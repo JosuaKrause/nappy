@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
 ## her rather than announcing itself the moment it streams in — `EventDef.notice_on(day)`,
-## the same day-keyed switch answered a different way, and `EventScheduler._for_day()` is where a
+## the same day-keyed switch answered a different way, and `EventDef.for_day()` is where a
 ## placement past it gets a copy carrying that answer. **And the day-3 shape does not retire** —
 ## *(2026-09-13, PLAYTEST-68: "we can sprinkle the day 3 charging dog in every now and then,
 ## too")* — `EventDirector._owe_the_sprinkled_dog()` now and then sends the same unmodified def
@@ -162,7 +162,7 @@ func _test_the_notice_switches_after_the_teaching_day(t) -> void:
 	t.check(is_equal_approx(def.notice_on(Tuning.RUN_TAUGHT_DAY + 11).within, waiting),
 			"and it stays the waiting shape for every day after that")
 
-## The waiting itself, on the copy `EventScheduler._for_day()` hands a `MAP` placement past the
+## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
 ## to arrive: a different `EventDef`, `EventDef.notice` already set, never a mutation of the one
 ## day 3's own dog reads.
@@ -171,7 +171,7 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 	if not cold:
 		return
 	var day := Tuning.RUN_TAUGHT_DAY + 1
-	var hot := EventScheduler._for_day(cold, day)
+	var hot := cold.for_day(day)
 	t.check(hot.notice_within() > 0.0, "the day-4 copy carries a real trigger")
 
 	var dog := EventInstance.new()

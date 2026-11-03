@@ -36,7 +36,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
 | `on_her_way` | An `OnHerWay`, or null: the day budgets the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
-| `from_day_after` | A `DaySwitch` for a row whose siting and notice change once its first appearance is over: `spawn_mode_on(day)` and `notice_on(day)` answer the row's own `spawn_mode` and `notice` through `after_day` and the switch's own past it. Null (the default) means the row is the same every day. `charging_dog` is the one row that carries it: `AHEAD_OF_PLAYER` with no notice on `RUN_TAUGHT_DAY`, then `MAP` with a 130px notice (its one radius, inside its 150px field — see "Every charger that does not arrive charging warns first"), so a `MAP` placement waits for her instead of announcing itself the moment it streams in. A placement past the switch is handed a copy carrying the later notice (`EventScheduler._for_day()`) |
+| `from_day_after` | A `DaySwitch` for a row whose siting and notice change once its first appearance is over: `spawn_mode_on(day)` and `notice_on(day)` answer the row's own `spawn_mode` and `notice` through `after_day` and the switch's own past it. Null (the default) means the row is the same every day. `charging_dog` is the one row that carries it: `AHEAD_OF_PLAYER` with no notice on `RUN_TAUGHT_DAY`, then `MAP` with a 130px notice (its one radius, inside its 150px field — see "Every charger that does not arrive charging warns first"), so a `MAP` placement waits for her instead of announcing itself the moment it streams in. A placement past the switch is handed a copy carrying the later notice (`EventDef.for_day()`) |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursuit` | A `PursuitSpec`, or null for a row that does not pursue: it comes after **her** rather than along a path, at its `speed`, strictly between a walk and a run — the one thing running is the answer to, see `Tuning.validate_pursuit`. Its fields: |
 | `pursuit.start` | How its chase begins. `NOTICES` (the default): one that waits for her (`notice`) warns inside its one radius and charges if she is still inside once `PursuitSpec.warns_for` has run; one with no notice closes on her through its telegraph and lunges at its stand-off (the day-3 dog). `SETS_OFF_BESIDE_HER`: put down inside its own stand-off to charge her (the men an investigating vehicle lets out, `EventCatalogue.out_of_the_car()`), so it never lunges early, never backs off, holds its ground and charges when its notice has run its whole length, owed the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. `CHARGES_AT_ONCE`: charges from its first frame because its warning came before it was set on her (`door_guard`, after the hut guard's raised hand for `CheckpointController.CROSSING_WARNING`, "Checkpoints"); its `telegraph_time` is 0 and it owes no notice of its own. `ARRIVES_CHASING`: warned of by its badge alone and created already chasing her (the robber and the guard a done task sends) |
@@ -135,7 +135,7 @@ the view, rather than when she comes inside its own field. `EventDef.notice_on(d
 same day-keyed switch answered a second way: no notice through `RUN_TAUGHT_DAY`, 130px past it — inside
 its own 150px `outer_radius`, an "on sight" band before it decides — so a dog she can see is a dog
 she can route around, `alley_robbery`'s shape. Nothing mutates the shared def:
-`EventScheduler._for_day()` hands a `MAP` placement past the switch a copy carrying the day's own
+`EventDef.for_day()` hands a `MAP` placement past the switch a copy carrying the day's own
 answer, the way `EventCatalogue.heated()` hands a placement a copy carrying a heat level's.
 
 **And a flock is a place for the same reason, with the same wait.** *(2026-09-13, PLAYTEST-69:
@@ -1292,7 +1292,7 @@ from the doorstep to the calm areas still worth reaching.
 *(PLAYTEST-77: "how is market stall a friction? you can't walk through it"; "a wall is also when you
 physically cannot walk through".)* A sidewalk is `Tuning.SIDEWALK_WIDTH` tiles — two lanes, 64px —
 so the only line past a row standing in one of them is the other lane, a tile away; a row whose body
-and charging disc (`EventScheduler._line_reach_of`, "What a row denies is what it charges for" in
+and charging disc (`EventDef.line_reach()`, "What a row denies is what it charges for" in
 `docs/CITY.md`) reach that far leaves no line at all. A market stall costs 8.5 points to walk
 through, well under `WALL_WORTH_OF_COST`, and denies 58px of the 64: cheap and impassable are not the
 same question, and friction is the role aimed *at* the route, so a row aimed there has to be one she
@@ -2335,10 +2335,10 @@ Two cases are exempt, and both are about the field having no fixed place to keep
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not
 be on it, so an overlapping lethal field there is the city saying so rather than a fairness
 failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
-`_keeps_its_field_clear` reads that role directly. **A pursuer**, because it follows her rather
+`Planned.keeps_its_field_clear()` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
 `charging_dog`, `alley_robbery`, a hunting `roadblock` and the men a hunting van lets out all carry a
-lethal radius with them wherever she is, and `EventScheduler._keeps_its_field_clear` says so by name
+lethal radius with them wherever she is, and `Planned.keeps_its_field_clear()` says so by name
 rather than leaving it to follow from the `WALL` case by coincidence.
 
 ## What an event actually costs

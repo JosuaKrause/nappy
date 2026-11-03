@@ -47,7 +47,7 @@ func run(t) -> void:
 			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
 					and city.map.is_walkable(tile) and not city.map.is_closed(tile) \
 					and not city.map.is_on_home_block(tile) and not city.map.is_obstructed(tile) \
-					and director._reachable_from_home(tile):
+					and director.reaches_from_home(tile):
 				stand_tiles.append(tile)
 		var tip := director.red_arrow_target()
 		if not stand_tiles.is_empty():
@@ -56,12 +56,12 @@ func run(t) -> void:
 					"front %s: the arrow %s ends on the door %s" % [fronts[i], tip, door])
 			t.check(director.contact_position().is_equal_approx(door),
 					"front %s: and the contact stands on it" % fronts[i])
-			t.check(is_equal_approx(director._contact.reach, ResistanceDirector.DOOR_REACH),
+			t.check(is_equal_approx(director.contact().reach, ResistanceDirector.DOOR_REACH),
 					"front %s: touched under the door reach" % fronts[i])
 			# Standing on each tile she can stand on within reach completes it, the side tiles
 			# a door's own frontage tile under a café's tables leaves her too.
 			for tile in stand_tiles:
-				t.check(director._contact.would_complete_at(city.map.tile_to_world(tile)),
+				t.check(director.contact().would_complete_at(city.map.tile_to_world(tile)),
 						"front %s: a touch from the frontage tile %s counts" % [fronts[i], tile])
 			if tile_is_taken(city, frontage):
 				from_the_side += 1
@@ -78,8 +78,8 @@ func run(t) -> void:
 	GameState.attempt_spend.scars = []
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
-	if director.current_step() != null and director._rider != null:
-		var door := city.way_in_behind(director._rider.global_position)
+	if director.current_step() != null and director.rider() != null:
+		var door := city.way_in_behind(director.rider().global_position)
 		t.check(door != Vector2.INF and director.red_arrow_target().is_equal_approx(door),
 				"with no recorded scar the arrow %s ends on the burnt building's door %s"
 				% [director.red_arrow_target(), door])
@@ -109,7 +109,7 @@ func _task_on_offer(t, city: City) -> ResistanceDirector:
 	director.set_process(false)
 	director.setup(city, city.map)
 	director.start_day(DAY, _rng("resistance"), 300.0)
-	director._on_contact_completed(5)
+	director.contact().complete_now()
 	return director
 
 func _rng(stream: String) -> RandomNumberGenerator:

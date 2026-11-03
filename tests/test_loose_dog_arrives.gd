@@ -9,7 +9,9 @@ extends RefCounted
 ## closing, rather than run its whole route there — which is what a check on `main` fails.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const STEP := 1.0 / 30.0
+## The engine's clock for the walks: each physics frame carries `1 / Engine.physics_ticks_per_second
+## * Engine.time_scale` seconds, so the stretch is sped up and put back after it.
+const FAST_SCALE := 3.0
 ## How near it comes to count as having reached her, px: her body and its own.
 const REACHED := 40.0
 
@@ -36,12 +38,12 @@ func run(t) -> void:
 	_city.events.use_player(_rig)
 	for speed: float in [0.0, Tuning.WALK_SPEED]:
 		var dog := _send_from_behind(false)
-		var seen := _run(dog, speed, 25.0)
+		var seen := await _run(dog, speed, 25.0)
 		t.check(dog.is_finished, "a dog sent from behind her, she going away at %.0fpx/s, is over" % speed)
 		t.check(seen["closest"] < REACHED, "and it reached her (%.0fpx at its nearest)" % seen["closest"])
 	var far := _send_from_behind(true)
 	var route_end := far.path[far.path.size() - 1]
-	var far_run := _run(far, Tuning.RUN_SPEED, 25.0)
+	var far_run := await _run(far, Tuning.RUN_SPEED, 25.0)
 	t.check(far.is_finished and far_run["over_at"] < 7.0,
 			"a dog she runs away from, sent from behind the furthest out, is retired within 7s (%.1fs)"
 			% far_run["over_at"])
@@ -72,20 +74,24 @@ func _send_from_behind(far: bool) -> EventInstance:
 			return instance
 	return null
 
-## Steps the manager and the dog for `seconds` with her walking up at `speed`; when the dog is over,
-## when and how far from her, and how near it came. A rig has no frames, so the manager is ticked by
-## hand, and it steps the dog.
+## Lets real physics frames pass for `seconds` of the game's clock with her walking up at `speed`;
+## when the dog is over, when and how far from her, and how near it came. The manager steps the dog
+## in its own physics frames, and her walk is carried by hand since the rig's own physics is off.
 func _run(dog: EventInstance, speed: float, seconds: float) -> Dictionary:
 	var closest := INF
 	var over_at := INF
 	var gap := INF
-	for i in int(seconds / STEP):
+	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in int(seconds / step):
 		_rig.velocity = Vector2.UP * speed
-		_rig.global_position += _rig.velocity * STEP
-		_city.events._physics_process(STEP)
+		_rig.global_position += _rig.velocity * step
+		await _rig.get_tree().physics_frame
 		if dog.is_finished:
-			over_at = i * STEP
+			over_at = i * step
 			break
 		gap = dog.global_position.distance_to(_rig.global_position)
 		closest = minf(closest, gap)
+	Engine.time_scale = clock
 	return {"closest": closest, "over_at": over_at, "gap_when_over": gap}
