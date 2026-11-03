@@ -18,6 +18,8 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 ## The seed of the run each test hands its manager.
 const RUN_SEED := 2
+## The long waits go at this many times real time (`PhysicsTicks`): each tick is that much longer.
+const WAIT_SCALE := 3.0
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
@@ -98,13 +100,14 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 			"holding a direction through the lock runs velocity out through friction, not held "
 			+ "at speed", 1.0)
 
-	# Five ticks short of the lock's end, the first tick (which began it) and the ten above counted.
-	var lock := PhysicsTicks.ticks_for(def.detain_seconds)
-	await PhysicsTicks.pass_ticks(t, lock - 16)
+	# Up to 0.2s short of the lock's end, the 11 ticks above counted.
+	var spent := 11.0 / Engine.physics_ticks_per_second
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds - spent - 0.2, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(stroller.is_detained(), "still locked a few frames before detain_seconds is up")
 	t.close_to(stroller.velocity.length(), 0.0, "and stays at rest for the whole lock", 1.0)
 
-	await PhysicsTicks.pass_ticks(t, 10)
+	await PhysicsTicks.pass_ticks(t, 4, Callable(), WAIT_SCALE)
 	Input.action_release("move_right")
 	t.check(not stroller.is_detained(), "and releases once detain_seconds has run")
 	t.check(stroller.velocity.length() > 10.0,
@@ -152,7 +155,8 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
 
-		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds) + 5)
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds, WAIT_SCALE) + 2,
+				Callable(), WAIT_SCALE)
 
 		if awake:
 			t.close_to(baby.excitement, starting_excitement + Tuning.CHAT_EXCITEMENT,
@@ -242,7 +246,8 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 
 	# Her own ticks run the lock down; the conversation ends on the manager's, with her still
 	# standing inside its reach.
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1))
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(mother.has_chatted() and not mother.is_chatting() and mother.is_leaving,
 			"it ends, and she is spent as a detainer — see 'departs like dog_walker'")
 	t.check(not stroller.is_detained(), "and the lock from the first approach has run down")
@@ -282,7 +287,8 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 		world.free()
 		return
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1))
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(mother.is_leaving, "it ends with her leaving")
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)

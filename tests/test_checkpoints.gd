@@ -7,6 +7,14 @@ extends RefCounted
 ## `tests/test_regions.gd` is the model this suite's data-level half follows — a segment-level
 ## check cannot see an alley mouth or a wall body bleeding sideways, so the shape checks below walk
 ## real tiles the same way that suite's own flood check does.
+##
+## **The holds are played on real physics ticks** (`PhysicsTicks`, one tick a frame): the manager is
+## in the tree over a bare map and a run of its own (`EventManager.setup_world()`, the entry `main`
+## hands the escape's building its world through), so its own tick hands every instance where she
+## is, steps them, starts the hold and releases it, and hers runs the input lock down and moves
+## her camera; a finger is a touch pushed through the viewport. The street-door rigs further down
+## stand a real city's door and call the controller's public frame methods
+## (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
