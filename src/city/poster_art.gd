@@ -10,7 +10,9 @@ extends RefCounted
 ## drawing call only ever looks one up. **One instance holds them**: `main` makes it and
 ## hands it to each day's city, which hands it down through `PosterWalls` to every `Building`
 ## that draws a sheet, so the day's city, rebuilt daily, does not compose them again. The sheets
-## themselves are regions of the baked page, so the intact picture is a static lookup.
+## themselves are regions of the baked page, so the intact picture is a lookup in the library the
+## drawing front holds (`Building.atlas`), which it hands in with each ask; this object holds the
+## composed pictures and no library.
 ##
 ## **Why the pixels and not a shader.** A mask on a canvas item needs either a material on the
 ## whole building (which would mask its walls too) or a node per torn sheet, and a composed
@@ -79,17 +81,17 @@ static func region_names() -> Array[StringName]:
 
 ## The intact sheet for `kind`, a region on the held `buildings` page — the crossed wanted notice in
 ## place of the plain one once the neighbor has been taken (`neighbor_taken`).
-static func sheet(kind: int, neighbor_taken: bool) -> Texture2D:
+static func sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Texture2D:
 	if _crossed(kind, neighbor_taken):
-		return AtlasLibrary.region(WANTED_CROSSED)
-	return AtlasLibrary.region(SHEETS[kind])
+		return atlas.region(WANTED_CROSSED)
+	return atlas.region(SHEETS[kind])
 
 ## `kind` torn the `tear`th way, or the intact sheet if `prepare()` could not compose it — a torn
 ## sheet drawn whole is a wrong picture, never a missing one.
-func torn(kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
+func torn(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
 	var key := _CROSSED_TORN + tear if _crossed(kind, neighbor_taken) else kind * TEARS + tear
 	var composed: Texture2D = _torn.get(key)
-	return composed if composed else sheet(kind, neighbor_taken)
+	return composed if composed else sheet(atlas, kind, neighbor_taken)
 
 ## Whether `kind` draws as the crossed wanted notice, the neighbor taken or not.
 static func _crossed(kind: int, neighbor_taken: bool) -> bool:
@@ -98,10 +100,10 @@ static func _crossed(kind: int, neighbor_taken: bool) -> bool:
 ## Composes every torn sheet from the baked page, once for this instance. Called by
 ## `PosterWalls.setup()` from `City.build()`, which is a loading moment: the page image is a CPU copy
 ## of a whole page, which is nothing to want in the frame a tear happens.
-func prepare() -> void:
+func prepare(atlas: AtlasLibrary) -> void:
 	if not _torn.is_empty():
 		return
-	var page := AtlasLibrary.page_image(ATLAS_GROUP)
+	var page := atlas.page_image(ATLAS_GROUP)
 	if page == null:
 		push_error("PosterArt: no '%s' page to compose the torn posters from" % ATLAS_GROUP)
 		return
@@ -125,9 +127,9 @@ func prepare() -> void:
 
 ## The picture for a sheet as `PosterState` holds it: intact, or torn the `tear`th way, the wanted
 ## notice crossed out when `neighbor_taken`.
-func texture_for(kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
-	return sheet(kind, neighbor_taken) if tear == PosterState.INTACT \
-			else torn(kind, tear, neighbor_taken)
+func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
+	return sheet(atlas, kind, neighbor_taken) if tear == PosterState.INTACT \
+			else torn(atlas, kind, tear, neighbor_taken)
 
 ## The recipe, per pixel: the poster's colour with its alpha multiplied by the mask's, then the
 ## overlay drawn over the result with ordinary source-over blending. All three images are the same
@@ -143,7 +145,7 @@ static func compose(poster: Image, mask: Image, overlay: Image) -> Image:
 	return result
 
 static func _cut(page: Image, name: StringName) -> Image:
-	var rect := AtlasLibrary.region_rect(name)
+	var rect := AtlasTable.baked().region_rect(name)
 	if rect.size == Vector2i.ZERO:
 		push_error("PosterArt: no baked region '%s'" % name)
 		return null

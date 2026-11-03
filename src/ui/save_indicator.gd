@@ -203,6 +203,9 @@ var _icon_rect: TextureRect
 var _plain_texture: Texture2D
 var _struck_texture: Texture2D
 var _showing: Showing
+## The baked atlas pages the symbol draws from (`AtlasLibrary`), handed by `main` before it enters
+## the tree; a symbol nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## `timeline` is the symbol's timeline, handed in so whoever builds the symbol can keep a hand on it
 ## — begin and answer changes on it, move its clocks, read its state — and a fresh one by default.
@@ -213,10 +216,12 @@ func _init(timeline: Showing = null) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 
 func _ready() -> void:
 	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
@@ -234,8 +239,8 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(root)
 	_icon_rect = TextureRect.new()
 	_icon_rect.name = "Icon"
-	_plain_texture = AtlasLibrary.region(_ICON)
-	_struck_texture = AtlasLibrary.region(_ICON_UNAVAILABLE)
+	_plain_texture = atlas.region(_ICON)
+	_struck_texture = atlas.region(_ICON_UNAVAILABLE)
 	_icon_rect.texture = _plain_texture
 	_icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

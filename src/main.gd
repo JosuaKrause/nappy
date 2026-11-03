@@ -625,6 +625,7 @@ static func escape_section_spec(section: int, length: float) -> DaySpec:
 ## and the title, with one set of handlers for all three.
 func _build_the_screens() -> void:
 	_hud = HUD.instantiate()
+	_hud.use_atlas(_sitting.atlas)
 	_configure_the_hud()
 	_hud.use_touch(_touch_available)
 	add_child(_hud)
@@ -637,6 +638,7 @@ func _build_the_screens() -> void:
 	_add_touch_controls()
 	_summary = DAY_SUMMARY.instantiate()
 	_summary.use_touch(_touch_available)
+	_summary.use_atlas(_sitting.atlas)
 	add_child(_summary)
 
 	# Deliberately not `_pauses_with_the_game`: a pause screen that pauses with the game cannot
@@ -644,6 +646,7 @@ func _build_the_screens() -> void:
 	_pause = PAUSE_SCREEN.instantiate()
 	_pause.use_platform(_touch_available, QuitOption.available(config))
 	_pause.use_run(_run)
+	_pause.use_atlas(_sitting.atlas)
 	add_child(_pause)
 	# So `_pause.open()`/`close()` can stash and restore the heading she carried into an ordinary
 	# Esc-pause — see `PauseScreen._touch_controls`'s own doc. `_add_touch_controls()` already ran
@@ -657,6 +660,7 @@ func _build_the_screens() -> void:
 	_title.use_platform(_touch_available, QuitOption.available(config))
 	_title.use_run(_run)
 	_title.use_sitting(_sitting)
+	_title.use_atlas(_sitting.atlas)
 	add_child(_title)
 	_title.start_requested.connect(_on_title_start)
 	_title.quit_requested.connect(_quit)
@@ -736,6 +740,7 @@ func _add_trailer_rigs() -> void:
 ## hand the baby whether `--invincible` stands her excitement meter still.
 func _make_player() -> Stroller:
 	var player: Stroller = STROLLER.instantiate()
+	player.atlas = _sitting.atlas
 	player.is_male = _run.header.player_is_male
 	(player.get_node("Baby") as Baby).excitement_frozen = config.invincible
 	(player.get_node("Baby") as Baby).timing = _sitting.frame_timing
@@ -749,6 +754,7 @@ func _new_city() -> City:
 	city.run = _run
 	city.ground_recipe = _sitting.ground_recipe
 	city.poster_art = _poster_art
+	city.atlas = _sitting.atlas
 	city.ground_mode = config.ground_mode as SceneryGround.Mode
 	city.scenery_frame_locked = config.recipe_scripted
 	city.skip_shadows = config.skip_shadows
@@ -855,6 +861,7 @@ func _world_map() -> WorldMap:
 ## reaches the day's clock (`DayController.reach_the_exit()`).
 func _build_the_escape_building() -> void:
 	_interior = InteriorScene.new()
+	_interior.atlas = _sitting.atlas
 	_interior.name = "Interior"
 	add_child(_interior)
 	_pauses_with_the_game(_interior)
@@ -874,6 +881,7 @@ func _build_the_escape_building() -> void:
 	_building_events.name = "BuildingEvents"
 	_building_events.skip_drawing = config.skip_events
 	_building_events.timing = _sitting.frame_timing
+	_building_events.atlas = _sitting.atlas
 	_building_events.trace = _the_trace()
 	_building_events.stream_radius = INF
 	add_child(_building_events)
@@ -883,7 +891,7 @@ func _build_the_escape_building() -> void:
 	_hand_the_controls_cover_to_the_events()
 	_interior.excitement_sources = [_building_events.sources]
 	_building_seed = _run.calendar.day_rng(_run.header.day, "finale-interior").randi()
-	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map)
+	SteamGrates.lay(BuildingPlan.grates(_interior.map), _interior.map, _sitting.atlas)
 	# The building shows what the city shows: the same badge, halo and debug view, reading its
 	# events as a day reads the city's — see `_event_source()`. The city's own build calls the same
 	# three again when she walks out, which points them at the street.
@@ -1302,7 +1310,7 @@ func _show_the_resume_gate() -> void:
 	# here today** — the boot above already holds every group a day draws — and it is opened
 	# anyway because this is the screen a page the boot could not have known about belongs behind:
 	# a group whose membership depends on the day would be acquired between these two lines.
-	AtlasLibrary.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
+	_sitting.atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
 	_summary.show_summary(SummaryModel.brief_for(_run, _resume_gate_note(), _flow.spec.title),
 			_flow.mode)
 
@@ -1368,6 +1376,7 @@ func _add_danger_edge() -> void:
 	_edge_layer = layer
 	_edge = DangerEdge.new()
 	_edge.timing = _sitting.frame_timing
+	_edge.atlas = _sitting.atlas
 	_edge.name = "Edge"
 	# Pinned to the fixed design box rather than full-rect, so this layer's own rotation (applied
 	# in `_apply_orientation()`) has a stationary 1280x720 footprint to rotate — see
@@ -1508,14 +1517,15 @@ func _retire_the_boot_camera() -> void:
 ## restarted once would be holding both.
 func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -> void:
 	var elapsed := Time.get_ticks_msec()
-	AtlasLibrary.claim_the_loading_moments(moment)
+	var atlas := _sitting.atlas
+	atlas.claim_the_loading_moments(moment)
 	for group in RESIDENT_GROUPS:
-		AtlasLibrary.hold_for_the_process(group)
+		atlas.hold_for_the_process(group)
 	for group in also:
-		AtlasLibrary.hold_for_the_process(group)
-	AtlasLibrary.stop_holding(Stroller.parent_atlas(not _run.header.player_is_male))
-	AtlasLibrary.hold_for_the_process(Stroller.parent_atlas(_run.header.player_is_male))
-	AtlasLibrary.close_loading_window()
+		atlas.hold_for_the_process(group)
+	atlas.stop_holding(Stroller.parent_atlas(not _run.header.player_is_male))
+	atlas.hold_for_the_process(Stroller.parent_atlas(_run.header.player_is_male))
+	atlas.close_loading_window()
 	# Beside "city generated in N ms" for the same reason that one is printed: a reader working
 	# out where a boot went belongs next to the other numbers.
 	print("[Main] %d atlas pages held from %s in %d ms"
@@ -1523,10 +1533,12 @@ func _hold_every_page_a_day_draws(moment: StringName, also: Array[StringName]) -
 
 ## Hands the loading moments back, so a scene reload — the held restart — boots into a fresh
 ## claim rather than into this instance's closed window. The residency itself is deliberately not
-## given back: the reloaded boot wants exactly the same pages and giving them up here would be a
-## reload of every one of them, which is the thing the residency exists to prevent.
+## given back: the library is the sitting's, which outlives the reload, and the reloaded boot wants
+## exactly the same pages, so giving them up here would be a reload of every one of them, which is
+## the thing the residency exists to prevent.
 func _exit_tree() -> void:
-	AtlasLibrary.release_the_loading_moments()
+	if _sitting:
+		_sitting.atlas.release_the_loading_moments()
 
 ## Gets the Compatibility renderer to compile the halo and shoreline shader programs before their
 ## first real drawings. **Godot 4.7 has no precompile call for this renderer** — `RenderingServer`'s own
@@ -1562,7 +1574,7 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 	_pauses_with_the_game(halo_probe)
 	halo_probe.queue_redraw()
 
-	var water_texture := AtlasLibrary.region(&"tiles/water") as AtlasTexture
+	var water_texture := _sitting.atlas.region(&"tiles/water") as AtlasTexture
 	var water_probe := Node2D.new()
 	water_probe.name = "WaterWarm"
 	water_probe.global_position = ground
@@ -1655,6 +1667,7 @@ func _add_touch_controls() -> void:
 	_touch_layer = layer
 	add_child(layer)
 	_touch_controls = TOUCH_CONTROLS.instantiate()
+	_touch_controls.atlas = _sitting.atlas
 	_touch_controls.use_touch(_touch_available)
 	_touch_layer.add_child(_touch_controls)
 	_touch_controls.rotated = _rotated
@@ -1970,7 +1983,7 @@ func _on_summary_continued(raised_in: int) -> void:
 		RunFlow.Step.ENGAGE:
 			# The brief's own loading window shuts with the brief: from here she is walking, and a
 			# page read from disk in a walked frame is the stutter the window exists to refuse.
-			AtlasLibrary.close_loading_window()
+			_sitting.atlas.close_loading_window()
 			_summary.dismiss()
 			_engage_the_day()
 		RunFlow.Step.CARRY_TO_CHECKPOINT:
@@ -2313,6 +2326,7 @@ func _raise_save_indicator() -> void:
 	if _save_indicator:
 		return
 	_save_indicator = SaveIndicator.new()
+	_save_indicator.atlas = _sitting.atlas
 	add_child(_save_indicator)
 
 ## Every write goes through here. **It tells the symbol nothing**: `GameSave.write()` announces the

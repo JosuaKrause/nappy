@@ -12,7 +12,8 @@ func run(t) -> void:
 	_test_each_state_has_three_distinct_poses_per_view(t)
 	await _test_every_view_resolves_every_pose_in_both_states(t)
 
-## A rig in the tree, so her own `_ready()` acquires her page and her own `_physics_process()` runs.
+## A rig in the tree, so her own `_enter_tree()` acquires her page (on a library of her own, since
+## nobody hands her one) and her own `_physics_process()` runs.
 func _rig(t, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
 	rig.carrying = carrying
@@ -135,8 +136,8 @@ func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
 			for frame in range(3):
 				var expected := _direction_textures(carrying, frame)
 				t.check(pose.mother_sources[frame] == expected[direction]
-						and AtlasLibrary.region(StringName(pose.mother_sources[frame]))
-						== AtlasLibrary.region(StringName(expected[direction])),
+						and rig.atlas.region(StringName(pose.mother_sources[frame]))
+						== rig.atlas.region(StringName(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()

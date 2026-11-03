@@ -146,16 +146,22 @@ var _clock := Callable()
 ## still raises the signal exactly once, at the moment it first reaches full rather than again on
 ## every later frame `_process()` finds `hold_progress` still clamped at `1.0`.
 var _fired := false
+## The baked atlas pages the button draws from (`AtlasLibrary`), handed by its screen before it
+## enters the tree (`use_atlas()` on the title, the pause and the summary); a button nobody handed
+## one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## Acquires the `ui` group before `_ready()` sets `icon` from it — see `Building._enter_tree()`'s
 ## own doc for why this is paired with `_exit_tree()` rather than folded into `_ready()`.
 ## `AtlasLibrary` reference-counts, so every button on a screen acquiring the same group is one
 ## page load.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 
 ## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -167,7 +173,7 @@ func _ready() -> void:
 	# reserve below the disc is gone along with the bar itself; the fill now lives inside the disc.
 	custom_minimum_size = Vector2(_DIAMETER, _DIAMETER)
 	_apply_disc_style()
-	icon = AtlasLibrary.region(_ICON_BY_SYMBOL.get(symbol))
+	icon = atlas.region(_ICON_BY_SYMBOL.get(symbol))
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	expand_icon = true

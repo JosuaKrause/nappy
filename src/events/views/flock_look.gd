@@ -40,7 +40,7 @@ func _draw_birds(canvas: CanvasItem) -> void:
 			# that has already gone — which is the thing the wait and the telegraph before it exist
 			# to show her instead.
 			wings = EventPictures.PIGEON_DOWN_BY_VIEW[view]
-		Sprites.draw_standing(canvas, EventPictures.drawn(wings), bird.at - Vector2(0.0, bird.lift),
+		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, wings), bird.at - Vector2(0.0, bird.lift),
 				Vector2.ZERO, mirror)
 
 ## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on

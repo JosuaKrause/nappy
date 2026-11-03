@@ -279,12 +279,17 @@ var _drag_pointer_index := -1
 var _drag_run := false
 
 var _was_paused := false
+## The baked atlas pages the controls draw from (`AtlasLibrary`), handed by `main` before they
+## enter the tree; controls nobody handed one (a suite's) make their own when they first enter it.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 
 ## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
 ## since it may not name the view.
@@ -913,7 +918,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * PAUSE_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(AtlasLibrary.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Run's disc, on the focus the steering side leaves free, lit while any finger holds Run.
@@ -924,7 +929,7 @@ func _draw_run_button() -> void:
 	if _run_held:
 		draw_circle(center, RUN_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * RUN_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
+	draw_texture_rect(atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
 ## The steering ring at `RING_RADIUS` and a knob (the dot) at the heading she is actually walking,
