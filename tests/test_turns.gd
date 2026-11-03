@@ -123,12 +123,13 @@ func _one_arm(t, vertical: bool, direction: float, turning: float) -> void:
 	t.check(watched.turned and watched.finished,
 			"%s: the car takes the open arm and completes the turn (%.2fs)" % [name, watched.seconds])
 	_check_the_path(t, watched, name)
-	t.check(car.travelling_vertically() == not vertical and car._direction == turning,
+	t.check(car.travelling_vertically() == not vertical and _direction_of(car) == turning,
 			"%s: it comes out on the crossing axis pointing the way it turned" % name)
-	t.check(car._lane == CrowdLanes.road_lane(not vertical, turning),
+	t.check(_is_in_the_lane_on_its_right(car),
 			"%s: and in the lane on its own right for the way it is now pointing" % name)
 	var landed_on: float = car.position.x if car.travelling_vertically() else car.position.y
-	var off := absf(landed_on - CrowdLanes.lane_centre(car._corridor, car._lane))
+	var off := absf(landed_on - CrowdLanes.lane_centre(CrowdLanes.corridor_at(landed_on),
+			CrowdLanes.road_lane(not vertical, turning)))
 	t.check(off < 1.0, "%s: on the exit lane's own centre line, not steering back to it (%.1fpx off)"
 			% [name, off])
 
@@ -143,17 +144,16 @@ func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
 			_hold(_arm(not vertical, 1.0))
 			_hold(_arm(not vertical, -1.0))
 			var car := _place_a_car(vertical, direction)
-			var lane_before := car._lane
+			var lane_before := car.lane_key()
 			var watched := _watch(car, 10.0)
 			var name := "%s%s" % ["+" if direction > 0.0 else "-", "y" if vertical else "x"]
 			t.check(watched.turned and watched.finished,
 					"boxed in on three sides (%s): the car turns round and completes it (%.2fs)"
 					% [name, watched.seconds])
 			_check_the_path(t, watched, "about-face " + name)
-			t.check(car.travelling_vertically() == vertical and car._direction == -direction,
+			t.check(car.travelling_vertically() == vertical and _direction_of(car) == -direction,
 					"about-face %s: it comes out on the same street pointing back" % name)
-			t.check(car._lane != lane_before
-					and car._lane == CrowdLanes.road_lane(vertical, -direction),
+			t.check(car.lane_key() != lane_before and _is_in_the_lane_on_its_right(car),
 					"about-face %s: and in the other lane, which is the one on its own right now"
 					% name)
 
@@ -170,7 +170,7 @@ func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
 	t.check(watched.turned and watched.finished,
 			"a car meeting a closed junction turns round in the street (%.2fs)" % watched.seconds)
 	_check_the_path(t, watched, "street about-face")
-	t.check(car._direction == -1.0 and car.travelling_vertically(),
+	t.check(_direction_of(car) == -1.0 and car.travelling_vertically(),
 			"and comes out heading back the way it came")
 	# That it never reached the closure is `off_the_road` above: closed ground fails the same check
 	# the pavement does, which is what *never drive through a barrier* means here.
@@ -200,7 +200,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 	var rests_at := barrier - Tuning.CAR_STRIKE_HALF_LENGTH - CarTurn.about_face_reach() \
 			- CarStrategy.TURN_ROOM_MARGIN
 	var blocker := _place_a_car(true, -1.0)
-	var landing_lane := CrowdAgent.make_lane_key(true, blocker._corridor,
+	var landing_lane := LaneMover.make_lane_key(true, _corridor(true),
 			CrowdLanes.road_lane(true, -1.0), -1.0)
 	blocker._cruise = 0.0
 	blocker._speed = 0.0
@@ -221,9 +221,9 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 			blocker._cruise = 0.0
 			blocker._speed = 0.0
 		_city.crowd.set_focus(car.position)
-		var facing := car._direction
+		var facing := _direction_of(car)
 		_city.crowd.step(STEP)
-		flipped = flipped or car._direction != facing
+		flipped = flipped or _direction_of(car) != facing
 		if car.is_turning():
 			turned = true
 			break
@@ -269,24 +269,24 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 	car.position.y = float(here * Tuning.TILE_SIZE) + float(Tuning.TILE_SIZE) * 0.5
 	car._speed = 0.0
 	car._scan_at = Vector2i(-9999, -9999)
-	var facing := car._direction
-	var lane_before := car._lane
+	var facing := _direction_of(car)
+	var lane_before := car.lane_key()
 	var flips := 0
 	var swings := 0.0
 	var turned := false
 	for frame in int(round(6.0 / STEP)):
 		_city.crowd.set_focus(car.position)
-		var was := car._direction
+		var was := _direction_of(car)
 		var across := car.position.x
 		_city.crowd.step(STEP)
-		if car._direction != was:
+		if _direction_of(car) != was:
 			flips += 1
 		swings = maxf(swings, absf(car.position.x - across))
 		turned = turned or car.is_turning()
 	t.check(flips == 0,
 			"a car with less than a half turn's road at either end stands rather than reversing "
 			+ "where it stands (%d reversals in six seconds)" % flips)
-	t.check(car._direction == facing and car._lane == lane_before and not turned,
+	t.check(_direction_of(car) == facing and car.lane_key() == lane_before and not turned,
 			"it keeps the heading and the lane it had, so nothing slides it across the carriageway")
 	t.check(swings < 1.0, "and it does not drift across its own street (%.1fpx in a frame)" % swings)
 	t.check(car.strategy.nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
@@ -314,7 +314,7 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
 	var past_the_barrier := float((_junction.y * CityMap.period() + Tuning.STREET_WIDTH)
 			* Tuning.TILE_SIZE)
 	var follower := _place_a_car(true, 1.0)
-	var leader := _place_a_car(true, 1.0)
+	var leader := _place_a_car(true, 1.0, -1, 4.0 * Tuning.CAR_GAP_MIN)
 	follower.position.y = past_the_barrier + 40.0
 	leader.position.y = follower.position.y + 20.0
 	for car in [follower, leader]:
@@ -383,7 +383,7 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
 			inside += 1
 	t.check(inside == 0, "the car never ends up inside the plug it could not have left")
 	t.check(watched.turned, "it still makes a manoeuvre rather than standing there")
-	t.check(car._direction == -1.0 or not car.travelling_vertically(),
+	t.check(_direction_of(car) == -1.0 or not car.travelling_vertically(),
 			"and leaves by the arm that is open or by the way it came")
 	_check_the_path(t, watched, "plugged arm")
 	for tile in plug:
@@ -415,8 +415,7 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
 	var leader := _place_a_car(true, 1.0)
 	var followers: Array[CrowdAgent] = []
 	for i in 2:
-		var follower := _place_a_car(true, 1.0)
-		follower.position.y = leader.position.y - float(i + 1) * Tuning.CAR_GAP_MIN * 1.6
+		var follower := _place_a_car(true, 1.0, -1, float(i + 1) * Tuning.CAR_GAP_MIN * 1.6)
 		followers.append(follower)
 	var closest := INF
 	var worst_jump := 0.0
@@ -476,7 +475,7 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 	# a car is already travelling down.
 	var queue: Array[CrowdAgent] = []
 	for i in 3:
-		var car := _place_a_car(true, 1.0)
+		var car := _place_a_car(true, 1.0, -1, float(i + 1) * Tuning.CAR_GAP_MIN * 1.6)
 		car.position.y = turner.position.y - 400.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6
 		queue.append(car)
 
@@ -592,8 +591,10 @@ func _test_two_cars_arriving_together_do_not_share_the_box(t) -> void:
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
 	var turner := _place_a_car(true, 1.0)
-	var crossing := _place_a_car(false, 1.0)
-	# Level with each other, so the box is decided rather than queued for.
+	# Placed on the open side of the box, which the entry accepts (the arm it comes along is held for
+	# the scenario), then put level with the turner, so the box is decided rather than queued for.
+	var crossing := _place_a_car(false, 1.0, -1, 0.0,
+			float((_junction.x * CityMap.period() + Tuning.STREET_WIDTH + 4) * Tuning.TILE_SIZE))
 	crossing.position.x = float(_junction.x * CityMap.period() * Tuning.TILE_SIZE) \
 			- (float(_junction.y * CityMap.period() * Tuning.TILE_SIZE) - turner.position.y)
 	var closest := INF
@@ -679,13 +680,18 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 ## at the last junction — the boundary case of the same rule a closure exercises.
 func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
 	_clear_the_holds()
+	# The outermost street that is an ordinary one, the map's corner: its last junction has one arm to
+	# turn into, or an about-face. A spine is kept by its lights and a precinct has no carriageway for
+	# a car, so those are skipped.
+	var start := (StreetNetwork.junction_count().x - 1) * CityMap.period() - 4
 	var corridor := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y) - 1
-	if corridor == _city.map.main_road:
+	while corridor > 1 and (corridor == _city.map.main_road
+			or _city.map.street_kind(false, corridor, start) != GameEnums.StreetKind.ORDINARY):
 		corridor -= 1
-	var car := _place_a_car(false, 1.0, corridor)
 	# Started in the last block before the edge, heading east at it.
-	car.position.x = float((StreetNetwork.junction_count().x - 1) * CityMap.period()
-			* Tuning.TILE_SIZE) - 4.0 * float(Tuning.TILE_SIZE)
+	var car := _place_a_car(false, 1.0, corridor, 0.0,
+			float((StreetNetwork.junction_count().x - 1) * CityMap.period() * Tuning.TILE_SIZE)
+			- 4.0 * float(Tuning.TILE_SIZE))
 	var watched := _watch(car, 10.0, true)
 	t.check(watched.turned, "a car driving at the city boundary makes a manoeuvre at the last "
 			+ "junction rather than driving off the map")
@@ -771,31 +777,47 @@ func _the_body_is_on_drivable_ground(car: CrowdAgent, over_the_kerb: bool) -> bo
 
 ## A car of this suite's own, placed in a lane and pointed at `_junction`. The crowd is emptied
 ## first so that what the scenario measures is the scenario.
-func _place_a_car(vertical: bool, direction: float, corridor := -1) -> CrowdAgent:
-	var car := CrowdAgent.new()
-	car.traffic = _city.crowd.traffic()
-	car.setup(CrowdAgent.Kind.CAR, _city.map, _city.crowd.field(), 7, 0.0)
-	car._vertical = vertical
-	car._corridor = _corridor(vertical) if corridor < 0 else corridor
-	car._lane = CrowdLanes.road_lane(vertical, direction)
-	car._direction = direction
-	car._speed = Tuning.CAR_SPEED.x
-	car._cruise = Tuning.CAR_SPEED.x
-	car._lane_centre = CrowdLanes.lane_centre(car._corridor, car._lane)
-	car._turn = null
-	car._turn_run_up = 0.0
-	car._scan_at = Vector2i(-9999, -9999)
+##
+## `back` places it that many px further back down its lane than the usual run-up, which is how a
+## scenario stands several cars in one lane: the entry refuses a car on top of another's queue.
+## `at_along` puts it at that distance along its street instead.
+func _place_a_car(vertical: bool, direction: float, corridor := -1, back := 0.0,
+		at_along := INF) -> CrowdAgent:
+	var street := _corridor(vertical) if corridor < 0 else corridor
+	var lane := CrowdLanes.road_lane(vertical, direction)
 	# Four tiles of run-up on the near side of the junction, which is far enough out to see the
 	# blockage beyond it and near enough that the whole manoeuvre fits in a few seconds of rig.
 	var band_index := _junction.y if vertical else _junction.x
 	var band := float(band_index * CityMap.period() * Tuning.TILE_SIZE)
 	var along := band - 4.0 * float(Tuning.TILE_SIZE) if direction > 0.0 \
 			else band + float((Tuning.STREET_WIDTH + 4) * Tuning.TILE_SIZE)
-	car.position = CarTurn.world(vertical, along, car._lane_centre)
-	_city.add_entity(car)
-	_city.crowd.agents().append(car)
+	along -= direction * back
+	if at_along != INF:
+		along = at_along
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	# The entry a task scene's pinned actor takes (`Crowd.add_recipe_actor()`): the lane, the
+	# street under it and the traffic queue are checked as a rolled morning's are.
+	var placed := _city.crowd.add_recipe_actor("turner-%d" % _city.crowd.agent_count(),
+			CrowdAgent.Kind.CAR, CarTurn.world(vertical, along, CrowdLanes.lane_centre(street, lane)),
+			heading, Tuning.CAR_SPEED.x, 7)
+	assert(placed["error"] == "", "the scenario's car is placed: %s" % placed["error"])
+	var car: CrowdAgent = placed["actor"]
 	_city.crowd.set_focus(car.position)
 	return car
+
+## Which way along its street a car points once it is out of a turn: plus or minus one.
+func _direction_of(car: CrowdAgent) -> float:
+	var heading := car.heading()
+	return heading.y if car.travelling_vertically() else heading.x
+
+## Whether a car is in the lane on its own right for the way it points, on the street it is standing
+## in: the lane `CrowdLanes.road_lane()` names, read off its lane key.
+func _is_in_the_lane_on_its_right(car: CrowdAgent) -> bool:
+	var vertical := car.travelling_vertically()
+	var direction := _direction_of(car)
+	var street := CrowdLanes.corridor_at(car.position.x if vertical else car.position.y)
+	return car.lane_key() == LaneMover.make_lane_key(vertical, street,
+			CrowdLanes.road_lane(vertical, direction), direction)
 
 ## The corridor a car travelling on this axis uses to reach `_junction`.
 func _corridor(vertical: bool) -> int:
@@ -817,6 +839,9 @@ func _hold(key: Vector3i) -> void:
 func _clear_the_holds() -> void:
 	_city.map.clear_day_holds()
 	_city.crowd.clear()
+	# The day's pockets (`CrowdPockets`) are refreshed by a tick, so a tick of no time lets the last
+	# scenario's holds stop deciding which ground is a pocket the entry refuses.
+	_city.crowd.step(0.0)
 
 ## Somebody standing on the first zebra this car is coming up to: the pavement band of the
 ## crossing corridor, on the car's own line, which is the gesture the give-way rule answers.
