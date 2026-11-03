@@ -38,5 +38,6 @@ presses the building's brief, which `BuildingWalker` does; it says the walker pr
 **Open to overturn** (the builder's choices where the brief was silent): the observer give-back
 after each boot; the held-restart test letting its boot build its own sitting, which the runner
 hands the stand-in, since parking that sitting is what it checks; tests emitting the signals the
-game fires (`hard_fail_triggered`, the summary's restart).
+game fires: `EventBus.hard_fail_triggered`, `DayController.day_finished` for a won day, the pause
+screen's `restart_requested`, and the summary's restart.
 
