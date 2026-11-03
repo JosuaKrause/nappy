@@ -509,6 +509,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		else:
 			_contact.queue_free()
 	_contact = ContactPoint.new()
+	_contact.atlas = _city.atlas if _city else null
 	_contact.use_player(_player)
 	if neighbor:
 		_rider = neighbor

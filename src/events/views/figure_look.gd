@@ -92,7 +92,7 @@ func _draw_loose_dog(canvas: CanvasItem) -> void:
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := select_view(event.facing_now())
 	var dog := EventPictures.dog_picture(view, gait_is_stepping(), gait_is_second_half())
-	Sprites.draw_standing(canvas, EventPictures.drawn(dog), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, dog), Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 func _draw_cat(canvas: CanvasItem) -> void:
@@ -107,7 +107,7 @@ func _draw_cat(canvas: CanvasItem) -> void:
 		by_view = EventPictures.CAT_RUNNING_BY_VIEW_B
 	_draw_body_shadow(canvas)
 	var view := select_view(event.facing_now())
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 ## The tables, and the people at them.
@@ -133,7 +133,7 @@ func _draw_busker(canvas: CanvasItem) -> void:
 	var mirror := is_mirrored()
 	var by_view := EventPictures.BUSKER_BY_VIEW_B \
 			if idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			mirror)
 
 ## The pole and horns stand whether the mast is live or silenced — a mast never leaves. On top of
@@ -147,14 +147,14 @@ func _draw_mast(canvas: CanvasItem) -> void:
 	if event.silenced:
 		return
 	if mast_is_telegraphing_now():
-		Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP),
+		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.MAST_LAMP),
 				EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
 				Palette.SIGNAL_AMBER)
 		return
-	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.MAST_LAMP),
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.MAST_LAMP),
 			EventPictures.MAST_LAMP_AT, Vector2.ZERO, false,
 			Palette.SIGNAL_GREEN)
-	Sprites.draw_standing(canvas, EventPictures.drawn(EventPictures.SOUND_PULSE),
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.SOUND_PULSE),
 			EventPictures.MAST_PULSE_AT, Vector2.ZERO, false)
 
 ## The person, the dog, and the lead between them.
@@ -183,9 +183,9 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	var person_by_view := EventPictures.PERSON_BY_VIEW_B if stepping \
 			else EventPictures.PERSON_BY_VIEW
 	var dog := EventPictures.dog_picture(view, stepping, gait_is_second_half())
-	Sprites.draw_standing(canvas, EventPictures.drawn(person_by_view[view]), Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, person_by_view[view]), Vector2.ZERO,
 			Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, EventPictures.drawn(dog), to_the_dog, Vector2.ZERO, mirror)
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, dog), to_the_dog, Vector2.ZERO, mirror)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
@@ -202,5 +202,5 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 	if not chatting and gait_is_stepping():
 		by_view = EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := select_view(event.facing_now())
-	Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())

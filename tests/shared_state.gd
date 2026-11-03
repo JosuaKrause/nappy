@@ -33,14 +33,7 @@ const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "GameState"
 ## Memoised from constant data or files, filled by whichever suite first needs it, and read as the
 ## same answer ever after:
 const EXEMPT: Dictionary[String, String] = {
-	"atlas_library._regions": "atlas regions, read from the baked table on first use",
-	"atlas_library._pages": "atlas page textures, loaded on first use",
-	"atlas_library._mode": "which atlas format the files are in, read on first use",
-	"atlas_library._table_loaded": "set once the baked table is read",
-	"atlas_library._moments_claimed": "set once the load moments are claimed",
-	"atlas_library._window": "the group window the loader is in, a function of what has been loaded",
-	"atlas_library._resident": "which groups are loaded, filled on first use",
-	"atlas_library._load_moments": "when each group loads, filled on first use",
+	"atlas_table._baked": "the baked atlas region table, read from its file on first use",
 	"street_network._segments": "the lattice's street segments, built from the fixed lattice size",
 	"street_network._by_key": "the same segments by key",
 	"street_network._adjacency": "the same segments' adjacency",

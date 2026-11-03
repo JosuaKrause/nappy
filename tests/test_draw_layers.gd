@@ -152,13 +152,15 @@ func _test_slices_stand_at_their_own_feet(t) -> void:
 ## world's entity layer at its own feet, covering the body's run, ahead of the instance in the tree
 ## so the instance's caret is drawn over them at a tie; the rim stands behind the first.
 func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var def := EventCatalogue.by_id("construction")
 	for vertical: bool in [false, true]:
 		var what := "end-on" if vertical else "broadside"
 		var world := WorldContext.new()
 		t.add_child(world)
 		var instance := EventInstance.new()
+		instance.atlas = atlas
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
 				_open_ground_in(world))
 		instance._spread_vertical = vertical
@@ -193,16 +195,18 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 				"%s: the rim stands behind the first slice, at the instance's own origin" % what)
 		instance._rim.release()
 		world.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## **An event's slices go with it** while the world it stood in stays: freed with the instance on
 ## its own, a frame later no slice of it is left in the world's entity layer. Freeing the world
 ## would take every slice with it whatever the instance does, so the world is kept.
 func _test_the_slices_go_with_their_event(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
+	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
 			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
 	world.add_entity(instance)
@@ -214,7 +218,7 @@ func _test_the_slices_go_with_their_event(t) -> void:
 	t.check(_slices_in(layer) == 0, "and a frame after it is freed none of them is left (%d)"
 			% _slices_in(layer))
 	world.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## Open ground drawn in `world`: the map an instance stood in that world is handed, so what it adds
 ## beside itself goes into the world (`WorldMap.add_entity()`).
@@ -237,7 +241,8 @@ static func _slices_in(layer: Node) -> int:
 ## layer; a protest's back rank stands up the screen of its front rank; a wide scene's bands
 ## together cover its picture's run exactly, and end-on its slices rise toward the camera.
 func _test_every_long_picture_is_drawn_in_slices(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	for id: String in ["cafe_tables", "protest", "firefight", "fallen_tree", "car_accident",
 			"burst_water_main"]:
 		for vertical: bool in [false, true]:
@@ -245,6 +250,7 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			var world := WorldContext.new()
 			t.add_child(world)
 			var instance := EventInstance.new()
+			instance.atlas = atlas
 			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
 					Vector2.RIGHT, _open_ground_in(world))
 			instance._spread_vertical = vertical
@@ -275,4 +281,4 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 					t.check(rising, "%s: each slice stands nearer the camera than the one before"
 							% what)
 			world.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")

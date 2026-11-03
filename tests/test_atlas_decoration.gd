@@ -22,7 +22,7 @@ func run(t) -> void:
 	_test_the_city_is_the_groups_only_acquire(t)
 	_test_the_group_is_released_when_the_city_is_freed(t)
 
-## A prop's shadow radius (and the swing frame's capsule) come from `AtlasLibrary.native_size()`,
+## A prop's shadow radius (and the swing frame's capsule) come from `AtlasTable.baked().native_size()`,
 ## not from `get_size()` on a loaded texture — the change `docs/TODO.md`'s M171 decoration item
 ## asks for by name. Built off the scene tree, one `Prop` at a time, in the order `City` itself
 ## builds one: `Prop.new()`, then the exports, then `add_child()` — which is what fires `_ready()`
@@ -40,7 +40,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 		var prop := Prop.new()
 		prop.kind = kind
 		t.add_child(prop)
-		var expected: float = float(AtlasLibrary.native_size(region).x) * fraction
+		var expected: float = float(AtlasTable.baked().native_size(region).x) * fraction
 		t.check(prop.shape != null and is_equal_approx(prop.shape.radius, expected),
 				"Prop.Kind %d's shadow radius is off the region table's own size (%.2f against %.2f)"
 				% [kind, prop.shape.radius if prop.shape else -1.0, expected])
@@ -52,7 +52,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 	tree.scale_factor = 1.3
 	t.add_child(tree)
 	var tree_name: StringName = Prop.TREES[0]
-	var expected_tree: float = float(AtlasLibrary.native_size(tree_name).x) * 1.3 * 0.28
+	var expected_tree: float = float(AtlasTable.baked().native_size(tree_name).x) * 1.3 * 0.28
 	t.check(tree.shape != null and is_equal_approx(tree.shape.radius, expected_tree),
 			"a tree's shadow radius follows scale_factor off the region table's own size (%.2f against %.2f)"
 			% [tree.shape.radius if tree.shape else -1.0, expected_tree])
@@ -61,7 +61,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 	var frame := Prop.new()
 	frame.kind = Prop.Kind.PLAYGROUND_FRAME
 	t.add_child(frame)
-	var frame_size := Vector2(AtlasLibrary.native_size(Prop.SWING_FRAME))
+	var frame_size := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME))
 	var expected_radius := frame_size.y * 0.5
 	var expected_half_length := frame_size.x * 0.5 - expected_radius
 	t.check(frame.shape != null and is_equal_approx(frame.shape.radius, expected_radius)
@@ -72,7 +72,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 	frame.free()
 
 ## `StreetTrees.footprint_radius()` (`src/city/street_trees.gd`) plans tree clearance for the
-## closure and event planners off `AtlasLibrary.native_size()` now, ahead of any `City` existing —
+## closure and event planners off `AtlasTable.baked().native_size()` now, ahead of any `City` existing —
 ## the same table `Prop`'s own shadow reads, rather than a second source of the same number.
 ## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` already establishes
 ## that `native_size()` is bit-identical to the SVG import this used to read (see the docstring on
@@ -80,7 +80,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 func _test_street_tree_footprint_matches_the_region_table(t) -> void:
 	var widest := 0.0
 	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasLibrary.native_size(name).x) * 0.28)
+		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * 0.28)
 	t.check(is_equal_approx(StreetTrees.footprint_radius(), widest),
 			"StreetTrees.footprint_radius() (%.2f) is the widest street tree's region size times 0.28 (%.2f)"
 			% [StreetTrees.footprint_radius(), widest])
@@ -96,39 +96,40 @@ func _test_street_tree_footprint_matches_the_region_table(t) -> void:
 ## `push_error` it raises is a real engine error, and an engine error fails the whole run
 ## (`docs/DECISIONS.md`, M164), which would be a worse silence than the state checks below.
 func _test_the_city_is_the_groups_only_acquire(t) -> void:
-	AtlasLibrary.reset_for_tests()
-	t.check(not AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
+	var atlas := AtlasLibrary.new()
+	t.check(not atlas.is_acquired(CityDecals.DECORATION_ATLAS),
 			"nothing holds the decoration group before any city exists")
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.atlas = atlas
 	t.add_child(city)
 	city.build(map)
-	t.check(AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
+	t.check(atlas.is_acquired(CityDecals.DECORATION_ATLAS),
 			"City.build() acquires the decoration group")
-	t.check(AtlasLibrary.reference_count(CityDecals.DECORATION_ATLAS) == 1,
+	t.check(atlas.reference_count(CityDecals.DECORATION_ATLAS) == 1,
 			"build() is the group's only acquire (count %d)"
-			% AtlasLibrary.reference_count(CityDecals.DECORATION_ATLAS))
+			% atlas.reference_count(CityDecals.DECORATION_ATLAS))
 	# A region a real draw depends on actually resolves while the city stands.
-	var door := AtlasLibrary.region(City.DOOR_TEXTURE)
-	t.check(door != null and door.get_size() == Vector2(AtlasLibrary.native_size(City.DOOR_TEXTURE)),
+	var door := atlas.region(City.DOOR_TEXTURE)
+	t.check(door != null
+			and door.get_size() == Vector2(AtlasTable.baked().native_size(City.DOOR_TEXTURE)),
 			"the door's region resolves to its own size while the city holds the group")
 	city.free()
-	AtlasLibrary.reset_for_tests()
 
 ## `City._exit_tree()` owes `build()`'s `acquire()` a matching `release()` — a city freed without
 ## one would leave the page counted, and resident, for a city that no longer exists.
 func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
-	AtlasLibrary.reset_for_tests()
+	var atlas := AtlasLibrary.new()
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.atlas = atlas
 	t.add_child(city)
 	city.build(map)
-	t.check(AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
+	t.check(atlas.is_acquired(CityDecals.DECORATION_ATLAS),
 			"the group is acquired while the city stands")
 	city.free()
-	t.check(not AtlasLibrary.is_acquired(CityDecals.DECORATION_ATLAS),
+	t.check(not atlas.is_acquired(CityDecals.DECORATION_ATLAS),
 			"the group is released once the city that acquired it is freed")
-	t.check(AtlasLibrary.reference_count(CityDecals.DECORATION_ATLAS) == 0,
+	t.check(atlas.reference_count(CityDecals.DECORATION_ATLAS) == 0,
 			"and its reference count returns to nought (got %d)"
-			% AtlasLibrary.reference_count(CityDecals.DECORATION_ATLAS))
-	AtlasLibrary.reset_for_tests()
+			% atlas.reference_count(CityDecals.DECORATION_ATLAS))

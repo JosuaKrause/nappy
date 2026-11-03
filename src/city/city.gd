@@ -252,6 +252,11 @@ var ground_recipe := GroundRecipe.new()
 ## The torn posters' textures, composed once: `main._new_city()` hands the one it holds, so
 ## every day's city draws the same fifteen. A city nobody handed one (a suite's) composes its own.
 var poster_art := PosterArt.new()
+## The baked atlas pages this city and everything it builds draw from (`AtlasLibrary`):
+## `main._new_city()` hands the sitting's, and the city hands it on to its buildings, props,
+## exits, lights, markers, ground, decals, crowd and events. A city nobody handed one (a suite's)
+## makes its own in `build()`.
+var atlas: AtlasLibrary = null
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -261,7 +266,7 @@ var _street_trees: Array[Prop] = []
 ## the planners hand back, and a float position is not a key.
 var _street_tree_pits := {}
 
-## Region name of the door's own picture in the "decoration" `AtlasLibrary` group.
+## Region name of the door's own picture in the "decoration" atlas group.
 const DOOR_TEXTURE := &"props/door"
 ## Region name of her street door once day 10's raid has sealed it — `art/buildings/
 ## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
@@ -285,20 +290,22 @@ var _home_door: HomeDoor
 
 ## The sealed/unsealed fact survives unloading; only the Sprite's texture reference is resident.
 class HomeDoor extends Sprite2D:
+	## The city's library, handed before `picture` is first set.
+	var atlas: AtlasLibrary
 	var scenery_resident := true
 	var picture: StringName:
 		set(value):
 			picture = value
-			texture = AtlasLibrary.region(picture) if scenery_resident else null
+			texture = atlas.region(picture) if scenery_resident else null
 
 	func set_scenery_resident(resident: bool) -> void:
 		if scenery_resident == resident:
 			return
 		scenery_resident = resident
-		texture = AtlasLibrary.region(picture) if resident else null
+		texture = atlas.region(picture) if resident else null
 
 	func scenery_bounds() -> Rect2:
-		return Rect2(global_position + offset, Vector2(AtlasLibrary.native_size(picture)))
+		return Rect2(global_position + offset, Vector2(AtlasTable.baked().native_size(picture)))
 
 ## Hands the scene's `Buildings` and `Entities` over as the city's nodes for those draw layers
 ## (`add_entity()`), both y-sorted: everything on the ground sorts at its feet, and two lots sharing
@@ -314,6 +321,8 @@ func build(city_map: CityMap) -> void:
 	if run == null:
 		push_error("City.build(): the run must be handed in first")
 		return
+	if atlas == null:
+		atlas = AtlasLibrary.new()
 	map = city_map
 	# The city draws this map: what is added to the world through it comes here.
 	map.world = self
@@ -324,13 +333,15 @@ func build(city_map: CityMap) -> void:
 	scenery.frame_locked = scenery_frame_locked
 	add_child(scenery)
 	_ground.mode = ground_mode
+	_ground.atlas = atlas
+	_decals.atlas = atlas
 	_decals.streamed = true
 	_building_shadows.streamed = true
 	_building_shadows.skip_draw = skip_shadows
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
-	AtlasLibrary.acquire(CityDecals.DECORATION_ATLAS)
+	atlas.acquire(CityDecals.DECORATION_ATLAS)
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -341,6 +352,7 @@ func build(city_map: CityMap) -> void:
 	_posters.name = "Posters"
 	_posters.trace = trace
 	_posters.art = poster_art
+	_posters.atlas = atlas
 	add_child(_posters)
 	_posters.setup(self, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
@@ -367,6 +379,7 @@ func build(city_map: CityMap) -> void:
 	events.trace = trace
 	events.skip_drawing = skip_event_drawing
 	events.timing = frame_timing
+	events.atlas = atlas
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
@@ -379,6 +392,7 @@ func build(city_map: CityMap) -> void:
 	crowd.skip_motion = skip_crowd_motion
 	crowd.view = crowd_view
 	crowd.timing = crowd_timing
+	crowd.atlas = atlas
 	add_child(crowd)
 	crowd.setup(self, map, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
@@ -401,7 +415,8 @@ func build(city_map: CityMap) -> void:
 ## resident, for a city that no longer exists. The event families are `EventManager`'s own and are
 ## released by its own `_exit_tree()`.
 func _exit_tree() -> void:
-	AtlasLibrary.release(CityDecals.DECORATION_ATLAS)
+	if atlas != null:
+		atlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 func set_act(act: int) -> void:
@@ -505,6 +520,7 @@ func is_alley(world_position: Vector2) -> bool:
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
 	_home_door = HomeDoor.new()
+	_home_door.atlas = atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
 	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend`), already loaded by the
 	# time `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
@@ -518,7 +534,7 @@ func _spawn_home() -> void:
 	_home_door.centered = false
 	# Both door pictures share one canvas (`SEALED_DOOR_TEXTURE`'s own doc), so this size and
 	# offset stay correct whichever one is showing, today or after a live swap.
-	var door_size := AtlasLibrary.native_size(DOOR_TEXTURE)
+	var door_size := AtlasTable.baked().native_size(DOOR_TEXTURE)
 	_home_door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
 	# Same centre-x `_door_world_x_range()` hands the building behind it, so the sprite and the
 	# blanked window column can never disagree about where the door actually is.
@@ -559,11 +575,11 @@ func home_door_is_sealed() -> bool:
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
 ## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
-## `AtlasLibrary` rather than on the door node, and handed to every home-block `Building` so it can
+## `AtlasTable` rather than on the door node, and handed to every home-block `Building` so it can
 ## blank the ground-floor column(s) standing behind the door instead of drawing a window there.
 func _door_world_x_range() -> Vector2:
 	var centre_x := map.tile_rect_to_world(map.home_rect).get_center().x
-	var half_width := AtlasLibrary.native_size(DOOR_TEXTURE).x * 0.5
+	var half_width := AtlasTable.baked().native_size(DOOR_TEXTURE).x * 0.5
 	return Vector2(centre_x - half_width, centre_x + half_width)
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
@@ -626,6 +642,7 @@ func _spawn_street_trees() -> void:
 		if not _recipe_contains(planted_tree.position):
 			continue
 		var tree := Prop.new()
+		tree.atlas = atlas
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
 		tree.variant = hash(planted_tree.position)
@@ -701,6 +718,7 @@ func bridge_world_position() -> Vector2:
 ## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
 func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	var exit := CityEdge.new()
+	exit.atlas = atlas
 	exit.kind = kind
 	exit.position = at
 	if exit.overhangs():
@@ -749,6 +767,7 @@ func _spawn_signal_heads() -> void:
 				if not map.is_walkable(map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
+				light.atlas = atlas
 				light.junction = junction
 				light.faces(heading)
 				light.signals = signals
@@ -766,6 +785,7 @@ func _spawn_buildings() -> void:
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
+		building.atlas = atlas
 		building.scenery_resident = false
 		building.scenery_clock = _ground
 		# Origin is the south edge centre of the lot (see building.gd).
@@ -825,6 +845,7 @@ func _spawn_buildings() -> void:
 		var feet := building.stack_feet()
 		for i in feet.size():
 			var stack := Building.StationStack.new()
+			stack.atlas = atlas
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
 			add_entity(stack)
@@ -1301,6 +1322,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
+		post.atlas = atlas
 		post.piece = ClosureMarker.Piece.POST
 		post.kind = closure.kind
 		post.position = feet
@@ -1309,6 +1331,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_spawn_barrier(closure, mouth)
 	if ClosureMarker.CAUSES.has(closure.kind):
 		var cause := ClosureMarker.new()
+		cause.atlas = atlas
 		cause.piece = ClosureMarker.Piece.CAUSE
 		cause.kind = closure.kind
 		cause.across = closure.barrier_runs_across()
@@ -1343,7 +1366,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
 		run = fence.rail_ends()
-	var pitch := float(AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x)
+	var pitch := float(AtlasTable.baked().native_size(ClosureMarker.FENCE_ACROSS).x)
 	if closure is ParkClosure and not across:
 		pitch = 44.0
 	var panels := maxi(1, roundi(picture_width / pitch))
@@ -1359,6 +1382,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
+		panel.atlas = atlas
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
 		panel.kind = closure.kind
 		panel.across = across
@@ -1425,6 +1449,7 @@ func _dress_blocks(state: CityState) -> void:
 func _dress_the_stretch() -> void:
 	for listed in map.stretch_props:
 		var prop := Prop.new()
+		prop.atlas = atlas
 		prop.kind = int(listed.kind) as Prop.Kind
 		prop.position = listed.at
 		prop.variant = int(listed.variant)
@@ -1529,6 +1554,7 @@ func close_ground(tiles: Array[Vector2i]) -> void:
 func _place_garbage_sacks() -> void:
 	for entry in GarbageSacks.placed(map, _day):
 		var sack := Prop.new()
+		sack.atlas = atlas
 		sack.kind = Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK
 		sack.position = entry.position
 		_add_prop(sack)
@@ -1553,6 +1579,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
 		var playground := map.tile_rect_to_world(layout.playground)
 		var frame := Prop.new()
+		frame.atlas = atlas
 		frame.kind = Prop.Kind.PLAYGROUND_FRAME
 		frame.position = Vector2(playground.get_center().x, playground.end.y - 8.0)
 		frame.variant = block.x * 31 + block.y
@@ -1598,6 +1625,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		if _too_close_to_a_planted_tree(at, planted):
 			continue
 		var tree := Prop.new()
+		tree.atlas = atlas
 		tree.kind = Prop.Kind.TREE
 		tree.position = at
 		tree.variant = rng.randi()
@@ -1621,6 +1649,7 @@ static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2]) -
 func _dress_precincts() -> void:
 	for at in map.post_positions():
 		var bollard := Prop.new()
+		bollard.atlas = atlas
 		bollard.kind = Prop.Kind.BOLLARD
 		bollard.position = at
 		_add_prop(bollard)
@@ -1793,7 +1822,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
 		_authored_ground_tile_set = _ground.tile_set
-	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe)
+	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe, atlas)
 
 ## What the city stops at, on each of its four sides.
 ##

@@ -31,14 +31,12 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	_test_every_picture_the_events_can_draw_is_on_the_events_page(t)
 	_test_every_look_a_row_can_carry_has_pictures_on_the_page(t)
 	_test_every_badge_silhouette_is_on_the_page(t)
 	_test_both_dog_families_draw_their_accepted_transfers(t)
 	_test_the_manager_holds_one_reference_for_its_own_life(t)
 	_test_a_manager_freed_mid_day_still_gives_its_page_back(t)
-	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------- the whole page ---
 
@@ -60,16 +58,16 @@ func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
 			"the sweep found the catalogue's pictures to check (%d)" % pictures.size())
 	for picture: String in pictures.keys():
 		var name := StringName(picture)
-		t.check(AtlasLibrary.has_region(name),
+		t.check(AtlasTable.baked().has_region(name),
 				"%s is baked, under the region name %s" % [picture.get_file(), name])
-		if not AtlasLibrary.has_region(name):
+		if not AtlasTable.baked().has_region(name):
 			continue
-		t.check(AtlasLibrary.group_of(name) == EventPictures.ATLAS_GROUP,
+		t.check(AtlasTable.baked().group_of(name) == EventPictures.ATLAS_GROUP,
 				"%s is on the '%s' page, not on '%s'"
-				% [picture.get_file(), EventPictures.ATLAS_GROUP, AtlasLibrary.group_of(name)])
-		t.check(AtlasLibrary.native_size(name) > Vector2i.ZERO,
+				% [picture.get_file(), EventPictures.ATLAS_GROUP, AtlasTable.baked().group_of(name)])
+		t.check(AtlasTable.baked().native_size(name) > Vector2i.ZERO,
 				"%s has a real size in the region table (%s)"
-				% [picture.get_file(), AtlasLibrary.native_size(name)])
+				% [picture.get_file(), AtlasTable.baked().native_size(name)])
 
 ## Recurses into dictionaries and arrays, since a view table's pictures are its values and the
 ## pointing poses are an array. Keyed into `found` so a picture several arms share — the guard, the
@@ -78,7 +76,7 @@ func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
 ## **What makes a constant a picture is its shape, not a prefix a path used to carry**: a region
 ## name is `<family>/<picture>`, one slash and no extension, which is what
 ## `AtlasLibrary.region_name_for()` writes and what the file's constants now hold. Deliberately
-## not `AtlasLibrary.has_region()` — that would make the sweep select exactly the names that pass
+## not `AtlasTable.baked().has_region()` — that would make the sweep select exactly the names that pass
 ## the check below, which is the shape of a test that cannot fail.
 func _collect_paths(value: Variant, found: Dictionary) -> void:
 	if value is String:
@@ -111,14 +109,14 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t) -> void:
 		for picture in sources:
 			checked += 1
 			var name := StringName(picture)
-			t.check(AtlasLibrary.group_of(name) == EventPictures.ATLAS_GROUP,
+			t.check(AtlasTable.baked().group_of(name) == EventPictures.ATLAS_GROUP,
 					"'%s' draws %s from the '%s' page"
 					% [looks[look], picture.get_file(), EventPictures.ATLAS_GROUP])
 	t.check(checked > 0, "some look listed a picture to check (%d)" % checked)
 
 ## The screen-edge badge draws `EventPictures.icon_for()`'s own silhouette as a region of the same
 ## page the thing in the street draws from — `DangerEdge._draw_arrow()` reads
-## `AtlasLibrary.native_size()` for the badge's fit and `AtlasLibrary.region()` for the picture, so
+## `AtlasTable.native_size()` for the badge's fit and `AtlasLibrary.region()` for the picture, so
 ## a silhouette missing from the page is an arrow that says nothing on a day the row appears.
 func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 	var checked := 0
@@ -131,7 +129,7 @@ func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 			continue
 		checked += 1
 		var name := StringName(icon)
-		t.check(AtlasLibrary.group_of(name) == EventPictures.ATLAS_GROUP,
+		t.check(AtlasTable.baked().group_of(name) == EventPictures.ATLAS_GROUP,
 				"'%s' badge draws %s from the '%s' page"
 				% [def.id, icon.get_file(), EventPictures.ATLAS_GROUP])
 	t.check(checked > 0, "some row offered a badge silhouette to check (%d)" % checked)
@@ -164,8 +162,9 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_events:%d:%d" % [SEED, day])
 	return rng
 
-func _city(t) -> City:
+func _city(t, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.atlas = atlas
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city
@@ -181,39 +180,41 @@ func _city(t) -> City:
 ## With no boot behind this rig the reference is what loads and drops the page, which is what makes
 ## the pairing visible at all; in a booted game it is a count on a page `RESIDENT_GROUPS` holds.
 func _test_the_manager_holds_one_reference_for_its_own_life(t) -> void:
-	t.check(not AtlasLibrary.is_acquired(EventPictures.ATLAS_GROUP),
+	var atlas := AtlasLibrary.new()
+	t.check(not atlas.is_acquired(EventPictures.ATLAS_GROUP),
 			"nothing holds the events page before a manager exists")
-	var city := _city(t)
-	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
+	var city := _city(t, atlas)
+	t.check(atlas.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"the manager holds exactly one reference from the moment it is in the tree (got %d)"
-			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
+			% atlas.reference_count(EventPictures.ATLAS_GROUP))
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(1), _rng(1), consumed)
-	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
+	t.check(atlas.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"a day's events do not each take a reference of their own (got %d)"
-			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
+			% atlas.reference_count(EventPictures.ATLAS_GROUP))
 	city.events.clear()
-	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
+	t.check(atlas.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"clearing the day keeps the page held rather than releasing and reloading it")
 	city.events.start_day(DaySpec.for_day(2), _rng(2), consumed)
-	t.check(AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP) == 1,
+	t.check(atlas.reference_count(EventPictures.ATLAS_GROUP) == 1,
 			"and a second day starts on the same one reference (got %d)"
-			% AtlasLibrary.reference_count(EventPictures.ATLAS_GROUP))
+			% atlas.reference_count(EventPictures.ATLAS_GROUP))
 	city.events.clear()
 	city.free()
-	t.check(not AtlasLibrary.is_acquired(EventPictures.ATLAS_GROUP),
+	t.check(not atlas.is_acquired(EventPictures.ATLAS_GROUP),
 			"freeing the city is what finally gives the page back")
 
 ## The leak `clear()` cannot catch, since it never releases: a city torn down mid-day — quitting to
-## the title screen with a day still running. `AtlasLibrary`'s counts are static and outlive the
-## freed node, so `EventManager._exit_tree()` is the only thing between this and a reference held
-## for the rest of the process.
+## the title screen with a day still running. The library's counts outlive the freed node (in a
+## booted game the library is the sitting's), so `EventManager._exit_tree()` is the only thing
+## between this and a reference held for the rest of the process.
 func _test_a_manager_freed_mid_day_still_gives_its_page_back(t) -> void:
-	var city := _city(t)
+	var atlas := AtlasLibrary.new()
+	var city := _city(t, atlas)
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(1), _rng(3), consumed)
-	t.check(AtlasLibrary.is_acquired(EventPictures.ATLAS_GROUP),
+	t.check(atlas.is_acquired(EventPictures.ATLAS_GROUP),
 			"the day's manager holds its page before the city is torn down")
 	city.free()
-	t.check(not AtlasLibrary.is_acquired(EventPictures.ATLAS_GROUP),
+	t.check(not atlas.is_acquired(EventPictures.ATLAS_GROUP),
 			"freeing the city mid-day releases the events page too, with no clear() in between")

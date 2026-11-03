@@ -298,6 +298,10 @@ var is_male := false
 ## if `is_male` were ever written afterwards. Empty before she is ready, which is why releasing it
 ## is safe only from `_exit_tree()`, which cannot run before `_ready()` has.
 var _parent_atlas: StringName = &""
+## The baked atlas pages she draws from (`AtlasLibrary`), handed by `main` before she enters the
+## tree (`main._make_player()`); a stroller nobody handed one (a suite's) makes its own when she
+## first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
@@ -403,10 +407,12 @@ var _camera_smoothing_when_free := true
 ## is bound before she enters the tree (`main._make_player()`) and `docs/GRAPHICS.md` holds it
 ## fixed for the run, so the two can never name different pages.
 func _enter_tree() -> void:
+	if atlas == null:
+		atlas = AtlasLibrary.new()
 	_parent_atlas = parent_atlas(is_male)
-	AtlasLibrary.acquire(_parent_atlas)
-	AtlasLibrary.acquire(STROLLER_ATLAS)
-	AtlasLibrary.acquire(INDICATOR_ATLAS)
+	atlas.acquire(_parent_atlas)
+	atlas.acquire(STROLLER_ATLAS)
+	atlas.acquire(INDICATOR_ATLAS)
 
 func _ready() -> void:
 	add_to_group("player")
@@ -424,9 +430,9 @@ func _ready() -> void:
 ## never more than one of her in a running game. In the running game none of these three drops a
 ## page: the boot's own residency is still holding each of them underneath her.
 func _exit_tree() -> void:
-	AtlasLibrary.release(_parent_atlas)
-	AtlasLibrary.release(STROLLER_ATLAS)
-	AtlasLibrary.release(INDICATOR_ATLAS)
+	atlas.release(_parent_atlas)
+	atlas.release(STROLLER_ATLAS)
+	atlas.release(INDICATOR_ATLAS)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
@@ -1062,6 +1068,7 @@ func pose(gait: float) -> Pose:
 	for frame in 3:
 		drawn.mother_sources.append(_mother_source(frame))
 	drawn.pram_source = _pram_source()
+	drawn.atlas = atlas
 	drawn.pram_offset = _pram_offset
 	drawn.pram_size = drawn.pram_texture().get_size() * PRAM_VISUAL_SCALE
 	return drawn
@@ -1078,15 +1085,17 @@ class Pose extends RefCounted:
 	var pram_source := ""
 	var pram_offset := Vector2.ZERO
 	var pram_size := Vector2.ZERO
+	## The library her pages are acquired on (`Stroller.atlas`), which the pictures are read from.
+	var atlas: AtlasLibrary = null
 
 	## The region of the pose she is drawn in; the run's own parent page is acquired for the whole
-	## run in `_ready()`, so this is always the baked region and never the raw source.
+	## run in `_enter_tree()`, so this is always the baked region and never the raw source.
 	func mother_texture() -> Texture2D:
-		return AtlasLibrary.region(StringName(mother_sources[gait_frame]))
+		return atlas.region(StringName(mother_sources[gait_frame]))
 
 	## The region of the pram, off the page the two parents share.
 	func pram_texture() -> Texture2D:
-		return AtlasLibrary.region(StringName(pram_source))
+		return atlas.region(StringName(pram_source))
 
 ## The authored view this frame draws, as the path it is baked under.
 func _mother_source(frame: int) -> String:
@@ -1170,7 +1179,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(path)),
+	Sprites.draw_standing(self, atlas.region(StringName(path)),
 			_indicator_anchor(path, pram_offset + Vector2(aside, -baby_cue_lift() + breath)))
 
 ## The draw anchor that puts a cue's registration line (`INDICATOR_BOTTOM_PADDING` above its
@@ -1197,5 +1206,5 @@ func _draw_alert() -> void:
 	if fmod(_alert_phase * rate, 1.0) > 0.55:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(mark)),
+	Sprites.draw_standing(self, atlas.region(StringName(mark)),
 			Vector2(0.0, -ALERT_HEIGHT))

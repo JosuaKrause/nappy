@@ -79,6 +79,13 @@ var timing := FrameTiming.new():
 	set(value):
 		timing = value
 		world.timing = value
+## The baked atlas pages this manager holds the events' group on and every instance it creates
+## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever builds it (`City`,
+## `main`); a manager nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null:
+	set(value):
+		atlas = value
+		world.atlas = value
 ## How close the player has to be for a planned event to exist (`EventStreaming.stream_radius`).
 ## `INF` turns streaming off and puts the whole day in the world at once, which is what the escape's
 ## building and a test rig with no player want.
@@ -134,10 +141,12 @@ func _init() -> void:
 ## `_enter_tree()`/`_exit_tree()` rather than `_ready()`, so a manager that leaves the tree and
 ## comes back keeps the count right.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(EventPictures.ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
+	atlas.release(EventPictures.ATLAS_GROUP)
 
 ## **Lets go of the warnings when the manager goes**, so the parts go with it. A warning still up
 ## holds the callbacks that put its row in the world or owe it again (`PendingWarning.arrive`,

@@ -24,6 +24,8 @@ const REACH := 36.0
 ## test with no `City` around it (`tests/test_resistance_steps.gd`'s bare pickups and rides) still
 ## needs a region to draw, and `AtlasLibrary` reference-counts, so acquiring a group already
 ## resident from boot (`main.RESIDENT_GROUPS`) still costs one page load for the whole process.
+## The library is the city's, handed by the director (`atlas`); a contact nobody handed one makes
+## its own.
 const ATLAS_GROUP := &"decoration"
 ## The two prepared pictures a pickup draws from (`docs/GRAPHICS.md`, "M100 — Small, real, and
 ## nobody's").
@@ -54,12 +56,17 @@ var _pulse := 0.0
 ## where the task is, and where the red arrow ends — and follows it.
 var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
+## The baked atlas pages this contact draws from (`AtlasLibrary`), handed by its director before
+## it is added; a contact nobody handed one makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(ATLAS_GROUP)
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(ATLAS_GROUP)
+	atlas.release(ATLAS_GROUP)
 
 ## A pickup: a bare chalk mark at a fixed point.
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
@@ -200,7 +207,7 @@ func draws_a_mark() -> bool:
 ## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
 func _draw_chalk() -> void:
 	var picture := MARK_TOUCHED if is_done else MARK
-	var texture := AtlasLibrary.region(picture)
+	var texture := atlas.region(picture)
 	if not texture:
 		return
 	var flicker := 0.75 + 0.25 * sin(_pulse * 2.0)

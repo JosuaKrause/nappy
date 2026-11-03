@@ -626,7 +626,7 @@ func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 	# A front or back view's own bottom edge is the car's south end, so it belongs
 	# `CAR_STRIKE_HALF_LENGTH` south of the node — exactly where the strike box's own south edge
 	# already sits for a car pointed along that axis.
-	var front_extent := Vector2(AtlasLibrary.native_size(
+	var front_extent := Vector2(AtlasTable.baked().native_size(
 			StringName(CarLook.BODY_BY_VIEW["front"])))
 	var front_margin: float = CarLook.CANVAS_BOTTOM_MARGIN["front"]
 	var front_anchor: Vector2 = CarLook.body_anchor("front", Vector2.DOWN)
@@ -644,7 +644,7 @@ func _test_the_car_picture_agrees_with_its_strike_box(t) -> void:
 	# south edge `CAR_STRIKE_HALF_WIDTH` south of the node, so its wheels belong there rather than
 	# on the node itself, or the picture and the box disagree by the whole half-width — and a car
 	# swinging from that view onto an arc swaps that disagreement for a different one mid-turn.
-	var side_extent := Vector2(AtlasLibrary.native_size(
+	var side_extent := Vector2(AtlasTable.baked().native_size(
 			StringName(CarLook.BODY_BY_VIEW["side"])))
 	var side_margin: float = CarLook.CANVAS_BOTTOM_MARGIN["side"]
 	var side_anchor: Vector2 = CarLook.body_anchor("side", Vector2.RIGHT)

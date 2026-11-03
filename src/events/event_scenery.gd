@@ -8,6 +8,9 @@ extends Node2D
 ## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery
 ## child and every streamed instance; a standalone fixture acquires that page around this node.
 
+## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed by the look that
+## builds this scenery before it is configured.
+var atlas: AtlasLibrary
 var moving_layers: Array[SceneryLayer] = []
 var static_layers: Array[SceneryLayer] = []
 var _picture: String
@@ -40,13 +43,13 @@ func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String
 
 func _build() -> void:
 	show_behind_parent = true
-	var original := AtlasLibrary.region(_picture)
+	var original := atlas.region(_picture)
 	var scale_factor := _extent / original.get_size()
 	var top_left := _anchor - Vector2(_extent.x * 0.5, _extent.y)
 	if not _shadow.is_empty():
 		var contact := SceneryLayer.new()
 		contact.modulate = Palette.SHADOW
-		contact.append(AtlasLibrary.region(_shadow), Rect2(top_left, _extent))
+		contact.append(atlas.region(_shadow), Rect2(top_left, _extent))
 		static_layers.append(contact)
 		add_child(contact)
 	var stem := _picture.get_file()
@@ -55,7 +58,7 @@ func _build() -> void:
 		var moving: bool = part[5]
 		var rect := Rect2(top_left + Vector2(part[1], part[2]) * scale_factor,
 				Vector2(part[3], part[4]) * scale_factor)
-		var texture := AtlasLibrary.region(region)
+		var texture := atlas.region(region)
 		var source := Rect2()
 		if _clip.has_area():
 			var inside := rect.intersection(_clip)
@@ -65,7 +68,7 @@ func _build() -> void:
 			source = Rect2((inside.position - rect.position) * texels, inside.size * texels)
 			rect = inside
 		var layer := SceneryLayer.new()
-		layer.append(texture, rect, AtlasLibrary.region(region + "_b") if moving else null, source)
+		layer.append(texture, rect, atlas.region(region + "_b") if moving else null, source)
 		if moving:
 			moving_layers.append(layer)
 		else:

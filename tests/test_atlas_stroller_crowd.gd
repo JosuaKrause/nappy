@@ -24,19 +24,18 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	_test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t)
 	_test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
 	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
 	_test_walker_body_and_trim_are_separate_regions_on_every_view(t)
 	_test_car_body_and_trim_are_separate_regions_on_every_view(t)
-	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------------ stroller ---
 
-func _rig(t) -> Stroller:
+func _rig(t, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
+	rig.atlas = atlas
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -51,21 +50,22 @@ func _rig(t) -> Stroller:
 ## holds; with no boot behind this rig they are the references that load and drop the pages,
 ## which is what makes the pairing visible at all.
 func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
+	var atlas := AtlasLibrary.new()
 	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]
 	for group in groups:
-		t.check(not AtlasLibrary.is_acquired(group),
+		t.check(not atlas.is_acquired(group),
 				"nothing holds '%s' before she exists" % group)
-	var rig := _rig(t)
+	var rig := _rig(t, atlas)
 	t.check(not rig.is_male, "the rig this file builds draws the mother's page")
 	for group in groups:
-		t.check(AtlasLibrary.is_acquired(group),
+		t.check(atlas.is_acquired(group),
 				"'%s' is acquired the moment she is ready" % group)
-	t.check(not AtlasLibrary.is_acquired(Stroller.parent_atlas(true)),
+	t.check(not atlas.is_acquired(Stroller.parent_atlas(true)),
 			"and the parent she is not holds nothing at all")
 	rig.free()
 	for group in groups:
-		t.check(not AtlasLibrary.is_acquired(group),
+		t.check(not atlas.is_acquired(group),
 				"leaving the tree releases '%s'" % group)
 
 # ---------------------------------------------------------------------- crowd ---
@@ -75,8 +75,9 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_stroller_crowd:%s" % tag)
 	return rng
 
-func _city(t) -> City:
+func _city(t, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.atlas = atlas
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	return city
@@ -89,24 +90,25 @@ func _city(t) -> City:
 ## as well as directly — never releases it; only freeing the node does, which
 ## `_test_a_crowd_freed_without_clear_still_releases_its_page()` below covers.
 func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
-	var city := _city(t)
-	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+	var atlas := AtlasLibrary.new()
+	var city := _city(t, atlas)
+	t.check(not atlas.is_acquired(Crowd.ATLAS_GROUP),
 			"nothing has asked for the crowd's page before the first day")
 	city.crowd.start_day(1, _rng("day1"))
-	t.check(AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP)
-			and AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
+	t.check(atlas.is_acquired(Crowd.ATLAS_GROUP)
+			and atlas.reference_count(Crowd.ATLAS_GROUP) == 1,
 			"a day's crowd holds exactly one reference on its own page")
 	city.crowd.clear()
-	t.check(AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP)
-			and AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
+	t.check(atlas.is_acquired(Crowd.ATLAS_GROUP)
+			and atlas.reference_count(Crowd.ATLAS_GROUP) == 1,
 			"clearing the crowd keeps the page held, not released and reloaded between two days")
 	city.crowd.start_day(2, _rng("day2"))
-	t.check(AtlasLibrary.reference_count(Crowd.ATLAS_GROUP) == 1,
+	t.check(atlas.reference_count(Crowd.ATLAS_GROUP) == 1,
 			"a second day's start_day() does not take a second reference on top of the one it "
 			+ "already holds")
 	city.crowd.clear()
 	city.free()
-	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+	t.check(not atlas.is_acquired(Crowd.ATLAS_GROUP),
 			"freeing the crowd node is what finally gives the page back")
 
 ## `main._build_the_finale_city()`'s own shape — "never `Crowd.start_day()`: a cleared crowd is the
@@ -115,24 +117,26 @@ func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) ->
 ## independently of whether a day ever ran; pinned anyway as the shape the finale actually
 ## exercises.
 func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
-	var city := _city(t)
+	var atlas := AtlasLibrary.new()
+	var city := _city(t, atlas)
 	city.crowd.clear()
-	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+	t.check(not atlas.is_acquired(Crowd.ATLAS_GROUP),
 			"a direct clear with no day started holds nothing")
 	city.free()
 
 ## The leak `clear()` cannot catch, since it never releases at all: a `Crowd` freed mid-day
 ## — the city torn down on quitting to the title screen while a day is still running, or exactly
-## this test freeing its city without ever calling `clear()` first. `AtlasLibrary`'s counts are
-## static and outlive the freed node, so `Crowd._exit_tree()` is the only thing standing between
-## this and a reference held for the rest of the process.
+## this test freeing its city without ever calling `clear()` first. The library's counts outlive
+## the freed node (in a booted game the library is the sitting's), so `Crowd._exit_tree()` is the
+## only thing standing between this and a reference held for the rest of the process.
 func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
-	var city := _city(t)
+	var atlas := AtlasLibrary.new()
+	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("freed-without-clear"))
-	t.check(AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+	t.check(atlas.is_acquired(Crowd.ATLAS_GROUP),
 			"the day's crowd holds its page before the city is torn down")
 	city.free()
-	t.check(not AtlasLibrary.is_acquired(Crowd.ATLAS_GROUP),
+	t.check(not atlas.is_acquired(Crowd.ATLAS_GROUP),
 			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
 
 # --------------------------------------------------------------- tint regression ---
