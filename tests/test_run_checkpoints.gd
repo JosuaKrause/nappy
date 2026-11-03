@@ -567,7 +567,8 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 ## - A boot that resumed a saved run, its day under way or not: none.
 ## - The escape's resume gate (`open(false)`) and the `--start-escape` epilogue (`open(true)`): none.
 func _test_which_titles_show_the_checkbox_today(t) -> void:
-	var main := _bare_gate_main(t)
+	# The stand-in, so the title `main` opens reads the run this test starts and hands the HUD.
+	var main := _bare_gate_main(t, GameState)
 	# `_open_the_title()` turns every layer through `_apply_orientation()`, which reaches
 	# `_hud.set_rotated()`: the bare layer the gate rig carries has no such method.
 	main._hud.free()
@@ -809,7 +810,8 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	run.free()
 
 ## A `main` off the tree with the title, the summary and her, playing `run` where one is handed
-## (the caller frees it) and a fresh run of its sitting's own where none is.
+## (the caller's own, freed by the caller if it built it) and a fresh run of its sitting's own
+## where none is.
 func _bare_gate_main(t, run: RunState = null) -> Node2D:
 	var main: Node2D = MAIN_SCRIPT.new()
 	# Never in the tree, so it takes no sitting of its own: it is handed one, freed with it.

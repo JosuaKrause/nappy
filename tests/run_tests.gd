@@ -9,14 +9,16 @@ extends Node
 ## `GameState` stand-in below) actually exist — `--script` replaces the main loop and skips them.
 ##
 ## **`GameState` is a stand-in, read by suites only.** The game's run lives on the `Sitting`
-## (`Sitting.run`), which `main` takes it from; no class under `src/` reads the autoload. Until
-## every suite hands a run of its own, the suites not yet moved set and read `GameState`, and for
-## them the stand-in and a booted `main`'s run are one object: every `Sitting` that enters the tree
-## holding no run is handed the stand-in (`_hand_the_stand_in()`), before the `main` that built or
-## found it takes its run. A sitting a suite hands a run of its own keeps that run, and one that
-## never enters the tree (handed to a `main` driven off the tree) keeps the run it was handed or
-## starts its own. The stand-in, this hand-off and the reset below go together, once the last suite
-## stops reading `GameState` (minty-quail, the run's state handed in).
+## (`Sitting.run`), which `main` takes it from; no class under `src/` reads the autoload. The
+## suites not yet moved set and read `GameState`, and for a sitting that enters the tree holding
+## no run the stand-in and the run its `main` plays are one object: the sitting is handed the
+## stand-in as it enters (`_hand_the_stand_in()`), before the `main` that built or found it
+## takes its run. A sitting a suite hands a run keeps it. A sitting that never enters the tree
+## (one handed to a `main` with `use_sitting()`) is handed nothing here: its `main` plays the
+## run the suite handed it, or a fresh one of the sitting's own, so a suite that reads
+## `GameState` beside such a `main` hands the sitting the stand-in itself
+## (`sitting.run = GameState`). The stand-in, this hand-off and the reset below are there only
+## for the suites that read `GameState` (minty-quail, the run's state handed in).
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may

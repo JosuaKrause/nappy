@@ -410,14 +410,17 @@ func _test_the_clock_resolution(t) -> void:
 ## the recorder up before `_start_day()` makes the day's agents, and the crowd's timed tick, which
 ## steps them, is checked on the real crowd (`_check_the_crowd_is_timed_once`).
 ## The recorder itself is then set up from a switch left off, the way a held restart leaves it,
-## and handed a sitting of the test's own, which keeps the one file a desktop save writes.
+## and handed a sitting of the test's own, which keeps the one file a desktop save writes. The
+## sitting never enters the tree, so the runner hands it no stand-in: it is handed a run of the
+## test's own, which `main` plays and the day check reads.
 func _test_the_recorder_in_a_real_main(t) -> void:
-	var saved := _save_game_state()
 	var restarted := FrameLedger.new(8)
 	var record := FrameRecord.new()
 	record.start(restarted)
+	var run := RunState.new()
 	var sitting := Sitting.new()
 	sitting.frame_timing = record
+	sitting.run = run
 	var save := GameSave.new(_SCRATCH_SAVE)
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.use_sitting(sitting)
@@ -477,7 +480,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var row: PackedInt64Array = ledger.rows().back()
 	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS]
 				== main._city.crowd.agent_count()
-			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == GameState.header.day,
+			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == run.header.day,
 			"with the world's counters read at the end of its process step")
 	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
 	_check_the_crowd_is_timed_once(t, main._city.crowd, record)
@@ -493,9 +496,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	t.check(not record.on, "leaving the tree switches the timing off")
 	sitting.free()
 	save.free()
-	_restore_game_state(saved)
-	t.check(_save_game_state() == saved,
-			"the suite leaves every field a real main's run writes as it found it")
+	run.free()
 
 ## The real day's crowd, ticked under the record: its physics tick steps every agent once (each
 ## clock moves by one step, not two and not none) inside one timed call charged to `crowd`, since an
@@ -609,32 +610,6 @@ func _event(t, def: EventDef) -> EventInstance:
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
-
-## Everything `GameState.start_run()` and the boot's `begin_day()` write: the save's own fields
-## through `save_snapshot()` (the dawn photograph included), and beside them the ones the save
-## file keeps out of that snapshot — `escape_section`, the posters, the fenced park and the alley
-## tiles — so the next suite in the process finds the run it left. A field the save snapshot
-## gains is covered by the closing equality check; one written outside it has to join the
-## hand-listed set here, which that check cannot see.
-func _save_game_state() -> Dictionary:
-	return {
-		"snapshot": GameState.save_snapshot(),
-		"escape_section": GameState.facts.escape_section,
-		"posters": GameState.posters.to_data(),
-		"pelican": GameState.pelican.to_data(),
-		"fenced_park": GameState.facts.fenced_park,
-		"fenced_park_act": GameState.facts.fenced_park_act,
-		"alley_tiles": GameState.facts.completed_resistance_alley_tiles.duplicate(),
-	}
-
-func _restore_game_state(saved: Dictionary) -> void:
-	GameState.restore_snapshot(saved["snapshot"])
-	GameState.facts.escape_section = saved["escape_section"]
-	GameState.posters.restore(saved["posters"])
-	GameState.pelican.restore(saved["pelican"])
-	GameState.facts.fenced_park = saved["fenced_park"]
-	GameState.facts.fenced_park_act = saved["fenced_park_act"]
-	GameState.facts.completed_resistance_alley_tiles.assign(saved["alley_tiles"])
 
 ## The frame the ledger is in the middle of, closed the way the next frame's first callback closes
 ## it, as the row it writes — what the ledger records of a frame is its rows, and a frame a test is
