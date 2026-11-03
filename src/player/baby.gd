@@ -228,12 +228,8 @@ func force_sleep() -> void:
 	_set_state(GameEnums.BabyState.ASLEEP)
 	EventBus.return_phase_started.emit()
 
+## One physics tick of her meters, which the engine runs on every one while she is in the tree.
 func _physics_process(delta: float) -> void:
-	step(delta)
-
-## One frame of her meters, the body of `_physics_process()`: what the engine runs every physics
-## frame, public so a scene-level run steps her the same way with no engine tick.
-func step(delta: float) -> void:
 	if timing.on:
 		var outer := timing.enter(FrameTiming.INFLUENCE)
 		_feel_the_frame(delta)
