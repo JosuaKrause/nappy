@@ -87,11 +87,13 @@ func _test_the_gate_stores_the_key_it_compared(t) -> void:
 			"before its first drawn frame an instance holds a key nothing can equal, so the first draw is asked for")
 	t.check(not _asks(fresh), "and asking again with nothing changed is not a draw")
 	fresh.free()
+	var atlas := AtlasLibrary.new()
 	var instance := EventInstance.new()
+	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO)
-	# In the tree, as the manager keeps it: its own frames draw it, so its atlas page is held as the
-	# manager holds it.
-	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
+	# In the tree, as the manager keeps it: its own frames draw it, so its atlas page is held, on
+	# the library it was handed, as the manager holds it.
+	atlas.acquire(EventPictures.ATLAS_GROUP)
 	t.add_child(instance)
 	instance.step(STEP)
 	await t.get_tree().process_frame
@@ -99,7 +101,7 @@ func _test_the_gate_stores_the_key_it_compared(t) -> void:
 	t.check(not _asks(instance),
 			"after a drawn frame the stored key is the one the gate just computed")
 	instance.free()
-	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
+	atlas.release(EventPictures.ATLAS_GROUP)
 
 # ------------------------------------------------------------- what still moves ---
 

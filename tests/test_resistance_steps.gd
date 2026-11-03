@@ -3,6 +3,9 @@ extends "res://tests/resistance_rig.gd"
 
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left.
+## The library the bare event instances below draw from, holding the events' page for them.
+var _events_atlas := AtlasLibrary.new()
+
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_step_table(t)
@@ -13,13 +16,14 @@ func run(t) -> void:
 	await _test_walking_away_leaves_it_untouched(t)
 	_test_the_chalk_mark_pictures_are_baked_on_decoration(t)
 	# The bare event instances the next tests stand in the tree are drawn on the real frames they let
-	# pass, so the events' pictures are held for them as a city's `EventManager` holds them.
-	AtlasLibrary.acquire(EventPictures.ATLAS_GROUP)
+	# pass, so the events' pictures are held for them, on a library each is handed, as a city's
+	# `EventManager` holds them.
+	_events_atlas.acquire(EventPictures.ATLAS_GROUP)
 	await _test_a_perform_contact_rides_on_its_instance(t)
 	await _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t)
 	_test_a_perform_contact_sees_its_rider_finish(t)
 	await _test_touching_a_tasks_body_from_any_side_completes_it(t)
-	AtlasLibrary.release(EventPictures.ATLAS_GROUP)
+	_events_atlas.release(EventPictures.ATLAS_GROUP)
 	_test_touching_the_mark_activates_the_same_days_task(t)
 	_test_placement_is_deterministic(t)
 	_test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t)
@@ -160,8 +164,8 @@ func _test_walking_away_leaves_it_untouched(t) -> void:
 ## silent until somebody looked at a screenshot.
 func _test_the_chalk_mark_pictures_are_baked_on_decoration(t) -> void:
 	for name: StringName in [ContactPoint.MARK, ContactPoint.MARK_TOUCHED]:
-		t.check(AtlasLibrary.has_region(name), "%s is a baked region" % name)
-		t.check(AtlasLibrary.group_of(name) == ContactPoint.ATLAS_GROUP,
+		t.check(AtlasTable.baked().has_region(name), "%s is a baked region" % name)
+		t.check(AtlasTable.baked().group_of(name) == ContactPoint.ATLAS_GROUP,
 				"%s is on the '%s' group" % [name, ContactPoint.ATLAS_GROUP])
 
 ## The shared plumbing every task needs: a contact that rides on an `EventInstance` rather
@@ -176,6 +180,7 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 	_player.set_physics_process(false)
 
 	var instance := EventInstance.new()
+	instance.atlas = _events_atlas
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2(300.0, 0.0))
 	t.add_child(instance)
 	instance.set_process(false)
@@ -220,6 +225,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void
 	player.set_physics_process(false)
 
 	var instance := EventInstance.new()
+	instance.atlas = _events_atlas
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
@@ -273,6 +279,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void
 
 func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 	var instance := EventInstance.new()
+	instance.atlas = _events_atlas
 	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.set_process(false)
@@ -304,6 +311,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
 		var instance := EventInstance.new()
+		instance.atlas = _events_atlas
 		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 		t.add_child(instance)
 		instance.set_process(false)

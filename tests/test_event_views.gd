@@ -238,7 +238,7 @@ func _test_roadwork_barrier_has_an_upright_vertical_source(t) -> void:
 			"north-south roadworks uses the broad panel source")
 	t.check(EventPictures.roadwork_segment_texture(true) == vertical,
 			"east-west roadworks uses the upright panel source")
-	# The sizes come from the baked region table (`AtlasLibrary.native_size()`, which answers with
+	# The sizes come from the baked region table (`AtlasTable.baked().native_size()`, which answers with
 	# nothing acquired and no texture loaded), since the panels are region names now rather than
 	# textures. A region's size is the source picture's own size, so this is the same projection
 	# question it always was.
@@ -959,7 +959,7 @@ const FOOTPRINT_TOLERANCE_PX := 8.0
 func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
 	# The pixels come off the baked page rather than out of the authoring SVG: the sources live
 	# under `art/`, which the engine ignores, and the page is what the game actually draws.
-	var page := AtlasLibrary.page_image(EventPictures.ATLAS_GROUP)
+	var page := AtlasLibrary.new().page_image(EventPictures.ATLAS_GROUP)
 	t.check(page != null, "the baked events page reads back as an image")
 	if page == null:
 		return
@@ -967,15 +967,15 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t) -> void:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		for view in ["front", "back", "front_diagonal", "back_diagonal"]:
 			var picture: String = by_view[view]
-			var image := page.get_region(AtlasLibrary.region_rect(StringName(picture)))
+			var image := page.get_region(AtlasTable.baked().region_rect(StringName(picture)))
 			var bounds := image.get_used_rect()
 			t.check(bounds.size.y > 0, "%s's %s view has some ink to measure" % [name, view])
 			var ground := bounds.end.y
 			# A vehicle that rolls on wheels of its own touches the ground with those: its body
 			# rides a bob above them, so the wheels picture is the ground contact being measured.
 			var wheels := StringName(picture + "_wheels")
-			if AtlasLibrary.has_region(wheels):
-				var wheel_image := page.get_region(AtlasLibrary.region_rect(wheels))
+			if AtlasTable.baked().has_region(wheels):
+				var wheel_image := page.get_region(AtlasTable.baked().region_rect(wheels))
 				ground = maxi(ground, wheel_image.get_used_rect().end.y)
 			var gap := image.get_height() - ground
 			t.check(gap <= FOOTPRINT_TOLERANCE_PX,
@@ -1022,10 +1022,10 @@ func _test_every_moving_vehicle_has_wheels_on_its_own_canvas(t) -> void:
 			var wheels := str(wheels_by_view.get(view, ""))
 			var body := str(body_by_view[view])
 			named[wheels] = true
-			t.check(AtlasLibrary.has_region(StringName(wheels)),
+			t.check(AtlasTable.baked().has_region(StringName(wheels)),
 					"%s's wheels (%s) are baked" % [body, wheels])
-			t.check(AtlasLibrary.native_size(StringName(wheels))
-					== AtlasLibrary.native_size(StringName(body)),
+			t.check(AtlasTable.baked().native_size(StringName(wheels))
+					== AtlasTable.baked().native_size(StringName(body)),
 					"%s's wheels share its canvas" % body)
 			t.check(wheels in sources, "%s is among its look's own sources" % wheels)
 	for wheels: String in EventPictures.WHEELS_BEHIND_THE_BODY:
@@ -1091,7 +1091,7 @@ func _test_a_vehicle_badge_draws_its_wheels(t) -> void:
 		var body := EventPictures.icon_for(look)
 		t.check(wheels == str((EventPictures.WHEELS_BY_LOOK[look] as Dictionary)["side"]),
 				"look %d's badge draws its side view's wheels (%s)" % [look, wheels])
-		t.check(AtlasLibrary.native_size(StringName(wheels)) == AtlasLibrary.native_size(
+		t.check(AtlasTable.baked().native_size(StringName(wheels)) == AtlasTable.baked().native_size(
 				StringName(body)), "and they fit the badge's own rectangle for %s" % body)
 	t.check(EventPictures.icon_wheels_for(EventDef.Look.DELIVERY_VAN).is_empty(),
 			"a parked van's badge is its one picture")

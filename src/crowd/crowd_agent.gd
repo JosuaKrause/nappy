@@ -171,6 +171,9 @@ func crashed_into() -> void:
 ## How this agent is drawn, installed with `kind`: a `WalkerLook` or a `CarLook`. Everything the
 ## drawing differs on between the two kinds asks it.
 var _look: AgentLook
+## The baked atlas pages the crowd holds its group on (`AtlasLibrary`), handed by the crowd that
+## makes this agent; the look draws its regions from it.
+var atlas: AtlasLibrary
 
 ## Whether this agent's look is marked by a caret, kept here by `_kind_installed()` as a plain
 ## member because the redraw gate reads it every frame of every agent.

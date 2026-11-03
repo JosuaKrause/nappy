@@ -21,17 +21,18 @@ extends RefCounted
 ## `texture_region_size` is the region's own size, which puts tile `(0, 0)` exactly on the region
 ## and needs no second copy of its pixels. Proved against this engine version with a throwaway
 ## script before writing it this way: `TileSetAtlasSource.get_tile_texture_region(Vector2i.ZERO)`
-## on a source built this way equals `AtlasLibrary.region_rect(name)` exactly, and two sources
+## on a source built this way equals `AtlasTable.region_rect(name)` exactly, and two sources
 ## sharing the same page texture at different offsets do not collide.
 ##
 ## **The group has to be acquired for as long as this `TileSet` is used**, not only while
-## `build()` runs: every source's `texture` is the live page `AtlasLibrary.acquire()` loaded, so
-## the picture stays valid exactly as long as the group that page belongs to is held.
+## `build()` runs: every source's `texture` is the live page `AtlasLibrary.acquire()` loaded on the
+## library handed in, so the picture stays valid exactly as long as the group that page belongs to
+## is held.
 ## `InteriorScene._enter_tree()` acquires `interior` before `_ready()` calls `build()`, and
 ## releases it in `_exit_tree()` — after the `TileMapLayer` this `TileSet` is bound to has already
 ## been freed as `InteriorScene`'s own child, so nothing reads a stale texture. A caller with no
-## such lifecycle of its own (a test calling `build()` directly) has to acquire the group itself
-## for as long as it keeps the returned `TileSet`.
+## such lifecycle of its own (a test calling `build()` directly) has to acquire the group on the
+## library it hands in for as long as it keeps the returned `TileSet`.
 const _SOURCES := {
 	InteriorTile.Kind.HALLWAY_FLOOR: &"interior/hallway_floor",
 	InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N: &"interior/hallway_floor_edge_n",
@@ -73,18 +74,18 @@ static func region_name_for(kind: InteriorTile.Kind) -> StringName:
 	return _SOURCES.get(kind, &"")
 
 ## Requires the `interior` group already acquired — every source built here reads the group's own
-## live page texture (`AtlasLibrary.region(name).atlas`), so building with nothing acquired asks
-## `AtlasLibrary.region()` a question it answers `null` for, with its own `push_error`. See the
-## class doc for how long the group has to stay acquired after this returns.
-static func build() -> TileSet:
+## live page texture (`atlas.region(name).atlas`), so building with nothing acquired on `atlas`
+## asks `region()` a question it answers `null` for, with its own `push_error`. See the class doc
+## for how long the group has to stay acquired after this returns.
+static func build(atlas: AtlasLibrary) -> TileSet:
 	var set := TileSet.new()
 	set.tile_size = Vector2i(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
 	for kind in _SOURCES:
 		var name: StringName = _SOURCES[kind]
-		var region: AtlasTexture = AtlasLibrary.region(name)
+		var region: AtlasTexture = atlas.region(name)
 		if region == null:
 			continue
-		var rect := AtlasLibrary.region_rect(name)
+		var rect := AtlasTable.baked().region_rect(name)
 		var source := TileSetAtlasSource.new()
 		source.texture = region.atlas
 		source.margins = rect.position

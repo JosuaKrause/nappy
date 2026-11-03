@@ -142,6 +142,14 @@ var _run: RunState
 func use_run(run: RunState) -> void:
 	_run = run
 
+## Hands the screen's three buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Choice/LeftColumn/Left") as ModeButton).atlas = atlas
+	(get_node(^"Root/Choice/TapColumn/Tap") as ModeButton).atlas = atlas
+	(get_node(^"Root/Choice/RightColumn/Right") as ModeButton).atlas = atlas
+
 ## The sitting whose last restart the guard measures a press against
 ## (`Sitting.restarted_at_msec`, which `main._restart_run()` stamps before its reload): a fresh
 ## screen is built by that reload, so the stamp lives on the owner that outlives it, never on this

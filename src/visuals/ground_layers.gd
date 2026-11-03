@@ -3,10 +3,11 @@ extends RefCounted
 ## Builds the ground's presentation TileSet out of the baked `ground` page, once per repaint.
 ##
 ## **Every picture comes out of one image, and one image goes back to the GPU.**
-## `AtlasLibrary.page_image(ATLAS_GROUP)` is read once per build; each base, overlay, damage
-## stencil, grass feature and whole authored tile is a `get_region()` of it, addressed by the
-## region name `assets/ground_tileset.tres` carries on each source. Nothing here loads a picture
-## from disk and nothing reads a texture back from the GPU per picture.
+## `AtlasLibrary.page_image(ATLAS_GROUP)`, on the library the city hands in, is read once per
+## build; each base, overlay, damage stencil, grass feature and whole authored tile is a
+## `get_region()` of it, addressed by the region name `assets/ground_tileset.tres` carries on each
+## source. Nothing here loads a picture from disk and nothing reads a texture back from the GPU
+## per picture.
 ##
 ## **The page holds what its own bake mode draws.** A default bake's page carries the layers and
 ## the twelve whole tiles whose source the recipe composes nothing for; the 46 whole tiles of
@@ -77,17 +78,17 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 ##
 ## A source the recipe composes nothing for draws its whole tile off the page, in either bake, and
 ## a name the bake does not carry is the same kind of error one level down.
-static func build_tile_set(authored: TileSet, recipe: GroundRecipe) -> TileSet:
+static func build_tile_set(authored: TileSet, recipe: GroundRecipe, atlas: AtlasLibrary) -> TileSet:
 	if authored == null:
 		return null
 	var started := Time.get_ticks_usec()
-	var page := AtlasLibrary.page_image(ATLAS_GROUP)
+	var page := atlas.page_image(ATLAS_GROUP)
 	if page == null:
 		push_error("The baked '%s' page did not read back; the ground cannot be composed"
 				% ATLAS_GROUP)
 		return null
 	var manifest := _layer_recipe(recipe)
-	if manifest.is_empty() and AtlasLibrary.bake_mode() != "svg":
+	if manifest.is_empty() and AtlasTable.baked().bake_mode() != "svg":
 		# The recipe said what a default bake's page holds, so without it nothing can be composed
 		# and nothing whole is on the page to draw instead. Stopping here says that once;
 		# continuing would say it again for each of the 46 sources and bury the reason.
@@ -148,7 +149,7 @@ static func build_tile_set(authored: TileSet, recipe: GroundRecipe) -> TileSet:
 ## In a default bake the recipe is what the page was baked around, so a missing or unusable one is
 ## an error rather than a quiet `{}` — the whole tiles it composes are not on that page.
 static func _layer_recipe(recipe: GroundRecipe) -> Dictionary:
-	if AtlasLibrary.bake_mode() == "svg":
+	if AtlasTable.baked().bake_mode() == "svg":
 		return {}
 	var manifest := recipe.manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
@@ -460,9 +461,9 @@ static func _source_image(page: Image, source: TileSetAtlasSource) -> Image:
 
 ## One region of the page as its own image, or null where the bake does not carry that name.
 static func _region_image(page: Image, name: StringName) -> Image:
-	if name.is_empty() or not AtlasLibrary.has_region(name):
+	if name.is_empty() or not AtlasTable.baked().has_region(name):
 		return null
-	var rect := AtlasLibrary.region_rect(name)
+	var rect := AtlasTable.baked().region_rect(name)
 	if not rect.has_area() or not Rect2i(Vector2i.ZERO, page.get_size()).encloses(rect):
 		return null
 	return page.get_region(rect)

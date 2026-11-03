@@ -71,7 +71,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 				"every body view %s has a matching trim view" % view)
 		var body_region := StringName(CarLook.BODY_BY_VIEW[view])
 		var trim_region := StringName(CarLook.TRIM_BY_VIEW[view])
-		t.check(AtlasLibrary.has_region(body_region) and AtlasLibrary.has_region(trim_region),
+		t.check(AtlasTable.baked().has_region(body_region) and AtlasTable.baked().has_region(trim_region),
 				"both regions for %s are actually baked" % view)
 		t.check(body_region != trim_region,
 				"body and trim for %s are two separate regions, so tinting one leaves the other" % view)
@@ -206,7 +206,7 @@ func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 		var view: String = CarLook.VIEW_BY_SECTOR[sector]
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
 		var anchor := CarLook.body_anchor(view, heading)
-		var extent := Vector2(AtlasLibrary.native_size(
+		var extent := Vector2(AtlasTable.baked().native_size(
 				StringName(CarLook.BODY_BY_VIEW[view])))
 		var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		# The node always falls inside the drawn footprint rather than sitting at its own edge —
@@ -311,7 +311,7 @@ func _drawn_picture(view: String, heading: Vector2) -> Rect2:
 	var merged := false
 	for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
 			CarLook.WHEELS_BY_VIEW[view]]:
-		var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
+		var extent := Vector2(AtlasTable.baked().native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
 		drawn = drawn.merge(layer) if merged else layer
 		merged = true
@@ -474,12 +474,12 @@ func _test_wheels_share_the_body_canvas(t) -> void:
 		var wheels := StringName(CarLook.WHEELS_BY_VIEW[view])
 		var body := StringName(CarLook.BODY_BY_VIEW[view])
 		var trim := StringName(CarLook.TRIM_BY_VIEW[view])
-		t.check(AtlasLibrary.has_region(wheels), "the %s wheels are baked" % view)
+		t.check(AtlasTable.baked().has_region(wheels), "the %s wheels are baked" % view)
 		t.check(wheels != body and wheels != trim,
 				"the %s wheels are a region of their own, so the tint never reaches them" % view)
-		t.check(AtlasLibrary.native_size(wheels) == AtlasLibrary.native_size(body),
+		t.check(AtlasTable.baked().native_size(wheels) == AtlasTable.baked().native_size(body),
 				"the %s wheels share the body's canvas (%s against %s)"
-				% [view, AtlasLibrary.native_size(wheels), AtlasLibrary.native_size(body)])
+				% [view, AtlasTable.baked().native_size(wheels), AtlasTable.baked().native_size(body)])
 
 ## A car in a lane, driven one tick at a time at a cruising speed. Its lane is east-west, which
 ## `LaneMover.heading()` answers exactly, so nothing but the bob can change about its picture. Pinned

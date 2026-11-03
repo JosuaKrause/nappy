@@ -44,11 +44,17 @@ func _ready() -> void:
 	body.add_child(shape)
 	add_child(body)
 
+## The baked atlas pages this piece is drawn from (`AtlasLibrary`): the city's, handed by the cordon
+## that strings it; a piece nobody handed one makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
+
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"street_kit")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"street_kit")
+	atlas.release(&"street_kit")
 
 ## The world rect the stretch's body covers. Kept for the tests.
 func body_rect() -> Rect2:
@@ -58,13 +64,13 @@ func body_rect() -> Rect2:
 
 func _draw() -> void:
 	if piece == Piece.POST:
-		Sprites.draw_standing(self, AtlasLibrary.region(POST), Vector2.ZERO)
+		Sprites.draw_standing(self, atlas.region(POST), Vector2.ZERO)
 		return
 	if across:
-		var native := Vector2(AtlasLibrary.native_size(TAPE_ACROSS))
-		draw_texture_rect(AtlasLibrary.region(TAPE_ACROSS),
+		var native := Vector2(AtlasTable.baked().native_size(TAPE_ACROSS))
+		draw_texture_rect(atlas.region(TAPE_ACROSS),
 				Rect2(-length * 0.5, -native.y, length, native.y), false)
 		return
-	var width := float(AtlasLibrary.native_size(TAPE_ALONG).x)
-	draw_texture_rect(AtlasLibrary.region(TAPE_ALONG),
+	var width := float(AtlasTable.baked().native_size(TAPE_ALONG).x)
+	draw_texture_rect(atlas.region(TAPE_ALONG),
 			Rect2(-width * 0.5, -length - LIFT, width, length), false)

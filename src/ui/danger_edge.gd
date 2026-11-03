@@ -61,6 +61,10 @@ const ICON := 34.0
 var rotated := false
 ## Where this charges its time to the frame record, handed in by `main`; the null sink until then.
 var timing := FrameTiming.new()
+## The baked atlas pages a badge's picture comes from (`AtlasLibrary`): the one `main` holds every
+## page a day draws on, handed before the edge is added. A badge only reads a region, so it holds
+## no group of its own.
+var atlas: AtlasLibrary
 
 ## The event source — see `setup()`.
 var _events: Node
@@ -269,16 +273,16 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		# that does, and the `events` page is held for the whole process from either boot's own
 		# loading window (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
 		var name := StringName(picture)
-		var art := Vector2(AtlasLibrary.native_size(name))
+		var art := Vector2(AtlasTable.baked().native_size(name))
 		var fit := ICON / maxf(art.x, art.y)
 		var drawn := art * fit
 		var rect := Rect2(at - drawn * 0.5, drawn)
-		draw_texture_rect(AtlasLibrary.region(name), rect, false)
+		draw_texture_rect(atlas.region(name), rect, false)
 		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
 		# rectangle and go over the body the way the street draws them.
 		var wheels := EventPictures.icon_wheels_for(def.look)
 		if not wheels.is_empty():
-			draw_texture_rect(AtlasLibrary.region(StringName(wheels)), rect, false)
+			draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
 
 	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

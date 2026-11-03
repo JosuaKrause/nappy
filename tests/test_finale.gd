@@ -1629,7 +1629,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	t.check(burst.aftermath.on_finish == crater.id, "the burst names the crater it leaves")
 	t.check(burst.look == EventDef.Look.NONE, "and draws nothing itself")
 	# The width comes from the baked region table rather than from a loaded texture — the crater's
-	# picture is a region of the `events` page now, and `AtlasLibrary.native_size()` answers the
+	# picture is a region of the `events` page now, and `AtlasTable.baked().native_size()` answers the
 	# source picture's own size with nothing acquired.
 	var picture := EventPictures.icon_for(crater.look)
 	var drawn_width := EventPictures.native_size(picture).x
@@ -2270,7 +2270,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 			"the clock still standing still behind the brief")
 
 	save.clear()
-	AtlasLibrary.close_loading_window()
+	main._sitting.atlas.close_loading_window()
 	_free_the_escape(t, main)
 	save.free()
 
