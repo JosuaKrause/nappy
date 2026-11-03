@@ -36,7 +36,8 @@ guard is built. *Proposed, not asked for:* review is where a bad test is stopped
 from the filer's reading of the suites rather than a survey, is that the suites that build a `main`
 or a `GameSave` without handing it a scratch path or a fake get one, and three tests in
 `test_telemetry.gd` that write the player's real `user://telemetry` folder (and delete what they wrote)
-are handed a scratch one.
+are handed a scratch one; the frame recorder's desktop file name is checked once the records folder is
+handed to the recorder rather than named under the player's `user://frame-records/`.
 
 This item sits beside `tests-public-seams.md` (tests drive public seams and real frames), whose
 fakes injected instead of patched statics remove part of the same shared state.

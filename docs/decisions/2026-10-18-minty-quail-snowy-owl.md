@@ -9,14 +9,17 @@ and `test_observers.gd` still want.
   B, leaves the `Telemetry` autoload: `Telemetry` builds it and hands it a `TelemetryScreen`
   (`src/telemetry/telemetry_screen.gd`; the game's is the viewport, which a headless run cannot draw
   from), a clock on the tree's timers and its own `note`, and each `start()` the run's `asked/`
-  folder. `start()`, `cancel()` and `is_active()` are called by `Telemetry`.
+  folder. `start()` and `cancel()` are called by `Telemetry`; whether a burst is running is private to
+  the recorder.
 - `FrameWatch` (`src/telemetry/frame_watch.gd`), the observer's once-a-second `frame` line and the
   `--spikes` probe, leaves `TelemetryObserver`, which builds it, calls `watch()` every frame and
   `restart()` at a day's start; the lines it writes are unchanged.
 - `test_frame_record.gd` boots the real game with `--frame-record` on a sitting and a scratch record
   path of its own, reads the crowd through `excitement.clock()` over real ticks pinned one per frame,
   draws events on real frames and reads the flags off `RunConfig.parse()`. No `src/` change for it.
-- Private-read lines: burst_capture 25 to 0, frame_record 25 to 0 (hand-called frames 7 to 0),
+- The first review also found the crowd's "the clock goes back to what was running" check dropped;
+  it is back, read on real frames against a node of the test's own that runs after the crowd.
+- Private-read lines: burst_capture 25 to 1, frame_record 25 to 0 (hand-called frames 7 to 0),
   telemetry 2 to 1; `GameState` lines 7 to 0, and `test_telemetry.gd`'s five cities built on the
   stand-in without naming it each get a run of their own. Forty-two mutation runs.
 
@@ -29,6 +32,9 @@ under `user://frame-records/`, which would write the player's real folder; the b
 finish-reason table became two real runs.
 
 **Left:** `Telemetry._shots` in three tests; three tests that write the player's real
-`user://telemetry` folder (before this pass too); the recorder's `cancel()` calls from
-`end_day()` and `end_run()`, no longer reached since the autoload's recorder cannot start headless.
-All three want the run folder handed to `begin_run()` and a screen handed to `Telemetry`.
+`user://telemetry` folder (before this pass too), both wanting the run folder handed to
+`begin_run()` and a screen handed to `Telemetry`; the burst suite's one private write, swapping
+`Telemetry._bursts` for a recorder of its own so a day's and the run's end are seen cutting a burst
+short (the first review found that reach dropped); and the frame recorder's desktop file name, which
+wants the records folder handed to the recorder, since naming it under `user://frame-records/` would
+write the player's real folder.
