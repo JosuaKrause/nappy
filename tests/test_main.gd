@@ -5,7 +5,8 @@ extends RefCounted
 ## **`main` is booted for real.** Where a check is about what `main` builds or connects, the real
 ## `scenes/main.tscn` boots under the suite (`configure()` hands it its run configuration the way
 ## `RunConfig.at_boot()` does in play, `use_reload()` and `use_quit()` stand in for the two calls
-## that would take the runner's own scene away), two real frames let its `_ready()` finish, and
+## that would take the runner's own scene away, `use_save()` a save at a scratch path), real frames
+## let its boot finish (`tests/booted_main.gd`, which waits for her to stand in her world), and
 ## everything after that is what a player or the engine could do: a real touch pushed through the
 ## viewport onto the title's own button, the screens' signals, the engine's focus notifications on
 ## the `ReturnWindow` node, and real physics frames. Nodes are found by the names and classes the
@@ -15,6 +16,7 @@ extends RefCounted
 ## A check that steps one step by hand with an injected delta says so where it does.
 
 const UI := preload("res://tests/ui_screens.gd")
+const Boot := preload("res://tests/booted_main.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
@@ -24,6 +26,9 @@ const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 const STROLLER_SCENE: PackedScene = preload("res://scenes/player/stroller.tscn")
 
 const SEED := 4242
+## The save every boot is handed, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_main_scratch.json"
+var _save := GameSave.new(_SCRATCH_SAVE)
 
 ## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
 ## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
@@ -92,6 +97,8 @@ func run(t) -> void:
 	_test_is_rig_from_args(t)
 	_test_rig_quit_seconds_from(t)
 	GameState.start_run(SEED)
+	_save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 
 # ------------------------------------------------------------------ finding and booting ---
 
@@ -134,22 +141,22 @@ class Calls:
 		quits.append(1)
 
 ## The real `main.tscn`, configured on a debug build (so the flags in `words` answer), with the
-## reload and the quit handed to `calls`, not yet in the tree.
+## reload and the quit handed to `calls` and the suite's scratch save, not yet in the tree.
 func _instance(words: Array, calls: Calls) -> Node2D:
 	var all := PackedStringArray(["--no-save", "--no-telemetry", "--seed", str(SEED)])
 	all.append_array(PackedStringArray(words))
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(all, "", true))
+	main.use_save(_save)
 	main.use_reload(calls.reload)
 	main.use_quit(calls.quit)
 	return main
 
-## Puts a configured `main` in the tree and lets the two frames its `_ready()` awaits pass, so the
-## run, the day and the title are built.
+## Puts a configured `main` in the tree and lets real frames pass until its boot has finished, so
+## the run, the day and the title are built.
 func _enter(t, main: Node2D) -> void:
 	t.add_child(main)
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
+	await Boot.until_booted(t, main)
 
 ## `home`, when given, stands for the tree's root the boot parks its sitting in before a reload and
 ## takes it from at boot (`main.use_sitting_home()`).
