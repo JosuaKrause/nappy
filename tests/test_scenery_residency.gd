@@ -20,7 +20,7 @@ func _test_city(t, seed_value: int) -> void:
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)
-	_test_all_mode(t, city)
+	await _test_all_mode(t, city)
 	await _test_all_mode_budget(t, city)
 	await _test_one_mode(t, city)
 	_test_frame_record(t, city)
@@ -246,14 +246,27 @@ func _test_all_mode(t, city: City) -> void:
 	var view := city.scenery.camera_view()
 	var keys := _ring_keys(city, view, 3)
 	t.check(keys.size() == 3, "the mode-1 check has three actual load-ring regions to prepare")
+	# The soft budget is wall-clock time, and three whole regions take about that long on their
+	# own, so under it the third region spills into the next frame whenever the machine is a
+	# little slow (a cold start, another process on the cores). What this check is about is the
+	# mode — a region is prepared whole, never stepped — so the update runs with room for all
+	# three; the budget's own spill-over is `_test_all_mode_budget`'s, which a one-microsecond
+	# budget makes countable without timing anything.
+	city.scenery.budget_usec = 1_000_000_000
 	var prepared := ground.prepared
 	city.scenery.update(view)
+	city.scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	var all_whole := true
 	for key in keys:
 		all_whole = all_whole and ground.chunks.has(key)
 	t.check(all_whole and ground.prepared - prepared == keys.size(),
 			"mode 1 prepares every needed region whole in the update that needs it")
-	t.check(ground.pending.is_empty(), "mode 1 leaves nothing partly built")
+	# Nothing waiting: a real frame passes and the residency's own maintenance, which runs an
+	# update whenever work waits, prepares nothing more.
+	var after := ground.prepared
+	await _frames(city)
+	t.check(ground.pending.is_empty() and ground.prepared == after,
+			"mode 1 leaves nothing partly built and nothing waiting")
 	for key in keys:
 		_check_chunk(t, city, key)
 		_check_whole_layout(t, city, key)
