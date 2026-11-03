@@ -4,13 +4,16 @@ extends RefCounted
 ## the last slow frame's three largest costs; and the flag and its page word open only where the
 ## rest of the `?debug=1` bundle does, keeping the run off the save.
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+const UI := preload("res://tests/ui_screens.gd")
 const STEP := 1.0 / 60.0
 ## How long a test holds the clock inside a bucket it wants to read back, in microseconds: long
 ## enough that the bucket's time cannot read as zero, whatever the timer's resolution.
 const SPENT_US := 2000
 ## The save the real boot is handed, at a scratch path, so nothing it drives reaches the player's.
 const _SCRATCH_SAVE := "user://test_frame_record_scratch.json"
+## Where the boot's recorder writes its record on the desktop, kept on the test's sitting.
+const _SCRATCH_RECORD := "user://test_frame_record_scratch_record.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -31,8 +34,8 @@ func run(t) -> void:
 	_test_the_deferred_scenery_window(t)
 	_test_slow_frames_outside_callbacks_and_with_scenery(t)
 	_test_the_clock_resolution(t)
-	_test_the_recorder_in_a_real_main(t)
-	_test_a_timed_body_runs_once(t)
+	await _test_the_recorder_in_a_real_main(t)
+	await _test_a_timed_body_runs_once(t)
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
 ## one is charged to itself alone, and the ten buckets sum to the frame's length exactly.
@@ -331,19 +334,28 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	for node in [prop, label, chunk, marker]:
 		node.free()
 
+## The flag and its page word, read the way the game reads them: off the configuration
+## `RunConfig.parse()` builds from the command line, the page's query and the build.
 func _test_the_flag_and_its_page_word(t) -> void:
-	var none := PackedStringArray()
-	t.check(DevFlags._frame_record_for(PackedStringArray(["--frame-record"]), "", false),
+	t.check(_debug_build(["--frame-record"]).frame_record_requested,
 			"the command line's --frame-record starts the record")
-	t.check(DevFlags._frame_record_for(none, "?debug=1&framerecord=1", true),
+	t.check(_page("?debug=1&framerecord=1").frame_record_requested,
 			"?framerecord=1 starts it on a page whose bundle is open")
-	t.check(not DevFlags._frame_record_for(none, "?framerecord=1", false),
+	t.check(not _page("?framerecord=1").frame_record_requested,
 			"a release page without ?debug=1 ignores ?framerecord=1")
-	t.check(not DevFlags._frame_record_for(none, "?debug=1&framerecord=0", true)
-			and not DevFlags._frame_record_for(none, "?debug=1", true),
+	t.check(not _page("?debug=1&framerecord=0").frame_record_requested
+			and not _page("?debug=1").frame_record_requested,
 			"only the value 1 asks for it, and ?debug=1 alone does not")
-	t.check(DevFlags._web_debug_flag_used_in_query("?debug=1&framerecord=1"),
+	t.check(_page("?debug=1&framerecord=1").web_debug_flag_used,
 			"a page that records stays off the save, like the bundle's other words")
+
+## The configuration a release page whose address bar says `query` runs on.
+func _page(query: String) -> RunConfig:
+	return RunConfig.parse(PackedStringArray(), query, false)
+
+## The configuration a debug build started with `words` runs on.
+func _debug_build(words: Array) -> RunConfig:
+	return RunConfig.parse(PackedStringArray(words), "", true)
 
 ## The scenery queue's deferred window: what its update left to the engine's flush is charged to
 ## `scenery` and counted apart, and the frame still adds up.
@@ -399,53 +411,53 @@ func _test_the_clock_resolution(t) -> void:
 	var step := FrameRecorder.clock_resolution()
 	t.check(step >= 1 and step < 2000, "the clock's smallest step is measured (%dus)" % step)
 
-## The recorder in a real boot of `main`: its markers run first and last because no other node in
-## the tree is prioritised past them, a paused frame is timed but not kept, a played one is kept
-## with its world counters, the readout carries its line, and leaving the tree switches the timing
-## off — which is what keeps the escape, which builds no recorder, from paying for it. This
-## suite is a plain function that lets no frame elapse, so the phases are driven by hand on the
-## real tree's recorder, as `tests/test_camera_start.gd` drives its boot.
+## The recorder in a real boot of `main` (`tests/booted_main.gd`) under `--frame-record`: `main`
+## hands the sitting's record to every timed system and sets the recorder up from it, its markers
+## run first and last because no other node in the tree is prioritised past them, a paused frame is
+## timed but not kept, a played one is kept with its world counters, the readout carries its line,
+## the crowd's tick is timed once on real physics ticks, a desktop save writes the file the sitting
+## keeps, and leaving the tree switches the timing off — which is what keeps the escape, which
+## builds no recorder, from paying for it — and writes the record.
 ##
-## The record is running before `main` is built, as it is in the game, where `main._ready()` sets
-## the recorder up before `_start_day()` makes the day's agents, and the crowd's timed tick, which
-## steps them, is checked on the real crowd (`_check_the_crowd_is_timed_once`).
-## The recorder itself is then set up from a switch left off, the way a held restart leaves it,
-## and handed a sitting of the test's own, which keeps the one file a desktop save writes. The
-## sitting never enters the tree, so the runner hands it no stand-in: it is handed a run of the
-## test's own, which `main` plays and the day check reads.
+## The sitting is the test's own, parked in a home of its own (`Boot.home_playing()`) with a run of
+## its own, which `main` plays and the day counter reads. Its record was started and then stopped
+## before the boot, the switch a held restart leaves off with its ledger kept, so `main._ready()`
+## sets the recorder up from it before `_start_day()` makes the day's agents, as in the game. The
+## file a desktop save writes is a scratch path the sitting already keeps, so nothing reaches the
+## player's own records.
 func _test_the_recorder_in_a_real_main(t) -> void:
-	var restarted := FrameLedger.new(8)
+	var restarted := FrameLedger.new(FrameLedger.CAPACITY)
 	var record := FrameRecord.new()
 	record.start(restarted)
-	var run := RunState.new()
-	var sitting := Sitting.new()
-	sitting.frame_timing = record
-	sitting.run = run
-	var save := GameSave.new(_SCRATCH_SAVE)
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main.use_sitting(sitting)
-	main.use_save(save)
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	main._on_title_start(ControlsMode.Mode.TAP)
-	t.check(main._city.frame_timing == record and main._city.scenery.timing == record
-			and main._city.events.timing == record and main._baby.timing == record
-			and main._edge.timing == record and main._halo.timing == record,
-			"main hands the sitting's record to every system that is timed")
 	record.stop()
-	var recorder := FrameRecorder.new()
-	recorder.save_on_exit = false
-	main.add_child(recorder)
-	recorder.setup(main._flow.in_the_title, main._city, main._player, main._day, main._run, sitting)
-	main._frame_recorder = recorder
-	main._readout.watch_frames(recorder)
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var sitting: Sitting = home.get_node(Sitting.NODE_NAME)
+	sitting.frame_timing = record
+	sitting.frame_record_path = _SCRATCH_RECORD
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
+			func(unbooted: Node) -> void: unbooted.use_sitting_home(home))
+	var main := booted.main
+	await Boot.press_title(t, main)
+	var city := Boot.city(main)
+	var edge: DangerEdge = main.get_node("DangerEdge/Edge")
+	var halo: ExcitementHalo = main.get_node("ExcitementHalo")
+	t.check(city.frame_timing == record and city.scenery.timing == record
+			and city.events.timing == record and Boot.baby(main).timing == record
+			and edge.timing == record and halo.timing == record,
+			"main hands the sitting's record to every system that is timed")
+	var recorder: FrameRecorder = main.get_node("FrameRecorder")
 	t.check(record.on and record.ledger == recorder.ledger and recorder.ledger == restarted,
 			"setting up the recorder switches the timing on, keeping the record a restart left")
-	restarted.process_start(Time.get_ticks_usec())
-	var drawn_before := _row_so_far(restarted)[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER]
-	main._player.draw.emit()
-	t.check(_row_so_far(restarted)[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER] == drawn_before + 1,
+	await t.get_tree().process_frame
+	Boot.player(main).queue_redraw()
+	# The redraw lands in one of the next stored frames, not necessarily the last: some frames
+	# hold no physics tick, and her stroller draws in the one that does.
+	var drawn_in := _rows_over(restarted, await _frames_counted(t, restarted, 3))
+	var drew_her := false
+	for row in drawn_in:
+		drew_her = drew_her or row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER] >= 1
+	t.check(drew_her and drawn_in.size() >= 2,
 			"her stroller's drawn frame is counted by the recorder's listening")
 	var end := recorder.get_node("ProcessEnd")
 	var nodes := 0
@@ -465,79 +477,152 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	t.check(first and last, "no node in the real tree is prioritised past the recorder's markers")
 	t.check(recorder.process_mode == Node.PROCESS_MODE_ALWAYS
 			and end.process_mode == Node.PROCESS_MODE_ALWAYS, "both markers run through a pause")
+	# A frame is stored as the next one begins (its first physics tick or its process step, which
+	# comes first depends on the frame's length), so a frame is read once the one after it has begun.
 	var ledger := recorder.ledger
-	var kept := ledger.count
-	ledger.process_start(Time.get_ticks_usec())
 	t.get_tree().paused = true
-	recorder.at_process_end()
+	await UI.frames(t, 3)
+	var kept := ledger.count
 	t.check(not ledger.keep, "a paused frame is not kept")
-	ledger.process_start(Time.get_ticks_usec())
+	await UI.frames(t)
 	t.check(ledger.count == kept, "and closing it stores nothing")
 	t.get_tree().paused = false
-	recorder.at_process_end()
-	ledger.process_start(Time.get_ticks_usec())
-	t.check(ledger.count == kept + 1, "a played frame is kept")
+	await UI.frames(t)
+	t.check(ledger.count > kept, "a played frame is kept")
 	var row: PackedInt64Array = ledger.rows().back()
-	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS]
-				== main._city.crowd.agent_count()
+	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS] == city.crowd.agent_count()
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == run.header.day,
 			"with the world's counters read at the end of its process step")
-	t.check(main._readout._frame_record_lines().size() == 1, "the readout carries the record's line")
-	_check_the_crowd_is_timed_once(t, main._city.crowd, record)
+	t.check(await _the_readout_shows(t, main, recorder), "the readout carries the record's line")
+	await _check_the_crowd_is_timed_once(t, city.crowd, record, ledger)
+	record.start(ledger)
 	var written := recorder.save()
-	t.check(sitting.frame_record_path.begins_with("user://frame-records/")
-			and written == ProjectSettings.globalize_path(sitting.frame_record_path),
-			"a desktop save chooses its file on the sitting, which outlives the recorder")
+	t.check(written == ProjectSettings.globalize_path(_SCRATCH_RECORD)
+			and sitting.frame_record_path == _SCRATCH_RECORD,
+			"a desktop save writes the file its sitting keeps, which outlives the recorder")
 	t.check(recorder.save() == written, "and every later save rewrites the same file")
 	DirAccess.remove_absolute(written)
-	record.start(ledger)
-	Telemetry.end_run()
-	main.free()
+	booted.free_all()
 	t.check(not record.on, "leaving the tree switches the timing off")
-	sitting.free()
-	save.free()
+	t.check(FileAccess.get_file_as_string(_SCRATCH_RECORD).contains("nappy-frame-record"),
+			"and writes the record on the desktop as the scene exits")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))
+	home.free()
 	run.free()
 
-## The real day's crowd, ticked under the record: its physics tick steps every agent once (each
-## clock moves by one step, not two and not none) inside one timed call charged to `crowd`, since an
-## agent steps inside the crowd's tick and times nothing of its own; once the record stops, the tick
-## still steps every agent once and the record it ran under is not touched again.
-func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord) -> void:
+## Whether the readout's label, which the readout fills a few times a second while the day is
+## walked, shows the recorder's line, the one that begins `slow` (what follows it changes with each
+## slow frame); the engine's time scale is raised so a refresh comes within a few frames, and put
+## back.
+func _the_readout_shows(t, main: Node, recorder: FrameRecorder) -> bool:
+	var label: Label = main.get_node("CanvasLayer/Status")
+	var scale := Engine.time_scale
+	Engine.time_scale = 5.0
+	var shown := false
+	for i in 60:
+		await t.get_tree().process_frame
+		shown = recorder.readout_line().begins_with("slow ") and Array(label.text.split("\n")).any(
+				func(line: String) -> bool: return line.begins_with("slow "))
+		if shown:
+			break
+	Engine.time_scale = scale
+	return shown
+
+## The real day's crowd, ticked under the record on real physics ticks, one a frame: each tick steps
+## every agent once (each clock moves by one tick, not two and not none), charged to `crowd` as one
+## timed call, since an agent steps inside the crowd's tick and times nothing of its own, so no
+## frame makes as many timed calls as there are agents; once the record stops, each tick still
+## steps every agent once and the record is not touched again.
+func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
+		ledger: FrameLedger) -> void:
+	var steps := Engine.max_physics_steps_per_frame
+	Engine.max_physics_steps_per_frame = 1
 	var agents := crowd.agents()
-	var scratch := FrameLedger.new(4)
-	record.start(scratch)
-	scratch.process_start(Time.get_ticks_usec())
-	var clocks: Array[float] = []
-	for agent in agents:
-		clocks.append(agent.excitement._clock)
-	crowd._physics_process(STEP)
-	var once := not agents.is_empty()
-	for i in agents.size():
-		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + STEP)
+	var once := not agents.is_empty() and await _one_tick_steps_each_once(t, crowd, agents)
 	t.check(once, "the crowd's timed tick steps every agent once, not twice and not never (%d agents)"
 			% agents.size())
-	OS.delay_usec(SPENT_US)
-	var row := _row_so_far(scratch)
-	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 1,
-			"as one timed call for the whole crowd (%d)"
-			% row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS])
-	t.check(row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] > 0
-			and row[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= SPENT_US,
-			"charged to crowd, and the clock goes back to what was running")
+	# A node of the test's own ticks after the crowd and spends a measured time: had the crowd left
+	# its bucket open, that time would land in `crowd`; given back, it lands in the physics steps'
+	# rest, so the stored frame it ran in must show at least the span measured, however slow the
+	# frame was.
+	var later := _LaterTick.new()
+	later.process_physics_priority = 1000
+	t.get_tree().root.add_child(later)
+	var timed := _rows_over(ledger, await _frames_counted(t, ledger, 6))
+	later.queue_free()
+	var charged := false
+	var fewest := true
+	var given_back := true
+	var matched := 0
+	for row in timed:
+		charged = charged or row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] > 0
+		fewest = fewest and row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] < agents.size()
+		for i in later.frames.size():
+			if row[FrameLedger.FIRST_COUNTER + FrameLedger.PROCESS_FRAME] == later.frames[i]:
+				matched += 1
+				given_back = given_back and row[FrameLedger.FIRST_BUCKET + FrameRecord.PHYSICS_REST] \
+						>= later.spent_us[i]
+	t.check(not timed.is_empty() and fewest,
+			"as one timed call for the whole crowd, never one an agent")
+	t.check(charged, "charged to crowd")
+	t.check(matched > 0 and given_back, "and the clock goes back to what was running (%d ticks matched to their frames)"
+			% matched)
 	record.stop()
-	crowd._physics_process(STEP)
-	once = true
-	for i in agents.size():
-		once = once and is_equal_approx(agents[i].excitement._clock, clocks[i] + 2.0 * STEP)
-	var stopped := _row_so_far(scratch)
-	t.check(once and stopped[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0
-			and stopped[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] == 0,
+	await t.get_tree().process_frame
+	once = await _one_tick_steps_each_once(t, crowd, agents)
+	var stopped := _rows_over(ledger, await _frames_counted(t, ledger, 4))
+	var untouched := not stopped.is_empty()
+	for row in stopped:
+		untouched = untouched and row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0 \
+				and row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] == 0
+	t.check(once and untouched,
 			"once the record stops, the tick steps every agent once and times nothing")
+	Engine.max_physics_steps_per_frame = steps
+
+## A node whose physics tick runs after the crowd's and spends at least 10 `SPENT_US`, measured, each tick.
+class _LaterTick extends Node:
+	## The engine frame each tick ran in, and the time it spent, measured.
+	var frames: Array[int] = []
+	var spent_us: Array[int] = []
+
+	func _physics_process(_delta: float) -> void:
+		var from := Time.get_ticks_usec()
+		OS.delay_usec(10 * SPENT_US)
+		frames.append(Engine.get_process_frames())
+		spent_us.append(Time.get_ticks_usec() - from)
+
+## Whether one physics tick moves every agent's clock by exactly that tick's length.
+func _one_tick_steps_each_once(t, crowd: Crowd, agents: Array[CrowdAgent]) -> bool:
+	await t.get_tree().physics_frame
+	var clocks: Array[float] = []
+	for agent in agents:
+		clocks.append(agent.excitement.clock())
+	await t.get_tree().physics_frame
+	var tick := crowd.get_physics_process_delta_time()
+	for i in agents.size():
+		if not is_equal_approx(agents[i].excitement.clock(), clocks[i] + tick):
+			return false
+	return true
+
+## Lets `count` frames pass and be stored, and answers how many rows the ledger stored meanwhile.
+func _frames_counted(t, ledger: FrameLedger, count: int) -> int:
+	var before := ledger.count
+	await UI.frames(t, count + 1)
+	return ledger.count - before
+
+## The last `count` rows the ledger stored.
+func _rows_over(ledger: FrameLedger, count: int) -> Array[PackedInt64Array]:
+	var rows := ledger.rows()
+	var last: Array[PackedInt64Array] = []
+	for i in range(maxi(0, rows.size() - count), rows.size()):
+		last.append(rows[i])
+	return last
 
 ## A live event made with the record off is never timed, even once it is on; one made under it runs
-## its drawn frame (its look's redraw) once a call, inside `events`, and once the record stops, it
+## its drawn frame (its look's redraw) once a frame, inside `events`, and once the record stops, it
 ## still redraws and the record it ran under is not touched again. Its step times nothing of its
-## own: the manager's physics tick that runs it is timed.
+## own: the manager's physics tick that runs it is timed. Each event draws on real frames, one at
+## a time (`_one_drawn_frame()`).
 func _test_a_timed_body_runs_once(t) -> void:
 	var record := FrameRecord.new()
 	var def := EventCatalogue.by_id("protest")
@@ -546,21 +631,26 @@ func _test_a_timed_body_runs_once(t) -> void:
 	var scratch := FrameLedger.new(4)
 	record.start(scratch)
 	scratch.process_start(Time.get_ticks_usec())
-	untimed_event._process(STEP)
+	await _one_drawn_frame(t, untimed_event)
 	var untimed := _row_so_far(scratch)
 	t.check(untimed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0 and untimed_look.redraws == 1,
 			"an event handed no record is not timed while another is on")
 	var event := _event(t, def)
 	event.timing = record
 	var look := _BucketLook.watching(event)
-	event._process(STEP)
-	OS.delay_usec(SPENT_US)
+	await _one_drawn_frame(t, event)
+	# Time spent after the frame, measured, lands in what was running before the event: had the
+	# event left its bucket open, it would land in `events` on top of the redraw's own.
+	var after_from := Time.get_ticks_usec()
+	OS.delay_usec(4 * SPENT_US)
+	var after := Time.get_ticks_usec() - after_from
 	var timed := _row_so_far(scratch)
 	t.check(look.redraws == 1 and timed[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] >= SPENT_US,
-			"a timed event's drawn frame redraws once a call, inside the events bucket (%d redraws)"
+			"a timed event's drawn frame redraws once a frame, inside the events bucket (%d redraws)"
 			% look.redraws)
 	t.check(timed[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 1
-			and timed[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= SPENT_US,
+			and timed[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= after
+			and timed[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] < after,
 			"as one timed call, and the clock goes back to what was running")
 	# Past its telegraph, so its first step announces it, in whatever bucket was running: its step
 	# times nothing itself, so the time spent in the announcement is the rest of the process's.
@@ -577,7 +667,7 @@ func _test_a_timed_body_runs_once(t) -> void:
 			and stepped[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0,
 			"its step runs once a call and times nothing of its own")
 	record.stop()
-	event._process(STEP)
+	await _one_drawn_frame(t, event)
 	var stopped := _row_so_far(scratch)
 	t.check(look.redraws == 2
 			and stopped[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] == 0
@@ -585,6 +675,14 @@ func _test_a_timed_body_runs_once(t) -> void:
 			"once the record stops, an event made under it redraws once and times nothing")
 	untimed_event.free()
 	event.free()
+
+## Lets `event` draw on exactly one real frame: its process callback is on from the start of one
+## frame to the start of the next.
+func _one_drawn_frame(t, event: EventInstance) -> void:
+	await t.get_tree().process_frame
+	event.set_process(true)
+	await t.get_tree().process_frame
+	event.set_process(false)
 
 ## A look that only counts how many times its event's drawn frame asked it to redraw.
 ## `watching()` lets the event's own look go first, so nothing it built is left over.
@@ -602,8 +700,8 @@ class _BucketLook extends EventLook:
 		OS.delay_usec(SPENT_US)
 		return false
 
-## A live event standing alone, its process callback left to the test, as `tests/test_acts.gd`
-## builds one.
+## A live event standing alone, its process callback off until the test lets it draw, as
+## `tests/test_acts.gd` builds one.
 func _event(t, def: EventDef) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
@@ -650,9 +748,11 @@ func _test_the_environment_carries_the_view(t) -> void:
 	t.add_child(recorder)
 	var sitting := Sitting.new()
 	sitting.frame_timing = FrameRecord.new()
-	recorder.setup(func() -> bool: return false, null, null, null, GameState, sitting)
+	var run := RunState.new()
+	recorder.setup(func() -> bool: return false, null, null, null, run, sitting)
 	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		t.check(environment.has(key), "the record's environment carries %s" % key)
 	recorder.free()
 	sitting.free()
+	run.free()
