@@ -8,15 +8,19 @@ need to set a flag and then indicate that the displayed times are inaccurate due
 only if a running game was interrupted during reload. Reloading from a day brief is fine" (inbox
 #965 in brisk-pelican).
 
-**Read as:** a save is written during a day, and a resume after the page was reloaded or closed
-restores the day from it without the ticks walked since the last write, so the times the game shows
-come out short. When a run resumes from a save written while a day was being walked, the run carries
-a flag, and the times it shows say they are inaccurate because of the reload. A save written at a day
-brief, before the day is engaged, resumes with no flag.
+**Read as:** the save is written when a day starts (record M166, the save is written when a day
+starts and a saved game opens on the day brief), so a reload in the middle of a walk resumes by
+charging the abandoned day a nerve and opening on the day brief, and the day is walked again. The
+stretch already walked is lost from the run's total time (record M107, the run clock: the saved total
+of seconds played misses it), so a time the game shows that adds up the run comes out short. When a
+run resumes from a save written while a day was being walked, the run carries a flag, and the times
+it shows say they are inaccurate because of the reload. A save written at a day brief, before the day
+is engaged, loses nothing and resumes with no flag. (The context written when the note was captured
+said the resume restores the day without the walked ticks; M166 says the day restarts, as above.)
 
-**Open, for whoever picks it up:** whether the flag marks only that day's time or the run's total for
-the rest of the run. The total keeps the lost stretch, so the reading above is the day's time for
-that day and the total for the rest of the run; asked when the work starts.
+**Open, for whoever picks it up:** which shown times carry the mark (the total game time on the
+ending screens, and any other screen that shows a time adding up the run) and how the mark reads;
+asked when the work starts.
 
 *Proposed, not asked for:* the band, `now`, as a note from playing (the player named none).
 
