@@ -258,7 +258,6 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		return planned
 	var day := spec.number
 	var pictures := pictures_for(spec)
-	var home := route.street_it_starts_in()
 	# The city's standing street trees, asked once rather than once per street. `trees` is the
 	# ground no seal body may stand on (`_seal_along_tile` steps along the street until it is
 	# clear); `lined` is which streets may carry a fallen tree at all; `emptied` collects the pits
@@ -267,40 +266,28 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
-	# Soft pairs are collected as `[segment, placed]` rather than `placed` alone, because the
-	# thinning pass below needs the segment back to mark the surviving side's own pavement tiles in
-	# `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see `_thin_soft_pairs`.
+	# Soft pairs are collected as the whole `SitedSeal` rather than its bodies alone, because the
+	# thinning pass below needs the street and the along tile back to shut the surviving side's own
+	# pavement tiles in `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see
+	# `_thin_soft_pairs`.
 	var soft_pairs: Array = []
 	# From the gatehouse day on, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so a day before it draws nothing extra from `rng`.
 	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY and not spec.seals_every_street_off_the_walk
 	for segment in StreetNetwork.segments():
 		var key := segment.key()
-		if not map.has_street(key) or route.walks_the_street(segment) or skip.has(key):
-			continue
-		if home and key == home.key():
-			continue
-		if not spec.seals_the_main_road and _is_the_main_road(map, segment):
+		if skip.has(key) or not may_seal(map, spec, route, segment):
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
 		var candidate := _pick_candidate(pictures, day, rng, lined.has(key))
 		if not candidate:
 			continue
-		var along := _seal_along_tile(map, segment, candidate, trees, emptied)
-		# **Stepping off a tree may never step onto the walk.** The street was spared the walk as a
-		# whole, or at its own midpoint for a walk that answers there (a chain); a tile or two along
-		# from there can be ground the walk takes, and a seal placed on it would wall the one way
-		# through. So the moved position is asked the same question, and a move that would close the
-		# walk is refused — the seal stands in the tree instead, which is a picture overlapping a
-		# picture rather than a city with no way through it.
-		if route.walks_the_street(segment, along):
-			along = -1
-		var placed := _place(map, segment, candidate, along)
+		var sited := seal_street(map, segment, candidate, route, trees, emptied)
 		if candidate.strength == Strength.SOFT:
-			soft_pairs.append([segment, placed, along])
+			soft_pairs.append(sited)
 		else:
-			planned.append_array(placed)
+			planned.append_array(sited.bodies)
 			held[key] = true
 	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
@@ -372,6 +359,22 @@ static func pictures_for(spec: DaySpec) -> Array[Candidate]:
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
+## **Whether `segment` is a street the walk `spec` describes may seal at all**: a real street on
+## `map`, off the walk `route` hands in, not the street the walk starts in, and not the main road
+## unless the spec seals it (`DaySpec.seals_the_main_road`). The one answer `plan_day()` asks of
+## every street before it rolls for one, and the one a scene recipe's authored seal is held to
+## (`SceneRecipeRuntime`), so an authored seal stands only where the day's own pass could have put
+## one. `plan_day()`'s `skip` and its gatehouse-day share are its own, on top of this.
+static func may_seal(map: CityMap, spec: DaySpec, route: RouteSource,
+		segment: StreetNetwork.Segment) -> bool:
+	var key := segment.key()
+	if not map.has_street(key) or route.walks_the_street(segment):
+		return false
+	var home := route.street_it_starts_in()
+	if home and key == home.key():
+		return false
+	return spec.seals_the_main_road or not _is_the_main_road(map, segment)
+
 ## Whether a street the loop in `plan_day` would seal is sealed today, from
 ## `Tuning.REGION_WALL_FIRST_DAY` on — one roll per street against
 ## `GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when the guard houses are set up the
@@ -401,13 +404,20 @@ static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNum
 		street_has_trees: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
-			continue
-		if _eligible(candidate, day):
+		if offers(candidate, day, street_has_trees):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
+
+## Whether `candidate` may seal a street on `day`: every row it names is available by then
+## (`_effective_first_day()`), and a fallen tree only on a street with trees of its own
+## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`). What `plan_day()` draws a street's picture from, and
+## what a scene recipe's authored seal is held to (`SceneRecipeRuntime`).
+static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bool:
+	if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
+		return false
+	return _eligible(candidate, day)
 
 static func _eligible(candidate: Candidate, day: int) -> bool:
 	for id in candidate.def_ids:
@@ -428,6 +438,48 @@ static func _effective_first_day(def: EventDef) -> int:
 		var index := clampi(def.act_tag - 1, 0, Tuning.ACT_START_DAYS.size() - 1)
 		return Tuning.ACT_START_DAYS[index]
 	return def.first_day
+
+## One seal sited on one street (`seal_street()`): the street, the picture, the tile on the
+## street's own along axis its bodies stand at (`-1` for the midpoint), and the bodies.
+class SitedSeal extends RefCounted:
+	var segment: StreetNetwork.Segment
+	var candidate: Candidate
+	var along := -1
+	var bodies: Array[EventScheduler.Planned] = []
+
+	func _init(the_segment: StreetNetwork.Segment, the_candidate: Candidate, at: int,
+			placed: Array[EventScheduler.Planned]) -> void:
+		segment = the_segment
+		candidate = the_candidate
+		along = at
+		bodies = placed
+
+	## Shuts one pavement of a soft seal to walkers (`CityMap.soft_sealed_tiles`): both lanes of
+	## the near side (`near`, the lower end of the street's cross-section) or of the far one, at the
+	## tile the bodies stand at. `_thin_soft_pairs()` shuts the side of each body it keeps, and a
+	## scene recipe's authored soft seal shuts both.
+	func shut_the_sidewalk(map: CityMap, near: bool) -> void:
+		SealPlanner._mark_soft_sealed(map, SealPlanner._sidewalk_band_tiles(segment, near, along))
+
+## **One seal on one street, at the site the day's own pass gives it**: where along the street it
+## stands (`_seal_along_tile()`, off any standing tree, or on the pit a fallen tree empties into
+## `emptied`), and its bodies there (`_place()`). The one entry both `plan_day()` and a scene
+## recipe's authored seal (`SceneRecipeRuntime`) site a seal through, so an authored seal stands
+## where the game would stand the same picture. What follows is the caller's: a hard seal's street
+## held, a soft seal's pavements shut (`SitedSeal.shut_the_sidewalk()`).
+##
+## **Stepping off a tree may never step onto the walk.** The street was spared the walk as a whole,
+## or at its own midpoint for a walk that answers there (a chain); a tile or two along from there
+## can be ground the walk takes, and a seal placed on it would wall the one way through. So the
+## moved position is asked the same question of `route`, and a move that would close the walk is
+## refused — the seal stands in the tree instead, which is a picture overlapping a picture rather
+## than a city with no way through it.
+static func seal_street(map: CityMap, segment: StreetNetwork.Segment, candidate: Candidate,
+		route: RouteSource, trees: Dictionary, emptied: Array[Vector2i]) -> SitedSeal:
+	var along := _seal_along_tile(map, segment, candidate, trees, emptied)
+	if route.walks_the_street(segment, along):
+		along = -1
+	return SitedSeal.new(segment, candidate, along, _place(map, segment, candidate, along))
 
 ## Where along `segment` this seal's bodies stand, as a tile coordinate on the street's own along
 ## axis — and, for a fallen tree, which pit that empties.
@@ -589,22 +641,18 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenerator) \
 		-> Array[EventScheduler.Planned]:
 	var kept: Array[EventScheduler.Planned] = []
-	for entry: Array in pairs:
-		var segment: StreetNetwork.Segment = entry[0]
-		var pair: Array = entry[1]
-		# The along tile `_seal_along_tile` chose for this pair, so the tiles marked shut to walkers
-		# are the ones the bodies actually stand on rather than the street's own midpoint.
-		var along: int = entry[2]
-		var bands := [_sidewalk_band_tiles(segment, true, along),
-				_sidewalk_band_tiles(segment, false, along)]
+	for sited: SitedSeal in pairs:
+		# Shut at the along tile `seal_street()` chose for this pair, so the tiles marked shut to
+		# walkers are the ones the bodies actually stand on rather than the street's own midpoint.
+		var pair := sited.bodies
 		if pair.size() == 2 and rng.randf() < SEAL_THINNING_FRACTION:
 			var side := rng.randi_range(0, 1)
 			kept.append(pair[side])
-			_mark_soft_sealed(map, bands[side])
+			sited.shut_the_sidewalk(map, side == 0)
 		else:
 			kept.append_array(pair)
-			_mark_soft_sealed(map, bands[0])
-			_mark_soft_sealed(map, bands[1])
+			sited.shut_the_sidewalk(map, true)
+			sited.shut_the_sidewalk(map, false)
 	return kept
 
 ## Both walker-lane tiles of one pavement side of `segment` — `Tuning.SIDEWALK_WIDTH` of them, not
