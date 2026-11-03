@@ -27,7 +27,7 @@ extends RefCounted
 ## way they scan `near`.
 const REPORT_INTERVAL := 1.0
 
-var _note: Callable
+var _sink: Callable
 
 # Time since the last `frame` entry and the longest single frame seen since it, in frame seconds.
 var _since := 0.0
@@ -51,7 +51,11 @@ var _spike_events := 0
 
 ## `note` is called with a kind and a sentence for each line written.
 func _init(note: Callable) -> void:
-	_note = note
+	_sink = note
+
+## One line to the run log, under `kind`.
+func _note(kind: String, text: String) -> void:
+	_sink.call(kind, text)
 
 ## One frame `delta` seconds long. `spikes` is whether `--spikes` was given; only then is `scene`
 ## called, for her tile and the live event count this frame (`[Vector2i, int]`), so with the flag off
@@ -65,9 +69,9 @@ func watch(delta: float, spikes: bool, scene: Callable) -> void:
 	if _since < REPORT_INTERVAL:
 		return
 	if _spike_delta > 0.0:
-		_note.call("spike", "%.1fms, mean %.1fms — %s" % [
+		_note("spike", "%.1fms, mean %.1fms — %s" % [
 			_spike_delta * 1000.0, _spike_mean * 1000.0, _spike_what])
-	_note.call("frame", FrameCost.line(_worst))
+	_note("frame", FrameCost.line(_worst))
 	_since = 0.0
 	_worst = 0.0
 	_reset_the_spike_window()

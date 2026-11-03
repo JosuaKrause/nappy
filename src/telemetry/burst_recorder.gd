@@ -38,7 +38,7 @@ class Clock extends RefCounted:
 
 var _screen: TelemetryScreen
 var _clock: Clock
-var _note: Callable
+var _sink: Callable
 var _burst: Dictionary = {}
 var _serial := 0
 var _token := 0
@@ -47,7 +47,11 @@ var _token := 0
 func _init(screen: TelemetryScreen, clock: Clock, note: Callable) -> void:
 	_screen = screen
 	_clock = clock
-	_note = note
+	_sink = note
+
+## One line to the run log, under `kind`.
+func _note(kind: String, text: String) -> void:
+	_sink.call(kind, text)
 
 ## Whether a sequence is being captured now.
 func _is_active() -> bool:
@@ -58,15 +62,15 @@ func _is_active() -> bool:
 ## the folder or its first manifest cannot be written; each refusal is a line in the run log.
 func start(directory: String, context: String) -> bool:
 	if _is_active():
-		_note.call("shot", "burst refused: another burst is active")
+		_note("shot", "burst refused: another burst is active")
 		return false
 	if directory == "" or not _screen.can_draw():
-		_note.call("shot", "burst refused: no drawable viewport")
+		_note("shot", "burst refused: no drawable viewport")
 		print("[Telemetry] burst refused: no drawable viewport")
 		return false
 	var burst_path := _next_path(directory)
 	if DirAccess.make_dir_recursive_absolute(burst_path) != OK:
-		_note.call("shot", "burst refused: could not create %s" % burst_path)
+		_note("shot", "burst refused: could not create %s" % burst_path)
 		push_warning("telemetry: could not create burst directory %s" % burst_path)
 		return false
 	_token += 1
@@ -81,10 +85,10 @@ func start(directory: String, context: String) -> bool:
 	}
 	if not _write_metadata():
 		_burst.clear()
-		_note.call("shot", "burst refused: could not write metadata")
+		_note("shot", "burst refused: could not write metadata")
 		push_warning("telemetry: burst metadata could not be written")
 		return false
-	_note.call("shot", "burst started: %s | %s/%s"
+	_note("shot", "burst started: %s | %s/%s"
 			% [context, directory.get_file(), burst_path.get_file()])
 	print("[Telemetry] burst started: %s" % ProjectSettings.globalize_path(burst_path))
 	_clock.after(DURATION_SECONDS).connect(_finish.bind(_token, "duration"), CONNECT_ONE_SHOT)
@@ -172,10 +176,10 @@ func _finish(token: int, reason: String, detail := "") -> void:
 	var wrote_metadata := _write_metadata()
 	_burst.clear()
 	if not wrote_metadata:
-		_note.call("shot", "burst abandoned: metadata write failed")
+		_note("shot", "burst abandoned: metadata write failed")
 		push_warning("telemetry: burst metadata could not be finalized")
 		return
-	_note.call("shot", "burst %s: %d frames | %s" % [outcome, count, ending])
+	_note("shot", "burst %s: %d frames | %s" % [outcome, count, ending])
 	print("[Telemetry] burst %s: %s (%d frames)"
 			% [outcome, ProjectSettings.globalize_path(path), count])
 
