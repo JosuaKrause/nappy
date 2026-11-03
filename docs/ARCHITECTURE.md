@@ -236,6 +236,11 @@ src/
 	telemetry_log.gd      one run's ordered lines, and the file they go to
 	run_session.gd        the run log's owner for a boot: opens and closes it, writes a day's
 	                      and a section's start and end off the bus, holds the observer
+	goatcounter_outbox.gd the gate, the queue for events asked before `count.js` has loaded and the
+	                      page call that counts one (the VisitCounter hands its events to it)
+	telemetry_shots.gd    the day's shot allowance, the spacing and the run-wide picture counter
+	                      that Telemetry asks before it photographs
+	telemetry_page.gd     whether a page's query is read, and whether it asks for the log
 	telemetry_observer.gd watches the player: turns, runs, crossings, encounters, where she
 	                      went and which events she met
 	telemetry_map.gd      the tile grid as a picture, drawn at dawn and again at dusk
@@ -855,8 +860,10 @@ ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_c
 `city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,
 `controls_chosen`, `run_mode_chosen` and `went_back_to_a_checkpoint` — decides nothing and writes nothing back. Sends only on a released web build
-with `?debug=1` unasked and `window.goatcounter.count` actually present — `VisitCounter._should_send()` is the pure gate, and
-`tests/test_visit_counter.gd` drives its truth table and its event-name builders directly.
+with `?debug=1` unasked and `window.goatcounter.count` actually present — `GoatCounterOutbox.gate_allows()` is the pure gate, and
+`tests/test_visit_counter.gd` drives its truth table directly and the event names through a bus
+the counter is handed with `listen(bus)`, and what reaches the page through the outbox it is handed
+with `send_through(outbox)`.
 
 ## WorldMap
 
@@ -1021,7 +1028,8 @@ one figure a slice, a wide scene one
 `--script`: `--script` replaces the main loop, which skips the autoloads, and every test
 needs `Tuning`. The runner loads every `tests/test_*.gd`, calls its `run(t)`, and exits
 non-zero on any failure. After each suite it compares the shared state (`InputMap` and the
-actions `Input` holds pressed, the autoloads' variables and signal connections, every `static var`
+actions `Input` holds pressed, the autoloads' variables, those of each part an autoload holds (except
+`GameState`'s, until the run's state is handed in), and their signal connections, every `static var`
 under `src/`) with what it was before, and a suite that left any of it changed fails, naming the
 field with its value before and after (`tests/shared_state.gd`).
 

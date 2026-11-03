@@ -89,7 +89,7 @@ The events:
   one event folding in what actually did it rather than a second event beside it. The cause rides
   on the day's one end event, `EventBus.day_ended(day, result, cause, elapsed)`, which
   `DayDirector.finish_day()` emits, and `VisitCounter` folds it onto the loss kind
-  (`VisitCounter._loss_event_suffix()`); the run log's `lost` line names the same cause off the
+  (`VisitCounter`'s day-ended handler); the run log's `lost` line names the same cause off the
   same event. A hard fail names the row that struck her — `car` for the
   one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
@@ -301,9 +301,13 @@ things holds: the build is running on the web (`OS.get_name() == "Web"`), it is 
 nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. One pure function, `VisitCounter._should_send()`, decides the gate from those
+independent switch. One pure function, `GoatCounterOutbox.gate_allows()`, decides the gate from those
 four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
-`tests/test_visit_counter.gd` drives its truth table directly. A missing or failing
+`tests/test_visit_counter.gd` drives its truth table directly. The same `GoatCounterOutbox` holds
+the events asked for before `count.js` has loaded and counts them in order once it has, and is
+handed the evaluator of the page's script; the counter is handed its outbox with `send_through()`
+(its `_ready()` hands it the page's), so a test hands one with a recorder and reads the script each
+event sends, or that a refused event never reached it. A missing or failing
 `window.goatcounter` never raises or prints an engine error: the existence check comes first, and
 the call itself sits inside the page's own `try`/`catch`.
 
@@ -1096,7 +1100,7 @@ taken that same day; even off that flag, two pictures inside one in-game second 
 way. *(2026-09-11,
 playtest 56: "phot capture must use real time not game time otherwise at the end of the day all
 pictures get overwritten", then "actually why not just count up the screenshot numbers?".)* The
-counter is `Telemetry._shot_serial`, shared with the person-requested pictures in `asked/` below so
+counter is the run's `TelemetryShots` (`src/telemetry/telemetry_shots.gd`), which `Telemetry` holds, shared with the person-requested pictures in `asked/` below so
 a picture's own number says when in the run — relative to every picture the run took, from either
 folder — it was taken; it counts from 1 for the life of the run and never resets, not even across a
 retried attempt at the same day, so the counter itself cannot repeat a number. The attempt is named
