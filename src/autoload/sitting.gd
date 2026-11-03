@@ -1,12 +1,13 @@
 class_name Sitting
 extends Node
-## What one sitting at the game keeps across the scene reloads a run makes: the held restart, the
-## day-14 hand-over to the escape, a normal run carried on to its checkpoint and a free recipe's
-## lost section played again (`main._reload_the_scene()` is the one place any of them happens).
-## `reload_current_scene()` frees `main` and every node under it, so nothing a boot builds can
-## hold a fact the next boot needs; this node is the one owner of those facts, and of nothing
-## else. Process memory only, never saved itself: a page opened again starts a sitting with none of
-## it, and only the run comes back, from the save its first boot reads (`GameSave.try_resume()`).
+## What one sitting at the game keeps across the scene reloads a run makes: the held restart,
+## the day-14 hand-over to the escape, a normal run carried on to its checkpoint and a free
+## recipe's lost section played again (`main._reload_the_scene()` is the one place any of them
+## happens). `reload_current_scene()` frees `main` and every node under it, so nothing a boot
+## builds can hold a fact the next boot needs; this node is the one owner of those facts, and of
+## nothing else. Process memory only, never saved itself: a page opened again starts a sitting
+## with none of it, and only the run comes back, from the save its first boot reads
+## (`GameSave.try_resume()`).
 ##
 ## **Not an autoload**, and nothing fetches it. `main`, the composition root, takes the one the
 ## boot before it parked at the tree's root, or builds one as its own child on the sitting's first
@@ -18,10 +19,10 @@ extends Node
 ## reload takes the sitting the one before parked there, rather than the test setting and
 ## resetting statics; a test driving a `main` off the tree hands it one (`main.use_sitting()`).
 ##
-## **It holds the run** (`run`, a `RunState`), which `main` takes off it once a boot and hands down:
-## the day-14 hand-over and a run carried to its checkpoint keep it across their reloads, and the
-## boot after a held restart starts a fresh run in it (`RunState.start_run()`). A test hands a sitting
-## the run it built before handing the sitting on.
+## **It holds the run** (`run`, a `RunState`), which `main` takes off it once a boot and hands
+## down: the day-14 hand-over and a run carried to its checkpoint keep it across their reloads,
+## and the boot after a held restart starts a fresh run in it (`RunState.start_run()`). A test
+## hands a sitting the run it built before handing the sitting on.
 ##
 ## **It is the home of the save too** (`GameSave`, a child node `main` makes on the first boot and
 ## finds there after): the web flush's page-side objects, the operation ids and the file's path
@@ -37,10 +38,10 @@ const NODE_NAME := "Sitting"
 ## The name the run takes when the sitting starts one of its own (`take_the_run()`).
 const RUN_NODE_NAME := "Run"
 
-## The run this sitting plays (`RunState`): the seed, the calendar, the nerves and the resistance's
-## progress. `main` takes it once a boot (`take_the_run()`) and hands it to every reader it builds,
-## so it outlives each reload exactly as long as the sitting does. Null until handed one or asked
-## for one; a caller that hands one in owns it.
+## The run this sitting plays (`RunState`): the seed, the calendar, the nerves and the
+## resistance's progress. `main` takes it once a boot (`take_the_run()`) and hands it to every
+## reader it builds, so it outlives each reload exactly as long as the sitting does. Null until
+## handed one or asked for one; a caller that hands one in owns it.
 var run: RunState
 
 ## Set by `main` just before a reload that carries a normal run on from its checkpoint, and read

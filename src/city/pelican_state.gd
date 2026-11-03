@@ -8,8 +8,8 @@ extends RunSubState
 ## save it in the standard save file to reset the bag to the beginning of the day on a lost day".)*
 ##
 ## **A lost day sets the bag back to the beginning of that day.** `photograph()` is taken where
-## the run's registry photographs the rest of the run and `give_back()` where it gives the rest back, so
-## the retry meets the same cyclists, and the same pelican, the day first did.
+## the run's registry photographs the rest of the run and `give_back()` where it gives the rest
+## back, so the retry meets the same cyclists, and the same pelican, the day first did.
 
 ## Cyclists drawn from the bag so far this run.
 var draws := 0

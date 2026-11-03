@@ -508,7 +508,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## city's seed and the day number and touches no gameplay stream.
 ##
 ## `heat` is `RunState.resistance.progress`, and it is threaded through rather than read off the
-## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
+## run so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
 ## `doors` is where today's region-door bodies stand — `RegionPlanner.RegionPlan.door_bodies`'

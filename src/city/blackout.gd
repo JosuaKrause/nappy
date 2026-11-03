@@ -16,9 +16,10 @@ extends Node
 ##
 ## **Stated over the flag, never over how it was set.** Whatever touch or step sets
 ## `sabotage_done`, this watches the flag and her distance and nothing else, so it cannot fire
-## before the sabotage exists — which is day 14 — and a retry of that day, which gives the flag back
-## at dawn (the run's dawn photograph), gives the city its power back with it. Once dark it stays dark for as long
-## as the flag stands: walking back towards the station does not put the lights on.
+## before the sabotage exists — which is day 14 — and a retry of that day, which gives the flag
+## back at dawn (the run's dawn photograph), gives the city its power back with it. Once dark it
+## stays dark for as long as the flag stands: walking back towards the station does not put the
+## lights on.
 ##
 ## **The escape is in the dark too**, since it is the same night: a city built for the escape
 ## (`dark_from_the_start`, its `DaySpec`'s) is dark from its first frame. `--blackout` stands in for

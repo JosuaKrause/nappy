@@ -2025,8 +2025,8 @@ it — and a save closed mid-city-section reopens in the city rather than being 
 her from the hallway. What is asked first is whether this boot is **reading that section off a
 file** rather than carrying it forward from a won day 14 handed over earlier in the same process:
 the two reach the same boot with the same non-empty `escape_section`, and the only thing that
-tells them apart is whether the value was already on the autoload before the save was read or
-only arrived from the file — see `RunFlow.Opening.ESCAPE_RESUMED`, set in `main._ready()`. A genuine resume
+tells them apart is whether the value was already on the run its sitting carried before the save
+was read or only arrived from the file — see `RunFlow.Opening.ESCAPE_RESUMED`, set in `main._ready()`. A genuine resume
 answers the
 title first, the same screen a resumed day answers first — paused rather than run behind, since
 the section it stands in front of has no city day's worth of scenery to keep moving for its own

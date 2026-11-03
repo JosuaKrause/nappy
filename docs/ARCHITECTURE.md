@@ -764,12 +764,13 @@ fires. The run is handed per call rather than held; what the save holds (the web
 objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that
 free the `main` holding a run, so the `Sitting` is its home and no static holds any of it. A test
 builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
-`ResistanceDirector.setup()`. **`RunState` is still a `Node`, and the `GameState` autoload in
-`project.godot` still registers it, only as a stand-in** for the suites not yet moved onto a run of
-their own: no class under `src/` reads it, and the test runner hands the stand-in to every `Sitting`
-that enters the tree holding no run, so a booted `main` plays the run those suites set and read
-(`tests/run_tests.gd`). The stand-in, that hand-off and the runner's reset of it go once the last
-suite hands a run of its own, and `RunState` then needs no node.
+`ResistanceDirector.setup()`. **The `GameState` autoload in `project.godot` registers a `RunState`
+only as a stand-in** for the suites not yet moved onto a run of their own: no class under `src/`
+reads it. The test runner hands the stand-in to every `Sitting` that enters the tree holding no
+run, so a `main` whose sitting enters the tree plays the run those suites set and read
+(`tests/run_tests.gd`); a suite that hands a `main` a sitting kept off the tree hands the sitting
+the stand-in itself where it reads `GameState`. `RunState` is a `Node` for the stand-in's sake
+alone: nothing in the game needs it to be one.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day

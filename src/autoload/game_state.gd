@@ -11,12 +11,12 @@ extends Node
 ## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
 ## (`run.header.day`, `run.attempt_spend.scars`), and nothing forwards to a part.
 ##
-## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the scene
-## reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a held
-## restart starts a fresh run in it (`start_run()`). `main`, the composition root, takes it off the
-## sitting once a boot and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
-## so a test hands a reader whichever run it built; the resistance is handed it with its city
-## (`City.run`) or by `ResistanceDirector.setup()`.
+## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the
+## scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a
+## held restart starts a fresh run in it (`start_run()`). `main`, the composition root, takes it
+## off the sitting once a boot and hands it, typed `RunState`, to `GameSave` and to every reader
+## it builds, so a test hands a reader whichever run it built; the resistance is handed it with
+## its city (`City.run`) or by `ResistanceDirector.setup()`.
 ##
 ## **A `Node` only while the suites not yet moved read it as an autoload**: nothing in the game
 ## needs a node, and the sitting holds a run of its own as its child so it is freed with it.
@@ -37,7 +37,7 @@ var posters: PosterState = run_parts.register(PosterState.new())
 var pelican: PelicanState = run_parts.register(PelicanState.new())
 ## The run's calendar over those parts: the day and act, a day's attempt begun and ended, the mode
 ## and the checkpoint, the day's random streams (`RunCalendar`). Whoever walks the days is handed
-## this rather than the autoload.
+## this rather than the whole run.
 var calendar := RunCalendar.new(run_parts, header, settled, resistance, facts)
 
 ## `%d:%02d.%03d` — minutes, seconds, milliseconds — the one format a run's own length is ever
