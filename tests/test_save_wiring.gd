@@ -618,7 +618,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 	_begin()
 	var parked := Parked.new(t)
-	var main := await _boot(t, _headless(), Calls.new())
+	var main := await _boot(t, _headless(), Calls.new(), parked.home)
 	await Boot.press_title(t, main, "Tap")
 	t.check(not t.get_tree().paused, "the day engaged, which is where the game writes its save")
 	t.check(parked.timeline.is_idle() and not parked.timeline.struck,
@@ -636,7 +636,7 @@ func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 func _test_a_desktop_save_is_shown_at_once_and_begun_once(t) -> void:
 	_begin()
 	var parked := Parked.new(t)
-	var main := await _boot(t, _windowed(), Calls.new())
+	var main := await _boot(t, _windowed(), Calls.new(), parked.home)
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
 	EventBus.save_written.connect(listen)
