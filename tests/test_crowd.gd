@@ -20,8 +20,15 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The rig of `test_crowd_bodies.gd`: agents placed on a straight stretch of this city's street through
+## `Crowd.add_recipe_actor()`, the entry a task scene's pinned actors take.
+const RIG := preload("res://tests/test_crowd_bodies.gd")
+## How much faster than real time a long stretch of real physics frames runs (`Engine.time_scale`,
+## restored after), so a few seconds of the crowd's own tick do not take a few seconds of the suite.
+const FAST_SCALE := 8.0
 
 var _city: City
+var _rig = RIG.new()
 
 func run(t) -> void:
 	_city = RunCity.of_the_run(CITY_SCENE)
@@ -41,7 +48,7 @@ func run(t) -> void:
 	_test_the_arterial_is_the_busiest_street(t)
 	_test_the_traffic_contract_is_fair(t)
 	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
-	_test_the_horn_watches_further_than_the_strike_does(t)
+	await _test_the_horn_watches_further_than_the_strike_does(t)
 	_test_every_car_drives_on_its_own_right(t)
 	_test_the_strike_box_never_crosses_the_kerb(t)
 	_test_the_car_picture_agrees_with_its_strike_box(t)
@@ -65,7 +72,7 @@ func run(t) -> void:
 	_test_a_precinct_stops_the_street_that_crosses_it(t)
 	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
 	_test_nothing_walks_into_a_hard_blocker(t)
-	_test_the_motion_skip_stops_an_agent_in_its_tracks(t)
+	await _test_the_motion_skip_stops_an_agent_in_its_tracks(t)
 	_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t)
 	_test_the_morning_resolve_is_not_drawn_as_a_slide(t)
 
@@ -488,46 +495,58 @@ func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
 ## the old gate restored, since it says nothing about which watch the loop actually reads — this
 ## drives the real `Crowd._physics_process`.
 func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
+	var map := _city.map
+	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
+	t.check(street.x >= 0, "this city has a straight stretch of street for a car to sound its horn on")
+	if street.x < 0:
+		return
+	# The day is started and emptied, and one fast car is put on a carriageway of the stretch: the
+	# crowd's own physics frames then run its player half (`_meet_the_player()`) against her.
 	_city.crowd.start_day(1, _rng(1))
-	# A few frames to clear the day's own opening unpack (`space_out_the_traffic`'s own doc,
-	# "the first frame is the day being built"), so the one frame under test moves the target car
-	# by a few pixels of separation correction rather than by whatever that unpacking needed.
-	for i in 3:
-		_city.crowd.step(STEP)
+	_city.crowd.clear()
+	var lane: int = CrowdLanes.road_lane(true, 1.0)
+	var agent: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.CAR, street.x, lane,
+			float(street.y + 2) * Tuning.TILE_SIZE, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
+			Tuning.CAR_SPEED.y)
 
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	rig.add_child(camera)
-	t.add_child(rig)
+	_city.add_child(rig)
 	rig.set_physics_process(false)
 	_city.crowd.use_player(rig)
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
 	# test on the wrong side of either.
 	var distance := Tuning.CAR_ZEBRA_SIGHT + (Crowd.CAR_HORN_SIGHT - Tuning.CAR_ZEBRA_SIGHT) * 0.5
-	var tested := false
-	for agent in _city.crowd.agents():
-		if agent.kind != CrowdAgent.Kind.CAR:
-			continue
-		var forward := agent.heading()
-		var at := agent.global_position + forward * distance
-		if not Tile.is_road(_city.map.tile_type_at_world(at)):
-			continue
-		agent._speed = Tuning.CAR_SPEED.y
-		agent.pedestrian_ahead = Vector2.INF
-		rig.global_position = at
-		_city.crowd._physics_process(STEP)
-		tested = true
-		t.check(agent.excitement.is_startled(),
-				("a car %.0fpx off — beyond the strike's own watch (CAR_ZEBRA_SIGHT %.0fpx) but "
-				+ "inside the horn's (CAR_HORN_SIGHT %.0fpx) — sounds its horn")
-				% [distance, Tuning.CAR_ZEBRA_SIGHT, Crowd.CAR_HORN_SIGHT])
-		t.check(agent.pedestrian_ahead == Vector2.INF,
-				"and the give-way scan still does not see her from beyond its own watch")
-		break
-	t.check(tested, "there was a car with clear road ahead to test the wider watch on")
+	rig.global_position = agent.global_position + agent.heading() * distance
+	t.check(Tile.is_road(map.tile_type_at_world(rig.global_position)),
+			"she stands on the carriageway ahead of the car")
+	agent.pedestrian_ahead = Vector2.INF
+	_city.crowd.set_focus(agent.global_position)
+	# The first tick that sounds the horn: how far off she was, and what the give-way scan had
+	# written for the car on that same tick. The physics frames the suite lets pass are not counted
+	# on, since a frame that follows a long stretch of work runs several ticks to catch up.
+	var first := {}
+	var on_horn := func(_at: Vector2) -> void:
+		if first.is_empty():
+			first["distance"] = agent.global_position.distance_to(rig.global_position)
+			first["ahead"] = agent.pedestrian_ahead
+	EventBus.car_near_miss.connect(on_horn)
+	for frame in 30:
+		await _city.get_tree().physics_frame
+		if not first.is_empty():
+			break
+	EventBus.car_near_miss.disconnect(on_horn)
+	t.check(not first.is_empty() and first["distance"] > Tuning.CAR_ZEBRA_SIGHT
+			and agent.excitement.is_startled(),
+			("a car %.0fpx off — beyond the strike's own watch (CAR_ZEBRA_SIGHT %.0fpx) but "
+			+ "inside the horn's (CAR_HORN_SIGHT %.0fpx) — sounds its horn")
+			% [distance, Tuning.CAR_ZEBRA_SIGHT, Crowd.CAR_HORN_SIGHT])
+	t.check(not first.is_empty() and first["ahead"] == Vector2.INF,
+			"and the give-way scan still does not see her from beyond its own watch")
 	_city.crowd.use_player(null)
 	rig.free()
 
@@ -595,7 +614,7 @@ func _test_the_strike_box_never_crosses_the_kerb(t) -> void:
 ## A car's picture is a standing elevation rather than a top-down one, so its own canvas has to be
 ## anchored at the point on it that is the car's actual ground contact — the drawn content's bottom
 ## edge on the strike box's own southernmost point, which is `CarLook.body_anchor()`'s one
-## rule for all five views. This pins the two cardinal cases against `Crowd._strike()`'s box, the
+## rule for all five views. This pins the two cardinal cases against `CarStrike`'s box, the
 ## shadow and the field, all of which are centred on the node and rotated onto the heading;
 ## `tests/test_car_views.gd` pins the same property for every sector, diagonals included, and pins
 ## that it does not jump at a sector boundary. Sampled the same way `Sprites.draw_standing` itself
@@ -766,18 +785,16 @@ func _test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t) -> void:
 	var across := Vector2(-forward.y, forward.x)
 	var at := car.global_position
 
-	t.check(_strike(car, at), "standing where the car is ends the day")
-	t.check(not _strike(car, at + forward * (Tuning.CAR_STRIKE_HALF_LENGTH + 4.0)),
+	var driving := car.speed()
+	t.check(CarStrike.hits(at, forward, driving, at), "standing where the car is ends the day")
+	t.check(not CarStrike.hits(at, forward, driving, at + forward * (Tuning.CAR_STRIKE_HALF_LENGTH + 4.0)),
 			"standing beyond its bumper does not")
-	t.check(not _strike(car, at + across * (Tuning.CAR_STRIKE_HALF_WIDTH + 4.0)),
+	t.check(not CarStrike.hits(at, forward, driving, at + across * (Tuning.CAR_STRIKE_HALF_WIDTH + 4.0)),
 			"and neither does standing beside it")
 
 	# A car halted at a zebra is scenery. Walking into one must never end the day, or giving
 	# way would be a trap rather than a courtesy.
-	var cruising := car._speed
-	car._speed = 0.0
-	t.check(not _strike(car, at), "a car that has stopped cannot run anybody over")
-	car._speed = cruising
+	t.check(not CarStrike.hits(at, forward, 0.0, at), "a car that has stopped cannot run anybody over")
 
 ## Finding 3: *"cars should stop at crossings when I am close."* A zebra is only the safe way
 ## over if the traffic honours it — otherwise it is paint, and the choice between crossing here
@@ -1598,14 +1615,12 @@ func _test_the_motion_skip_stops_an_agent_in_its_tracks(t) -> void:
 	var agent: CrowdAgent = _city.crowd.agents()[1]
 	var at := agent.global_position
 	_city.crowd.skip_motion = true
-	for i in int(round(2.0 / STEP)):
-		_city.crowd._physics_process(STEP)
+	await _let_the_physics_run(2.0)
 	t.check(agent.global_position == at,
 			"under --skip motion the crowd's tick steps nobody: an agent has not moved after two "
 			+ "seconds of ticks (%s)" % agent.global_position)
 	_city.crowd.skip_motion = false
-	for i in int(round(2.0 / STEP)):
-		_city.crowd._physics_process(STEP)
+	await _let_the_physics_run(2.0)
 	t.check(agent.global_position != at,
 			"with the flag off the tick steps it as it always does (%s -> %s)"
 			% [at, agent.global_position])
@@ -1692,11 +1707,18 @@ func _first_of(kind: CrowdAgent.Kind, except: CrowdAgent = null) -> CrowdAgent:
 			return agent
 	return null
 
-## `Crowd` refuses to strike twice, so a test asking several questions has to clear the flag
-## between them — the day is over after the first one in the game.
-func _strike(car: CrowdAgent, at: Vector2) -> bool:
-	_city.crowd._struck = false
-	return _city.crowd._strike(car, at)
+## Lets the crowd's own physics tick (`Crowd._physics_process()`, in the tree) run for `seconds` of
+## game time: real physics frames, under `Engine.time_scale` so there are fewer of them. The scale
+## makes each tick last `FAST_SCALE` times longer (as `test_meters.gd`'s `_simulate_fast()` does), so
+## the frames are counted in the scaled tick and one more passes once the scale is restored.
+func _let_the_physics_run(seconds: float) -> void:
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in maxi(1, int(round(seconds / frame))):
+		await _city.get_tree().physics_frame
+	Engine.time_scale = clock
+	await _city.get_tree().physics_frame
 
 func _step(agent: CrowdAgent, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):

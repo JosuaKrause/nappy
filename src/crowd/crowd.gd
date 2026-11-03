@@ -1334,15 +1334,7 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 ## is the edge she chose to step over — the same shape of contract the alley robbery has,
 ## where the alley is the warning. See `tests/test_tuning_fairness.gd`'s traffic check.
 func _strike(agent: CrowdAgent, here: Vector2) -> bool:
-	if _struck or agent.speed() < Tuning.CAR_STRIKE_MIN_SPEED:
-		return false
-	var forward := agent.heading()
-	var offset := here - agent.global_position
-	# Only from the car's centre forward: behind it the car is driving away from her.
-	var along := offset.dot(forward)
-	if along < 0.0 or along > Tuning.CAR_STRIKE_HALF_LENGTH:
-		return false
-	if absf(offset.dot(Vector2(-forward.y, forward.x))) > Tuning.CAR_STRIKE_HALF_WIDTH:
+	if _struck or not CarStrike.hits(agent.global_position, agent.heading(), agent.speed(), here):
 		return false
 	_struck = true
 	EventBus.hard_fail_triggered.emit("car_strike")

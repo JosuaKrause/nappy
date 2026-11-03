@@ -586,8 +586,7 @@ func _hold(instance: EventInstance, her: Vector2, seconds: float) -> void:
 		instance.step(STEP)
 
 func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
-	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"),
-			Tuning.RUN_TAUGHT_DAY + 1)
+	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	_hold(instance, Vector2(def.notice_within() + 60.0, 0.0), 1.0)

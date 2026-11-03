@@ -5,7 +5,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
-const STEP := 1.0 / 60.0
+const FAST_SCALE := 5.0
 ## A handful of seeds, for the one guarantee that has to hold on more than the seed the rest of
 ## this suite happens to use — `docs/EVENTS.md`'s "checked before it is accepted" — the same reason
 ## a city guarantee is measured across several seeds rather than trusted from one.
@@ -21,7 +21,7 @@ func run(t) -> void:
 	_test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t)
 	_test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t)
 	_build_city(t)
-	_test_they_all_speak_together(t)
+	await _test_they_all_speak_together(t)
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
@@ -160,9 +160,18 @@ func _build_city(t) -> void:
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
 
+## Lets `seconds` of the game's own clock pass in real physics frames, the engine sped up for the
+## stretch (each frame then carries `1 / Engine.physics_ticks_per_second * Engine.time_scale`
+## seconds) and put back after it. The frame in progress when the scale changes keeps the delta it
+## started with, so one frame passes at the normal scale after; the checks that follow read a range.
 func _advance(seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		_city.events._physics_process(STEP)
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in maxi(1, int(round(seconds / frame))):
+		await _city.get_tree().physics_frame
+	Engine.time_scale = clock
+	await _city.get_tree().physics_frame
 
 func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventScheduler.Planned:
 	for plan in _city.events.plans():
@@ -183,7 +192,7 @@ func _test_they_all_speak_together(t) -> void:
 	var a := sites[0]
 	var b := sites[1]
 
-	_advance(9.0)
+	await _advance(9.0)
 	var clock_a: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(a.foot)
 	var plan_a := _plan_for(a.id)
@@ -192,7 +201,7 @@ func _test_they_all_speak_together(t) -> void:
 		t.close_to(plan_a.live.age, clock_a,
 				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
 
-	_advance(6.0)
+	await _advance(6.0)
 	var clock_b: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(b.foot)
 	var plan_b := _plan_for(b.id)

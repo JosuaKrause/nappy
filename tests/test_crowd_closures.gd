@@ -14,8 +14,11 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The rig of `test_crowd_bodies.gd`: agents placed on the street through `Crowd.add_recipe_actor()`.
+const RIG := preload("res://tests/test_crowd_bodies.gd")
 
 var _city: City
+var _rig = RIG.new()
 
 func run(t) -> void:
 	_city = RunCity.of_the_run(CITY_SCENE)
@@ -391,7 +394,7 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 		_city.crowd.step(STEP)
 		for agent: CrowdAgent in _city.crowd.agents():
 			var id := agent.get_instance_id()
-			var heading := Vector2(agent._direction, 1.0 if agent._vertical else 0.0)
+			var heading := agent.heading()
 			# `INF` until this agent has actually been seen to turn round once: the first about-face
 			# of the run says nothing, since whatever came before it happened before the measurement
 			# started.
@@ -417,7 +420,7 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 			# with nothing here to say about it. The clock is **not** restarted for one, because what
 			# is being measured is the gap between two about-faces and a turn in between is not a
 			# reason to allow the second one sooner.
-			if before.y != heading.y or before.x == heading.x:
+			if not before.is_equal_approx(-heading):
 				continue
 			reversals += 1
 			var waited: float = since[id]
@@ -702,14 +705,20 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	# happens to visit it.
 	var door_tile := door_segment.tile_rect().get_center()
 	var vertical := not door_segment.horizontal
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._map = map
+	city.crowd.clear()
+	var walker: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER, _rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.HELD))
+	var car: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.CAR)
+	# One whose answer at a door is to turn back: the first roll of its seed gives it.
+	var turner: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER,
+			_rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.TURNS_BACK))
+	t.check(walker != null and car != null and turner != null,
+			"the crowd takes a walker, a car and a walker that turns back on some open street")
+	if walker == null or car == null or turner == null:
+		city.free()
+		return
 	walker.door_segments = {door_segment.key(): true}
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
-	car._map = map
 	car.door_segments = {door_segment.key(): true}
+	turner.door_segments = {door_segment.key(): true}
 	t.check(not walker.strategy.cannot_go_on(vertical, door_tile),
 			"a walker is not turned away from today's region door")
 	t.check(not car.strategy.cannot_go_on(vertical, door_tile),
@@ -717,16 +726,8 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	# And the carve-out is the walker's own rather than the day's: one whose answer at a door is to
 	# turn back sees the same tile as wall, which is the whole of turning back — the machinery that
 	# turns it at the last junction is the one a wall already uses.
-	var turner := CrowdAgent.new()
-	turner.kind = CrowdAgent.Kind.WALKER
-	turner._map = map
-	turner.door_segments = {door_segment.key(): true}
-	turner.strategy._door_answer = WalkerStrategy.DoorAnswer.TURNS_BACK
 	t.check(turner.strategy.cannot_go_on(vertical, door_tile),
 			"a walker that turns back at doors reads today's door as wall")
-	turner.free()
-	walker.free()
-	car.free()
 	city.free()
 
 ## A city, a day whose region wall has an open door in it, and an **empty** crowd centred on that
@@ -798,25 +799,16 @@ func _walker_approaching(scene: Dictionary, hut: WalkerDoorHold, back: float,
 	var lane := CrowdLanes.nearest_sidewalk(corridor, hut_across)
 	# Toward the mouth from inside the door's own segment, whichever end the mouth is at.
 	var direction := -1.0 if scene["at_a"] else 1.0
-	var agent := CrowdAgent.new()
-	agent.door_segments = city.crowd._door_segments
-	agent.setup(CrowdAgent.Kind.WALKER, map, city.crowd.field(), 1, 0.0)
-	agent.strategy._door_answer = answer
-	agent._vertical = vertical
-	agent._corridor = corridor
-	agent._lane = lane
-	agent._direction = direction
-	agent._lane_centre = CrowdLanes.walker_lane_centre(corridor, lane,
-			CrowdLanes.SIDEWALK_OFFSETS)
-	agent._speed = 60.0
-	agent._cruise = 60.0
-	agent._set_along(hut_along - direction * back)
-	agent._set_cross(agent._lane_centre)
-	agent._junction = -1
-	agent._scan_at = Vector2i(-9999, -9999)
-	city.add_entity(agent)
-	city.crowd._agents.append(agent)
-	return agent
+	var centre := CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
+	var along := hut_along - direction * back
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	# The entry a task scene's pinned actor takes (`Crowd.add_recipe_actor()`); the seed is one whose
+	# first roll gives the walker the answer it is to have at the door.
+	var placed := city.crowd.add_recipe_actor("walker-%d" % city.crowd.agent_count(),
+			CrowdAgent.Kind.WALKER, Vector2(centre, along) if vertical else Vector2(along, centre),
+			heading, 60.0, _rig.seed_for_door_answer(answer))
+	assert(placed["error"] == "", "the walker is placed: %s" % placed["error"])
+	return placed["actor"]
 
 ## How far past a hut a walker has got, along its own line of travel: negative while it is still
 ## coming, positive once it is through.
@@ -987,23 +979,9 @@ func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 	var corridor := CrowdLanes.corridor_at(gate_across)
 	var direction := -1.0 if scene["at_a"] else 1.0
 	var lane := CrowdLanes.road_lane(vertical, direction)
-	var car := CrowdAgent.new()
-	car.door_segments = city.crowd._door_segments
-	car.traffic = city.crowd.traffic()
-	car.setup(CrowdAgent.Kind.CAR, map, city.crowd.field(), 7, 0.0)
-	car._vertical = vertical
-	car._corridor = corridor
-	car._lane = lane
-	car._direction = direction
-	car._lane_centre = CrowdLanes.lane_centre(corridor, lane)
-	car._speed = Tuning.CAR_SPEED.x
-	car._cruise = Tuning.CAR_SPEED.x
-	car._set_along(gate_along - direction * 180.0)
-	car._set_cross(car._lane_centre)
-	car._junction = -1
-	car._scan_at = Vector2i(-9999, -9999)
-	city.add_entity(car)
-	city.crowd._agents.append(car)
+	var car: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+			gate_along - direction * 180.0, direction, vertical, CrowdLanes.SIDEWALK_OFFSETS,
+			Tuning.CAR_SPEED.x, 7)
 
 	# Watched against the moment the boom first goes up rather than against its state at the end:
 	# it comes back down behind a car that has gone through (`Crowd._stop_for_gates()` keeps it up
@@ -1069,12 +1047,12 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 	if not both_sealed or not thinned:
 		return
 
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._map = _city.map
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
-	car._map = _city.map
+	_city.crowd.clear()
+	var walker: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.WALKER)
+	var car: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.CAR)
+	t.check(walker != null and car != null, "the crowd takes a walker and a car on some open street")
+	if walker == null or car == null:
+		return
 	var vertical := not both_sealed.horizontal
 
 	for tile in _sidewalk_side_tiles(both_sealed, true) + _sidewalk_side_tiles(both_sealed, false):
@@ -1088,8 +1066,7 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 		t.check(not walker.strategy.cannot_go_on(not thinned.horizontal, tile),
 				"the thinned pair's open pavement stays open to a walker at %s" % tile)
 
-	walker.free()
-	car.free()
+	_city.crowd.clear()
 	_city.map.clear_day_soft_seals()
 
 ## The street's own cross-section, one tile per lane, at the middle of the block — the same layout
