@@ -119,7 +119,7 @@ func _ready() -> void:
 func run(t) -> void:
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
-	_test_a_held_departure_places_its_move(t)
+	await _test_a_held_departure_places_its_move(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
 	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
@@ -145,27 +145,48 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
 
-## A held event walked away by hand (`_process()`) is moved outside its own step, so its move stands
-## where it now does (`MoveProposal.place()`): the crowd's separation pass reads the move, not the
-## node, and a move left behind would have the crowd step round a dog that is no longer there.
+## A held event walked away by hand (`EventInstance.walk_on_by_hand()`, which the runtime calls on
+## each drawn frame for an event it holds) walks straight away from her at its departure's pace and
+## is moved outside its own step, so its move stands where it now does (`MoveProposal.place()`): the
+## crowd's separation pass reads the map's moves (`WorldMap.moves`), not the node, and a move left
+## behind would have the crowd step round a dog that is no longer there. The dog is a real one in a
+## city of its own run's, turned away from her by its own departure
+## (`EventInstance.leave_for_a_completed_task()`) once a real frame has told it where she is.
 func _test_a_held_departure_places_its_move(t) -> void:
-	var runtime := SceneRecipeRuntime.new()
-	t.add_child(runtime)
-	runtime.set_physics_process(false)
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("charging_dog"), Vector2(100.0, 100.0))
-	instance._be_done()
-	instance._heading = Vector2.RIGHT
-	t.check(instance.is_leaving, "the dog is leaving")
-	runtime._held.append(instance)
-	runtime._process(0.5)
-	t.check(instance.position.x > 100.0, "the held dog is walked on: %s" % instance.position)
-	t.check(instance._move.from == instance.position and instance._move.to == instance.position,
-			"its move stands where it does: at %s, from %s to %s" % [instance.position,
-			instance._move.from, instance._move.to])
-	runtime._held.clear()
-	instance.free()
-	runtime.free()
+	const CITY_SCENE := preload("res://scenes/world/city.tscn")
+	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+	var own_run := RunState.new()
+	own_run.start_run(4242)
+	var city: City = CITY_SCENE.instantiate()
+	city.run = own_run
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, 3)
+	city.start_day(state, 3, own_run.calendar.day_rng(3, "closures"))
+	var player: Stroller = STROLLER_SCENE.instantiate()
+	t.add_child(player)
+	var her := city.map.doorstep_world_position()
+	player.global_position = her
+	city.events.use_player(player)
+	var dog := city.events.spawn_extra(EventCatalogue.by_id("charging_dog"), her + Vector2(60.0, 0.0))
+	await t.get_tree().physics_frame
+	dog.leave_for_a_completed_task()
+	t.check(dog.is_leaving, "the dog is leaving")
+	dog.held_by_hand = true
+	var from := dog.position
+	dog.walk_on_by_hand(0.5)
+	var walked := dog.position - from
+	t.check(is_equal_approx(walked.length(), dog.departure.speed() * 0.5)
+			and walked.dot(from - player.global_position) > 0.0,
+			"the held dog is walked straight on away from her at its departure's pace: %s" % walked)
+	var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
+			return move.from == dog.position and move.to == dog.position)
+	t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
+	city.events.retire(dog)
+	player.free()
+	city.free()
+	own_run.free()
 
 ## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
 ## no radius to skip and for one that sets off beside her on its own clock.

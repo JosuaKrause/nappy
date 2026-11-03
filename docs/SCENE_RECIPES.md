@@ -154,12 +154,16 @@ Only the real happening installs the trucks. Their count stays outside the catal
 as it does in ordinary play.
 
 `seals: [{"segment":[5,4,0],"candidate":"cafe_pair"}]` selects an existing production
-seal picture and its exact street. Ordinary day eligibility, off-route street, home and spine
-exclusions and tree placement apply. The existing placement supplies both sides of a soft pair.
-There is no automatic seal fill or thinning of these explicitly selected pairs.
-`gates: [{"segment":[5,5,0]}]` selects an existing checkpoint from the context's eligible
-region doors, including its two gatehouses and shared traffic-operated boom. A horizontal street
-uses the standard vertical gate. `barriers: [{"segment":[3,5,0],"end":"b"}]` places the
+seal picture and its exact street. The street and the picture are held to the questions the
+day's own seal pass asks (`SealPlanner.may_seal()`: off the walk, not the home street, not the
+main road; `SealPlanner.offers()`: the picture's day, and a fallen tree only on a street with
+trees), and the seal is sited through the pass's own entry (`SealPlanner.seal_street()`), so it
+stands where a played day would stand the same picture, both sides of a soft pair included, with
+both its sidewalks shut to walkers. There is no automatic seal fill or thinning of these
+explicitly selected pairs. `gates: [{"segment":[5,5,0]}]` selects an existing checkpoint from the
+context's eligible region doors and stands it through the day's own entry
+(`RegionPlanner.stand_door()`): its two gatehouses and shared traffic-operated boom where the
+day's door stands them. A horizontal street uses the standard vertical gate. `barriers: [{"segment":[3,5,0],"end":"b"}]` places the
 existing roadblock band at that mouth of an off-route street, on an eligible later day.
 These fields place production components; they introduce no new scenery or event types.
 

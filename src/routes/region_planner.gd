@@ -610,7 +610,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		return plan
 	for segment in boundary_segments(map):
 		if tree.is_on_the_tree(segment.key()):
-			plan.doors.append(segment)
+			stand_door(map, segment, plan)
 		else:
 			plan.walls.append(segment)
 	for rect in map.alley_rects:
@@ -641,8 +641,6 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var vertical: bool = info[2]
 		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
 		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
-	for segment in plan.doors:
-		_add_door_bodies(map, segment, plan)
 	for rect in plan.alley_doors:
 		_add_alley_door_bodies(map, rect, plan)
 	return plan
@@ -707,6 +705,14 @@ static func _along_axis(horizontal: bool) -> Vector2:
 ## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
+## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its
+## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
+## each of the day's street doors through, and a scene recipe's authored checkpoint
+## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
+static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+	plan.doors.append(segment)
+	_add_door_bodies(map, segment, plan)
+
 static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
