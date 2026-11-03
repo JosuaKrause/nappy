@@ -1,11 +1,12 @@
 # The run's state is made fresh and handed in, not a global
 
-- **The run's state is still a global** (`GameState`, `src/autoload/game_state.gd`, a `RunState`
-  autoload). In the game only `main` takes it, once (`var _run: RunState = GameState`), and hands it
-  to every reader it builds (record minty-quail-22); the autoload keeps the run across the reloads that carry it on (the day-14 hand-over, a run carried to its checkpoint), and a held restart throws the run away and starts a fresh one in it. The tests lean on
-  it: about a hundred suites read or set `GameState` directly, and the test runner resets it before
-  every suite (`tests/run_tests.gd`, `GameState.start_run(RESET_SEED)`), so the runner's
-  shared-state check has to accept the run's fields that suites change.
+- **The tests still lean on a global run.** The run's state is held by the `Sitting`
+  (`src/autoload/sitting.gd`, `Sitting.run`), and `main` takes it from there (`_take_the_run()`) and
+  hands it to every reader it builds (record minty-quail-22); no class under `src/` reads the
+  `GameState` autoload. It stays only as a stand-in for the suites not yet moved, about a hundred of
+  which read or set it directly: the test runner hands it to every `Sitting` that enters the tree
+  holding no run (`tests/run_tests.gd`, `_hand_the_stand_in()`), resets it before every suite
+  (`GameState.start_run(RESET_SEED)`), and the shared-state check skips its parts.
 
 **The ask.** Told that PR #976 lists 17 of the run's fields as exempt from the runner's leak check
 because the runner puts them back before every suite, the player: "why would you put a state back
@@ -28,3 +29,12 @@ use, read by no game class; each wave of `tests-public-seams.md` moves its own s
 run state as it converts them; the stand-in, the runner's reset and any exemption of run fields go
 when the last suite stops using it. Until then the runner's deeper check (#976) skips the run's
 parts and names this item as the reason, rather than listing fields.
+
+**Where it stands:** the run is on the `Sitting` and the waves of `tests-public-seams.md` move their
+suites onto a fresh run state, each giving its suites' `GameState` lines. While the stand-in exists a
+held restart starts a fresh run in the same object (`start_run()`), not a new one, since a new object
+would split the sitting's run from the stand-in. The last wave removes the `GameState` line in
+`project.godot`, the runner's `_hand_the_stand_in()` and its reset of the stand-in (with its
+`use_trace()` call and `VisitCounter.configure(null, GameState)`), `GameState` from the shared-state
+check's autoloads and its skip; `RunState` then need not be a node, the sitting stops adding it as a
+child, and a held restart gives the sitting a new run object.
