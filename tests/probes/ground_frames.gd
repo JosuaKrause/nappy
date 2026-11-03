@@ -94,7 +94,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	get_viewport().canvas_transform = Transform2D(0, Vector2(10000, 10000))
 	for key in keys:
 		var layer := TileMapLayer.new()
-		layer.tile_set = _city._ground.tile_set
+		layer.tile_set = _city.scenery_ground.tile_set
 		layer.rendering_quadrant_size = 4 if mode == "quadrants" else 16
 		owner.add_child(layer)
 		layers.append(layer)
@@ -161,7 +161,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	return result
 
 func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Dictionary:
-	var ground := _city._ground
+	var ground := _city.scenery_ground
 	var at := _city.map.doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2

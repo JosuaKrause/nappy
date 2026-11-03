@@ -89,7 +89,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	var load_view := view.grow(LOAD_MARGIN)
 	var retained := view.grow(RETAIN_MARGIN)
 	var guard := load_view if immediate or relocated else view.grow(GUARD_MARGIN)
-	var ground := city._ground
+	var ground := city.scenery_ground
 	for key: Vector2i in ground.chunks.keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)

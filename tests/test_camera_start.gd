@@ -84,8 +84,8 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	var at_dawn := func(_day: int) -> void:
 		dawns.append(1)
 		var home_view := city._home_scenery_view()
-		for key in city._ground.keys_in(home_view):
-			t.check(city._ground.chunks.has(key),
+		for key in city.scenery_ground.keys_in(home_view):
+			t.check(city.scenery_ground.chunks.has(key),
 					"real day reset prepares the home viewport before its first frame")
 	EventBus.day_planned.connect(at_dawn)
 	EventBus.hard_fail_triggered.emit("car_strike")
