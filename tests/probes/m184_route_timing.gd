@@ -8,11 +8,10 @@ extends RefCounted
 ##
 ## **Spawns the real game once per (day, seed) rather than driving `RouteRig` inside this probe's
 ## own process.** `RouteRig`'s whole point is walking through the real `Stroller`'s real
-## collision, and a manually-stepped test scene cannot make `move_and_slide()` apply a
-## displacement without a live physics frame between two calls — see `tests/test_route_rig.gd`'s
-## own doc on why its one live leg integrates position by hand instead, which is honest for a
-## short regression check and would understate every collision this measurement is supposed to
-## be honest about. `OS.get_executable_path()` is the Godot binary already running this probe, so
+## collision through whole days, and a manually-stepped test scene cannot make `move_and_slide()`
+## apply a displacement without a live physics frame between two calls; a suite's real frames
+## (`tests/test_route_rig.gd` walks its legs on them) are honest for a short leg and too slow for a
+## day per seed. `OS.get_executable_path()` is the Godot binary already running this probe, so
 ## nothing external has to be configured to find it.
 ##
 ## Each run is headless, carries `--no-save` and `--no-title` (a title screen left up is a title

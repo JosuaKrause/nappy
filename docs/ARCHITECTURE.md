@@ -399,6 +399,9 @@ src/
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path; presses an escape brief's continue as a key would
+	route_rig_planner.gd  where a --route target is and the walk there: resolves a target word,
+	                       plans the kerb-preferring path clear of bodies and doors, names the
+	                       ground a stall says to go round; the rig and its suite ask it alike
 	building_walker.gd    --route in the escape's building: presses the building's brief and walks
 	                       her door to door to the service exit, then the city's rig takes over
 	brief_presser.gd      presses an escape section's first brief for a rig, as a key would; the
