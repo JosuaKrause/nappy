@@ -16,6 +16,9 @@ const SEED := 4242
 const WALK_DAY := 9
 const TILE := float(Tuning.TILE_SIZE)
 
+## The run the suite's real city stands in (`City.run`), made fresh by `_a_day()` and freed after.
+var _run: RunState
+
 func run(t) -> void:
 	_test_each_mover_is_stopped_by_its_own_layers(t)
 	_test_is_walkable_is_the_lattice(t)
@@ -35,6 +38,7 @@ func run(t) -> void:
 	_test_every_row_that_moves_stays_off_blocked_ground(t, city)
 	_test_every_mover_on_a_map_shares_its_one_navigator(t, city)
 	city.free()
+	_run.free()
 
 ## **One navigator per map** (`WorldMap.navigator()`): the city's, its event manager's, its crowd's and
 ## its director's are one object, and a mover built over the map with none handed to it takes that
@@ -261,11 +265,13 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 
 ## Seed 4242's day 9, its closures, seals and bodies put down.
 func _a_day(t) -> City:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	_run = RunState.new()
+	_run.start_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	_run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
@@ -429,7 +435,6 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 ## guard it sends off, enters ground its mover may not.
 func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 	var map := city.map
-	var saved_scars := GameState.attempt_spend.scars.duplicate()
 	var walked := 0
 	var steps := 0
 	var bad: Array[String] = []
@@ -482,7 +487,6 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 				and instance.global_position.distance_to(left_from) < TILE:
 			stalled.append(def.id)
 		city.events.retire(instance)
-	GameState.attempt_spend.scars.assign(saved_scars)
 	# What the remeasuring step reads: a departure that a solid holds within a tile of where it
 	# began, which the contract that nothing vanishes in her view keeps standing there.
 	print("WALKER day %d seed %d: %d rows, %d steps asked, departures held within a tile: %s"
