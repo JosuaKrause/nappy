@@ -10,8 +10,8 @@ extends RefCounted
 ## into `Input.get_vector()`, the acceleration ramp, the facing turn — one physics tick at a time,
 ## in the order a recipe's playback presses (the input pressed for tick `n` is read on tick
 ## `n + 1`). Her position is integrated by hand from the `velocity` each tick computes rather than
-## left to `move_and_slide()`, for the reason `tests/test_route_rig.gd`'s end-to-end leg gives:
-## a hand-stepped body in this suite has no synced collision shape for the slide to move.
+## left to `move_and_slide()`: a hand-stepped body in this suite has no synced collision shape for
+## the slide to move.
 ##
 ## **Equal means within `TOLERANCE`**, a hundredth of a pixel: the construction is exact on open
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of

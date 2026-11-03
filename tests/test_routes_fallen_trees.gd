@@ -90,19 +90,12 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
 ## `FALLEN_TREE` to offer, and must still shut its act's quota rather than coming up short.
 ##
 ## `RoadClosure.KINDS` keeps `ROADWORKS` and `CRASH` available from day 1, so the kind roll can
-## never run out — asked of `_pick_kind` directly as well as of whole days, because a day that
-## happens never to reach a bare street would pass the second half vacuously.
+## never run out. Asked of every closure the sweep's days put on a bare street, which is where
+## `ClosurePlanner.plan_day()` rolls the kind with the fallen tree gated out, as well as of the days
+## whose closures are all bare, because a day that happens never to reach a bare street would pass
+## the second half vacuously.
 func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("bare-street kinds")
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var kinds := RoadClosure.kinds_on(day)
-		for _try in 30:
-			var kind := ClosurePlanner._pick_kind(kinds, rng, false)
-			t.check(kind != RoadClosure.Kind.FALLEN_TREE,
-					"day %d: a bare street is never closed by a fallen tree" % day)
-			t.check(RoadClosure.KINDS.has(kind),
-					"day %d: a bare street still has something to have happened to it" % day)
+	var bare_closures := 0
 	var bare_days := 0
 	for map in _maps:
 		var lined := StreetTrees.segment_keys_with_trees(map)
@@ -110,12 +103,23 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 			var closures := _plan(map, day)
 			var any_lined := false
 			for closure in closures:
-				any_lined = any_lined or lined.has(closure.segment.key())
+				if lined.has(closure.segment.key()):
+					any_lined = true
+					continue
+				bare_closures += 1
+				t.check(closure.kind != RoadClosure.Kind.FALLEN_TREE,
+						"seed %d day %d: a bare street is never closed by a fallen tree"
+						% [map.seed_used, day])
+				t.check(RoadClosure.KINDS.has(closure.kind),
+						"seed %d day %d: a bare street still has something to have happened to it"
+						% [map.seed_used, day])
 			if any_lined:
 				continue
 			bare_days += 1
 			t.check(closures.size() == ClosurePlanner.closures_wanted(day),
 					"seed %d day %d closed %d of its %d streets with no tree-lined one among them"
 					% [map.seed_used, day, closures.size(), ClosurePlanner.closures_wanted(day)])
+	t.check(bare_closures > 0,
+			"the sweep closed bare streets for the kind roll to be asked of (%d)" % bare_closures)
 	t.check(bare_days > 0,
 			"the sweep had days whose closures were all on bare streets (%d)" % bare_days)

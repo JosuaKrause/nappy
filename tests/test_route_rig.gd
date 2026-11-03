@@ -698,8 +698,9 @@ func _test_task_target_steps_off_obstructed_ground(t) -> void:
 	var contact := (fixture["resistance"] as ResistanceDirector).contact_position()
 	var planner := _fixture_planner(fixture)
 	var contact_tile := map.world_to_tile(contact)
-	t.check(planner.resolve("task") == contact and map.is_open(contact_tile)
-			and not map.is_obstructed(contact_tile),
+	t.check(map.is_open(contact_tile) and not map.is_obstructed(contact_tile),
+			"the tile this test obstructs starts out open, or the test proves nothing")
+	t.check(planner.resolve("task") == contact,
 			"open ground is returned unchanged rather than nudged to a neighbour")
 	map.obstructed_tiles[contact_tile] = 1
 	var reachable := planner.resolve("task")
@@ -790,7 +791,13 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 			and map.is_walkable(map.world_to_tile(resolved)),
 			"'task' resolves to the pavement the power station's front door is touched from")
 	var door := director.contact_position()
-	var off := map.world_to_tile(resolved) - map.world_to_tile(door)
+	var door_tile := map.world_to_tile(door)
+	var open_straight_out := false
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		open_straight_out = open_straight_out or map.is_open(door_tile + step)
+	t.check(not map.is_walkable(door_tile) and open_straight_out,
+			"the station's door stands on its facade with open ground straight out from it")
+	var off := map.world_to_tile(resolved) - door_tile
 	t.check(absi(off.x) + absi(off.y) == 1,
 			"the door at %s is walked to from the tile straight out from it (got %s)"
 			% [map.world_to_tile(door), map.world_to_tile(resolved)])
@@ -966,8 +973,9 @@ func _test_pace_does_not_advance_the_target(t) -> void:
 func _begin_settling(t, targets: Array) -> Dictionary:
 	var settle := _settling_rig(t, targets)
 	await _frames_for(t, 0.5)
+	t.check(_count("reached 'calm'") == 1,
+			"the rig set down on calm ground reaches it (%s)" % [_route_lines()])
 	if _count("reached 'calm'") != 1:
-		t.check(false, "the rig set down on calm ground reaches it (%s)" % [_route_lines()])
 		_end_settling(settle)
 		return {}
 	return settle
@@ -1061,6 +1069,7 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 ## presses and the re-plans it writes, frame by frame.
 func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	_stroller.reset_at(_city.map.doorstep_world_position())
+	t.check(_planner().resolve("calm") != Vector2.INF, "a calm target exists for this leg")
 	_stroller.set_physics_process(false)
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["calm"])
@@ -1422,6 +1431,10 @@ func _test_a_rig_run_never_walks_under_a_boom(t, doors: Dictionary) -> void:
 	var day := _started_day(t, city, stroller, run)
 	day.spec.exits = {CityEdge.Kind.TUNNEL: to}
 	var rig := _started_rig(t, city, stroller, doors["resistance"], day, run, ["tunnel"])
+	await _frame(t)
+	await _frame(t)
+	t.check(_pressed() != Vector2.ZERO and _count("no path") == 0,
+			"the rig plans a leg through the door")
 	var held := false
 	var clock := Engine.time_scale
 	Engine.time_scale = FAST
