@@ -1028,8 +1028,8 @@ one figure a slice, a wide scene one
 `--script`: `--script` replaces the main loop, which skips the autoloads, and every test
 needs `Tuning`. The runner loads every `tests/test_*.gd`, calls its `run(t)`, and exits
 non-zero on any failure. After each suite it compares the shared state (`InputMap` and the
-actions `Input` holds pressed, the autoloads' variables, those of each part an autoload holds, and
-their signal connections, every `static var`
+actions `Input` holds pressed, the autoloads' variables, those of each part an autoload holds (except
+`GameState`'s, until the run's state is handed in), and their signal connections, every `static var`
 under `src/`) with what it was before, and a suite that left any of it changed fails, naming the
 field with its value before and after (`tests/shared_state.gd`).
 
