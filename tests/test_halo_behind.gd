@@ -9,6 +9,8 @@ extends RefCounted
 ## a screenshot's question; what is held here is the order, which nothing else would notice
 ## changing.
 
+const EastWestStreet = preload("res://tests/east_west_street.gd")
+
 func run(t) -> void:
 	_test_the_rim_is_painted_before_the_scene(t)
 	_test_the_rim_is_given_back_when_the_slices_go(t)
@@ -17,23 +19,31 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for vertical: bool in [false, true]:
+		# Down the screen on an east-west street, across it on open ground, as the street it
+		# stands on decides.
+		var ground: WorldMap = EastWestStreet.new() if vertical else WorldMap.open_ground()
 		var instance := EventInstance.new()
 		instance.atlas = atlas
-		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
-		instance._spread_vertical = vertical
+		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
+				Vector2.RIGHT, ground)
 		t.add_child(instance)
 		instance.look.attach_nodes()
 		instance.step(instance.def.telegraph_time + 0.01)
-		t.check(not (instance.look as SpreadLook)._sceneries.is_empty(),
-				"the crash has its scenery (vertical %s)" % vertical)
-		instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-		t.check(instance._rim.entity_halo() != null, "a pick builds the crash's rim (vertical %s)" % vertical)
-		var scenery := (instance.look as SpreadLook)._sceneries[0]
-		t.check(instance._rim.entity_halo().get_parent() == scenery.get_parent(),
+		t.check(instance.runs_vertically() == vertical,
+				"the crash runs %s the screen on its street" % ("down" if vertical else "across"))
+		var first := _first_slice(instance)
+		var sceneries := _sceneries_on(first)
+		t.check(not sceneries.is_empty(), "the crash has its scenery (vertical %s)" % vertical)
+		(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA,
+				Palette.HALO_STRONG)
+		var rim := instance.rim()
+		t.check(rim != null, "a pick builds the crash's rim (vertical %s)" % vertical)
+		var scenery: EventScenery = sceneries[0]
+		t.check(rim.get_parent() == scenery.get_parent(),
 				"the rim and the first slice's scenery stand on the same slice")
-		t.check(instance._rim.entity_halo().show_behind_parent and scenery.show_behind_parent,
+		t.check(rim.show_behind_parent and scenery.show_behind_parent,
 				"both are drawn behind the slice, so tree order is their painter order")
-		t.check(instance._rim.entity_halo().get_index() < scenery.get_index(),
+		t.check(rim.get_index() < scenery.get_index(),
 				"the rim is painted before the cars, so it is behind them (vertical %s)" % vertical)
 		t.remove_child(instance)
 		instance.free()
@@ -51,7 +61,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	t.add_child(instance)
 	instance.look.attach_nodes()
 	instance.step(instance.def.telegraph_time + 0.01)
-	instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,
 			"a pick builds the crash's rim behind its first slice")
@@ -61,3 +71,21 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	t.remove_child(instance)
 	instance.free()
 	atlas.release(&"events")
+
+## The first slice `instance`'s picture is drawn in, found where the look stood it: beside the
+## instance in its parent (`EventInstance.add_beside_it()`), the one whose index is 0.
+static func _first_slice(instance: EventInstance) -> SpreadLook.Slice:
+	for child in instance.get_parent().get_children():
+		if child is SpreadLook.Slice and child.instance == instance and child.index == 0:
+			return child
+	return null
+
+## The visible scene's layers standing on `slice` (`EventScenery`), in tree order.
+static func _sceneries_on(slice: SpreadLook.Slice) -> Array[EventScenery]:
+	var found: Array[EventScenery] = []
+	if slice == null:
+		return found
+	for child in slice.get_children():
+		if child is EventScenery:
+			found.append(child)
+	return found
