@@ -299,7 +299,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	(_one(first, "PauseScreen") as PauseScreen).restart_requested.emit()
 	t.check(reloads.size() == 1, "the held restart reloads")
 	var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME))
-	t.check(parked != null, "the held restart parks the sitting in the home")
+	t.check(parked != null and _sittings_in(home) == [parked],
+			"the held restart parks the one sitting in the home")
 	lines.append_array(log.lines)
 	_shut(t, first)
 
@@ -319,8 +320,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	await UI.frames(t)
 	t.check(reloads.size() == 2 and GameState.facts.escape_section == DaySpec.Section.BUILDING,
 			"continuing past day 14's summary reloads into the escape's building")
-	t.check(parked != null and home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == parked,
-			"and the second boot took the parked sitting and parks the same one again")
+	t.check(parked != null and _sittings_in(home) == [parked],
+			"and the second boot took the parked sitting and parks the same one again, and no other")
 	_shut(t, second)
 	var escape := await _boot_in(t, home, save, reloads)
 	t.check(_one(escape, "InteriorScene") != null, "and that boot builds the building")
@@ -389,6 +390,15 @@ func _one(root: Node, type_name: String) -> Node:
 				or script.resource_path.get_file().get_basename().to_pascal_case() == type_name):
 			found.append(node)
 	return found[0] if found.size() == 1 else null
+
+## The `Sitting` nodes parked directly under `home`, whatever the tree named them: a second one is
+## renamed on entering, so reading `Sitting.NODE_NAME` alone would find the first and miss it.
+func _sittings_in(home: Node) -> Array[Node]:
+	var sittings: Array[Node] = []
+	for child in home.get_children():
+		if child is Sitting:
+			sittings.append(child)
+	return sittings
 
 # ------------------------------------------------------------------- the rigs ---
 
