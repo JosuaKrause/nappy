@@ -157,13 +157,13 @@ func _test_water_ownership(t) -> void:
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
 					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	var surfaces: Array[SceneryWater] = []
-	for chunk: TileMapLayer in city._ground.chunks.values():
+	for chunk: TileMapLayer in city.scenery_ground.chunks.values():
 		for child in chunk.get_children():
 			if child is SceneryWater:
 				surfaces.append(child)
 	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
 	var water := surfaces[0]
-	t.check(not city._ground.tile_set.has_source(GroundTiles.WATER),
+	t.check(not city.scenery_ground.tile_set.has_source(GroundTiles.WATER),
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}
@@ -171,7 +171,7 @@ func _test_water_ownership(t) -> void:
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
-	for key: Vector2i in city._ground.chunks:
+	for key: Vector2i in city.scenery_ground.chunks:
 		var start := key * SceneryGround.CHUNK_TILES
 		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
@@ -183,7 +183,7 @@ func _test_water_ownership(t) -> void:
 		for tile in surface.cells:
 			actual[tile] = true
 			count += 1
-			t.check(city._ground.get_cell_source_id(tile) == -1,
+			t.check(city.scenery_ground.get_cell_source_id(tile) == -1,
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")
@@ -201,7 +201,7 @@ func _test_water_ownership(t) -> void:
 	t.check(water._ripples != first_material and water._ripples.shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
 	var other := SceneryWater.new()
-	city._ground.add_child(other)
+	city.scenery_ground.add_child(other)
 	other.configure(cells.slice(0, 1))
 	other._process(0.5)
 	t.check(other._ripples != water._ripples
@@ -225,5 +225,5 @@ func _test_water_ownership(t) -> void:
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
 					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	for tile: Vector2i in expected:
-		t.check(city._ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
+		t.check(city.scenery_ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
 	city.free()
