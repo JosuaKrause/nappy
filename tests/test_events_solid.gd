@@ -253,7 +253,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 
 			var boundary := {}
@@ -364,7 +364,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 
 			var boundary := {}

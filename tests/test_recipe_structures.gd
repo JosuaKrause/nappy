@@ -31,7 +31,7 @@ func run(t) -> void:
 	var selected := Vector3i(-1, -1, -1)
 	var day_spec := DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS)
 	for key: Vector3i in StreetTrees.segment_keys_with_trees(city.map):
-		if SealPlanner.may_seal(city.map, day_spec, city.route_tree(), StreetNetwork.by_key(key)):
+		if SealPlanner.may_seal(city.map, day_spec, city.route_tree(), city.map.network.by_key(key)):
 			selected = key
 			break
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
@@ -112,7 +112,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRunti
 		if candidate.id == "cafe_pair":
 			cafe = candidate
 	var street: StreetNetwork.Segment = null
-	for segment in StreetNetwork.segments():
+	for segment in city.map.network.segments():
 		if SealPlanner.may_seal(city.map, spec, city.route_tree(), segment) \
 				and RegionPlanner.region_of_segment(city.map, segment) >= 0 \
 				and not RegionPlanner.boundary_segments(city.map).has(segment):

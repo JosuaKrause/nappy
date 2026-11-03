@@ -530,7 +530,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 		events_rng.seed = hash("%d:events:%d" % [seed_value, day])
 		city.events.start_day(DaySpec.for_day(day), events_rng, [], city.map.doorstep_world_position())
 
-		var home_border := StreetNetwork.around_blocks(
+		var home_border := city.map.network.around_blocks(
 				Rect2i(city.map.home_block, Vector2i.ONE))
 		var home_border_keys := {}
 		for segment in home_border:
@@ -555,7 +555,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 			if at == Vector2.INF:
 				continue
 			checked += 1
-			var segment := StreetNetwork.segment_containing(city.map.world_to_tile(at))
+			var segment := city.map.network.segment_containing(city.map.world_to_tile(at))
 			var bordering := segment != null and home_border_keys.has(segment.key())
 			t.check(not bordering,
 					("seed %d day %d draw %d: the door task never sits on a segment bordering " +
@@ -1110,7 +1110,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 			t.check(i == trucks.size() - 1, "only the rear truck leaves anything")
 			t.check(stop.distance_to(her) >= Tuning.OUT_OF_SIGHT,
 					"and it stops out of her sight")
-			t.check(StreetNetwork.segment_containing(map.world_to_tile(stop)) != null,
+			t.check(map.network.segment_containing(map.world_to_tile(stop)) != null,
 					"on a street, not a junction")
 	t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
 	# **Where the front truck is created and how long after the badge it can reach her, on the

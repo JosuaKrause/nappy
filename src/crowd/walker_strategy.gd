@@ -400,7 +400,7 @@ func _consider_the_hut_ahead() -> void:
 func _refuse_the_door(hold: WalkerDoorHold) -> void:
 	_refused_hut = hold
 	_refused_door_key = NO_DOOR
-	var segment := StreetNetwork.segment_containing(_mover._map.world_to_tile(hold.position))
+	var segment := _mover._map.network.segment_containing(_mover._map.world_to_tile(hold.position))
 	if segment:
 		_refused_door_key = segment.key()
 	# The lookahead is cached per tile and was worked out before this walker decided anything.

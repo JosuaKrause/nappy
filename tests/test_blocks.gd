@@ -264,7 +264,7 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 				t.check(map.has_street(key),
 						"seed %d: a run covers %s, which is not a street this city has"
 						% [map.seed_used, key])
-				var segment := StreetNetwork.by_key(key)
+				var segment := map.network.by_key(key)
 				t.check(segment != null and segment.horizontal == run.horizontal,
 						"seed %d: a run's streets all run the same way" % map.seed_used)
 				if i > 0:
@@ -302,7 +302,7 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 	var ordinary_total := 0
 	for map in _maps:
 		var ordinary := 0
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if map.has_street(segment.key()) \
 					and StreetTrees._street_kind_of(map, segment) == GameEnums.StreetKind.ORDINARY:
 				ordinary += 1

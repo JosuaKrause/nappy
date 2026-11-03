@@ -149,7 +149,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 			var tile := map.world_to_tile(plan.position)
 			var away := corridor.depth(tile)
 			if plan.role == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
-				var segment := StreetNetwork.segment_containing(tile)
+				var segment := map.network.segment_containing(tile)
 				if segment:
 					gaps_walled["%d:%s" % [day, segment.key()]] = true
 			if plan.role == GameEnums.BlockerRole.WALL:
@@ -611,7 +611,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	if free.is_empty():
 		return false
 	var arms: Array = []
-	for segment in StreetNetwork.at_junction(junction):
+	for segment in map.network.at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []
@@ -699,7 +699,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.def.paces:
 				counted.append(plan)
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			var rect := segment.tile_rect()
 			if corridor.depth(rect.position) != 0:
 				continue
@@ -785,7 +785,7 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		for plan in counted:
 			if not plan.def.paces:
 				continue
-			var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+			var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 			if segment and corridor.depth(segment.tile_rect().position) == 0:
 				streets[segment.key()] = segment
 		for key: Vector3i in streets:

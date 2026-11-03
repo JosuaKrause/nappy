@@ -430,20 +430,20 @@ func _routes_lost(map: CityMap, kerbs: Array[Array], body: GroundShape) -> Vecto
 	var open := map.blocked_segments()
 	var before: Array[int] = []
 	for area in areas:
-		before.append(StreetNetwork.route_count(home, area.access, open, 2))
+		before.append(map.network.route_count(home, area.access, open, 2))
 	var lost := Vector2i.ZERO
 	for kerb: Array in kerbs:
 		var park: Vector2 = kerb[0]
 		var along: Vector2 = kerb[1]
 		var blocked := _tiles_touched(body, park, along)
-		var segment := StreetNetwork.segment_containing(map.world_to_tile(park))
+		var segment := map.network.segment_containing(map.world_to_tile(park))
 		if segment == null or _passes(map, park, along, body, blocked):
 			continue
 		lost.x += 1
 		var closed := open.duplicate()
 		closed[segment.key()] = true
 		for i in areas.size():
-			if StreetNetwork.route_count(home, areas[i].access, closed, 2) < before[i]:
+			if map.network.route_count(home, areas[i].access, closed, 2) < before[i]:
 				lost.y += 1
 	return lost
 

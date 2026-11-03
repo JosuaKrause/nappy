@@ -9,6 +9,13 @@ extends RefCounted
 ##
 ## Nothing here knows what is closed or what is calm. The lattice is fixed for the run; what
 ## today has done to it arrives as a set of segment keys.
+##
+## **An instance is one city's lattice, and each `CityMap` holds its own** (`CityMap.network`), so
+## a planner is handed the streets with the map it is handed. The lattice is a function of
+## `Tuning.CITY_BLOCKS` alone, a constant, so every network has the same streets in the same order
+## and a segment key means the same street on all of them; a `Segment` object belongs to the
+## network that built it, so a caller compares streets by `key()` or takes them from one network.
+## Nothing writes a network after `_init()` builds it.
 
 ## One street, from one junction to the next: the frontage of the blocks either side of it.
 ##
@@ -66,27 +73,46 @@ static func in_bounds(junction: Vector2i) -> bool:
 	var count := junction_count()
 	return junction.x >= 0 and junction.y >= 0 and junction.x < count.x and junction.y < count.y
 
-## Every street in the city. Built once — the lattice never changes.
-static func segments() -> Array[Segment]:
-	if _segments.is_empty():
-		var count := junction_count()
-		for y in count.y:
-			for x in count.x:
-				var junction := Vector2i(x, y)
-				if x < count.x - 1:
-					_add(Segment.new(junction, true))
-				if y < count.y - 1:
-					_add(Segment.new(junction, false))
+## Every street in the lattice, built here once and never written after: the streets, the same
+## streets by key, and the junction adjacency the traversals below walk.
+var _segments: Array[Segment] = []
+var _by_key := {}
+## Junction adjacency, as node -> [[neighbour node, segment key], ...]. The per-day work is all in
+## the capacities, which is why this is built with the lattice rather than on every count.
+var _adjacency: Array = []
+
+func _init() -> void:
+	var count := junction_count()
+	for y in count.y:
+		for x in count.x:
+			var junction := Vector2i(x, y)
+			if x < count.x - 1:
+				_add(Segment.new(junction, true))
+			if y < count.y - 1:
+				_add(Segment.new(junction, false))
+	_adjacency.resize(node_total())
+	for i in node_total():
+		_adjacency[i] = []
+	for segment in _segments:
+		var u := node_of(segment.a)
+		var v := node_of(segment.b)
+		(_adjacency[u] as Array).append([v, segment.key()])
+		(_adjacency[v] as Array).append([u, segment.key()])
+
+func _add(segment: Segment) -> void:
+	_segments.append(segment)
+	_by_key[segment.key()] = segment
+
+## Every street in the city, in a fixed order. The lattice's own list: read it, never write it.
+func segments() -> Array[Segment]:
 	return _segments
 
 ## The segment with this key, or null.
-static func by_key(key: Vector3i) -> Segment:
-	segments()
+func by_key(key: Vector3i) -> Segment:
 	return _by_key.get(key)
 
 ## The four streets that meet at a junction — three at an edge, two at a corner.
-static func at_junction(junction: Vector2i) -> Array[Segment]:
-	segments()
+func at_junction(junction: Vector2i) -> Array[Segment]:
 	var found: Array[Segment] = []
 	for candidate in [
 			Vector3i(junction.x, junction.y, 0), Vector3i(junction.x - 1, junction.y, 0),
@@ -101,7 +127,7 @@ static func at_junction(junction: Vector2i) -> Array[Segment]:
 ## `side` is an `int` and not a `Side`: an enum declared in one script and named from another
 ## does not compare equal to itself as a parameter type ("argument should be Side but is
 ## StreetNetwork.Side"), so a cross-script enum parameter has to be widened by hand.
-static func beside_block(block: Vector2i, side: int) -> Segment:
+func beside_block(block: Vector2i, side: int) -> Segment:
 	match side:
 		Side.NORTH:
 			return by_key(Vector3i(block.x, block.y, 0))
@@ -119,7 +145,7 @@ static func beside_block(block: Vector2i, side: int) -> Segment:
 ## not there to be one of them — which is the whole reason this exists: "the ways into this calm
 ## area" stopped being derivable from a block coordinate the moment a calm area could be more
 ## than a block.
-static func around_blocks(blocks: Rect2i) -> Array[Segment]:
+func around_blocks(blocks: Rect2i) -> Array[Segment]:
 	var found: Array[Segment] = []
 	for x in range(blocks.position.x, blocks.end.x):
 		_append_if_real(found, by_key(Vector3i(x, blocks.position.y, 0)))
@@ -135,7 +161,7 @@ static func _append_if_real(found: Array[Segment], segment: Segment) -> void:
 
 ## The street a tile is on, or null when the tile is inside a junction or inside a block.
 ## A junction belongs to no street on purpose: it is where the choice is made.
-static func segment_containing(tile: Vector2i) -> Segment:
+func segment_containing(tile: Vector2i) -> Segment:
 	var period := CityMap.period()
 	var across_x := CityMap.corridor_offset(tile.x) >= 0
 	var across_y := CityMap.corridor_offset(tile.y) >= 0
@@ -143,13 +169,6 @@ static func segment_containing(tile: Vector2i) -> Segment:
 		return null   # a junction (both) or a block interior (neither)
 	return by_key(Vector3i(floori(float(tile.x) / period), floori(float(tile.y) / period),
 			1 if across_x else 0))
-
-static var _segments: Array[Segment] = []
-static var _by_key := {}
-
-static func _add(segment: Segment) -> void:
-	_segments.append(segment)
-	_by_key[segment.key()] = segment
 
 # -------------------------------------------------------------------- graph ---
 
@@ -163,8 +182,8 @@ static func node_total() -> int:
 
 ## Junctions within reach of `sources`, as node -> distance in streets. `closed` is a set of
 ## segment keys, which is what a day does to the lattice.
-static func junction_distances(sources: Array[Vector2i], closed: Dictionary) -> Dictionary:
-	var links := _links()
+func junction_distances(sources: Array[Vector2i], closed: Dictionary) -> Dictionary:
+	var links := _adjacency
 	var distances := {}
 	var queue: Array[int] = []
 	for junction in sources:
@@ -199,7 +218,7 @@ static func junction_distances(sources: Array[Vector2i], closed: Dictionary) -> 
 ## area is reached by arriving at *either end* of a street it opens onto, so a courtyard
 ## with a single archway can still have two routes to it. The exemption is the same at both
 ## ends and for the same reason: a door is not a route.
-static func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
+func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
 		cap: int = 2) -> int:
 	if not from or access.is_empty():
 		return 0
@@ -212,8 +231,8 @@ static func route_count(from: Segment, access: Array[Segment], closed: Dictionar
 	# graph: a flow that used both directions of one street cancels to a flow that uses
 	# neither, so the value counts streets and not lanes.
 	var capacity := {}
-	var links: Array = _links().duplicate()
-	for segment in segments():
+	var links: Array = _adjacency.duplicate()
+	for segment in _segments:
 		if closed.has(segment.key()):
 			continue
 		var u := node_of(segment.a)
@@ -277,22 +296,6 @@ static func _augment(capacity: Dictionary, links: Array, total: int, source: int
 ## The key on a link that stands for no street at all: the two ways out of the doorstep,
 ## and the last step onto calm ground. Neither can be closed, so neither is charged for.
 const _NO_STREET := Vector3i(-1, -1, -1)
-
-## Junction adjacency, as node -> [[neighbour node, segment key], ...]. Built once; the
-## per-day work is all in the capacities, which is why this is worth caching.
-static var _adjacency: Array = []
-
-static func _links() -> Array:
-	if _adjacency.is_empty():
-		_adjacency.resize(node_total())
-		for i in node_total():
-			_adjacency[i] = []
-		for segment in segments():
-			var u := node_of(segment.a)
-			var v := node_of(segment.b)
-			(_adjacency[u] as Array).append([v, segment.key()])
-			(_adjacency[v] as Array).append([u, segment.key()])
-	return _adjacency
 
 ## Links with no street behind them, for the source's two ways out of the doorstep.
 static func _plain_links(nodes: Array[int]) -> Array:

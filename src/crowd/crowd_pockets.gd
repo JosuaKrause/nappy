@@ -180,7 +180,7 @@ func _shut_the_held_segments(map: CityMap, crossable_segments: Dictionary, groun
 	for key: Vector3i in map.held_segments:
 		if crossable_segments.has(key):
 			continue
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if segment == null:
 			continue
 		var rect := segment.tile_rect()

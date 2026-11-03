@@ -264,7 +264,7 @@ static func target_candidates(step: Step, map: CityMap,
 		if not region_plan:
 			return found
 		var home_border := {}
-		for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+		for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 			home_border[segment.key()] = true
 		for segment in region_plan.doors:
 			if home_border.has(segment.key()):

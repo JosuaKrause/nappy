@@ -195,11 +195,11 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 				sealed_at[map.world_to_tile(placement.position)] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
-		var hers := StreetNetwork.segment_containing(
+		var hers := map.network.segment_containing(
 				FinalePlanner.service_exit_tile(map))
 		var open_and_unsealed := 0
 		var closed := 0
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
@@ -1007,10 +1007,10 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
 				GameState.calendar.day_rng(GameState.header.day, "finale"), _city_spec())
 		var bands := _escape_roadblocks(placements)
-		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := StreetNetwork.segment_containing(map.world_to_tile(band_plan.position))
+			var street := map.network.segment_containing(map.world_to_tile(band_plan.position))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1609,7 +1609,7 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
 		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := city.map.network.segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):

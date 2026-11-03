@@ -382,7 +382,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 		map.hold_segment(segment.key())
 	for segment in region_plan.doors:
 		map.hold_segment(segment.key())
-	for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 
 	var boundary := {}
@@ -607,7 +607,7 @@ func _allowed_mask(map: CityMap, route: Array, area_rect: Rect2i,
 	mask.fill(0)
 	for cell: Vector2i in route:
 		var origin: Vector2i = cell * ReachabilityGrid.CELL
-		var segment := StreetNetwork.segment_containing(origin)
+		var segment := map.network.segment_containing(origin)
 		if segment:
 			_add_street(mask, map, segment, with_carriageway)
 			continue
@@ -1028,7 +1028,7 @@ func _rows_covering(owners: Array, frontier: Array[Vector2i], width: int) -> Arr
 func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segment:
 	var counts := {}
 	for tile in frontier:
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		if segment:
 			counts[segment.key()] = int(counts.get(segment.key(), 0)) + 1
 	var best := Vector3i.ZERO
@@ -1037,7 +1037,7 @@ func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segme
 		if int(counts[key]) > most:
 			most = int(counts[key])
 			best = key
-	return StreetNetwork.by_key(best) if most > 0 else null
+	return map.network.by_key(best) if most > 0 else null
 
 func _stretch_of(map: CityMap, frontier: Array[Vector2i]) -> String:
 	var segment := _segment_of(map, frontier)
@@ -1090,7 +1090,7 @@ func _mid_block_crossings_of(map: CityMap, route: Array) -> Array:
 		var after: Vector2i = route[i + 1]
 		if not _is_a_mid_block_road_cell(map, middle):
 			continue
-		var segment := StreetNetwork.segment_containing(middle * ReachabilityGrid.CELL)
+		var segment := map.network.segment_containing(middle * ReachabilityGrid.CELL)
 		if not segment:
 			continue
 		var one := _pavement_band(before * ReachabilityGrid.CELL, segment)
@@ -1119,7 +1119,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 	for cell: Vector2i in route:
 		if not _is_a_mid_block_road_cell(map, cell):
 			continue
-		var segment := StreetNetwork.segment_containing(cell * ReachabilityGrid.CELL)
+		var segment := map.network.segment_containing(cell * ReachabilityGrid.CELL)
 		if segment:
 			found["%s %s" % [segment.key(), GameEnums.StreetKind.keys()[
 					map.street_kind_at(not segment.horizontal, cell * ReachabilityGrid.CELL)]]] = true
@@ -1131,7 +1131,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 
 func _is_a_mid_block_road_cell(map: CityMap, cell: Vector2i) -> bool:
 	var origin: Vector2i = cell * ReachabilityGrid.CELL
-	var segment := StreetNetwork.segment_containing(origin)
+	var segment := map.network.segment_containing(origin)
 	return segment != null and _is_a_carriageway_tile(map, origin, segment.horizontal)
 
 # ---------------------------------------------------------------------- the report ---

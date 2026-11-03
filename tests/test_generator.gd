@@ -384,13 +384,13 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 	var built := 0
 	for key: Vector3i in map.absent_segments:
-		if not CityMap.blocks_tile_rect(footprint).encloses(StreetNetwork.by_key(key).tile_rect()):
+		if not CityMap.blocks_tile_rect(footprint).encloses(map.network.by_key(key).tile_rect()):
 			continue
 		built += 1
 		t.check(map.is_hard_blocker(key),
 				"seed %d: the street %s the complex %s took is built over"
 				% [seed_value, key, anchor])
-		for tile in map.rect_tiles(StreetNetwork.by_key(key).tile_rect()):
+		for tile in map.rect_tiles(map.network.by_key(key).tile_rect()):
 			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
 					or layout.passage.has_point(tile),
 					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
@@ -538,7 +538,7 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 		total += map.dead_ends.size()
 
 		for key: Vector3i in map.dead_ends:
-			var segment := StreetNetwork.by_key(key)
+			var segment := map.network.by_key(key)
 			t.check(map.absent_segments.has(key),
 					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
 			t.check(key != home.key(),
@@ -631,10 +631,10 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 			# One street gone, and it is the one between them — derived here as the street both
 			# blocks' own rings have in common, rather than restated from the generator's rule.
 			var ring := {}
-			for segment in StreetNetwork.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
 				ring[segment.key()] = true
 			var between := Vector3i.ZERO
-			for segment in StreetNetwork.around_blocks(Rect2i(pair.end - Vector2i.ONE,
+			for segment in map.network.around_blocks(Rect2i(pair.end - Vector2i.ONE,
 					Vector2i.ONE)):
 				if ring.has(segment.key()):
 					between = segment.key()
@@ -648,7 +648,7 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 
 			# And nothing else round the pair was taken *by the landmark*. A dead end may still sit
 			# on one of them, which is legitimate city and is why the exception is named.
-			for segment in StreetNetwork.around_blocks(pair):
+			for segment in map.network.around_blocks(pair):
 				t.check(map.has_street(segment.key()) or map.dead_ends.has(segment.key()),
 						"seed %d: %s round the landmark %s is still a street"
 						% [_seed(i), segment.key(), pair])

@@ -165,7 +165,7 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 					continue
 				checked += 1
 				var tile := map.world_to_tile(body.position)
-				var containing := StreetNetwork.segment_containing(tile)
+				var containing := map.network.segment_containing(tile)
 				t.check(containing != null and containing.key() == segment.key(),
 						"seed %d day %d: door body %s at %s stands on its own segment %s (got %s)"
 						% [map.seed_used, day, body.def.id, body.position, segment.key(),

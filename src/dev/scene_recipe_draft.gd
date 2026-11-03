@@ -157,7 +157,7 @@ static func _add_the_ground_of(map: CityMap, tile: Vector2i, ground: Dictionary,
 	if on_x and on_y:
 		_add_walkable(map, _junction_box(CityMap.junction_at(tile)), ground)
 		return
-	var segment := StreetNetwork.segment_containing(tile)
+	var segment := map.network.segment_containing(tile)
 	if segment and map.has_street(segment.key()):
 		_add_walkable(map, segment.tile_rect(), ground)
 		_add_walkable(map, _junction_box(segment.a), ground)

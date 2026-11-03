@@ -289,7 +289,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		map.hold_segment(segment.key())
 	for segment: StreetNetwork.Segment in region_plan.doors:
 		map.hold_segment(segment.key())
-	for segment: StreetNetwork.Segment in StreetNetwork.around_blocks(
+	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 
@@ -399,7 +399,7 @@ func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, be
 func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 		position: Vector2) -> bool:
 	var tile := map.world_to_tile(position)
-	var segment := StreetNetwork.segment_containing(tile)
+	var segment := map.network.segment_containing(tile)
 	if not segment or corridor.depth(segment.tile_rect().position) != 0:
 		return false
 	for band: Rect2i in EventScheduler._sidewalk_bands(segment.tile_rect(), segment.horizontal):
