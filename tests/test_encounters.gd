@@ -43,7 +43,7 @@ func run(t) -> void:
 	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
-	await _test_the_manager_watches_only_while_she_is_playing(t)
+	await _test_the_manager_tells_the_encounter_under_its_day(t)
 	await _test_the_manager_reads_the_controls_scheme(t)
 
 	EventBus.encounter_seen.disconnect(on_seen)
@@ -629,8 +629,10 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	city.free()
 
 ## The wiring: a real day's manager, with her on the street beside a yeller, tells the yeller seen
-## under the day it was started for — and tells nothing while she is stood aside for the title.
-func _test_the_manager_watches_only_while_she_is_playing(t) -> void:
+## under the day it was started for, and tells nothing while she is stood aside for the title. The
+## check is on that outcome only: removing the `player` group return inside
+## `_watch_the_encounters()` leaves it passing, so it does not name that guard.
+func _test_the_manager_tells_the_encounter_under_its_day(t) -> void:
 	_clear()
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)

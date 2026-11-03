@@ -63,6 +63,16 @@ func _free_manager(manager: EventManager) -> void:
 	manager.free()
 	run.free()
 
+## Frees a rig whatever state its checks left it in: the manager first, so that no tick is left to
+## act on a mother who is still mid-conversation (or a hold a failed check never let start), then
+## the mother and her. A check that failed then reports as a FAIL, rather than the engine aborting
+## inside a `free()` before any line prints.
+func _free_the_cast(manager: EventManager, mother, stroller) -> void:
+	_free_manager(manager)
+	for node: Variant in [mother, stroller]:
+		if is_instance_valid(node):
+			node.free()
+
 ## A bare `Stroller`, in the tree so `_ready()` has run, its `@onready` camera lookup resolves and
 ## her own physics runs (the lock is run down on her tick).
 func _chat_stroller(t) -> Stroller:
@@ -112,9 +122,7 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	t.check(not stroller.is_detained(), "and releases once detain_seconds has run")
 	t.check(stroller.velocity.length() > 10.0,
 			"and the same held key moves her again the instant it does")
-	mother.free()
-	stroller.free()
-	_free_manager(manager)
+	_free_the_cast(manager, mother, stroller)
 
 func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
@@ -225,9 +233,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 			"just outside the capture, no conversation starts")
 	t.check(not mother.is_chatting() and not mother.has_chatted(),
 			"and the instance is untouched by it")
-	mother.free()
-	stroller.free()
-	_free_manager(manager)
+	_free_the_cast(manager, mother, stroller)
 
 func _test_a_conversation_happens_once_per_instance(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
@@ -254,10 +260,9 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 
 	stroller.global_position = mother.global_position
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers")
-	mother.free()
-	stroller.free()
-	_free_manager(manager)
+	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers (the once-only rule: it is "
+			+ "spent and leaving, which stops it as much as the has_chatted() gate does)")
+	_free_the_cast(manager, mother, stroller)
 
 ## **No second conversation across streaming**: a conversation ends with her leaving
 ## (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is spent

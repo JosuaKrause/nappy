@@ -71,7 +71,7 @@ func run(t) -> void:
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
 	await _test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
-	_test_walking_under_the_boom_sets_a_guard_on_her(t)
+	await _test_walking_under_the_boom_sets_a_guard_on_her(t)
 	_test_the_guard_who_warned_is_the_guard_who_comes(t)
 	_test_the_guard_leaves_room_to_answer(t)
 	_test_a_walk_under_the_boom_is_seen(t)
@@ -970,7 +970,6 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 
 	# Every tick of the hold, ending on the one that lets her out.
 	var seen_visible_at_the_entry := false
-	var seen_hidden_after := false
 	var ticks_to_go := PhysicsTicks.ticks_for(EventCatalogue.CHECKPOINT_DETAIN_SECONDS) + 10
 	while hut.is_chatting() and ticks_to_go > 0:
 		ticks_to_go -= 1
@@ -1497,12 +1496,6 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	t.check(not gate.is_chatting() and not far_hut.is_chatting(),
 			"and only the nearest of the door's three bodies starts one")
 	t.check(not stroller.visible, "she goes inside for it")
-	# And no second body picks the hold up on the next frame, which is a different rule from the
-	# tie above and the one that was actually charging her twice for one crossing.
-	manager.checkpoints.check_detentions()
-	t.check(not gate.is_chatting() and not far_hut.is_chatting(),
-			"and nothing else takes her in on top of it the frame after")
-
 	# **The camera jump.** `top_level` hands the camera its own transform and Godot keeps the
 	# node's *local* position when it does — `Vector2.ZERO`, a whole city away — so the ease has to
 	# put the camera where it was drawing from in the same breath, or every frame before the first
@@ -1518,6 +1511,13 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 	# **The hut vanishing.** Only the guard goes in with her.
 	t.check(not EventFootprints.hidden_by_its_hold(hut), "the hut is still drawn through the hold")
 	t.check(hut.is_its_guard_inside(), "and its guard is not")
+
+	# And no second body picks the hold up on the next real tick, which is a different rule from the
+	# tie above and the one that was actually charging her twice for one crossing. After the camera
+	# checks, which read the tick the hold began on.
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(not gate.is_chatting() and not far_hut.is_chatting(),
+			"and nothing else takes her in on top of it the tick after")
 
 	await _advance_hold(t, Stroller.CAMERA_EASE_SECONDS)
 	var onto := camera.global_position.distance_to(hut.global_position)
@@ -2083,8 +2083,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 				% guard.global_position.distance_to(far_hut.global_position))
 		t.check((guard.global_position - far_hut.global_position).dot(axis) > 0.0,
 				"on the side of the line she crossed to")
-		guard.player_at = lane + axis * 20.0
-		guard.step(STEP)
+		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(not guard.is_telegraphing() and not guard.is_waiting(), "and charging at once")
 		t.check(not far_hut.is_finished and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
