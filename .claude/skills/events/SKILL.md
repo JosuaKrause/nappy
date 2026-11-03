@@ -157,7 +157,7 @@ inherits this, not just the telegraph.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.
-`EventScheduler._keeps_its_field_clear` names both. The reasoning is `docs/EVENTS.md`, "The contract
+`EventScheduler.Planned.keeps_its_field_clear()` names both. The reasoning is `docs/EVENTS.md`, "The contract
 is per event, and the player experiences the sum".
 
 ## A lethal radius and a solid body are the same mechanism

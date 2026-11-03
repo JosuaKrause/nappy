@@ -849,7 +849,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var everything: Array[EventScheduler.Planned] = rows.duplicate()
 			everything.append_array(standing)
 			for row: EventScheduler.Planned in rows:
-				if not row.is_placed() or not EventScheduler._counts_against_the_line(row):
+				if not row.is_placed() or not row.counts_against_the_line():
 					continue
 				checked += 1
 				t.check(EventScheduler._leaves_the_route_junctions_open(row, map, corridor, ground,
