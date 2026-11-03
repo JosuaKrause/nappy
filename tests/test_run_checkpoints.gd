@@ -421,11 +421,17 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 ## section's own words, and the last one is the bad ending, with no continue, rather than the
 ## section again — shown after the outcome screen, as a lost day's is.
 func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
-	GameState.start_run(_SEED)
-	GameState.calendar.choose_mode(true)
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.header.nerves = 2
+	# Never in the tree, so it takes no sitting of its own: it is handed one, which holds the run
+	# the test plays, a fresh one of the sitting's own, freed with it.
+	var sitting := Sitting.new()
+	var run := sitting.take_the_run()
+	run.start_run(_SEED)
+	run.calendar.choose_mode(true)
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.header.nerves = 2
 	var main: Node2D = MAIN_SCRIPT.new()
+	main.add_child(sitting)
+	main.use_sitting(sitting)
 	# Never configured, so it refuses every write as a headless run's does; a child of `main`, freed with it.
 	var save := GameSave.new("user://test_run_checkpoints_scratch.json")
 	main.add_child(save)
@@ -433,7 +439,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	main._summary = SUMMARY_SCENE.instantiate()
 	t.add_child(main._summary)
 	main._hud = HUD_SCENE.instantiate()
-	main._hud.use_run(main._run)
+	main._hud.use_run(run)
 	t.add_child(main._hud)
 	var day := DayController.new()
 	t.add_child(day)
@@ -444,7 +450,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.header.nerves == 1 and main._summary.is_showing()
+	t.check(run.header.nerves == 1 and main._summary.is_showing()
 			and main._flow.mode == RunFlow.Mode.SECTION_LOST,
 			"a lost section costs a hard run a nerve, and comes up on the day's outcome screen")
 	var body: Label = main._summary.get_node("Root/Center/Lines/Body")
@@ -455,10 +461,10 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.start(180.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	main._on_day_finished(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.header.nerves == 0 and main._flow.mode == RunFlow.Mode.RUN_OVER,
+	t.check(run.header.nerves == 0 and main._flow.mode == RunFlow.Mode.RUN_OVER,
 			"the last nerve does not start it again")
 	main._on_summary_continued(main._flow.mode)
-	t.check(GameState.header.ending == GameEnums.Ending.BAD and main._flow.mode == RunFlow.Mode.ENDING,
+	t.check(run.header.ending == GameEnums.Ending.BAD and main._flow.mode == RunFlow.Mode.ENDING,
 			"it is the bad ending")
 	var heading: Label = main._summary.get_node("Root/Center/Lines/Heading")
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
@@ -469,8 +475,6 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	day.free()
 	main.free()
 	t.get_tree().paused = false
-	GameState.header.ending = GameEnums.Ending.NONE
-	GameState.facts.escape_section = DaySpec.Section.NONE
 
 ## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
@@ -776,37 +780,41 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 ## the counter the mode only for the new game. The rig is the bare gate `main` below,
 ## with the real title scene in place of a bare `TitleScreen`, so the box is there to read.
 func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
-	var main := _bare_gate_main(t)
+	var run := RunState.new()
+	var main := _bare_gate_main(t, run)
 	var modes := []
 	var listen := func(hard: bool, day: int) -> void: modes.append([hard, day])
 	EventBus.run_mode_chosen.connect(listen)
 
-	GameState.start_run(_SEED)
-	GameState.calendar.hard_mode = true
+	run.start_run(_SEED)
+	run.calendar.hard_mode = true
 	main._resume = {"day_under_way": false}
 	main._title.open(false, false)
 	main._on_title_start(ControlsMode.Mode.TAP)
-	t.check(GameState.calendar.hard_mode and modes.is_empty(),
+	t.check(run.calendar.hard_mode and modes.is_empty(),
 			"a resumed run keeps the mode its save carries, and reports none")
 	main._summary.dismiss()
 
-	GameState.start_run(_SEED)
+	run.start_run(_SEED)
 	main._resume = {}
 	main._title.open(false, true)
 	main._title._toggle_hard_mode()
 	main._on_title_start(ControlsMode.Mode.TAP)
-	t.check(GameState.calendar.hard_mode and modes == [[true, 1]],
+	t.check(run.calendar.hard_mode and modes == [[true, 1]],
 			"a new game takes the box's answer and reports it with the day behind the title (%s)"
 					% [modes])
 
 	EventBus.run_mode_chosen.disconnect(listen)
 	_free_gate_main(t, main)
-	GameState.calendar.hard_mode = false
+	run.free()
 
-func _bare_gate_main(t) -> Node2D:
+## A `main` off the tree with the title, the summary and her, playing `run` where one is handed
+## (the caller frees it) and a fresh run of its sitting's own where none is.
+func _bare_gate_main(t, run: RunState = null) -> Node2D:
 	var main: Node2D = MAIN_SCRIPT.new()
 	# Never in the tree, so it takes no sitting of its own: it is handed one, freed with it.
 	var sitting := Sitting.new()
+	sitting.run = run
 	main.add_child(sitting)
 	main.use_sitting(sitting)
 	# Never configured, so it refuses every write as a headless run's does; a child of `main`, freed with it.
