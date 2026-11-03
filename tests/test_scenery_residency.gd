@@ -94,7 +94,7 @@ func _test_city(t, seed_value: int) -> void:
 	_check_roof_ownership(t, city)
 	for cycle in 3:
 		city.scenery.update(far, true)
-		await _run_the_city_clock(city, Building.VENT_FRAME_INTERVAL * 1.25)
+		await _run_the_city_clock(t, city, Building.VENT_FRAME_INTERVAL * 1.25)
 		city.scenery.update(target, true)
 		_check_roof_ownership(t, city)
 	t.check(building.day == 12 and building.condition == Building.Condition.BOARDED \
@@ -111,7 +111,7 @@ func _test_city(t, seed_value: int) -> void:
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"dawn and relocation do not replace persistent building collision")
 	# Clock belongs to the city, so a newly entered shoreline resumes its neighbors' phase.
-	await _run_the_city_clock(city, 3.75)
+	await _run_the_city_clock(t, city, 3.75)
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
 	city.scenery.update(shore, true)
 	var water_count := 0
@@ -144,7 +144,7 @@ func _test_roof_phase(t, city: City) -> void:
 				t.check(not is_instance_valid(rotor), "eviction frees the actual moving rotor owner")
 			for object in old_objects:
 				t.check(not is_instance_valid(object), "eviction frees the actual fan housing owner")
-			await _run_the_city_clock(city, Building.VENT_FRAME_INTERVAL * 1.25)
+			await _run_the_city_clock(t, city, Building.VENT_FRAME_INTERVAL * 1.25)
 			city.scenery.update(view, true)
 			t.check(not building._rotor_layers.is_empty(), "returning fan owner reconstructs actual rotors")
 			var expected_phase := int(city.scenery_ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
@@ -184,8 +184,8 @@ func _collision_shape(building: Building) -> Shape2D:
 
 ## Lets real process frames pass until the city's ground clock has run `seconds` more, under a high
 ## `Engine.time_scale` so few frames do it. The residency's own per-frame maintenance is paused for
-## the stretch, so the view the caller chose is the view it finds again.
-func _run_the_city_clock(city: City, seconds: float) -> void:
+## the stretch, so the view the caller chose is the view it finds again; a clock that stops short fails.
+func _run_the_city_clock(t, city: City, seconds: float) -> void:
 	var ground := city.scenery_ground
 	var until := ground.elapsed + seconds
 	var clock := Engine.time_scale
@@ -197,6 +197,9 @@ func _run_the_city_clock(city: City, seconds: float) -> void:
 		frames += 1
 	Engine.time_scale = clock
 	city.scenery.set_process(true)
+	t.check(ground.elapsed >= until,
+			"the city's clock ran its %.2f s within 600 frames (it reached %.2f of %.2f)"
+			% [seconds, ground.elapsed, until])
 
 ## Lets `count` process frames pass. The caller sits at the start of a frame, before that frame's
 ## `_process`, whenever it has just awaited one, so each await here is exactly one `_process` of
