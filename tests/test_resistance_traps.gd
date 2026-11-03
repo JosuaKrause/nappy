@@ -16,8 +16,8 @@ func run(t) -> void:
 	await _test_the_handover_sets_a_robber_on_her_from_off_screen(t)
 	await _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t)
 	_test_a_trap_rechecks_the_camera_when_its_warning_expires(t)
-	_test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
-	_test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
+	await _test_the_robber_after_her_is_announced_before_he_can_catch_her(t)
+	await _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t)
 	_test_the_robber_after_her_is_never_the_schedulers(t)
 	_test_the_van_guard_after_her_is_never_the_schedulers(t)
 	_free_city()
@@ -651,17 +651,19 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
 ## not touch; a sent one has no closing-in for it to bound.
 func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t) -> void:
-	_assert_a_trap_row_is_announced_before_it_can_catch_her(t, "robber_giving_chase")
+	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "robber_giving_chase")
 
 ## The same contract for the van's own guard: walks the guard's own row and asserts the same
 ## relationships rather than assuming the robber's numbers carry over unchecked.
 func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> void:
-	_assert_a_trap_row_is_announced_before_it_can_catch_her(t, "van_guard_giving_chase")
+	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "van_guard_giving_chase")
 
 ## Shared between the man shouting's row and the van's: each of this suite's two callers passes
 ## its own catalogue id, since the contract this checks is the same row-independent relationship
 ## for both.
 func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
+	# No city of an earlier test stands in the tree while the walks tick the engine faster.
+	_free_city()
 	var def := EventCatalogue.by_id(id)
 	t.check(def.warns_before_it_exists() and def.warned_for() <= Tuning.WARNING_ALONE_MAX
 			and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
@@ -681,23 +683,23 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 	for start in starts:
 		t.check(SpawnSiting.is_out_of_sight(view_on_her, box, her, start),
 				"from %v: wholly off screen the frame he exists" % start)
-		var stood := _walk_the_trap(def, start, 0.0)
+		var stood: Dictionary = await _walk_the_trap(t, def, start, 0.0)
 		t.check(stood["caught_at"] < INF,
 				"from %v: standing still is caught (%.2fs)" % [start, stood["caught_at"]])
-		var into := _walk_the_trap(def, start, Tuning.WALK_SPEED)
+		var into: Dictionary = await _walk_the_trap(t, def, start, Tuning.WALK_SPEED)
 		t.check(into["caught_at"] < INF, "from %v: walking into him is caught" % start)
 		# The badge went up `warned_for()` before he exists, so a turn `PURSUIT_REACTION` after the
 		# badge is that much less after he appears.
-		var turned := _walk_the_trap(def, start, Tuning.WALK_SPEED,
+		var turned: Dictionary = await _walk_the_trap(t, def, start, Tuning.WALK_SPEED,
 				maxf(0.0, PursuitSpec.PURSUIT_REACTION - def.warned_for()))
 		t.check(turned["caught_at"] == INF and turned["gave_up"],
 				"from %v: walking into him and turning to run %.1fs after the badge gets away"
 				% [start, PursuitSpec.PURSUIT_REACTION])
-		var away := _walk_the_trap(def, start, -Tuning.WALK_SPEED)
+		var away: Dictionary = await _walk_the_trap(t, def, start, -Tuning.WALK_SPEED)
 		t.check(away["caught_at"] < INF,
 				"from %v (%.0fpx): walking straight away is caught (%.2fs)"
 				% [start, start.length(), away["caught_at"]])
-		var ran := _walk_the_trap(def, start, -Tuning.RUN_SPEED)
+		var ran: Dictionary = await _walk_the_trap(t, def, start, -Tuning.RUN_SPEED)
 		t.check(ran["caught_at"] == INF and ran["gave_up"] and not ran["cried"],
 				"from %v: running shakes him off before either catch or crying" % start)
 		if is_zero_approx(start.x):
@@ -714,18 +716,29 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 ## gets up to speed at `Tuning.ACCELERATION`. `turn_to_run_after`, if given, reverses her into a run
 ## away from him that many seconds after he appears. The real Baby charges this run, awake at zero
 ## excitement with no world noise or recovery; crying ends the attempt rather than counting as escape.
-func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_after := INF) -> Dictionary:
+##
+## **Her meter runs on the engine's own ticks**: the baby rides a real `Stroller` in the tree and her
+## `_physics_process()` takes each tick. The walk is driven tick by tick on the engine's
+## `physics_frame`, which is sent before the nodes take that tick: her state for a tick is set, the
+## next `physics_frame` comes once the baby has stepped on it, and the robber then takes the same
+## tick's step, however many ticks a frame runs. The ticks are `STEP` of game time each
+## (`_walk_ticks()`).
+func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
+		turn_to_run_after := INF) -> Dictionary:
 	var bearing := start.normalized()
 	var robber := EventInstance.new()
 	robber.setup(def, start)
 	robber.came_under_a_warning = true
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.resume(EventSpawner.age_when_warned(def), 0.0)
-	var stroller := Stroller.new()
+	var stroller := _rig_player(t, Vector2.ZERO)
 	var baby := Baby.new()
 	baby.name = "Baby"
 	stroller.add_child(baby)
-	baby.set_stroller(stroller)
+	var held := _walk_ticks()
+	var tree := t.get_tree() as SceneTree
+	# The tick the walk starts on: the baby takes its step after this, with what is set below.
+	await tree.physics_frame
 	var result := {"caught_at": INF, "at_the_lunge": INF, "lunged_at": INF, "gave_up": false,
 			"ended": false, "first_seen": INF, "cried": false, "excitement": 0.0}
 	var her := Vector2.ZERO
@@ -740,7 +753,7 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 		her += bearing * velocity * STEP
 		stroller.position = her
 		stroller.velocity = bearing * velocity
-		baby.step(STEP)
+		await tree.physics_frame
 		robber.player_at = her
 		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
 		var box := robber.drawn_box()
@@ -766,9 +779,29 @@ func _walk_the_trap(def: EventDef, start: Vector2, speed: float, turn_to_run_aft
 			result["ended"] = true
 			break
 	result["excitement"] = baby.excitement
+	_give_the_ticks_back(held)
 	stroller.free()
 	robber.free()
 	return result
+
+## How many times faster than the wall clock a trap walk runs its ticks (`_walk_ticks()`), at most:
+## a slow frame runs no more than `Engine.max_physics_steps_per_frame` of them, which only slows the
+## walk, never changes it.
+const WALK_SPEED_UP := 60.0
+
+## Sets the engine's ticks to `STEP` of game time each, `WALK_SPEED_UP` times as many a second:
+## `Engine.time_scale` times the tick's length is the delta every `_physics_process()` is handed.
+## Answers what it changed, for `_give_the_ticks_back()`.
+func _walk_ticks() -> Array:
+	var held := [Engine.physics_ticks_per_second, Engine.time_scale]
+	Engine.physics_ticks_per_second = int(round(WALK_SPEED_UP / STEP))
+	Engine.time_scale = WALK_SPEED_UP
+	return held
+
+## Puts back the ticks `_walk_ticks()` changed.
+func _give_the_ticks_back(held: Array) -> void:
+	Engine.physics_ticks_per_second = held[0]
+	Engine.time_scale = held[1]
 
 ## Spawned only by the director: no day of the run, at any heat, offers the row to the scheduler's
 ## roll, its stream or its budget — `EventCatalogue.available_on()` is the pool all three draw from —

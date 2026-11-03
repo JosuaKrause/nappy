@@ -12,9 +12,13 @@ extends RefCounted
 ## **The rig.** Per seed, a real city through the real day order (`CityState.begin_day()`,
 ## `City.start_day()`, `EventManager.start_day()`, then the director), her standing on the mark with
 ## the camera's unrotated view round her answering what is on screen, and the mark read, so the task
-## is placed as a played day places it. The arrow is then settled from where she stands
-## (`_settle_the_arrow()`), and again from each of `WALK_STOPS` points on her straight line toward
-## the task's roadblock, to see whether the arrow stays on it as she walks there.
+## is placed as a played day places it. Each city stands in a run of its own
+## (`RunCity.with_own_run()`), and she is handed to the director and the events as `main` hands her.
+## The arrow is then run to rest from where she stands the way the game runs it
+## (`ResistanceDirector.retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
+## under way), and again from each of `WALK_STOPS` points on her straight line toward the task's
+## roadblock, to see whether the arrow stays on it as she walks there; what it points at is its
+## `arrow_key()`.
 ##
 ## **Before and after in one file.** `FallbackDirector` refuses every placement under the day's
 ## rules, which is the spawn on the circle's edge every other task near its mark takes — the
@@ -26,6 +30,8 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024, 555, 8080, 99, 
 		271828, 314159]
 ## Points on her straight line from the mark to the task's roadblock, as fractions of the way.
 const WALK_STOPS: Array[float] = [0.25, 0.5, 0.75]
+## The seed of each city's own run: the one the test runner starts the live run on.
+const RUN_SEED := 2
 
 ## A director whose placement under the day's rules always comes back empty: the edge spawn.
 class FallbackDirector extends ResistanceDirector:
@@ -33,20 +39,9 @@ class FallbackDirector extends ResistanceDirector:
 		return null
 
 func run(t) -> void:
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_scars := GameState.attempt_spend.scars.duplicate()
-	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var saved_state := GameState.attempt_spend.city_state
+	t.gives_back_observers()
 	for fallback in [true, false]:
 		_measure(t, fallback)
-	GameState.resistance.completed_steps.assign(saved_completed)
-	GameState.resistance.failed_steps.assign(saved_failed)
-	GameState.resistance.progress = saved_progress
-	GameState.attempt_spend.scars.assign(saved_scars)
-	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
-	GameState.attempt_spend.city_state = saved_state
 
 func _measure(t, fallback: bool) -> void:
 	var label := "before (edge spawn)" if fallback else "after (placed under the day's rules)"
@@ -59,10 +54,9 @@ func _measure(t, fallback: bool) -> void:
 	var live_counts: Array[int] = []
 	var reading: Array[float] = []
 	for seed_value in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
-		GameState.attempt_spend.scars = []
 		var director: ResistanceDirector = FallbackDirector.new() if fallback \
 				else ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
@@ -78,10 +72,10 @@ func _measure(t, fallback: bool) -> void:
 		director.set_sight(city.events.sees)
 		var plans_before := city.events.plans().size()
 		var started := Time.get_ticks_usec()
-		director._on_contact_completed(mark.index)
+		director.contact().complete_now()
 		reading.append((Time.get_ticks_usec() - started) / 1000.0)
 		var step := director.current_step()
-		var own: EventInstance = director._rider
+		var own: EventInstance = director.rider()
 		if step == null or own == null:
 			print("DAY13_ROADBLOCK seed %d: no task" % seed_value)
 			_tear_down(player, director, city)
@@ -93,11 +87,11 @@ func _measure(t, fallback: bool) -> void:
 			placed_by_rules += 1
 		var distance := own.body_position().distance_to(mark_at)
 		distances.append(distance)
-		director._settle_the_arrow()
-		var found := director._arrow_candidates(step)
+		_settle_the_arrow(director)
+		var found := director.arrow_targets()
 		live_counts.append(found.size())
 		var own_key := own.get_instance_id()
-		var first_own := ResistanceDirector._same_key(director._arrow_key, own_key)
+		var first_own := _same_key(director.arrow_key(), own_key)
 		if first_own:
 			own_from_mark += 1
 		var stayed := 0
@@ -107,9 +101,9 @@ func _measure(t, fallback: bool) -> void:
 			if not city.map.is_walkable(tile):
 				continue
 			player.global_position = at
-			director._settle_the_arrow()
+			_settle_the_arrow(director)
 			stops += 1
-			if ResistanceDirector._same_key(director._arrow_key, own_key):
+			if _same_key(director.arrow_key(), own_key):
 				own_on_the_way += 1
 				stayed += 1
 		print("DAY13_ROADBLOCK %s seed %d: %s, %.0fpx from the mark, %d live roadblocks, arrow on it from the mark: %s, on the way %d" % [
@@ -129,14 +123,10 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.resistance.completed_steps.assign(done)
-	GameState.resistance.failed_steps.assign([])
-	GameState.resistance.progress = 0
-	# A read mark's alley is remembered and never chosen again, so each day built on one seed starts
-	# from none remembered and reads the same mark.
-	GameState.facts.completed_resistance_alley_tiles.assign([])
+	var run: RunState = city.run
+	run.resistance.completed_steps.assign(done)
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
@@ -151,9 +141,23 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	player.add_child(camera)
 	t.add_child(player)
 	city.events.use_player(player)
+	director.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
 	return player
+
+## Runs the arrow to rest the way the game does: it chooses, then the physics ticks `main` runs sweep
+## its walking fields a slice at a time, choosing again as each finishes, until none is under way.
+static func _settle_the_arrow(director: ResistanceDirector) -> void:
+	director.retarget_the_arrow()
+	var ticks := 0
+	while director.arrow_sweeping() and ticks < 1200:
+		director.tick(1.0 / Engine.physics_ticks_per_second)
+		ticks += 1
+
+## Whether two of the arrow's keys name the same target, the type asked first.
+static func _same_key(a: Variant, b: Variant) -> bool:
+	return typeof(a) == typeof(b) and a == b
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

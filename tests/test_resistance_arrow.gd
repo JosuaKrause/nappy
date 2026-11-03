@@ -288,7 +288,8 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 	_free_city()
 
 ## The cell centres of the day's longest route, from the doorstep end out: the walk she takes, as
-## `tests/test_route_bag.gd` walks it.
+## `tests/test_route_bag.gd` walks it. A route names `ReachabilityGrid` cells, two tiles square, so
+## a cell's centre is half a tile past its first tile's centre on both axes.
 func _longest_route_points() -> Array[Vector2]:
 	var longest: Array = []
 	for branch in _city.route_tree().branches:
@@ -297,7 +298,8 @@ func _longest_route_points() -> Array[Vector2]:
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, longest[i]))
+		points.append(_city.map.tile_to_world(longest[i] * ReachabilityGrid.CELL)
+				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5))
 	return points
 
 ## How many seconds the last `_walk_until_the_route_mast()` walked before the mast was put down.
@@ -386,8 +388,8 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
 func _a_mast_can_be_sited_along_her_route() -> bool:
 	var siting: EventScheduler.WalkSiting = _city.events.ahead._siting
-	var def: EventDef = _city.events.ahead._director.route_row(EventCatalogue.mast().id)
-	var band: Vector2 = _city.events.ahead._director._siting_band()
+	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
+	var band: Vector2 = _city.events.ahead.director()._siting_band()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	var path := _longest_route_points()
@@ -573,8 +575,8 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping `ResistanceDirector.swing_base()`
-## round the swing's base, the extent of the shadow the frame casts there
-## (`Prop._playground_frame_shape()`): from eight bearings, standing with her edge a pixel inside the ellipse's
+## round the swing's base, the extent of the shadow the frame casts there (the ground shape a swing
+## frame `Prop` takes as it enters the tree, `Prop.shape`): from eight bearings, standing with her edge a pixel inside the ellipse's
 ## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
 ## Before, a 36px circle round the swing's tile centre counted.
 func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
@@ -584,7 +586,11 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 	t.add_child(contact)
 	contact.set_physics_process(false)
 	var semi := ResistanceDirector.swing_base()
-	var shadow := Prop._playground_frame_shape()
+	var frame := Prop.new()
+	frame.kind = Prop.Kind.PLAYGROUND_FRAME
+	t.add_child(frame)
+	var shadow := frame.shape
+	frame.free()
 	t.check(is_equal_approx(semi.x, shadow.reach()) and is_equal_approx(semi.y, shadow.across()),
 			"the ellipse spans the shadow the frame casts at its base (%s)" % semi)
 	var touching := 0

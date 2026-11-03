@@ -10,7 +10,8 @@ extends RefCounted
 ##
 ## With `trap_arrival_fingerprint.gd` (the pursuers the director sends) and
 ## `placement_fingerprint.gd` (the day's own plan) this covers everything placement does. Per seed
-## and day 1 to 14, a real city through the real day order, and:
+## and day 1 to 14, a real city in a run of its own (`RunCity.with_own_run()`) through the real day
+## order, and:
 ##
 ## - **the director's contact placements**: the day's mark and its guard, the task's contact and
 ##   its guard (a door, a swing, a mast, a roadblock, the neighbor), each placed again from a
@@ -35,30 +36,23 @@ const DAYS: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 ## How many spread tiles the sweeps stand her on, per seed and day.
 const SPOTS := 4
 const STEP := 1.0 / 60.0
+## The seed of each city's own run: the one the test runner starts the live run on.
+const RUN_SEED := 2
 
 var _lines: Array[String] = []
 
 func run(t) -> void:
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-	var saved_state := GameState.attempt_spend.city_state
+	# The director tells the observers of the tasks it offers and ends (`EventBus`), as in a run, so
+	# the runner gives them back what they held (`VisitCounter`'s open tasks among them).
+	t.gives_back_observers()
 	var printed := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in DAYS:
 			printed += _a_day(t, city, seed_value, day)
 		city.free()
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.progress = saved_progress
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
-	GameState.attempt_spend.scars = saved_scars
-	GameState.header.day = saved_day
-	GameState.attempt_spend.city_state = saved_state
 	print("DP_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were placements to print (%d)" % printed)
 
@@ -68,13 +62,14 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	for step in ResistanceSteps.all():
 		if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 			done.append(step.index)
-	GameState.resistance.completed_steps = done
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-	GameState.facts.completed_resistance_alley_tiles = []
-	GameState.attempt_spend.scars.clear()
-	GameState.header.day = day
+	var run: RunState = city.run
+	run.resistance.completed_steps = done
+	run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+	run.facts.completed_resistance_alley_tiles = []
+	run.attempt_spend.scars.clear()
+	run.header.day = day
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -118,7 +113,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	if offered and offered.is_pickup and mark != Vector2.INF:
 		printed += _the_guard_spots(city, director, label, mark, true, doorstep)
 		printed += _the_relocation(city, director, player, label, mark)
-		director._on_contact_completed(offered.index)
+		director.contact().complete_now()
 	var task := director.current_step()
 	if task == null or task.is_pickup:
 		_print("%s no task" % label)
@@ -127,14 +122,14 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 		return printed + 1
 	var contact := director.contact_position()
 	_print("%s task %s contact %s guard %s mast %s arrow %s" % [label, task.index, _point(contact),
-			_guard_at(director._task_guard), director._mast_id,
+			_guard_at(_task_guard(city)), director.mast_in_play(),
 			_point(director.red_arrow_target())])
 	printed += 1
 	# The task placed again from a fresh stream, as the day's order draws it.
 	var again := _rng(seed_value, day, "placed-again")
 	var placed := director.place_contact(task, again, mark)
 	_print("%s task %s placed again %s rng %d fell back %s" % [label, task.index,
-			_point(placed), again.state, director._fell_back])
+			_point(placed), again.state, director.fell_back()])
 	printed += 1
 	if contact != Vector2.INF:
 		printed += _the_guard_spots(city, director, label, contact, false, doorstep)
@@ -367,6 +362,13 @@ func _point(at: Vector2) -> String:
 
 func _print(line: String) -> void:
 	print("DP " + line)
+
+## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
+static func _task_guard(city: City) -> EventInstance:
+	for instance in city.events.instances():
+		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
+			return instance
+	return null
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

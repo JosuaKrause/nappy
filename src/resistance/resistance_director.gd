@@ -3286,8 +3286,8 @@ const ARROW_HOLD_TILES := 4
 ## How many tiles of a sweep (`WalkField.advance()`) one tick runs. A whole sweep of a city's
 ## open ground at once is a long tick, so it is spread: at this size a slice is a small part of a
 ## frame, and one field is done in about twenty ticks, two thirds of a second, while the arrow reads
-## the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the slice, the tick and
-## the whole sweep.
+## the field it replaces. `tests/probes/plush_moose_arrow_cost.gd` measures the choice, the tick a
+## slice runs in and the whole sweep.
 const ARROW_SWEEP_TILES_PER_TICK := 1000
 
 ## What the red arrow points at right now, for a task several places answer: the instance id of a
@@ -3563,16 +3563,6 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 			finished = true
 	if finished:
 		retarget_the_arrow()
-
-## Runs every sweep to its end and chooses, all at once: what a rig with no frames to spread it over
-## asks for (`tests/test_resistance_*.gd`, the cost probe). Bounded, though a sweep finishing starts at
-## most the one field of whatever it chose.
-func _settle_the_arrow() -> void:
-	retarget_the_arrow()
-	for i in 16:
-		if not _arrow_nearest_next and not _arrow_own_next:
-			return
-		_sweep_the_arrow_fields(1 << 30)
 
 ## Points the arrow at `key`, and a mast's contact with it.
 func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) -> void:
