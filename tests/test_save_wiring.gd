@@ -166,6 +166,7 @@ func _one(root: Node, type_name: String) -> Node:
 ## in and taken from, put in the tree, with real frames let pass until its boot has finished
 ## (`Boot.until_booted()`): the run, the day, her and the title are built.
 func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true) -> Node2D:
+	_observers.append(Boot.hold_observers())
 	var main: Node2D = MAIN_SCENE.instantiate()
 	if hand_the_save:
 		main.use_save(_save)
@@ -178,9 +179,14 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	await Boot.until_booted(t, main)
 	return main
 
+## What the observers held before each boot still standing, given back as it is shut, so none
+## keeps a run a test frees (`tests/booted_main.gd`).
+var _observers: Array[Dictionary] = []
+
 func _shut(t, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
+	Boot.give_back_observers(_observers.pop_back())
 
 ## Whether the summary's note line is up, and what it says.
 func _note_of(main: Node2D) -> Label:
