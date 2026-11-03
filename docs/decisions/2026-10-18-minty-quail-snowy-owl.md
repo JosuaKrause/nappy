@@ -18,10 +18,12 @@ and `test_observers.gd` still want.
   path of its own, reads the crowd through `excitement.clock()` over real ticks pinned one per frame,
   draws events on real frames and reads the flags off `RunConfig.parse()`. No `src/` change for it.
 - The first review also found the crowd's "the clock goes back to what was running" check dropped;
-  it is back, read on real frames against a node of the test's own that runs after the crowd.
-- Private-read lines: burst_capture 25 to 1, frame_record 25 to 0 (hand-called frames 7 to 0),
+  it is back, matching each tick of a node of the test's own that runs after the crowd to the
+  stored frame it fell in and requiring that frame's time in physics outside any timed system to
+  cover it, so no slow frame fails it (a first version compared wall-clock times and did).
+- Private-read lines: burst_capture 25 to 3 (the one swap of `Telemetry._bursts`, read and put back), frame_record 25 to 0 (hand-called frames 7 to 0),
   telemetry 2 to 1; `GameState` lines 7 to 0, and `test_telemetry.gd`'s five cities built on the
-  stand-in without naming it each get a run of their own. Forty-two mutation runs.
+  stand-in without naming it each get a run of their own. Forty-five mutation runs.
 
 **Open to overturn** (checks loosened where the brief was silent): "a played frame is kept" means the
 count grows, not by exactly one, since when a frame is stored depends on its length; the crowd's
