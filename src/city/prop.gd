@@ -59,7 +59,7 @@ func _add_bollard_body() -> void:
 	add_child(body)
 
 ## A post's ground shape: a point of 0.4 of the 12px picture (4.8px), the one definition its body,
-## its shadow and anything planning round it (`RouteRig`) read.
+## its shadow and anything planning round it (`RouteRigPlanner`, the route rig's planner) read.
 static func bollard_shape() -> GroundShape:
 	return GroundShape.point(AtlasTable.baked().native_size(BOLLARD).x * 0.4)
 
