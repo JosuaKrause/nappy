@@ -244,9 +244,9 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 	return _falloff_at(GroundShape.eccentric_distance(_projected_from, velocity, sample))
 
 ## Whether this car's strike box reaches her before the horizon is out, on its current course, her
-## position held fixed, over the same rectangle `Crowd._strike()` tests for the collision: the car's
+## position held fixed, over the same rectangle `CarStrike.hits()` tests for the collision (`Crowd._strike()`): the car's
 ## front half, from its centre forward. Never for a walker — nothing about a pedestrian ends the day
-## — and never for a car already too slow to strike at all (`Crowd._strike()`'s own guard).
+## — and never for a car already too slow to strike at all (`CarStrike.hits()`'s own guard).
 func will_be_lethal(player_position: Vector2) -> bool:
 	var agent := _agent
 	if not _car or agent._speed < Tuning.CAR_STRIKE_MIN_SPEED:
