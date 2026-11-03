@@ -12,11 +12,28 @@ class World extends Node2D:
 			position.x += 1
 		if frames == 2 and position.x == 1:
 			print("ONE_TICK_INPUT_COMPLETED")
+## Reads a scene's manifest after the scene's own tick (its priority is the runtime's plus one
+## hundred), and says once that a failed observation stopped it before it reported success.
+class Watcher extends Node:
+	var runtime: SceneRecipeRuntime
+	func _ready() -> void:
+		process_physics_priority = 200
+	func _physics_process(_delta: float) -> void:
+		var observed: Array = runtime.manifest.observations
+		if observed.is_empty():
+			return
+		if not runtime.manifest.playback_complete and observed.size() == 1 \
+				and not observed[0].passed:
+			print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
+		set_physics_process(false)
+## A run of the probe's own, freed with it, which every runtime below is handed.
+var _run := RunState.new()
 ## A scripted recipe's configuration, which is what the runtime probes below are handed.
 func _scripted() -> RunConfig:
 	return RunConfig.parse(PackedStringArray(["--recipe", "probe.json", "--recipe-mode", "scripted"]),
 			"", true)
 func _ready() -> void:
+	add_child(_run)
 	var config := RunConfig.at_boot()
 	var save := GameSave.new()
 	save.configure(config)
@@ -35,48 +52,7 @@ func _ready() -> void:
 		get_tree().quit(14)
 		return
 	if "--probe-camera" in OS.get_cmdline_user_args():
-		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {}, "manifest": {}, "anchors": {}}, _scripted(), GameState)
-		add_child(runtime)
-		var from := Camera2D.new()
-		from.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-		from.position = Vector2(320, 240)
-		from.position_smoothing_enabled = true
-		add_child(from)
-		from.make_current()
-		var player := Stroller.new()
-		player.facing = Vector2.RIGHT
-		runtime._player = player
-		runtime._settle_starting_camera()
-		var settled_current := from.is_current()
-		var settled_centre := from.get_screen_center_position()
-		var frame_offset := Vector2(200, 0)
-		runtime._install_fixed_camera(frame_offset)
-		var fixed := runtime._fixed_camera
-		from.position += Vector2(200, 100)
-		player.free()
-		runtime._player = null
-		if not settled_current or from.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0) \
-				or not fixed.is_current() or fixed.position != settled_centre + frame_offset \
-				or fixed.zoom != from.zoom:
-			get_tree().quit(18)
-			return
-		var zoom := ZoomOutCamera.new()
-		runtime.add_child(zoom)
-		runtime._zoom = zoom
-		zoom.simulation_clock = runtime.elapsed
-		zoom.setup(from, Rect2(0, 0, 4000, 4000), Vector2(1280, 720), 4, 0)
-		runtime.tick = Engine.physics_ticks_per_second
-		runtime.prepare_capture()
-		var position_before := zoom._camera.position
-		var zoom_before := zoom._camera.zoom
-		zoom._process(100)
-		if zoom.is_processing() or not get_tree().paused or zoom._elapsed != 1 \
-				or zoom._camera.position != position_before or zoom._camera.zoom != zoom_before:
-			get_tree().quit(17)
-			return
-		print("CAPTURE_CAMERA_FROZEN")
-		get_tree().quit(0)
+		_probe_the_camera()
 		return
 	if "--probe-boundary" in OS.get_cmdline_user_args():
 		var runtime := SceneRecipeRuntime.new()
@@ -85,14 +61,12 @@ func _ready() -> void:
 			"walk": str(seconds) + "e1p", "observations": [
 			{"tick": 1, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0},
 			{"tick": 2, "subject": "world", "condition": "near", "at": [1, 0], "distance": 0}]}}
-		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), GameState)
+		runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), _run)
 		var world := World.new()
 		add_child(world)
 		add_child(runtime)
 		runtime.named.world = world
-		runtime._active = true
-		runtime._observe()
-		runtime._apply_input()
+		runtime.begin()
 		return
 	if "--probe-observation" not in OS.get_cmdline_user_args():
 		print("RECIPE_FLAGS_OK")
@@ -101,19 +75,72 @@ func _ready() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
 		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), GameState)
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), _run)
 	add_child(runtime)
-	runtime.set_physics_process(false)
-	runtime._active = true
-	runtime._physics_process(1.0 / 60.0)
-	if runtime._active or runtime.manifest.playback_complete:
-		get_tree().quit(15)
+	var watcher := Watcher.new()
+	watcher.runtime = runtime
+	add_child(watcher)
+	# Begun as `main` begins it; its own physics tick observes and stops it, and its own quit(1) is
+	# the probe's exit status.
+	runtime.begin()
+## The example recipe installed into a city of the probe's run, begun as `main` begins it with a
+## settled start, a fixed camera and a zoom out, and then held for a capture (`prepare_capture()`,
+## which `main` hands the screenshot): the settled start leads her by her look-ahead, the fixed
+## camera stands over that settled centre by its offset and does not follow her camera, and once the
+## capture holds the moment the zoom out stops and the picture stays where it is while idle frames
+## pass.
+func _probe_the_camera() -> void:
+	var loaded := SceneRecipeRuntime.load_recipe("res://scene-recipes/power-station-hall.json",
+			PackedStringArray())
+	loaded.data.playback = {"duration": 5, "walk": "5p", "settled_camera": true,
+		"camera": {"fixed": true, "fixed_offset": [200, 0], "zoom_out": 4, "zoom_delay": 0}}
+	var city: City = load("res://scenes/world/city.tscn").instantiate()
+	city.run = _run
+	add_child(city)
+	city.build(loaded.map)
+	var state := CityState.new()
+	state.begin_day(city.map.block_plans, 1)
+	city.start_recipe_day(state, 1, _run.calendar.day_rng())
+	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	add_child(player)
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure(loaded, _scripted(), _run)
+	add_child(runtime)
+	var errors := runtime.install(city, player, player.get_node("Baby"),
+			DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
+	if not errors.is_empty():
+		print(errors)
+		get_tree().quit(19)
 		return
-	if runtime.manifest.observations.size() != 1 or runtime.manifest.observations[0].passed:
-		get_tree().quit(16)
+	var hers: Camera2D = player.get_node("Camera2D")
+	hers.make_current()
+	runtime.begin()
+	var settled := hers.get_screen_center_position()
+	var fixed := get_viewport().get_camera_2d()
+	hers.position += Vector2(200, 100)
+	if hers.offset != Vector2(Stroller.CAMERA_LOOK_AHEAD, 0) or fixed == hers \
+			or not settled.is_equal_approx(player.global_position + hers.offset) \
+			or not fixed.position.is_equal_approx(settled + Vector2(200, 0)) or fixed.zoom != hers.zoom:
+		get_tree().quit(18)
 		return
-	print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
-	# Keep the runtime's own quit(1); this probe must not replace its failure status.
+	await get_tree().process_frame
+	var zoom: ZoomOutCamera = null
+	for child in runtime.get_children():
+		if child is ZoomOutCamera:
+			zoom = child
+	runtime.prepare_capture()
+	var shown := get_viewport().get_camera_2d()
+	var position_before := shown.position
+	var zoom_before := shown.zoom
+	for _frame in 3:
+		await get_tree().process_frame
+	if zoom == null or zoom.is_processing() or not get_tree().paused \
+			or get_viewport().get_camera_2d() != shown or shown.position != position_before \
+			or shown.zoom != zoom_before:
+		get_tree().quit(17)
+		return
+	print("CAPTURE_CAMERA_FROZEN")
+	get_tree().quit(0)
 """
 
 func run(t) -> void:
@@ -125,7 +152,7 @@ func run(t) -> void:
 	_test_heat_installs_the_heated_row(t)
 	_test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
-	_test_inputs(t)
+	await _test_inputs(t)
 	_test_real_argv_and_failure(t)
 
 ## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
@@ -282,29 +309,37 @@ func _test_schema(t) -> void:
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
 ## investigating copy that stops for her from `EventDef.HEAT_INVESTIGATE_WITHIN`, the shape a played
-## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `_event_plans()`
-## against a real city, so a field the runtime read and then ignored would fail here.
+## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `install()`
+## against a real city in a run of its own, and read off the plans the scene's events were started
+## on (`EventManager.plans()`), so a field the runtime read and then ignored would fail here.
 func _test_heat_installs_the_heated_row(t) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
-	var saved_day := GameState.header.day
-	GameState.header.day = 6
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+	var own_run := RunState.new()
+	own_run.start_run(4242)
+	own_run.header.day = 6
+	var city: City = CITY_SCENE.instantiate()
+	city.run = own_run
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var state := CityState.new()
-	state.begin_day(city.map.block_plans, GameState.header.day)
-	city.start_day(state, GameState.header.day, GameState.calendar.day_rng(GameState.header.day, "closures"))
+	state.begin_day(city.map.block_plans, own_run.header.day)
+	city.start_day(state, own_run.header.day, own_run.calendar.day_rng(own_run.header.day, "closures"))
+	var player: Stroller = STROLLER_SCENE.instantiate()
+	t.add_child(player)
+	var baby: Baby = player.get_node("Baby")
 	var installed := {}
 	for heat: Variant in [null, EventDef.HEAT_INVESTIGATES_LEVEL]:
 		var entry := {"name": "car", "row": "police_patrol", "at": [4560, 3984]}
 		if heat != null:
 			entry["heat"] = heat
 		var runtime := SceneRecipeRuntime.new()
-		runtime.configure({"data": {"setup": {"day": GameState.header.day, "events": [entry]}},
-				"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), GameState)
-		runtime._city = city
-		var errors: Array[String] = []
-		for plan in runtime._event_plans(Vector2(4624, 3728), errors):
+		runtime.configure({"data": {"setup": {"day": own_run.header.day, "events": [entry],
+				"player": {"at": [4624, 3728]}}}, "manifest": {}, "anchors": {}, "map": city.map},
+				_recipe_config(false), own_run)
+		var errors := runtime.install(city, player, baby,
+				DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
+		for plan in city.events.plans():
 			if plan.get_meta("recipe_name", "") == "car":
 				installed[heat] = plan.def
 		t.check(errors.is_empty(), "the patrol car is installed at heat %s: %s" % [heat, errors])
@@ -317,8 +352,9 @@ func _test_heat_installs_the_heated_row(t) -> void:
 			and is_equal_approx(hot.notice_within(), EventDef.HEAT_INVESTIGATE_WITHIN),
 			"at the investigating level it installs the copy that stops for her from %.0fpx"
 			% EventDef.HEAT_INVESTIGATE_WITHIN)
+	player.free()
 	city.free()
-	GameState.header.day = saved_day
+	own_run.free()
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`
@@ -326,11 +362,12 @@ func _test_heat_installs_the_heated_row(t) -> void:
 ## it: a failed setup, noticed and recorded in a scene played by hand as well, with the director's
 ## reasons printed.
 func _test_a_task_gone_after_the_read(t) -> void:
+	var own_run := RunState.new()
 	var director := ResistanceDirector.new()
 	var mark := ContactPoint.new()
 	director._read_mark = mark
 	director._contact = null
-	var placed := _task_runtime(director)
+	var placed := _task_runtime(director, own_run)
 	var expired := ContactPoint.new()
 	placed.named["task"] = expired
 	placed.manifest.task["read_tick"] = 40
@@ -342,7 +379,7 @@ func _test_a_task_gone_after_the_read(t) -> void:
 			and not placed.manifest.get("setup_failed", false),
 			"a placed task that is gone expired at the tick it went: %s" % [placed.manifest.task])
 	# Played by hand, the runtime's own tick is what notices the read, as it does in play.
-	var refused := _task_runtime(director)
+	var refused := _task_runtime(director, own_run)
 	t.add_child(refused)
 	refused.set_physics_process(false)
 	refused._hand_played = true
@@ -357,7 +394,7 @@ func _test_a_task_gone_after_the_read(t) -> void:
 			"a task refused at the read fails the setup, noticed by a scene played by hand too")
 	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
 			"and the director's reasons are printed: %s" % [printed.lines])
-	for node: Node in [placed, refused, expired, mark, director]:
+	for node: Node in [placed, refused, expired, mark, director, own_run]:
 		node.free()
 
 ## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
@@ -372,11 +409,12 @@ func _recipe_config(scripted: bool) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode",
 			"scripted" if scripted else "free"]), "", true)
 
-## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started.
-func _task_runtime(director: ResistanceDirector) -> SceneRecipeRuntime:
+## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started, in
+## `own_run`.
+func _task_runtime(director: ResistanceDirector, own_run: RunState) -> SceneRecipeRuntime:
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"setup": {"task": {"mark": "mark"}}}, "manifest": {},
-			"anchors": {}}, _recipe_config(false), GameState)
+			"anchors": {}}, _recipe_config(false), own_run)
 	runtime._resistance = director
 	runtime.manifest["task"] = {"mark": [0, 0]}
 	return runtime
@@ -402,27 +440,39 @@ func _test_arguments(t) -> void:
 	t.check(status != 0 and str(output).contains("--unknown-recipe-flag"),
 			"run.sh rejects an unknown flag before launching a game")
 
+## A scripted walk presses the real inputs tick by tick on the game's own physics frames: the
+## runtime is begun as `main` begins it (`begin()`), real frames pass, and the inputs are read
+## while each leg of `1e1N1p` is under way, by the scene's own clock (`elapsed()`, the clock a
+## capture is timed off). Removed from the tree, it lets go of what it held. The frames pass under
+## `Engine.time_scale`, which leaves the scene's clock in physics ticks.
 func _test_inputs(t) -> void:
+	var own_run := RunState.new()
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
-			"anchors": {}, "manifest": {}}, _recipe_config(true), GameState)
-	runtime.tick = 0
-	runtime._apply_input()
+			"anchors": {}, "manifest": {}}, _recipe_config(true), own_run)
+	t.add_child(runtime)
+	var scale := Engine.time_scale
+	Engine.time_scale = 4.0
+	runtime.begin()
+	await _until_elapsed(t, runtime, 0.5)
 	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
 			"walking script presses the real right input without running")
-	runtime.tick = Engine.physics_ticks_per_second
-	runtime._apply_input()
+	await _until_elapsed(t, runtime, 1.5)
 	t.check(Input.is_action_pressed("move_up") and Input.is_action_pressed("run")
 			and not Input.is_action_pressed("move_right"), "turning releases the previous direction and presses real run input")
-	runtime.tick = Engine.physics_ticks_per_second * 2
-	runtime._apply_input()
+	await _until_elapsed(t, runtime, 2.5)
 	t.check(Input.get_vector("move_left", "move_right", "move_up", "move_down") == Vector2.ZERO
 			and not Input.is_action_pressed("run"), "script pause releases movement and running")
-	runtime.tick = 0
-	runtime._apply_input()
-	runtime._release_input()
-	t.check(not Input.is_action_pressed("move_right"), "runtime cleanup releases its held input")
+	Engine.time_scale = scale
 	runtime.free()
+	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_up")
+			and not Input.is_action_pressed("run"), "runtime cleanup releases its held input")
+	own_run.free()
+
+## Lets real physics frames pass until the scene's own clock reads `seconds`.
+func _until_elapsed(t, runtime: SceneRecipeRuntime, seconds: float) -> void:
+	while runtime.elapsed() < seconds:
+		await t.get_tree().physics_frame
 
 func _test_real_argv_and_failure(t) -> void:
 	var stem := "user://scene_recipe_runtime_probe_%d" % OS.get_process_id()
