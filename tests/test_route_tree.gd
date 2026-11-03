@@ -197,7 +197,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
 				for cell: Vector2i in route:
 					for offset in _CELL_TILE_OFFSETS:
 						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
-						var segment := StreetNetwork.segment_containing(tile)
+						var segment := planned.map.network.segment_containing(tile)
 						if not segment:
 							continue   # a junction box, or ground off the lattice
 						street_tiles += 1
@@ -288,7 +288,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
 		for area in planned.areas:
-			if StreetNetwork.route_count(planned.home, area.access, planned.blocked, 1) < 1:
+			if planned.map.network.route_count(planned.home, area.access, planned.blocked, 1) < 1:
 				continue
 			var branch := planned.tree.branch_for(area.block)
 			# A calm area next door to the home is arrived at without walking anywhere, so it has
@@ -320,7 +320,7 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
 	for planned in _days:
 		for branch in planned.tree.branches:
 			var area := _area_of(planned, branch.area)
-			if not area or StreetNetwork.route_count(
+			if not area or planned.map.network.route_count(
 					planned.home, area.access, planned.blocked, 2) < 2:
 				continue
 			possible += 1
@@ -342,7 +342,7 @@ func _test_the_fan_out_meets_every_route(t) -> void:
 				% [planned.map.seed_used, planned.day])
 		for branch in planned.tree.branches:
 			for route: Array in branch.routes:
-				t.check(_route_meets(route, sites), "seed %d day %d: %s's route meets the fan-out"
+				t.check(_route_meets(planned.map.network, route, sites), "seed %d day %d: %s's route meets the fan-out"
 						% [planned.map.seed_used, planned.day, branch.area])
 		# Every site earns its place, or the answer is not a smallest one.
 		for dropped in sites:
@@ -399,7 +399,7 @@ func _test_a_gap_joins_two_parallel_strands(t) -> void:
 	for planned in _days:
 		for key in planned.tree.gaps():
 			total += 1
-			var segment := StreetNetwork.by_key(key)
+			var segment := planned.map.network.by_key(key)
 			t.check(segment != null and not planned.tree.is_on_the_tree(key),
 					"seed %d day %d: the gap %s is a street off the tree"
 					% [planned.map.seed_used, planned.day, key])
@@ -432,7 +432,7 @@ func _test_a_gap_is_a_small_part_of_the_rim(t) -> void:
 
 ## Whether a street of the tree meets this junction at right angles to a street running `along`.
 func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
-	for segment in StreetNetwork.at_junction(junction):
+	for segment in planned.map.network.at_junction(junction):
 		var key := segment.key()
 		if key.z != along and planned.tree.is_on_the_tree(key):
 			return true
@@ -617,9 +617,9 @@ func _cells(branch: RouteTree.Branch) -> Array:
 		found.append_array(route)
 	return found
 
-func _route_meets(route: Array, sites: Array[Vector3i]) -> bool:
+func _route_meets(network: StreetNetwork, route: Array, sites: Array[Vector3i]) -> bool:
 	for cell: Vector2i in route:
-		var segment := StreetNetwork.segment_containing(cell * ReachabilityGrid.CELL)
+		var segment := network.segment_containing(cell * ReachabilityGrid.CELL)
 		if segment and sites.has(segment.key()):
 			return true
 	return false
@@ -627,6 +627,6 @@ func _route_meets(route: Array, sites: Array[Vector3i]) -> bool:
 func _covers_everything(tree: RouteTree, sites: Array[Vector3i]) -> bool:
 	for branch in tree.branches:
 		for route: Array in branch.routes:
-			if not _route_meets(route, sites):
+			if not _route_meets(tree.network(), route, sites):
 				return false
 	return true

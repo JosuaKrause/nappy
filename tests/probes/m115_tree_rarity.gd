@@ -18,7 +18,7 @@ func run(t) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 13)
 		var ordinary := 0
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			if StreetTrees._street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:

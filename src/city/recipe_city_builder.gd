@@ -45,9 +45,12 @@ static func build(data: Dictionary) -> Dictionary:
 		var block := Vector2i(int(pin.block[0]), int(pin.block[1]))
 		if not Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS).has_point(block):
 			errors.append("layout.block: pin outside the block lattice")
+	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
+	# every city's map holds (`CityMap.network`).
+	var lattice := StreetNetwork.new()
 	for pin: Dictionary in choices.get("dead_ends", []):
 		var key := Vector3i(int(pin.segment[0]), int(pin.segment[1]), int(pin.segment[2]))
-		if not StreetNetwork.by_key(key):
+		if not lattice.by_key(key):
 			errors.append("dead_end.segment: unknown lattice segment")
 	if not errors.is_empty():
 		return result
@@ -188,7 +191,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 	for listed: Array in stretch.get("trees", []):
 		var tile := RecipeCityContext.point(listed)
 		if not map.in_stretch(tile) or not map.is_walkable(tile) \
-				or not StreetNetwork.segment_containing(tile) or trees.has(tile):
+				or not map.network.segment_containing(tile) or trees.has(tile):
 			errors.append("stretch.trees: duplicate tree or no street ground at %s" % tile)
 		else:
 			trees.append(tile)
@@ -286,7 +289,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	var emptied: Array[Vector2i] = []
 	for pin: Dictionary in pins:
 		var key := Vector3i(int(pin.segment[0]), int(pin.segment[1]), int(pin.segment[2]))
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		var eligible := false
 		for candidate in candidates:
 			if candidate.key() == key:
@@ -329,7 +332,7 @@ static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]
 		if not original:
 			errors.append("tree_moves.from: no existing street tree at %s" % source)
 			continue
-		var segment := StreetNetwork.by_key(original.segment_key)
+		var segment := map.network.by_key(original.segment_key)
 		var opposite := source
 		var axis := 1 if segment.horizontal else 0
 		var offset := CityMap.corridor_offset(source[axis])

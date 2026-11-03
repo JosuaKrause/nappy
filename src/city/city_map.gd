@@ -113,6 +113,10 @@ var zone_rects := {}
 ## Every block of a multi-block lot -> that lot's anchor, the anchor included. The inverse of
 ## `zone_rects`, kept rather than searched because `block_at()` asks it per event.
 var zone_anchor := {}
+## The street lattice as a graph, this city's own: every planner, placement and mover handed the
+## map reads its streets here. Built with the map and never replaced; the same streets on every
+## city, since the lattice is a function of `Tuning.CITY_BLOCKS` alone (`StreetNetwork`).
+var network := StreetNetwork.new()
 ## Segment keys this city does not have at all: the streets a four-block calm zone was painted
 ## straight over. Fixed for the run, unlike `closed_tiles`, and a fact about the **lattice**
 ## rather than about a day — the tiles are park, and the player walks on them quite happily.
@@ -173,7 +177,7 @@ func has_power_station() -> bool:
 func power_station_door_street() -> StreetNetwork.Segment:
 	if not has_power_station():
 		return null
-	return StreetNetwork.by_key(power_station_door_key)
+	return network.by_key(power_station_door_key)
 
 ## The world point in front of the power station's front door: the middle of the pavement tiles
 ## `power_station_door` names, which is where she stands to reach it and what an arrow aims at.
@@ -357,7 +361,7 @@ func is_held(segment: StreetNetwork.Segment) -> bool:
 ## Whether the street segment a tile stands on is held today. False for a tile inside a junction
 ## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
 func is_held_at(tile: Vector2i) -> bool:
-	return is_held(StreetNetwork.segment_containing(tile))
+	return is_held(network.segment_containing(tile))
 
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue

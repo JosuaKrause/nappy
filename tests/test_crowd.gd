@@ -1812,7 +1812,7 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 
 	var at := _city.map.doorstep_world_position()
 	for key: Vector3i in _city.map.dead_ends:
-		var segment := StreetNetwork.by_key(key)
+		var segment := _city.map.network.by_key(key)
 		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
 		break
 	_city.crowd.start_day(1, _rng(1), at)

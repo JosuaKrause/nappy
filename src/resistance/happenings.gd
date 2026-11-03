@@ -523,7 +523,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 		var at := Vector2(lane_x, _map.tile_to_world(tile).y)
 		if absf(at.y - her.y) > limit:
 			return Vector2.INF
-		if StreetNetwork.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
+		if _map.network.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
 			tile += step
 			continue
 		if _siting.leaves_her_a_way(_city.events.plans(),

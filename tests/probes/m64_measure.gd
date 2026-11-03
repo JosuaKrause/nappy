@@ -103,7 +103,7 @@ func _role_and_depth_sweep() -> void:
 				if depth == 0 and plan.role == GameEnums.BlockerRole.FRICTION \
 						and not plan.def.mobile and plan.def.obstructs_radius > 0.0:
 					sum_solid_friction_on_corridor += 1
-					var segment := StreetNetwork.segment_containing(tile)
+					var segment := map.network.segment_containing(tile)
 					if segment:
 						crossing_streets[segment.key()] = true
 			sum_streets_with_a_crossing += crossing_streets.size()
@@ -158,7 +158,7 @@ func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Arra
 
 func _closure_access_vs_rim_sweep() -> void:
 	print("\n== closures, the access-street refusal, and the rim, over %d seeds x 14 days ==" % SEEDS)
-	var total_streets := StreetNetwork.segments().size()
+	var total_streets := StreetNetwork.new().segments().size()
 	var sum_access := 0
 	var sum_rim := 0
 	var sum_access_and_rim := 0
@@ -260,7 +260,7 @@ func _candidates_without_access_filter(map: CityMap, home: StreetNetwork.Segment
 		gaps[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue

@@ -73,6 +73,8 @@ class Plan extends RouteSource:
 	var _ends: Array[Vector2] = []
 	## `open_streets`' keys, for the kerb tint's question about a tile.
 	var _open_keys := {}
+	## The escape city's street lattice (`CityMap.network`), which names the street a tile is on.
+	var _network: StreetNetwork
 
 	func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
 		return open_streets
@@ -100,7 +102,7 @@ class Plan extends RouteSource:
 	## from intersection to intersection. A street a chain only turns at is sealed and carries no
 	## tint, and a junction resolves to no street, exactly as on a day.
 	func marks_the_kerb_at(tile: Vector2i) -> bool:
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := _network.segment_containing(tile)
 		return segment != null and _open_keys.has(segment.key())
 
 	func street_it_starts_in() -> StreetNetwork.Segment:
@@ -135,6 +137,7 @@ static func route(map: CityMap) -> Plan:
 	var start := service_exit_tile(map)
 	var areas := calm_areas(map, grid)
 	var result := Plan.new()
+	result._network = map.network
 	# Sorted north to south, so the tunnel chain takes the calm nearest the top of the map and the
 	# bridge chain the calm nearest the bottom. The home lot sits between the two ends of the
 	# spine, so neither exit is trivially nearer and neither chain is the short one.
@@ -167,7 +170,7 @@ static func route(map: CityMap) -> Plan:
 	for segment in result.open_streets:
 		result._open_keys[segment.key()] = true
 	result._start = map.tile_to_world(start)
-	result._starts_in = StreetNetwork.segment_containing(start)
+	result._starts_in = map.network.segment_containing(start)
 	result._ends = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
 			map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
 	return result
@@ -352,7 +355,7 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 ## truck on it would put one behind a wall.
 static func _streets_covering(map: CityMap, open_cells: Dictionary) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if map.has_street(segment.key()) and SealPlanner.runs_through(segment, open_cells):
 			found.append(segment)
 	return found

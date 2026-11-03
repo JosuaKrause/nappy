@@ -22,7 +22,7 @@ func run(t) -> void:
 
 func _events_per_street_by_band() -> void:
 	print("\n== streets and events per band, %d seeds x days %s ==" % [SEEDS, SAMPLE_DAYS])
-	var lattice := StreetNetwork.segments().size()
+	var lattice := StreetNetwork.new().segments().size()
 	# depth bucket 0 = on the tree, 1 = rim, 2 = everything further out.
 	var streets := [0, 0, 0]
 	var events := [0, 0, 0]
@@ -49,7 +49,7 @@ func _events_per_street_by_band() -> void:
 				seen[key] = true
 				streets[mini(int(depths[key]), 2)] += 1
 			# A street the tree never reached is as far out as this counts.
-			for segment in StreetNetwork.segments():
+			for segment in map.network.segments():
 				if not seen.has(segment.key()):
 					streets[2] += 1
 
@@ -62,7 +62,7 @@ func _events_per_street_by_band() -> void:
 				placed_total += 1
 				var tile := map.world_to_tile(plan.position)
 				# Only a thing standing on a street can be met by somebody walking down it.
-				if not StreetNetwork.segment_containing(tile):
+				if not map.network.segment_containing(tile):
 					continue
 				on_street_total += 1
 				var band := mini(corridor.depth(tile), 2)

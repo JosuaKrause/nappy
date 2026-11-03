@@ -217,7 +217,7 @@ var _door_segments := {}
 
 ## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
 ## the second carve-out `cannot_go_on` needs, since `EventManager.start_day` holds those segments
-## too (`StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
+## too (`map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
 ## but only so no catalogue row lands on the home block's own street, never because a body stands
 ## across it. Rebuilt every `start_day` beside `_door_segments`: the home block never moves, but
 ## computing it fresh here is one loop over four segments and needs no assumption about what
@@ -339,7 +339,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 				hold.position = body.position
 				_door_holds.append(hold)
 	_home_segments = {}
-	for segment in StreetNetwork.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
+	for segment in _map.network.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
 		_home_segments[segment.key()] = true
 	# Before either `_populate` call for the same reason the carve-outs above are: `setup()` refuses
 	# a spot in a pocket the way it refuses one behind a barrier, and a record built afterwards would

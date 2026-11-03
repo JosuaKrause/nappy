@@ -370,7 +370,7 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 	city.map.closed_tiles[tile] = true
 	t.check(not _mast_installs(t, made, at), "nor on a closed tile")
 	city.map.closed_tiles.erase(tile)
-	city.map.hold_segment(StreetNetwork.segment_containing(tile).key())
+	city.map.hold_segment(city.map.network.segment_containing(tile).key())
 	t.check(not _mast_installs(t, made, at), "nor on a held street")
 	_free_day(made)
 	made = _day(t, Tuning.MAST_FIRST_DAY - 1)

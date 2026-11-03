@@ -209,7 +209,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		if segment:
 			if not seen_keys.has(segment.key()):
 				seen_keys[segment.key()] = true
@@ -247,8 +247,8 @@ static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-	var segment_a := StreetNetwork.beside_block(block, side_a)
-	var segment_b := StreetNetwork.beside_block(block, side_b)
+	var segment_a := map.network.beside_block(block, side_a)
+	var segment_b := map.network.beside_block(block, side_b)
 	if not segment_a or not segment_b:
 		return []
 	return [segment_a, segment_b, vertical]
@@ -342,7 +342,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var wanted: int = demanded[key]
 		if wanted < 0:
 			continue   # a conflict was recorded; keep the default
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		var ra := region_of_junction(map, segment.a)
 		var rb := region_of_junction(map, segment.b)
 		if ra == wanted:
@@ -363,15 +363,15 @@ static func _demand_ground(demanded: Dictionary, segment: StreetNetwork.Segment,
 
 ## Junction adjacency over real segments only — `absent_segments` is never traversed, so a region
 ## can never grow across ground that is not there to cross. Built fresh per call: this only ever
-## runs once per city, at generation, so caching it the way `StreetNetwork._links()` caches the
-## full lattice would save nothing.
+## runs once per city, at generation, so keeping it the way `StreetNetwork` keeps the full
+## lattice's adjacency would save nothing.
 static func _growth_graph(map: CityMap) -> Array:
 	var total := StreetNetwork.node_total()
 	var adjacency: Array = []
 	adjacency.resize(total)
 	for i in total:
 		adjacency[i] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		var u := StreetNetwork.node_of(segment.a)
@@ -560,7 +560,7 @@ static func ground_region_of(map: CityMap, segment: StreetNetwork.Segment) -> in
 ## run and independent of any day's tree.
 static func boundary_segments(map: CityMap) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		if region_of_junction(map, segment.a) != region_of_junction(map, segment.b):

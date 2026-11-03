@@ -49,7 +49,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 			var source := GroundTiles.source_for(city.map, tile, day)
 			if not (source in kerb_sources):
 				continue
-			var segment := StreetNetwork.segment_containing(tile)
+			var segment := city.map.network.segment_containing(tile)
 			if not segment:
 				continue
 			var entry: Dictionary = tiles_by_segment.get(segment.key(), {"tiles": {}, "sources": {}})

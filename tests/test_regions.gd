@@ -103,7 +103,7 @@ func _real_junctions(map: CityMap) -> Array[Vector2i]:
 	for y in count.y:
 		for x in count.x:
 			var junction := Vector2i(x, y)
-			for segment in StreetNetwork.at_junction(junction):
+			for segment in map.network.at_junction(junction):
 				if map.has_street(segment.key()):
 					found.append(junction)
 					break
@@ -213,7 +213,7 @@ func _test_precinct_spans_are_never_boundary(t) -> void:
 			var range_end := span.w + 1
 			for along in range(span.z, range_end):
 				var key := Vector3i(corridor, along, 1) if span.x == 1 else Vector3i(along, corridor, 0)
-				var segment := StreetNetwork.by_key(key)
+				var segment := map.network.by_key(key)
 				if not segment or not map.has_street(segment.key()):
 					continue
 				checked += 1
@@ -268,7 +268,7 @@ func _test_flood_matches_the_partition(t) -> void:
 		var doorstep := map.world_to_tile(map.doorstep_world_position())
 		var reached := grid.flood([doorstep], blocked)
 		var home := RegionPlanner.home_region(map)
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			var region := RegionPlanner.ground_region_of(map, segment)
@@ -703,7 +703,7 @@ func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
-				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan_item.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan_item.position))
 				if segment:
 					t.check(not boundary.has(segment.key()),
 							"seed %d day %d: seal at %s does not land on a region boundary"

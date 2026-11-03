@@ -99,7 +99,7 @@ func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
 func _candidate_segments(map: CityMap, tree: RouteTree,
 		home: StreetNetwork.Segment) -> Dictionary:
 	var found := {}
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
@@ -115,7 +115,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> Dictionary:
 	var found := {}
 	for plan in planned:
-		var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 		if segment:
 			found[segment.key()] = true
 	return found
@@ -178,7 +178,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
 			for plan in planned:
-				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 				if not segment:
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
@@ -199,7 +199,7 @@ func _test_the_main_road_is_never_sealed(t) -> void:
 		for day in [1, 7, 14]:
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
-			for segment in StreetNetwork.segments():
+			for segment in map.network.segments():
 				if not map.is_main_road(not segment.horizontal, segment.a.x):
 					continue
 				t.check(not sealed.has(segment.key()),
@@ -253,7 +253,7 @@ func _test_the_doorstep_reaches_the_corridor(t) -> void:
 				used_the_spine += 1
 			var joined := false
 			for junction in [home.a, home.b]:
-				for segment in StreetNetwork.at_junction(junction):
+				for segment in map.network.at_junction(junction):
 					if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 						joined = true
 			t.check(joined,
@@ -363,7 +363,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 			var off_street_tiles := {}
 			for plan in planned:
 				var tile := map.world_to_tile(plan.position)
-				if not StreetNetwork.segment_containing(tile):
+				if not map.network.segment_containing(tile):
 					off_street_tiles[tile] = true
 
 			for rect in map.alley_rects:
@@ -373,8 +373,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 				var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 				var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 				var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-				var segment_a := StreetNetwork.beside_block(block, side_a)
-				var segment_b := StreetNetwork.beside_block(block, side_b)
+				var segment_a := map.network.beside_block(block, side_a)
+				var segment_b := map.network.beside_block(block, side_b)
 				var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
 						or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
 				var sealed_here := false
@@ -488,7 +488,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
 		for junction in [home.a, home.b]:
-			for segment in StreetNetwork.at_junction(junction):
+			for segment in map.network.at_junction(junction):
 				if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 					joined = true
 		t.check(joined,
@@ -500,7 +500,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 ## The first real street the map offers, for the two checks below — the geometry they check does
 ## not depend on which street it is, only that it is one `map.has_street` actually carries.
 func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if map.has_street(segment.key()):
 			return segment
 	return null
@@ -742,7 +742,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 					continue
 				found += 1
 				var tile := map.world_to_tile(plan.position)
-				var segment := StreetNetwork.segment_containing(tile)
+				var segment := map.network.segment_containing(tile)
 				t.check(segment != null and lined.has(segment.key()),
 						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
 						% [map.seed_used, day, tile])
@@ -831,7 +831,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 			var boundary := {}
 			for segment in region_plan.walls:

@@ -187,7 +187,7 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t) -> void:
 const _HARD_SEAL_SEED := 424242
 
 func _real_segment(map: CityMap, horizontal: bool) -> StreetNetwork.Segment:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if segment.horizontal == horizontal and map.has_street(segment.key()):
 			return segment
 	return null
