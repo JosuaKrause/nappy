@@ -37,32 +37,34 @@ class Manoeuvre extends RefCounted:
 	var worst_drift := 0.0
 
 func run(t) -> void:
-	_city = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
-	_junction = _plain_junction()
-	t.check(_junction.x >= 0, "this city has an ordinary four-way junction to turn at")
-	if _junction.x < 0:
-		_city.free()
-		return
-
 	_test_the_turn_constants_hold_their_relationships(t)
-	_test_a_car_turns_into_each_arm_from_every_approach(t)
-	_test_a_car_turns_round_when_every_arm_is_shut(t)
-	_test_a_car_turns_round_in_the_street_short_of_a_closure(t)
-	_test_a_car_waits_for_the_lane_its_half_turn_lands_in(t)
-	_test_a_car_with_no_road_either_way_stands_rather_than_flickering(t)
-	_test_a_car_against_a_barrier_is_not_shunted_later(t)
-	_test_a_plugged_arm_is_refused_rather_than_driven_into(t)
-	_test_the_heading_is_the_direction_it_is_actually_travelling(t)
-	_test_a_queue_keeps_its_distance_behind_a_turning_car(t)
-	_test_a_turn_merges_into_a_lane_without_resetting_it(t)
-	_test_two_cars_arriving_together_do_not_share_the_box(t)
-	_test_a_turning_car_still_gives_way_at_a_zebra(t)
-	_test_a_red_light_still_holds_a_car_that_is_turning(t)
-	_test_a_car_turns_at_the_last_junction_before_the_boundary(t)
-
-	_city.free()
+	# Each scenario stands in a city of its own, built over a run of its own, so none leans on what
+	# an earlier one left closed, held or driving.
+	var scenarios: Array[Callable] = [
+		_test_a_car_turns_into_each_arm_from_every_approach,
+		_test_a_car_turns_round_when_every_arm_is_shut,
+		_test_a_car_turns_round_in_the_street_short_of_a_closure,
+		_test_a_car_waits_for_the_lane_its_half_turn_lands_in,
+		_test_a_car_with_no_road_either_way_stands_rather_than_flickering,
+		_test_a_car_against_a_barrier_is_not_shunted_later,
+		_test_a_plugged_arm_is_refused_rather_than_driven_into,
+		_test_the_heading_is_the_direction_it_is_actually_travelling,
+		_test_a_queue_keeps_its_distance_behind_a_turning_car,
+		_test_a_turn_merges_into_a_lane_without_resetting_it,
+		_test_two_cars_arriving_together_do_not_share_the_box,
+		_test_a_turning_car_still_gives_way_at_a_zebra,
+		_test_a_red_light_still_holds_a_car_that_is_turning,
+		_test_a_car_turns_at_the_last_junction_before_the_boundary,
+	]
+	for scenario in scenarios:
+		_city = RunCity.with_own_run(CITY_SCENE, SEED)
+		t.add_child(_city)
+		_city.build(CityGenerator.generate(SEED))
+		_junction = _plain_junction()
+		t.check(_junction.x >= 0, "this city has an ordinary four-way junction to turn at")
+		if _junction.x >= 0:
+			scenario.call(t)
+		_city.free()
 
 # ------------------------------------------------------------------ the numbers ---
 
@@ -199,27 +201,25 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 	var barrier := float(_junction.y * CityMap.period() * Tuning.TILE_SIZE)
 	var rests_at := barrier - Tuning.CAR_STRIKE_HALF_LENGTH - CarTurn.about_face_reach() \
 			- CarStrategy.TURN_ROOM_MARGIN
-	var blocker := _place_a_car(true, -1.0)
-	var landing_lane := LaneMover.make_lane_key(true, _corridor(true),
-			CrowdLanes.road_lane(true, -1.0), -1.0)
-	blocker._cruise = 0.0
-	blocker._speed = 0.0
-	# Stood on the landing and put into the index before the car is ever asked, because
-	# `TrafficIndex` is rebuilt at the *end* of a frame: a car that asks on the very first one reads
-	# an empty index and commits to a spot the rig has already filled.
-	_join_the_lane(blocker, landing_lane, rests_at * -1.0)
+	# A car stood on the landing, in the oncoming lane, held there by a figure standing just ahead of
+	# it: what stops a car in the game. The figure keeps its place until it is asked to go.
+	var blocker := _place_a_car(true, -1.0, -1, 0.0, rests_at)
+	var figure_at := Vector2(blocker.position.x,
+			rests_at - Tuning.CAR_STRIKE_HALF_LENGTH - CarStrategy.FIGURE_SETBACK - 2.0)
+	# Joined beside the lane and stepped into it on the second frame, so it is one that has moved:
+	# a crowd car stands for a figure it has seen move, not for one that was only ever placed.
+	var figure := _a_figure(figure_at + Vector2(6.0, 0.0))
+	# Put into the index before the car is ever asked, because `TrafficIndex` is rebuilt at the *end*
+	# of a frame: a car that asks on the very first one reads an empty index and commits to a spot
+	# the rig has already filled.
 	_city.crowd.space_out_the_traffic(STEP)
 
 	var waited := false
 	var flipped := false
 	var turned := false
 	for frame in int(round(14.0 / STEP)):
-		# Pinned every frame, because the separation pass moves a car that something lands on and the
-		# question here is what happens while it has *not* moved.
-		if not waited:
-			_join_the_lane(blocker, landing_lane, rests_at * -1.0)
-			blocker._cruise = 0.0
-			blocker._speed = 0.0
+		if frame == 2:
+			figure.place(figure_at)
 		_city.crowd.set_focus(car.position)
 		var facing := _direction_of(car)
 		_city.crowd.step(STEP)
@@ -227,12 +227,11 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 		if car.is_turning():
 			turned = true
 			break
-		if not waited and car.strategy._waited_to_turn > 0.0:
+		if not waited and car.speed() < Tuning.CAR_STOPPED_SPEED:
 			# It is stopped at its aim point with the landing taken and it has not reversed. That is
 			# the whole assertion; now let the lane clear and watch it take the arc it was refused.
 			waited = true
-			_join_the_lane(blocker, landing_lane, (rests_at - 900.0) * -1.0)
-			blocker._cruise = Tuning.CAR_SPEED.x
+			_city.map.moves.leave(figure)
 	t.check(waited, "the car reached its aim point and waited for the lane its half turn lands in "
 			+ "rather than finding it empty")
 	t.check(not flipped, "it did not reverse on the spot while the landing was taken")
@@ -255,9 +254,9 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 ## what is measured here is the standing rather than the leaving.
 func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> void:
 	_clear_the_holds()
-	var car := _place_a_car(true, 1.0)
 	var band := _junction.y * CityMap.period()
-	var here := floori(car.position.y / float(Tuning.TILE_SIZE))
+	var here := floori((float(band * Tuning.TILE_SIZE) - 4.0 * float(Tuning.TILE_SIZE))
+			/ float(Tuning.TILE_SIZE))
 	var closed: Array[Vector2i] = []
 	for step in [-2, 2]:
 		for lane in CrowdLanes.ROAD_OFFSETS:
@@ -265,10 +264,11 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 	for tile in closed:
 		_city.map.closed_tiles[tile] = true
 	# Standing in the middle of the stub, at rest: there is less than a half turn's road at either
-	# end of it, which is the state being asked about rather than one to be driven into.
-	car.position.y = float(here * Tuning.TILE_SIZE) + float(Tuning.TILE_SIZE) * 0.5
-	car._speed = 0.0
-	car._scan_at = Vector2i(-9999, -9999)
+	# end of it, which is the state being asked about rather than one to be driven into. Placed
+	# there as the entry places a car, and brought to rest as a collision brings one (`crashed_into()`).
+	var car := _place_a_car(true, 1.0, -1, 0.0,
+			float(here * Tuning.TILE_SIZE) + float(Tuning.TILE_SIZE) * 0.5)
+	car.crashed_into()
 	var facing := _direction_of(car)
 	var lane_before := car.lane_key()
 	var flips := 0
@@ -313,13 +313,14 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
 	var closed := _close_the_junction_band()
 	var past_the_barrier := float((_junction.y * CityMap.period() + Tuning.STREET_WIDTH)
 			* Tuning.TILE_SIZE)
-	var follower := _place_a_car(true, 1.0)
-	var leader := _place_a_car(true, 1.0, -1, 4.0 * Tuning.CAR_GAP_MIN)
-	follower.position.y = past_the_barrier + 40.0
-	leader.position.y = follower.position.y + 20.0
+	# The follower is placed a little past the barrier and the leader a safe gap ahead of it; the
+	# leader is then backed onto the follower by the same nudge the separation pass uses
+	# (`nudge_back()`), which leaves it a fraction of a car's length in front.
+	var follower := _place_a_car(true, 1.0, -1, 0.0, past_the_barrier + 40.0)
+	var leader := _place_a_car(true, 1.0, -1, 0.0, past_the_barrier + 40.0 + 4.0 * Tuning.CAR_GAP_MIN)
+	leader.nudge_back(4.0 * Tuning.CAR_GAP_MIN - 20.0)
 	for car in [follower, leader]:
-		car._speed = 0.0
-		car._scan_at = Vector2i(-9999, -9999)
+		car.crashed_into()
 	_city.crowd.set_focus(follower.position)
 	_city.crowd.step(STEP)
 	var first := follower.position.y
@@ -470,14 +471,9 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	var turner := _place_a_car(true, 1.0)
-	# Parked well back up the same street until there is a lane to put them in: the exit lane is not
-	# known until the turn has been planned, and the placement helper can only place a car in a lane
-	# a car is already travelling down.
+	# The traffic in the lane the turn lands in is not known until the turn has been planned, so it
+	# is put there once the turn has booked its lane (below).
 	var queue: Array[CrowdAgent] = []
-	for i in 3:
-		var car := _place_a_car(true, 1.0, -1, float(i + 1) * Tuning.CAR_GAP_MIN * 1.6)
-		car.position.y = turner.position.y - 400.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6
-		queue.append(car)
 
 	# Close enough that the queue closes on the booked spot while the arc is still running, which is
 	# the timing the whole defect lives in: free when the turn committed, taken when it arrived.
@@ -485,9 +481,9 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 	for frame in int(round(6.0 / STEP)):
 		if turner.is_turning() and turner.turn_lane_key() != turner.lane_key():
 			booked = turner.turn_landing()
-			for i in queue.size():
-				_join_the_lane(queue[i], turner.turn_lane_key(),
-						booked - 150.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6)
+			for i in 3:
+				queue.append(_place_a_car_in_lane(turner.turn_lane_key(),
+						booked - 150.0 - float(i) * Tuning.CAR_GAP_MIN * 1.6))
 			break
 		_city.crowd.set_focus(turner.position)
 		_city.crowd.step(STEP)
@@ -544,21 +540,21 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 			"and the car that joined ends up a full gap clear of everybody that was already there "
 			+ "(%.0fpx against %.0f)" % [tightest, Tuning.CAR_GAP_MIN])
 
-## Moves `car` into the lane `key` names, at `at` on that lane's own queue axis — the rig's way of
-## standing traffic in a lane a turn has just booked a place in, which is not a lane the placement
-## helper could have known about before the turn was planned. `CrowdAgent.queue_position()` is
+## Places a car in the lane `key` names, at `at` on that lane's own queue axis, through the entry
+## `_place_a_car()` takes. The lane is one a turn has just booked a place in, which the placement
+## helper could not have known about before the turn was planned. `CrowdAgent.queue_position()` is
 ## `along * direction`, and therefore its own inverse for a direction of plus or minus one.
-func _join_the_lane(car: CrowdAgent, key: int, at: float) -> void:
+func _place_a_car_in_lane(key: int, at: float) -> CrowdAgent:
 	var parts := CrowdAgent.lane_key_parts(key)
-	car._vertical = parts[0]
-	car._corridor = parts[1]
-	car._lane = parts[2]
-	car._direction = float(parts[3])
-	car._lane_centre = CrowdLanes.lane_centre(car._corridor, car._lane)
-	car._turn = null
-	car._turn_run_up = 0.0
-	car._scan_at = Vector2i(-9999, -9999)
-	car.position = CarTurn.world(car._vertical, at * car._direction, car._lane_centre)
+	var vertical: bool = parts[0]
+	var direction := float(parts[3])
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	var placed := _city.crowd.add_recipe_actor("queued-%d" % _city.crowd.agent_count(),
+			CrowdAgent.Kind.CAR,
+			CarTurn.world(vertical, at * direction, CrowdLanes.lane_centre(parts[1], parts[2])),
+			heading, Tuning.CAR_SPEED.x, 7)
+	assert(placed["error"] == "", "the queued car is placed: %s" % placed["error"])
+	return placed["actor"]
 
 ## The car in `queue` closest behind `at` on its own lane's queue axis, or `null` when they are all
 ## in front of it. "Behind" is smaller, since `CrowdAgent.queue_position()` is signed so that ahead
@@ -804,6 +800,16 @@ func _place_a_car(vertical: bool, direction: float, corridor := -1, back := 0.0,
 	var car: CrowdAgent = placed["actor"]
 	_city.crowd.set_focus(car.position)
 	return car
+
+## A figure standing at `at` on the map's list of moves, the radius an event figure walks at
+## (`EventInstance.FIGURE_RADIUS`) and one that is stood round: what a car stops behind. It stays
+## until it leaves the list (`ProposedMoves.leave()`).
+func _a_figure(at: Vector2) -> MoveProposal:
+	var move := MoveProposal.new()
+	move.radius = EventInstance.FIGURE_RADIUS
+	move.stood_round = true
+	_city.map.moves.join(move, at)
+	return move
 
 ## Which way along its street a car points once it is out of a turn: plus or minus one.
 func _direction_of(car: CrowdAgent) -> float:
