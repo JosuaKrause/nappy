@@ -17,8 +17,13 @@ it.
 - The `GameState` autoload is a stand-in only tests read. The runner hands it to every `Sitting`
   that enters the tree holding no run (`SceneTree.node_added`, `_hand_the_stand_in()`), before
   `main` takes its run, so a suite not yet moved that sets `GameState.header.day` and boots `main`
-  works unchanged; a sitting a suite hands its own run keeps it. Nothing under `src/` knows of the
-  stand-in.
+  works unchanged; a sitting a suite hands its own run keeps it. A sitting kept off the tree is
+  handed nothing, so a suite that reads `GameState` beside it hands the sitting the stand-in itself;
+  the first review found three suites that read a different run from the one their `main` played
+  (one check passing only because both were on day 1), fixed inside the PR. Nothing under `src/`
+  knows of the stand-in.
+- `test_main.gd` checks the game's own arrangement in process: a sitting that made its own run
+  carries that same run across day 14's hand-over into the next boot.
 - Suites changed only where the move broke them: `test_atlas_loading.gd`, `test_run_checkpoints.gd`,
   and the two scene-recipe probes that boot `main` in a process of their own, which read the run
   off the booted `main`'s sitting.

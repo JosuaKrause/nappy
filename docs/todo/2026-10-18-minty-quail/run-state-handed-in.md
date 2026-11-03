@@ -5,7 +5,8 @@
   hands it to every reader it builds (record minty-quail-22); no class under `src/` reads the
   `GameState` autoload. It stays only as a stand-in for the suites not yet moved, about a hundred of
   which read or set it directly: the test runner hands it to every `Sitting` that enters the tree
-  holding no run (`tests/run_tests.gd`, `_hand_the_stand_in()`), resets it before every suite
+  holding no run (`tests/run_tests.gd`, `_hand_the_stand_in()`; a suite that keeps its sitting off
+  the tree hands it the stand-in itself), resets it before every suite
   (`GameState.start_run(RESET_SEED)`), and the shared-state check skips its parts.
 
 **The ask.** Told that PR #976 lists 17 of the run's fields as exempt from the runner's leak check
