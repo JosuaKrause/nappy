@@ -18,13 +18,17 @@ fourteen more the brief named are not started; the item lists them.
   step scenes as `main` does, and build each day in a run of its own with a fresh `RunState`
   (`GameState` lines 52 to 0).
 - New tests: an authored door and soft seal stand where the day's own would; a crowd handed no
-  navigator still pushes a walker clear of her (`test_navigator_fallbacks.gd`); a booted day recipe
+  navigator still pushes a walker walking toward her aside, further than his own side-step
+  (`test_navigator_fallbacks.gd`); the runtime walks a held event on over real frames; a booted day recipe
   and escape recipe run their events under the spec their clock runs on (`test_scene_recipe_boot.gd`,
-  which hands `main` a scratch-path save). Every check kept; fifteen mutation runs each fail one.
+  which hands `main` a scratch-path save). Every check kept; fourteen mutation runs each fail one. The first review found two new checks that
+  could not fail on what they claimed (the push, and a held walk the test drove itself); both were
+  rewritten inside the PR.
 
 **Open to overturn:** the order. The brief put `test_route_rig.gd` first; converting it means
 moving the rig's planning, clearance and target resolution into a class `RouteRig` calls, a pull
 request's worth of moved code on its own, so this one did the runtime's fixes first.
 
-**Not done:** a test of `ResistanceDirector`'s fallback to the map's navigator, since its happenings
-fall back to the same navigator and nothing observable depends on the director's.
+**Not done:** a test of `ResistanceDirector`'s fallback to the map's navigator. A director handed no
+city siting builds its spawn siting on it, and the one start it sites that way is a trap sent at her,
+which needs a city with events and a task that sets a trap; it is listed as left.
