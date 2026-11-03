@@ -17,10 +17,15 @@ fallen-trees suite. The item lists the eleven route and recipe suites still to d
   presses and the `route` lines it writes. Three setup checks added. `test_routes_fallen_trees.gd`
   checks every closure `plan_day()` puts on a bare street rather than calling
   `ClosurePlanner._pick_kind()`.
-- About forty mutation runs, each failing the check that guards the code broken. The first review
-  found the suite counting awaited frames as physics ticks (a slow frame runs several), which failed
-  in CI, and one test building a second city beside the shared one; the suite counts real ticks and
-  that test runs after the shared day is freed.
+- About forty mutation runs, each failing the check that guards the code broken.
+- The real-frame rig tests step every frame as exactly one physics tick, through one helper that
+  pins `Engine.max_physics_steps_per_frame` to 1 and puts it back however the stretch ends. Three
+  reviews found the tests reading a timeline of frames while the engine packs several ticks into a
+  slow frame (a leg's first plan, a loaded machine): counting frames as ticks failed in CI, widening
+  the tolerances by the frame length let a 2.5 s wait pass, and the ladder's first steps could land
+  inside one frame. The rethink after the third pinned one tick per frame, so the time checks keep
+  their first, tight bounds and hold on a loaded machine. The runner's shared-state check compares
+  `Engine.max_physics_steps_per_frame` beside `Engine.time_scale`, and the verify skill names it.
 
 **A rig bug the real-frame test found:** when a stall check started its three-second wait, the rig
 still pressed toward the next waypoint that frame and nothing released it, so she walked on into
