@@ -891,7 +891,7 @@ of her.
   walls for a day; so is anything very costly, **and so is anything that cannot be walked past
   where it stands** — a row whose body and charging disc leave no lane of a sidewalk free is a wall
   at any price, because *"a wall is also when you physically cannot walk through"*. That last
-  reading splits into two: a row wide or loud enough to also cost her something (`_line_reach_of`
+  reading splits into two: a row wide or loud enough to also cost her something (`EventDef.line_reach()`
   crossing the sidewalk's own far lane) is a wall **by cost**; a silent, narrow body that leaves no
   lane purely by where it stands (`delivery_van`, pinned `AT_THE_KERB`) is a wall **by fit**, and
   the two are weighted differently below. For a row that **paces**, "where it stands" is its beat,
@@ -1007,7 +1007,7 @@ free, and everything louder than the rim is checked like any other row's ground.
 
 Two rows are outside the arithmetic. A **lethal** row keeps its whole radius: its price is not a
 rate, and nothing about being quiet at the rim makes walking into it survivable. A row with no field
-at all — a hoarding, a parked van — denies exactly its body. `EventScheduler._line_reach_of()` is
+at all — a hoarding, a parked van — denies exactly its body. `EventDef.line_reach()` is
 the one place the answer lives, and `tests/probes/m129_zero_cost_line.gd` asks it rather than
 keeping a second copy, so what the probe measures is what the rules refuse.
 
@@ -1094,7 +1094,7 @@ reason a beat answers by itself.
 branch she is walking and the engine parks across from it for the rest of the day: *"you're not
 supposed to go past it"*, *"when you see the fire the reaction should be to take a different route"*
 (PLAYTEST-119). Asking whether a line survives along that sidewalk would refuse every site the beat
-of the day is made of, so `EventScheduler._a_line_has_to_avoid` leaves an `EventDef.on_her_way` one-shot
+of the day is made of, so `EventDef.has_a_line_to_avoid()` leaves an `EventDef.on_her_way` one-shot
 out of the line rules altogether. (A poster crew is sited from her walk too, and is not exempt: it
 closes nothing.) **What replaces the guarantee is stated over the day rather than over
 the street**, and it is the stronger statement of the two: a site is accepted only where, from where

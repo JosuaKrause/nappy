@@ -58,11 +58,11 @@ extends RefCounted
 ##   having to worry or plan around it"*, PLAYTEST-76. A lethal row keeps its whole radius, a body
 ##   its `obstructs_radius`, and the larger applies where both do. A row that neither charges nor
 ##   obstructs — the `playground` ambient, at intensity 0 — is not something a line has to avoid and
-##   is skipped. `EventScheduler._line_reach_of()` is the one place that arithmetic lives, and this
+##   is skipped. `EventDef.line_reach()` is the one place that arithmetic lives, and this
 ##   probe asks it rather than keeping a second copy: the placement rules refuse what this measures,
 ##   so a probe reading a different disc could not tell whether they had worked.
 ## - **A mast is excluded**: planted once by `MastSites`, off the corridor-aware placement this
-##   guarantee is stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc.
+##   guarantee is stated over — see `EventDef.has_a_line_to_avoid()`'s own doc.
 ## - **Rows with no tile are excluded**: `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` queue rows are sited
 ##   by `EventDirector` out of where the player turns out to walk, so they have no position at plan
 ##   time (`Planned.is_placed()` is false) and no route can be measured against them. They are
@@ -85,7 +85,7 @@ extends RefCounted
 ##   cross the street, wait, then come back without ever getting excited by it"*).
 ## - **A pursuer (`EventDef.pursuit`) is never a block.** It follows her rather than sitting on a
 ##   tile and pays the telegraph contract instead of the placement rules'
-##   (`EventScheduler._a_line_has_to_avoid()`'s own doc: *"a pursuer follows her rather than
+##   (`EventDef.has_a_line_to_avoid()`'s own doc: *"a pursuer follows her rather than
 ##   sitting on a tile, and pays the telegraph contract instead"*), so `alley_robbery` and
 ##   `charging_dog` are left out here the same way a door is — no placement rule ever refuses
 ##   ground on their account, so a line reading their dawn position as something to route around
@@ -448,7 +448,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
 ## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
-## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `Role.SCENERY` rows
+## stated over — see `EventDef.has_a_line_to_avoid()`'s own doc; `Role.SCENERY` rows
 ## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
@@ -464,7 +464,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0
-		var radius := EventScheduler._line_reach_of(def)
+		var radius := def.line_reach()
 		if radius <= 0.0:
 			continue
 		var row := Row.new()
@@ -1183,7 +1183,7 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		var def := EventCatalogue.by_id(id)
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
-				% [def.intensity, def.outer_radius, EventScheduler._line_reach_of(def),
+				% [def.intensity, def.outer_radius, def.line_reach(),
 				def.obstructs_radius, ", paces" if def.paces else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 
