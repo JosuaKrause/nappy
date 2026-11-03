@@ -15,9 +15,8 @@ the statics belong to the city, the routes and the art rather than to the run's 
 that keeps the run's state in one place does not build them.
 
 **Where it stands:** the statics under `src/crowd/`, `src/city/`, `src/routes/` and `src/world/`
-hold no hidden globals except `StreetNetwork`'s lattice memos (`_segments`, `_by_key`,
-`_adjacency`), which need a network handed to their static callers, the resistance and finale tests
-among them. The torn posters are held by a `PosterArt` that `main` keeps and hands down through
+hold no hidden globals: the street lattice is a `StreetNetwork` each `CityMap` holds (`map.network`),
+built with the map and handed to its callers with it. The torn posters are held by a `PosterArt` that `main` keeps and hands down through
 `City`, `PosterWalls` and `Building`. The constants left there (the `Mover` filters, `CityMap`'s
 tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. What outlives a
 scene reload (the controls choice, the held-restart stamp, the save symbol's home, the frame
