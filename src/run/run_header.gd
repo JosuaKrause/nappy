@@ -2,7 +2,7 @@ class_name RunHeader
 extends RunSubState
 ## Who and where a run is: its seed, the player's presentation, the calendar, nerves, how it ended
 ## and how long it has been played. Nothing here is spent by an attempt, so a lost day gives none
-## of it back (the nerve a loss costs is `GameState.calendar.finish_day()`'s, not a give-back).
+## of it back (the nerve a loss costs is `RunCalendar.finish_day()`'s, not a give-back).
 
 var run_seed: int = 0
 ## A run owns its presentation just as it owns its seed. Days and scene changes only read it.
@@ -23,13 +23,13 @@ var ending: GameEnums.Ending = GameEnums.Ending.NONE
 var play_ticks: int = 0
 
 ## `play_ticks` in seconds, at the physics tick rate (`Engine.physics_ticks_per_second`): what the
-## ending screen shows (`GameState.format_clock()`) and what the save holds. A function rather than
+## ending screen shows (`RunState.format_clock()`) and what the save holds. A function rather than
 ## a field, since a part declares each field once in its data (`tests/test_run_state.gd`).
 func play_seconds() -> float:
 	return float(play_ticks) / Engine.physics_ticks_per_second
 
 ## Back to day 1 with every nerve and no ending. The seed and the presentation are the run's
-## identity and are set by `GameState.start_run()`, not here.
+## identity and are set by `RunState.start_run()`, not here.
 func reset() -> void:
 	day = 1
 	nerves = Tuning.STARTING_NERVES

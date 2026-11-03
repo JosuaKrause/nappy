@@ -48,15 +48,14 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(fenced, fenced_act, Tuning.act_for_day(day))
 	map.repaint(state)
-	# Exercise Main's actual read-back policy without leaving this fixture's run in the autoload.
-	var saved_block := GameState.facts.fenced_park
-	var saved_act := GameState.facts.fenced_park_act
-	GameState.facts.fenced_park = fenced
-	GameState.facts.fenced_park_act = fenced_act
-	GameState.facts.remember_fenced_park(map.fenced_park, map.fenced_park_act)
-	var remembered := [GameState.facts.fenced_park, GameState.facts.fenced_park_act]
-	GameState.facts.fenced_park = saved_block
-	GameState.facts.fenced_park_act = saved_act
+	# Exercise Main's actual read-back policy on a run of its own, thrown away after.
+	var run := RunState.new()
+	run.start_run(BASE_SEED)
+	run.facts.fenced_park = fenced
+	run.facts.fenced_park_act = fenced_act
+	run.facts.remember_fenced_park(map.fenced_park, map.fenced_park_act)
+	var remembered := [run.facts.fenced_park, run.facts.fenced_park_act]
+	run.free()
 	return remembered
 
 ## The calm areas today's repaint leaves calm with nothing handed over.
@@ -526,7 +525,9 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t) -> voi
 ## The real `City` stands one static body behind every fence line, where `ParkClosure` says: the
 ## one fenced park has a body across every way in, the same body a closed street's mouth has.
 func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var run := RunState.new()
+	run.start_run(BASE_SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
 	city.build(CityGenerator.generate(BASE_SEED))
 	var day := 9
@@ -538,6 +539,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			% [city.map.seed_used, day, calm.size()])
 	if calm.is_empty():
 		city.free()
+		run.free()
 		return
 	var used: Array[Vector2i] = [calm[0]]
 	city.map.set_spent_calm(used)
@@ -549,6 +551,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			% [city.map.fenced_park])
 	if city.map.fenced_park.x < 0:
 		city.free()
+		run.free()
 		return
 	var bodies: Array[Rect2] = []
 	var park_pictures := 0
@@ -624,3 +627,4 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			t.check(covered, "a body stands across the way in at %s of fenced %s" % [tile, block])
 	t.check(entrances > 0, "fenced %s has ways in to stand bodies across" % block)
 	city.free()
+	run.free()

@@ -9,7 +9,7 @@ project.godot
 icon.png
 docs/                     design documentation (this folder)
 scenes/
-  main.tscn               root: boots GameState, holds World + HUD
+  main.tscn               root: takes the run off the `Sitting`, holds World + HUD
   world/city.tscn         generated city container
   player/stroller.tscn    the mother + stroller CharacterBody2D
   ui/hud.tscn             meters, clock, nerves
@@ -33,7 +33,8 @@ src/
 	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-	game_state.gd         the run, as a registry of its parts (autoload: GameState)
+	game_state.gd         the run (`RunState`), as a registry of its parts; held by the `Sitting`
+	                      (the `GameState` autoload is a stand-in only suites read)
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
 	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
@@ -736,7 +737,7 @@ outcome it hoists the existing roll into a variable to print it; it never adds o
 requires the two plans to be identical, because that hoist is exactly the edit that could
 quietly consume one extra value and break determinism for every other guarantee here.
 
-### `GameState`
+### `RunState`
 The run. Holds the run's state as a registry
 (`run_parts`, a `RunStateRegistry`) of parts, each a `RunSubState` with one interface: `reset`,
 `photograph`, `give_back`, `to_data`, `restore`. **A field is declared once, in the part that owns
@@ -750,9 +751,10 @@ arcs), `SettledState`, `RunFacts`, and `PosterState` and `PelicanState`. A part 
 save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a save must all carry,
 beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
 (`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
-an argument. **The autoload is where the run lives, not how it is reached**: it outlives the scene
-reloads (the held restart, the day-14 hand-over, a run carried to its checkpoint), and `main`, the
-composition root, takes it once and hands it, typed `RunState`, to every reader it builds — the
+an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
+scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and the
+boot after a held restart starts a fresh run in it (`start_run()`). `main`, the composition root,
+takes it off the sitting once a boot and hands it, typed `RunState`, to every reader it builds — the
 `City` (which hands it to its `PosterWalls`, which hands each `Building` whether the neighbor was
 taken, the one thing `PosterArt` draws from the run), the HUD, the pause and title screens,
 `RunSession` and its `TelemetryObserver`, the frame trace and recorder, `DayController`,
@@ -765,7 +767,13 @@ fires. The run is handed per call rather than held; what the save holds (the web
 objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that
 free the `main` holding a run, so the `Sitting` is its home and no static holds any of it. A test
 builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
-`ResistanceDirector.setup()`.
+`ResistanceDirector.setup()`. **The `GameState` autoload in `project.godot` registers a `RunState`
+only as a stand-in** for the suites not yet moved onto a run of their own: no class under `src/`
+reads it. The test runner hands the stand-in to every `Sitting` that enters the tree holding no
+run, so a `main` whose sitting enters the tree plays the run those suites set and read
+(`tests/run_tests.gd`); a suite that hands a `main` a sitting kept off the tree hands the sitting
+the stand-in itself where it reads `GameState`. `RunState` is a `Node` for the stand-in's sake
+alone: nothing in the game needs it to be one.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day
@@ -811,16 +819,17 @@ escape, a run carried on to its checkpoint and a recipe's lost section played ag
 `reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
-desktop frame record's one file (`frame_record_path`), the ground's composition recipe, read once
+desktop frame record's one file (`frame_record_path`), the run (`run`, a `RunState`, which `main`
+takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot), the ground's composition recipe, read once
 per process (`ground_recipe`), the baked atlas pages and which of them are held (`atlas`, the one
 `AtlasLibrary`, so the pages a boot holds for the process and its loading moments outlive the
 reload), the save symbol a reload carries, which
 `SaveIndicator.outlive_the_scene()` reparents under it, and the `GameSave`, a child `main` makes
-and finds there (the sitting names neither: it is on the model's layer, they are not). Process memory only, never saved. `main`
+and finds there (the sitting names neither: it is on the model's layer, they are not). Process memory only, never saved itself: only its run is, by the `GameSave`. `main`
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
-and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, and
-its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
+and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, its
+run to every reader it builds (see "`RunState`"), its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
 to everything that acquires a group or draws a region (the city, which hands it on to its
 furniture, crowd and events; her; the escape's building, its events and its steam grates; the
 screens, which hand it to their buttons and lines; the touch controls; the badge and the save
@@ -828,7 +837,7 @@ symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
 boot before parked there, and hands a `main` it drives off the tree one directly
-(`main.use_sitting()`).
+(`main.use_sitting()`), holding the run the test built where the test hands one (`Sitting.run`).
 
 ### `SummaryModel`
 Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one
@@ -850,8 +859,7 @@ charges still running closed, `day_ended`, and for an ordinary day the calendar'
 events it plans), the resistance, the player, the baby and the clock; `finish_day()` requires only
 the clock and the run, since the escape's building has no city, crowd or resistance, and reads the
 events, city, player and baby where there are some. It calls no observer: the readout, the HUD and
-the route rig hear the day from `RunFlow`. It is handed the run, a `RunState` (the class of the
-`GameState` autoload), rather than reading the autoload by name. `start_authored_day(spec, scene)`
+the route rig hear the day from `RunFlow`. It is handed the run, a `RunState`, rather than reading it off a global. `start_authored_day(spec, scene)`
 starts an authored scene's day from the same components, the scene installing its own setup.
 
 ### `VisitCounter`

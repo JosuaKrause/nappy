@@ -17,11 +17,15 @@ const PATIENCE := 40.0
 const REACTION := 2.0
 
 var _city: City
+## The run the suite's city stands in, made fresh for the suite and handed to the city (`City.run`).
+var _run: RunState
 ## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_run = RunState.new()
+	_run.start_run(SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
@@ -38,28 +42,22 @@ func run(t) -> void:
 	_test_an_escort_sent_back_alone_holds_the_gap(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
 	_city.free()
+	_run.free()
 
 # ------------------------------------------------------------------ fixture ---
 
 ## Day 12 on the suite's city with the mark read and the swing's task offered; `before_the_touch`
 ## runs before she reaches the swing. Answers the director, its happenings, the park, the swing and
-## the city state, with the run's state put back by `_end()`.
+## the city state; `_end()` frees the director.
 func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
-	var saved := {
-		"state": GameState.attempt_spend.city_state, "day": GameState.header.day,
-		"completed": GameState.resistance.completed_steps.duplicate(),
-		"failed": GameState.resistance.failed_steps.duplicate(),
-		"progress": GameState.resistance.progress,
-		"package": GameState.resistance.carrying_package,
-	}
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
-	GameState.resistance.carrying_package = false
+	_run.resistance.completed_steps = []
+	_run.resistance.failed_steps = []
+	_run.resistance.progress = 0
+	_run.resistance.carrying_package = false
 	var day := ResistanceSteps.swing_day()
-	GameState.header.day = day
+	_run.header.day = day
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	_run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -69,7 +67,7 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	director.setup(_city, _city.map)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
-	director._on_contact_completed(mark.index if mark else -1)
+	director.contact().complete_now()
 	var task := director.current_step()
 	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING,
 			"day 12 sends her to the swing")
@@ -77,20 +75,12 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	_swing_now = swing
 	if before_the_touch.is_valid():
 		before_the_touch.call()
-	director._on_contact_completed(task.index if task else -1)
+	director.contact().complete_now()
 	return {"director": director, "happenings": director._happenings, "state": state,
-			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day,
-			"saved": saved}
+			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day}
 
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
-	var saved: Dictionary = fixture.saved
-	GameState.attempt_spend.city_state = saved.state
-	GameState.header.day = saved.day
-	GameState.resistance.completed_steps = saved.completed
-	GameState.resistance.failed_steps = saved.failed
-	GameState.resistance.progress = saved.progress
-	GameState.resistance.carrying_package = saved.package
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

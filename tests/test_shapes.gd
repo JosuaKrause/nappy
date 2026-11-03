@@ -209,7 +209,8 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 				"the map has a real %s street to check" % ("horizontal" if horizontal else "vertical"))
 		if not segment:
 			continue
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
+				segment.horizontal, def.obstructs_radius)
 		t.check(positions.size() > 0, "the seal places at least one body on this street")
 		if positions.is_empty():
 			continue
