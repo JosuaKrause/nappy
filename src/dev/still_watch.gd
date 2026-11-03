@@ -87,6 +87,9 @@ var _day: DayController
 var _seconds := DEFAULT_SECONDS
 ## Whether Godot's movie writer is recording the run, handed on to the capture.
 var _recording := false
+## The folder the picture goes into, handed in by whoever builds the watch: `main` hands it the run's
+## own (`telemetry_picture_dir()`), a suite a scratch folder of its own.
+var _picture_dir := ""
 
 ## Whether she has moved past `STILL_RADIUS` from wherever `_anchor` currently sits — before this
 ## is true, standing at the doorstep for the opening seconds of a day must never trigger anything.
@@ -100,11 +103,12 @@ var _elapsed := 0.0
 var _done := false
 
 func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
-		recording := false) -> void:
+		picture_dir: String, recording := false) -> void:
 	_city = city
 	_player = player
 	_day = day
 	_seconds = hold_seconds
+	_picture_dir = picture_dir
 	_recording = recording
 
 func _physics_process(delta: float) -> void:
@@ -260,20 +264,23 @@ func _trigger() -> void:
 		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
-## Where the picture goes: a `still/` folder beside the run's other picture kinds (`auto/`,
-## `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
+## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
+## (`auto/`, `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
 ## `Telemetry.current_log().path` — the one public handle onto where a run writes anything, rather
-## than a second copy of `Telemetry`'s own folder-naming. A fixed filename is enough: the flag
-## quits the game the instant it fires, so a run can never write this file twice. Falls back to
-## `Telemetry.DIRECTORY` itself when telemetry is off (`--no-telemetry` alongside this flag) — an
-## edge case the flag was not asked to solve, but one a picture dropped into the working directory
-## would answer worse than a shared, findable folder.
-func _picture_path() -> String:
+## than a second copy of `Telemetry`'s own folder-naming. Falls back to `Telemetry.DIRECTORY`
+## itself when telemetry is off (`--no-telemetry` alongside this flag) — an edge case the flag was
+## not asked to solve, but one a picture dropped into the working directory would answer worse than
+## a shared, findable folder. Only names the folder; `_picture_path()` makes it.
+static func telemetry_picture_dir() -> String:
 	var log := Telemetry.current_log()
-	var dir: String = (log.path.get_base_dir() + "/still") if log and log.path != "" \
+	return (log.path.get_base_dir() + "/still") if log and log.path != "" \
 			else (Telemetry.DIRECTORY + "/still")
-	DirAccess.make_dir_recursive_absolute(dir)
-	return dir + "/quit-when-still.png"
+
+## The picture's file, in the folder the watch was handed (made here). A fixed filename is enough:
+## the flag quits the game the instant it fires, so a run can never write this file twice.
+func _picture_path() -> String:
+	DirAccess.make_dir_recursive_absolute(_picture_dir)
+	return _picture_dir + "/quit-when-still.png"
 
 ## The closest live event or vehicle — the same "how far, never 'in reach'" shape
 ## `TelemetryObserver._nearest()` reports a chase against — cheap to ask once, at the moment the

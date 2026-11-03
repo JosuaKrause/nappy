@@ -27,9 +27,15 @@ const _MARGIN := 8
 ## of the real time: the watch counts ticks and their length, so the checks do not change with it.
 const _TICK_RATE := 600
 
+## A folder of the suite's own that every picture goes into, removed with the suite (a `DirAccess`
+## made by `create_temp()` removes its folder when it is released): nothing under `user://`.
+var _scratch: DirAccess
+
 func run(t) -> void:
 	var tick_rate := Engine.physics_ticks_per_second
 	Engine.physics_ticks_per_second = _TICK_RATE
+	_scratch = DirAccess.create_temp("still_watch")
+	assert(_scratch != null, "a scratch folder for the pictures")
 	await _test_the_opening_stand_never_triggers(t)
 	await _test_a_move_past_the_radius_arms_it_without_triggering(t)
 	await _test_holding_still_after_the_move_triggers_at_the_hold(t)
@@ -40,6 +46,7 @@ func run(t) -> void:
 	await _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t)
 	await _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t)
 	Engine.physics_ticks_per_second = tick_rate
+	_scratch = null
 	_test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she_stands(t)
 	_test_facing_a_red_light_false_when_the_visible_junction_shows_green(t)
 	_test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longer_matters(t)
@@ -61,7 +68,7 @@ class Rig:
 	## The tick the watch asked for its picture on, or -1 while it has not.
 	var triggered_at := -1
 
-	func _init(t, hold_seconds: float, map: CityMap) -> void:
+	func _init(t, hold_seconds: float, map: CityMap, picture_dir: String) -> void:
 		viewport.size = Vector2i(64, 64)
 		t.add_child(viewport)
 		# A screen far from every junction, until a test places one on it.
@@ -80,7 +87,7 @@ class Rig:
 		day.set_process(false)
 		day.setup(map, player, run)
 		day.start(1000.0)
-		watch.setup(city, player, day, hold_seconds)
+		watch.setup(city, player, day, hold_seconds, picture_dir)
 		watch.child_entered_tree.connect(_the_picture_was_asked_for)
 		viewport.add_child(watch)
 
@@ -110,7 +117,7 @@ func _hold_seconds() -> float:
 
 ## A rig whose first physics tick has begun, so `_stand()` is in step with the ticks.
 func _rig(t) -> Rig:
-	var rig := Rig.new(t, _hold_seconds(), _signalled_map())
+	var rig := Rig.new(t, _hold_seconds(), _signalled_map(), _scratch.get_current_dir() + "/still")
 	await t.get_tree().physics_frame
 	return rig
 
@@ -148,6 +155,8 @@ func _test_holding_still_after_the_move_triggers_at_the_hold(t) -> void:
 	t.check(absi(rig.triggered_at - moved_at - _HOLD_TICKS) <= 2,
 			"at the hold, to within a tick or two (%d ticks after the move)"
 			% (rig.triggered_at - moved_at))
+	t.check(DirAccess.dir_exists_absolute(_scratch.get_current_dir() + "/still"),
+			"the picture's folder is made in the folder the watch was handed")
 	rig.free_all()
 
 ## A second move mid-hold restarts the countdown from the new spot rather than finishing at the
