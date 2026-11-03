@@ -329,7 +329,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "DrawnFrame",
         "telemetry to be handed what it reports",
         ("src/autoload/telemetry.gd",),
-        more=(("src/autoload/telemetry.gd", 2),),
     ),
     Exception_(
         "names",

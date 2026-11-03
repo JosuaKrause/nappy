@@ -1150,7 +1150,11 @@ serially before the next frame is scheduled, so disk overhead appears in the tim
 create an unbounded backlog. A second request is refused while one is active; a run or day ending
 the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
 that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
-unwritable runs are refused without fabricating images. Run `./tools/clip.sh` to scan the whole
+unwritable runs are refused without fabricating images. The capture is `BurstRecorder`
+(`src/telemetry/burst_recorder.gd`), which `Telemetry` builds and hands the screen it photographs
+(`TelemetryScreen`, the game's viewport, which can draw nothing headless), the engine's clock and
+the tree's timers, and the run's `asked/` folder at each start; `tests/test_burst_capture.gd` hands
+it a screen whose frames it draws, a clock it moves and a scratch folder. Run `./tools/clip.sh` to scan the whole
 telemetry folder and convert bursts whose sibling MP4 is missing, without deleting their PNGs.
 The scan skips active captures and existing videos; ended partial sequences with frames are
 eligible too. Pass a burst folder to select one sequence. If there is nothing to convert, the
