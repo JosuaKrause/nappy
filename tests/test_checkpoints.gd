@@ -31,7 +31,7 @@ func run(t) -> void:
 	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
 	_test_a_hut_detains_and_releases_on_the_other_side(t)
 	_test_she_stands_still_when_a_hold_lets_her_out(t)
-	_test_the_hold_charges_only_its_toll(t)
+	await _test_the_hold_charges_only_its_toll(t)
 	_test_a_boundarys_structures_charge_as_one(t)
 	_test_a_corner_of_two_doors_is_one_toll(t)
 	_test_she_is_never_drawn_at_the_place_she_went_in(t)
@@ -687,7 +687,6 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	t.check(baby != null, "the real stroller carries the Baby whose meter this reads")
 	baby.set_world(world)
 	stroller.set_physics_process(false)
-	baby.set_physics_process(false)
 
 	var axis := Vector2.RIGHT
 	var centre := Vector2(5200.0, 5200.0)
@@ -697,6 +696,12 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	# Past its own telegraph, so the field it is standing there with is the field it declares.
 	loud.age = loud.def.telegraph_time + 1.0
 	manager.world.instances.append(loud)
+	# Real frames pass below, on which an event in the tree is drawn: each is handed the events'
+	# atlas page, as the game hands it.
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	hut.atlas = atlas
+	loud.atlas = atlas
 
 	var entry := centre + axis * 60.0
 	stroller.global_position = entry
@@ -713,13 +718,20 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 	t.check(hut.is_chatting(), "walking up to the hut starts the hold")
 	# The baby's own tick before the instances', so every tick the meter takes is a tick the
 	# hold was actually running: the clock runs out inside `EventInstance.step()`, and a baby
-	# stepped after it would spend its last tick outside a hold that had just ended.
-	var guard := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / STEP)) + 10
+	# stepped after it would spend its last tick outside a hold that had just ended. Her tick is
+	# the engine's, in the tree (`Baby._physics_process()`), and the walk is driven on the engine's
+	# `physics_frame`, sent before the nodes take a tick: the next one comes once she has taken
+	# hers, and the instances then take the same tick's step, however many ticks a frame runs.
+	var tick := 1.0 / Engine.physics_ticks_per_second
+	var guard := int(round(EventCatalogue.CHECKPOINT_DETAIN_SECONDS / tick)) + 10
+	var tree := t.get_tree() as SceneTree
+	await tree.physics_frame
 	while hut.is_chatting() and guard > 0:
 		guard -= 1
-		baby.step(STEP)
+		await tree.physics_frame
 		for instance in manager.world.instances:
-			instance.step(STEP)
+			instance.step(tick)
+	baby.set_physics_process(false)
 	t.check(not hut.is_chatting() and guard > 0, "and it runs its own clock out")
 	t.close_to(baby.excitement - before, Tuning.CHAT_EXCITEMENT,
 			"the whole crossing costs the toll and nothing else (%.1f against %.0f)"
@@ -737,6 +749,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 
 	hut.free()
 	loud.free()
+	atlas.release(&"events")
 	stroller.free()
 	world.free()
 	manager.free()

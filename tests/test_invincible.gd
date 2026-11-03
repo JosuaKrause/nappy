@@ -6,7 +6,9 @@ extends RefCounted
 ## handed its value directly, the way `main` hands it from the run's configuration.
 
 const SEED := 4242
-const STEP := 1.0 / 60.0
+## How long the meter rig stands against the source: whole physics ticks of the baby's own, in the
+## tree (`_let_the_baby_tick()`).
+const METER_SECONDS := 3.0
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 ## Stands in for the city, the same shape `tests/test_meters.gd`'s own `FakeWorld` uses: a live
@@ -31,6 +33,8 @@ class _MeterRig extends RefCounted:
 	var baby: Baby
 
 var _map: CityMap
+## The run the day's clock is handed (`_build()`): a run of the test's own, freed with it.
+var _run: RunState
 var _player: Node2D
 var _day: DayController
 var _results: Array[GameEnums.DayResult] = []
@@ -43,8 +47,8 @@ func run(t) -> void:
 	_test_hard_fail_does_not_end_the_day_under_invincible(t)
 	_test_the_clock_never_moves_under_invincible(t)
 	_test_a_won_day_still_ends_under_invincible(t)
-	_test_the_meter_does_not_rise_under_invincible(t)
-	_test_the_clock_and_the_meter_both_move_with_the_flag_off(t)
+	await _test_the_meter_does_not_rise_under_invincible(t)
+	await _test_the_clock_and_the_meter_both_move_with_the_flag_off(t)
 	_test_the_three_losses_still_end_the_day_with_the_flag_off(t)
 	_test_the_hud_names_the_mode_when_invincible(t)
 	_test_the_run_log_notes_the_flag_once_per_day(t)
@@ -93,12 +97,15 @@ func _build(t) -> void:
 	_day = DayController.new()
 	t.add_child(_day)
 	_day.set_process(false)
-	_day.setup(_map, _player, GameState)
+	_run = RunState.new()
+	_run.start_run(SEED)
+	_day.setup(_map, _player, _run)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 func _teardown() -> void:
 	_day.free()
 	_player.free()
+	_run.free()
 
 ## A `Baby` on a live `Stroller`, standing on a `FakeWorld` — the same shape `tests/test_meters.
 ## gd`'s own `_build()` uses, kept local to this suite so a rig this small does not need a shared
@@ -117,8 +124,15 @@ func _build_meter_rig(t) -> _MeterRig:
 	rig.baby = Baby.new()
 	rig.stroller.add_child(rig.baby)
 	rig.baby.set_world(rig.world)
-	rig.baby.set_physics_process(false)
 	return rig
+
+## Lets `seconds` of the project's physics ticks pass with the baby in the tree: her own
+## `_physics_process()` runs her meters once a tick, as it does in a day. Counted in ticks, so a long
+## frame that runs several of them changes nothing.
+func _let_the_baby_tick(rig: _MeterRig, seconds: float) -> void:
+	for _i in int(round(seconds * Engine.physics_ticks_per_second)):
+		await rig.baby.get_tree().physics_frame
+	await rig.baby.get_tree().process_frame
 
 func _teardown_meter_rig(rig: _MeterRig) -> void:
 	rig.stroller.free()
@@ -184,8 +198,7 @@ func _test_the_meter_does_not_rise_under_invincible(t) -> void:
 	rig.world.noise = 50.0
 
 	rig.baby.excitement_frozen = true
-	for _i in int(round(3.0 / STEP)):
-		rig.baby.step(STEP)
+	await _let_the_baby_tick(rig, METER_SECONDS)
 	t.check(rig.baby.excitement <= 20.0 + 0.01,
 			"excitement never rises under --invincible, even against a live source (got %.2f)"
 			% rig.baby.excitement)
@@ -204,8 +217,7 @@ func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t) -> void:
 
 	var rig := _build_meter_rig(t)
 	rig.world.noise = 50.0
-	for _i in int(round(3.0 / STEP)):
-		rig.baby.step(STEP)
+	await _let_the_baby_tick(rig, METER_SECONDS)
 	t.check(rig.baby.excitement > 0.01, "and excitement rises too, against the same source")
 	_teardown_meter_rig(rig)
 
@@ -235,21 +247,31 @@ func _test_the_three_losses_still_end_the_day_with_the_flag_off(t) -> void:
 
 # -------------------------------------------------------------------- HUD ---
 
+## Each HUD is configured as `main` configures it, before it enters the tree, where it draws its
+## header (`Root/Header`) from the run it is handed, a run of the test's own.
 func _test_the_hud_names_the_mode_when_invincible(t) -> void:
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	hud.use_run(GameState)
-	t.add_child(hud)
-	hud.set_process(false)
-	hud.configure(true, true, false)
-	hud._refresh_header()
-	t.check(hud._header.text.contains("INVINCIBLE"),
+	var run := RunState.new()
+	run.start_run(SEED)
+	var on := _hud_drawing(t, run, true)
+	t.check(on.text.contains("INVINCIBLE"),
 		"the debug header names the mode so no capture from this run reads as a real one")
 
-	hud.configure(true, false, false)
-	hud._refresh_header()
-	t.check(not hud._header.text.contains("INVINCIBLE"), "and drops it once the flag is off")
+	var off := _hud_drawing(t, run, false)
+	t.check(not off.text.contains("INVINCIBLE"), "and drops it once the flag is off")
 
-	hud.free()
+	on.owner.free()
+	off.owner.free()
+	run.free()
+
+## The header a debug HUD draws on entering the tree, configured `invincible` or not and handed
+## `run`; its owner is the HUD, which the caller frees.
+func _hud_drawing(t, run: RunState, invincible: bool) -> Label:
+	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	hud.configure(true, invincible, false)
+	hud.use_run(run)
+	t.add_child(hud)
+	hud.set_process(false)
+	return hud.find_child("Header", true, false) as Label
 
 # --------------------------------------------------------------- telemetry ---
 
