@@ -1798,7 +1798,9 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 ## real physics frame; the charge is a masked pursuer put on the city's street as a streamed-in row
 ## comes back (`EventInstance.resume()`, which the streaming calls: a row brought back after it had
 ## noticed her is still chasing), and she is put at the tunnel, where the day's own clock finds her
-## on its next tick (`DayController.tick()`, which its frame calls).
+## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is given
+## the atlas the city's events draw from (`EventInstance.atlas`, which the spawner hands every
+## event it makes), so a real frame can draw it.
 func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
@@ -1822,12 +1824,14 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	var guard := EventInstance.new()
 	guard.setup(EventCatalogue.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
+	guard.atlas = city.events.world.atlas
 	city.add_child(guard)
 	guard.set_process(false)
 	city.events.world.instances.append(guard)
 	guard.resume(0.01, 0.0, 0.0)
 	her.global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
-	Boot.day(main).tick(0.0)
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
 			"getting out closes the charge still running, then ends the city's day (%s)" % [heard])
 	EventBus.pursuit_cut_short.disconnect(on_cut_short)
@@ -2065,6 +2069,12 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 
 # ---------------------------------------------------------- pause, built the same way ---
 
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
+
 func _action(name: StringName) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
@@ -2138,8 +2148,13 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	t.check(Boot.day(main).is_running(), "the section's clock is running")
 	t.check(not pause.is_open(), "and nothing is paused yet")
 
-	pause.quit_requested.emit()
-	t.check(calls["quits"] == 1, "quit reaches the same quit a day's pause reaches")
+	# The quit is pressed where the game fires it: with the pause open, as a `Q` through the viewport.
+	t.get_viewport().push_input(_action("pause"))
+	t.check(pause.is_open(), "Esc opens the pause")
+	t.get_viewport().push_input(_key(KEY_Q))
+	t.check(calls["quits"] == 1, "Q on the open pause reaches the same quit a day's pause reaches")
+	pause.close()
+	t.get_tree().paused = false
 
 	# Her heading, held by the on-screen controls: let go while the pause is up, and given back by
 	# the pause screen's close only if it stashed it in these same controls. The controls are let a
@@ -2162,8 +2177,11 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 		Input.action_release(action)
 	t.get_tree().paused = false
 
-	pause.restart_requested.emit()
-	t.check(calls["reloads"] == 1, "and the held restart reaches the same restart a day's does")
+	t.get_viewport().push_input(_action("pause"))
+	t.get_viewport().push_input(_key(KEY_R))
+	t.check(calls["reloads"] == 1, "and R on the open pause reaches the same restart a day's does")
+	pause.close()
+	t.get_tree().paused = false
 	_free_the_escape(t, escape)
 
 	var unpaused := await _boot_the_escape(t, DaySpec.Section.BUILDING,
@@ -2216,7 +2234,8 @@ func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
 
 	await Boot.press_continue(t, main)
 	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
-	Boot.day(main).tick(0.0)
+	for _frame in 3:
+		await t.get_tree().physics_frame
 	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
 			"out of the city, the epilogue is up")
 	t.get_viewport().push_input(_action("pause"))
@@ -2402,7 +2421,11 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(),
 			func(main: Node) -> void: main.use_reload(func() -> void: reloads[0] += 1))
 	var main := escape.main
-	Boot.pause(main).restart_requested.emit()
+	await Boot.press_continue(t, main)
+	t.get_viewport().push_input(_action("pause"))
+	t.get_viewport().push_input(_key(KEY_R))
+	Boot.pause(main).close()
+	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
 	escape.run.facts.escape_section = DaySpec.Section.CITY
 	Boot.summary(main).restart_requested.emit()

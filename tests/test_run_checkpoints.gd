@@ -366,7 +366,10 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.connect(on_back)
 	EventBus.run_begun.connect(on_begun)
 	run.header.nerves = 1
-	Boot.day(main).day_finished.emit(GameEnums.DayResult.LOST_TIMEOUT)
+	# The day's own timeout: its clock runs out and one physics tick ends the day.
+	Boot.day(main).time_remaining = 0.0
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(run.header.day == 8 and Boot.summary(main).is_showing(), "the lost-day screen is up, at day 8")
 	await Boot.press_continue(t, main)
 
