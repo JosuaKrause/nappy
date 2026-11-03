@@ -19,5 +19,11 @@ encounter suites, subtask W1 of the scoped plan. No `src/` change and no seam ad
 - Mutation runs listed in the PR; two gates are caught by nothing, since other conditions stop the
   same cases first (the old suites missed them too).
 
-**Not done:** the arm test writes the crowd's `_player` and calls its `_stop_for_gates()`; the
-street-door rig tests call the rig's public steps by hand on a city that never ticks.
+- The first review found the chat suite aborting with no check named when the hold was broken (a
+  mother freed mid-conversation); it frees the manager first, and the mutation fails eighteen named
+  checks. The door rig's frame-after check and the door guard's charge take real ticks.
+
+**Not done:** the arm test writes the crowd's `_player` and calls its `_stop_for_gates()`; public
+steps are called by hand where nothing ticks them: the street-door rig on a city that never ticks,
+the crowd's `step()` in the gate rig (its own tick passes the car at another time), and a lone
+guard's `step()` in the pursuit simulations.
