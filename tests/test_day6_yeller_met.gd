@@ -79,15 +79,15 @@ func _walk(t, seed_value: int) -> String:
 	var outcome := "no mark"
 	var mark := resistance.current_step()
 	if mark and mark.is_pickup:
-		var seen := {"man": null, "in_view": false}
+		var seen := {"man": null, "in_view": false, "standing": [], "read": false}
 		var tick := func() -> void:
 			var events := city.events
 			events.ahead.site_what_is_on_her_way(STEP)
 			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
-			if seen["man"] == null:
+			if seen["man"] == null and seen["read"]:
 				for plan: EventScheduler.Planned in events.plans():
-					if plan.def.id == ROW and events.ahead.director().is_from_her_route(plan):
+					if plan.def.id == ROW and not seen["standing"].has(plan):
 						seen["man"] = plan
 			var man: EventScheduler.Planned = seen["man"]
 			if man and man.is_placed():
@@ -97,6 +97,9 @@ func _walk(t, seed_value: int) -> String:
 		_along(player, _path(map, player.global_position, [map.world_to_tile(
 				resistance.contact_position())]), tick)
 		resistance.contact().complete_now()
+		# The dawn's rows and the task's own man; a man not among them was put on her route.
+		seen["standing"] = city.events.plans().duplicate()
+		seen["read"] = true
 		var task_man: EventInstance = resistance.rider()
 		if task_man:
 			_along(player, _path(map, player.global_position, _beside(map,

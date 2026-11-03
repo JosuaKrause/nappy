@@ -2974,7 +2974,7 @@ static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNum
 ## friction? you can't walk through it"; "a wall is also when you physically cannot walk through".)*
 ##
 ## A sidewalk is two lanes of tile, and a row stands in one of them, so the only line past it is the
-## other lane — one tile across, which `_denies` reads as free while the row's reach is under it.
+## other lane — one tile across, which `Planned.denies()` reads as free while the row's reach is under it.
 ## What the reach is, is the whole point: **the body plus the ground it charges for**
 ## (`EventDef.line_reach()`), not the body alone. A café whose tables are 24px across but which bills
 ## anybody within 56px of them is a café nobody walks past on that sidewalk for free, and *free* is
@@ -3001,7 +3001,7 @@ static func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 ## The line a stroller needs, stated as a width rather than a reach: an edge-to-edge gap has to be
 ## at least this wide for her whole body to fit inside it, once a row's own edge and the sidewalk's
 ## true boundary — the kerb, or the frontage wall — are both hard edges neither of them may cross.
-## The same number as `EventDef.reaches_the_far_lane()`'s tile grain (2 * `PLAYER_BODY_RADIUS`, 28px), read as a
+## The same number as the far-lane distance `EventDef` compares a reach to (`EventDef._THE_FAR_LANE`, one tile of 32px; `EventDef.reaches_the_far_lane()` asks it), read as a
 ## width because this clause measures one directly rather than comparing a reach to a fixed tile.
 const _HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 
@@ -3011,13 +3011,13 @@ const _HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 ## "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
 ## to do correctly?")* The cost clause asks what a row bills a passer-by for being near it; this asks
 ## whether a passer-by has anywhere left to stand at all, and the two can disagree: `delivery_van`
-## is silent and its 22px `obstructs_radius` stays under `EventDef.reaches_the_far_lane()` (32px), so the cost clause
+## is silent and its 22px `obstructs_radius` stays under the far-lane distance (`EventDef._THE_FAR_LANE`, one tile, 32px), so the cost clause
 ## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
 ## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
 ## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
 ## already measures by hand for this one row. Read off `obstructs_radius` and `pavement_side` rather
 ## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
-## list — and a row that already clears `EventDef.reaches_the_far_lane()` never reaches this, so nothing already a wall
+## list — and a row whose reach already clears the far-lane distance (`EventDef.reaches_the_far_lane()`) never reaches this, so nothing already a wall
 ## is asked twice.
 static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
 	var reach := def.obstructs_radius

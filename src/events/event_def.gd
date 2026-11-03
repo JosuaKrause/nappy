@@ -1826,22 +1826,24 @@ func silent_beyond() -> float:
 ## `RegionPlanner` choosing it rather than any field on the def.
 const _DOOR_ID_PREFIX := "checkpoint"
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to
-## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
-## *is it actually standing anywhere* — is the caller's own question above.
+## ask about: `EventScheduler._role_for()` decides a role before any tile is chosen. Everything a
+## placement adds — *is it actually standing anywhere* — is the caller's own question:
+## `EventScheduler.Planned.counts_against_the_line()` asks it of a placement, over the five kinds of
+## row it lists as outside the line.
 ##
-## **A row the day sites from her own walk is the sixth, and it is the only one that is exempt
+## **A row the day sites from her own walk is a sixth kind outside the line, and it is the only one that is exempt
 ## because closing the way is the point.** *(PLAYTEST-119: "you're not supposed to go past it";
 ## "when you see the fire the reaction should be to take a different route".)* Day 3's fire is put
 ## on the branch she is walking so that the street she is on stops being a way through, and the
 ## engine parks across from it for the rest of the day — so asking whether a line survives along
 ## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
 ## strictly stronger and is stated over the day rather than over the street:
-## `WalkSiting._still_leaves_a_park_reachable()` refuses any site that leaves her unable to reach
+## `EventScheduler.WalkSiting.leaves_her_a_way()` (`_still_leaves_a_park_reachable()`) refuses any site that leaves her unable to reach
 ## the home, or a calm area she has not used, **outside both fields**. A one-shot carrying this
-## flag is never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in
+## flag is never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing else in
 ## the day is judged differently because of it. **A recurring row carrying it is not exempt**: a
 ## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
-## its position is handed to her walk (`_hand_to_her_walk`).
+## its position is handed to her walk (`EventScheduler._hand_to_her_walk()`).
 func has_a_line_to_avoid() -> bool:
 	if role == EventDef.Role.SCENERY or pursuit != null or id.begins_with(_DOOR_ID_PREFIX):
 		return false
@@ -1871,10 +1873,10 @@ func reaches_the_far_lane() -> bool:
 ## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
 ## junction is low enough that it can be taken without having to worry or plan around it."* A walk
 ## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
-## *down*, so it is ground a route does not have to be planned around and the rules in this section
-## have no business refusing a placement over it. The disc is therefore where the emission crosses
+## *down*, so it is ground a route does not have to be planned around and the placement rules
+## in `EventScheduler` have no business refusing a placement over it. The disc is therefore where the emission crosses
 ## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
-## `_denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
+## `EventScheduler._denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
 ## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
 ## disc to a pram trying to settle.
 ##
