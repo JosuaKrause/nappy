@@ -139,7 +139,7 @@ func _test_pointing_pose_on_a_perform_step(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director(t)
 		director.start_day(6, _rng(6), 300.0)
-		director._on_contact_completed(1)
+		director.contact().complete_now()
 		var step := director.current_step()
 		t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
@@ -163,13 +163,13 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 	_with_clean_run(func() -> void:
 		var director := _director(t)
 		director.start_day(6, _rng(6), 300.0)
-		director._on_contact_completed(1)
+		director.contact().complete_now()
 		var objective := director.pointable_objective()
 		t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
 		var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
 				objective + Vector2(0.0, 300.0))
 		var look := protest.look as RankLook
-		t.check(look._protest_objective() == objective,
+		t.check(protest.points_at.call() == objective,
 				"a protest the city's events make asks the director it was handed")
 		var picture: String = look._protest_pose_now()[0]
 		t.check(picture != EventPictures.PROTESTER
@@ -183,7 +183,7 @@ func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
 	_build_city(t)
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
 	var look := protest.look as RankLook
-	t.check(look._protest_objective() == Vector2.INF,
+	t.check(not protest.points_at.is_valid() or protest.points_at.call() == Vector2.INF,
 			"a protest with no director handed in has nothing to point at")
 	var picture: String = look._protest_pose_now()[0]
 	t.check(not EventPictures.POINTING_POSES.has(picture),

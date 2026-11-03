@@ -70,7 +70,7 @@ func _test_one_judgement_per_candidate(t) -> void:
 	var judged_once := 0
 	var refused := 0
 	for id in ["poster_crew", "homeless_yeller", "dog_walker"]:
-		var def := EventScheduler._for_day(EventCatalogue.by_id(id), day)
+		var def := EventCatalogue.by_id(id).for_day(day)
 		var role := EventScheduler._role_for(def, day)
 		var ground := {}
 		var whole := EventScheduler._ground_for(def, map, ground, corridor, role)
@@ -188,7 +188,7 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	var already := _planned(day)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
-	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
+	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
@@ -248,8 +248,10 @@ func _longest_route(day: int) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
+	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, [] as Array[Vector2i],
+			PackedVector2Array())
 	for i in best.size():
-		points.append(EventScheduler.WalkSiting._cell_centre(_map(), best[best.size() - 1 - i]))
+		points.append(siting.cell_centre(best[best.size() - 1 - i]))
 	return points
 
 ## A crew accepted on a one-tile offer inside a look, and then a crew of the same row standing on
@@ -263,7 +265,7 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var already := _planned(day)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
-	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
+	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS

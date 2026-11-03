@@ -21,22 +21,22 @@ func _symmetric_gap(a: EventScheduler.Planned, b: EventScheduler.Planned) -> flo
 func _test_stationary_pairs(t) -> void:
 	var a := _plan(Vector2(2.0, 3.0))
 	var b := _plan(Vector2(5.0, 7.0))
-	t.close_to(EventScheduler._gap_between(a, b), 5.0,
+	t.close_to(a.gap_to(b), 5.0,
 			"two stationary plans use their point-to-point distance", 0.0001)
 
 func _test_one_stationary_side(t) -> void:
 	var point := _plan(Vector2(0.0, 5.0))
 	var line := _plan(Vector2.ZERO,
 			PackedVector2Array([Vector2(-10.0, 0.0), Vector2(10.0, 0.0)]))
-	t.close_to(EventScheduler._gap_between(point, line), 5.0,
+	t.close_to(point.gap_to(line), 5.0,
 			"a point measures to the interior of the other route", 0.0001)
-	t.close_to(EventScheduler._gap_between(line, point), 5.0,
+	t.close_to(line.gap_to(point), 5.0,
 			"and reversing the plans gives the same interior distance", 0.0001)
 
 func _test_one_point_paths_are_stationary(t) -> void:
 	var one_point := _plan(Vector2(2.0, 3.0), PackedVector2Array([Vector2(100.0, 100.0)]))
 	var other := _plan(Vector2(2.0, 7.0))
-	t.close_to(EventScheduler._gap_between(one_point, other), 4.0,
+	t.close_to(one_point.gap_to(other), 4.0,
 			"a one-point path uses the plan position, as ends and distance_from do", 0.0001)
 
 func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t) -> void:
@@ -57,7 +57,7 @@ func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t) ->
 			if a.path.size() >= 2 and b.path.size() >= 2:
 				continue
 			compared += 1
-			t.check(EventScheduler._gap_between(a, b) == _symmetric_gap(a, b),
+			t.check(a.gap_to(b) == _symmetric_gap(a, b),
 					"stationary ordered pair %d matches the symmetric result" % compared)
 	t.check(compared > 0,
 			"the stationary oracle covered both orders and the duplicate zero-length segment")

@@ -466,11 +466,27 @@ func spawn_mode_on(day: int) -> SpawnMode:
 
 ## How this row notices her on `day`: `notice` through `from_day_after.after_day`, the switch's own
 ## past it. An instance reads `notice` off the def it was handed, so a placement past the switch is
-## handed a copy carrying this (`EventScheduler._for_day()`); a director-sited row keeps its own.
+## handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
 func notice_on(day: int) -> NoticeSpec:
 	if from_day_after and day > from_day_after.after_day:
 		return from_day_after.notice
 	return notice
+
+## A `MAP` placement's own answer to `notice_on(day)` — a derived copy for the same reason
+## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
+## past `from_day_after` cannot set the shared row's `notice` without changing what
+## every other day sees. An instance reads `notice` off the def it was handed, so the
+## day's answer arrives as a different def. This row itself for every row whose notice does not
+## change by day.
+func for_day(day: int) -> EventDef:
+	var that_day := notice_on(day)
+	if that_day == notice:
+		return self
+	var variant: EventDef = duplicate()
+	variant.shape = shape
+	variant.solid_parts = solid_parts
+	variant.notice = that_day
+	return variant
 
 ## **Where her walk sites this row**, or null for a row the dawn places — see `OnHerWay`.
 @export var on_her_way: OnHerWay = null
@@ -1150,7 +1166,7 @@ func at_heat(level: int) -> EventDef:
 		hot.duration = Tuning.PURSUIT_TIME
 	# A hunt whose own catch ends the day says so (`HuntSpec.ends_the_day`, the roadblock's guard):
 	# a pursuer is exempt from the rule that nothing else happens inside a lethal event's field
-	# (`EventScheduler._keeps_its_field_clear`), so the copy is lethal rather than losing it to stay
+	# (`Planned.keeps_its_field_clear()`), so the copy is lethal rather than losing it to stay
 	# inside that rule.
 	if hunts.ends_the_day:
 		hot.hard_fail = true
@@ -1667,7 +1683,7 @@ func as_warned_first() -> EventDef:
 ## The field's own furthest reach from this row's centre — what every "how far" rule needs instead
 ## of `outer_radius` alone now that a segment's field is a capsule rather than a disc, and now that
 ## a moving point's own forward reach outgrows its resting radius:
-## `EventScheduler._keeps_its_field_clear`'s clearance, the streaming rect, and
+## `Planned.keeps_its_field_clear()`'s clearance, the streaming rect, and
 ## `ExcitementSource.expected_gross_at()`'s early-out (`EventExcitement._projection_reach()`).
 ## `half_length + outer_radius` for a segment (the along-axis reach, which is exactly the old flat
 ## `outer_radius` a row's radii were derived *against* — see the catalogue's own docstrings) whose
@@ -1804,3 +1820,100 @@ func silent_beyond() -> float:
 		level = maxf(level, core_radius)
 	var body := shape.reach() if shape != null else 0.0
 	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
+
+## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
+## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
+## `RegionPlanner` choosing it rather than any field on the def.
+const _DOOR_ID_PREFIX := "checkpoint"
+## The same exemptions asked of the **def** alone, for the one caller that has no placement to
+## ask about: `EventScheduler._role_for()` decides a role before any tile is chosen. Everything a
+## placement adds — *is it actually standing anywhere* — is the caller's own question:
+## `EventScheduler.Planned.counts_against_the_line()` asks it of a placement, over the five kinds of
+## row it lists as outside the line.
+##
+## **A row the day sites from her own walk is a sixth kind outside the line, and it is the only one that is exempt
+## because closing the way is the point.** *(PLAYTEST-119: "you're not supposed to go past it";
+## "when you see the fire the reaction should be to take a different route".)* Day 3's fire is put
+## on the branch she is walking so that the street she is on stops being a way through, and the
+## engine parks across from it for the rest of the day — so asking whether a line survives along
+## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
+## strictly stronger and is stated over the day rather than over the street:
+## `EventScheduler.WalkSiting.leaves_her_a_way()` (`_still_leaves_a_park_reachable()`) refuses any site that leaves her unable to reach
+## the home, or a calm area she has not used, **outside both fields**. A one-shot carrying this
+## flag is never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing else in
+## the day is judged differently because of it. **A recurring row carrying it is not exempt**: a
+## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
+## its position is handed to her walk (`EventScheduler._hand_to_her_walk()`).
+func has_a_line_to_avoid() -> bool:
+	if role == EventDef.Role.SCENERY or pursuit != null or id.begins_with(_DOOR_ID_PREFIX):
+		return false
+	if on_her_way != null and kind == GameEnums.EventKind.ONE_SHOT:
+		return false
+	if mobile and not paces:
+		return false
+	return line_reach() > 0.0
+
+## The line a stroller needs across a sidewalk, measured between the two lanes of one:
+## `SIDEWALK_WIDTH` (2) tiles of sidewalk means the far lane's centre is one tile (32px) from the
+## near one, and a free tile is a line because a tile is wider than the 28px stroller
+## (`2 * PLAYER_BODY_RADIUS`). It is the same tile-grained reading every other rule in this section
+## measures a line in.
+const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
+
+## Whether the row's reach (`line_reach()`) is at least the far lane's, so the lane she would use
+## to get past is itself billed.
+func reaches_the_far_lane() -> bool:
+	return line_reach() >= _THE_FAR_LANE
+
+## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
+## body, the larger of the two where both apply. A row that neither charges nor obstructs — the
+## `playground` ambient, at intensity 0 — is not something a line has to avoid.
+##
+## **Charging for is not the same as being heard on**, and the difference is the player's own
+## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
+## junction is low enough that it can be taken without having to worry or plan around it."* A walk
+## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
+## *down*, so it is ground a route does not have to be planned around and the placement rules
+## in `EventScheduler` have no business refusing a placement over it. The disc is therefore where the emission crosses
+## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
+## `EventScheduler._denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
+## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
+## disc to a pram trying to settle.
+##
+## **A lethal row keeps its whole `outer_radius`.** Its price is not a rate and nothing about being
+## quiet at the rim makes walking into it survivable, so the arithmetic below says nothing about it.
+##
+## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
+## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
+## would need its own answer — its intensity is shared between bodies, so the closed form below
+## reads it far too wide — and does not have one: `pigeon_flock` is `Role.SCENERY` and
+## `Planned.counts_against_the_line()` is done with it before this is ever asked.
+func line_reach() -> float:
+	if hard_fail:
+		return maxf(outer_radius, obstructs_radius)
+	return maxf(reach_above(Tuning.EXCITEMENT_DECAY_WALKING), obstructs_radius)
+
+## How far from the centre a row still emits more than `rate`, over both parts of its field: the
+## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
+## which is the whole point of having it).
+func reach_above(rate: float) -> float:
+	return maxf(_band_crossing(intensity, inner_radius, outer_radius, rate,
+			falloff_power),
+			_band_crossing(core_intensity, inner_radius, core_radius, rate,
+			falloff_power))
+
+## Where one falloff band crosses `rate`, or zero if it is never above it — `Field.falloff`'s
+## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
+## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
+## it actually charges for rather than the ground a quadratic row of the same numbers would.
+static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
+		power: float) -> float:
+	if intensity <= rate or outer <= inner:
+		return 0.0
+	var left := 1.0 - rate / intensity
+	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Field.falloff` writes its
+	# own default out: the two may differ in the last bit, and every radius the catalogue was
+	# measured at came from this one.
+	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
+	return inner + t * (outer - inner)
+

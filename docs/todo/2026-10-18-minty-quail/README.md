@@ -71,6 +71,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
    `tests-isolated.md` and `hidden-statics.md` beside it, since the tests that patch a static and put it back are the ones
    that move to an injected fake once its owner holds the state instead.
+   `run-state-handed-in.md` beside them too: each wave moves its suites onto a fresh run state
+   handed in, after the one PR that moves the run onto the `Sitting` (inbox #985 in round-egret).
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each

@@ -1849,7 +1849,7 @@ static func _charging_dog() -> EventDef:
 	def.spawn_mode = EventDef.SpawnMode.AHEAD_OF_PLAYER
 	# From the day after the lesson it is a place on the map that waits for her inside its one
 	# radius, 130px, inside its 150px field, the bigger of the two radii it had before (inbox
-	# #788 in minty-lemur). `EventScheduler._for_day()` hands a placement past the switch a copy
+	# #788 in minty-lemur). `EventDef.for_day()` hands a placement past the switch a copy
 	# carrying it.
 	def.from_day_after = DaySwitch.new()
 	def.from_day_after.after_day = Tuning.RUN_TAUGHT_DAY
