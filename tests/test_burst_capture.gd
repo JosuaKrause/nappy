@@ -5,37 +5,89 @@ extends RefCounted
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_b_and_the_rig_action_choose_the_burst(t)
+	_test_a_release_build_ignores_the_capture_keys(t)
 	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)
 	_test_cancellation_and_stale_callbacks_cannot_cross_sequences(t)
 	_test_metadata_write_failure_stops_without_claiming_success(t)
 
+const UI := preload("res://tests/ui_screens.gd")
+
+## The readout the way `main` sets it up on a debug build, handed a `RunSession` over the run log
+## (a log held in memory), in a tree where the viewport delivers it keys.
+class Rig:
+	var readout := DebugReadout.new()
+	var label := Label.new()
+	var layer := CanvasLayer.new()
+	var session := RunSession.new()
+	var run := RunState.new()
+
+	func _init(t, debug_build := true) -> void:
+		Telemetry.begin_memory_log()
+		t.add_child(layer)
+		layer.add_child(label)
+		var config := RunConfig.parse(PackedStringArray(), "", debug_build)
+		session.setup(Telemetry, config, EventBus, run)
+		readout.setup(config, label, layer, run.header, session, Callable())
+		t.add_child(readout)
+
+	## The run log's lines that begin a picture or a burst the key asked for.
+	func asked() -> Array[String]:
+		var found: Array[String] = []
+		for line: String in Telemetry.current_log().lines:
+			if line.contains("asked for a picture") or line.contains("burst"):
+				found.append(line)
+		return found
+
+	func free_all() -> void:
+		readout.free()
+		layer.free()
+		session.free()
+		run.free()
+		Telemetry.end_run()
+
 ## The input map binds B through a physical key, so these are real `InputEventKey` shapes
 ## rather than action names invented by the test. The named action is the shape `--press` sends.
+## Each is pushed through the viewport to the readout, and what it chose is read from the run log:
+## a picture writes the line "asked for a picture", a burst the line the headless refusal writes
+## ("burst refused"), since a headless run has no drawable viewport to capture.
 func _test_b_and_the_rig_action_choose_the_burst(t) -> void:
-	var single := _p_key(false)
-	var old_burst := _p_key(true)
-	var burst := _b_key(false)
-	var shifted_burst := _b_key(true)
-	var echo := _b_key(false, true)
+	var rig := Rig.new(t)
 	var rig_action := InputEventAction.new()
 	rig_action.action = &"snapshot_burst"
 	rig_action.pressed = true
 
-	t.check(DebugReadout._debug_snapshot_action(single) == &"snapshot",
+	UI.push(rig.readout, _p_key(false))
+	t.check(_pictures(rig) == 1 and _bursts(rig) == 0,
 			"an unmodified physical P remains the single-snapshot action")
-	t.check(DebugReadout._debug_snapshot_action(old_burst) == &"snapshot",
+	UI.push(rig.readout, _p_key(true))
+	t.check(_pictures(rig) == 2 and _bursts(rig) == 0,
 			"Shift+P stays a single snapshot and no longer starts a burst")
-	t.check(DebugReadout._debug_snapshot_action(burst) == &"snapshot_burst",
+	UI.push(rig.readout, _b_key(false))
+	t.check(_pictures(rig) == 2 and _bursts(rig) == 1,
 			"an unmodified physical B selects the burst action")
-	t.check(DebugReadout._debug_snapshot_action(shifted_burst) == &"snapshot_burst",
-			"Shift+B also selects the burst action")
-	t.check(not burst.is_action_pressed("run"),
-			"the burst key is not the run action")
-	t.check(DebugReadout._debug_snapshot_action(echo) == &"",
-			"a held B echo cannot make another capture")
-	t.check(DebugReadout._debug_snapshot_action(rig_action) == &"snapshot_burst",
+	UI.push(rig.readout, _b_key(true))
+	t.check(_pictures(rig) == 2 and _bursts(rig) == 2, "Shift+B also selects the burst action")
+	t.check(not _b_key(false).is_action_pressed("run"), "the burst key is not the run action")
+	UI.push(rig.readout, _b_key(false, true))
+	t.check(_pictures(rig) == 2 and _bursts(rig) == 2, "a held B echo cannot make another capture")
+	UI.push(rig.readout, rig_action)
+	t.check(_pictures(rig) == 2 and _bursts(rig) == 3,
 			"the named action used by the scripted rig follows the burst branch")
+	rig.free_all()
+
+func _test_a_release_build_ignores_the_capture_keys(t) -> void:
+	var rig := Rig.new(t, false)
+	UI.push(rig.readout, _p_key(false))
+	UI.push(rig.readout, _b_key(false))
+	t.check(rig.asked().is_empty(), "the capture keys do nothing outside a debug build")
+	rig.free_all()
+
+func _pictures(rig: Rig) -> int:
+	return rig.asked().filter(func(line: String) -> bool: return line.contains("asked for a picture")).size()
+
+func _bursts(rig: Rig) -> int:
+	return rig.asked().filter(func(line: String) -> bool: return line.contains("burst refused")).size()
 
 func _test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
 	Telemetry.begin_memory_log()
