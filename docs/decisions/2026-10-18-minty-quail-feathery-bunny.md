@@ -9,14 +9,15 @@ seventeen suites it was given, partly. The item lists what each still reads and 
   `_is_the_main_road`, day 1's `plan_day()` for `_eligible`, a plan's `wall_bodies` with
   `alley_mouth_rect()` for `_alley_mouth_wall_body`, `EventInstance.runs_vertically()` for
   `_spread_is_vertical`, `contact().complete_now()` for `_on_contact_completed`,
-  `reach_obstruction()` for `_reach_blocked`, `Building.window_texture()` for `_window_style` and
-  `_windows`.
+  `Building.window_texture()` for `_window_style` and `_windows`. The park cordon suite keeps its two
+  reads of `ResistanceDirector._reach_blocked`: the public `reach_obstruction()` is read by no game
+  class, so it is no seam (the first review found it swapped in).
 - Two test fixtures, `RunCity.in_run` and `RunCity.with_own_run` (`tests/fixtures/run_city.gd`),
   hand a city a fresh `RunState`, so the park cordon, spent park and world passability suites no
   longer touch `GameState` (45 lines to 0), and the blocks, home block and barrier suites build
   their cities on a run of their own.
 - Private-read lines: seals 6 to 1, shapes 3 to 2, regions 8 to 3, home_block 9 to 5, park_cordon
-  8 to 4, park_cordon_seeds 10 to 5; spent_park, world_passability, blocks and barrier_stays
+  8 to 6, park_cordon_seeds 10 to 5; spent_park, world_passability, blocks and barrier_stays
   unchanged. Every check kept but home_block's window-style and lit-pattern checks, merged (four
   fewer); regions gains checks that the plan's wall body stands in each alley mouth. A first
   day-one soft-seal check passed with no soft seals placed, since alley mouths take soft rows too;

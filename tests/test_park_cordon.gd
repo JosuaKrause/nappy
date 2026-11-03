@@ -157,7 +157,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
 		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
-				director.reach_obstruction())
+				director._reach_blocked)
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
@@ -431,7 +431,7 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
 			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
-					_city.spawn_siting, director.reach_obstruction())
+					_city.spawn_siting, director._reach_blocked)
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				_look(_city, null)
