@@ -759,7 +759,7 @@ func player_view_requested() -> bool:
 	return "--player-view" in active_args()
 
 ## `--parent mother|father`: which presentation the run shows, instead of the roll
-## `GameState.start_run()` makes from the seed. `""` for "not given"; an unknown word is refused
+## `RunState.start_run()` makes from the seed. `""` for "not given"; an unknown word is refused
 ## with `push_warning` and treated the same, since a shot of the wrong parent that said nothing
 ## would be the one failure the shot list exists to rule out. A recipe's own parent wins.
 func parent_override() -> String:

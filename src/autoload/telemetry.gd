@@ -43,7 +43,7 @@ var _day_open := false
 ## `""` when the log is in memory only, which is what the test suite runs on.
 var _run_dir := ""
 ## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
-## at the same day without the calendar advancing — see `GameState.calendar.finish_day()` — so
+## at the same day without the calendar advancing — see `RunCalendar.finish_day()` — so
 ## `begin_day` is called again with the day number it just failed at, and this is what lets the
 ## second attempt's pictures say so instead of overwriting the first's. Reset at the start of a
 ## run.
@@ -196,7 +196,7 @@ func begin_memory_log() -> void:
 ## Starts a day's section. Everything after this is timestamped from zero.
 ##
 ## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
-## advancing — see `GameState.calendar.finish_day()` — so this is called again with the same
+## advancing — see `RunCalendar.finish_day()` — so this is called again with the same
 ## `day`, and `_day_attempts[day]` counts how many times that has happened. `_attempt` is a
 ## first attempt (`1`) until it is not, and `_attempt_suffix()` is what turns that into a
 ## filename fragment.
@@ -539,7 +539,7 @@ func _write_burst_metadata() -> bool:
 ## is not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. See
 ## `TelemetryMap`, which does the drawing and carries the reasoning.
 ##
-## It takes the day rather than reading `GameState`, for the reason everything in this file takes
+## It takes the day rather than reading the run, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
 ## It also draws the day's **corridor**, unless `corridor` says the walk has none (the escape's

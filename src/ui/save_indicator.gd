@@ -11,8 +11,8 @@ extends CanvasLayer
 ## node is the only one that listens**: a write raises it through `EventBus.save_written`, deleting
 ## the save file through `EventBus.save_deleted`, and the browser's later answer to either arrives
 ## on `EventBus.save_write_settled` or `EventBus.save_deletion_settled`. Nothing is relayed by
-## `main`: the deletion a run's end makes comes from `GameState`, an autoload with no way to reach
-## `main`, and a web save's answer may come after a scene reload has freed the `main` that saved,
+## `main`: the deletion a run's end makes comes from `GameSave`'s own `run_ended` subscriber, under
+## the sitting, with no way to reach `main`, and a web save's answer may come after a scene reload has freed the `main` that saved,
 ## where a callable bound to it would be dropped and the symbol would stay fully shown for good. So
 ## one place decides when the symbol begins and is answered, and a change begins it exactly once.
 ## Every change carries its operation id from `GameSave`, on its announcement and on its answer, so

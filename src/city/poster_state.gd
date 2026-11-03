@@ -1,7 +1,7 @@
 class_name PosterState
 extends RunSubState
 ## What is pasted on the city's walls this run, and how many tears she has made. Run-scoped, a registered
-## part of the run (`RunSubState`) held as `GameState.posters`, and a fact about the run rather than about the seed: a crew pastes where
+## part of the run (`RunSubState`) held as `run.posters`, and a fact about the run rather than about the seed: a crew pastes where
 ## her walk sites it and a sheet tears where she pushes, so neither can be recomputed.
 ##
 ## **Keyed by the sidewalk tile in front of a wall cell**, because every blank ground-floor column
@@ -14,7 +14,7 @@ extends RunSubState
 ## exactly over the old one replaces it and leaves no `under` (statements 32 and 33).
 ##
 ## **A lost day gives the walls back, like everything else an attempt spends.** `photograph()` is
-## taken where `GameState` photographs the rest of the run and `give_back()` is called where it gives
+## taken where the run's registry photographs the rest of the run and `give_back()` is called where it gives
 ## the rest back, so a crew that pasted and a sheet she tore on a lost day did not happen, and the
 ## retry's own dawn pastes the same sheets again from the same stream.
 

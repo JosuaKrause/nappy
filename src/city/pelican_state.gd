@@ -1,14 +1,14 @@
 class_name PelicanState
 extends RunSubState
 ## How many cyclists this run has drawn from its pelican bag: how far into the bag the next cyclist
-## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `GameState.pelican`, and
+## draws. Run-scoped, a registered part of the run (`RunSubState`) held as `run.pelican`, and
 ## the whole state of the bag — it is rebuilt from the run's seed and `MarbleBag.skip()`ped to this
 ## count, the way the poster tears' bag is
 ## (`PosterState.tears`). *(pebbly-ibis, inbox #575 in feathery-lynx: "let's do a bag per run but
 ## save it in the standard save file to reset the bag to the beginning of the day on a lost day".)*
 ##
 ## **A lost day sets the bag back to the beginning of that day.** `photograph()` is taken where
-## `GameState` photographs the rest of the run and `give_back()` where it gives the rest back, so
+## the run's registry photographs the rest of the run and `give_back()` where it gives the rest back, so
 ## the retry meets the same cyclists, and the same pelican, the day first did.
 
 ## Cyclists drawn from the bag so far this run.

@@ -11,11 +11,15 @@ extends Node
 ## here and not registered is caught by `tests/test_run_state.gd`**. Readers take the part
 ## (`run.header.day`, `run.attempt_spend.scars`), and nothing forwards to a part.
 ##
-## **The `GameState` autoload is where the run lives**, since it outlives the scene reloads (the
-## held restart, the day-14 hand-over, a run carried to its checkpoint). `main`, the composition
-## root, takes it once and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
+## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the scene
+## reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a held
+## restart starts a fresh run in it (`start_run()`). `main`, the composition root, takes it off the
+## sitting once a boot and hands it, typed `RunState`, to `GameSave` and to every reader it builds,
 ## so a test hands a reader whichever run it built; the resistance is handed it with its city
 ## (`City.run`) or by `ResistanceDirector.setup()`.
+##
+## **A `Node` only while the suites not yet moved read it as an autoload**: nothing in the game
+## needs a node, and the sitting holds a run of its own as its child so it is freed with it.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
@@ -85,7 +89,7 @@ func start_run(seed_value: int = 0) -> void:
 	# otherwise — `main._on_title_start()` sets `hard_mode` from the checkbox as the run begins.
 	calendar.hard_mode = false
 	calendar.checkpoint = {}
-	print("[GameState] run started, seed=%d" % header.run_seed)
+	print("[RunState] run started, seed=%d" % header.run_seed)
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:

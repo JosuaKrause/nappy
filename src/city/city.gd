@@ -90,7 +90,7 @@ const MIN_TREE_SPACING := 40.0 * 1.25
 const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 
 ## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
-## package is picked up (`GameState.resistance.carrying_package`) — the one cost in the subquest
+## package is picked up (`run.resistance.carrying_package`) — the one cost in the subquest
 ## that is deferred and total rather than local, so it changes the afternoon's routing rather than
 ## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
 ## it: this is a decision she made, not ground she has to cross.
@@ -238,7 +238,7 @@ var _buildings: Array[Building] = []
 ## The posters on the fronts: which cells can carry one and what is pasted on them. Built once
 ## with the buildings, pasted each dawn. See `PosterWalls`.
 var _posters: PosterWalls
-## The run the city stands in, handed in rather than reached for through `GameState`: what is
+## The run the city stands in, handed in rather than reached for through a global: what is
 ## pasted on the walls (`posters`), the scars and block arcs a lost day gives back
 ## (`attempt_spend`), whether the pram carries the package (`resistance`), and the seed and day
 ## streams the walls are pasted from, which `PosterWalls` is handed in turn. Whoever builds the city
@@ -272,14 +272,14 @@ const DOOR_TEXTURE := &"props/door"
 ## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
 ## GRAPHICS.md`), so swapping `_home_door`'s texture needs no change to its offset or position.
 const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
-## `GameState.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
+## `run.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
 ## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
-## `_sync_home_door()` both run after `GameState.calendar.begin_day()`'s dawn photograph, so the
+## `_sync_home_door()` both run after `RunCalendar.begin_day()`'s dawn photograph, so the
 ## scar's mere presence already answers "sealed as of this dawn" for every day after the one it
 ## was added on, and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
-## `GameState.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `run.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
 ## `aftermath.scar`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
 ## `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
@@ -552,7 +552,7 @@ func _door_texture_for_today() -> StringName:
 
 ## Puts the street door where the run's scars say it belongs, for the dawn `start_day()`
 ## already runs every day: sealed from day 11 on and after a save/load, ordinary again the dawn a
-## lost day 10 gives its own scar back (`GameState.run_parts.give_back()`), since
+## lost day 10 gives its own scar back (`run.run_parts.give_back()`), since
 ## `_spawn_home()` itself only ever runs once, at boot, for the whole run.
 func _sync_home_door() -> void:
 	if _home_door:
@@ -1113,7 +1113,7 @@ func _dress(state: CityState, day: int) -> void:
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
-	# After `GameState.calendar.begin_day()`'s own dawn photograph (`main.gd` calls this after
+	# After `RunCalendar.begin_day()`'s own dawn photograph (`main.gd` calls this after
 	# that), so a lost day 10's scar is already given back by the time this reads the run's
 	# scars.
 	_sync_home_door()
@@ -1465,7 +1465,7 @@ func _dress_the_stretch() -> void:
 ## purpose above too — the same look for a different, per-building reason.
 ##
 ## **The lookup is the shape of `board_neighbor_window()`/`home_door_building()`**: a fixed fact
-## about the run (`GameState.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
+## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall this file actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
 ## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.

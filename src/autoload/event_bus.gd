@@ -12,7 +12,7 @@ signal baby_state_changed(state: GameEnums.BabyState)
 
 # ---------------------------------------------------------------- day / run ---
 
-## A run's very first frame with `GameState` settled — fresh (`resumed` false, always day 1) or
+## A run's very first frame with the run settled — fresh (`resumed` false, always day 1) or
 ## picked back up from the save (`resumed` true, `day` whichever it was written on). `main._ready()`
 ## is the one emitter, for the ordinary boot and for a game reopened mid-escape alike. Read by
 ## `VisitCounter`, which is the only listener today — see docs/TELEMETRY.md, "The page counts
@@ -41,7 +41,7 @@ signal nerves_changed(nerves: int)
 ## read `cause` from here, so the two name a lost day the same way.
 ##
 ## Emitted by `DayDirector.finish_day()` once the charges still running are closed and above the
-## calendar move `GameState.calendar.finish_day()` makes a moment later, so a lost day's retry
+## calendar move `RunCalendar.finish_day()` makes a moment later, so a lost day's retry
 ## and a won day's next dawn are both still "day N" here. Fires once per attempt, as
 ## `day_started` does: a retry begins and ends this pair again for the day it repeats — an
 ## escape section's included, under its own number.
@@ -58,7 +58,7 @@ signal run_ended(ending: GameEnums.Ending)
 signal run_mode_chosen(hard: bool, day: int)
 ## A normal run spent its last nerve on `lost_day` and went back to its checkpoint, `day` — 1
 ## for checkpoint zero, otherwise 4, 8 or 12 — with every nerve. Emitted by
-## `GameState.calendar.finish_day()` once the checkpoint is restored. Listen-only, for
+## `RunCalendar.finish_day()` once the checkpoint is restored. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal went_back_to_a_checkpoint(day: int, lost_day: int)
 ## `GameSave.write()`'s own moment a save was actually written — never a refused write (a dev or
@@ -147,7 +147,7 @@ signal pursuit_ended(id: String, shaken_off: bool)
 
 # Encounters and bouts of running, for the page's counter — `EncounterWatch`, which `EventManager`
 # asks once a physics frame, is the one emitter of all three. `day` is the day they happened on,
-# carried rather than read from `GameState` because an influence that waited is sent as late as the
+# carried rather than read from the run because an influence that waited is sent as late as the
 # next day's start. `name` is `EventInstance.logged_name()`: the row's own `def.id`, or `pelican`.
 # Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 
