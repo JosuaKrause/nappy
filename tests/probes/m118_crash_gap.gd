@@ -69,7 +69,7 @@ func run(t) -> void:
 ## A tile on a real street of the asked-for axis, as a world point. `Vector2.INF` when this city
 ## has none, which no generated city actually is.
 func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		if segment.horizontal != vertical:

@@ -274,7 +274,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	# From the gatehouse day on, only a share of the streets below is sealed at all — see
 	# `_seals_this_street`. Asked once here so a day before it draws nothing extra from `rng`.
 	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY and not spec.seals_every_street_off_the_walk
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if skip.has(key) or not may_seal(map, spec, route, segment):
 			continue

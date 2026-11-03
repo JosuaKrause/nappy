@@ -324,7 +324,7 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 			stops.append(mouth)
 			seen[mouth.snapped(Vector2.ONE)] = true
 	for key: Vector3i in map.held_segments:
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if segment == null:
 			continue
 		for at_a in [true, false]:

@@ -2563,7 +2563,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# weight. The rect is the street itself and not a radius round it: a street is the unit every
 	# other placement decision in this milestone is stated in, and a set piece has to be something
 	# she walks past on the way through rather than something near where she walked.
-	var named := StreetNetwork.by_key(site) if site != NO_SITE else null
+	var named := map.network.by_key(site) if site != NO_SITE else null
 	var only := named.tile_rect() if named else Rect2i()
 	var refuses_required_alleys := _refuses_required_alleys(def)
 	for tile in base:
@@ -3219,7 +3219,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 		return false
 
 	var arms: Array = []
-	for segment in StreetNetwork.at_junction(junction):
+	for segment in map.network.at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []
@@ -3283,7 +3283,7 @@ const _ROUTE_SIDEWALKS_KEY := "route sidewalks"
 static func _route_sidewalks(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
 	if not ground.has(_ROUTE_SIDEWALKS_KEY):
 		var found: Array = []
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			var rect := segment.tile_rect()
 			if corridor.depth(rect.position) != 0:
 				continue
@@ -3559,13 +3559,13 @@ static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, cor
 		return true
 	var reach := candidate.def.line_reach()
 	var streets := {}
-	var here := StreetNetwork.segment_containing(map.world_to_tile(candidate.position))
+	var here := map.network.segment_containing(map.world_to_tile(candidate.position))
 	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
 		streets[here.key()] = here
 	for plan in already:
 		if plan == candidate or not plan.def.paces or not plan.counts_against_the_line():
 			continue
-		var theirs := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		var theirs := map.network.segment_containing(map.world_to_tile(plan.position))
 		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
 			continue
 		if candidate.reach_touches(map.tile_rect_to_world(theirs.tile_rect()), reach):

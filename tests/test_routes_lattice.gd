@@ -31,15 +31,15 @@ func run(t) -> void:
 ## 7x7 blocks is 8x8 junctions, 56 streets each way. If this is ever wrong every number
 ## below it is wrong too, so it is checked first and by construction.
 func _test_the_lattice_is_the_lattice(t) -> void:
+	var map := _maps[0]
 	var junctions := StreetNetwork.junction_count()
 	t.check(junctions == Tuning.CITY_BLOCKS + Vector2i.ONE,
 			"one more junction than blocks along each axis")
 	var expected := junctions.y * (junctions.x - 1) + junctions.x * (junctions.y - 1)
-	t.check(StreetNetwork.segments().size() == expected,
+	t.check(map.network.segments().size() == expected,
 			"the lattice has %d streets" % expected)
 
-	var map := _maps[0]
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var rect := segment.tile_rect()
 		t.check(rect.size == (Vector2i(Tuning.BLOCK_SIZE, Tuning.STREET_WIDTH)
 				if segment.horizontal else Vector2i(Tuning.STREET_WIDTH, Tuning.BLOCK_SIZE)),
@@ -85,7 +85,7 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 			var span := footprint.size
 			var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 			var found := 0
-			for segment in StreetNetwork.segments():
+			for segment in map.network.segments():
 				if map.has_street(segment.key()):
 					continue
 				var rect := segment.tile_rect()
@@ -109,11 +109,11 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 			for y in range(footprint.position.y + 1, footprint.end.y):
 				for x in range(footprint.position.x + 1, footprint.end.x):
 					var inside := Vector2i(x, y)
-					t.check(StreetNetwork.junction_distances([inside],
+					t.check(map.network.junction_distances([inside],
 							map.blocked_segments()).size() == 1,
 							"seed %d: junction %s inside zone %s is cut off from the whole city"
 							% [map.seed_used, inside, anchor])
-			var ways_in := StreetNetwork.around_blocks(footprint)
+			var ways_in := map.network.around_blocks(footprint)
 			t.check(ways_in.size() == 2 * (span.x + span.y),
 					"seed %d zone %s has %d streets round it, one per block edge"
 					% [map.seed_used, anchor, ways_in.size()])
@@ -126,14 +126,14 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 ## street may never seal the corner it starts from.
 func _test_a_tile_knows_which_street_it_is_on(t) -> void:
 	var map := _maps[0]
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		for tile in map.rect_tiles(segment.tile_rect()):
-			var found := StreetNetwork.segment_containing(tile)
+			var found := map.network.segment_containing(tile)
 			t.check(found != null and found.key() == segment.key(),
 					"tile %s belongs to street %s" % [tile, segment.key()])
 	for i in StreetNetwork.junction_count().x:
 		var corner := Vector2i(i, i) * CityMap.period()
-		t.check(StreetNetwork.segment_containing(corner) == null,
+		t.check(map.network.segment_containing(corner) == null,
 				"junction tile %s belongs to no street" % corner)
 
 ## The layout guarantee from docs/CITY.md, restated on the graph: with nothing closed, every
@@ -153,11 +153,11 @@ func _test_an_open_city_can_reach_everywhere_calm(t) -> void:
 		var home := ClosurePlanner.home_street(map)
 		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
 		for area in ClosurePlanner.calm_areas(map):
-			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+			t.check(map.network.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: calm area %s can be walked to before anything closes"
 					% [map.seed_used, area.block])
 			total += 1
-			if StreetNetwork.route_count(home, area.access, map.blocked_segments(), 2) >= 2:
+			if map.network.route_count(home, area.access, map.blocked_segments(), 2) >= 2:
 				with_a_choice += 1
 	# Measured at 100% of areas on these seeds with the weaker gate in place. A floor well under
 	# it, because the offer is allowed to fail on a map that cannot make it — what would be worth
@@ -202,7 +202,7 @@ func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
 	var map := _maps[0]
 	var home := ClosurePlanner.home_street(map)
 	var areas := ClosurePlanner.calm_areas(map)
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if segment.key() == home.key() or not map.has_street(segment.key()):
 			continue
 		var closed := map.blocked_segments()
@@ -216,7 +216,7 @@ func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
 			# the doorway exemption and not a failure.
 			if doors.has(segment.key()) and area.access.size() == 1:
 				continue
-			if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+			if map.network.route_count(home, area.access, closed, 1) >= 1:
 				reachable += 1
 		t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 				"shutting %s still leaves %d calm areas to walk to, wanting %d"
@@ -236,12 +236,12 @@ func _test_a_doorway_is_not_a_route(t) -> void:
 			if area.access.size() != 1:
 				continue
 			checked += 1
-			t.check(StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
+			t.check(map.network.route_count(home, area.access, map.blocked_segments(), 1) >= 1,
 					"seed %d: the one archway into %s can be walked to"
 					% [map.seed_used, area.block])
 			var closed := map.blocked_segments()
 			closed[area.access[0].key()] = true
-			t.check(StreetNetwork.route_count(home, area.access, closed, 1) == 0,
+			t.check(map.network.route_count(home, area.access, closed, 1) == 0,
 					"seed %d: and shutting that archway's street puts %s out of reach today"
 					% [map.seed_used, area.block])
 	t.check(checked > 0, "the city still has calm with a single way in (%d found)" % checked)

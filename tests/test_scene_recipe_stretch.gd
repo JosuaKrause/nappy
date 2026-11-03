@@ -247,7 +247,8 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	var tree := data.duplicate(true)
 	var run: Array = tree.stretch.tiles.sidewalk[0]
 	var planted := Vector2i(int(run[1]), int(run[0]))
-	while not StreetNetwork.segment_containing(planted) and planted.x < int(run[2]):
+	var lattice := StreetNetwork.new()
+	while not lattice.segment_containing(planted) and planted.x < int(run[2]):
 		planted.x += 1
 	tree.stretch.trees = [[planted.x, planted.y]]
 	var treed := RecipeCityBuilder.build(tree)
@@ -381,7 +382,7 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 ## drafting inputs make (`SceneRecipeDraft.base_of()`).
 func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
-	var segment := StreetNetwork.by_key(Vector3i(5, 5, 1))
+	var segment := witness.network.by_key(Vector3i(5, 5, 1))
 	var ground := {}
 	SceneRecipeDraft._add_the_ground_of(witness, segment.tile_rect().get_center(), ground)
 	var whole := true

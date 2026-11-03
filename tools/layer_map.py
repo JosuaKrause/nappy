@@ -466,12 +466,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "StreetNetwork",
-        "the calendar computes its own task targets on the map",
-        ("src/resistance/resistance_steps.gd",),
-    ),
-    Exception_(
-        "names",
         "Stroller",
         "her class's constants (the camera's look-ahead) and type tests are read where she is not handed in",
         (
@@ -547,19 +541,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the scheduler keeps its kept-ground memo and judgement count in statics (hidden-statics)",
         ("src/events/day_planner.gd",),
         more=(("src/events/day_planner.gd", 2),),
-    ),
-    Exception_(
-        "static",
-        "StreetNetwork",
-        "the lattice's graph is held in statics (hidden-statics)",
-        (
-            "src/crowd/crowd.gd",
-            "src/crowd/crowd_pockets.gd",
-            "src/crowd/lane_mover.gd",
-            "src/crowd/walker_strategy.gd",
-            "src/events/day_planner.gd",
-            "src/resistance/happenings.gd",
-        ),
     ),
     Exception_(
         "names",

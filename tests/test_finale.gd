@@ -11,13 +11,12 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
-const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
-const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
 const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
+const UI := preload("res://tests/ui_screens.gd")
 ## Where the resumed-escape test writes the save it boots from — never the player's own.
 const _SCRATCH_SAVE := "user://test_finale_scratch.json"
 ## The seed the player played the escape on and could not win (inbox #771 in minty-lemur), from the building, and
@@ -48,7 +47,7 @@ func run(t) -> void:
 	_test_luring_its_guard_off_is_the_way_past_a_roadblock(t)
 	_test_no_two_roadblocks_notice_her_from_the_same_ground(t)
 	_test_an_escape_guard_warns_on_the_screen_and_on_top(t)
-	_test_the_players_seed_is_winnable_past_its_roadblocks(t)
+	await _test_the_players_seed_is_winnable_past_its_roadblocks(t)
 	_test_the_escape_stands_its_rows_on_the_days_own_ground(t)
 	_test_an_alley_mouth_wall_fits_the_mouth(t)
 	_test_nothing_the_escape_stands_reaches_over_a_building(t)
@@ -62,10 +61,10 @@ func run(t) -> void:
 	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
 	_test_the_finale_city_has_nobody_in_it(t)
 	_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t)
-	_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
+	await _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
 	_test_the_clock_reads_hundredths_only_in_the_finale(t)
-	_test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t)
-	_test_the_escape_counts_its_time_and_closes_its_charges(t)
+	await _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t)
+	await _test_the_escape_counts_its_time_and_closes_its_charges(t)
 	_test_the_two_sections_are_named_for_the_player(t)
 	_test_only_a_won_last_day_with_every_task_done_hands_over(t)
 	_test_the_city_word_boots_the_second_section(t)
@@ -74,23 +73,29 @@ func run(t) -> void:
 	_test_a_day_owes_its_return_only_as_its_spec_says(t)
 	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
 	_test_finale_entities_stop_when_the_tree_pauses(t)
-	_test_the_escape_pauses_the_same_way_a_day_does(t)
-	_test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t)
+	await _test_the_escape_pauses_the_same_way_a_day_does(t)
+	await _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t)
 	_test_escape_section_came_from_the_file(t)
-	_test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t)
-	_test_a_route_rig_carries_the_building_on_into_the_city(t)
-	_test_a_route_rig_boots_the_city_section_and_walks(t)
-	_test_without_a_route_the_briefs_wait_for_a_person(t)
-	_test_a_route_rig_presses_only_the_first_brief_of_a_section(t)
-	_test_a_handover_does_not_open_on_the_title(t)
-	_test_the_held_restart_from_the_escape_clears_the_section(t)
+	await _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t)
+	await _test_a_route_rig_carries_the_building_on_into_the_city(t)
+	await _test_a_route_rig_boots_the_city_section_and_walks(t)
+	await _test_without_a_route_the_briefs_wait_for_a_person(t)
+	await _test_a_route_rig_presses_only_the_first_brief_of_a_section(t)
+	await _test_a_handover_does_not_open_on_the_title(t)
+	await _test_the_held_restart_from_the_escape_clears_the_section(t)
 
 # --------------------------------------------------------------- the chains ---
 
+## Paints `map` as day 1 of a fresh run would find its blocks (`CityState.begin_day()`), the ground
+## the escape is planned on.
+static func _paint_day_one(map: CityMap) -> void:
+	var state := CityState.new()
+	state.begin_day(map.block_plans, 1)
+	map.repaint(state)
+
 static func _plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.attempt_spend.city_state)
+	_paint_day_one(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
@@ -195,11 +200,11 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 				sealed_at[map.world_to_tile(placement.position)] = true
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
-		var hers := StreetNetwork.segment_containing(
+		var hers := map.network.segment_containing(
 				FinalePlanner.service_exit_tile(map))
 		var open_and_unsealed := 0
 		var closed := 0
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			if SealPlanner.runs_through(segment, plan.open_cells):
@@ -355,8 +360,7 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
 	var vans := 0
 	for seed_value in VAN_STREET_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var placed := _escape_rows_on(map, bare,
 				EventScheduler.street_bag({"abduction": 1}, seed_value), 2)
@@ -988,29 +992,30 @@ static func _escape_roadblocks(
 ## the city starts with, walking straight past a posted guard is caught while luring him off and
 ## walking on is not, and costs nothing.
 func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
-	var saved_section := GameState.facts.escape_section
-	GameState.start_run(PLAYERS_SEED)
-	GameState.header.day = 1
-	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	var main: Node2D = MAIN_SCENE.instantiate()
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	main._on_summary_continued(main._flow.mode)
-	main._interior.exit_requested.emit()
-	main._on_summary_continued(main._flow.mode)
-	t.check(main._city != null and main._flow.spec.section == DaySpec.Section.CITY,
+	var run := RunState.new()
+	run.start_run(PLAYERS_SEED)
+	run.header.day = 1
+	run.facts.escape_section = DaySpec.Section.BUILDING
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home))
+	var main := booted.main
+	await Boot.press_continue(t, main)
+	Boot.interior(main).exit_requested.emit()
+	await Boot.press_continue(t, main)
+	var city := Boot.city(main)
+	t.check(city != null and Boot.day(main).spec.section == DaySpec.Section.CITY,
 			"seed %d: the service door puts her in the city" % PLAYERS_SEED)
-	if main._city != null:
-		var map: CityMap = main._city.map
+	if city != null:
+		var map: CityMap = city.map
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
-				GameState.calendar.day_rng(GameState.header.day, "finale"), _city_spec())
+				run.calendar.day_rng(run.header.day, "finale"), _city_spec())
 		var bands := _escape_roadblocks(placements)
-		var hers := StreetNetwork.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
+		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
 		for band_plan in bands:
-			var street := StreetNetwork.segment_containing(map.world_to_tile(band_plan.position))
+			var street := map.network.segment_containing(map.world_to_tile(band_plan.position))
 			if hers and street and street.key() == hers.key():
 				on_her_street += 1
 		t.check(hers != null and on_her_street <= 1,
@@ -1068,8 +1073,9 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 				% [PLAYERS_SEED, crossings])
 	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
-	GameState.facts.escape_section = saved_section
+	booted.free_all()
+	home.free()
+	run.free()
 
 # ------------------------------------------------------- the day's own rules ---
 
@@ -1174,8 +1180,7 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	var map := CityGenerator.generate(SEEDS[0])
-	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.attempt_spend.city_state)
+	_paint_day_one(map)
 	var walks: Array[FinalePlanner.Plan] = []
 	var plans: Array[Array] = []
 	var kept: Array[Dictionary] = []
@@ -1244,8 +1249,7 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 	var unmet := 0
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
 		for slots in [1, 2]:
@@ -1336,8 +1340,7 @@ static func _escape_rows_on(map: CityMap, bare: Dictionary, bag: MarbleBag,
 func _test_the_service_exit_is_beside_the_home_block(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		_paint_day_one(map)
 		var tile := FinalePlanner.service_exit_tile(map)
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
 		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block))
@@ -1378,8 +1381,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 	var on_her := 0
 	for seed_value in SPAWN_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
@@ -1427,8 +1429,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 	var over_her := 0
 	for seed_value in SPAWN_SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
@@ -1455,18 +1456,19 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 ## ground the planner holds, and the second reads that same ground rather than scanning the city
 ## again.
 func _test_the_manager_plans_a_restart_on_the_ground_it_kept(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := city.run
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
-	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
+	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(GameState.attempt_spend.city_state, 1,
-			GameState.calendar.day_rng(1, "closures"), spec)
+	city.start_day(run.attempt_spend.city_state, 1,
+			run.calendar.day_rng(1, "closures"), spec)
 	var none: Array[String] = []
 	var kept := city.events.planner.kept_ground
 	var grounds: Array[Dictionary] = []
 	for attempt in 2:
-		city.events.start_day(spec, GameState.calendar.day_rng(1, "finale"), none)
+		city.events.start_day(spec, run.calendar.day_rng(1, "finale"), none)
 		grounds.append(kept.of(city.map))
 	t.check(grounds[0].size() > 1,
 			"the first plan leaves the rows' answers in the planner's ground (%d)" % grounds[0].size())
@@ -1480,15 +1482,16 @@ func _test_the_manager_plans_a_restart_on_the_ground_it_kept(t) -> void:
 ## crowd as the section's spec says (`DaySpec.crowd_density`, through `DayDirector.start_the_crowd()`)
 ## leaves it empty rather than that it started that way.
 func _test_the_finale_city_has_nobody_in_it(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	var run := city.run
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
-	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	city.crowd.start_day(1, GameState.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
+	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
+	city.crowd.start_day(1, run.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
 	var spec := _section(DaySpec.Section.CITY)
-	city.start_day(GameState.attempt_spend.city_state, 1, GameState.calendar.day_rng(1, "closures"), spec)
-	var director := DayDirector.new(GameState.calendar, GameState.facts, GameState.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
+	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
+	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	director.city = city
 	director.spec = spec
 	director.start_the_crowd(Vector2.INF)
@@ -1511,16 +1514,16 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## `restarted` set, which is what a lost section's outcome screen continues into. The tint is wiped
 ## between the two, so the restart is checked painting it rather than inheriting it.
 func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
-	var saved_section := GameState.facts.escape_section
-	var day := GameState.header.day
+	var run := RunState.new()
+	run.start_run(SEEDS[0])
+	var day := run.header.day
 	var main: Node2D = MAIN_SCRIPT.new()
-	# Never in the tree, so it takes no sitting of its own: it is handed one, and the sitting the
-	# `GameState` stand-in, which the runner hands only a sitting that enters the tree, so `main`
-	# plays the run whose day and escape section this test reads and puts back.
+	# Never in the tree, so it takes no sitting of its own: it is handed one, holding the run of
+	# the test's own that `main` and the city play.
 	var sitting := Sitting.new()
-	sitting.run = GameState
+	sitting.run = run
 	main.use_sitting(sitting)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.in_run(CITY_SCENE, run)
 	t.add_child(city)
 	main._city = city
 	city.build(CityGenerator.generate(SEEDS[0]))
@@ -1588,8 +1591,8 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	city.free()
 	main.free()
 	sitting.free()
+	run.free()
 	t.get_tree().paused = false
-	GameState.facts.escape_section = saved_section
 
 ## Every tile of `city` whose plain ground source is a kerb a route can tint.
 static func _kerb_tiles(city: City, day: int) -> Array[Vector2i]:
@@ -1609,7 +1612,7 @@ static func _escape_tint(city: City, day: int, on_the_walk: Dictionary,
 	var counted := Vector4i.ZERO
 	for tile in _kerb_tiles(city, day):
 		var source := GroundTiles.source_for(city.map, tile, day)
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := city.map.network.segment_containing(tile)
 		var wanted := segment != null and on_the_walk.has(segment.key())
 		if city.scenery_ground_source(tile) != (GroundTiles.route_twin_of(source) if wanted \
 				else source):
@@ -1642,7 +1645,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
 	# was, through the same `aftermath.on_finish` mechanism a convoy leaves a barricade through.
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
@@ -1661,9 +1664,10 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 		live.step(0.05)
 		steps += 1
 	t.check(live.is_finished, "the burst is over after %.1fs" % (steps * 0.05))
-	# `EventStreaming.retire_finished()` runs inside `_physics_process`, which a synchronous test has to call
-	# itself: no frame passes while `run()` is executing.
-	city.events._physics_process(0.0)
+	# `EventStreaming.retire_finished()` runs inside the manager's own physics frame, which the city
+	# in the tree is let have.
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	var craters := 0
 	for instance in city.events.instances():
 		if instance.def.id == crater.id:
@@ -1678,8 +1682,9 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 ## alone which adds additional tension."* Tried as hundredths (inbox #746 in woolly-penguin). The only thing that
 ## changes, so both shapes are checked off the same signal and the same time.
 func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
+	var run := RunState.new()
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	hud.use_run(GameState)
+	hud.use_run(run)
 	t.add_child(hud)
 	hud.set_process(false)
 	var clock: Label = hud.get_node("Root/Clock")
@@ -1692,6 +1697,7 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	# Freed rather than queued for the same reason the cities are: nothing here yields a frame, and
 	# a HUD left listening to `EventBus.day_time_changed` answers the next suite's emit as well.
 	hud.free()
+	run.free()
 
 # ------------------------------------------------------------- the sections ---
 
@@ -1706,40 +1712,44 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 ## spent.
 ##
 ## **Driven through the real `main.tscn`**, booted on each section the way a run's own escape is
-## (the building as a won day 14 hands over, the city as a game closed in it opens again), and lost
-## through the signal a real capture fires, so what is checked is the path the game takes: the
-## day's own clock and finish path, not a call this test invented.
+## (the building as a won day 14 hands over, the city as a game closed in it opens again), with
+## every brief and outcome screen continued through the viewport and the loss through the signal a
+## real capture fires, so what is checked is the path the game takes: the day's own clock and
+## finish path, not a call this test invented. A screen is told apart by what it says: the brief by
+## the section's own words as its title, the outcome screen by the reason as its title.
 func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
-		var main := _boot_the_escape(t, section)
+		var escape := await _boot_the_escape(t, section)
+		var main := escape.main
+		var summary := Boot.summary(main)
 		var words := _section(section).title
-		var nerves := GameState.header.nerves
-		var length: float = main._flow.spec.length
-		var title: Label = main._summary.get_node("Root/Center/Lines/Title")
-		var body: Label = main._summary.get_node("Root/Center/Lines/Body")
-		t.check(main._flow.spec.section == section and main._summary.is_showing(),
+		var nerves := escape.run.header.nerves
+		var length: float = Boot.day(main).spec.length
+		var title: Label = summary.get_node("Root/Center/Lines/Title")
+		var body: Label = summary.get_node("Root/Center/Lines/Body")
+		t.check(Boot.day(main).spec.section == section and summary.is_showing(),
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
 		t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(nerves)),
 				"section %d: and carrying the nerve line, as stars ('%s')" % [section, body.text])
-		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).time_remaining, length),
 				"section %d: with a full clock standing still behind it" % section)
 
-		main._on_summary_continued(main._flow.mode)
-		t.check(not main._summary.is_showing() and not t.get_tree().paused,
+		await Boot.press_continue(t, main)
+		t.check(not summary.is_showing() and not t.get_tree().paused,
 				"section %d: continuing takes the screen away and the walk begins" % section)
-		t.check(main._hud.visible, "section %d: with the HUD back" % section)
+		t.check(Boot.hud(main).visible, "section %d: with the HUD back" % section)
 		# *(2026-09-20, the player: "the escape shouldn't behave any different than the rest of the
 		# game" — read here as the hint showing every time the section's clock starts, a fast click
 		# through the brief included, not only on a first entry.)*
-		var teach: HelpText = main._hud.get_node("Root/Teach")
+		var teach: HelpText = Boot.hud(main).get_node("Root/Teach")
 		t.check(teach.line == words,
 				"section %d: and the section's own words said once she is walking it" % section)
 
-		main._day.time_remaining -= 30.0
+		Boot.day(main).time_remaining -= 30.0
 		EventBus.hard_fail_triggered.emit("abduction")
-		t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
+		t.check(summary.is_showing() and title.text != words,
 				"section %d: being taken comes up on the day's outcome screen" % section)
 		t.check(title.text.replace("\n", " ").contains(Texts.HARD_FAIL_TEXT["abduction"]),
 				"section %d: which states the reason, as a lost day's does ('%s')"
@@ -1747,22 +1757,22 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 		t.check(body.text.contains(words) and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: under the section's own words, the nerves unchanged ('%s')"
 				% [section, body.text])
-		t.check(GameState.header.nerves == nerves,
+		t.check(escape.run.header.nerves == nerves,
 				"section %d: since a normal run's lost section spends none" % section)
 
 		teach.text = ""
-		main._on_summary_continued(main._flow.mode)
-		t.check(main._flow.spec.section == section and main._summary.is_showing()
-				and main._flow.mode == RunFlow.Mode.BRIEF,
+		await Boot.press_continue(t, main)
+		t.check(Boot.day(main).spec.section == section and summary.is_showing()
+				and title.text == words,
 				"section %d: its continue is the same section again, behind its brief" % section)
 		t.check(title.text == words and body.text.contains(Texts.nerve_stars(nerves)),
 				"section %d: titled with its words and the nerves unchanged ('%s', '%s')"
 				% [section, title.text, body.text])
-		t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).time_remaining, length),
 				"section %d: with a full clock standing still behind it" % section)
-		main._on_summary_continued(main._flow.mode)
-		t.check(not main._summary.is_showing() and not t.get_tree().paused
-				and main._day.is_running(),
+		await Boot.press_continue(t, main)
+		t.check(not summary.is_showing() and not t.get_tree().paused
+				and Boot.day(main).is_running(),
 				"section %d: the brief's continue is the walk" % section)
 		t.check(teach.line == words,
 				"section %d: and its words said again on the retry, not only the first entry"
@@ -1772,27 +1782,35 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 			# **Each section is a day, so each gets a day's clock** — what the building spent is
 			# not the city's to make up. Twenty seconds are taken off the building's clock first,
 			# so a city that carried it across would be visibly short here.
-			main._day.time_remaining -= 20.0
-			main._interior.exit_requested.emit()
-			t.check(main._flow.spec.section == DaySpec.Section.CITY and main._summary.is_showing(),
+			Boot.day(main).time_remaining -= 20.0
+			Boot.interior(main).exit_requested.emit()
+			t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and summary.is_showing(),
 					"the service exit begins the second section, on its own brief")
-			t.check(is_equal_approx(main._day.time_remaining, length),
+			t.check(is_equal_approx(Boot.day(main).time_remaining, length),
 					"on a full clock of its own, whatever the walk down the stairs cost")
-		_free_the_escape(t, main)
+		_free_the_escape(t, escape)
 
 ## **The escape is counted like a day** *(minty-lemur #785: "telemetry should work the same also in
-## escape both apartment and city")*: the run's played time (`GameState.header.play_ticks`, which the
+## escape both apartment and city")*: the run's played time (`RunHeader.play_ticks`, which the
 ## ending screen shows) runs while a section is walked, and a charge still running when she gets
 ## out of the city is closed for the page's counter as cut short, before the section's own end is
-## counted — through the day's own finish path, as a day's are.
+## counted — through the day's own finish path, as a day's are. The played time is read across one
+## real physics frame; the charge is a masked pursuer put on the city's street as a streamed-in row
+## comes back (`EventInstance.resume()`, which the streaming calls: a row brought back after it had
+## noticed her is still chasing), and she is put at the tunnel, where the day's own clock finds her
+## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is given
+## the atlas the city's events draw from (`EventInstance.atlas`, which the spawner hands every
+## event it makes), so a real frame can draw it.
 func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.CITY)
-	main._on_summary_continued(main._flow.mode)
-	var played := GameState.header.play_ticks
-	main._physics_process(1.0 / Engine.physics_ticks_per_second)
-	t.check(GameState.header.play_ticks == played + 1,
+	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
+	var main := escape.main
+	await Boot.press_continue(t, main)
+	await t.get_tree().physics_frame
+	var played := escape.run.header.play_ticks
+	await t.get_tree().physics_frame
+	t.check(escape.run.header.play_ticks == played + 1,
 			"walking the city section counts toward the run's played time (%d, then %d ticks)"
-			% [played, GameState.header.play_ticks])
+			% [played, escape.run.header.play_ticks])
 
 	var heard: Array[String] = []
 	var on_cut_short := func(id: String) -> void:
@@ -1801,53 +1819,72 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 		heard.append("day %d %s" % [day, GameEnums.DayResult.keys()[result]])
 	EventBus.pursuit_cut_short.connect(on_cut_short)
 	EventBus.day_ended.connect(on_ended)
+	var her := Boot.player(main)
+	var city := Boot.city(main)
 	var guard := EventInstance.new()
-	guard.setup(EventCatalogue.by_id("masked_pursuer"), main._player.global_position,
-			PackedVector2Array([main._player.global_position,
-					main._player.global_position + Vector2(0.0, -400.0)]))
-	main._city.add_child(guard)
+	guard.setup(EventCatalogue.by_id("masked_pursuer"), her.global_position,
+			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
+	guard.atlas = city.events.world.atlas
+	city.add_child(guard)
 	guard.set_process(false)
-	main._city.events.world.instances.append(guard)
-	guard._charge.begin()
-	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
-	main._day.tick(0.0)
+	city.events.world.instances.append(guard)
+	guard.resume(0.01, 0.0, 0.0)
+	her.global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	await t.get_tree().physics_frame
+	await t.get_tree().physics_frame
 	t.check(heard == ["cut short masked_pursuer", "day %d WON" % DaySpec.CITY_DAY],
 			"getting out closes the charge still running, then ends the city's day (%s)" % [heard])
 	EventBus.pursuit_cut_short.disconnect(on_cut_short)
 	EventBus.day_ended.disconnect(on_ended)
-	_free_the_escape(t, main)
+	_free_the_escape(t, escape)
 
 ## One of the escape's sections, a whole clock long, titled the way the run titles it.
 static func _section(section: int) -> DaySpec:
 	return MAIN_SCRIPT.escape_section_spec(section, RunConfig.FINALE_LENGTH_SECONDS)
 
-## Boots the real `main.tscn` on `section` of a normal run's own escape, on seed `SEEDS[0]` and its
-## last day — the way a won day 14's handover and a game closed in a section both reach the boot —
-## and returns it with its first screen up. `_free_the_escape()` puts the run back.
-func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringArray()) -> Node2D:
-	_saved_section = GameState.facts.escape_section
-	GameState.start_run(SEEDS[0])
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.facts.escape_section = section
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main.configure(RunConfig.parse(
-			PackedStringArray(["--no-save", "--no-telemetry"]) + flags, "", true))
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	return main
+## A booted escape: the real `main.tscn`, the run of the test's own it plays (on seed `SEEDS[0]`
+## and its last day, handed over to `section`), and the home its sitting is parked in. Freed
+## together by `_free_the_escape()`.
+class Escape:
+	var booted: RefCounted
+	var main: Node2D
+	var run: RunState
+	var home: Node
 
-var _saved_section := 0
+## Boots the real `main.tscn` on `section` of a normal run's own escape — the way a won day 14's
+## handover and a game closed in a section both reach the boot — through `tests/booted_main.gd`, a
+## debug configuration with `flags` and no save, handed a home with a sitting that holds a fresh run
+## of the test's own, set on the last day with `section` its escape section. `before` is handed the
+## unbooted `main` for anything else the test hands it (`use_quit()`, `use_reload()`). Returned
+## with its first screen up.
+func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringArray(),
+		before := Callable()) -> Escape:
+	var escape := Escape.new()
+	escape.run = RunState.new()
+	escape.run.start_run(SEEDS[0])
+	escape.run.header.day = Tuning.RUN_LENGTH_DAYS
+	escape.run.facts.escape_section = section
+	escape.home = Boot.home_playing(t, escape.run)
+	var home := escape.home
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(Array(flags)),
+			func(main: Node) -> void:
+				main.use_sitting_home(home)
+				if before.is_valid():
+					before.call(main))
+	escape.booted = booted
+	escape.main = booted.main
+	return escape
 
-func _free_the_escape(t, main: Node2D) -> void:
+func _free_the_escape(t, escape: Escape) -> void:
 	t.get_tree().paused = false
-	main.free()
+	Telemetry.end_run()
+	(escape.booted as Boot.Booted).free_all()
 	# A `--route` boot is a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
 	# the scene must give them back, or every later suite in this process hears no key as an action.
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
 			"freeing the escape leaves the keys bound to their actions")
-	GameState.facts.escape_section = _saved_section
-	GameState.start_run(SEEDS[0])
+	escape.home.free()
+	escape.run.free()
 
 ## The two names the briefs carry — *"something along 'Escape the building' and ... 'Escape the
 ## city'"*. Pinned as literals because they are the player's own words for the two screens, and a
@@ -1951,12 +1988,11 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	bare.owe_the_return(an_act_iv_day, 0)
 	t.check(bare.owed() > 0, "a day's own director owes %d rows to the return" % bare.owed())
 
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
-	var was_the_day := GameState.header.day
-	GameState.header.day = an_act_iv_day
+	city.run.header.day = an_act_iv_day
 	GivenPlanner.hand_in(city.events, [] as Array[EventScheduler.Planned])
 	var none: Array[String] = []
 	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS),
@@ -1965,7 +2001,6 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 	t.check(city.events.owed_ahead() == 0,
 			"and the escape owes nothing to a return it does not have (got %d)"
 					% city.events.owed_ahead())
-	GameState.header.day = was_the_day
 	city.free()
 
 ## **The walk's settings are the spec's, handed in, not the manager's own**: on the same act IV day
@@ -1974,25 +2009,23 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 ## spec the run flow hands over (`EventManager.start_day()`), never a branch in the manager.
 func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	var an_act_iv_day := 13
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.events.setup(city, city.map)
-	var was_the_day := GameState.header.day
-	GameState.header.day = an_act_iv_day
+	city.run.header.day = an_act_iv_day
 	var owed := {}
 	for owes: bool in [true, false]:
 		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 		spec.owes_a_return = owes
 		var consumed: Array[String] = []
-		city.events.start_day(spec, GameState.calendar.day_rng(an_act_iv_day), consumed)
+		city.events.start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
 		var before := city.events.owed_ahead()
 		EventBus.return_phase_started.emit()
 		owed[owes] = city.events.owed_ahead() - before
 	t.check(int(owed[true]) > 0, "a day's spec owes its return rows (%d)" % owed[true])
 	t.check(int(owed[false]) == 0,
 			"and a spec that owes none is owed none on the same day (%d)" % owed[false])
-	GameState.header.day = was_the_day
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
@@ -2036,6 +2069,12 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 
 # ---------------------------------------------------------- pause, built the same way ---
 
+func _key(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = true
+	return event
+
 func _action(name: StringName) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
@@ -2062,7 +2101,7 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 	t.add_child(interior)
 	interior.process_mode = Node.PROCESS_MODE_PAUSABLE
 
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEEDS[0]))
 	city.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -2085,82 +2124,74 @@ func _test_finale_entities_stop_when_the_tree_pauses(t) -> void:
 
 ## `Esc`, the pause button's own action and a window losing focus all reach the pause screen during
 ## a section exactly as they do during a day: the same continue, the same held restart, the same
-## quit, and the same stashed heading through `TouchControls`. Driven through the return window's
-## `notification()` and `main._unhandled_input()`'s own guards, against a section's day with no
-## world built behind it, since putting her down is not what this is about.
+## quit, and the same stashed heading through `TouchControls`. **Booted for real** on the building
+## and walked out of its brief, with the quit and the reload handed to counters (`main.use_quit()`,
+## `main.use_reload()`), since the real ones would take the runner's own scene away: the pause
+## screen's own quit and restart signals are heard reaching them, the window's focus loss is the
+## `ReturnWindow`'s own notification, `Esc` is pushed through the viewport as a key arrives, and her
+## heading is held by the on-screen controls (`TouchControls.set_direction()`, what a tap locks in).
+## `--no-focus-pause` is a second boot under that flag.
 ##
-## **Esc's own successful open is proven through focus loss, not through `_unhandled_input()`
-## itself.** Both reach `_pause.open()` behind the same two guards (`_pause`/`_title` not already
-## open, and — the escape's own addition — `_summary` not showing a brief or the epilogue); past
-## those, `_unhandled_input()` also calls `get_viewport().set_input_as_handled()`, which is null for
-## every `main` in this suite (see this file's own class doc on why `main` is never added to the
-## tree) and would crash rather than prove anything the readout's key tests do not already
-## establish the pattern for: call the guarded action directly, not the input handler that wraps
-## it. So this exercises `_unhandled_input()` for its two *refusals* (guard coverage no
-## different from `_pause_on_focus_lost()`'s own), and `notification()` for the one open it can
-## prove end to end.
+## **`Esc` over a pause already open is the pause screen's to answer**: it reaches the screen before
+## `main` and closes it (`PauseScreen._unhandled_input()`), so what is checked is that it closes
+## and no second pause opens over it; `main`'s own refusal to open over an open pause is not
+## reachable by a real key while the screen answers first.
 func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
-	var saved_paused: bool = t.get_tree().paused
-	var main: Node2D = MAIN_SCRIPT.new()
-	# Never in the tree, so it takes no sitting of its own: it is handed one.
-	var sitting := Sitting.new()
-	main.use_sitting(sitting)
-	main._summary = SUMMARY_SCENE.instantiate()
-	t.add_child(main._summary)
-	main._hud = HUD_SCENE.instantiate()
-	main._hud.use_run(main._run)
-	t.add_child(main._hud)
-	main._title = TITLE_SCREEN_SCENE.instantiate()
-	main._title.use_run(main._run)
-	t.add_child(main._title)
-	main._pause = PAUSE_SCREEN_SCENE.instantiate()
-	main._pause.use_run(main._run)
-	t.add_child(main._pause)
-	main._add_touch_controls()
-	# The two calls the boot's `_build_the_screens()` makes, in the same order, for every day.
-	main._pause.set_touch_controls(main._touch_controls)
-	main._connect_summary_and_pause_signals()
-	main._no_focus_pause = false
-	main._add_the_return_window(t.get_viewport())
+	var calls := {"quits": 0, "reloads": 0}
+	var hand := func(main: Node) -> void:
+		main.use_quit(func() -> void: calls["quits"] += 1)
+		main.use_reload(func() -> void: calls["reloads"] += 1)
+	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING, PackedStringArray(), hand)
+	var main := escape.main
+	var pause := Boot.pause(main)
+	await Boot.press_continue(t, main)
+	t.check(Boot.day(main).is_running(), "the section's clock is running")
+	t.check(not pause.is_open(), "and nothing is paused yet")
 
-	var clock := DayController.new()
-	t.add_child(clock)
-	clock.set_process(false)
-	main._day = clock
-	main._use_the_day(_section(DaySpec.Section.BUILDING))
-	clock.start(main._flow.spec.length)
-	t.check(clock.is_running(), "the section's clock is running")
-	t.check(not main._pause.is_open(), "and nothing is paused yet")
-
-	t.check(main._pause.quit_requested.is_connected(main._quit),
-			"quit reaches the same main._quit() a day's pause reaches")
-	t.check(main._pause.restart_requested.is_connected(main._restart_run),
-			"and the held restart reaches the same main._restart_run()")
-	t.check(main._pause._touch_controls == main._touch_controls,
-			"the pause screen can stash and restore her heading through the same touch controls")
-
-	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(main._pause.is_open(), "losing the window's focus opens the same pause a day's does")
-	t.check(t.get_tree().paused, "and pauses the tree behind it")
-	# `Esc` never opens a second time over the screen focus loss just opened — the same refusal
-	# `_pause_on_focus_lost()` makes for itself, now asked of `_unhandled_input()`.
-	main._unhandled_input(_action("pause"))
-	t.check(main._pause.is_open(), "Esc does not need to do anything — it is already open")
-	main._pause.close()
+	# The quit is pressed where the game fires it: with the pause open, as a `Q` through the viewport.
+	t.get_viewport().push_input(_action("pause"))
+	t.check(pause.is_open(), "Esc opens the pause")
+	t.get_viewport().push_input(_key(KEY_Q))
+	t.check(calls["quits"] == 1, "Q on the open pause reaches the same quit a day's pause reaches")
+	pause.close()
 	t.get_tree().paused = false
 
-	main._no_focus_pause = true
-	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(not main._pause.is_open(), "--no-focus-pause suppresses that during the escape too")
+	# Her heading, held by the on-screen controls: let go while the pause is up, and given back by
+	# the pause screen's close only if it stashed it in these same controls. The controls are let a
+	# frame of the walk first, so they have seen the tree running since the brief.
+	await UI.frames(t)
+	var controls := Boot.touch_controls(main)
+	controls.set_direction(Boot.player(main).global_position + Vector2(200.0, 0.0), false)
+	var held := Input.is_action_pressed(&"move_right")
+	var window := main.get_node("ReturnWindow") as ReturnWindow
+	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(pause.is_open(), "losing the window's focus opens the same pause a day's does")
+	t.check(t.get_tree().paused, "and pauses the tree behind it")
+	await UI.frames(t)
+	var let_go := not Input.is_action_pressed(&"move_right")
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open(), "Esc over the open pause closes it, and no second pause opens")
+	t.check(held and let_go and Input.is_action_pressed(&"move_right"),
+			"the pause screen can stash and restore her heading through the same touch controls")
+	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down", &"run"]:
+		Input.action_release(action)
+	t.get_tree().paused = false
 
-	main._summary.free()
-	main._hud.free()
-	main._title.free()
-	main._pause.free()
-	clock.free()
-	main.free()
-	sitting.free()
-	t.get_tree().paused = saved_paused
+	t.get_viewport().push_input(_action("pause"))
+	t.get_viewport().push_input(_key(KEY_R))
+	t.check(calls["reloads"] == 1, "and R on the open pause reaches the same restart a day's does")
+	pause.close()
+	t.get_tree().paused = false
+	_free_the_escape(t, escape)
+
+	var unpaused := await _boot_the_escape(t, DaySpec.Section.BUILDING,
+			PackedStringArray(["--no-focus-pause"]))
+	await Boot.press_continue(t, unpaused.main)
+	(unpaused.main.get_node("ReturnWindow") as ReturnWindow).notification(
+			Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not Boot.pause(unpaused.main).is_open(),
+			"--no-focus-pause suppresses that during the escape too")
+	_free_the_escape(t, unpaused)
 
 ## A section's brief and the epilogue are the one exception to an ordinary day's own "Esc opens over
 ## the summary too": each stands between her and a walk not yet begun, so a second screen stacked
@@ -2169,49 +2200,54 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 ## as over a lost day's *(minty-lemur #785: "nothing should be different")*; focus loss does not,
 ## as on a day. **Booted for real** on the city section and walked through each screen the way the
 ## game reaches it — the brief, the outcome screen of a loss, the retry's brief, the epilogue —
-## since Esc's own open needs `main` in the tree (`get_viewport().set_input_as_handled()`).
+## with every `Esc` pushed through the viewport and every continue pressed there.
 func _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.CITY)
-	main._no_focus_pause = false
+	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
+	var main := escape.main
+	var summary := Boot.summary(main)
+	var pause := Boot.pause(main)
+	var window := main.get_node("ReturnWindow") as ReturnWindow
+	var title: Label = summary.get_node("Root/Center/Lines/Title")
+	var words := _section(DaySpec.Section.CITY).title
 
-	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF, "the section's brief is up")
-	main._unhandled_input(_action("pause"))
-	t.check(not main._pause.is_open(), "Esc does not open the pause over a section's brief")
-	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(not main._pause.is_open(), "and neither does losing focus")
+	t.check(summary.is_showing() and title.text == words, "the section's brief is up")
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open(), "Esc does not open the pause over a section's brief")
+	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not pause.is_open(), "and neither does losing focus")
 
-	main._on_summary_continued(main._flow.mode)
+	await Boot.press_continue(t, main)
 	EventBus.hard_fail_triggered.emit("abduction")
-	t.check(main._summary.is_showing() and main._flow.mode != RunFlow.Mode.BRIEF,
-			"a lost section's outcome screen is up")
-	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(not main._pause.is_open(), "losing focus does not open the pause over it")
-	main._unhandled_input(_action("pause"))
-	t.check(main._pause.is_open(), "Esc does, as over a lost day's outcome screen")
-	main._pause.close()
-	t.check(t.get_tree().paused and main._summary.is_showing(),
+	t.check(summary.is_showing() and title.text != words, "a lost section's outcome screen is up")
+	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not pause.is_open(), "losing focus does not open the pause over it")
+	t.get_viewport().push_input(_action("pause"))
+	t.check(pause.is_open(), "Esc does, as over a lost day's outcome screen")
+	pause.close()
+	t.check(t.get_tree().paused and summary.is_showing(),
 			"and closing it leaves the outcome screen up and the tree paused")
 
-	main._on_summary_continued(main._flow.mode)
-	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF, "the retry's brief is up")
-	main._unhandled_input(_action("pause"))
-	t.check(not main._pause.is_open(), "Esc does not open the pause over it")
+	await Boot.press_continue(t, main)
+	t.check(summary.is_showing() and title.text == words, "the retry's brief is up")
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open(), "Esc does not open the pause over it")
 
-	main._on_summary_continued(main._flow.mode)
-	main._player.global_position = main._flow.spec.exits[CityEdge.Kind.TUNNEL]
-	main._day.tick(0.0)
-	t.check(main._flow.mode == RunFlow.Mode.EPILOGUE and main._summary.is_showing(),
+	await Boot.press_continue(t, main)
+	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
+	for _frame in 3:
+		await t.get_tree().physics_frame
+	t.check(summary.is_showing() and title.text == Texts.FINALE_TITLE,
 			"out of the city, the epilogue is up")
-	main._unhandled_input(_action("pause"))
-	t.check(not main._pause.is_open(), "Esc does not open the pause over the epilogue")
-	main._return_window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
-	t.check(not main._pause.is_open(), "and neither does losing focus")
-	_free_the_escape(t, main)
+	t.get_viewport().push_input(_action("pause"))
+	t.check(not pause.is_open(), "Esc does not open the pause over the epilogue")
+	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	t.check(not pause.is_open(), "and neither does losing focus")
+	_free_the_escape(t, escape)
 
 # ------------------------------------------------------ a resumed escape, and a handover ---
 
 ## `_escape_section_came_from_the_file()` is the boot policy with the two live
-## `GameState.facts.escape_section` reads taken out of it, so every combination can be driven directly.
+## reads of the run's `facts.escape_section` taken out of it, so every combination can be driven directly.
 func _test_escape_section_came_from_the_file(t) -> void:
 	var none := DaySpec.Section.NONE
 	var building := DaySpec.Section.BUILDING
@@ -2224,97 +2260,112 @@ func _test_escape_section_came_from_the_file(t) -> void:
 
 ## *(2026-09-20, the player, on a save closed inside a section: "if I load into the game and I'm at
 ## escape I see the title screen, then the brief".)* A genuinely resumed escape — a page with nothing
-## on the autoload, opening a save closed inside a section — opens on the title, through the day's
-## own `_open_the_title()`, with the section's clock standing still behind it, and the title's start
-## is the day's own `_on_title_start()`, whose resume gate raises the section's brief. **Booted for
-## real from a save on disk** (a scratch file, a windowed release run), so what is checked is
-## `_ready()`'s own decision — `_escape_section_came_from_the_file()` read at the boot and handed to
-## `_open_the_first_screen_of_the_escape()` — not a screen this test opened by hand.
+## of the escape on its run, opening a save closed inside a section — opens on the title, with the
+## section's clock standing still behind it, and the title's start raises the section's brief, the
+## resume gate a resumed day has too. **Booted for real from a save on disk** (a scratch file, a
+## windowed release run), handed a fresh run of the test's own that the save is read into, so what
+## is checked is the boot's own decision — whether the section came from the file — not a screen
+## this test opened by hand; the title's start is a press on its Tap button through the viewport.
 func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void:
-	_saved_section = GameState.facts.escape_section
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false)
 	var save := GameSave.new(_SCRATCH_SAVE)
 	save.configure(config)
-	GameState.start_run(SEEDS[0])
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	t.check(save.write(GameState, false) == GameSave.Result.CONFIRMED,
+	var closed := RunState.new()
+	closed.start_run(SEEDS[0])
+	closed.header.day = Tuning.RUN_LENGTH_DAYS
+	closed.facts.escape_section = DaySpec.Section.BUILDING
+	t.check(save.write(closed, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
-	# A fresh page: nothing of the escape on the autoload, only in the file.
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	var main: Node2D = MAIN_SCENE.instantiate()
-	main.use_save(save)
-	main.configure(config)
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	var length: float = main._flow.spec.length
+	closed.free()
+	save.free()
+	# A fresh page: nothing of the escape on the run it plays, only in the file.
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
+			func(main: Node) -> void: main.use_sitting_home(home))
+	var main := booted.main
+	var day := Boot.day(main)
+	var length: float = day.spec.length
 
-	t.check(main._flow.spec.section == DaySpec.Section.BUILDING,
+	t.check(day.spec.section == DaySpec.Section.BUILDING,
 			"the boot read the section off the save")
-	t.check(main._title.is_open() and not main._summary.is_showing(),
+	t.check(Boot.title(main).is_open() and not Boot.summary(main).is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
-	t.check(main._title.mode_name_shown() != "", "and names the mode, which the save already fixed")
-	t.check(main._flow.in_the_title(), "and the boot is behind its title")
-	t.check(t.get_tree().paused and not main._day.can_process()
-			and is_equal_approx(main._day.time_remaining, length),
+	t.check(Boot.title(main).mode_name_shown() != "", "and names the mode, which the save already fixed")
+	t.check(Boot.title(main).is_open() and t.get_tree().paused, "and the boot is behind its title")
+	t.check(t.get_tree().paused and not day.can_process()
+			and is_equal_approx(day.time_remaining, length),
 			"with the section's whole clock standing still behind the title (%.2f of %.2f)"
-			% [main._day.time_remaining, length])
+			% [day.time_remaining, length])
 
-	main._title.start_requested.emit(ControlsMode.Mode.TAP, false, ControlsMode.Side.LEFT)
-	t.check(not main._title.is_open(), "pressing start closes the title")
-	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF,
+	await Boot.press_title(t, main, "Tap")
+	t.check(not Boot.title(main).is_open(), "pressing start closes the title")
+	var title_label: Label = Boot.summary(main).get_node("Root/Center/Lines/Title")
+	t.check(Boot.summary(main).is_showing() and title_label.text == "Escape the building",
 			"and raises the section's own brief, in front of the section already built")
-	var title_label: Label = main._summary.get_node("Root/Center/Lines/Title")
 	t.check(title_label.text == "Escape the building",
 			"titled with the section's own words ('%s')" % title_label.text)
-	t.check(not main._flow.in_the_title(), "the title is behind her")
-	t.check(t.get_tree().paused and is_equal_approx(main._day.time_remaining, length),
+	t.check(not Boot.title(main).is_open(), "the title is behind her")
+	t.check(t.get_tree().paused and is_equal_approx(day.time_remaining, length),
 			"the clock still standing still behind the brief")
 
-	save.clear()
-	main._sitting.atlas.close_loading_window()
-	_free_the_escape(t, main)
-	save.free()
+	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas.close_loading_window()
+	t.get_tree().paused = false
+	Telemetry.end_run()
+	booted.free_all()
+	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
+			"freeing the escape leaves the keys bound to their actions")
+	home.free()
+	run.free()
 
-## `--route` booted into the building: nothing presses the building's own brief, and once the
-## building is won the city is built, its brief raised, and the route rig presses that brief's
+## `--route` booted into the building: the building's own walker presses the building's brief
+## (`BuildingWalker`, the rig a route builds with the building), there is no city rig yet, and once
+## the building is won the city is built, its brief raised, and the route rig presses that brief's
 ## continue the way a key does — through the run flow's own continue, with no special case in `main`.
+## The building is won by its service door's `exit_requested`, and the rig is found by the name
+## `main` gives it. The building's brief is left to the walker rather than continued here: a second
+## continue for it, still in flight when the city's brief comes up, would press the city's brief in
+## the rig's place.
 func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.BUILDING, PackedStringArray(["--route", "tunnel"]))
-	t.check(main._route_rig == null and main._flow.mode == RunFlow.Mode.BRIEF,
-			"a route booted into the building has no city to walk yet, and the building's brief stands")
-	main._summary.continued.emit(RunFlow.Mode.BRIEF)
-	var end := DayEnd.new()
-	end.result = GameEnums.DayResult.WON
-	main._finish_the_section(end)
-	t.check(main._route_rig != null, "winning the building builds the rig with the city")
-	_let_frames_pass(t, 4)
-	t.check(main._flow.spec.section == DaySpec.Section.CITY and main._flow.mode == RunFlow.Mode.WALKING
-			and not main._summary.is_showing(),
-			"the rig pressed the city brief's continue: the city is walked (mode %d)" % main._flow.mode)
+	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING,
+			PackedStringArray(["--route", "tunnel"]))
+	var main := escape.main
+	var summary := Boot.summary(main)
+	await _let_frames_pass(t, 4)
+	t.check(main.get_node_or_null("RouteRig") == null and not summary.is_showing()
+			and Boot.day(main).spec.section == DaySpec.Section.BUILDING,
+			"a route booted into the building has no city to walk yet, and its walker pressed the"
+			+ " building's brief")
+	Boot.interior(main).exit_requested.emit()
+	t.check(main.get_node_or_null("RouteRig") != null, "winning the building builds the rig with the city")
+	await _let_frames_pass(t, 4)
+	t.check(Boot.day(main).spec.section == DaySpec.Section.CITY and Boot.day(main).is_running()
+			and not summary.is_showing(),
+			"the rig pressed the city brief's continue: the city is walked")
 	t.check(not t.get_tree().paused, "and the tree runs")
-	_free_the_escape(t, main)
+	_free_the_escape(t, escape)
 
-## `--start-escape city --route`: the city's brief is pressed by the rig too, rather than skipped by
-## a branch in `main`, so the section walks without anyone pressing anything. **A parity check**: it
 ## held before the branch in `main` was removed, and guards that the removal changed nothing.
 func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(["--route", "tunnel"]))
-	_let_frames_pass(t, 4)
-	t.check(main._route_rig != null and main._flow.mode == RunFlow.Mode.WALKING
-			and not main._summary.is_showing(),
-			"a route booted into the city walks it with no one pressing the brief (mode %d)" % main._flow.mode)
-	_free_the_escape(t, main)
+	var escape := await _boot_the_escape(t, DaySpec.Section.CITY,
+			PackedStringArray(["--route", "tunnel"]))
+	var main := escape.main
+	await _let_frames_pass(t, 4)
+	t.check(main.get_node_or_null("RouteRig") != null and Boot.day(main).is_running()
+			and not Boot.summary(main).is_showing(),
+			"a route booted into the city walks it with no one pressing the brief")
+	_free_the_escape(t, escape)
 
 ## Without `--route` nothing presses a brief: the city's brief stands until a person does. **A parity
 ## check**: it held before the rig pressed anything.
 func _test_without_a_route_the_briefs_wait_for_a_person(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.CITY)
-	_let_frames_pass(t, 4)
-	t.check(main._flow.mode == RunFlow.Mode.BRIEF and main._summary.is_showing(),
+	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
+	var main := escape.main
+	await _let_frames_pass(t, 4)
+	var title: Label = Boot.summary(main).get_node("Root/Center/Lines/Title")
+	t.check(Boot.summary(main).is_showing() and title.text == "Escape the city",
 			"with no --route the city's brief waits for a person")
-	_free_the_escape(t, main)
+	_free_the_escape(t, escape)
 
 ## The rig presses a section's first brief only: a retry brief, raised after a loss, stays up, so a
 ## lost city section stops there instead of retrying forever. Fails without the `_pressed` guard.
@@ -2325,68 +2376,64 @@ func _test_a_route_rig_presses_only_the_first_brief_of_a_section(t) -> void:
 	rig.use_continue(func(_raised_in: int) -> void: presses[0] += 1)
 	var city := _section(DaySpec.Section.CITY)
 	rig.press_the_brief(city)
-	_let_frames_pass(t, 2)
+	await _let_frames_pass(t, 2)
 	rig.press_the_brief(city)
-	_let_frames_pass(t, 2)
+	await _let_frames_pass(t, 2)
 	t.check(presses[0] == 1, "the city's first brief is pressed and its retry brief is not (%d)" % presses[0])
 	rig.press_the_brief(_section(DaySpec.Section.BUILDING))
-	_let_frames_pass(t, 2)
+	await _let_frames_pass(t, 2)
 	t.check(presses[0] == 2, "another section's first brief is pressed")
 	rig.press_the_brief(DaySpec.new())
-	_let_frames_pass(t, 2)
+	await _let_frames_pass(t, 2)
 	t.check(presses[0] == 2, "a day's brief is left alone")
 	rig.free()
 
 func _let_frames_pass(t, frames: int) -> void:
 	for i in frames:
-		t.get_tree().process_frame.emit()
+		await t.get_tree().process_frame
 
-## The handover reload from a won day 14 reaches the boot as `RunFlow.Opening.ESCAPE_HANDED_OVER`
-## rather than `ESCAPE_RESUMED` — the latter only when `GameState.facts.escape_section` was `NONE`
-## before `try_resume()` ran, which a handover's own value already isn't, since it was written to
-## the autoload before the reload — so
-## it opens straight on the building's own brief, with no title in front of it and the section's
-## clock standing still behind the brief. Booted for real.
+## The handover reload from a won day 14 reaches the boot with the run's escape section already
+## set — it was set on the run the sitting carries across the reload — so the boot does not count
+## it as read off a save, and it opens straight on the building's own brief, with no title in front
+## of it and the section's clock standing still behind the brief. Booted for real, on a run of the
+## test's own that holds the section as the handover leaves it.
 func _test_a_handover_does_not_open_on_the_title(t) -> void:
-	var main := _boot_the_escape(t, DaySpec.Section.BUILDING)
-	t.check(not main._title.is_open(), "a handover does not raise the title")
-	t.check(main._summary.is_showing() and main._flow.mode == RunFlow.Mode.BRIEF,
+	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING)
+	var main := escape.main
+	var title: Label = Boot.summary(main).get_node("Root/Center/Lines/Title")
+	t.check(not Boot.title(main).is_open(), "a handover does not raise the title")
+	t.check(Boot.summary(main).is_showing() and title.text == "Escape the building",
 			"it opens straight on the section's own brief")
-	t.check(t.get_tree().paused and not main._day.can_process()
-			and is_equal_approx(main._day.time_remaining, main._flow.spec.length),
+	t.check(t.get_tree().paused and not Boot.day(main).can_process()
+			and is_equal_approx(Boot.day(main).time_remaining, Boot.day(main).spec.length),
 			"with the section's whole clock standing still behind it")
-	_free_the_escape(t, main)
+	_free_the_escape(t, escape)
 
-## *"the held restart from the escape ends in a fresh run with escape_section cleared"* —
-## `main._restart_run()` cannot safely run inside this suite: it defers a real
-## `reload_current_scene()` against the test runner's own tree, the same reason
-## `tests/test_pause.gd`'s own note gives for never calling it directly. What is checked instead is
-## the wiring that reaches it (both of the escape's own screens, the same as a day's two) and the one
-## fact of its own body that answers "a fresh run" for the escape specifically —
-## `GameState.facts.escape_section = DaySpec.Section.NONE`; its `_save.clear()` is exercised
-## safely, at a scratch path, by `tests/test_save.gd` and is not repeated here.
+## *"the held restart from the escape ends in a fresh run with escape_section cleared"* — booted
+## for real on the city section, with the reload handed to a counter (`main.use_reload()`), since a
+## real one would throw away the runner's own scene. Both of the escape's own screens reach the
+## restart, the same as a day's two: the pause screen's restart signal and the section brief's own
+## restart button's (`DaySummary.restart_requested`); and the run the restart reloads into has no
+## escape section, so the next boot starts a fresh run rather than opening the escape again. Its
+## `_save.clear()` is exercised, at a scratch path, by `tests/test_save_wiring.gd`.
 func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
-	var saved_section := GameState.facts.escape_section
-	GameState.facts.escape_section = DaySpec.Section.CITY
-
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._pause = PAUSE_SCREEN_SCENE.instantiate()
-	main._pause.use_run(main._run)
-	main._summary = SUMMARY_SCENE.instantiate()
-	main._connect_summary_and_pause_signals()
-	t.check(main._pause.restart_requested.is_connected(main._restart_run),
-			"the escape's own pause screen reaches main._restart_run(), same as a day's")
-	t.check(main._summary.restart_requested.is_connected(main._restart_run),
+	var reloads := [0]
+	var escape := await _boot_the_escape(t, DaySpec.Section.CITY, PackedStringArray(),
+			func(main: Node) -> void: main.use_reload(func() -> void: reloads[0] += 1))
+	var main := escape.main
+	await Boot.press_continue(t, main)
+	t.get_viewport().push_input(_action("pause"))
+	t.get_viewport().push_input(_key(KEY_R))
+	Boot.pause(main).close()
+	t.get_tree().paused = false
+	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
+	escape.run.facts.escape_section = DaySpec.Section.CITY
+	Boot.summary(main).restart_requested.emit()
+	t.check(reloads[0] == 2,
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
-
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
-			"a fresh run has no escape section — the run `_restart_run()` reloads into is a fresh one")
-
-	main._pause.queue_free()
-	main._summary.queue_free()
-	main.free()
-	GameState.facts.escape_section = saved_section
+	t.check(escape.run.facts.escape_section == DaySpec.Section.NONE,
+			"a fresh run has no escape section — the run the restart reloads into is a fresh one")
+	_free_the_escape(t, escape)
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:

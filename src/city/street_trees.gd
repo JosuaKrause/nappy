@@ -115,12 +115,12 @@ class Run extends RefCounted:
 					else Vector3i(index, first + i, 1))
 		return found
 
-	## The streets this run covers, as the lattice's own `Segment` objects. Null for a key the
+	## The streets this run covers, as `network`'s own `Segment` objects. Null for a key the
 	## lattice does not enumerate, which `_run_is_plantable` refuses the run for.
-	func segments() -> Array[StreetNetwork.Segment]:
+	func segments(network: StreetNetwork) -> Array[StreetNetwork.Segment]:
 		var found: Array[StreetNetwork.Segment] = []
 		for key in segment_keys():
-			var segment := StreetNetwork.by_key(key)
+			var segment := network.by_key(key)
 			if segment:
 				found.append(segment)
 		return found
@@ -185,7 +185,7 @@ static func planted(map: CityMap) -> Array[Planted]:
 	var found: Array[Planted] = []
 	if not map.recipe_dawn_tiles.is_empty():
 		for tile in map.recipe_trees:
-			var segment := StreetNetwork.segment_containing(tile)
+			var segment := map.network.segment_containing(tile)
 			if not segment:
 				continue
 			var tree := Planted.new()
@@ -281,7 +281,7 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 	for key in run.segment_keys():
 		if taken.has(key) or not map.has_street(key):
 			return false
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if not segment:
 			return false
 		if _street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:

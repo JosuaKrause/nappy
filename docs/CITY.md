@@ -556,7 +556,10 @@ The lattice is a graph: a **junction** at each end of every block — one more p
 blocks — and the **streets** between them, each one block long and one corridor wide.
 `StreetNetwork` owns that view of the city, and a closure takes out one whole street. A few hundred
 segments is cheap enough that validating a whole day's closures costs less than one tile-level flood
-fill.
+fill. Each `CityMap` holds its own (`map.network`), built with the map, and everything that asks
+about streets is handed it with the map rather than reading a lattice kept for the process; the
+lattice is a function of the block count alone, so every city's network has the same streets in the
+same order and a segment key names the same street on all of them.
 
 Half a street would be a closure the player cannot see the shape of, and a whole corridor
 would delete a route rather than narrow the choice. A street is the unit the player already

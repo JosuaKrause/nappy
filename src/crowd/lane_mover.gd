@@ -83,7 +83,7 @@ var traffic: TrafficIndex
 var door_segments := {}
 
 ## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
-## own — rebuilt beside `door_segments` from `StreetNetwork.around_blocks(Rect2i(map.home_block,
+## own — rebuilt beside `door_segments` from `map.network.around_blocks(Rect2i(map.home_block,
 ## Vector2i.ONE))`, the exact set `EventManager.start_day` holds them from for the opposite reason:
 ## those segments are held only so no catalogue row lands on the home block's own street, never
 ## because a body stands across it. The home is a notch with one exit, she walks out onto one of
@@ -417,7 +417,7 @@ const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
-	var segment := StreetNetwork.segment_containing(tile)
+	var segment := _map.network.segment_containing(tile)
 	if segment == null:
 		return strategy.shut_by_a_hold
 	var key := segment.key()

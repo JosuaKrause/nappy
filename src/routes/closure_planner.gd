@@ -197,7 +197,7 @@ static func closures_wanted(day: int) -> int:
 ## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where
 ## it is enforced.
 static func home_street(map: CityMap) -> StreetNetwork.Segment:
-	return StreetNetwork.segment_containing(
+	return map.network.segment_containing(
 			map.world_to_tile(map.doorstep_world_position()))
 
 ## Today's calm ground, as areas with their own ground and ways in.
@@ -244,7 +244,7 @@ static func _access_segments(map: CityMap, rect: Rect2i) -> Array[StreetNetwork.
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		# A **real** street is where this direction's search stops: what lies beyond it is not
 		# "entered from" this area, it is somewhere the street itself leads on to. `segment_
 		# containing` answers from tile geometry alone, so it still names a segment where a
@@ -455,7 +455,7 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 	for key: Vector3i in closed:
 		if map.absent_segments.has(key):
 			continue   # ground a calm zone painted over, not a street with a barrier on it
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if not segment:
 			continue
 		for at_a in [true, false]:
@@ -541,7 +541,7 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 		boundary[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
 				or access.has(key) or boundary.has(key):

@@ -869,7 +869,7 @@ func _all_four_arms_are_plain(junction: Vector2i) -> bool:
 			var key := _key_of(junction, vertical, direction)
 			if not _city.map.has_street(key):
 				return false
-			var segment := StreetNetwork.by_key(key)
+			var segment := _city.map.network.by_key(key)
 			if _city.map.is_held(segment):
 				return false
 			var rect := segment.tile_rect()

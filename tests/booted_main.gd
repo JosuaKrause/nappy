@@ -22,6 +22,14 @@ extends RefCounted
 ##
 ## **No boot reaches the player's save.** `boot()` hands every `main` a save at a scratch path
 ## (`main.use_save()`), whatever configuration it boots under.
+##
+## **Freeing a boot gives the observers back what they held before it.** A booted `main` hands the
+## run it plays to the observers (`VisitCounter.configure()`), which keep it after `main` is gone;
+## a test that hands its boot a run of its own (`home_playing()`) frees that run afterwards, and an
+## observer left holding it would read a freed run at the next bus signal a later test sends with
+## no boot of its own. `free_all()` puts back what `hold_observers()` read before the boot, the way
+## the runner puts them back after a suite (`SharedState.put_back_observers()`); a suite that boots
+## `main` its own way does the same with `hold_observers()` and `give_back_observers()`.
 
 const UI := preload("res://tests/ui_screens.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
@@ -38,6 +46,8 @@ class Booted:
 	var main: Node2D
 	var save: GameSave
 	var path := ""
+	## What the observers held before the boot (`hold_observers()`), put back by `free_all()`.
+	var observers := {}
 
 	func free_all() -> void:
 		var tree := main.get_tree() if main.is_inside_tree() else null
@@ -46,6 +56,16 @@ class Booted:
 		main.free()
 		save.free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		SharedState.put_back_observers(observers)
+
+## What the observers hold now (the configuration and the run `main` hands them,
+## `SharedState.OBSERVER_FIELDS`), for `give_back_observers()` once the boot is freed.
+static func hold_observers() -> Dictionary:
+	return SharedState.observers()
+
+## Puts back what `hold_observers()` read, so no observer keeps the run of a boot that is gone.
+static func give_back_observers(held: Dictionary) -> void:
+	SharedState.put_back_observers(held)
 
 ## The real `main.tscn`, handed `config` (none: the process's own) and a save at `scratch_path`,
 ## put under `t` and waited on, real frames passing, until she stands in a world (see this file's
@@ -55,6 +75,7 @@ class Booted:
 static func boot(t, scratch_path: String, config: RunConfig = null,
 		before := Callable()) -> Booted:
 	var booted := Booted.new()
+	booted.observers = hold_observers()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
 	booted.main = MAIN_SCENE.instantiate()
@@ -78,6 +99,21 @@ static func until_booted(t, main: Node) -> void:
 		if player(main) != null and main.get_node_or_null("BootCamera") == null:
 			return
 	t.check(false, "the boot finished within %d frames" % BOOT_FRAMES)
+
+## A node of the suite's own under `t`, standing for the tree's root, with a sitting parked in it
+## that plays `run`: handed to a boot (`main.use_sitting_home()`, through `boot()`'s `before`), it
+## is the sitting the boot takes, so the game plays the run the test made and hands it down, rather
+## than one of its own. A reload the boot asks for leaves that sitting where it is, and the boot
+## standing for the reload takes it again, as a real one takes the sitting parked at the root. The
+## caller frees the home, and the run, which the sitting does not own (`Sitting.run`).
+static func home_playing(t, run: RunState) -> Node:
+	var home := Node.new()
+	t.add_child(home)
+	var sitting := Sitting.new()
+	sitting.name = Sitting.NODE_NAME
+	sitting.run = run
+	home.add_child(sitting)
+	return home
 
 ## A debug build's configuration from command-line `words`, unsaved and uncounted.
 static func config(words: Array) -> RunConfig:

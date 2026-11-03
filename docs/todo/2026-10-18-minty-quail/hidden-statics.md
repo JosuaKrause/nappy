@@ -1,10 +1,9 @@
 # Hidden globals held in statics
 
-- **58 `static var`s hold hidden globals** (the review's count at v0.29.0): among them
-  `StreetNetwork._segments`, `SealPlanner._candidates` and the `AtlasLibrary` statics. A component
-  that reads one depends on whatever the last caller left there, and a test cannot hand it a fake,
-  only patch the static and put it back. The README's dependency-injection rule names "a static"
-  among the things a component must not fetch what it depends on from.
+- **A `static var` that holds a hidden global** makes a component that reads it depend on whatever
+  the last caller left there, and a test cannot hand it a fake, only patch the static and put it
+  back. The README's dependency-injection rule names "a static" among the things a component must
+  not fetch what it depends on from.
 
 **Build:** each owner holds its state and is handed it through its setup or constructor, and no
 static holds hidden globals; a value that is truly one per process (a table read once from disk) is
@@ -15,10 +14,9 @@ the statics belong to the city, the routes and the art rather than to the run's 
 that keeps the run's state in one place does not build them.
 
 **Where it stands:** the statics under `src/crowd/`, `src/city/`, `src/routes/` and `src/world/`
-hold no hidden globals except `StreetNetwork`'s lattice memos (`_segments`, `_by_key`,
-`_adjacency`), which need a network handed to their static callers, the resistance and finale tests
-among them. The torn posters are held by a `PosterArt` that `main` keeps and hands down through
-`City`, `PosterWalls` and `Building`. The constants left there (the `Mover` filters, `CityMap`'s
+hold no hidden globals: the street lattice is a `StreetNetwork` each `CityMap` holds
+(`map.network`), built with the map and handed to its callers with it. The torn posters are held by
+a `PosterArt` that `main` keeps and hands down through `City`, `PosterWalls` and `Building`. The constants left there (the `Mover` filters, `CityMap`'s
 tile tables) and `Mover._shared`, a pure memo of its flags, are not hidden globals. What outlives a
 scene reload (the controls choice, the held-restart stamp, the save symbol's home, the frame
 record's file and the frame record itself, the checkpoint carry, the ground recipe read once per

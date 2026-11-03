@@ -833,7 +833,7 @@ static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> 
 static func _absorb_one(map: CityMap, key: Vector3i, solid: bool) -> void:
 	map.absent_segments[key] = true
 	if solid:
-		map.built_over[key] = StreetNetwork.by_key(key).tile_rect()
+		map.built_over[key] = map.network.by_key(key).tile_rect()
 
 ## Seals the **stub** an arm leaves behind wherever it stops being a street: a zone's absorbed
 ## corridor, a dead end's plug and a big building's mass all call this over `gone` — the ground
@@ -1297,7 +1297,7 @@ static func _place_dead_ends(map: CityMap, home: StreetNetwork.Segment,
 static func _dead_end_candidates(map: CityMap, home: StreetNetwork.Segment, reference: RouteTree,
 		calm: Dictionary, rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var pool: Array[StreetNetwork.Segment] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()) or segment.key() == home.key():
 			continue
 		if reference.is_on_the_tree(segment.key()) or _runs_beside_calm(segment, calm):
@@ -1371,7 +1371,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 		# buildings on the same tiles. A candidate list is a snapshot; a placement is a change.
 		if not _the_pair_is_free(map, purposes, pair, home, reference, calm):
 			continue
-		var between := _street_between(pair)
+		var between := _street_between(map, pair)
 		map.absent_segments[between.key()] = true
 		if _the_calm_survives(map, home, areas):
 			_make_the_pair_solid(map, purposes, block_rects, pair, between)
@@ -1442,7 +1442,7 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 				door_blocks.append(requested)
 		if door_blocks.is_empty():
 			continue
-		var between := _street_between(pair)
+		var between := _street_between(map, pair)
 		map.absent_segments[between.key()] = true
 		if not _the_calm_survives(map, home, areas):
 			map.absent_segments.erase(between.key())
@@ -1453,7 +1453,7 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 		_assign_regions(map)
 		var home_region := RegionPlanner.home_region(map)
 		for block in door_blocks:
-			var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
+			var street := map.network.beside_block(block, StreetNetwork.Side.SOUTH)
 			if RegionPlanner.ground_region_of(map, street) == home_region:
 				continue
 			map.power_station = pair
@@ -1519,7 +1519,7 @@ static func _industrial_blocks(purposes: Dictionary) -> Dictionary:
 static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	for block in _blocks_in(pair):
-		var street := StreetNetwork.beside_block(block, StreetNetwork.Side.SOUTH)
+		var street := map.network.beside_block(block, StreetNetwork.Side.SOUTH)
 		if not street or not map.has_street(street.key()):
 			continue
 		if blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
@@ -1631,7 +1631,7 @@ static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 		if purposes.get(block) == GameEnums.BlockPurpose.BIG_BUILDING:
 			return false
 
-	var between := _street_between(pair)
+	var between := _street_between(map, pair)
 	if not between or not map.has_street(between.key()) or between.key() == home.key():
 		return false
 	if reference.is_on_the_tree(between.key()) or map.is_hard_blocker(between.key()):
@@ -1644,9 +1644,9 @@ static func _the_pair_is_free(map: CityMap, purposes: Dictionary, pair: Rect2i,
 
 ## The one street a pair of neighbouring blocks has between them. A segment key names the block it
 ## runs along the north or west edge of, so it is the far block's own western or northern street.
-static func _street_between(pair: Rect2i) -> StreetNetwork.Segment:
+static func _street_between(map: CityMap, pair: Rect2i) -> StreetNetwork.Segment:
 	var far := pair.position + pair.size - Vector2i.ONE
-	return StreetNetwork.beside_block(far,
+	return map.network.beside_block(far,
 			StreetNetwork.Side.WEST if pair.size.x == 2 else StreetNetwork.Side.NORTH)
 
 ## Turns two carved blocks and the street between them into one solid mass.
@@ -1690,7 +1690,7 @@ static func _the_calm_survives(map: CityMap, home: StreetNetwork.Segment,
 		areas: Array[ClosurePlanner.CalmArea]) -> bool:
 	var blocked := map.blocked_segments()
 	for area in areas:
-		if StreetNetwork.route_count(home, area.access, blocked, 1) < 1:
+		if map.network.route_count(home, area.access, blocked, 1) < 1:
 			return false
 	return true
 
@@ -1844,7 +1844,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 		problems.append("the front door does not open onto a street")
 		return problems
 	for area in ClosurePlanner.calm_areas(map):
-		if StreetNetwork.route_count(home, area.access, map.blocked_segments(), 1) < 1:
+		if map.network.route_count(home, area.access, map.blocked_segments(), 1) < 1:
 			problems.append("calm area %s cannot be reached from the home street" % area.block)
 			if not all_problems:
 				return problems

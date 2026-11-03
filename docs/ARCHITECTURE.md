@@ -62,7 +62,7 @@ src/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
   city/
-	city_map.gd           tile data, queries (walkable)
+	city_map.gd           tile data, queries (walkable); holds the city's street lattice
 	city_generator.gd     seeded generation
 	city.gd               the scene: ground, buildings, props, boundary, queries (is_calm_zone, is_alley)
 	block_plan.gd         one block's arc, planned at generation
@@ -81,7 +81,8 @@ src/
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
   routes/
-	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts
+	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts;
+	                      an instance per city map, read through the map it is handed
 	reachability_grid.gd  the tile graph contracted into two-tile cells; is there a walkable path
 	road_closure.gd       one street shut for one day, and what shut it
 	closure_planner.gd    picks the day's closures; enforces the two-routes invariant

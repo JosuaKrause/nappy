@@ -36,9 +36,6 @@ const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "GameState"
 ## same answer ever after:
 const EXEMPT: Dictionary[String, String] = {
 	"atlas_table._baked": "the baked atlas region table, read from its file on first use",
-	"street_network._segments": "the lattice's street segments, built from the fixed lattice size",
-	"street_network._by_key": "the same segments by key",
-	"street_network._adjacency": "the same segments' adjacency",
 	"resistance_steps._all": "the step table, built from constants on first use",
 	"event_catalogue._all": "the catalogue rows, built from code on first use",
 	"event_catalogue._hot": "the catalogue's hot-row index, built with it",
