@@ -1,7 +1,8 @@
 # minty-quail — The checkpoint and save-wiring suites boot the real game, and the finale boots its escapes (tests through public seams) · 2026-11-03
 
 minty-quail's `tests-public-seams.md` and `run-state-handed-in.md`: the checkpoint, finale and
-save-wiring suites. The first and last are converted; the item lists what the finale still reads.
+save-wiring suites. The first and last are converted; the item lists what the finale still reads
+(the first review found three of its reads missing from that list, added).
 
 **Built.**
 - No new public member and no seam; one stale docstring in `src/ui/title_screen.gd`.
@@ -23,6 +24,12 @@ save-wiring suites. The first and last are converted; the item lists what the fi
   one found the route rig's building test true by luck (the building walker's press landed on the
   city brief), fixed so it fails.
 
+- The first review found two tests driving the day clock by hand (`DayController.tick(0.0)`) where
+  real frames reach the city exit; both step real frames now, the charge test's hand-built pursuer
+  given the city's atlas so it draws. A day's timeout takes the game's own path (`time_remaining`
+  run out and a physics tick), and the pause's quit and restart are pressed through the viewport on
+  the open pause.
+
 **Found:** a real `Esc` over an open pause reaches the pause screen first and closes it, so
 `main`'s refusal to open a second pause there is not reachable by a key; the check reads "Esc over
 the open pause closes it, and no second pause opens". The route rig's building test said nothing
@@ -31,6 +38,5 @@ presses the building's brief, which `BuildingWalker` does; it says the walker pr
 **Open to overturn** (the builder's choices where the brief was silent): the observer give-back
 after each boot; the held-restart test letting its boot build its own sitting, which the runner
 hands the stand-in, since parking that sitting is what it checks; tests emitting the signals the
-game fires (`day_finished`, the pause and summary restart and quit signals, `hard_fail_triggered`);
-`DayController.tick(0.0)` called to put her through the city exit in two tests, since over real
-frames her body is moved off the exit tile before the clock looks.
+game fires (`hard_fail_triggered`, the summary's restart).
+
