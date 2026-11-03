@@ -43,7 +43,7 @@ func run(t) -> void:
 ## the first along tile of a run of `length` tiles that is street all the way across and all the way
 ## down. Returns `-1` for the corridor when the city has no such run, which no generated city does —
 ## the caller checks, so a rig that has quietly stopped testing anything says so.
-func _a_straight_run(map: CityMap, length: int) -> Vector2i:
+func a_straight_run(map: CityMap, length: int) -> Vector2i:
 	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
 		if corridor == map.main_road:
 			continue
@@ -75,9 +75,10 @@ func _stand_a_body(map: CityMap, corridor: int, lanes: Array, from: int, to: int
 
 ## An agent on one lane of one corridor, walking or driving at a given along position, added to the
 ## day's (emptied) crowd so `Crowd.step()` moves it exactly as it moves anybody.
-func _agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
+func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
 		along: float, direction: float, vertical := true,
-		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0) -> CrowdAgent:
+		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0,
+		seed_value := 1) -> CrowdAgent:
 	var centre := CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
 			else CrowdLanes.walker_lane_centre(corridor, lane, offsets)
 	var at := Vector2(centre, along) if vertical else Vector2(along, centre)
@@ -87,13 +88,39 @@ func _agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, l
 	if speed < 0.0:
 		speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
 	var placed := city.crowd.add_recipe_actor("rig-%d" % city.crowd.agent_count(), kind, at,
-			heading, speed, 1)
+			heading, speed, seed_value)
 	assert(placed["error"] == "", "the rig's agent is placed: %s" % placed["error"])
 	return placed.get("actor")
 
+## A body of `kind` the crowd accepts somewhere on this city's ordinary streets, whatever a day has
+## sealed or held there: the first spot along any vertical corridor that the entry
+## (`Crowd.add_recipe_actor()`) takes, or `null` when there is none.
+func any_agent(city: City, map: CityMap, kind: CrowdAgent.Kind, seed_value := 1) -> CrowdAgent:
+	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
+		for tile in range(8, map.size.y - 8, 3):
+			var lane := CrowdLanes.road_lane(true, 1.0) if kind == CrowdAgent.Kind.CAR else 0
+			var centre := CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
+					else CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
+			var placed := city.crowd.add_recipe_actor("any-%d" % city.crowd.agent_count(), kind,
+					Vector2(centre, float(tile) * Tuning.TILE_SIZE), Vector2.DOWN,
+					60.0 if kind == CrowdAgent.Kind.WALKER else 130.0, seed_value)
+			if placed["error"] == "":
+				return placed["actor"]
+	return null
+
+## A seed that gives a walker pinned with it the door answer `answer`: the first roll of the seed is
+## the one a placement draws its answer from (`WalkerStrategy.door_answer_for()`).
+func seed_for_door_answer(answer: WalkerStrategy.DoorAnswer) -> int:
+	for seed_value in range(1, 1000):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value
+		if WalkerStrategy.door_answer_for(rng.randf()) == answer:
+			return seed_value
+	return -1
+
 ## Whether `car` is still driving in the positive direction down vertical corridor `corridor`: its
 ## heading is straight down the street and it is standing in that corridor.
-func _still_driving_down(car: CrowdAgent, corridor: int) -> bool:
+func still_driving_down(car: CrowdAgent, corridor: int) -> bool:
 	return car.heading().is_equal_approx(Vector2.DOWN) \
 			and CrowdLanes.corridor_at(car.position.x) == corridor
 
@@ -150,7 +177,7 @@ func _footway_span(corridor: int, near: bool) -> Vector2:
 ## The whole run is inside one block's length of street, with no junction in it, so what is being
 ## asked about is the sidestep and not the random corner turn a walker rolls at every junction.
 func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> void:
-	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch of ordinary street to stand a body in")
 	if run.x < 0:
 		return
@@ -161,7 +188,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
 
-	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+	var walker := agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(start) * Tuning.TILE_SIZE + 4.0, 1.0)
 	var at := map.tile_to_world(Vector2i(corridor * CityMap.period() + 1, body_at))
 	var walked := _walk(city, map, walker, at, 6.0)
@@ -193,7 +220,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, city: City, map: CityMap) -> 
 ## between that junction and the body is the ground that used to be empty and now is not.
 func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: City,
 		map: CityMap) -> void:
-	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch for a walker to turn in")
 	if run.x < 0:
 		return
@@ -219,18 +246,18 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: Cit
 	city.crowd.clear()
 
 	var base := corridor * CityMap.period()
-	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+	var walker := agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 	t.check(walker.strategy.cannot_go_on(true, Vector2i(base + 0, body_at)),
 			"a taken footway is shut to a walker on it, the way a soft seal is")
 	t.check(not walker.strategy.cannot_go_on(true, Vector2i(base + 4, body_at)),
 			"and the other footway is not — a body takes a pavement, never a street")
-	var car := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, 2,
+	var car := agent_on(city, map, CrowdAgent.Kind.CAR, corridor, 2,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
 	t.check(not car.strategy.cannot_go_on(true, Vector2i(base + 2, body_at)),
 			"and neither is the carriageway under it")
 	city.crowd.clear()
-	walker = _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+	walker = agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 
 	# The last junction band before the body, which is where this walker used to give the street up.
@@ -277,7 +304,7 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, city: Cit
 ## front of it.
 func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, city: City,
 		map: CityMap) -> void:
-	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch for a car to turn in")
 	if run.x < 0:
 		return
@@ -290,9 +317,9 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
 
-	var blocked := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, blocked_lane,
+	var blocked := agent_on(city, map, CrowdAgent.Kind.CAR, corridor, blocked_lane,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
-	var oncoming := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, open_lane,
+	var oncoming := agent_on(city, map, CrowdAgent.Kind.CAR, corridor, open_lane,
 			float(body_at + 8) * Tuning.TILE_SIZE, -1.0)
 	t.check(blocked.strategy.cannot_go_on(true, Vector2i(base + blocked_lane, body_at)),
 			"a body in a car's lane is a wall to it")
@@ -307,7 +334,7 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, ci
 	# Turned off this street, or still on it and stopped short. Both are the entry's own answer —
 	# *"a car already in the street with no junction left before the body stops behind it"* — and
 	# which one a given seed's geometry produces is not a property worth pinning.
-	var turned_away := not _still_driving_down(blocked, corridor)
+	var turned_away := not still_driving_down(blocked, corridor)
 	t.check(turned_away or walked["deepest"] < float(body_at) * Tuning.TILE_SIZE,
 			"and it turns off the street or comes to rest short of the body")
 	t.check(oncoming_started - oncoming.position.y > float(CityMap.period()) * Tuning.TILE_SIZE,
@@ -393,7 +420,7 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 
 	var walkers: Array[CrowdAgent] = []
 	for lane in lanes:
-		walkers.append(_agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, lane,
+		walkers.append(agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, lane,
 				float(wall - 4) * Tuning.TILE_SIZE, 1.0, vertical, lanes))
 	var last_lane: int = rows[rows.size() - 1][0]
 	var probe := Vector2i(base + last_lane, wall + rows.size() - 1) if vertical \
@@ -446,7 +473,7 @@ func _walk_at_a_precinct_wall(t, city: City, map: CityMap, rows: Array,
 ## because the point is that the two agree: a list would pass while both drifted together. Three
 ## rows of different shapes, so a point body and a band body are both covered.
 func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: CityMap) -> void:
-	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch to site a body on")
 	if run.x < 0:
 		return
@@ -482,7 +509,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 ## because the whole street is shut to the crowd already. So this asks the rasterising — the half
 ## M118 changed — on ground where the answer is not thrown away.
 func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: CityMap) -> void:
-	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
@@ -525,7 +552,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 ## themselves; what this test is about is the half a walker reads, and the hold has nothing to say
 ## to a walker.
 func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) -> void:
-	var run := _a_straight_run(map, Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch to stand a crash in")
 	if run.x < 0:
 		return
@@ -544,18 +571,18 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t, city: City, map: CityMap) 
 
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
-	var walker := _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+	var walker := agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 	for offset: int in CrowdLanes.SIDEWALK_OFFSETS:
 		t.check(not walker.strategy.cannot_go_on(true, Vector2i(base + offset, body_at)),
 				"the pavement beside it stays open to a walker at offset %d" % offset)
-	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor,
+	var driver := agent_on(city, map, CrowdAgent.Kind.CAR, corridor,
 			CrowdLanes.road_lane(true, 1.0), float(run.y) * Tuning.TILE_SIZE, 1.0)
 	for offset: int in CrowdLanes.ROAD_OFFSETS:
 		t.check(driver.strategy.cannot_go_on(true, Vector2i(base + offset, body_at)),
 				"and the carriageway under it is shut to a car at offset %d" % offset)
 	city.crowd.clear()
-	walker = _agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
+	walker = agent_on(city, map, CrowdAgent.Kind.WALKER, corridor, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 
 	var at := map.tile_to_world(Vector2i(base + 1, body_at))
@@ -600,7 +627,7 @@ func _offsets_of(covered: Array[Vector2i], base: int) -> Array:
 ## genuinely overhangs the road by six pixels — the tile the overhang lands in is the whole
 ## question, and the record answers it by asking whether the middle of that tile is covered.
 func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityMap) -> void:
-	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch to park a van on")
 	if run.x < 0:
 		return
@@ -621,7 +648,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityM
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
-	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+	var driver := agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
 	t.check(not driver.strategy.cannot_go_on(true, Vector2i(base + lane, body_at)),
 			"and the carriageway beside it is not shut to a car")
@@ -630,7 +657,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityM
 	t.check(walked["deepest"] > float(body_at + 1) * Tuning.TILE_SIZE,
 			"so the car drives straight past it (reached %.0f, the van's tile ends %.0f)"
 			% [walked["deepest"], float(body_at + 1) * Tuning.TILE_SIZE])
-	t.check(_still_driving_down(driver, corridor),
+	t.check(still_driving_down(driver, corridor),
 			"without turning off the street it was on")
 	map.clear_day_obstructions()
 
@@ -638,7 +665,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, city: City, map: CityM
 ## away from it at the last junction. The turn-at-the-junction is a car's only answer: it cannot
 ## turn round against a barrier, and a car stopped nose to one holds the junction behind it.
 func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: CityMap) -> void:
-	var run := _a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
+	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return
 	var corridor := run.x
@@ -657,7 +684,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
-	var driver := _agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+	var driver := agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
 			float(run.y) * Tuning.TILE_SIZE, 1.0)
 	t.check(driver.strategy.cannot_go_on(true, Vector2i(base + lane, body_at)),
 			"and it is a wall to a car on the lane under it")
@@ -667,7 +694,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 			"no car ever stands on the tree's own tile (%d frames one did)" % walked["inside"])
 	# Turned off this street, or still on it and stopped short — the same two answers a body in a
 	# lane already has, and which one a seed's geometry produces is not worth pinning.
-	var turned_away := not _still_driving_down(driver, corridor)
+	var turned_away := not still_driving_down(driver, corridor)
 	t.check(turned_away or walked["deepest"] < float(body_at) * Tuning.TILE_SIZE,
 			"and it turns off the street or comes to rest short of the tree")
 	map.clear_day_obstructions()

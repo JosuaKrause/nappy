@@ -496,7 +496,7 @@ func _test_a_car_can_always_stop_for_a_zebra_it_can_see(t) -> void:
 ## drives the real `Crowd._physics_process`.
 func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 	var map := _city.map
-	var street: Vector2i = _rig._a_straight_run(map, Tuning.BLOCK_SIZE)
+	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(street.x >= 0, "this city has a straight stretch of street for a car to sound its horn on")
 	if street.x < 0:
 		return
@@ -505,7 +505,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	_city.crowd.clear()
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
-	var agent: CrowdAgent = _rig._agent_on(_city, map, CrowdAgent.Kind.CAR, street.x, lane,
+	var agent: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.CAR, street.x, lane,
 			float(street.y + 2) * Tuning.TILE_SIZE, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
 			Tuning.CAR_SPEED.y)
 
@@ -526,13 +526,26 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 			"she stands on the carriageway ahead of the car")
 	agent.pedestrian_ahead = Vector2.INF
 	_city.crowd.set_focus(agent.global_position)
-	await _city.get_tree().physics_frame
-	await _city.get_tree().physics_frame
-	t.check(agent.excitement.is_startled(),
+	# The first tick that sounds the horn: how far off she was, and what the give-way scan had
+	# written for the car on that same tick. The physics frames the suite lets pass are not counted
+	# on, since a frame that follows a long stretch of work runs several ticks to catch up.
+	var first := {}
+	var on_horn := func(_at: Vector2) -> void:
+		if first.is_empty():
+			first["distance"] = agent.global_position.distance_to(rig.global_position)
+			first["ahead"] = agent.pedestrian_ahead
+	EventBus.car_near_miss.connect(on_horn)
+	for frame in 30:
+		await _city.get_tree().physics_frame
+		if not first.is_empty():
+			break
+	EventBus.car_near_miss.disconnect(on_horn)
+	t.check(not first.is_empty() and first["distance"] > Tuning.CAR_ZEBRA_SIGHT
+			and agent.excitement.is_startled(),
 			("a car %.0fpx off — beyond the strike's own watch (CAR_ZEBRA_SIGHT %.0fpx) but "
 			+ "inside the horn's (CAR_HORN_SIGHT %.0fpx) — sounds its horn")
 			% [distance, Tuning.CAR_ZEBRA_SIGHT, Crowd.CAR_HORN_SIGHT])
-	t.check(agent.pedestrian_ahead == Vector2.INF,
+	t.check(not first.is_empty() and first["ahead"] == Vector2.INF,
 			"and the give-way scan still does not see her from beyond its own watch")
 	_city.crowd.use_player(null)
 	rig.free()

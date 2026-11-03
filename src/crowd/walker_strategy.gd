@@ -318,13 +318,18 @@ func enter_at_an_end(along_tile: int) -> bool:
 ## the boom is `Crowd._stop_for_gates()`'s business and a car spending a number here would turn
 ## differently at every junction it has ever turned at correctly.
 func draw_the_door_answer() -> void:
-	var roll := _mover._rng.randf()
+	_door_answer = door_answer_for(_mover._rng.randf())
+
+## The answer a roll in `[0, 1)` gives at a door: the fractions `WALKER_DOOR_PASS_FRACTION` and
+## `WALKER_DOOR_TURN_BACK_FRACTION` cut the roll, and the rest are held. A walker's placement draws
+## it from the first roll of its own seed (`draw_the_door_answer()`), so a scene that pins a walker
+## through `Crowd.add_recipe_actor()` can ask which seed gives the answer it wants.
+static func door_answer_for(roll: float) -> DoorAnswer:
 	if roll < WALKER_DOOR_PASS_FRACTION:
-		_door_answer = DoorAnswer.PASSES
-	elif roll < WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION:
-		_door_answer = DoorAnswer.TURNS_BACK
-	else:
-		_door_answer = DoorAnswer.HELD
+		return DoorAnswer.PASSES
+	if roll < WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION:
+		return DoorAnswer.TURNS_BACK
+	return DoorAnswer.HELD
 
 ## One frame of this walker's own crossing. Called by `Crowd._hold_walkers_at_doors()` the moment
 ## after it has written `door_ahead`/`door_ahead_along`, so a state is always decided on this

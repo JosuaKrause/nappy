@@ -25,7 +25,7 @@ func run(t) -> void:
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
-	var street: Vector2i = _rig._a_straight_run(map, Tuning.BLOCK_SIZE)
+	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(street.x >= 0, "this city has a straight stretch of ordinary street for a car")
 	if street.x >= 0:
 		EventBus.hard_fail_triggered.connect(_on_hard_fail)
@@ -46,7 +46,7 @@ func _on_hard_fail(reason: String) -> void:
 func _a_car(city: City, map: CityMap, street: Vector2i, lane: int, speed: float) -> CrowdAgent:
 	city.crowd.start_day(1, _rng(), Vector2.ZERO)
 	city.crowd.clear()
-	return _rig._agent_on(city, map, CrowdAgent.Kind.CAR, street.x, lane,
+	return _rig.agent_on(city, map, CrowdAgent.Kind.CAR, street.x, lane,
 			float(street.y + 2) * Tuning.TILE_SIZE, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS, speed)
 
 func _rng() -> RandomNumberGenerator:
