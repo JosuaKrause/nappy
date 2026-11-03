@@ -315,7 +315,7 @@ static func encounters() -> Array[Dictionary]:
 
 	# `charging_dog`: day 3's own, sent by the director down her heading and warned first
 	# (`EventsAhead._warn_down_her_heading()`), created just out of sight with its approach still to
-	# run; and every later day's, a `MAP` row waiting for her (`EventScheduler._for_day()`).
+	# run; and every later day's, a `MAP` row waiting for her (`EventDef.for_day()`).
 	var dog := EventCatalogue.by_id("charging_dog")
 	var sent_dog := EventSpawner.as_warned(dog)
 	for heading: Vector2 in [up, right]:
@@ -325,7 +325,7 @@ static func encounters() -> Array[Dictionary]:
 			return PackedVector2Array([place])
 		list.append(_warned(sent_dog, "day 3, warned, down her heading, %s" % _axis(heading),
 				dog_where, dog_route, heading))
-	var later_dog := EventScheduler._for_day(dog, Tuning.RUN_TAUGHT_DAY + 1)
+	var later_dog := dog.for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	list.append({"def": later_dog, "how": "day 4 on, waits for her", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, later_dog.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})

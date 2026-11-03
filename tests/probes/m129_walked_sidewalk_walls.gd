@@ -13,7 +13,7 @@ extends RefCounted
 ## # What this measures
 ##
 ## `EventScheduler._leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
-## a **cost** one (`_line_reach_of` against `_THE_FAR_LANE`, "what does this row bill a passer-by")
+## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
 ## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, and only in
@@ -50,7 +50,7 @@ extends RefCounted
 ## combined physics radius for the whole rig"*), and the pram's own body
 ## (`Stroller.PRAM_BODY_RADIUS`, 8px) sits ahead of her **on the circumference of that circle, in
 ## the direction of travel** — never beside it — so nothing about pushing it widens her sideways.
-## `EventScheduler._THE_FAR_LANE`'s own doc comment states the width a lane needs in those terms: *"a
+## `EventDef.reaches_the_far_lane()`'s own doc comment states the width a lane needs in those terms: *"a
 ## free tile is a line because a tile is wider than the 28px stroller (2 * PLAYER_BODY_RADIUS)"*, and
 ## `tests/test_events.gd`'s `_walkable_lane_beside(...) >= 2.0 * Tuning.PLAYER_BODY_RADIUS` is the
 ## same figure checked directly against a placed body. 46px is a different, narrower fact:
@@ -274,7 +274,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 ## Every solid body the day stands, tagged with the pass that placed it. Reimplements
 ## `EventScheduler.build_day`'s own phase order by calling its private phase functions directly —
-## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `_line_reach_of`,
+## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `EventDef.line_reach()`,
 ## `_role_for` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
@@ -409,7 +409,7 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 	return false
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
-## before the tile work, the same shape as `EventScheduler._reach_touches`.
+## before the tile work, the same shape as `Planned.reach_touches()`.
 func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 	var found: Array = []   # Array[Body]
 	for body: Body in bodies:

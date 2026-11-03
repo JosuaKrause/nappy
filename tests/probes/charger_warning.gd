@@ -46,7 +46,7 @@ static func _waiting_chargers() -> Array[EventDef]:
 	for row in EventCatalogue.all():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventScheduler._for_day(EventCatalogue.heated(row, level), day)
+				var def := EventCatalogue.heated(row, level).for_day(day)
 				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue
