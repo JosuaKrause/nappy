@@ -10,7 +10,8 @@ func _ready() -> void:
 	var city: City = main.get("_city")
 	if not runtime or not city or runtime.manifest.get("setup_failed", false):
 		return
-	var act := Tuning.act_for_day(GameState.header.day)
+	var run := run_of(main)
+	var act := Tuning.act_for_day(run.header.day)
 	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
 	var pins: Array = runtime.data.setup.get("actors", [])
 	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
@@ -63,7 +64,7 @@ func _ready() -> void:
 	if runtime.data.setup.has("posters"):
 		for entry: Dictionary in runtime.data.setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
-			if not city.poster_walls().fronts().has(tile) or GameState.posters.cells[tile].kind \
+			if not city.poster_walls().fronts().has(tile) or run.posters.cells[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return
@@ -77,6 +78,13 @@ func _ready() -> void:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return
 	print("RECIPE_ACTIVITY_OK")
+## The run the booted `main` plays, off its sitting: its own child on a first boot, parked at the
+## tree's root across a reload.
+func run_of(main: Node) -> RunState:
+	var sitting := main.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	if not sitting:
+		sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	return sitting.run
 func roof_matches(building: Building, fixtures: Array) -> bool:
 	if building.recipe_roof_furniture == null:
 		return false

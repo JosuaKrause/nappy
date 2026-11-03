@@ -276,21 +276,21 @@ var _fenced_tiles := {}
 ## What `set_spent_calm()` handed over, waiting for the next `repaint()` to read it.
 var _spent_for_the_next_repaint: Array[Vector2i] = []
 
-## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `GameState.facts.fenced_park`
+## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `run.facts.fenced_park`
 ## as `set_fenced_park_state()` handed it over, carried unchanged for the rest of the act it was
 ## chosen in, or the first area today's `shut_calm` accepts if none has been chosen yet and today
 ## is act III or later. See docs/CITY.md, "Shutting a spent park".
 var fenced_park := Vector2i(-1, -1)
 ## The act today's active `fenced_park` was chosen in, or 0 when none stands today.
-## `GameState` remembers the first choice even after these daily fields return to none.
+## The run (`RunFacts`) remembers the first choice even after these daily fields return to none.
 var fenced_park_act := 0
-## What `set_fenced_park_state()` handed over: what `GameState` already remembers, and today's own
+## What `set_fenced_park_state()` handed over: what the run already remembers, and today's own
 ## act, both waiting for the next `repaint()` to read them.
 var _fenced_park_state := Vector2i(-1, -1)
 var _fenced_park_state_act := 0
 var _act_for_the_next_repaint := 0
 
-## The calm areas she has used this act (`GameState.calendar.settled_this_act()`), for the **next**
+## The calm areas she has used this act (`RunCalendar.settled_this_act()`), for the **next**
 ## `repaint()` to shut where it can. `Main._start_day()` hands them over just before
 ## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
 ## escape's own repaint (`City.start_day()` under the city section's spec) comes with no handover and shuts nothing, and a
@@ -298,7 +298,7 @@ var _act_for_the_next_repaint := 0
 func set_spent_calm(blocks: Array[Vector2i]) -> void:
 	_spent_for_the_next_repaint = blocks.duplicate()
 
-## What `GameState` remembers about the one park barriers ever stand around this run — the block
+## What the run remembers about the one park barriers ever stand around this run — the block
 ## (`Vector2i(-1, -1)` for none yet) and the act it was fenced in — plus today's own act, all for
 ## the next `repaint()` to read. `Main._start_day()` hands this over the same way it hands over
 ## `set_spent_calm()`, and remembers the first `fenced_park`/`fenced_park_act` choice after repaint.
@@ -983,7 +983,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 ## park day 12 sends her to is never shut or fenced on its day (`CityState.is_forced_open()`): the
 ## day's own task is in it.
 ##
-## **An existing fence outlives the day that chose it.** If `GameState.facts.fenced_park` already names a
+## **An existing fence outlives the day that chose it.** If `run.facts.fenced_park` already names a
 ## block fenced this act, it is protected from `calm_to_shut()`'s own candidate pass — asking the
 ## guarantees about ground already fenced would be asking twice — and carried into `shut_calm` and
 ## `_fenced_tiles` unconditionally, so the barriers stand every day of the act regardless of whether

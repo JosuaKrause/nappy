@@ -1514,8 +1514,11 @@ func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -
 	var saved_section := GameState.facts.escape_section
 	var day := GameState.header.day
 	var main: Node2D = MAIN_SCRIPT.new()
-	# Never in the tree, so it takes no sitting of its own: it is handed one.
+	# Never in the tree, so it takes no sitting of its own: it is handed one, and the sitting the
+	# `GameState` stand-in, which the runner hands only a sitting that enters the tree, so `main`
+	# plays the run whose day and escape section this test reads and puts back.
 	var sitting := Sitting.new()
+	sitting.run = GameState
 	main.use_sitting(sitting)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)

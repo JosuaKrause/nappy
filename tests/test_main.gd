@@ -85,6 +85,7 @@ func run(t) -> void:
 	await _test_a_left_joystick_press_on_the_title_sets_the_controls_mode(t)
 	await _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t)
 	await _test_the_title_choice_survives_the_handover_to_the_escape(t)
+	await _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t)
 	await _test_a_session_on_one_booted_game(t)
 	_test_the_unclamped_view_at_every_corner_is_painted(t)
 	_test_the_overview_is_landscape_to_every_edge(t)
@@ -566,6 +567,49 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 	_shut(t, main)
 	home.free()
 	GameState.start_run(SEED)
+
+## **A sitting's own run crosses the reload into the next boot, as in the game.** In play the run
+## is the sitting's own (`Sitting.take_the_run()` makes it as the sitting's child), and the reload
+## carries it because the sitting is parked in its home and taken back. The runner hands the
+## `GameState` stand-in to a sitting that enters the tree holding no run, so this sitting makes its
+## run before it enters, and is parked in a home of the test's own standing for the tree's root.
+## The first boot plays that run and day 14's hand-over reloads; the boot standing for the reload,
+## handed only the home, opens on the escape the run was left in, while the stand-in, which no
+## boot played, stays out of it.
+func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
+	var home := Node.new()
+	t.add_child(home)
+	var sitting := Sitting.new()
+	sitting.name = Sitting.NODE_NAME
+	var run := sitting.take_the_run()
+	home.add_child(sitting)
+	var first_calls := Calls.new()
+	var first := await _boot(t, [], first_calls, home)
+	t.check(sitting.run == run and run.get_parent() == sitting and run.header.run_seed == SEED,
+			"the first boot plays the run the sitting made, started on the run's seed")
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance.sabotage_done = true
+	(_one(first, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
+	var day_fourteen := _one(first, "DaySummary") as DaySummaryScript
+	await UI.frames(t)
+	UI.push(day_fourteen, UI.touch_at(UI.centre(UI.button(day_fourteen, "Continue")), true))
+	await UI.frames(t)
+	t.check(first_calls.reloads.size() == 1
+			and run.facts.escape_section == DaySpec.Section.BUILDING,
+			"its won day 14 leaves the run in the building and reloads")
+	_shut(t, first)
+	t.check(home.get_node_or_null(NodePath(Sitting.NODE_NAME)) == sitting and sitting.run == run,
+			"the sitting stays in its home, holding the same run")
+	var main := await _boot(t, [], Calls.new(), home)
+	t.check(_one(main, "InteriorScene") != null
+			and (_one(main, "DaySummary") as DaySummaryScript).is_showing(),
+			"the next boot plays that run: it opens on the building's brief, not a day's title")
+	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS
+			and GameState.facts.escape_section == DaySpec.Section.NONE,
+			"on day 14 still, and the stand-in never played, outside the escape")
+	_shut(t, main)
+	home.free()
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once
 ## per boot, so the checks that start from it share one boot: what the boot builds, the title with

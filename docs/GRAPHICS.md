@@ -381,7 +381,7 @@ animation still apply.
 
 The live replacement families are in `art/illustrated/svg-transfer/rig/`.
 The names below use `mother`; the complete male counterpart uses `father` with the same
-dimensions, poses, states and registration. `GameState.start_run()` makes an equal two-way
+dimensions, poses, states and registration. `RunState.start_run()` makes an equal two-way
 choice through its independent seeded `player-presentation` stream, and `Main._make_player()`
 binds that choice before every ordinary or escape player enters the tree. Days, retries, pauses,
 carrying changes and texture resolution never reroll it. **Each complete family has a baked page
@@ -512,7 +512,7 @@ glob only when it names every member of the family and no unrelated file.
 that are somewhere, asks for. Every file below is **bound**: baked on the `buildings` page and drawn
 by `Building._draw_posters()` on blank ground-floor wall cells, from what `PosterWalls` says is
 pasted there; `PosterArt` names the regions. A wanted notice draws `poster_wanted_crossed.svg` in
-place of `poster_wanted.svg` — intact or torn — once `GameState.neighbor_was_taken()`: day 10 is
+place of `poster_wanted.svg` — intact or torn — once `run.neighbor_was_taken()`: day 10 is
 behind her and its warning was never given on a day she won.
 
 Each is a 32×32 canvas matching a wall tile's own grid, so a later placement can register

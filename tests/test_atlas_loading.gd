@@ -96,13 +96,14 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 ## reloads the scene into the same process and rerolls the choice: without it one process that
 ## restarted once would be holding both, which is the waste the split exists to remove.
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
-	var saved := GameState.header.player_is_male
 	var main: Node2D = MAIN_SCRIPT.new()
+	# The boot plays the run its sitting holds, a fresh one of the sitting's own, freed with it.
 	var sitting := Sitting.new()
+	var run := sitting.take_the_run()
 	main.use_sitting(sitting)
 	var atlas := sitting.atlas
 	for male in [false, true]:
-		GameState.header.player_is_male = male
+		run.header.player_is_male = male
 		main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP,
 				MAIN_SCRIPT.NO_FURTHER_GROUPS)
 		var mine := Stroller.parent_atlas(male)
@@ -126,7 +127,6 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 			"a second boot that rerolled the choice gave the first run's parent back")
 	main.free()
 	sitting.free()
-	GameState.header.player_is_male = saved
 
 # -------------------------------------------------------------------- the rule ---
 
@@ -183,10 +183,10 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 ## page **object**, not the reference count: a count that dips to nought and comes back would
 ## look identical from the outside and would have cost a blocking read from disk in between.
 func _test_two_days_never_reload_a_page(t) -> void:
-	var saved := GameState.header.player_is_male
-	GameState.header.player_is_male = false
 	var main: Node2D = MAIN_SCRIPT.new()
+	# The boot plays the run its sitting holds, a fresh one of the sitting's own, freed with it.
 	var sitting := Sitting.new()
+	sitting.take_the_run().header.player_is_male = false
 	main.use_sitting(sitting)
 	var atlas := sitting.atlas
 	main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, MAIN_SCRIPT.NO_FURTHER_GROUPS)
@@ -222,7 +222,6 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	tomorrow.crowd.clear()
 	tomorrow.free()
 	sitting.free()
-	GameState.header.player_is_male = saved
 
 # ------------------------------------------------------------------ the boot ---
 

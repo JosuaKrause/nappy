@@ -21,8 +21,8 @@ var _changed_on := {}
 ## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
 ## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
 var _open_today := {}
-## Where a block's step along its arc is written down for the run log — `GameState`'s trace, handed
-## on by `GameState.use_trace()`; silent for the scratch states a generator or a recipe builds.
+## Where a block's step along its arc is written down for the run log — the run's trace, handed
+## on by `RunState.use_trace()`; silent for the scratch states a generator or a recipe builds.
 var trace := RunTrace.new()
 
 ## Back to day 1 with every block at the start of its arc.
@@ -32,7 +32,7 @@ func reset() -> void:
 	_open_today.clear()
 
 ## A block's arc position depends on run history — a fire only advances a block if something
-## burned there — so `GameState`'s save has to carry it rather than recompute it from the seed and
+## burned there — so the run's save has to carry it rather than recompute it from the seed and
 ## the day. `Vector2i` keys cannot survive `JSON.stringify()`, so each entry becomes its own small
 ## dictionary rather than a `Dictionary` keyed by one; see `restore()` for the other half.
 func snapshot() -> Dictionary:
