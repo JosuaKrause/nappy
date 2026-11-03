@@ -1115,8 +1115,9 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	for k in range(maxi(released, 0), maxi(resumed, 0)):
 		still = still and timeline[k]["pressed"] == Vector2.ZERO
 	t.check(released > 0 and resumed > released and still
-			and absf(timeline[resumed]["at"] - timeline[released]["at"] - 3.0)
-			< 0.3 + _slack(timeline, released) + _slack(timeline, resumed),
+			and timeline[resumed]["at"] - timeline[released]["at"] >= 3.0 - _slack(timeline, released)
+			and timeline[resumed]["at"] - timeline[released]["at"]
+					<= 3.0 + _slack(timeline, resumed) + 1.0 / Engine.physics_ticks_per_second * FAST,
 			"waiting ends once three seconds have passed, with a fresh plan (%.2fs)"
 			% (timeline[resumed]["at"] - timeline[released]["at"] if resumed > 0 and released > 0
 					else -1.0))
