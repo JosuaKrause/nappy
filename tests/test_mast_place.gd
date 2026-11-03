@@ -25,3 +25,9 @@ func run(t) -> void:
 	var shouting := EventScheduler.Planned.new(yeller, here)
 	t.check(shouting.counts_against_the_line(),
 			"the man shouting, with the same field, still counts")
+	var announcing := EventScheduler.Planned.new(EventCatalogue.by_id("curfew_announce"), here)
+	t.check(announcing.def.role != EventDef.Role.MAST and announcing.counts_against_the_line(),
+			"the curfew announcement, a row of its own, counts when no mast carries it")
+	announcing.mast_id = "site-0"
+	t.check(not announcing.counts_against_the_line(),
+			"and does not once a mast carries it, whatever the row's own role")

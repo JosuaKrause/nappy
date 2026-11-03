@@ -481,6 +481,12 @@ func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 	t.check(off_wall_stationary.keeps_its_field_clear(),
 			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
 
+	# And the exemption the other way: the same row classified a wall is the one the rule lets off.
+	var walled := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	walled.role = GameEnums.BlockerRole.WALL
+	t.check(not walled.keeps_its_field_clear(),
+			"while a lethal wall is the exemption the rule makes, and keeps nothing clear")
+
 ## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
 ## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
 ## verb stopped being a decision on day two.

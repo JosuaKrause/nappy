@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_nothing_takes_the_routes_own_sidewalk(t)
 	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
+	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
 
 
 ## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
@@ -900,3 +901,15 @@ func _test_a_flock_is_scenery(t) -> void:
 	t.check(on_corridor > 0,
 			"a flock lands on the day's own corridor at least once (%d on, %d off)"
 			% [on_corridor, off_corridor])
+
+## What a row denies along a line (`EventDef.line_reach()`): a lethal row keeps its whole
+## `outer_radius`, since nothing about being quiet at the rim makes walking into it survivable, and
+## no row reaches less than its own body.
+func _test_a_lethal_rows_line_reach_is_its_whole_field(t) -> void:
+	var lorry := EventCatalogue.by_id("reversing_lorry")
+	t.check(lorry.hard_fail, "the reversing lorry is a lethal row")
+	t.check(is_equal_approx(lorry.line_reach(), maxf(lorry.outer_radius, lorry.obstructs_radius)),
+			"and its line reach is its whole field (%.0fpx)" % lorry.line_reach())
+	for def in EventCatalogue.all():
+		t.check(def.line_reach() >= def.obstructs_radius,
+				"%s: no row reaches less than its own body" % def.id)
