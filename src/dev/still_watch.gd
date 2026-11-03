@@ -63,9 +63,13 @@ extends Node
 ## only the stillness heuristic and where the picture goes.
 ##
 ## Not put through `main._pauses_with_the_game()`: unlike a node that *is* the game and must stop
-## outright when the tree pauses, this one wants to keep receiving `_process()` calls through a
-## pause so it can read `get_tree().paused` itself and freeze the hold rather than losing track of
+## outright when the tree pauses, this one wants to keep receiving `_physics_process()` calls through
+## a pause so it can read `get_tree().paused` itself and freeze the hold rather than losing track of
 ## it — the same reasoning `TelemetryObserver._process()` follows for `DayController.is_running()`.
+##
+## **The hold is counted in physics ticks** (`_physics_process()`), the tick her position changes
+## on, so a second of standing still is the same number of ticks on every machine and a lag spike
+## cannot make one frame's length count as a long stillness.
 
 ## How far she may drift from wherever she last effectively stopped and still count as standing
 ## there. Smaller than the route rig's own `_STUCK_DISTANCE` (8px, `src/dev/route_rig.gd`), whose
@@ -74,8 +78,7 @@ extends Node
 const STILL_RADIUS := 4.0
 
 ## "About a second" — the player's own phrase for the hold; `DevFlags.quit_when_still_seconds()`
-## answers the same default, and this is it for a caller (`tests/test_still_watch.gd`) with no
-## configuration at all.
+## answers the same default, and this is what the hold is before `setup()` hands it one.
 const DEFAULT_SECONDS := 1.0
 
 var _city: City
@@ -104,7 +107,7 @@ func setup(city: City, player: Stroller, day: DayController, hold_seconds: float
 	_seconds = hold_seconds
 	_recording = recording
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _done:
 		return
 	if _feed(_player.global_position, delta, _watching(), _held()):
@@ -252,7 +255,7 @@ static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSi
 ## Notes the moment, then hands off to `AutoScreenshot` for the picture and the quit.
 func _trigger() -> void:
 	_done = true
-	set_process(false)
+	set_physics_process(false)
 	Telemetry.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
 		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
