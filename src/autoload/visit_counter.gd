@@ -265,7 +265,7 @@ static func _is_pickup_step(step: int) -> bool:
 ## a day-14 handover into the escape alike — has already answered `run_begun` once. `main.gd`'s own
 ## `resumed` argument only asks "did a save exist when `GameSave.try_resume()` ran"; it cannot also
 ## know whether *this page* already ran once before asking, because that is not something
-## `GameState` or a save file could ever record — a save a `reload_current_scene()` wrote a moment
+## the run or a save file could ever record — a save a `reload_current_scene()` wrote a moment
 ## ago and a save a real previous visit left both answer `GameSave.try_resume()` the same way.
 ## "A resume means a save that existed when the page loaded, never one this page session wrote" is
 ## answered here instead, the one place a flag can live for exactly a page's own lifetime.

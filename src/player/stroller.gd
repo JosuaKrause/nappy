@@ -167,7 +167,7 @@ const INDICATOR_BOTTOM_PADDING := {
 ##
 ## **The two parents are two pages and a run loads one of them.** *(PLAYTEST-109: "putting both
 ## genders in the player atlas is a bit wasteful since it's guaranteed to not use half of it.")*
-## The choice is made once per run (`GameState.start_run()`) and `docs/GRAPHICS.md` holds it
+## The choice is made once per run (`RunState.start_run()`) and `docs/GRAPHICS.md` holds it
 ## fixed — carrying and texture resolution never reroll it — so the other parent's sixty views
 ## are a page nothing in the run can ever draw. `STROLLER_ATLAS` is what the two share: the pram
 ## itself, which either parent pushes.

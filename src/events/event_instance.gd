@@ -696,6 +696,19 @@ func _process(_delta: float) -> void:
 ## itself (`SceneRecipeRuntime`). Its drawing goes on.
 var held_by_hand := false
 
+## **Walks it on by hand by `delta` seconds**, for the hand that holds it (`held_by_hand`, a scene
+## recipe's held event, `SceneRecipeRuntime`): the straight walk away along its heading at its
+## departure's own pace (`EventDeparture.speed()`), its stride advancing by the ground covered, as
+## the departure's plain branch walks it (`EventDeparture.leave()`), with no removal and no
+## manager's step. Its move stands where it now does (`MoveProposal.place()`), since the crowd's
+## separation pass reads the move, not the node.
+func walk_on_by_hand(delta: float) -> void:
+	var step := departure.speed() * delta
+	position += _heading * step
+	_move.place(position)
+	_path_travelled += step
+	_advance_gait(step)
+
 ## **One physics tick of the event**, which its manager runs in a fixed order
 ## (`EventManager._step_them()`), **proposed, checked, then committed** (`MoveProposal`, the world's
 ## shape for every mover's step): the step is opened at the pose it stands at

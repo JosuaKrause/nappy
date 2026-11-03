@@ -4,7 +4,7 @@ extends RefCounted
 ## nerves a loss spends, the checkpoint a normal run goes back to, and the day's random streams.
 ## `RunState` builds one over the parts it registers and hands it to whoever walks the days
 ## (`DayDirector`, the readers `main` builds), so those take the calendar rather than the whole
-## autoload; a test builds a `RunState` and takes its `calendar`.
+## run; a test builds a `RunState` and takes its `calendar`.
 ##
 ## It holds the run's mode and its checkpoint, which are the calendar's state rather than any
 ## part's: both ride beside the snapshot as top-level keys of the save. It reads and writes the

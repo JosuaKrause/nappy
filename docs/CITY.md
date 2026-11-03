@@ -538,7 +538,7 @@ walks there without a route pointing the way.
   shows. `ParkFenceMarker` draws both rails above one ground line: side runs show their narrow top
   surfaces mounted inward of visible upright poles, and corners share one pole with rail collars.
   Each run's closed sign is mounted on a support at its exact midpoint.
-  `GameState` retains the first fenced block and its act for the whole run, including saves;
+  The run (`run.facts`) retains the first fenced block and its act for the whole run, including saves;
   `CityMap` exposes a physical fence only during that act. An expired fence spends the run's
   allowance even when no barrier stands today.
 - **At least one calm area is always usable.** `_ensure_one_usable_park` is the last line under it,
@@ -853,7 +853,7 @@ guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pai
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
-sabotage is done (`GameState.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
+sabotage is done (`run.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
 station's lot — far enough that no part of it, stacks included, is on screen whichever way she
 leaves — `Blackout` puts out everything that runs on it in one frame: every lit window
 (`Building.powered`), every traffic light on the spine (`TrafficSignals.powered`, see "Traffic
@@ -1797,7 +1797,7 @@ makes an unwinnable run rather than a hard one.
 - `BlockLayout` — the carves (open rect, playground, square, alley, courtyard passage).
   Also fixed, which is why repainting a block on day 12 re-rolls nothing: the same court is
   a court on day 1 and churned mud on day 12, in the same place and the same size.
-- `CityState` — run-scoped, on `GameState`. Only records how far along each arc the run has
+- `CityState` — run-scoped, held by the run's `AttemptSpendState` (`run.attempt_spend.city_state`). Only records how far along each arc the run has
   got. A day is therefore reconstructible from a seed, a day number and the causes fired.
 
 ## The city degrades
@@ -2281,7 +2281,7 @@ Top-down camera with a fake vertical extrusion:
   pins a floor for that day and a higher one for the last. A new sheet on an old one
   mostly covers it exactly; a quarter of the time the older one shows beneath, offset enough to
   read as pasted over. What is on the walls is run state
-  (`GameState.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
+  (`run.posters`, a `PosterState`): it is saved, and a lost day gives it back like the rest
   of what the attempt spent, so the retry's dawn pastes the same sheets again. A burnt front shows
   none. Nothing takes a sheet down but her: pushing against the wall tears it (`docs/MECHANICS.md`,
   "Tearing a poster down"), and a torn sheet stays torn until a crew or a dawn pastes that wall

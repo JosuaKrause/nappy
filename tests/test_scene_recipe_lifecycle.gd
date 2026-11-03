@@ -17,9 +17,10 @@ func _ready() -> void:
 	if not recipe or not player or recipe.manifest.get("setup_failed", false):
 		fail("real Main did not finish recipe setup")
 		return
-	var initial := {"actors": recipe.snapshot(), "day": GameState.header.day,
+	var run := run_of(main)
+	var initial := {"actors": recipe.snapshot(), "day": run.header.day,
 		"events": recipe.manifest.get("installed_events", []),
-		"seed": GameState.header.run_seed, "sleep": (main.get("_baby") as Baby).sleepiness,
+		"seed": run.header.run_seed, "sleep": (main.get("_baby") as Baby).sleepiness,
 		"excitement": (main.get("_baby") as Baby).excitement}
 	if not player.global_position.is_equal_approx(recipe.start_position()):
 		fail("Main moved the player away from the authored start")
@@ -133,11 +134,11 @@ func _ready() -> void:
 	if int(initial.day) == Tuning.RUN_LENGTH_DAYS:
 		# The door touched, so the run has earned the good ending: outside a recipe that hands the
 		# won day over to the escape, and the reload would boot it with no director.
-		GameState.resistance.sabotage_done = true
+		run.resistance.sabotage_done = true
 	main.call("_on_day_finished", GameEnums.DayResult.WON)
 	# The last night's win ends the run on its ending rather than moving on to a next day.
-	var progressed := GameState.header.ending != GameEnums.Ending.NONE \
-			if int(initial.day) == Tuning.RUN_LENGTH_DAYS else GameState.header.day == int(initial.day) + 1
+	var progressed := run.header.ending != GameEnums.Ending.NONE \
+			if int(initial.day) == Tuning.RUN_LENGTH_DAYS else run.header.day == int(initial.day) + 1
 	if not progressed:
 		fail("winning the recipe day did not apply normal progression")
 		return
@@ -210,6 +211,14 @@ func nearest_cut_off(map: CityMap, start: Vector2i) -> Vector2i:
 				seen[next] = true
 				pending.append(next)
 	return Vector2i(-1, -1)
+
+## The run the booted `main` plays, off its sitting: its own child on a first boot, parked at the
+## tree's root across a reload.
+func run_of(main: Node) -> RunState:
+	var sitting := main.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	if not sitting:
+		sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	return sitting.run
 
 func fail(message: String) -> void:
 	press(Vector2.ZERO)

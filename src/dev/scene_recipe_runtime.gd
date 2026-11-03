@@ -13,7 +13,7 @@ const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--w
 
 var data: Dictionary = {}
 ## The walk the scene was installed into (`install()`), handed in by the run flow.
-var walk_spec: DaySpec = null
+var _walk_spec: DaySpec = null
 var built: Dictionary = {}
 var manifest: Dictionary = {}
 var named: Dictionary = {}
@@ -538,7 +538,7 @@ func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 
 func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		resistance: ResistanceDirector) -> Array[String]:
-	walk_spec = spec
+	_walk_spec = spec
 	_city = city
 	_player = player
 	_resistance = resistance
@@ -815,8 +815,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.doors.map(func(door): return door.key())])
 			continue
-		selected.doors.append(segment)
-		RegionPlanner._add_door_bodies(_city.map, segment, selected)
+		RegionPlanner.stand_door(_city.map, segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
@@ -849,31 +848,29 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
+	var route := _city.route_tree()
 	for entry: Dictionary in data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := StreetNetwork.by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.seals: selected street leaves the authored extent")
 			continue
-		var home := ClosurePlanner.home_street(map)
-		if not map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
-				or (home and key == home.key()) or SealPlanner._is_the_main_road(map, segment):
+		if not SealPlanner.may_seal(map, _walk_spec, route, segment):
 			errors.append("setup.seals: requires a production off-route, non-home, non-spine street")
 			continue
 		for candidate in SealPlanner.candidates():
 			if candidate.id != entry.candidate:
 				continue
-			if not SealPlanner._eligible(candidate, _run.header.day) \
-					or (candidate.id == SealPlanner.FALLEN_TREE_SEAL_ID and not lined.has(key)):
+			if not SealPlanner.offers(candidate, _run.header.day, lined.has(key)):
 				errors.append("setup.seals: candidate is unavailable on this day or street")
 				continue
-			var along := SealPlanner._seal_along_tile(map, segment, candidate, trees, emptied)
-			plans.append_array(SealPlanner._place(map, segment, candidate, along))
+			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
+			plans.append_array(sited.bodies)
 			if candidate.strength == SealPlanner.Strength.HARD:
 				map.hold_segment(key)
 			else:
-				for side in [true, false]:
-					SealPlanner._mark_soft_sealed(map, SealPlanner._sidewalk_band_tiles(segment, side, along))
+				sited.shut_the_sidewalk(map, true)
+				sited.shut_the_sidewalk(map, false)
 	map.set_seal_tree_pits(emptied)
 	return plans
 
@@ -891,7 +888,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
 		DayPlanner.plan_the_escape_city(map, finale,
-				_run.calendar.day_rng(_run.header.day, "finale"), walk_spec, false)
+				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
@@ -1009,9 +1006,9 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
 		route_seed: int) -> EventScheduler.Planned:
-	if not walk_spec.bag_rows.has(def.id):
+	if not _walk_spec.bag_rows.has(def.id):
 		return null
-	def = walk_spec.bag_rows[def.id]
+	def = _walk_spec.bag_rows[def.id]
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -1020,7 +1017,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in finale.open_streets:
 		if tile in EventScheduler.street_ground(map, segment, def, trees, player_at, {},
-				walk_spec.holds_the_home_streets):
+				_walk_spec.holds_the_home_streets):
 			ground_ok = true
 			break
 	if not ground_ok:
@@ -1199,14 +1196,7 @@ func _process(delta: float) -> void:
 		# puts it rather than interpolated between physics ticks; its look still redraws it.
 		instance.held_by_hand = true
 		instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-		var before := instance._path_travelled
-		var step := instance.departure.speed() * delta
-		instance.position += instance._heading * step
-		# Moved outside its own step, so its move stands where it now does (`MoveProposal.place()`):
-		# the crowd's separation pass reads the move, not the node.
-		instance._move.place(instance.position)
-		instance._path_travelled += step
-		instance._advance_gait(instance._path_travelled - before)
+		instance.walk_on_by_hand(delta)
 
 func _physics_process(_delta: float) -> void:
 	_keep_the_pursuers_coming()
