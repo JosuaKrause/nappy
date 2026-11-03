@@ -8,13 +8,20 @@ extends RefCounted
 ##
 ## **`main` is booted for real**, the way `tests/test_main.gd` boots it: the real `scenes/main.tscn`
 ## is handed a `RunConfig` (`configure()`), the reload and the quit that would take the runner's own
-## scene away (`use_reload()`, `use_quit()`), and two real frames let its `_ready()` finish. After that
+## scene away (`use_reload()`, `use_quit()`), and real frames pass until its boot has finished. After that
 ## everything is what a player or the engine could do: a real touch pushed through the viewport onto
 ## the title's button and the summary's continue button, the engine's focus notifications on the
 ## `ReturnWindow`, the pause screen's restart signal, and the day's own end signal. Nodes are found by
-## the names and classes the scene gives them, and the save symbol a booted `main` raises is its child.
-## A save a boot resumes from is laid down through `_save.write()` before the boot, the way a game
-## closed earlier left it.
+## the names and classes the scene gives them (`tests/booted_main.gd`, which also waits for the boot
+## itself, `until_booted()`), and the save symbol a booted `main` raises is its child. A save a boot
+## resumes from is a run of the test's own written through `_save.write()` before the boot, the way
+## a game closed earlier left it; what is on disk afterwards is read back into a run of the test's
+## own too (`_on_disk()`), so reading it never touches the run the booted game plays.
+##
+## **Each test plays a run of its own.** Where a check reads the run the booted game plays, the
+## boot is handed a home with a sitting parked in it that holds a fresh `RunState` of the test's
+## (`Boot.home_playing()`), so the game takes that sitting and plays that run; the held restart's
+## test lets the boot build its own sitting instead, since parking it is what that test checks.
 ##
 ## Where a check follows something across a reload, the boots are handed one node of the test's
 ## own in place of the tree's root (`main.use_sitting_home()`): the reload a boot asks for parks its
@@ -28,9 +35,8 @@ extends RefCounted
 ## configuration of a windowed release run (a booted `main` hands it its own, which is that), so its
 ## ordinary `write()`, `try_resume()` and `clear()` reach it.
 
-const UI := preload("res://tests/ui_screens.gd")
+const Boot := preload("res://tests/booted_main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
-const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 
 const _SCRATCH_PATH := "user://test_save_wiring_scratch.json"
 const _SEED := 4242
@@ -40,7 +46,6 @@ var _save := GameSave.new(_SCRATCH_PATH)
 
 func run(t) -> void:
 	t.gives_back_observers()
-	var baseline := GameState.save_snapshot()
 	_save.clear_when_a_run_ends()
 	_begin()
 
@@ -59,11 +64,6 @@ func run(t) -> void:
 
 	_save.clear()
 	_save.free()
-	GameState.restore_snapshot(baseline)
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	GameState.calendar.hard_mode = false
-	GameState.calendar.checkpoint = {}
-	GameState.start_run(_SEED)
 
 # ------------------------------------------------------------------ finding and booting ---
 
@@ -81,9 +81,20 @@ func _begin() -> void:
 	_save.configure(_windowed())
 	_save.clear()
 
-## `GameState` written to the scratch file the way a game writes it. Whether the write was kept.
-func _saved(day_under_way: bool) -> bool:
-	return _save.write(GameState, day_under_way) == GameSave.Result.CONFIRMED
+## `run` written to the scratch file the way a game writes it. Whether the write was kept.
+func _saved(run: RunState, day_under_way: bool) -> bool:
+	return _save.write(run, day_under_way) == GameSave.Result.CONFIRMED
+
+## What the scratch file resumes into: `_save.try_resume()`'s own answer, read into a run of the
+## test's own so the run the booted game plays is never touched, with that run's nerves after it
+## under `"nerves"` (`{}` when there is nothing to resume).
+func _on_disk() -> Dictionary:
+	var reader := RunState.new()
+	var resumed := _save.try_resume(reader)
+	if not resumed.is_empty():
+		resumed["nerves"] = reader.header.nerves
+	reader.free()
+	return resumed
 
 var _operation := 5000
 
@@ -104,22 +115,26 @@ class Calls:
 		quits.append(1)
 
 ## A symbol with a timeline of the test's own, under a sitting parked in a home of the test's own
-## where an earlier `main` leaves one, for the next booted `main` handed that home to take.
+## where an earlier `main` leaves one, for the next booted `main` handed that home to take. The
+## sitting holds a fresh run of its own, which the booted game plays.
 class Parked:
 	var home := Node.new()
 	var sitting := Sitting.new()
+	var run := RunState.new()
 	var timeline := SaveIndicator.Showing.new()
 	var indicator: SaveIndicator
 
 	func _init(t) -> void:
 		t.add_child(home)
 		sitting.name = Sitting.NODE_NAME
+		sitting.run = run
 		home.add_child(sitting)
 		indicator = SaveIndicator.new(timeline)
 		sitting.add_child(indicator)
 
 	func free_all() -> void:
 		home.free()
+		run.free()
 
 ## Every node under `root` that is a `type_name`: a script class by its `class_name` (the scene
 ## root of a screen is one), anything else by the engine's class.
@@ -148,8 +163,8 @@ func _one(root: Node, type_name: String) -> Node:
 	return found[0] if found.size() == 1 else null
 
 ## The real `main.tscn` handed `config`, `calls` and, when given, the `home` its sitting is parked
-## in and taken from, put in the tree, with the two frames its `_ready()` awaits let pass: the run,
-## the day and the title are built.
+## in and taken from, put in the tree, with real frames let pass until its boot has finished
+## (`Boot.until_booted()`): the run, the day, her and the title are built.
 func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	if hand_the_save:
@@ -160,40 +175,21 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	if home:
 		main.use_sitting_home(home)
 	t.add_child(main)
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
+	await Boot.until_booted(t, main)
 	return main
 
 func _shut(t, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
 
-## A press on the title's button `button_name` ("Left", "Right", "Tap"), pushed through the viewport
-## where the layout really draws it, and the frames the tap's acknowledgement takes.
-func _press_on_the_title(t, main: Node2D, button_name: String) -> void:
-	var title := _one(main, "TitleScreen")
-	await UI.frames(t)
-	UI.push(title, UI.touch_at(UI.centre(UI.button(title, button_name)), true))
-	await UI.frames(t)
-
-## A press on the summary's continue button, the way the title's is pressed.
-func _press_continue(t, main: Node2D) -> void:
-	var summary := _one(main, "DaySummary")
-	await UI.frames(t)
-	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
-	await UI.frames(t)
-
-func _summary_of(main: Node2D) -> DaySummaryScript:
-	return _one(main, "DaySummary") as DaySummaryScript
-
 ## Whether the summary's note line is up, and what it says.
 func _note_of(main: Node2D) -> Label:
-	return _summary_of(main).get_node("Root/Center/Lines/Note") as Label
+	return Boot.summary(main).get_node("Root/Center/Lines/Note") as Label
 
 # ---------------------------------------------------------------------------- the checks ---
 
 ## Losing focus opens the pause and, under a real run, may write a save — but never through
-## `GameState.calendar.finish_day()`. Only *opening a saved game* ever spends a nerve; continuing after a
+## `RunCalendar.finish_day()`. Only *opening a saved game* ever spends a nerve; continuing after a
 ## focus loss in the same session is free, which this asserts by the coarsest available proof: the
 ## numbers `finish_day()` would have touched do not move.
 ##
@@ -207,17 +203,19 @@ func _note_of(main: Node2D) -> Label:
 func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 	_begin()
 	var calls := Calls.new()
-	var main := await _boot(t, _windowed(), calls)
-	await _press_on_the_title(t, main, "Tap")
-	var pause := _one(main, "PauseScreen") as PauseScreen
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var main := await _boot(t, _windowed(), calls, home)
+	await Boot.press_title(t, main, "Tap")
+	var pause := Boot.pause(main)
 	var window := main.get_node("ReturnWindow") as ReturnWindow
-	var day := GameState.header.day
-	var nerves := GameState.header.nerves
+	var day := run.header.day
+	var nerves := run.header.nerves
 	t.get_tree().paused = false
 
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(pause.is_open(), "focus loss still opens the pause, exactly as before this milestone")
-	t.check(GameState.header.day == day and GameState.header.nerves == nerves,
+	t.check(run.header.day == day and run.header.nerves == nerves,
 			"and neither the day nor the nerve count moved — a focus loss alone never spends one")
 	pause.close()
 
@@ -232,6 +230,8 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 	t.check(not _save.has_save(), "and neither does the window-close notification")
 
 	_shut(t, main)
+	home.free()
+	run.free()
 	_save.clear()
 
 ## **The review finding this test exists for.** The day's start used to write its own dawn
@@ -253,16 +253,15 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 	_begin()
 	var main := await _boot(t, _windowed(), Calls.new())
-	t.check((_one(main, "TitleScreen") as TitleScreen).is_open()
-			and not _summary_of(main).is_showing(), "a fresh run's own default — nothing to resume")
+	t.check(Boot.title(main).is_open()
+			and not Boot.summary(main).is_showing(), "a fresh run's own default — nothing to resume")
 	t.check(not _save.has_save(), "a fresh boot writes nothing at all")
 
-	await _press_on_the_title(t, main, "Tap")
-	t.check(not _summary_of(main).is_showing()
+	await Boot.press_title(t, main, "Tap")
+	t.check(not Boot.summary(main).is_showing()
 			and not t.get_tree().paused,
 			"no day brief for a fresh run — she is playing already, the tree running")
-	var saved := _save.try_resume(GameState)
-	t.check(saved.get("day_under_way") == true,
+	t.check(_on_disk().get("day_under_way") == true,
 			"and the save on disk already says so, with nothing else run at all")
 
 	_shut(t, main)
@@ -284,12 +283,12 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	t.add_child(home)
 	var calls := Calls.new()
 	var main := await _boot(t, _windowed(), calls, home)
-	await _press_on_the_title(t, main, "Tap")
+	await Boot.press_title(t, main, "Tap")
 	t.check(_save.has_save(), "a save exists before the restart")
 	Telemetry.begin_memory_log()
 	var log: TelemetryLog = Telemetry.current_log()
 
-	(_one(main, "PauseScreen") as PauseScreen).restart_requested.emit()
+	Boot.pause(main).restart_requested.emit()
 	t.check(not _save.has_save(), "the held restart clears it")
 	t.check(calls.reloads.size() == 1, "and reloads the scene")
 	t.check(log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
@@ -303,11 +302,10 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	t.check(carried != null, "and with the symbol showing the deletion under it")
 	_shut(t, main)
 
-	var resume := _save.try_resume(GameState)
-	t.check(resume.is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
+	t.check(_on_disk().is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
 	var reloaded := await _boot(t, _windowed(), calls, home)
 	t.check(not _save.has_save(), "and its own dawn write does nothing either")
-	t.check((_one(reloaded, "TitleScreen") as TitleScreen).is_open(), "it opens on the title")
+	t.check(Boot.title(reloaded).is_open(), "it opens on the title")
 	t.check(_one(reloaded, "SaveIndicator") == null and home.get_child_count() == 1
 			and SaveIndicator.carried(sitting) == carried,
 			"and takes the parked sitting, adopting the symbol under it rather than building its own")
@@ -326,8 +324,10 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	_begin()
 	var home := Node.new()
 	t.add_child(home)
+	var run := RunState.new()
 	var sitting := Sitting.new()
 	sitting.name = Sitting.NODE_NAME
+	sitting.run = run
 	home.add_child(sitting)
 	var parked := GameSave.new(_SCRATCH_PATH)
 	parked.name = GameSave.NODE_NAME
@@ -347,11 +347,12 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 		EventBus.save_written.disconnect(hear)
 		Telemetry.end_run()
 		home.free()
+		run.free()
 		return
-	await _press_on_the_title(t, first, "Tap")
+	await Boot.press_title(t, first, "Tap")
 	t.check(ids.size() >= 1, "the first boot's save, found under the sitting, wrote (%s)" % [ids])
 	var before := ids.size()
-	(_one(first, "PauseScreen") as PauseScreen).restart_requested.emit()
+	Boot.pause(first).restart_requested.emit()
 	t.check(calls.reloads.size() == 1 and is_instance_valid(parked)
 			and parked.get_parent() == sitting and sitting.get_parent() == home,
 			"the restart reloads and the save is still parked under the sitting in its home")
@@ -362,7 +363,7 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	t.check(home.get_node_or_null(NodePath("%s/%s" % [Sitting.NODE_NAME, GameSave.NODE_NAME])) == parked
 			and home.get_child_count() == 1 and _all(sitting, "GameSave").size() == 1,
 			"the next boot finds the same save node, and makes no second one")
-	await _press_on_the_title(t, second, "Tap")
+	await Boot.press_title(t, second, "Tap")
 	t.check(ids.size() > before, "the next boot wrote through it (%s)" % [ids])
 	var growing := true
 	for i in range(1, ids.size()):
@@ -373,6 +374,7 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	parked.clear()
 	Telemetry.end_run()
 	home.free()
+	run.free()
 
 ## *"either it saves with one less nerve and a cleared "during active game" flag. or you defer
 ## saving to the actual day start"* — a game closed between days charged nothing when it was
@@ -382,12 +384,13 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 ## the file is what the bus carries.
 func _test_a_game_closed_between_days_writes_nothing_at_opening(t) -> void:
 	_begin()
-	GameState.start_run(348)
-	GameState.header.day = 4
-	GameState.calendar.begin_day()
-	t.check(_saved(false), "the save the end-of-day message wrote")
-	var resume := _save.try_resume(GameState)
-	t.check(resume.get("day_under_way") == false, "the load finds the day not under way")
+	var closed := RunState.new()
+	closed.start_run(348)
+	closed.header.day = 4
+	closed.calendar.begin_day()
+	t.check(_saved(closed, false), "the save the end-of-day message wrote")
+	closed.free()
+	t.check(_on_disk().get("day_under_way") == false, "the load finds the day not under way")
 	var before := FileAccess.get_file_as_string(_SCRATCH_PATH)
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
@@ -407,29 +410,35 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t) -> void:
 	_save.clear()
 
 ## A resumed boot with a charged nerve: `main._ready()` charges the load's day under way one nerve
-## (`GameState.calendar.finish_day()`) before the day's start and this write ever run, so the reduced
-## nerve count is already the live `GameState`'s own by the time this lands — and it is what the
+## (`RunCalendar.finish_day()`) before the day's start and this write ever run, so the reduced
+## nerve count is already the run's own by the time this lands — and it is what the
 ## write carries to disk, with `day_under_way: false`, before the title or the day brief behind it
 ## is ever shown.
 func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -> void:
 	_begin()
-	GameState.start_run(347)
-	GameState.header.day = 4
-	GameState.header.nerves = 5
-	GameState.calendar.begin_day()
-	t.check(_saved(true), "the original mid-day save")
-	var resume := _save.try_resume(GameState)
-	t.check(resume.get("day_under_way") == true, "the load finds a day under way")
+	var run := RunState.new()
+	run.start_run(347)
+	run.header.day = 4
+	run.header.nerves = 5
+	run.calendar.begin_day()
+	t.check(_saved(run, true), "the original mid-day save")
+	t.check(_on_disk().get("day_under_way") == true, "the load finds a day under way")
 
-	var main := await _boot(t, _windowed(), Calls.new())
-	t.check(GameState.header.nerves == 4, "the boot charges its one nerve")
-	var after := _save.try_resume(GameState)
+	# A fresh run handed to the boot, which the resume reads the save into.
+	var played := RunState.new()
+	var home := Boot.home_playing(t, played)
+	var main := await _boot(t, _windowed(), Calls.new(), home)
+	t.check(played.header.nerves == 4, "the boot charges its one nerve")
+	var after := _on_disk()
 	t.check(after.get("day_under_way") == false,
 			"the boot write says nothing has been played in the retry yet")
-	t.check(GameState.header.nerves == 4,
+	t.check(after.get("nerves") == 4,
 			"and the reduced nerve count the load already charged is what landed on disk")
 
 	_shut(t, main)
+	home.free()
+	played.free()
+	run.free()
 	_save.clear()
 
 ## The title→day-brief path with nothing charged: the save was written at a day's own summary or at
@@ -440,25 +449,27 @@ func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -
 ## exactly what the screen is already showing.
 func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 	_begin()
-	GameState.start_run(234)
-	GameState.header.day = 7
-	GameState.header.nerves = 5
-	_saved(false)
+	var run := RunState.new()
+	run.start_run(234)
+	run.header.day = 7
+	run.header.nerves = 5
+	_saved(run, false)
+	run.free()
 	var main := await _boot(t, _windowed(), Calls.new())
 
-	await _press_on_the_title(t, main, "Tap")
-	var summary := _summary_of(main)
+	await Boot.press_title(t, main, "Tap")
+	var summary := Boot.summary(main)
 	t.check(summary.is_showing(), "the day brief shows instead of starting the day outright")
 	t.check(not _note_of(main).visible, "no lost-day note — the load cost nothing")
-	t.check(_save.try_resume(GameState).get("day_under_way") == false,
+	t.check(_on_disk().get("day_under_way") == false,
 			"and the day brief's own continue still has to engage the day, which the save says;"
 			+ " showing the brief writes nothing new — the dawn write already said this")
 
 	t.check(t.get_tree().paused, "the tree stays paused while the day brief is up, so the day is not walked yet")
-	await _press_continue(t, main)
+	await Boot.press_continue(t, main)
 	t.check(not summary.is_showing(), "continuing dismisses the brief")
 	t.check(not t.get_tree().paused, "and the gate is spent, the day walked with the tree running")
-	t.check(_save.try_resume(GameState).get("day_under_way") == true,
+	t.check(_on_disk().get("day_under_way") == true,
 			"the day is engaged, which the save now says")
 
 	_shut(t, main)
@@ -467,11 +478,13 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 ## The same path with a nerve charged: the day brief carries `Texts.RESUMED_DAY_LOST`.
 func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 	_begin()
-	GameState.start_run(235)
-	_saved(true)
+	var run := RunState.new()
+	run.start_run(235)
+	_saved(run, true)
+	run.free()
 	var main := await _boot(t, _windowed(), Calls.new())
 
-	await _press_on_the_title(t, main, "Tap")
+	await Boot.press_title(t, main, "Tap")
 	t.check(_note_of(main).visible and _note_of(main).text == Texts.RESUMED_DAY_LOST,
 			"the day brief carries the lost-day line the load itself charged")
 
@@ -479,7 +492,7 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 	_save.clear()
 
 ## The last-nerve case: a hard run whose save was closed with its day under way. The load's own
-## `GameState.calendar.finish_day()` call in `_ready()` spends the run's last nerve, so pressing start
+## `RunCalendar.finish_day()` call in `_ready()` spends the run's last nerve, so pressing start
 ## on the title shows the ending directly — the same screen and the same continue any other
 ## run-ending reaches — rather than the day brief. The run has ended by the time the title is up, so
 ## `_save.write()`'s own refusal (see its doc) means nothing here writes at all, and the run's end
@@ -490,29 +503,35 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 ## boot only if it was raised before the charge, since one raised after hears nothing of it.
 func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	_begin()
-	GameState.start_run(236)
-	GameState.calendar.choose_mode(true)
-	GameState.header.day = 5
-	GameState.header.nerves = 1
-	GameState.calendar.begin_day()
-	t.check(_saved(true), "the hard run's save, closed with its day under way, is on disk")
-	var main := await _boot(t, _windowed(), Calls.new())
+	var closed := RunState.new()
+	closed.start_run(236)
+	closed.calendar.choose_mode(true)
+	closed.header.day = 5
+	closed.header.nerves = 1
+	closed.calendar.begin_day()
+	t.check(_saved(closed, true), "the hard run's save, closed with its day under way, is on disk")
+	closed.free()
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var main := await _boot(t, _windowed(), Calls.new(), home)
 
 	var own := _one(main, "SaveIndicator") as SaveIndicator
 	t.check(own != null and own.is_showing(),
 			"the symbol is raised before the resumed run's charge, so the deletion it makes is announced")
-	t.check(GameState.header.ending != GameEnums.Ending.NONE and not _save.has_save(),
+	t.check(run.header.ending != GameEnums.Ending.NONE and not _save.has_save(),
 			"the charge spent the last nerve, ended the run and deleted the save")
-	await _press_on_the_title(t, main, "Tap")
-	var summary := _summary_of(main)
+	await Boot.press_title(t, main, "Tap")
+	var summary := Boot.summary(main)
 	t.check(summary.is_showing()
 			and (summary.get_node("Root/Center/Lines/Title") as Label).text
-			== SummaryModel.ending(GameState, GameState.header.ending).title,
+			== SummaryModel.ending(run, run.header.ending).title,
 			"the ending is shown rather than the day brief, so there is no day brief for a later"
 			+ " continue to engage")
 	t.check(not _save.has_save(), "a run that has ended writes nothing, on this path either")
 
 	_shut(t, main)
+	home.free()
+	run.free()
 
 ## **The day-14 hand-over's reload to the escape, through the summary's own continue.** Day 14's own
 ## save (A) is written as its summary appears and may still be waiting for the browser when the player
@@ -526,35 +545,37 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 ## Two halves. The booted game's own symbol is handed to the sitting by the continue and survives
 ## the game being freed. A symbol of the test's own timeline, parked where that one is, is then
 ## adopted by a second booted game, and the escape's two saves are played on it with its counts read.
+## The first boot plays a run of the test's own, from a sitting parked in the home before it boots
+## (`Boot.home_playing()`); that the reload parks a sitting the boot built itself is the held
+## restart's test above, through the same `main._reload_the_scene()`.
 func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_begin()
-	var home := Node.new()
-	t.add_child(home)
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
 	var calls := Calls.new()
 	var main := await _boot(t, _windowed(), calls, home)
-	await _press_on_the_title(t, main, "Tap")
+	await Boot.press_title(t, main, "Tap")
 	var indicator := _one(main, "SaveIndicator") as SaveIndicator
 	t.check(indicator != null and indicator.get_parent() == main,
 			"a boot with nothing carried builds the symbol as its own child")
 
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	GameState.start_run(_SEED)
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.resistance.sabotage_done = true
-	(_one(main, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
-	t.check(_summary_of(main).is_showing()
-			and GameState.facts.escape_section == DaySpec.Section.BUILDING,
+	run.start_run(_SEED)
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance.sabotage_done = true
+	Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
+	t.check(Boot.summary(main).is_showing()
+			and run.facts.escape_section == DaySpec.Section.BUILDING,
 			"a won day 14 puts day 14's summary up with the run in the building")
 	var day_fourteen := _next_operation()
 	EventBus.save_written.emit(day_fourteen, int(GameSave.Result.PENDING))
 	t.check(indicator.is_showing(), "and the symbol shows day 14's pending save")
-	await _press_continue(t, main)
+	await Boot.press_continue(t, main)
 	t.check(calls.reloads.size() == 1, "continuing past day 14's summary reloads into the escape")
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	t.check(sitting != null and indicator.get_parent() == sitting,
-			"and parks the sitting in its home, with the symbol showing day 14's pending save under it")
+			"and hands the symbol showing day 14's pending save to the sitting in its home")
 	_shut(t, main)
 	t.check(is_instance_valid(indicator) and SaveIndicator.carried(sitting) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
@@ -564,7 +585,6 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 		indicator.free()
 
 	# The adoption, on a symbol whose counts the test can read.
-	GameState.facts.escape_section = DaySpec.Section.NONE
 	var parked := Parked.new(t)
 	var escape_boot := await _boot(t, _windowed(), calls, parked.home)
 	t.check(_one(escape_boot, "SaveIndicator") == null
@@ -589,7 +609,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_shut(t, escape_boot)
 	parked.free_all()
 	home.free()
-	GameState.facts.escape_section = DaySpec.Section.NONE
+	run.free()
 	_save.clear()
 
 ## The whole path through `main`'s write: a run `_save.uses_save()` refuses — here the headless
@@ -599,7 +619,7 @@ func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 	_begin()
 	var parked := Parked.new(t)
 	var main := await _boot(t, _headless(), Calls.new())
-	await _press_on_the_title(t, main, "Tap")
+	await Boot.press_title(t, main, "Tap")
 	t.check(not t.get_tree().paused, "the day engaged, which is where the game writes its save")
 	t.check(parked.timeline.is_idle() and not parked.timeline.struck,
 			"a refused save leaves the symbol dark")
@@ -620,7 +640,7 @@ func _test_a_desktop_save_is_shown_at_once_and_begun_once(t) -> void:
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
 	EventBus.save_written.connect(listen)
-	await _press_on_the_title(t, main, "Tap")
+	await Boot.press_title(t, main, "Tap")
 	EventBus.save_written.disconnect(listen)
 	var timeline := parked.timeline
 	t.check(timeline.pending == 0 and not timeline.is_idle(),

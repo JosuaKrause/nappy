@@ -79,6 +79,21 @@ static func until_booted(t, main: Node) -> void:
 			return
 	t.check(false, "the boot finished within %d frames" % BOOT_FRAMES)
 
+## A node of the suite's own under `t`, standing for the tree's root, with a sitting parked in it
+## that plays `run`: handed to a boot (`main.use_sitting_home()`, through `boot()`'s `before`), it
+## is the sitting the boot takes, so the game plays the run the test made and hands it down, rather
+## than one of its own. A reload the boot asks for leaves that sitting where it is, and the boot
+## standing for the reload takes it again, as a real one takes the sitting parked at the root. The
+## caller frees the home, and the run, which the sitting does not own (`Sitting.run`).
+static func home_playing(t, run: RunState) -> Node:
+	var home := Node.new()
+	t.add_child(home)
+	var sitting := Sitting.new()
+	sitting.name = Sitting.NODE_NAME
+	sitting.run = run
+	home.add_child(sitting)
+	return home
+
 ## A debug build's configuration from command-line `words`, unsaved and uncounted.
 static func config(words: Array) -> RunConfig:
 	var given := PackedStringArray(["--no-save", "--no-telemetry"])
