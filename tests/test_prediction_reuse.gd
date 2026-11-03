@@ -335,8 +335,9 @@ func _test_halo_and_removal(t) -> void:
 	var baby := Baby.new()
 	for cached: bool in [true, false]:
 		var manager := EventManager.new()
-		manager.set_physics_process(false)
 		t.add_child(manager)
+		# After it enters the tree: entering turns on the tick of a node that defines one.
+		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
 		source.atlas = atlas
