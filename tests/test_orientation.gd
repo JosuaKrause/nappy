@@ -13,38 +13,52 @@ extends RefCounted
 ## finding, on a build this suite's earlier checks all passed. A test can assert a transform;
 ## it cannot look at a picture. So alongside the transform checks below, `pin_to_design_box()` and
 ## `apply_to_layer()` — the two `ScreenOrientation` helpers every rotating `CanvasLayer` calls — are
-## checked to compose correctly, and `main._screen_furniture_layers()` is checked to still name
-## every layer it should, so a layer added later and forgotten there is a failing test rather than
-## a picture nobody happened to take. The picture still has to be taken too — see
+## checked to compose correctly, and a booted `main` in a portrait touch window is checked to turn
+## every layer of screen furniture it builds, so a layer added later and forgotten there is a
+## failing test rather than a picture nobody happened to take. The picture still has to be taken too — see
 ## `docs/evidence/` for the ones this milestone's report cites.
 
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
-const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
-const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
-const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
-const TITLE_SCREEN_SCENE := preload("res://scenes/ui/title_screen.tscn")
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
+const UI := preload("res://tests/ui_screens.gd")
+const Boot := preload("res://tests/booted_main.gd")
+const _SCRATCH_SAVE := "user://test_orientation_scratch.json"
 
 func run(t) -> void:
 	_test_wants_rotation_only_for_a_portrait_touch_window(t)
 	_test_content_scale_size_matches_the_rotated_or_unrotated_design_box(t)
 	_test_the_transform_sends_the_design_centre_to_the_rotated_centre(t)
 	_test_the_transform_round_trips(t)
-	_test_a_rotated_touch_still_fires_the_pause_button(t)
-	_test_a_rotated_touch_outside_the_button_still_sets_a_direction(t)
-	_test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t)
+	await _test_a_rotated_touch_still_fires_the_pause_button(t)
+	await _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t)
+	await _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t)
 	_test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t)
 	_test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t)
 	_test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(t)
-	_test_every_screen_furniture_layer_is_named_by_main(t)
+	await _test_every_screen_furniture_layer_is_named_by_main(t)
 	_release_actions()
 
+## A `TouchControls` in the tree, two frames let pass so it shows, and a probe that hears the
+## `pause` action the way `main` hears it.
 func _controls(t) -> TouchControls:
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	t.add_child(controls)
-	controls.set_process(false)
-	controls.visible = true
+	await UI.frames(t)
 	return controls
+
+class PauseProbe extends Node:
+	var presses := 0
+
+	func _input(event: InputEvent) -> void:
+		if event is InputEventAction and (event as InputEventAction).pressed \
+				and (event as InputEventAction).action == &"pause":
+			presses += 1
+
+func _held_any_move() -> bool:
+	return Input.is_action_pressed("move_left") or Input.is_action_pressed("move_right") \
+			or Input.is_action_pressed("move_up") or Input.is_action_pressed("move_down")
+
+func _finger(controls: TouchControls, index: int, at: Vector2, pressed: bool) -> void:
+	UI.push(controls, UI.touch_at(at, pressed, index))
 
 ## **Only a touch device in a portrait window rotates.** A narrow desktop window is portrait too,
 ## and `export_presets.cfg`'s own retired rotate overlay used to gate its message on
@@ -84,27 +98,37 @@ func _test_the_transform_round_trips(t: Node) -> void:
 				"round-tripping %s through the rotation lands back on itself" % point)
 
 func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
-	var controls := _controls(t)
+	var rig := Node2D.new()
+	rig.add_to_group("player")
+	t.add_child(rig)
+	var controls := await _controls(t)
+	var probe := PauseProbe.new()
+	t.add_child(probe)
 	controls.rotated = true
 
 	var screen_pause := ScreenOrientation.to_presented_space(TouchControls.PAUSE_CENTRE, true)
-	controls._input(_touch_event(0, screen_pause, true))
-	t.check(controls._pause_touch == 0,
-			"a rotated touch at the pause button's own screen position grabs its index")
-	t.check(not controls._walking,
-			"and is caught by the button rather than also locking in a direction toward the corner")
+	_finger(controls, 0, screen_pause, true)
+	t.check(not _held_any_move(),
+			"a rotated touch at the pause button's own screen position is caught by the button "
+			+ "rather than also locking in a direction toward the corner")
 
-	controls._input(_touch_event(0, screen_pause, false))
-	t.check(controls._pause_touch == -1, "and releasing there lets the index go again")
+	_finger(controls, 0, screen_pause, false)
+	Input.flush_buffered_events()
+	t.check(probe.presses == 1, "and releasing there fires it: the index it grabbed is let go again")
 
-	# The geometry the release itself asks is answered in design space (`_pause_fires` is a pure
-	# function over the space `TouchControls` keeps everything else in) -- the remap above is
-	# what has to hand it the right point, which is exactly what this whole suite is checking.
-	t.check(TouchControls._pause_fires(TouchControls.PAUSE_CENTRE),
-			"the pure geometry check underneath is untouched by rotation")
+	# The geometry the release itself asks is answered in design space -- the remap above is what
+	# has to hand it the right point, which is exactly what this whole suite is checking. Unrotated,
+	# the same press and lift at the unrotated position fires too.
+	controls.rotated = false
+	_finger(controls, 0, TouchControls.PAUSE_CENTRE, true)
+	_finger(controls, 0, TouchControls.PAUSE_CENTRE, false)
+	Input.flush_buffered_events()
+	t.check(probe.presses == 2, "the geometry underneath is untouched by rotation")
 
+	probe.free()
 	controls.free()
-	Input.action_release(&"pause")
+	rig.free()
+	_release_actions()
 
 ## **A direction press needs no remap of its own** — see `TouchControls.set_direction()`'s own
 ## class doc for why — but the pause corner it must *not* be read as still does, so a touch well
@@ -114,12 +138,12 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	t.add_child(rig)
-	var controls := _controls(t)
+	var controls := await _controls(t)
 	controls.rotated = true
 
 	var screen_point := ScreenOrientation.to_presented_space(Vector2(400.0, 400.0), true)
-	controls._input(_touch_event(0, screen_point, true))
-	t.check(controls._walking, "a rotated touch well clear of the button sets a direction")
+	_finger(controls, 0, screen_point, true)
+	t.check(_held_any_move(), "a rotated touch well clear of the button sets a direction")
 
 	controls.free()
 	rig.free()
@@ -147,25 +171,23 @@ func _test_a_rotated_touch_still_aims_from_the_steering_focus_correctly(t: Node)
 	rig.add_child(camera)
 	# docs/DECISIONS.md, M141, the physics tick at thirty: physics interpolation forces a
 	# Camera2D onto the physics tick, and the viewport's canvas transform this test reads through
-	# `TouchControls._input()` follows that interpolated transform — whose previous and current
-	# tick poses are never filled in a rig that runs no physics tick, so it stays unrotated at the
-	# origin. `reset_physics_interpolation()` alone did not take without one; there is no tick
-	# here for it to matter to, so the camera opts out the same way an untouched `_process`-driven
-	# node does.
+	# `TouchControls` follows that interpolated transform — whose previous and current tick poses
+	# are never filled in a rig that runs no physics tick, so it stays unrotated at the origin.
+	# `reset_physics_interpolation()` alone did not take without one; there is no tick here for it
+	# to matter to, so the camera opts out the same way an untouched `_process`-driven node does.
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	# With interpolation off, `_update_scroll()` still only reads the fresh transform once asked;
-	# nothing here ever draws a frame to ask on its own.
+	# With interpolation off, `_update_scroll()` still only reads the fresh transform once asked.
 	camera.force_update_scroll()
 
-	var controls := _controls(t)
+	var controls := await _controls(t)
 	controls.rotated = true
-	controls._mode = ControlsMode.Mode.JOYSTICK
+	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 
 	# West of the left focus, in design space -- the same offset `test_touch.gd`'s own (unrotated)
 	# equivalent test uses.
 	var design_press := TouchControls.FOCUS_LEFT + Vector2(-150.0, 0.0)
 	var screen_point := ScreenOrientation.to_presented_space(design_press, true)
-	controls._input(_touch_event(0, screen_point, true))
+	_finger(controls, 0, screen_point, true)
 	t.check(Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
 			"a rotated touch west of the left focus still walks west")
 	t.check(not Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
@@ -244,58 +266,41 @@ func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(
 ## `main.gd` is never instantiated as a scene in this suite — see `tests/test_main.gd`'s own doc
 ## for why — so this is the same script-only instance, its handful of dependencies wired by hand.
 func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	hud.use_run(GameState)
-	t.add_child(hud)
-	hud.set_process(false)
-	var edge_layer := CanvasLayer.new()
-	var touch_layer := CanvasLayer.new()
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
-	t.add_child(summary)
-	var pause: CanvasLayer = PAUSE_SCREEN_SCENE.instantiate()
-	pause.use_run(GameState)
-	t.add_child(pause)
-	var title: CanvasLayer = TITLE_SCREEN_SCENE.instantiate()
-	title.use_run(GameState)
-	t.add_child(title)
-	var status_layer := CanvasLayer.new()
-	var save_indicator := SaveIndicator.new()
-	t.add_child(save_indicator)
+	t.gives_back_observers()
+	var window: Window = t.get_window()
+	var original_size: Vector2i = window.size
+	var original_scale: Vector2i = window.content_scale_size
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--touch"]))
+	var main := booted.main
 
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._hud = hud
-	main._edge_layer = edge_layer
-	main._touch_layer = touch_layer
-	main._summary = summary
-	main._pause = pause
-	main._title = title
-	main._status_layer = status_layer
-	main._save_indicator = save_indicator
+	# Every layer `main` builds for the HUD, the screens, the controls, the edge badge and the
+	# status line is a `CanvasLayer` child of it.
+	var layers: Array[CanvasLayer] = []
+	for child in main.get_children():
+		if child is CanvasLayer:
+			layers.append(child)
+	t.check(layers.size() == 8, "every layer of screen furniture is built, and nothing extra "
+			+ "(got %d)" % layers.size())
+	for layer in layers:
+		t.check(layer.transform == Transform2D.IDENTITY,
+				"before the window turns portrait, '%s' is not rotated" % layer.name)
 
-	var layers: Array[CanvasLayer] = main._screen_furniture_layers()
-	t.check(layers.size() == 8, "every layer of screen furniture is named, and nothing extra")
-	for layer: CanvasLayer in layers:
-		t.check(layer != null, "no layer in the list is unset")
-	for expected in [hud, edge_layer, touch_layer, summary, pause, title, status_layer,
-			save_indicator]:
-		t.check(expected in layers, "the list still names the layer main wires up for it")
+	# A portrait touch window: `main` asks every frame whether the presentation should rotate and
+	# turns every layer it names.
+	window.size = Vector2i(400, 900)
+	await UI.frames(t, 4)
+	for layer in layers:
+		t.check(layer.transform == ScreenOrientation.rotation_transform(),
+				"once the window turns portrait, '%s' carries the one rotation every layer of "
+				% layer.name + "screen furniture shares")
+	for expected in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:
+		t.check(expected in layers, "'%s' is among them" % expected.name)
 
-	main.free()
-	hud.free()
-	edge_layer.free()
-	save_indicator.free()
-	touch_layer.free()
-	summary.free()
-	pause.free()
-	title.free()
-	status_layer.free()
+	window.size = original_size
+	window.content_scale_size = original_scale
+	booted.free_all()
+	GameState.start_run(4242)
 
-func _touch_event(index: int, position: Vector2, pressed: bool) -> InputEventScreenTouch:
-	var event := InputEventScreenTouch.new()
-	event.index = index
-	event.position = position
-	event.pressed = pressed
-	return event
 
 ## Global `Input` state, same reason `test_touch.gd` cleans it up: nothing here is scoped to this
 ## suite's own nodes.

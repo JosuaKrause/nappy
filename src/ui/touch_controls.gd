@@ -162,6 +162,21 @@ var _touch := TouchInput.available()
 func use_touch(touch: bool) -> void:
 	_touch = touch
 
+## The clock the double-tap window is measured on: a `Callable` returning seconds as a float, the
+## same shape `ModeButton.use_clock()` takes. Unset, a press is stamped with the engine's own
+## clock; a suite hands in one it moves by hand, so two presses land inside or outside
+## `DOUBLE_TAP_SECONDS` without waiting out the real time between them.
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+var _clock := Callable()
+
+## The moment a press arrived, in seconds, on the handed-in clock or the engine's own.
+func _now() -> float:
+	if _clock.is_valid():
+		return _clock.call()
+	return Time.get_ticks_msec() / 1000.0
+
 ## The player's own choice of aiming origin — see the class doc and `ControlsMode`. Defaults to
 ## `TAP`, the same default `ControlsMode.from_word()` falls back to, so a test or a rig that never
 ## calls `set_mode()` gets the mode every existing screenshot and `--walk` script was taken under.
@@ -424,7 +439,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				Input.action_press(&"run")
 				queue_redraw()
 			return
-		_on_tap(position, Time.get_ticks_msec() / 1000.0)
+		_on_tap(position, _now())
 		# Tracked whether this press walked or stopped her — see `_on_tap()`'s own doc for where
 		# `_drag_run` was just set for this same press. *(Playtest 34 finding 8: "when I start
 		# dragging from the center of the joystick nothing happens it should behave the same as if
@@ -494,9 +509,9 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
 ##   `to_design_space()`) → world (`_focus_world()`, the same canvas-transform inverse used above).
 ##
-## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
-## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
-## callers and supply it from `Time.get_ticks_msec()`.
+## `now` is a parameter rather than read from `Time` in here, so the double-tap window is measured
+## on the clock `use_clock()` hands in (the engine's own by default) -- `_on_pointer()` is the real
+## caller and supplies it from `_now()`.
 ##
 ## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the
 ## title, the pause and the between-days summary. The event is left unhandled either way, so the
