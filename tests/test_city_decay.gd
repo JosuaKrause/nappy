@@ -178,7 +178,7 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
-	t.check(building._storefront_variant.size() == building.columns() / 2,
+	t.check(_variants(building).size() == building.columns() / 2,
 			"a three-column facade has one storefront variant per complete pair")
 	t.check(building.ground_floor_texture(1) == &"",
 			"the second column of a storefront pair draws no duplicate texture")
@@ -277,21 +277,22 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 		building.position = Vector2(7000.0 + i * 137.0, 7100.0 + i * 89.0)
 		t.add_child(building)
 		sampled.append(building)
-		for storefront_index in building._storefront_variant.size():
+		var variants := _variants(building)
+		for storefront_index in variants.size():
 			if storefront_index > 0:
-				t.check(building._storefront_variant[storefront_index] != building._storefront_variant[storefront_index - 1],
+				t.check(variants[storefront_index] != variants[storefront_index - 1],
 						"neighboring storefronts use different variants")
 			if storefront_index % bag_width != 0 \
-					or storefront_index + bag_width > building._storefront_variant.size():
+					or storefront_index + bag_width > variants.size():
 				continue
-			var bag := building._storefront_variant.slice(storefront_index, storefront_index + bag_width)
+			var bag := variants.slice(storefront_index, storefront_index + bag_width)
 			var unique_bag := {}
 			for storefront_variant in bag:
 				unique_bag[storefront_variant] = true
 			t.check(unique_bag.size() == bag_width,
 					"each complete storefront bag uses every available variant once")
 		var order_key := ""
-		for storefront_variant in building._storefront_variant.slice(0, bag_width):
+		for storefront_variant in variants.slice(0, bag_width):
 			order_key += "%d," % storefront_variant
 		first_orders[order_key] = true
 	t.check(first_orders.size() > 1,
@@ -303,14 +304,14 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	same_seed.height = 64.0
 	same_seed.position = sampled[0].position
 	t.add_child(same_seed)
-	t.check(sampled[0]._storefront_variant == same_seed._storefront_variant,
+	t.check(_variants(sampled[0]) == _variants(same_seed),
 			"a storefront variant bag is reproducible from the building seed")
-	var variants_before_state_changes := sampled[0]._storefront_variant.duplicate()
+	var variants_before_state_changes := _variants(sampled[0]).duplicate()
 	sampled[0].height = 96.0
 	sampled[0].height = 64.0
 	sampled[0].day = Tuning.RUN_LENGTH_DAYS
 	sampled[0].condition = Building.Condition.BOARDED
-	t.check(sampled[0]._storefront_variant == variants_before_state_changes,
+	t.check(_variants(sampled[0]) == variants_before_state_changes,
 			"day and condition changes preserve storefront variants")
 
 	var odd := Building.new()
@@ -318,14 +319,14 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	odd.footprint = Vector2(160.0, 96.0)
 	odd.height = 64.0
 	t.add_child(odd)
-	t.check(odd._storefront_variant.size() == 2,
+	t.check(_variants(odd).size() == 2,
 			"an odd-width facade leaves its final wall column without a storefront")
 	var shallow := Building.new()
 	shallow.district = GameEnums.BlockPurpose.COMMERCIAL
 	shallow.footprint = Vector2(160.0, 32.0)
 	shallow.height = 32.0
 	t.add_child(shallow)
-	t.check(shallow._storefront_variant.is_empty(),
+	t.check(_variants(shallow).is_empty(),
 			"a one-row commercial facade keeps its ordinary wall base")
 	t.check(shallow.ground_floor_texture(0) == Building.WALL_BASE,
 			"a one-row commercial facade returns its ordinary wall base")
@@ -334,3 +335,17 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	same_seed.free()
 	odd.free()
 	shallow.free()
+
+## The storefront variant behind each drawn storefront of `building`, left to right: the index of the
+## picture `Building.ground_floor_texture()` hands the drawing for the first column of each
+## storefront pair, in whichever of the plain, awning or shuttered sets it comes from.
+func _variants(building: Building) -> Array[int]:
+	var found: Array[int] = []
+	for col in range(0, building.columns(), 2):
+		var texture := building.ground_floor_texture(col)
+		for set: Array in [Building.STOREFRONT_TEXTURES, Building.STOREFRONT_AWNING_TEXTURES,
+				Building.STOREFRONT_SHUTTERED_TEXTURES]:
+			if set.has(texture):
+				found.append(set.find(texture))
+				break
+	return found

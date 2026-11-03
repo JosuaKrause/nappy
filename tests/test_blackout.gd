@@ -10,14 +10,17 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+var _run: RunState
 var _city: City
 
 func run(t) -> void:
-	var saved_sabotage := GameState.resistance.sabotage_done
-	var saved_section := GameState.facts.escape_section
-	GameState.resistance.sabotage_done = false
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	_city = RunCity.of_the_run(CITY_SCENE)
+	# The run the cities stand in is this suite's own, handed to each as `City.run`.
+	_run = RunState.new()
+	_run.start_run(SEED)
+	_run.resistance.sabotage_done = false
+	_run.facts.escape_section = DaySpec.Section.NONE
+	_city = CITY_SCENE.instantiate()
+	_city.run = _run
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_start_the_last_day()
@@ -35,8 +38,7 @@ func run(t) -> void:
 
 	_test_the_escape_is_dark_from_its_first_frame(t)
 	_test_the_building_is_dark_too(t)
-	GameState.resistance.sabotage_done = saved_sabotage
-	GameState.facts.escape_section = saved_section
+	_run.free()
 
 func _rng(label: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -83,14 +85,14 @@ func _spine_junction() -> Vector2i:
 # ---------------------------------------------------------------------- tests ---
 
 func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
-	GameState.resistance.sabotage_done = false
+	_run.resistance.sabotage_done = false
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "far from the station with no sabotage, the city is lit")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the spine's lights are working")
 
 ## The station must be off screen before it goes, so the moment is the city going dark round her.
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
-	GameState.resistance.sabotage_done = true
+	_run.resistance.sabotage_done = true
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(not _city.blackout.is_dark, "at the door she has just touched, nothing is off yet")
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
@@ -101,23 +103,19 @@ func _test_everything_goes_dark_at_once(t) -> void:
 			% [Tuning.RUN_LENGTH_DAYS, _mast_plans().size()])
 	var lit_windows := 0
 	for building in _buildings():
-		for i in building._windows.size():
-			if building._lit(i):
-				lit_windows += 1
+		lit_windows += _lit_windows(building)
 	t.check(lit_windows > 0, "there were lit windows to put out (%d)" % lit_windows)
 	var quiet: Array[bool] = []
 	var handler := func() -> void: quiet.append(true)
 	EventBus.city_went_quiet.connect(handler)
 
-	GameState.resistance.sabotage_done = true
+	_run.resistance.sabotage_done = true
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
 
 	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
 	var still_lit := 0
 	for building in _buildings():
-		for i in building._windows.size():
-			if building._lit(i):
-				still_lit += 1
+		still_lit += _lit_windows(building)
 	t.check(still_lit == 0, "every lit window went out in the same call (%d left)" % still_lit)
 	t.check(not _city.signals.is_signalled(_spine_junction()),
 			"the spine's lights decide nothing")
@@ -134,21 +132,29 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	light.free()
 	EventBus.city_went_quiet.disconnect(handler)
 
+## How many of a building's windows are drawn showing a light: the lit variants of the window
+## textures `Building.window_texture()` hands the drawing for each wall cell.
+func _lit_windows(building: Building) -> int:
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+	var count := 0
+	for index in building.columns() * building.wall_tiles():
+		if building.window_texture(index) in lit:
+			count += 1
+	return count
+
 func _test_it_stays_dark_walking_back(t) -> void:
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(_city.blackout.is_dark, "walking back to the door does not put the lights on")
 
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
 func _test_a_retry_gives_the_power_back(t) -> void:
-	GameState.resistance.sabotage_done = false
+	_run.resistance.sabotage_done = false
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
 	var lit_windows := 0
 	for building in _buildings():
-		for i in building._windows.size():
-			if building._lit(i):
-				lit_windows += 1
+		lit_windows += _lit_windows(building)
 	t.check(lit_windows > 0, "and the same windows are lit again (%d)" % lit_windows)
 
 ## The hall is dimly lit on the one night it is seen to go out, and drawn as approved on every other.
@@ -242,8 +248,9 @@ func _spine_traffic(powered: bool) -> Vector2:
 ## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
 ## dark before its first frame.
 func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
-	GameState.resistance.sabotage_done = true
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	_run.resistance.sabotage_done = true
+	var city: City = CITY_SCENE.instantiate()
+	city.run = _run
 	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))

@@ -227,7 +227,7 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	city.forced_interval = 2.0
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	t.check(city._ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
+	t.check(city.scenery_ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and city._building_shadows.skip_draw, "the ground, the scenery and the shadows")
 	t.check(city.events.skip_drawing
 			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS

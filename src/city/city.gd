@@ -142,7 +142,9 @@ const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
 
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
-@onready var _ground: SceneryGround = $Ground
+## The ground layer the residency prepares and evicts region by region (`SceneryResidency.update()`
+## reads it to do so), and the clock the buildings' animation phase follows.
+@onready var scenery_ground: SceneryGround = $Ground
 @onready var _decals: CityDecals = $Decals
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
@@ -332,8 +334,8 @@ func build(city_map: CityMap) -> void:
 	scenery.timing = frame_timing
 	scenery.frame_locked = scenery_frame_locked
 	add_child(scenery)
-	_ground.mode = ground_mode
-	_ground.atlas = atlas
+	scenery_ground.mode = ground_mode
+	scenery_ground.atlas = atlas
 	_decals.atlas = atlas
 	_decals.streamed = true
 	_building_shadows.streamed = true
@@ -787,7 +789,7 @@ func _spawn_buildings() -> void:
 		var building := Building.new()
 		building.atlas = atlas
 		building.scenery_resident = false
-		building.scenery_clock = _ground
+		building.scenery_clock = scenery_ground
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
@@ -1176,7 +1178,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
 ## `curbstone` component (or, where the bake carries whole authored tiles, the stone's own fill) blended toward
 ## `Palette.ROUTE_KERB_TINT` by `GroundLayers.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
-## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
+## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `scenery_ground`
 ## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
 ## because there is only the one layer. A twin that was never registered (an incomplete art drop)
 ## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
@@ -1205,7 +1207,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 ## walk cannot survive into today's.
 func tint_the_route(route: RouteSource) -> void:
 	_tinted_route = route
-	_ground.repaint()
+	scenery_ground.repaint()
 
 ## Whether a kerb tile is on today's tinted walk.
 func _is_on_the_tinted_route(tile: Vector2i) -> bool:
@@ -1537,8 +1539,8 @@ func close_ground(tiles: Array[Vector2i]) -> void:
 	for tile: Vector2i in redraw:
 		var source := scenery_ground_source(tile)
 		if source >= 0:
-			_ground.set_cell(tile, source,
-					GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
+			scenery_ground.set_cell(tile, source,
+					GroundLayers.atlas_coords_for(source, map.seed_used, tile, scenery_ground.tile_set))
 	_sleepiness_tile = Vector2i(-1, -1)
 	for prop in _props.duplicate():
 		var frame := prop as Prop
@@ -1707,10 +1709,10 @@ func _spawn_boundary() -> void:
 ## place rather than four.
 func _paint_ground() -> void:
 	_tinted_route = null
-	_ground.configure(self, _composed_ground_tile_set())
+	scenery_ground.configure(self, _composed_ground_tile_set())
 	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
-	for key in _ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
-		_ground.prepare(key)
+	for key in scenery_ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
+		scenery_ground.prepare(key)
 
 func _home_scenery_view() -> Rect2:
 	return Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
@@ -1728,7 +1730,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	var source := GroundTiles.source_for(map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
 		var twin := GroundTiles.route_twin_of(source)
-		if twin >= 0 and _ground.tile_set.has_source(twin):
+		if twin >= 0 and scenery_ground.tile_set.has_source(twin):
 			return twin
 	return source
 
@@ -1821,7 +1823,7 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 ## baked region and holds no picture, so composing it twice can never accumulate layers.
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
-		_authored_ground_tile_set = _ground.tile_set
+		_authored_ground_tile_set = scenery_ground.tile_set
 	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe, atlas)
 
 ## What the city stops at, on each of its four sides.
