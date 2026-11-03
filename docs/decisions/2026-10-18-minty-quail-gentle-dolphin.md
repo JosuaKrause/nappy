@@ -17,11 +17,18 @@ the item lists them.
 - The residency and blackout suites build a fresh `RunState` and hand it to each city as
   `City.run`, so they no longer touch the `GameState` autoload (13 lines to 0), the first suites
   moved under `run-state-handed-in.md`.
+- The residency suite's mode-1 check raced the wall clock: one `SceneryResidency.update()` keeps a
+  2000-microsecond budget and the check expected it to prepare three regions, which a cold or busy
+  machine did not, so the suite failed run alone (main had the same race and passed by luck). The
+  check lifts the budget for that one update; the budget's spill-over stays tested by the check
+  that sets it to one microsecond. Its "nothing waiting" half, which read `_pending`, now lets one
+  real frame pass and checks the residency's own maintenance prepares nothing more.
 - Every check kept; the residency suite gains four. The rewritten checks fail under mutations of
   the residency fence and budget, the ground clock, the lit-window power rule, the storefront
   picture and the recorder's draw kind.
 
-**Not done:** no planner "place this at this site" entry was needed; the reads of `Building`
+**Not done:** `test_power_station.gd`'s chimney check still takes its city from
+`RunCity.of_the_run`, which hands it `GameState`, since `RunCity` takes no run; no planner "place this at this site" entry was needed; the reads of `Building`
 drawing privates no game class reads stay and are listed, since a public name would be a member
 only a test reads (records -44 and -47); the residency and blackout suites share one city across
 their tests by design and fail run in reverse, which `tests-isolated.md` covers.
