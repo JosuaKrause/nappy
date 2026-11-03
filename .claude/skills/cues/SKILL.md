@@ -265,4 +265,6 @@ stands, and a box of its point alone freezes them on screen. And it redraws on t
 whatever its key says, since nothing kept the picture current while it was away, so a caret owed on
 that frame is drawn on it.
 
-**Headless runs never call `_draw()`** — see the **verify** skill, "What each one cannot see".
+**A headless run draws but makes no pixels**: it calls `_draw()` and emits `draw` like any other,
+and its dummy renderer leaves no picture to judge — see the **verify** skill, "What each one cannot
+see".

@@ -2,8 +2,9 @@ class_name AutoScreenshot
 extends Node
 ## Dev tool: let the game run for a while, save the viewport to a PNG, quit.
 ##
-## Headless runs never call `_draw()`, so a clean headless boot says nothing about whether
-## the game looks right. This gives a windowed run a way to produce a checkable image.
+## A headless run calls `_draw()` but its dummy renderer makes no pixels, so a clean headless boot
+## says nothing about whether the game looks right. This gives a windowed run a way to produce a
+## checkable image.
 ##
 ##     godot --path . -- --screenshot out.png [--after 4.0]
 ##                                            [--walk north|south|east|west|1s5e|3@45@2e]

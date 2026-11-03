@@ -3,7 +3,7 @@ extends RefCounted
 ## their destination"): the chalk mark and its touched picture belong to the pickup alone, and a
 ## task's destination — a rider, or a bare point (day 9's district door, day 11's mast foot, day
 ## 12's swing, the last night's station door) — draws no chalk picture, untouched or done, while the
-## red arrow still ends on it. Headless runs never call `_draw()`, so this asks
+## red arrow still ends on it. A headless draw pass leaves no picture to read, so this asks
 ## `ContactPoint.draws_a_mark()`, the one question `_draw()` asks before it draws the chalk.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

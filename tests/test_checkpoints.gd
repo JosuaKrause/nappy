@@ -188,8 +188,8 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 
 ## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
 ## is the one body at a door whose picture is much wider than the body under it, so where the bar
-## actually lands is a question only the drawing can answer — and a headless run never calls
-## `_draw()` (see the **verify** skill), which is why `EventPictures.boom_arm_span()` states the
+## actually lands is a question only the drawing can answer — and a headless run's draw pass makes
+## no pixels (see the **verify** skill), which is why `EventPictures.boom_arm_span()` states the
 ## arm's own reach as a number the drawing and this check share.
 ##
 ## Three things about a street door, over every sampled day: the gate stands level with its two
@@ -1341,8 +1341,8 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
 ## M113, the inspection reads as one — *(2026-09-10, playtest 55: "both the guard and the player
 ## should disappear during the inspection ... after the inspection the player and the guard should
 ## reappear".)* Neither `Stroller.visible` nor `EventLook.draw()`'s own early return is
-## reachable from a test that never calls `_draw()` (headless runs never call it — see the
-## **verify** skill), so the state each of them reads is asserted directly instead.
+## readable from a test (a headless draw pass makes no pixels — see the **verify** skill), so the
+## state each of them reads is asserted directly instead.
 ##
 ## **The hut is not the guard, and only the guard goes in** — *(PLAYTEST-57: "the checkpoint house
 ## disappears ... all this is incorrect".)* A building that blinks out while she is inside it reads

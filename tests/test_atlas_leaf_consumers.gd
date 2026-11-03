@@ -3,12 +3,12 @@ extends RefCounted
 ## markers, traffic lights), the UI (`ModeButton`, `TouchControls`, `SaveIndicator`) and the
 ## interior (`InteriorScene`, `InteriorTileSet`) each draw from `AtlasLibrary` regions now instead
 ## of a `preload`ed texture. Two things a headless `check.sh`/`test.sh` boot cannot see on its own,
-## because headless never calls `_draw()` (see the **verify** skill): a region name a consumer's
-## drawing code holds a literal for that the bake never actually wrote, which would sit silent
-## until somebody looked at a screenshot; and a group a freed consumer leaves acquired forever,
-## which nothing else would ever notice either. This suite checks both, plus that every consumer
-## sharing a group counts references rather than loading a second page — each check on a library
-## of its own that it hands every consumer it builds, as the city and `main` hand theirs.
+## because a headless draw pass makes no pixels (see the **verify** skill): a region name a
+## consumer's drawing code holds a literal for that the bake never actually wrote, which would sit
+## silent until somebody looked at a screenshot; and a group a freed consumer leaves acquired
+## forever, which nothing else would ever notice either. This suite checks both, plus that every
+## consumer sharing a group counts references rather than loading a second page — each check on a
+## library of its own that it hands every consumer it builds, as the city and `main` hand theirs.
 
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 

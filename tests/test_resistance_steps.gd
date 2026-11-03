@@ -157,8 +157,8 @@ func _test_walking_away_leaves_it_untouched(t) -> void:
 	_teardown_contact()
 
 ## `ContactPoint._draw_chalk()` reads `MARK` untouched and `MARK_TOUCHED` once `is_done` from the
-## baked `decoration` group instead of stroking a circle and two lines — headless never calls
-## `_draw()` (the **verify** skill), so this is the same region-table check
+## baked `decoration` group instead of stroking a circle and two lines — a headless draw pass makes
+## no pixels (the **verify** skill), so this is the same region-table check
 ## `tests/test_atlas_leaf_consumers.gd` runs for every other consumer that switched from code or a
 ## loaded texture to an `AtlasLibrary` region: a name the bake never wrote would otherwise sit
 ## silent until somebody looked at a screenshot.

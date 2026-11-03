@@ -261,8 +261,9 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
 ## re-running the owner's own `AgentLook.draw_body()` (pinned by the test above), and `_draw()` is retained —
 ## so a rim that is only re-traced while a channel is easing keeps whatever silhouette the owner had
 ## when the glow settled. That is the player's "a turning car will have the original halo while
-## turning". Headless never calls `_draw()`, so what is asserted here is the state the drawing reads
-## — the same division `tests/test_checkpoints.gd` draws for the checkpoint hut's own suppression.
+## turning". A headless draw leaves no picture to read, so what is asserted here is the state the
+## drawing reads — the same division `tests/test_checkpoints.gd` draws for the checkpoint hut's own
+## suppression.
 func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 	var agent := _car(t)
 	if agent == null:
@@ -389,11 +390,11 @@ func _turn_at(degrees: float) -> CarTurn:
 ## the halo is at the regular position".
 ##
 ## So the property is stated over the drawing rather than over the key: **wherever the anchor moves
-## by as much as half a pixel, the gate must have asked for a redraw.** Headless never calls
-## `_draw()`, so what is read back is whether the gate asked (`CrowdAgent.end_the_frame()` answers
-## it) — the same division `_test_the_rim_is_re_traced_under_a_steady_glow()` above already makes.
-## The gate is run with a delta of zero: it is the key being checked here, not the clocks the same
-## call runs down.
+## by as much as half a pixel, the gate must have asked for a redraw.** A headless draw leaves no
+## picture to read, so what is read back is whether the gate asked (`CrowdAgent.end_the_frame()`
+## answers it) — the same division `_test_the_rim_is_re_traced_under_a_steady_glow()` above already
+## makes. The gate is run with a delta of zero: it is the key being checked here, not the clocks the
+## same call runs down.
 func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 	var agent := _car(t)
 	if agent == null:
@@ -548,9 +549,9 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 
 ## **The ring is lifted by the bob**: `EntityHalo.trace_offsets()` raises every offset of the ring by
 ## the lift it is given, and a car's lift is `CarLook.bob()`, which moves as the car drives on, so a
-## rising car's rim rises with it rather than sliding off it. Headless never calls `_draw()`, so what
-## the halo asks its owner for (`CrowdAgent._build_rim()` hands it the look's `bob` and `draw_body`)
-## is not observable here: this holds the two ends, the bob a car rides and the ring built from it.
+## rising car's rim rises with it rather than sliding off it. What the halo asks its owner for
+## (`CrowdAgent._build_rim()` hands it the look's `bob` and `draw_body`) is not read here, though a
+## headless run does draw: this holds the two ends, the bob a car rides and the ring built from it.
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	if agent == null:
