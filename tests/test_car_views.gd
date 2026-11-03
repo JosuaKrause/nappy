@@ -29,13 +29,14 @@ func run(t) -> void:
 	_test_a_fresh_heading_clears_the_previous_hold_in_one_step(t)
 	_test_every_sector_picture_agrees_with_the_strike_box(t)
 	_test_the_registration_is_continuous_across_a_sector_boundary(t)
+	await _test_the_halo_redraws_the_same_body(t)
 	await _test_the_rim_is_re_traced_under_a_steady_glow(t)
 	_test_the_rim_and_the_picture_share_one_footprint(t)
 	_test_the_redraw_gate_carries_the_live_anchor(t)
 	_test_wheels_share_the_body_canvas(t)
 	_test_a_moving_car_bobs_and_a_stopped_car_sits_still(t)
 	_test_the_bob_is_driven_by_ground_covered(t)
-	_test_the_halo_rides_the_bob(t)
+	await _test_the_halo_rides_the_bob(t)
 	_test_the_redraw_gate_follows_the_bob(t)
 	_rig.free_city()
 
@@ -256,6 +257,99 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
 				("crossing the %.1f degree boundary moves the drawn ground line by %.3fpx, which is "
 				+ "the boundary's own share of the box's rotation rather than a jump")
 				% [angle, moved])
+
+## **An atlas that notes what a halo traces.** It hands out the same regions as any library, and
+## for each one asked for while `halo` is tracing a copy it notes the region and where that copy
+## stands: `EntityHalo._on_draw()` tells `Sprites` each copy's ring offset
+## (`Sprites.base_transform_of()` reads it back) before it re-runs the owner's body drawing, and puts
+## it back to identity when its pass ends, so a region the car's own `_draw()` asks for is not noted.
+## Each of the halo's draw passes is one entry of `passes`, closed by the halo's own `draw` signal,
+## which a headless run emits like any other. Handed to a car the way the crowd hands its agents
+## their library (`CrowdAgent.atlas`).
+class TracingAtlas extends AtlasLibrary:
+	var halo: EntityHalo
+	## `[region, the copy's offset]` for every region asked for in the pass under way.
+	var traced: Array = []
+	## The finished passes, each a `traced` list.
+	var passes: Array = []
+
+	func watch(rim: EntityHalo) -> void:
+		halo = rim
+		halo.draw.connect(_on_halo_drawn)
+
+	func region(name: StringName) -> AtlasTexture:
+		if halo != null and is_instance_valid(halo):
+			var base := Sprites.base_transform_of(halo)
+			if base != Transform2D.IDENTITY:
+				traced.append([name, base.origin])
+		return super.region(name)
+
+	func _on_halo_drawn() -> void:
+		passes.append(traced)
+		traced = []
+
+## A car handed a `TracingAtlas`, in the tree with its rim lit, so its halo eases in and draws on
+## real frames. Answers the atlas, whose `halo` is the car's own rim; the caller frees the car, then
+## calls `_put_away()`.
+func _lit_and_traced(t, agent: CrowdAgent) -> TracingAtlas:
+	var atlas := TracingAtlas.new()
+	atlas.acquire(Crowd.ATLAS_GROUP)
+	agent.atlas = atlas
+	t.add_child(agent)
+	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	atlas.watch(agent.excitement.rim.entity_halo())
+	return atlas
+
+## The copies the halo traced in a whole draw pass begun after this call: the second pass from now,
+## since the first may have begun before the call. Empty if no such pass came within a few seconds.
+static func _next_whole_pass(t, atlas: TracingAtlas) -> Array:
+	var from := atlas.passes.size()
+	var started := Time.get_ticks_msec()
+	var frames := 0
+	while atlas.passes.size() < from + 2 and frames < 600 and Time.get_ticks_msec() - started < 10_000:
+		await t.get_tree().process_frame
+		frames += 1
+	return atlas.passes[from + 1] if atlas.passes.size() >= from + 2 else []
+
+static func _put_away(atlas: TracingAtlas) -> void:
+	atlas.halo = null
+	atlas.release(Crowd.ATLAS_GROUP)
+
+## **The halo re-draws this car's own body, so a per-sector picture change is a per-sector halo
+## change with nothing else to wire up.** `CrowdAgent._build_rim()` builds the rim with the look's
+## `draw_body`, and the rim re-runs it once per ring offset (`EntityHalo._on_draw()`). Read in one of
+## the halo's own draw passes: every region it asks for is the body, trim or wheels of the view this
+## car draws, and each of the three is traced at every offset of the ring.
+func _test_the_halo_redraws_the_same_body(t) -> void:
+	var agent := _car(t)
+	if agent == null:
+		return
+	var look := ViewRig.car_look(agent)
+	var atlas := _lit_and_traced(t, agent)
+	var copies: Array = await _next_whole_pass(t, atlas)
+	var view: String = CarLook.VIEW_BY_SECTOR[look.sector()]
+	var body := {
+		CarLook.region_of(CarLook.BODY_BY_VIEW[view]): 0,
+		CarLook.region_of(CarLook.TRIM_BY_VIEW[view]): 0,
+		CarLook.region_of(CarLook.WHEELS_BY_VIEW[view]): 0,
+	}
+	var other := 0
+	for copy in copies:
+		if body.has(copy[0]):
+			body[copy[0]] += 1
+		else:
+			other += 1
+	var every_offset := true
+	for region in body:
+		every_offset = every_offset and body[region] == EntityHalo.HALO_OFFSETS
+	t.check(not copies.is_empty() and other == 0 and every_offset,
+			("the halo redraws exactly this car's own %s body, trim and wheels at each of the %d "
+			+ "offsets (%s, and %d other regions), so a per-sector picture change is a per-sector "
+			+ "halo change with nothing else to wire up")
+			% [view, EntityHalo.HALO_OFFSETS, body, other])
+	# Freed with the halo still attached, as `_test_the_rim_is_re_traced_under_a_steady_glow()` is.
+	agent.free()
+	_put_away(atlas)
 
 ## **A steady glow is not a steady body, and the rim has to follow the body.** The rim is traced by
 ## re-running the owner's own `AgentLook.draw_body()` (pinned by the test above), and `_draw()` is retained —
@@ -547,30 +641,52 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 	slow.free()
 	fast.free()
 
-## **The ring is lifted by the bob**: `EntityHalo.trace_offsets()` raises every offset of the ring by
-## the lift it is given, and a car's lift is `CarLook.bob()`, which moves as the car drives on, so a
-## rising car's rim rises with it rather than sliding off it. What the halo asks its owner for
-## (`CrowdAgent._build_rim()` hands it the look's `bob` and `draw_body`) is not read here, though a
-## headless run does draw: this holds the two ends, the bob a car rides and the ring built from it.
+## **The halo rides the bob**: the rim is built with the car's own `CarLook.bob`
+## (`CrowdAgent._build_rim()`), and the ring `EntityHalo` traces is lifted by exactly what the body
+## is lifted by, so a rising car's rim rises with it rather than sliding off it. Read in the halo's
+## own draw passes: the car's picture is advanced by `CrowdAgent.advance_the_picture()`, the call
+## the crowd's tick makes, and a look beside it by the same tick, and every copy the halo traces
+## stands at an offset of `EntityHalo.trace_offsets()` lifted by that look's bob, up a rise and again
+## after the car drives on.
 func _test_the_halo_rides_the_bob(t) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	if agent == null:
 		return
 	var look := ViewRig.car_look(agent)
-	look.advance(agent.velocity(), WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x)
+	var up_the_rise := WheelBob.WAVELENGTH * 0.5 / Tuning.CAR_SPEED.x
+	agent.advance_the_picture(up_the_rise)
+	look.advance(agent.velocity(), up_the_rise)
 	var bob := look.bob()
 	t.check(bob < -0.5 * WheelBob.HEIGHT, "the car is well up its rise (%.3f)" % bob)
-	# The car drives on and the lift it rides moves with it.
-	look.advance(agent.velocity(), WheelBob.WAVELENGTH * 0.25 / Tuning.CAR_SPEED.x)
+	var atlas := _lit_and_traced(t, agent)
+	_check_the_copies_ride(t, await _next_whole_pass(t, atlas), bob, "up its rise")
+	# The car drives on and the lift it rides moves with it, and the ring with the lift.
+	var on := WheelBob.WAVELENGTH * 0.25 / Tuning.CAR_SPEED.x
+	agent.advance_the_picture(on)
+	look.advance(agent.velocity(), on)
 	t.check(look.bob() != bob, "the bob follows the car as it drives on")
-	bob = look.bob()
-	var flat := EntityHalo.trace_offsets(0.0)
-	var lifted := EntityHalo.trace_offsets(bob)
-	var rides := flat.size() == lifted.size()
-	for i in flat.size():
-		rides = rides and lifted[i].is_equal_approx(flat[i] + Vector2(0.0, bob))
-	t.check(rides, "every offset of the ring is lifted by the body's own %.3fpx" % bob)
+	_check_the_copies_ride(t, await _next_whole_pass(t, atlas), look.bob(), "once it has driven on")
 	agent.free()
+	_put_away(atlas)
+
+## That every copy in `copies` stands at an offset of the ring lifted by `bob`, and every offset of
+## the ring has a copy.
+func _check_the_copies_ride(t, copies: Array, bob: float, when: String) -> void:
+	var ring := EntityHalo.trace_offsets(bob)
+	var offsets := {}
+	var off_the_ring := 0
+	for copy in copies:
+		var on_the_ring := false
+		for i in ring.size():
+			if (copy[1] as Vector2).is_equal_approx(ring[i]):
+				offsets[i] = true
+				on_the_ring = true
+		if not on_the_ring:
+			off_the_ring += 1
+	t.check(not copies.is_empty() and off_the_ring == 0 and offsets.size() == ring.size(),
+			("%s, the halo traces the body at every offset of the ring lifted by the car's own "
+			+ "%.3fpx (%d of %d offsets, %d copies off it)")
+			% [when, bob, offsets.size(), ring.size(), off_the_ring])
 
 ## **A redraw gate is a promise about everything the drawing reads**, and a moving car's drawing now
 ## reads its bob. Driven down a lane, where nothing else about its picture changes, the key's third

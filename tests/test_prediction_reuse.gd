@@ -303,7 +303,7 @@ func _test_consumer_order(t) -> void:
 		# The picture key's one term that reads the prediction is the caret's strength; every other
 		# term reads state the two instances share by construction.
 		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(),
-				"redraw/caret key parity")
+				"event mark parity after the halo's total")
 		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "draw car mark parity")
 		t.check(cached.excitement.will_be_lethal(at) == reference.excitement.will_be_lethal(at), "event lethal prediction parity")
 		t.check(car.excitement.will_be_lethal(at) == reference_car.excitement.will_be_lethal(at), "car lethal prediction parity")

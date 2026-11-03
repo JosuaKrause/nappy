@@ -27,7 +27,9 @@ func run(t) -> void:
 # ------------------------------------------------------------------ helpers ---
 
 ## Every name in `names` is a region the bake actually wrote, and every one of them is on
-## `group` — the check a headless run cannot make by actually drawing one.
+## `group` — read off the bake's own table for every name a consumer can ask for, not only the ones
+## a drawn frame happens to reach, and a region on the wrong group would still draw in any frame
+## where that other group happened to be acquired.
 func _check_regions(t, names: Array, group: StringName, label: String) -> void:
 	var missing: Array[String] = []
 	var misfiled: Array[String] = []

@@ -68,9 +68,10 @@ func run(t) -> void:
 	await _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t)
 	_atlas.release(&"events")
 
-## A meter whose decay over the window is a number the test sets: what `ExcitementHalo` asks the
-## baby it is handed (`setup()`), and nothing else. Never in the tree (`Baby._ready()` wants a
-## stroller parent).
+## A meter whose decay over the window is a number the test sets: the one answer here the test
+## sets; the halo's other questions to the baby it is handed (`setup()`), `decay_rate()` and
+## `current_sensitivity()`, get a fresh `Baby`'s defaults. Never in the tree (`Baby._ready()` wants
+## a stroller parent).
 class DecayedBaby extends Baby:
 	var decay := 0.0
 
@@ -913,10 +914,13 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	var ever_lit := {}
 	var waits := 0
 	var waits_with_room := 0
-	var step := 0
+	# The walk is laid out in STEPs of frame time rather than in frames, as the rims' fades are, so
+	# it is the same walk however long the engine's frames are: `step` is how many STEPs the rims
+	# have been handed.
 	var from := clock.elapsed
 	while clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 3.0:
-		# 96px a frame along the row: past the picked set's whole reach every couple of frames.
+		var step := floori((clock.elapsed - from) / STEP)
+		# 96px a STEP along the row: past the picked set's whole reach every couple of STEPs.
 		player.global_position = Vector2(fmod(96.0 * float(step), 32.0 * float(count)), 0.0)
 		await t.get_tree().process_frame
 		# What the halo picked on that frame, by the same selection at the same point.
@@ -929,7 +933,6 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 			waits += 1
 			if probe.held < EntityHalo.RIM_BUDGET:
 				waits_with_room += 1
-		step += 1
 	t.check(ever_lit.size() > EntityHalo.RIM_BUDGET,
 			"the walk lit %d different sources, more than the budget of %d, so the cap was tested"
 			% [ever_lit.size(), EntityHalo.RIM_BUDGET])
@@ -1124,8 +1127,10 @@ func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.Fr
 ## **With the budget full, the strongest pick is lit first, not the one that began waiting first.**
 ## *(2026-10-04, the player: "if we have a limit with number of halos the selection should be by
 ## intensity so only the top k most intensive halos show at any one time".)* A weak source is picked
-## into a budget full of fading rims and waits; a stronger one is picked a few frames later. The
-## rims finish one at a time, and the first block that comes back goes to the stronger, newer pick.
+## into a budget full of fading rims and waits; `MAX_SOURCES - 1` stronger ones, all the picked set
+## has room for beside it, are picked a few frames later. The rims finish a few at a time, and no block goes to the
+## weaker pick while a stronger, newer one is still waiting: on no frame is the weak pick lit and a
+## strong one not.
 func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_earlier(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
@@ -1141,25 +1146,43 @@ func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_ear
 	var weak := ChurnSource.new()
 	events.add_child(weak)
 	events.list.append(weak)
-	var strong := ChurnSource.new()
-	events.add_child(strong)
-	events.list.append(strong)
+	# As many stronger picks as fit beside the weak one in the picked set, so a frame that hands back
+	# fewer blocks than that has a strong pick for every one of them.
+	var strong: Array[ChurnSource] = []
+	for i in ExcitementHalo.MAX_SOURCES - 1:
+		var source := ChurnSource.new()
+		events.add_child(source)
+		events.list.append(source)
+		strong.append(source)
+	var strong_waiting := func() -> int:
+		var waiting := 0
+		for source in strong:
+			if not source.rim.is_held():
+				waiting += 1
+		return waiting
 	weak.strength = 3.0
 	t.add_child(halo)
 	var frames := 0
 	var weak_waited := 0
+	var weak_before_strong := 0
 	var from := clock.elapsed
-	while not strong.rim.is_held() and clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 2.0:
+	while strong_waiting.call() > 0 and clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 2.0:
 		if frames == 2:
-			strong.strength = 30.0
+			for i in strong.size():
+				strong[i].strength = 30.0 + float(i)
 		await t.get_tree().process_frame
 		if not weak.rim.is_held():
 			weak_waited += 1
+		elif strong_waiting.call() > 0:
+			weak_before_strong += 1
 		frames += 1
-	var weak_held_when_strong_was_lit := weak.rim.is_held()
-	t.check(strong.rim.is_held() and weak_waited >= 2 and not weak_held_when_strong_was_lit,
-			"the strong pick, picked after the weak one had waited %d frames, was lit first"
-			% weak_waited)
+	# The rule is read on every frame rather than as the order within one: a frame long enough for
+	# several fades to end hands back several blocks at once, and the weak pick is rightly lit on it
+	# once every strong pick has one.
+	t.check(strong_waiting.call() == 0 and weak_waited >= 2 and weak_before_strong == 0,
+			("the %d strong picks, picked after the weak one had waited %d frames, were all lit no "
+			+ "later than it (%d frames with the weak one lit and a strong one waiting)")
+			% [strong.size(), weak_waited, weak_before_strong])
 	t.check(probe.most <= EntityHalo.RIM_BUDGET,
 			"at most %d rims were held at any moment, within the budget of %d"
 			% [probe.most, EntityHalo.RIM_BUDGET])
@@ -1217,15 +1240,19 @@ func _test_a_repicked_fading_rim_is_lit_again_at_once(t) -> void:
 ## - **A new strong pick every three frames**, seven at a time: each strong source is picked for 21
 ##   frames and never again, so more strong sources want a rim than the budget holds and the
 ##   budget is full of their rims. A block a finished fade gives back goes to a rimless strong pick
-##   if one is waiting. The weak pick joins late in the churn, so it is still unlit when it stops.
+##   if one is waiting. The weak pick joins late in the churn. Read on every frame: it is never
+##   given a block on a frame a strong pick is left waiting for one. (A frame long enough for
+##   several fades to end hands back more blocks than there are strong picks waiting, and then the
+##   weak pick is rightly lit in one of them, so its state on the churn's last frame is not the rule.)
 ## - **The same fifteen strong sources in turn**, seven at a time, the turn moving on every three
 ##   frames: each is dropped for 24 frames, less than a fade, so it is picked again while its rim is
-##   still fading and lit again in place, and all fifteen blocks stay held.
+##   still fading and lit again in place, and all fifteen blocks stay held. No block ever comes back,
+##   so the weak pick, which joins a fade's length into the churn, is still unlit when it stops.
 ##
-## The bound that holds is the other half: once every strong source stops being picked, the weak
-## one is lit within `EntityHalo.FADE_OUT_SECONDS` and the frame or two it takes to see the fade
-## end, whatever it was doing before. No fade is cut short and no block goes past the budget
-## throughout.
+## "Frames" in the turnovers are STEPs of frame time, so each is the same turnover however long the
+## engine's frames are. The bound that holds is the other half: once every strong source stops being picked, the weak one is lit within
+## `EntityHalo.FADE_OUT_SECONDS` and the frame or two it takes to see the fade end, whatever it was
+## doing before. No fade is cut short and no block goes past the budget throughout.
 func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -> void:
 	var fade_frames := int(ceil(EntityHalo.FADE_OUT_SECONDS / STEP))
 	var fresh := func(pool: Array, step: int) -> void:
@@ -1238,12 +1265,13 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 			var place := posmod(i - floori(step / 3.0), pool.size())
 			pool[i].strength = 50.0 if place < ExcitementHalo.MAX_SOURCES - 1 else 0.0
 	var churn_until := fade_frames * 3
-	for turnover in [["a new strong pick every three frames", 80, fresh, churn_until - 12],
-			["the same fifteen picked in turn", EntityHalo.RIM_BUDGET, in_turn, fade_frames]]:
+	for turnover in [["a new strong pick every three frames", 80, fresh, churn_until - 12, false],
+			["the same fifteen picked in turn", EntityHalo.RIM_BUDGET, in_turn, fade_frames, true]]:
 		var name: String = turnover[0]
 		var pool_size: int = turnover[1]
 		var set_strengths: Callable = turnover[2]
 		var weak_from: int = turnover[3]
+		var no_block_comes_back: bool = turnover[4]
 		var probe := RimProbe.new(t.get_tree())
 		var clock := HaloRig.FrameClock.new()
 		t.add_child(clock)
@@ -1269,9 +1297,12 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 		# turnover however long the engine's frames are: `step` is how many STEPs the rims have
 		# been handed.
 		var from := clock.elapsed
-		var lit_at_the_churns_end := false
 		var stopped_at := -1.0
 		var lit_after := -1.0
+		var weak_was_held := false
+		var lit_past_a_waiting_strong := 0
+		var contended := 0
+		var lit_at_the_churns_end := false
 		while true:
 			var step := floori((clock.elapsed - from) / STEP)
 			if step < churn_until:
@@ -1283,15 +1314,33 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 					source.strength = 0.0
 			weak.strength = 3.0 if step >= weak_from else 0.0
 			await t.get_tree().process_frame
+			# Every strong source told a strength this frame was picked (`MAX_SOURCES - 1` at a
+			# time), so one with no rim after the frame is a strong pick the halo left waiting.
+			var strong_waiting := 0
+			for source in pool:
+				if source.strength > 0.0 and not source.rim.is_held():
+					strong_waiting += 1
+			var weak_held: bool = weak.rim.is_held()
+			if weak_held and not weak_was_held and strong_waiting > 0:
+				lit_past_a_waiting_strong += 1
 			if stopped_at < 0.0:
+				if strong_waiting > 0:
+					contended += 1
 				lit_at_the_churns_end = weak.is_lit()
-			elif weak.is_lit():
+			weak_was_held = weak_held
+			if stopped_at >= 0.0 and weak.is_lit():
 				lit_after = clock.elapsed - stopped_at
 				break
-			elif clock.elapsed - stopped_at > EntityHalo.FADE_OUT_SECONDS * 2.0:
+			if stopped_at >= 0.0 and clock.elapsed - stopped_at > EntityHalo.FADE_OUT_SECONDS * 2.0:
 				break
-		t.check(not lit_at_the_churns_end,
-				"%s: the weak source is still unlit on the last frame of the churn" % name)
+		if no_block_comes_back:
+			t.check(not lit_at_the_churns_end,
+					"%s: the weak source is still unlit on the last frame of the churn" % name)
+		else:
+			t.check(contended > 0 and lit_past_a_waiting_strong == 0,
+					("%s: strong picks were left waiting for a block on %d frames of the churn, and "
+					+ "the weak source was never given one on a frame a strong pick was left waiting "
+					+ "(%d times)") % [name, contended, lit_past_a_waiting_strong])
 		var bound := EntityHalo.FADE_OUT_SECONDS + 2.0 * clock.longest
 		t.check(lit_after >= 0.0 and lit_after <= bound + 0.000001,
 				"%s: the weak source is lit within one fade and two frames (%.3f s) of the stronger "
