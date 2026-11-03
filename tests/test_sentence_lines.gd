@@ -26,30 +26,49 @@ func run(t) -> void:
 
 # ------------------------------------------------------------- the pure helper ---
 
+## A label at `font_size` whose prose wraps to `width`, the two things `break_for_label()` reads off
+## a screen's label. Never in the tree.
+static func _label(font_size: int, width: float) -> Label:
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", font_size)
+	label.custom_minimum_size.x = width
+	return label
+
 func _test_a_short_multi_sentence_text_stays_on_one_line(t) -> void:
 	var text := "A. B."
-	t.check(SentenceLines._wrap(text, 26, 100000.0) == text,
+	var wide := _label(26, 100000.0)
+	t.check(SentenceLines.break_for_label(text, wide) == text,
 			"a text that already fits the width keeps no break at all, whatever it is made of")
+	wide.free()
 
+## Where a sentence ends is read where it shows: at a width no two sentences can share, the text
+## breaks after every sentence and nowhere else.
 func _test_a_decimal_and_a_clock_reading_never_split(t) -> void:
+	var narrow := _label(26, 1.0)
 	var decimal := "The distance was 1.5 miles today."
-	t.check(SentenceLines._split_sentences(decimal) == [decimal],
+	t.check(SentenceLines.break_for_label(decimal, narrow) == decimal,
 			"a period followed by a digit, not a space, never ends a sentence — \"1.5\" stays whole")
 	var clock := "She started crying after 0:10. There is no settling her now."
-	t.check(SentenceLines._split_sentences(clock) == [
-				"She started crying after 0:10.", "There is no settling her now."],
+	t.check(SentenceLines.break_for_label(clock, narrow)
+				== "She started crying after 0:10.\nThere is no settling her now.",
 			"a period followed by a space still ends a sentence even right after a clock reading")
+	narrow.free()
 
 func _test_a_single_long_sentence_is_handed_back_unbroken(t) -> void:
 	var text := "A very long single sentence with no period anywhere inside it at all"
-	t.check(SentenceLines._wrap(text, 26, 1.0) == text,
+	var narrow := _label(26, 1.0)
+	t.check(SentenceLines.break_for_label(text, narrow) == text,
 			"one sentence too wide for the width is handed back with no `\\n` of its own, so the " +
 			"label's own autowrap is what wraps it, word by word")
+	narrow.free()
 
 func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> void:
-	var wrapped := SentenceLines._wrap("One sentence here. Another one there. And a third.", 26, 1.0)
+	var narrow := _label(26, 1.0)
+	var wrapped := SentenceLines.break_for_label(
+			"One sentence here. Another one there. And a third.", narrow)
 	t.check(wrapped == "One sentence here.\nAnother one there.\nAnd a third.",
 			"a width no sentence can share breaks after every one of them, never inside one")
+	narrow.free()
 
 # -------------------------------------------------------- the two pinned stills ---
 
@@ -65,7 +84,9 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 	end.result = GameEnums.DayResult.LOST_CRYING
 	end.reason = "She started crying. There is no settling her now."
 	end.elapsed_seconds = 10.0
-	summary.show_summary(SummaryModel.day_over(GameState, end), RunFlow.Mode.DAY_OVER)
+	var run := RunState.new()
+	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
+	run.free()
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	t.check(title.text == "She started crying after 0:10.\nThere is no settling her now.",
 			"the day summary's title breaks after the first sentence's own period, exactly where " +
@@ -79,10 +100,10 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
-	var saved_day := GameState.header.day
-	GameState.header.day = 1
-	summary.show_summary(SummaryModel.brief_for(GameState), RunFlow.Mode.BRIEF)
-	GameState.header.day = saved_day
+	var run := RunState.new()
+	run.header.day = 1
+	summary.show_summary(SummaryModel.brief_for(run), RunFlow.Mode.BRIEF)
+	run.free()
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	t.check(brief.text == "She won't settle indoors. It is quiet in the park.\n" +
 			"Walk until she sleeps, then bring her home.",
@@ -140,7 +161,8 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 
 func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
-	pause.use_run(GameState)
+	var run := RunState.new()
+	pause.use_run(run)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
@@ -153,4 +175,5 @@ func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
 							% joystick)
 		t.check(" ".join(lines) == source,
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
-	pause.queue_free()
+	pause.free()
+	run.free()
