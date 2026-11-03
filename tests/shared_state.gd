@@ -20,9 +20,8 @@ extends RefCounted
 ## an autoload or a `RefCounted` an autoload holds, as `<autoload>.<field>.<its field>`), arrays and
 ## dictionaries by their contents down to `DEPTH` levels.
 ##
-## The runner resets some of this on purpose before every suite (`_reset_globals`); the check does
-## not look past that, so a field the runner resets and a suite changes is named in `EXEMPT` with
-## that as its reason, and every other field is the suite's own to give back.
+## Every field is the suite's own to give back, except the memoised ones in `EXEMPT` and the parts
+## of the `GameState` autoload (see `_autoload`).
 
 const DEPTH := 3
 const MAX_ITEMS := 64
@@ -61,25 +60,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",
 	"mover._shared": "movers shared by their flags, a pure function of the flags",
-	# Put back before every suite by the runner's own `GameState.start_run()`, which resets every
-	# part of the run, and `GameState.use_trace()` (`_reset_globals`):
-	"GameState.attempt_spend._dawn_city_state": "reset by the runner's start_run before every suite",
-	"GameState.attempt_spend._dawn_scars": "reset by the runner's start_run before every suite",
-	"GameState.attempt_spend.city_state": "reset by the runner's start_run before every suite",
-	"GameState.attempt_spend.scars": "reset by the runner's start_run before every suite",
-	"GameState.calendar._trace": "replaced by the runner's use_trace before every suite",
-	"GameState.facts.completed_resistance_alley_tiles": "reset by the runner's start_run before every suite",
-	"GameState.header.day": "reset by the runner's start_run before every suite",
-	"GameState.header.player_is_male": "rolled again by the runner's start_run before every suite",
-	"GameState.header.run_seed": "set by the runner's start_run before every suite",
-	"GameState.pelican.draws": "reset by the runner's start_run before every suite",
-	"GameState.posters._dawn": "reset by the runner's start_run before every suite",
-	"GameState.posters.cells": "reset by the runner's start_run before every suite",
-	"GameState.posters.pasted_through": "reset by the runner's start_run before every suite",
-	"GameState.resistance._dawn_completed_steps": "reset by the runner's start_run before every suite",
-	"GameState.resistance._dawn_progress": "reset by the runner's start_run before every suite",
-	"GameState.resistance._dawn_sabotage_done": "reset by the runner's start_run before every suite",
-	"GameState.resistance.completed_steps": "reset by the runner's start_run before every suite",
 }
 
 ## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
@@ -189,7 +169,12 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 		var name: String = property["name"]
 		var value: Variant = node.get(name)
 		out["%s.%s" % [autoload, name]] = _describe(value, DEPTH)
-		_held(out, "%s.%s" % [autoload, name], value)
+		# The parts of the run's state are not compared: the runner's own `start_run()` and
+		# `use_trace()` put them back before every suite, so a suite's change to one cannot be told
+		# from the reset. `docs/todo/2026-10-18-minty-quail/run-state-handed-in.md` makes the run's
+		# state something each test is handed fresh rather than a global, and removes this skip.
+		if autoload != "GameState":
+			_held(out, "%s.%s" % [autoload, name], value)
 	for info in node.get_signal_list():
 		var signal_name: String = info["name"]
 		var targets: Array[String] = []
