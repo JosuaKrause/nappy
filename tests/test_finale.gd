@@ -2299,22 +2299,24 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	home.free()
 	run.free()
 
-## `--route` booted into the building: nothing presses the building's own brief, and once the
-## building is won the city is built, its brief raised, and the route rig presses that brief's
+## `--route` booted into the building: the building's own walker presses the building's brief
+## (`BuildingWalker`, the rig a route builds with the building), there is no city rig yet, and once
+## the building is won the city is built, its brief raised, and the route rig presses that brief's
 ## continue the way a key does — through the run flow's own continue, with no special case in `main`.
-## A rig hears no real press (`RigLock`), so the building's brief is continued by the summary's own
-## `continued` signal, the one a press sends, and the building is won by its service door's
-## `exit_requested`; the rig is found by the name `main` gives it.
+## The building is won by its service door's `exit_requested`, and the rig is found by the name
+## `main` gives it. The building's brief is left to the walker rather than continued here: a second
+## continue for it, still in flight when the city's brief comes up, would press the city's brief in
+## the rig's place.
 func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING,
 			PackedStringArray(["--route", "tunnel"]))
 	var main := escape.main
 	var summary := Boot.summary(main)
-	var title: Label = summary.get_node("Root/Center/Lines/Title")
-	t.check(main.get_node_or_null("RouteRig") == null and summary.is_showing()
-			and title.text == "Escape the building",
-			"a route booted into the building has no city to walk yet, and the building's brief stands")
-	summary.continued.emit(RunFlow.Mode.BRIEF)
+	await _let_frames_pass(t, 4)
+	t.check(main.get_node_or_null("RouteRig") == null and not summary.is_showing()
+			and Boot.day(main).spec.section == DaySpec.Section.BUILDING,
+			"a route booted into the building has no city to walk yet, and its walker pressed the"
+			+ " building's brief")
 	Boot.interior(main).exit_requested.emit()
 	t.check(main.get_node_or_null("RouteRig") != null, "winning the building builds the rig with the city")
 	await _let_frames_pass(t, 4)
@@ -2324,8 +2326,6 @@ func _test_a_route_rig_carries_the_building_on_into_the_city(t) -> void:
 	t.check(not t.get_tree().paused, "and the tree runs")
 	_free_the_escape(t, escape)
 
-## `--start-escape city --route`: the city's brief is pressed by the rig too, rather than skipped by
-## a branch in `main`, so the section walks without anyone pressing anything. **A parity check**: it
 ## held before the branch in `main` was removed, and guards that the removal changed nothing.
 func _test_a_route_rig_boots_the_city_section_and_walks(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY,
