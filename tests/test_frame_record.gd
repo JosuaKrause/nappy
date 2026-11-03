@@ -451,8 +451,13 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			"setting up the recorder switches the timing on, keeping the record a restart left")
 	await t.get_tree().process_frame
 	Boot.player(main).queue_redraw()
-	await UI.frames(t)
-	t.check(restarted.rows().back()[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER] >= 1,
+	# The redraw lands in one of the next stored frames, not necessarily the last: some frames
+	# hold no physics tick, and her stroller draws in the one that does.
+	var drawn_in := _rows_over(restarted, await _frames_counted(t, restarted, 3))
+	var drew_her := false
+	for row in drawn_in:
+		drew_her = drew_her or row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER] >= 1
+	t.check(drew_her and drawn_in.size() >= 2,
 			"her stroller's drawn frame is counted by the recorder's listening")
 	var end := recorder.get_node("ProcessEnd")
 	var nodes := 0
@@ -537,7 +542,9 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
 	t.check(once, "the crowd's timed tick steps every agent once, not twice and not never (%d agents)"
 			% agents.size())
 	# A node of the test's own ticks after the crowd and spends a measured time: had the crowd left
-	# its bucket open, that time would land in `crowd`; given back, it lands in the rest.
+	# its bucket open, that time would land in `crowd`; given back, it lands in the physics steps'
+	# rest, so the stored frame it ran in must show at least the span measured, however slow the
+	# frame was.
 	var later := _LaterTick.new()
 	later.process_physics_priority = 1000
 	t.get_tree().root.add_child(later)
@@ -545,17 +552,21 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
 	later.queue_free()
 	var charged := false
 	var fewest := true
-	var given_back := later.spent_us.size() > 0
+	var given_back := true
+	var matched := 0
 	for row in timed:
 		charged = charged or row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] > 0
 		fewest = fewest and row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] < agents.size()
-		given_back = given_back and row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] \
-				< (later.spent_us.min() as int)
+		for i in later.frames.size():
+			if row[FrameLedger.FIRST_COUNTER + FrameLedger.PROCESS_FRAME] == later.frames[i]:
+				matched += 1
+				given_back = given_back and row[FrameLedger.FIRST_BUCKET + FrameRecord.PHYSICS_REST] \
+						>= later.spent_us[i]
 	t.check(not timed.is_empty() and fewest,
 			"as one timed call for the whole crowd, never one an agent")
 	t.check(charged, "charged to crowd")
-	t.check(given_back, "and the clock goes back to what was running (%d ticks that spent time after it)"
-			% later.spent_us.size())
+	t.check(matched > 0 and given_back, "and the clock goes back to what was running (%d ticks matched to their frames)"
+			% matched)
 	record.stop()
 	await t.get_tree().process_frame
 	once = await _one_tick_steps_each_once(t, crowd, agents)
@@ -568,13 +579,16 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
 			"once the record stops, the tick steps every agent once and times nothing")
 	Engine.max_physics_steps_per_frame = steps
 
-## A node whose physics tick runs after the crowd's and spends 10 `SPENT_US`, measured, each tick.
+## A node whose physics tick runs after the crowd's and spends at least 10 `SPENT_US`, measured, each tick.
 class _LaterTick extends Node:
+	## The engine frame each tick ran in, and the time it spent, measured.
+	var frames: Array[int] = []
 	var spent_us: Array[int] = []
 
 	func _physics_process(_delta: float) -> void:
 		var from := Time.get_ticks_usec()
 		OS.delay_usec(10 * SPENT_US)
+		frames.append(Engine.get_process_frames())
 		spent_us.append(Time.get_ticks_usec() - from)
 
 ## Whether one physics tick moves every agent's clock by exactly that tick's length.
