@@ -50,14 +50,14 @@ func _init(screen: TelemetryScreen, clock: Clock, note: Callable) -> void:
 	_note = note
 
 ## Whether a sequence is being captured now.
-func is_active() -> bool:
+func _is_active() -> bool:
 	return _burst.size() > 0
 
 ## Starts a sequence in a new folder under `directory`, which is "" when the run has nowhere to put
 ## one. Refused while another is active, when the screen cannot draw or there is no folder, and when
 ## the folder or its first manifest cannot be written; each refusal is a line in the run log.
 func start(directory: String, context: String) -> bool:
-	if is_active():
+	if _is_active():
 		_note.call("shot", "burst refused: another burst is active")
 		return false
 	if directory == "" or not _screen.can_draw():
@@ -94,7 +94,7 @@ func start(directory: String, context: String) -> bool:
 ## Ends the active sequence, if any, keeping its frames and a manifest that says it was cut short
 ## and why. A day or a run ending calls this.
 func cancel(reason: String) -> void:
-	if is_active():
+	if _is_active():
 		_finish(int(_burst["token"]), "cancelled", reason)
 
 ## A folder under `directory` no sequence has used: an existing folder and an existing file are

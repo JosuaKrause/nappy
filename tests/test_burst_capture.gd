@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)
 	_test_cancellation_and_stale_callbacks_cannot_cross_sequences(t)
+	_test_a_day_or_a_run_ending_cuts_the_active_burst_short(t)
 	_test_metadata_write_failure_stops_without_claiming_success(t)
 
 const UI := preload("res://tests/ui_screens.gd")
@@ -177,6 +178,19 @@ class Bench:
 		var line := lines.back() as String
 		return "%s/%s" % [root, line.get_slice("/", line.get_slice_count("/") - 1)]
 
+	## Whether a sequence is running, asked the way a person asking for another finds out: a second
+	## request is refused as an overlap while one is, and starts (and is cut off again) when none is.
+	func busy() -> bool:
+		var before := lines.size()
+		var refused := true
+		if recorder.start(root, "probe"):
+			recorder.cancel("probe over")
+			refused = false
+		else:
+			refused = lines.back().contains("another burst is active")
+		lines.resize(before)
+		return refused
+
 	## Draws one frame on the screen.
 	func draw() -> void:
 		screen.drew.emit()
@@ -312,7 +326,7 @@ func _frames_until_the_end(seconds: float) -> Array:
 	bench.close()
 	return found
 
-## A day or a run ending cancels the sequence; a deadline with nothing drawn cancels it too. And a
+## A recorder cancelled by hand, or a deadline with nothing drawn, cancels the sequence. And a
 ## deadline or a frame wait left over from a sequence that has ended does nothing to the next one.
 func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 	var bench := Bench.new("lifecycle")
@@ -321,7 +335,6 @@ func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 	bench.draw()
 	bench.clock.advance(0.1)
 	bench.recorder.cancel("day ended")
-	t.check(not bench.recorder.is_active(), "ending a day cancels its active burst")
 	var cancelled := bench.manifest(cut)
 	t.check(cancelled.get("status") == "cancelled" and cancelled.get("reason") == "day ended"
 				and (cancelled.get("frames", []) as Array).size() == 1,
@@ -343,11 +356,37 @@ func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 	bench.clock.advance(BurstRecorder.DURATION_SECONDS - 0.5)
 	bench.draw()
 	var current := bench.manifest(newer)
-	t.check(bench.recorder.is_active() and current.get("status") == "active"
+	t.check(current.get("status") == "active"
 				and (current.get("frames", []) as Array).size() == 1
 				and bench.manifest(old).get("reason") == "day ended"
 				and (bench.manifest(old).get("frames", [1]) as Array).is_empty(),
 			"an old timer or post-draw coroutine cannot finalize a newer sequence")
+	bench.close()
+
+## `Telemetry.end_day()` and `end_run()` each cut the active sequence short, with their own reason.
+## The one private write of the suite: `Telemetry._bursts` is swapped for a recorder on this bench's
+## screen, clock and scratch folder (the game's own is on the viewport, which draws nothing here)
+## and put back, since `Telemetry` hands its recorder to no caller and takes none.
+func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
+	var bench := Bench.new("day-and-run")
+	var game_recorder = Telemetry._bursts
+	Telemetry._bursts = bench.recorder
+	Telemetry.begin_memory_log()
+	var day := bench.start("cut by the day")
+	bench.draw()
+	Telemetry.end_day()
+	var by_day := bench.manifest(day)
+	t.check(by_day.get("status") == "cancelled" and by_day.get("reason") == "day ended"
+				and (by_day.get("frames", []) as Array).size() == 1 and not bench.busy(),
+			"ending a day cuts its active burst short, keeping the frames drawn")
+	var run := bench.start("cut by the run")
+	bench.draw()
+	Telemetry.end_run()
+	var by_run := bench.manifest(run)
+	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
+				and not bench.busy(),
+			"ending the run cuts its active burst short")
+	Telemetry._bursts = game_recorder
 	bench.close()
 
 ## A manifest that can no longer be written ends the sequence, and the log never calls it a
@@ -356,12 +395,12 @@ func _test_metadata_write_failure_stops_without_claiming_success(t) -> void:
 	var bench := Bench.new("write-failure")
 	_block_the_manifest(bench.start("blocked on a frame"))
 	bench.draw()
-	t.check(not bench.recorder.is_active()
+	t.check(not bench.busy()
 				and bench.lines.back().contains("burst abandoned: metadata write failed"),
 			"a manifest path occupied by a directory reports its write failure")
 	_block_the_manifest(bench.start("blocked at the deadline"))
 	bench.clock.advance(BurstRecorder.DURATION_SECONDS)
-	t.check(not bench.recorder.is_active(), "a metadata failure always terminates the recorder")
+	t.check(not bench.busy(), "a metadata failure always terminates the recorder")
 	t.check(bench.lines.back().contains("burst abandoned")
 				and _count(bench.lines, "burst complete") == 0,
 			"a failed final write is never logged as a successful burst")

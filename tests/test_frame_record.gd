@@ -536,15 +536,26 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
 	var once := not agents.is_empty() and await _one_tick_steps_each_once(t, crowd, agents)
 	t.check(once, "the crowd's timed tick steps every agent once, not twice and not never (%d agents)"
 			% agents.size())
+	# A node of the test's own ticks after the crowd and spends a measured time: had the crowd left
+	# its bucket open, that time would land in `crowd`; given back, it lands in the rest.
+	var later := _LaterTick.new()
+	later.process_physics_priority = 1000
+	t.get_tree().root.add_child(later)
 	var timed := _rows_over(ledger, await _frames_counted(t, ledger, 6))
+	later.queue_free()
 	var charged := false
 	var fewest := true
+	var given_back := later.spent_us.size() > 0
 	for row in timed:
 		charged = charged or row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] > 0
 		fewest = fewest and row[FrameLedger.FIRST_COUNTER + FrameLedger.TIMER_CALLS] < agents.size()
+		given_back = given_back and row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] \
+				< (later.spent_us.min() as int)
 	t.check(not timed.is_empty() and fewest,
 			"as one timed call for the whole crowd, never one an agent")
 	t.check(charged, "charged to crowd")
+	t.check(given_back, "and the clock goes back to what was running (%d ticks that spent time after it)"
+			% later.spent_us.size())
 	record.stop()
 	await t.get_tree().process_frame
 	once = await _one_tick_steps_each_once(t, crowd, agents)
@@ -556,6 +567,15 @@ func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
 	t.check(once and untouched,
 			"once the record stops, the tick steps every agent once and times nothing")
 	Engine.max_physics_steps_per_frame = steps
+
+## A node whose physics tick runs after the crowd's and spends 10 `SPENT_US`, measured, each tick.
+class _LaterTick extends Node:
+	var spent_us: Array[int] = []
+
+	func _physics_process(_delta: float) -> void:
+		var from := Time.get_ticks_usec()
+		OS.delay_usec(10 * SPENT_US)
+		spent_us.append(Time.get_ticks_usec() - from)
 
 ## Whether one physics tick moves every agent's clock by exactly that tick's length.
 func _one_tick_steps_each_once(t, crowd: Crowd, agents: Array[CrowdAgent]) -> bool:
