@@ -1,7 +1,8 @@
 # minty-quail — The route rig's planning moves into a planner the rig calls (tests through public seams) · 2026-11-03
 
 minty-quail's `tests-public-seams.md` and `run-state-handed-in.md`: the route rig suite and the
-fallen-trees suite. The item lists the twelve route and recipe suites still to do.
+fallen-trees suite. The item lists the eleven route and recipe suites still to do;
+`test_scene_recipe.gd` and `test_routes_kerb_tint.gd` had no private read to convert.
 
 **Built.**
 - `RouteRigPlanner` (`src/dev/route_rig_planner.gd`) holds the route rig's target resolution,
@@ -16,7 +17,10 @@ fallen-trees suite. The item lists the twelve route and recipe suites still to d
   presses and the `route` lines it writes. Three setup checks added. `test_routes_fallen_trees.gd`
   checks every closure `plan_day()` puts on a bare street rather than calling
   `ClosurePlanner._pick_kind()`.
-- About forty mutation runs, each failing the check that guards the code broken.
+- About forty mutation runs, each failing the check that guards the code broken. The first review
+  found the suite counting awaited frames as physics ticks (a slow frame runs several), which failed
+  in CI, and one test building a second city beside the shared one; the suite counts real ticks and
+  that test runs after the shared day is freed.
 
 **A rig bug the real-frame test found:** when a stall check started its three-second wait, the rig
 still pressed toward the next waypoint that frame and nothing released it, so she walked on into
