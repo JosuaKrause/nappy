@@ -685,7 +685,8 @@ question, and it is one subtraction.
 
 ### What a frame cost
 
-The `frame` entry, once a second:
+The `frame` entry, once a second, written by the observer's `FrameWatch`
+(`src/telemetry/frame_watch.gd`), which the observer hands each frame's length:
 
 ```
   12.0  frame    fps 118, worst frame 22.4ms, draws 342, objects 351, primitives 4120, process 4.21ms, physics 0.83ms
@@ -747,8 +748,8 @@ anything at all.
 ### What a spike was
 
 `frame` gives the engine's own per-second maximum, and the engine cannot say *when in the second*
-that maximum fell or what the game was doing at the time. Under `--spikes`, the observer keeps the
-same second's running mean of its own frame deltas — the mean of every frame already seen since
+that maximum fell or what the game was doing at the time. Under `--spikes`, the observer's frame
+watch keeps the same second's running mean of its frame deltas — the mean of every frame already seen since
 the last report, reusing `frame`'s own interval rather than a window of its own — and remembers
 whichever frame ran past twice that mean, the worst one if more than one did:
 

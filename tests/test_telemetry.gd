@@ -16,6 +16,8 @@ extends RefCounted
 ## fourteen thousand checks below it is running a file write it did not ask for.
 
 const BuildingEvents := preload("res://tests/building_events.gd")
+## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 
 ## One observer in the tree watching a running day clock, with the player, the baby and the clock
 ## it is handed — what `main` hands a day's observer (`city` given: `setup()`) or the escape's
@@ -40,7 +42,7 @@ class Rig extends RefCounted:
 		tree = parent.get_tree()
 		city = a_city
 		if city != null:
-			observer.setup(GameState, city, player, baby, clock, null, false)
+			observer.setup(city.run, city, player, baby, clock, null, false)
 		else:
 			observer.setup_escape(player, baby, clock, false)
 			if map != null:
@@ -99,6 +101,7 @@ func run(t) -> void:
 	_test_steady_frames_write_no_spike_line(t)
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
+	await _test_the_observer_watches_its_frames_on_real_frames(t)
 	_test_a_baked_page_says_which_moment_loaded_it(t)
 	# Whichever test ran last leaves its clock and attempt count behind; a log opened and closed
 	# puts both back, so the suite hands the shared state on as it found it in any order.
@@ -364,7 +367,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	player.global_position = scene.start_world_position()
 	observer.start_section(true)
 
-	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	player.global_position = city.map.home_world_position()
@@ -654,10 +657,9 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
 func _test_a_lost_day_restarts_the_trail(t) -> void:
-	var saved_day := GameState.header.day
-	GameState.header.day = 1
 	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
+	city.run.header.day = 1
 	t.add_child(city)
 	city.build(map)
 	var rig := Rig.new(t, null, city)
@@ -678,7 +680,6 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 			"a new day's start — including a rewound day's — starts the trail over from nothing")
 
 	Telemetry.end_run()
-	GameState.header.day = saved_day
 	rig.free_all()
 	city.free()
 
@@ -689,7 +690,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
 func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
 	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
@@ -744,7 +745,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## watcher did reached `map`, `city.events` or a `day_rng()` stream.
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	var consumed: Array[String] = []
@@ -1277,9 +1278,9 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	Telemetry.end_run()
 	_delete_recursive(run_dir)
 
-## `GameState.calendar.finish_day()` retries a lost day by calling `_start_day()` again with the same
-## `GameState.header.day` — `begin_day()` sees the same day number twice — and `write_map()` is called
-## once per attempt from `main.gd`. Without the attempt in the name the second call's map would
+## The run's calendar (`RunCalendar.finish_day()`) retries a lost day by starting it again with the
+## same day number — `begin_day()` sees the same day twice — and `write_map()` is called
+## once per attempt by `RunSession`. Without the attempt in the name the second call's map would
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
 	var map := CityGenerator.generate(4242)
@@ -1363,26 +1364,27 @@ func _test_the_escape_observer_is_handed_the_spikes_flag(t) -> void:
 	for node in [on, off, player, baby, clock]:
 		node.free()
 
-## A real, empty `City` and a bare `Stroller` standing still — the least the frame watcher needs to
-## read (`_city.events.instances()`, `_map.world_to_tile(_player.global_position)`) without
-## crashing. `spikes_on` is set directly here; `main` hands it in through `setup()`.
-func _spike_rig(t) -> Rig:
-	var map := CityGenerator.generate(9001)
-	var city: City = RunCity.of_the_run(preload("res://scenes/world/city.tscn"))
-	t.add_child(city)
-	city.build(map)
-	var rig := Rig.new(t, null, city)
-	rig.player.global_position = city.map.home_world_position()
-	rig.observer.spikes_on = true
-	return rig
+## A frame watch writing into lines of the test's own, as the observer's writes into the run log
+## (`TelemetryObserver` hands its `FrameWatch` the log's `note`), and fed a series of frame lengths
+## the way the observer hands it each frame's: a frame's length is the one thing a real frame cannot
+## be told. Under `--spikes` (`spikes`) the watch asks the scene her tile and the live event count,
+## here a street corner with nothing on it.
+class Frames:
+	var lines: Array[String] = []
+	var watch := FrameWatch.new(noted)
 
-## Feeds a series of frame deltas straight into the observer's frame watcher — a frame's length is
-## the one thing a real frame cannot be told, so no `_process` and no real clock. A seam that would
-## end this private call is a source of frame lengths the observer is handed, as it is handed the
-## day's clock.
-func _feed_frames(rig: Rig, deltas: Array) -> void:
-	for delta in deltas:
-		rig.observer._watch_the_frame(delta)
+	func noted(kind: String, text: String) -> void:
+		lines.append("%s %s" % [kind, text])
+
+	func feed(deltas: Array, spikes := true) -> void:
+		for delta: float in deltas:
+			watch.watch(delta, spikes, scene)
+
+	func scene() -> Array:
+		return [Vector2i(12, 30), 0]
+
+	func spikes() -> Array[String]:
+		return lines.filter(func(line: String) -> bool: return line.begins_with("spike"))
 
 ## `count` copies of `dt`, for building a second's worth of frames without spelling each one out.
 func _steady_frames(count: int, dt: float) -> Array:
@@ -1391,27 +1393,16 @@ func _steady_frames(count: int, dt: float) -> Array:
 		out.append(dt)
 	return out
 
-func _spike_lines(t) -> Array:
-	var lines: Array = Telemetry.current_log().lines
-	Telemetry.end_run()
-	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
-	var spikes: Array = []
-	for line in lines:
-		if line.contains("spike"):
-			spikes.append(line)
-	return spikes
-
 ## One frame at five times the mean of the ten steady frames before it, padded out with more
 ## steady frames so the second's own `frame`/`spike` report actually closes.
 func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t) -> void:
-	Telemetry.begin_memory_log()
-	var rig := _spike_rig(t)
+	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.1)
 	deltas.append_array(_steady_frames(36, 0.02))
-	_feed_frames(rig, deltas)
+	frames.feed(deltas)
 
-	var spikes := _spike_lines(t)
+	var spikes := frames.spikes()
 	t.check(spikes.size() == 1,
 			"one frame past twice the mean writes exactly one spike line (got %d)" % spikes.size())
 	if not spikes.is_empty():
@@ -1420,33 +1411,25 @@ func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t) -> void:
 		t.check(spikes[0].contains("mean 20.0ms"),
 				"and the mean it was measured against (got '%s')" % spikes[0])
 
-	rig.free_all()
-	rig.city.free()
-
 ## No frame in a second of ordinary frames is ever twice the mean of its own neighbours.
 func _test_steady_frames_write_no_spike_line(t) -> void:
-	Telemetry.begin_memory_log()
-	var rig := _spike_rig(t)
-	_feed_frames(rig, _steady_frames(55, 0.02))
-
-	t.check(_spike_lines(t).is_empty(), "a second of ordinary frames writes no spike line")
-
-	rig.free_all()
-	rig.city.free()
+	var frames := Frames.new()
+	frames.feed(_steady_frames(55, 0.02))
+	t.check(frames.spikes().is_empty() and frames.lines.size() == 1,
+			"a second of ordinary frames writes no spike line")
 
 ## Two frames qualify in the same second — a big one, then a smaller one that still clears twice
 ## the (now higher) mean. The rate limit keeps the worse of the two, not the more recent.
 func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
-	Telemetry.begin_memory_log()
-	var rig := _spike_rig(t)
+	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.5)
 	deltas.append_array(_steady_frames(5, 0.02))
 	deltas.append(0.15)
 	deltas.append_array(_steady_frames(5, 0.02))
-	_feed_frames(rig, deltas)
+	frames.feed(deltas)
 
-	var spikes := _spike_lines(t)
+	var spikes := frames.spikes()
 	t.check(spikes.size() == 1,
 			"a second rate-limited to at most one spike line, however many frames qualify (got %d)"
 			% spikes.size())
@@ -1454,25 +1437,46 @@ func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
 		t.check(spikes[0].contains("500.0ms"),
 				"and it names the worse of the two, not the more recent (got '%s')" % spikes[0])
 
-	rig.free_all()
-	rig.city.free()
-
 ## The same series as the first test, with the flag off: nothing about the frame accounting
 ## changes, but no spike line is ever written.
 func _test_no_spike_line_with_the_flag_off(t) -> void:
-	Telemetry.begin_memory_log()
-	var rig := _spike_rig(t)
-	rig.observer.spikes_on = false
+	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.1)
 	deltas.append_array(_steady_frames(36, 0.02))
-	_feed_frames(rig, deltas)
+	frames.feed(deltas, false)
 
-	t.check(_spike_lines(t).is_empty(),
+	t.check(frames.spikes().is_empty() and frames.lines.size() == 1,
 			"with --spikes off, no spike line even across a frame far past twice the mean")
 
+## The observer on real frames, `--spikes` given, in a real city with her standing at home: it hands
+## its frame watch each frame's length and, for the spike line, her tile and the live events, so a
+## `frame` line reaches the run log once a second of frames has passed. The engine's time scale
+## makes that second a handful of frames, and is put back after.
+func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
+	t.add_child(city)
+	city.build(CityGenerator.generate(9001))
+	var rig := Rig.new(t, null, city)
+	rig.player.global_position = city.map.home_world_position()
+	rig.observer.spikes_on = true
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, Rig.LENGTH)
+	var scale := Engine.time_scale
+	Engine.time_scale = 50.0
+	var framed := false
+	for i in 400:
+		await rig.frame()
+		framed = Telemetry.current_log().lines.any(
+				func(line: String) -> bool: return line.substr(8, 9) == "frame    ")
+		if framed:
+			break
+	Engine.time_scale = scale
+	t.check(framed, "the observer's frames write the frame line once a second of them has passed")
+	Telemetry.end_run()
+	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
 	rig.free_all()
-	rig.city.free()
+	city.free()
 
 ## A baked page says which of the two sanctioned moments it was read from disk in, how long the
 ## read took and how big the page is — the line a reader scans to answer "did anything load in a
