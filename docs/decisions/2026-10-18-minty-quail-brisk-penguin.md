@@ -7,6 +7,11 @@ Four are converted; the item says what the other two still read.
 **Built.**
 - No public member added. `StillWatch` counts its hold in `_physics_process()` rather than
   `_process()`, so a hold is a whole number of fixed-length ticks a test can count.
+- `StillWatch.setup()` is handed the directory its pictures go in, which `main` fills from the
+  telemetry folder (`StillWatch.telemetry_picture_dir()`), so the suite hands it a scratch directory:
+  the first review found the suite writing the player's real userdata, against the player's rule that
+  tests touch nothing real (inbox #984 in brisk-pelican). The runner's shared-state check compares
+  `Engine.physics_ticks_per_second`, which the suite changes, and the verify skill names it.
 - `test_debug_layers.gd` (private-read lines 53 to 0) sets the readout up through
   `RunConfig.parse()`, pushes keys 1 to 7 through the viewport, finds the `DebugLayers` node by name
   and counts redraws over real frames. `test_auto_screenshot.gd` (39 to 0) builds the rig with
