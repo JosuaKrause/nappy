@@ -206,8 +206,8 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 	var blocker := _place_a_car(true, -1.0, -1, 0.0, rests_at)
 	var figure_at := Vector2(blocker.position.x,
 			rests_at - Tuning.CAR_STRIKE_HALF_LENGTH - CarStrategy.FIGURE_SETBACK - 2.0)
-	# Joined beside the lane and stepped into it on the second frame, so it is one that has moved:
-	# a crowd car stands for a figure it has seen move, not for one that was only ever placed.
+	# Joined beside the lane and stepped into it on the second frame. It is built standing its ground
+	# (`stood_round`), so the separation pass keeps it in the lane whether or not it has moved.
 	var figure := _a_figure(figure_at + Vector2(6.0, 0.0))
 	# Put into the index before the car is ever asked, because `TrafficIndex` is rebuilt at the *end*
 	# of a frame: a car that asks on the very first one reads an empty index and commits to a spot
