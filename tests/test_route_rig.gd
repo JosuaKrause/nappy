@@ -26,8 +26,8 @@ const DAY := 6
 ## these checks hold on seeds 4 and 5 and fail on 1, 2 and 3.
 const RUN_SEED := 4
 ## How much faster than real time a test's stretch of real physics frames runs: the engine hands
-## each frame `Engine.time_scale` times its ordinary length, so the rig's half-second checks and
-## three-second waits pass in a quarter of the wall time (`_frames_for()`).
+## each tick `Engine.time_scale` times its ordinary length, so the rig's half-second checks and
+## three-second waits pass in a quarter of the wall time (`_real_frames()`).
 const FAST := 4.0
 
 var _run: RunState
@@ -237,25 +237,46 @@ func _pressed() -> Vector2:
 	return Vector2(Input.get_action_strength(&"move_right") - Input.get_action_strength(&"move_left"),
 			Input.get_action_strength(&"move_down") - Input.get_action_strength(&"move_up"))
 
-## One real physics frame and the process frame after it, at `FAST` times real time: every node in
-## the tree takes its `_physics_process()` once — the rig presses, she walks — before the test reads
-## on. Answers the time the physics ticks it covered took, counted rather than assumed: after a slow
-## frame the engine runs up to `physics/common/max_physics_steps_per_frame` ticks in one frame, and
-## the rig's clock runs with every one of them.
-func _frame(t) -> float:
-	var before := Engine.get_physics_frames()
-	await t.get_tree().physics_frame
-	await t.get_tree().process_frame
-	return (Engine.get_physics_frames() - before) / float(Engine.physics_ticks_per_second) * Engine.time_scale
+## Real frames, each exactly one physics tick, at `scale` times real time: every node in the tree
+## takes its `_physics_process()` once a frame — the rig presses, she walks — and `each` is called
+## after every frame with the day time run so far, which stops the run by answering true. Stops
+## after `ticks` ticks at the latest, and answers the day time the frames took. **Every stretch of
+## real frames in this suite goes through here.** After a slow frame the engine would catch up by
+## running several ticks in one (up to `Engine.max_physics_steps_per_frame`), so a check made
+## between frames would miss what happened on the ticks inside it — the rig's first plan makes the
+## next frame such a frame even on a quiet machine, and a loaded one makes them anywhere. Held to
+## one tick a frame, the simulation slows down under load rather than catching up, and the frame
+## timeline is the tick timeline. The engine's own values are put back however the run ends: `each`
+## cannot return past this function.
+func _real_frames(t, ticks: int, each: Callable = Callable(), scale := FAST) -> float:
+	var clock := Engine.time_scale
+	var steps := Engine.max_physics_steps_per_frame
+	Engine.time_scale = scale
+	Engine.max_physics_steps_per_frame = 1
+	var tick := scale / Engine.physics_ticks_per_second
+	var ran := 0
+	while ran < ticks:
+		var before := Engine.get_physics_frames()
+		await t.get_tree().physics_frame
+		await t.get_tree().process_frame
+		ran += Engine.get_physics_frames() - before
+		if each.is_valid() and each.call(ran * tick):
+			break
+	Engine.max_physics_steps_per_frame = steps
+	Engine.time_scale = clock
+	return ran * tick
+
+## The ticks `seconds` of day time take at `FAST`, rounded up.
+func _ticks_for(seconds: float) -> int:
+	return ceili(seconds * Engine.physics_ticks_per_second / FAST - 0.001)
 
 ## Real frames for `seconds` of day time at `FAST`.
 func _frames_for(t, seconds: float) -> void:
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
-	var elapsed := 0.0
-	while elapsed < seconds:
-		elapsed += await _frame(t)
-	Engine.time_scale = clock
+	await _real_frames(t, _ticks_for(seconds))
+
+## `count` real frames at real time, one tick each.
+func _steps(t, count: int) -> void:
+	await _real_frames(t, count, Callable(), 1.0)
 
 ## Ends the rig's memory log and frees what a rig test built.
 func _end_rig(rig: RouteRig, day: DayController) -> void:
@@ -959,23 +980,18 @@ func _test_pace_does_not_advance_the_target(t) -> void:
 	if settle.is_empty():
 		return
 	var at: Vector2 = settle["at"]
-	var farthest := 0.0
-	var turned := false
-	var last_x := 0.0
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
-	var elapsed := 0.0
-	while elapsed < 3.0:
-		elapsed += await _frame(t)
-		farthest = maxf(farthest, _stroller.global_position.distance_to(at))
+	var seen := {"farthest": 0.0, "turned": false, "last_x": 0.0}
+	await _real_frames(t, _ticks_for(3.0), func(_at: float) -> bool:
+		seen["farthest"] = maxf(seen["farthest"], _stroller.global_position.distance_to(at))
 		var x := _pressed().x
-		turned = turned or (last_x != 0.0 and x != 0.0 and signf(x) != signf(last_x))
+		var last_x: float = seen["last_x"]
+		seen["turned"] = seen["turned"] or (last_x != 0.0 and x != 0.0 and signf(x) != signf(last_x))
 		if x != 0.0:
-			last_x = x
-	Engine.time_scale = clock
-	t.check(farthest < Tuning.TILE_SIZE and turned and _count("'home'") == 0,
+			seen["last_x"] = x
+		return false)
+	t.check(seen["farthest"] < Tuning.TILE_SIZE and seen["turned"] and _count("'home'") == 0,
 			"pacing never advances the target on its own (%.1fpx from the calm point at most, turned %s)"
-			% [farthest, turned])
+			% [seen["farthest"], seen["turned"]])
 	_end_settling(settle)
 
 ## Starts a settling rig and lets it reach its calm point. Answers it, or `{}` (after a failed
@@ -1054,12 +1070,11 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 	_stroller.reset_at(stand)
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["home"])
-	await _frame(t)
-	await _frame(t)
+	await _steps(t, 2)
 	t.check(_count("route done") == 0 and _count("day won") == 0 and _pressed() != Vector2.ZERO,
 			"not finished before the day is won: she is walking home")
 	baby.force_sleep()
-	await _frame(t)
+	await _steps(t, 1)
 	t.check(not day.is_running() and _count("day won") == 1 and _pressed() == Vector2.ZERO,
 			"WON finishes the rig rather than being ignored (%s)" % [_route_lines()])
 	_end_rig(rig, day)
@@ -1083,15 +1098,11 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	_stroller.set_physics_process(false)
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["calm"])
+	# One entry a tick (`_real_frames()`), so no step of the ladder falls between two entries.
 	var timeline: Array[Dictionary] = []
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
-	var elapsed := 0.0
-	while elapsed < 9.5:
-		var length := await _frame(t)
-		elapsed += length
-		timeline.append({"at": elapsed, "length": length, "replans": _count("re-planned"), "pressed": _pressed()})
-	Engine.time_scale = clock
+	await _real_frames(t, _ticks_for(9.5), func(at: float) -> bool:
+		timeline.append({"at": at, "replans": _count("re-planned"), "pressed": _pressed()})
+		return false)
 	# The first frame resolves the target and plans the leg; the second presses along it.
 	t.check(timeline[1]["pressed"] != Vector2.ZERO, "the leg starts with a real plan she is pressed along")
 
@@ -1107,7 +1118,7 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 
 	var released := _first_at(timeline, func(f: Dictionary) -> bool:
 		return f["replans"] == 1 and f["pressed"] == Vector2.ZERO)
-	t.check(released > first and timeline[released]["at"] - timeline[first]["at"] < 0.75 + _slack(timeline, released),
+	t.check(released > first and timeline[released]["at"] - timeline[first]["at"] < 0.75,
 			"a second stall in a row waits for a crowd to clear rather than forcing a maneuver")
 
 	var resumed := _first_at(timeline, func(f: Dictionary) -> bool: return f["replans"] >= 2)
@@ -1115,9 +1126,7 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	for k in range(maxi(released, 0), maxi(resumed, 0)):
 		still = still and timeline[k]["pressed"] == Vector2.ZERO
 	t.check(released > 0 and resumed > released and still
-			and timeline[resumed]["at"] - timeline[released]["at"] >= 3.0 - _slack(timeline, released)
-			and timeline[resumed]["at"] - timeline[released]["at"]
-					<= 3.0 + _slack(timeline, resumed) + 1.0 / Engine.physics_ticks_per_second * FAST,
+			and absf(timeline[resumed]["at"] - timeline[released]["at"] - 3.0) < 0.3,
 			"waiting ends once three seconds have passed, with a fresh plan (%.2fs)"
 			% (timeline[resumed]["at"] - timeline[released]["at"] if resumed > 0 and released > 0
 					else -1.0))
@@ -1132,18 +1141,12 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	for k in range(maxi(resumed, 0) + 1, timeline.size()):
 		never_released = never_released and timeline[k]["pressed"] != Vector2.ZERO
 	t.check(up > resumed and down > up and never_released
-			and timeline[up]["at"] - timeline[resumed]["at"] < 0.75 + _slack(timeline, up),
+			and timeline[up]["at"] - timeline[resumed]["at"] < 0.75,
 			"still stuck right after waiting escalates to the physical maneuver, not a second wait"
 			+ " (north first, then south)")
 	_end_rig(rig, day)
 	_stroller.set_physics_process(true)
 	_stroller.reset_at(_city.map.doorstep_world_position())
-
-## How far a time read off frame `k` of `timeline` can be out: the frame is read where it ends, and a
-## frame that caught up after a slow one covers several ticks, so the moment inside it is unknown to
-## its length.
-func _slack(timeline: Array[Dictionary], k: int) -> float:
-	return timeline[k]["length"]
 
 ## The index of the first frame in `timeline` that `matches`, or -1.
 func _first_at(timeline: Array[Dictionary], matches: Callable) -> int:
@@ -1188,13 +1191,12 @@ func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
 	stroller.set_physics_process(false)
 	var day := _started_day(t, city, stroller, run)
 	var rig := _started_rig(t, city, stroller, resistance, day, run, ["mark"])
-	await _frame(t)
-	await _frame(t)
+	await _steps(t, 2)
 	t.check(_pressed() != Vector2.ZERO and _count("reached") == 0,
 			"the mark leg has waypoints left to walk")
 	var far := stroller.global_position.distance_to(resistance.contact_position())
 	resistance.contact().complete_now()
-	await _frame(t)
+	await _steps(t, 1)
 	t.check(_count("reached 'mark'") == 1 and far > ContactPoint.REACH,
 			"a mark leg remembers the step it walks to: the step recorded completed ends the leg"
 			+ " %.0fpx short of the mark" % far)
@@ -1220,16 +1222,16 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> voi
 	await _frames_for(t, 0.3)
 	_stroller.detain(2.0)
 	var replans := _count("re-planned")
-	var held_still := true
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
+	var seen := {"held_still": true}
 	var elapsed := 0.0
-	while _stroller.is_detained() and elapsed < 3.0:
-		elapsed += await _frame(t)
-		if _stroller.is_detained():
-			held_still = held_still and _pressed() == Vector2.ZERO \
+	if _stroller.is_detained():
+		elapsed = await _real_frames(t, _ticks_for(3.0), func(_at: float) -> bool:
+			if not _stroller.is_detained():
+				return true
+			seen["held_still"] = seen["held_still"] and _pressed() == Vector2.ZERO \
 					and _count("re-planned") == replans
-	Engine.time_scale = clock
+			return false)
+	var held_still: bool = seen["held_still"]
 	t.check(held_still and elapsed >= 1.9,
 			"while a door holds her the rig waits it out without counting a stall (%.1fs, %s)"
 			% [elapsed, _route_lines()])
@@ -1257,12 +1259,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 	var start_position := _stroller.global_position
 	var day := _started_day(t, _city, _stroller, _run)
 	var rig := _started_rig(t, _city, _stroller, _resistance, day, _run, ["home"])
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
-	var elapsed := 0.0
-	while elapsed < 30.0 and _count("route done") == 0:
-		elapsed += await _frame(t)
-	Engine.time_scale = clock
+	await _real_frames(t, _ticks_for(30.0), func(_at: float) -> bool: return _count("route done") > 0)
 	t.check(_count("reached 'home'") == 1 and _count("route done") == 1,
 			"a short leg to 'home' is reported reached and done within 30s of day time (%s)"
 			% [_route_lines()])
@@ -1449,18 +1446,16 @@ func _test_a_rig_run_never_walks_under_a_boom(t, doors: Dictionary) -> void:
 	var day := _started_day(t, city, stroller, run)
 	day.spec.exits = {CityEdge.Kind.TUNNEL: to}
 	var rig := _started_rig(t, city, stroller, doors["resistance"], day, run, ["tunnel"])
-	await _frame(t)
-	await _frame(t)
+	await _steps(t, 2)
 	t.check(_pressed() != Vector2.ZERO and _count("no path") == 0,
 			"the rig plans a leg through the door")
-	var held := false
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST
+	var seen := {"held": false}
 	var elapsed := 0.0
-	while elapsed < 60.0 and _count("route done") == 0:
-		elapsed += await _frame(t)
-		held = held or stroller.is_detained()
-	Engine.time_scale = clock
+	if _count("route done") == 0:
+		elapsed = await _real_frames(t, _ticks_for(60.0), func(_at: float) -> bool:
+			seen["held"] = seen["held"] or stroller.is_detained()
+			return _count("route done") > 0)
+	var held: bool = seen["held"]
 	var crossed := (stroller.global_position - gate.global_position).dot(axis) > 0.0
 	print("[test_route_rig] through the door at %s: %s after %.1fs, held %s, %d walks under" % [
 		RunTrace.tile(city.map.world_to_tile(gate.global_position)),

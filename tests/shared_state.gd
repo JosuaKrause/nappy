@@ -6,8 +6,8 @@ extends RefCounted
 ##
 ## Shared state is everything one suite can change and another can see, which is not the
 ## suite's own objects:
-##   - the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, and the nodes under the root and
-##     under the runner;
+##   - the tree's `paused`, `Engine.time_scale`, `Engine.max_physics_steps_per_frame`,
+##     `Input.mouse_mode`, and the nodes under the root and under the runner;
 ##   - `InputMap`: each action's deadzone and events, and whether `Input` holds it pressed;
 ##   - every autoload's script variables, the script variables of each `RefCounted` it holds in
 ##     one, and every connection on its signals;
@@ -127,11 +127,13 @@ static func _clip(text: String) -> String:
 	return text if text.length() <= 160 else text.substr(0, 157) + "..."
 
 ## The engine's own globals and the nodes a suite left standing: whether the tree is paused, the
-## time scale, the mouse mode, and the names of the nodes under the root and under the runner.
+## time scale, how many physics ticks one frame may run, the mouse mode, and the names of the nodes
+## under the root and under the runner.
 static func _engine(out: Dictionary[String, String], runner: Node) -> void:
 	var tree := runner.get_tree()
 	out["engine.paused"] = str(tree.paused)
 	out["engine.time_scale"] = str(Engine.time_scale)
+	out["engine.max_physics_steps_per_frame"] = str(Engine.max_physics_steps_per_frame)
 	out["engine.mouse_mode"] = str(Input.mouse_mode)
 	var under_root: Array[String] = []
 	for child in tree.root.get_children():
