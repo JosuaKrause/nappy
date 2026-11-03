@@ -29,8 +29,8 @@ extends CanvasLayer
 @onready var _teach: HelpText = $Root/Teach
 
 ## Whether the debug header and the developer's furniture show — the build's own answer until
-## `configure()` hands the run's. A member rather than a read at each use site, so a test can flip
-## it and drive both HUD shapes without needing an actual debug build.
+## `configure()` hands the run's. A member rather than a read at each use site, so a test can
+## configure either HUD shape without needing an actual debug build.
 var _debug := OS.is_debug_build()
 ## `--invincible`, named in the debug header so no capture from such a run reads as a real one.
 var _invincible := false
@@ -55,6 +55,12 @@ var _run: RunState
 ## draws both lines at once, and by a test that builds one.
 func use_run(run: RunState) -> void:
 	_run = run
+
+## Hands the HUD's teaching line the baked atlas pages its symbols are drawn from (`AtlasLibrary`).
+## Called by `main` before the HUD enters the tree, so the line acquires on it; a HUD built
+## anywhere else leaves the line to make its own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Teach") as HelpText).atlas = atlas
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,

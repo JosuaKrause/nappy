@@ -68,7 +68,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 	var extent := EventPictures.stationary_vehicle_extent(picture, event.stands_side_on(),
 			side_width)
 	_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, EventPictures.drawn(picture), Vector2.ZERO, extent,
+	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, picture), Vector2.ZERO, extent,
 			event.stands_side_on() and _heading_is_west())
 
 ## The van, and the bystander it is taking while there is one to draw.
@@ -104,7 +104,7 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 		var view := select_view(-standing)
 		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if victim_gait_is_stepping() \
 				else EventPictures.VAN_VICTIM_BY_VIEW
-		Sprites.draw_standing(canvas, EventPictures.drawn(by_view[view]), at, Vector2.ZERO,
+		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, by_view[view]), at, Vector2.ZERO,
 				is_mirrored())
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.

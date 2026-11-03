@@ -14,9 +14,11 @@ func run(t) -> void:
 	_test_the_rim_is_given_back_when_the_slices_go(t)
 
 func _test_the_rim_is_painted_before_the_scene(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	for vertical: bool in [false, true]:
 		var instance := EventInstance.new()
+		instance.atlas = atlas
 		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
 		instance._spread_vertical = vertical
 		t.add_child(instance)
@@ -35,14 +37,16 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 				"the rim is painted before the cars, so it is behind them (vertical %s)" % vertical)
 		t.remove_child(instance)
 		instance.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## The rim stands behind the first slice, so when the look lets go of its slices the instance gives
 ## the rim back on the spot (`SpreadLook.letting_go_of_the_slices`) rather than leaving it to be
 ## freed with its slice while the instance still holds it.
 func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var instance := EventInstance.new()
+	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
 	t.add_child(instance)
 	instance.look.attach_nodes()
@@ -56,4 +60,4 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 			"letting go of the slices gives the rim back, and the instance holds none")
 	t.remove_child(instance)
 	instance.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")

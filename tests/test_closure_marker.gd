@@ -18,8 +18,8 @@ func _test_each_street_axis_has_its_own_picture(t) -> void:
 		t.check(down != &"" and down != across,
 				"%s has its own picture for an east-west street (%s)"
 				% [RoadClosure.display_name(kind), down])
-		var across_size := AtlasLibrary.native_size(across)
-		var down_size := AtlasLibrary.native_size(down)
+		var across_size := AtlasTable.baked().native_size(across)
+		var down_size := AtlasTable.baked().native_size(down)
 		t.check(across_size.x > across_size.y,
 				"%s's north-south picture lies across the screen (%s)"
 				% [RoadClosure.display_name(kind), across_size])
@@ -36,8 +36,8 @@ func _test_each_street_axis_has_its_own_picture(t) -> void:
 func _test_a_cause_is_centred_on_the_street_it_closes(t) -> void:
 	for kind: int in ClosureMarker.CAUSES:
 		var label := RoadClosure.display_name(kind)
-		var lie := float(AtlasLibrary.native_size(ClosureMarker.cause_picture(kind, true)).x)
-		var tall := float(AtlasLibrary.native_size(ClosureMarker.cause_picture(kind, false)).y)
+		var lie := float(AtlasTable.baked().native_size(ClosureMarker.cause_picture(kind, true)).x)
+		var tall := float(AtlasTable.baked().native_size(ClosureMarker.cause_picture(kind, false)).y)
 		t.check(tall >= lie,
 				"%s's east-west picture (%.0fpx tall) holds the %.0fpx of road it lies along"
 				% [label, tall, lie])

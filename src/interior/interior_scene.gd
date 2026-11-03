@@ -93,7 +93,7 @@ signal exit_requested
 
 ## Every picture below is a region name on the `interior` atlas group; `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, and every draw site fetches its texture through
-## `AtlasLibrary.region()` — a live `AtlasTexture` over the group's shared page, whose own
+## `atlas.region()` — a live `AtlasTexture` over the group's shared page, whose own
 ## `.atlas`/`.region` a test can read directly, unlike a `resource_path` a region-backed texture
 ## does not carry.
 const HALLWAY_WALL := &"interior/hallway_wall"
@@ -126,6 +126,10 @@ const FADE_SECONDS := 0.35
 ## The building's map (`InteriorMapPlan`), the one everything standing in the building is handed:
 ## built by `build()` and drawn by this scene (`WorldMap.world`).
 var map: InteriorMapPlan
+## The baked atlas pages the building draws from (`AtlasLibrary`), handed by `main` before the
+## scene is added; a scene nobody handed one (a suite's) makes its own when it first enters the
+## tree.
+var atlas: AtlasLibrary = null
 var _tile_set: TileSet
 var _ground: TileMapLayer
 var _backdrops: Node2D
@@ -160,10 +164,12 @@ const _DOOR_RELEASE_RADIUS := TILE * 1.5
 ## releases it on the matching exit — see `Building._enter_tree()`'s own doc for why this is
 ## paired with `_exit_tree()` rather than folded into `_ready()`.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"interior")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"interior")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"interior")
+	atlas.release(&"interior")
 
 func _ready() -> void:
 	build()
@@ -197,7 +203,7 @@ func build() -> void:
 
 	map = InteriorMap.build()
 	map.world = self
-	_tile_set = InteriorTileSet.build()
+	_tile_set = InteriorTileSet.build(atlas)
 	_ground.tile_set = _tile_set
 	for tile: Vector2i in map.tiles:
 		var source := InteriorTileSet.source_id_for(map.tiles[tile])
@@ -267,7 +273,7 @@ func _rebuild_walls() -> void:
 	_add_rubble()
 	for at: Vector2i in map.entrance_tiles:
 		var barricade := Sprite2D.new()
-		var texture := AtlasLibrary.region(ENTRANCE_BARRICADE_TEXTURE)
+		var texture := atlas.region(ENTRANCE_BARRICADE_TEXTURE)
 		barricade.texture = texture
 		barricade.centered = false
 		barricade.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -285,7 +291,7 @@ func _add_rubble() -> void:
 	if map.rubble.size == Vector2i.ZERO:
 		return
 	var heap := Sprite2D.new()
-	heap.texture = AtlasLibrary.region(HALLWAY_RUBBLE_TEXTURE)
+	heap.texture = atlas.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
 	heap.position = Vector2(map.rubble.position) * TILE
 	add_entity(heap, DrawLayer.Layer.BUILDINGS)
@@ -293,7 +299,7 @@ func _add_rubble() -> void:
 func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 	if name == &"":
 		return null
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	if texture == null:
 		return null
 	var sprite := Sprite2D.new()
@@ -350,7 +356,7 @@ var _window_flash_left := 0.0
 ## two texture assignments.
 func flash_windows() -> void:
 	_window_flash_left = FINALE_WINDOW_FLASH_SECONDS
-	var texture := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
+	var texture := atlas.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
@@ -364,7 +370,7 @@ func windows_are_flashing() -> bool:
 ## flashing on its own.
 func windows_lit() -> int:
 	var lit := 0
-	var flash := AtlasLibrary.region(HALLWAY_WINDOW_FLASH)
+	var flash := atlas.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		if sprite.texture == flash:
 			lit += 1
@@ -440,7 +446,7 @@ func _process(delta: float) -> void:
 	_window_flash_left = maxf(0.0, _window_flash_left - delta)
 	if _window_flash_left > 0.0:
 		return
-	var texture := AtlasLibrary.region(HALLWAY_WINDOW)
+	var texture := atlas.region(HALLWAY_WINDOW)
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
@@ -480,7 +486,7 @@ func _rebuild_overlays() -> void:
 		var kind: InteriorTile.Kind = map.decals[tile]
 		var name := _decal_texture(kind)
 		var sprite := Sprite2D.new()
-		sprite.texture = AtlasLibrary.region(name)
+		sprite.texture = atlas.region(name)
 		sprite.position = map.tile_to_world(tile)
 		add_entity(sprite)
 	_add_chandeliers()
@@ -496,7 +502,7 @@ func _add_chandeliers() -> void:
 		if not map.waypoints.has(id):
 			continue
 		var chandelier := Sprite2D.new()
-		var texture := AtlasLibrary.region(CHANDELIER_TEXTURE)
+		var texture := atlas.region(CHANDELIER_TEXTURE)
 		chandelier.texture = texture
 		chandelier.centered = false
 		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -517,7 +523,7 @@ func _decal_texture(kind: InteriorTile.Kind) -> StringName:
 ## actor, in the door layer under her.
 func _add_standing(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -528,7 +534,7 @@ func _add_standing(tile: Vector2i, name: StringName) -> void:
 ## upright stairwell door's: the opening belongs to the wall beyond the corridor, not the floor.
 func _add_threshold(tile: Vector2i, name: StringName) -> void:
 	var sprite := Sprite2D.new()
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	sprite.texture = texture
 	sprite.centered = false
 	sprite.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
@@ -539,8 +545,8 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 ## complete 26-row stairwell, including the final two-cell lobby approach, but add no floor:
 ## collision and walkability still come only from the parsed symbols.
 func _rebuild_stairwell_backdrops() -> void:
-	var segment_texture := AtlasLibrary.region(STAIRWELL_SEGMENT_BACKDROP)
-	var cap_texture := AtlasLibrary.region(STAIRWELL_SHAFT_CAP_TOP)
+	var segment_texture := atlas.region(STAIRWELL_SEGMENT_BACKDROP)
+	var cap_texture := atlas.region(STAIRWELL_SHAFT_CAP_TOP)
 	for side in ["left", "right"]:
 		var top_landing: Vector2i = map.waypoints["stairwell_%s" % side]
 		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL

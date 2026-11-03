@@ -111,7 +111,7 @@ static func _roof_units(building: Building) -> Array[Dictionary]:
 		var key := object.texture_key
 		var span := 1
 		if key != Building.DUCT_RUN:
-			span = ceili(AtlasLibrary.native_size(key).x * Building.roof_equipment_scale(key) / Building.TILE)
+			span = ceili(AtlasTable.baked().native_size(key).x * Building.roof_equipment_scale(key) / Building.TILE)
 		var at := object.global_position - building.global_position
 		var col := (at.x - left_edge) / Building.TILE - span * 0.5
 		var row := -at.y / Building.TILE - building.wall_tiles()
@@ -613,15 +613,15 @@ func _test_a_two_story_front_rolls_its_escape_and_carries_none(t) -> void:
 ## off the baked page, the pixels the game draws. The stair picture's flight does reach that low,
 ## which is what makes the platform a picture of its own rather than the stair cut short.
 func _test_the_ground_floor_carries_only_the_platform(t) -> void:
-	var page := AtlasLibrary.page_image(&"buildings")
+	var page := AtlasLibrary.new().page_image(&"buildings")
 	t.check(page != null, "the baked buildings page reads back as an image")
 	if page == null:
 		return
 	var pairs := [[Building.FIRE_ESCAPE_PLATFORM_A, Building.FIRE_ESCAPE_A],
 			[Building.FIRE_ESCAPE_PLATFORM_B, Building.FIRE_ESCAPE_B]]
 	for pair: Array in pairs:
-		var platform := AtlasLibrary.region_rect(pair[0])
-		var stair := AtlasLibrary.region_rect(pair[1])
+		var platform := AtlasTable.baked().region_rect(pair[0])
+		var stair := AtlasTable.baked().region_rect(pair[1])
 		t.check(platform.size == stair.size and platform.size.y == 2 * int(Building.TILE),
 				"%s registers with %s, two floors tall (%s, %s)" % [pair[0], pair[1], platform.size, stair.size])
 		# The lower half of the ground floor: below the brackets, where the sidewalk's people stand.

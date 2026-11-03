@@ -373,10 +373,12 @@ src/
 	                      departures and returns that open it
   visuals/                the one loader; see the illustrated-png skill
 	atlas_library.gd      the baked atlas pages, by region name: a group's page is loaded on
-	                       the first acquire() and dropped on the last release(), a region's
-	                       native size is answered from the table with nothing loaded, and a
-	                       page may only be read from disk in a named loading window — main's
-	                       boot holds every group a day draws for the life of the process
+	                       the first acquire() and dropped on the last release(), and a page may
+	                       only be read from disk in a named loading window — one library per
+	                       sitting, held by the `Sitting` and handed down from `main`, whose boot
+	                       holds every group a day draws on it for the life of the process
+	atlas_table.gd        the baked region table, read once per process: every region's group,
+	                       rect and native size, answered with nothing loaded
 	ground_layers.gd      shared ground bases, transparent overlays and sparse grass atlases,
 	                       then every TileSetAtlasSource packed into one texture through margins
 	ground_recipe.gd      the composition recipe `ground_layers.json`, read from disk by the first
@@ -806,13 +808,19 @@ escape, a run carried on to its checkpoint and a recipe's lost section played ag
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
 held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
 desktop frame record's one file (`frame_record_path`), the ground's composition recipe, read once
-per process (`ground_recipe`), the save symbol a reload carries, which
+per process (`ground_recipe`), the baked atlas pages and which of them are held (`atlas`, the one
+`AtlasLibrary`, so the pages a boot holds for the process and its loading moments outlive the
+reload), the save symbol a reload carries, which
 `SaveIndicator.outlive_the_scene()` reparents under it, and the `GameSave`, a child `main` makes
 and finds there (the sitting names neither: it is on the model's layer, they are not). Process memory only, never saved. `main`
 takes the one the boot before parked at the tree's root, or builds one as its own child on the
 sitting's first boot, parks it at the root just before every reload (`main._park_the_sitting()`),
 and hands it to the title (`use_sitting()`), the frame recorder (`setup()`) and the save symbol, and
-its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`);
+its recipe to every city it builds (`main._new_city()` sets `City.ground_recipe`), and its library
+to everything that acquires a group or draws a region (the city, which hands it on to its
+furniture, crowd and events; her; the escape's building, its events and its steam grates; the
+screens, which hand it to their buttons and lines; the touch controls; the badge and the save
+symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
 boot before parked there, and hands a `main` it drives off the tree one directly

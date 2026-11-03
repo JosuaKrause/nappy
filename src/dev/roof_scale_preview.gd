@@ -12,8 +12,12 @@ const LABELS := ["Access room", "Regular door reference", "Water tank", "HVAC", 
 	"Duct reference", "Vent stacks", "Industrial fan", "Exhaust fan", "Pipe manifold",
 	"Long skylight", "Pyramid skylight"]
 
+## The baked atlas pages this rig and everything it stands up draw from: its own, since a review
+## rig is its own composition root.
+var _atlas := AtlasLibrary.new()
+
 func _ready() -> void:
-	AtlasLibrary.acquire(&"ground")
+	_atlas.acquire(&"ground")
 	RenderingServer.set_default_clear_color(Color("7f8580"))
 	var buildings := Node2D.new()
 	add_child(buildings)
@@ -21,6 +25,7 @@ func _ready() -> void:
 	entities.y_sort_enabled = true
 	add_child(entities)
 	var building := Building.new()
+	building.atlas = _atlas
 	building.position = Vector2(640, 576)
 	building.footprint = Vector2(1152, 448)
 	building.height = 64
@@ -31,6 +36,7 @@ func _ready() -> void:
 	for index in EQUIPMENT.size():
 		var foot := Vector2(180 + (index % 6) * 184, 300 + (index / 6) * 144)
 		var object := Building.RoofObject.new()
+		object.atlas = _atlas
 		object.texture_key = EQUIPMENT[index]
 		object.position = foot
 		entities.add_child(object)
@@ -56,11 +62,11 @@ func _ready() -> void:
 	get_tree().quit()
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ground")
+	_atlas.release(&"ground")
 
 func _draw() -> void:
-	var sidewalk := AtlasLibrary.region(&"tiles/layers/sidewalk_base")
-	var road := AtlasLibrary.region(&"tiles/layers/asphalt_base")
+	var sidewalk := _atlas.region(&"tiles/layers/sidewalk_base")
+	var road := _atlas.region(&"tiles/layers/asphalt_base")
 	for x in range(0, 1280, 32):
 		for y in range(576, 640, 32):
 			draw_texture(sidewalk, Vector2(x, y))

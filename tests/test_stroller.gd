@@ -3,9 +3,10 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 
-## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose.
+## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
+## from her own library.
 func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
-	return AtlasLibrary.region(StringName(rig.pose(1.0).mother_sources[frame]))
+	return rig.atlas.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
 func run(t) -> void:
 	await _test_all_eight_facings(t)
@@ -29,15 +30,16 @@ func _rig(t) -> Stroller:
 	return rig
 
 ## The authored picture as the live drawing path actually hands it over — the region of her
-## family's baked page, which `_ready()` has already acquired by the time `_rig(t)` returns.
-func _through_the_atlas(path: String) -> Texture2D:
-	return AtlasLibrary.region(StringName(path))
+## family's baked page on the rig's own library, which entering the tree has already acquired by
+## the time `_rig(t)` returns.
+func _through_the_atlas(rig: Stroller, path: String) -> Texture2D:
+	return rig.atlas.region(StringName(path))
 
 ## Every picture she draws comes from a baked region rather than a texture of its own, and every
 ## one of her sixty body views comes from the *same* page — which is the whole of what the atlas
 ## buys for the thing that is on screen every frame of every day. Nothing has to be collected by
-## hand here any more: `_ready()`'s `AtlasLibrary.acquire()` is a synchronous page load rather
-## than a task to pump.
+## hand here any more: entering the tree's `AtlasLibrary.acquire()` is a synchronous page load
+## rather than a task to pump.
 ##
 ## **Her body, the pram and the marks over her head are three pages, on purpose.** The two
 ## parents are a page each so a run never loads the one it cannot draw, the pram is the page they
@@ -61,7 +63,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 					atlas = (texture as AtlasTexture).atlas
 				t.check((texture as AtlasTexture).atlas == atlas,
 						"and from the same one every other view of her is on")
-				var native := AtlasLibrary.native_size(
+				var native := AtlasTable.baked().native_size(
 						StringName(rig.pose(1.0).mother_sources[frame]))
 				t.check(texture.get_size() == Vector2(native),
 						"and it is exactly the size of the picture it stands in for")
@@ -80,7 +82,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 		t.check((pram as AtlasTexture).atlas != atlas,
 				"which is the page the two parents share, not the one her body is on")
 	for mark: String in Stroller.indicator_sources():
-		var packed := AtlasLibrary.region(StringName(mark))
+		var packed := rig.atlas.region(StringName(mark))
 		t.check(packed is AtlasTexture,
 				"the head indicator %s is drawn from the UI's page" % mark.get_file())
 		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,
@@ -134,11 +136,11 @@ func _test_live_draw_selection(t) -> void:
 		# the pose's mother and pram pictures answer the region once the group is collected
 		# and the source before that, and what these assertions are about is *which* view the
 		# selector picks, which is the same question either way.
-		t.check(_mother_texture(rig, 0) == _through_the_atlas(mother_first_frames[direction]),
+		t.check(_mother_texture(rig, 0) == _through_the_atlas(rig, mother_first_frames[direction]),
 				"mother draw selects the authored texture for direction %d" % direction)
-		t.check(_mother_texture(rig, 1) == _through_the_atlas(mother_second_frames[direction]),
+		t.check(_mother_texture(rig, 1) == _through_the_atlas(rig, mother_second_frames[direction]),
 				"mother draw selects gait frame B for direction %d" % direction)
-		t.check(rig.pose(1.0).pram_texture() == _through_the_atlas(pram_textures[direction]),
+		t.check(rig.pose(1.0).pram_texture() == _through_the_atlas(rig, pram_textures[direction]),
 				"pram draw selects the authored texture for direction %d" % direction)
 		t.check(rig.pose(1.0).mirrored == mirrored[direction],
 				"mother mirror matches direction %d" % direction)

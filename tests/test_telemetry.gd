@@ -1484,33 +1484,25 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 ## not produced here: `AtlasLibrary.acquire()` raises a real engine error on it, and an engine
 ## error in a suite makes the gate red whether or not a test expected it. What that value means
 ## is `tests/test_atlas_loading.gd`'s, asked through `moment_for_a_load()` with nothing loaded.
-## Asked of a borrowed group rather than a real one: every group `assets/atlases/membership.json`
-## lists now has at least one runtime `acquire(` under `src/` (checked by grepping every call
-## against the file), so whether this test's precondition held on a real group's own name would
-## depend on whether an earlier suite in the same process left a live node holding it —
-## `City.build()` adds an `EventManager` that acquires `events` in its own `_enter_tree()` and only
-## gives it back in `_exit_tree()` (`src/events/event_manager.gd`), so a `City` left standing
-## anywhere earlier in the process makes `events` resident before this test even starts.
-## `AtlasLibrary.borrow_group_for_tests()` registers a page under a name nothing else ever asks
-## for, backed by `events`' own baked file so the read this test provokes is still a genuine disk
-## load; `forget_test_group()` at the end leaves nothing behind for the suite that runs next.
-## **Nothing calls `AtlasLibrary.reset_for_tests()` here for the same reason it never did** — it
-## zeroes every group's count, and a `ModeButton` still in the tree from an earlier suite would
-## then report a release of a group that was not acquired when the run tears down.
+## Asked of a library of the test's own (`AtlasLibrary.new()`), so the count this test watches
+## starts at nought whatever any other library in the process holds — a `City` left standing by an
+## earlier suite holds `events` on its own library, not on this one — and the library is dropped
+## with the test, leaving nothing behind for the suite that runs next.
 func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
-	var group := AtlasLibrary.borrow_group_for_tests(&"events")
-	t.check(not AtlasLibrary.is_acquired(group),
-			"the borrowed page starts out held by nobody")
+	var atlas := AtlasLibrary.new()
+	var group := EventPictures.ATLAS_GROUP
+	t.check(not atlas.is_acquired(group),
+			"the page starts out held by nobody")
 	Telemetry.begin_memory_log()
-	AtlasLibrary.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
-	AtlasLibrary.hold_for_the_process(group)
-	AtlasLibrary.close_loading_window()
+	atlas.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
+	atlas.hold_for_the_process(group)
+	atlas.close_loading_window()
 	# The second acquire is a consumer's, on a page already resident: it reads nothing, so it
 	# must not write a second line about a load that did not happen — and its release drops no
 	# memory, so that must not write one either.
-	AtlasLibrary.acquire(group)
-	AtlasLibrary.release(group)
-	AtlasLibrary.stop_holding(group)
+	atlas.acquire(group)
+	atlas.release(group)
+	atlas.stop_holding(group)
 	var loaded: Array[String] = []
 	var released: Array[String] = []
 	for line: String in Telemetry.current_log().lines:
@@ -1521,8 +1513,6 @@ func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 		else:
 			loaded.append(line)
 	Telemetry.end_run()
-	AtlasLibrary.release_the_loading_moments()
-	AtlasLibrary.forget_test_group(group)
 
 	t.check(loaded.size() == 1, "one line per page actually read from disk (got %d)" % loaded.size())
 	for line in loaded:

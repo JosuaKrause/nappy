@@ -89,7 +89,7 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 			var anchor := CarLook.body_anchor(view, heading)
 			for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
 					CarLook.WHEELS_BY_VIEW[view]]:
-				var extent := Vector2(AtlasLibrary.native_size(StringName(path)))
+				var extent := Vector2(AtlasTable.baked().native_size(StringName(path)))
 				var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent) \
 						.grow(1.0 + EntityHalo.HALO_MARGIN)
 				t.check(reach.encloses(drawn),
@@ -108,7 +108,7 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 	for view in WalkerLook.BODY_BY_VIEW:
 		for paths: Dictionary in [WalkerLook.BODY_BY_VIEW, WalkerLook.BODY_BY_VIEW_B,
 				WalkerLook.TRIM_BY_VIEW, WalkerLook.TRIM_BY_VIEW_B]:
-			var extent := Vector2(AtlasLibrary.native_size(StringName(paths[view])))
+			var extent := Vector2(AtlasTable.baked().native_size(StringName(paths[view])))
 			var drawn := Rect2(-extent.x * 0.5, -extent.y, extent.x, extent.y) \
 					.grow(EntityHalo.HALO_MARGIN)
 			t.check(reach.encloses(drawn), "the reach holds a walker's %s" % paths[view])

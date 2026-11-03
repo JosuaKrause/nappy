@@ -175,7 +175,8 @@ func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 ## The drawing, not only the model: six warnings up at once, and after a real draw the control has put
 ## six arrows on the edge. Fails if the drawing limits how many it shows.
 func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var source := _Source.new()
 	t.add_child(source)
 	var player := Node2D.new()
@@ -187,6 +188,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
 		warning.put_up(Vector2.ZERO)
 		source.warnings.append(warning)
 	var edge := DangerEdge.new()
+	edge.atlas = atlas
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(source, player)
@@ -197,7 +199,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
 	edge.free()
 	player.free()
 	source.free()
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## An event source with nothing in the world and the warnings it is given.
 class _Source extends Node:

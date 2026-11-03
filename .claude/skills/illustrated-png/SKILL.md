@@ -132,7 +132,7 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   is what installing a transfer for an existing picture is. A new picture also needs a line in
   `assets/atlases/membership.json` naming the group it belongs on, in `members` if both bakes draw
   it or `members_png`/`members_svg` if only one does — a bake reads and hashes its own mode's
-  lists alone, so it is baked nowhere and `AtlasLibrary` answers `has_region()` false for it until
+  lists alone, so it is baked nowhere and `AtlasTable` answers `has_region()` false for it until
   that line exists.
 - **A transfer PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback: the
   game holds no second copy of the picture to fall back to, so a mismatch is a committed mistake

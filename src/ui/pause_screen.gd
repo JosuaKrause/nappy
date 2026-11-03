@@ -72,6 +72,14 @@ var _run: RunState
 func use_run(run: RunState) -> void:
 	_run = run
 
+## Hands the screen's body and its two buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Center/Lines/Body") as HelpText).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+
 ## The body as the scheme in force words it.
 static func body_for(joystick: bool) -> String:
 	return Texts.WALKING_LESSON_PAUSE % (Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)

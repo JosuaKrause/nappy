@@ -334,10 +334,11 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	}
 	# `InteriorTileSet.build()` reads the group's own live page, so the group has to be acquired
 	# for as long as this test keeps the `TileSet` it returns — released at the very end, after
-	# the scene built below (which holds its own reference) is freed.
-	AtlasLibrary.acquire(&"interior")
-	var tile_set := InteriorTileSet.build()
-	var page := AtlasLibrary.region(&"interior/stairwell_floor").atlas
+	# the scene built below (which holds its own reference, on the same library) is freed.
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"interior")
+	var tile_set := InteriorTileSet.build(atlas)
+	var page := atlas.region(&"interior/stairwell_floor").atlas
 	for kind: InteriorTile.Kind in expected_names:
 		var name: StringName = expected_names[kind]
 		t.check(InteriorTileSet.region_name_for(kind) == name,
@@ -346,7 +347,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
 		t.check(source != null and source.texture == page,
 				"stair role %d's source shares the interior page, not a texture of its own" % kind)
-		var rect := AtlasLibrary.region_rect(name)
+		var rect := AtlasTable.baked().region_rect(name)
 		t.check(source != null and source.get_tile_texture_region(Vector2i.ZERO) == rect,
 				"stair role %d's tile addresses exactly its own region on the shared page" % kind)
 
@@ -380,16 +381,17 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	# Every region name on the `interior` page that could pass for a stair, other than the
 	# stairwell door itself — asked as textures rather than names, since a drawn `Sprite2D`
 	# no longer carries a name of its own to compare against, only the `AtlasTexture` region
-	# `AtlasLibrary.region()` handed out and cached.
+	# the library's `region()` handed out and cached — the scene is handed the same library.
 	var forbidden := {}
-	for name in AtlasLibrary.region_names():
-		if AtlasLibrary.group_of(name) != &"interior" or name == InteriorScene.DOOR_TEXTURE:
+	for name in AtlasTable.baked().region_names():
+		if AtlasTable.baked().group_of(name) != &"interior" or name == InteriorScene.DOOR_TEXTURE:
 			continue
 		var short := String(name).trim_prefix("interior/")
 		if short.begins_with("stair") or short.begins_with("m158_stair"):
-			forbidden[AtlasLibrary.region(name)] = true
+			forbidden[atlas.region(name)] = true
 
 	var scene := InteriorScene.new()
+	scene.atlas = atlas
 	t.add_child(scene)
 	scene.build()
 	var drawn_stairs := 0
@@ -403,7 +405,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 			"nothing standing in the scene draws a stair: the ground cells are the staircase (%d)"
 			% drawn_stairs)
 	scene.free()
-	AtlasLibrary.release(&"interior")
+	atlas.release(&"interior")
 
 ## The switchback's own redirection: a sideways press on a diagonal flight walks its slope rather
 ## than the screen axis it was pressed on — *(2026-09-10, playtest 55: "holding right or left on
@@ -645,7 +647,7 @@ func _test_every_door_is_drawn_under_her(t: Node) -> void:
 			InteriorScene.LIFT_DOOR_TEXTURE, InteriorScene.ENTRANCE_DOOR_TEXTURE]
 	var pictures := {}
 	for name: StringName in door_textures:
-		pictures[AtlasLibrary.region(name)] = name
+		pictures[scene.atlas.region(name)] = name
 	var doors: Array[Sprite2D] = []
 	var stack: Array[Node] = [scene]
 	while not stack.is_empty():
@@ -2106,13 +2108,13 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const WINDOW := 12.0
-	var grate_size := AtlasLibrary.native_size(StringName(EventPictures.STEAM_GRATE))
+	var grate_size := AtlasTable.baked().native_size(StringName(EventPictures.STEAM_GRATE))
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng)
-	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map), scene.map)
+	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map), scene.map, events.atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
 	t.check(ground != null, "the building has its floor tiles to lie on")
 	# She joins the same layer every blow does (`InteriorScene.add_entity()`), so a stand-in there

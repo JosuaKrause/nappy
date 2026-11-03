@@ -184,6 +184,10 @@ var view: CrowdView = null
 ## What the crowd and its agents charge their time and their draws to. See `CrowdTiming`; the null
 ## sink until the city hands another.
 var timing := CrowdTiming.new()
+## The baked atlas pages the crowd holds `ATLAS_GROUP` on and every agent draws from
+## (`AtlasLibrary`), handed in by `City` before the first day and on to every agent it makes; a
+## crowd nobody handed one (a suite's) makes its own on its first day.
+var atlas: AtlasLibrary = null
 ## The lights on the spine. Owned by `City`; the clock is advanced here because this is the class
 ## a rig steps, and a rig that runs the traffic without running the signals is running a
 ## different city — see `step()`.
@@ -297,7 +301,9 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# Taken on the first day only — see `_atlas_held`'s own doc for why a day's own end keeps
 	# holding this rather than releasing it, and `_exit_tree()` for where it finally does.
 	if not _atlas_held:
-		AtlasLibrary.acquire(ATLAS_GROUP)
+		if atlas == null:
+			atlas = AtlasLibrary.new()
+		atlas.acquire(ATLAS_GROUP)
 		_atlas_held = true
 	_struck = false
 	# The lights go back to the top of their cycle with the traffic. They are a property of the
@@ -404,6 +410,7 @@ func _make_an_agent() -> CrowdAgent:
 	agent.pockets = _pockets
 	agent.view = view
 	agent.frame_timing = timing
+	agent.atlas = atlas
 	agent.excitement.heard_in = sources
 	return agent
 
@@ -512,11 +519,12 @@ func clear() -> void:
 ## city torn down on quitting to the title screen mid-day, a test that frees its `City` directly,
 ## or, harmlessly, the finale's own crowd (`main.gd`'s "nobody on the street today"), which never
 ## called `start_day()` and so never took a reference to give back — `_atlas_held` is what tells
-## those two apart. `AtlasLibrary`'s counts are static and outlive this node, so a reference not
-## given back here is held for the rest of the process rather than for the rest of a day.
+## those two apart. The library's counts outlive this node (the city's is the sitting's), so a
+## reference not given back here is held for the rest of the process rather than for the rest of a
+## day.
 func _exit_tree() -> void:
 	if _atlas_held:
-		AtlasLibrary.release(ATLAS_GROUP)
+		atlas.release(ATLAS_GROUP)
 		_atlas_held = false
 
 ## Agents alternate axes rather than rolling for one, so a crowd is never accidentally all

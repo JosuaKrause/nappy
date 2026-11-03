@@ -39,6 +39,9 @@ var skip_drawing := false
 ## Where every instance this world makes charges its time to the frame record; the null sink until
 ## the manager is handed one.
 var timing := FrameTiming.new()
+## The baked atlas pages every instance made here draws from (`AtlasLibrary`): the manager's,
+## which holds the events' group on it; none until the manager is handed or makes one.
+var atlas: AtlasLibrary
 ## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
 ## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`). Unset where there is no
 ## resistance, and a protest then points at nothing.
