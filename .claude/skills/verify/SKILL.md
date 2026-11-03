@@ -392,13 +392,14 @@ Test what a screenshot cannot see, and screenshot what a test cannot judge.
 **After every suite the runner compares the shared state with what it was before, and fails the
 suite that changed it** (`tests/shared_state.gd`): the tree's `paused`, `Engine.time_scale`,
 `Input.mouse_mode`, the nodes under the root and the runner, each `InputMap` action's events and
-deadzone, which actions `Input` holds pressed, every autoload's variables and the connections on its
+deadzone, which actions `Input` holds pressed, every autoload's variables, those of each `RefCounted`
+an autoload holds (one level deep, named `<autoload>.<field>.<its field>`), the connections on its
 signals, and every `static var` under `src/`, found by reading the sources. The failure line names
 the field and its value before and after (`LEAK` is printed the moment it is found). A suite fixes a
 leak by giving back what it took (a released action, a disconnected signal, a freed node, a fake
 injected instead of a static patched); it is never retried and the runner does not clear it.
 Exceptions are fields, never owners: `EXEMPT` in that file names each with its reason (memoised
-statics). A suite that boots `main` or drives a run declares `t.gives_back_observers()` first, and
+statics, and the run fields the runner's own `GameState.start_run()` puts back before the next suite). A suite that boots `main` or drives a run declares `t.gives_back_observers()` first, and
 the runner restores the configuration `main` hands the observers, the remembered controls and the
 observers' count of the run (`SharedState.OBSERVER_FIELDS`) after it; the declaration is only for a
 suite that moves them, since it hides a leak of exactly those fields. A new exemption needs a reason of that kind, not a convenience.
