@@ -1630,7 +1630,7 @@ follow rather than sit; that is queued in `docs/TODO.md`.
 also the difficulty dial, so the price of pursuing it is that the place you are pushing a pram
 through starts paying attention to you.
 
-`GameState.resistance.progress` is the number — an integer from 0 to `Tuning.RESISTANCE_GOAL`, the
+`run.resistance.progress` is the number — an integer from 0 to `Tuning.RESISTANCE_GOAL`, the
 four completed tasks that qualify for the good ending — and `EventDef.heat_response` is the whole of
 how a row says whether it cares. `EventCatalogue.heated()` turns a row and a level into a **derived
 copy** with its numbers moved, so nothing downstream of the day's plan has to know heat exists: an
@@ -1861,8 +1861,8 @@ neighbourhood's own rather than a patrol's.
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `_role_for` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
 
-The day-14 sabotage is not a catalogue row: it is `GameState` logic (`sabotage_done`,
-`sabotage_available()`), gated on the resistance goal rather than sited or scheduled like an
+The day-14 sabotage is not a catalogue row: it is run logic (`run.resistance.sabotage_done`,
+`run.sabotage_available()`), gated on the resistance goal rather than sited or scheduled like an
 `EventDef`. `docs/NARRATIVE.md` and `docs/DESIGN.md` describe what completing it does.
 
 ### Seal pictures — off the day's route tree
@@ -2100,7 +2100,7 @@ routes through its corridor's own rules instead.
 
 ## Permanent marks
 
-`aftermath.scar` records an event's position in `GameState.attempt_spend.scars`, and the scheduler places that
+`aftermath.scar` records an event's position in `run.attempt_spend.scars`, and the scheduler places that
 event again on every **later day of the run**. The building the day-3 fire caught is still
 drawn burnt on that corner on day 12, never repaired; barricades from Act IV
 convoys accumulate. This is most of how the escalation is told — the city remembers, and
@@ -2873,7 +2873,7 @@ repetition. It is that **the game's only verb stops being a decision on day two*
 finds a good park on day 1 has no question left to answer, and answering that question is the whole
 game.
 
-So the calm block the baby actually fell asleep in is remembered — by `GameState`, not by
+So the calm block the baby actually fell asleep in is remembered — by the run (`run.settled.settled_in`), not by
 reading the telemetry; see docs/TELEMETRY.md.
 
 **And the day's route tree plans around every area this remembers** (`ClosurePlanner.

@@ -271,7 +271,7 @@ The events:
   the charging counters (`nappy-day-15-masked-pursuer-warned`, `-chased`, and `-ended` for a
   charge still running when the section ends); both sections' encounters and runs, the
   building's events being the day's own `EventManager` as the city's are; the city's holds;
-  and `nappy-day-16-blackout` as the escape's city is built dark. `GameState.header.day`, the calendar,
+  and `nappy-day-16-blackout` as the escape's city is built dark. `run.header.day`, the calendar,
   stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
   `day_started` announced rather than by the calendar.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
@@ -601,7 +601,7 @@ back.
 remembers which calm block the baby actually went to sleep in and spoils it the next day — which is
 exactly what the `calm` entries say. Reading them back is the smaller change and it breaks the
 invariant in the loudest possible way: the game would play differently with `--no-telemetry`. So
-`GameState.settled.settled_in` is its own run-scoped record, written by `DayController` at the moment she
+`run.settled.settled_in` is its own run-scoped record, written by `DayController` at the moment she
 settles, and the log merely *also* mentions it. **Where a trace and a rule want the same fact, the
 rule keeps its own copy.**
 
@@ -640,7 +640,7 @@ is made as the warning goes up, so the first line already knows.
 | `road` | observer | Did they *walk down* the road rather than across it? Only written when a stretch outlasts a crossing, so the entry existing is the answer |
 | `path` | observer | **Was she on the day's corridor?** A line each way as she crosses on or off it, and one at dusk with the share of her street time she spent on it. It is what makes *"going off the paths lets me skip events and is safer than going on the path"* a measurement rather than an argument. Time in a park or an alley is counted separately from "off it": the corridor is made of streets and the destination is not one, so folding them together would credit every won day with a long safe stretch off the paths |
 | `crowd` | `Crowd` → observer | Contact with the street: somebody she walked into, or a car that had to sound its horn at her standing in the road, with a timestamp on it |
-| `calm` / `left` | observer, `GameState` | Same park every day? It also says which block she settled in, so the log shows what tomorrow's plan is reacting to |
+| `calm` / `left` | observer, the run's calendar (`RunCalendar`) | Same park every day? It also says which block she settled in, so the log shows what tomorrow's plan is reacting to |
 | `near` | observer | How many entities were nearby, which, and how close — the cost table as what happened to a person. And the pelican's own two: the first frame it is on screen, which may be far outside its 90px, and its lethal reach covering her, which under `--invincible` is the only line that says so |
 | `closure` | observer | Are the closures a decision or scenery? |
 | `turn` | observer | Did the player double back — and was it because of a barrier they had just seen? |
@@ -656,8 +656,8 @@ is made as the warning goes up, so the first line already knows.
 | `asleep` / `woke` | observer | How long the walk actually took, and what woke her |
 | `quiet` | observer | The blackout came and the masts went off with the power — once she was far enough from the station after the sabotage, not at its door |
 | `home` / `lost` | observer | The outcome, the margin, and what was around when it happened. A crying or hard-fail day's `lost` line names what ended it as `to <cause>`, the cause the page's counter folds into its loss event (`DayDirector.loss_cause()`, `LossCause.of()`). In the escape a `lost` line also names the section and a `home` line the way out — see "The escape's log" |
-| `nerve` | `GameState` | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
-| `ending` | `GameState` | How the run finished, and how long the world was actually moving to get there — `GameState.header.play_seconds()`, the run's play ticks in seconds, formatted `%d:%02d.%03d` |
+| `nerve` | the run's calendar (`RunCalendar`) | Where the nerves went — which day, which act, and in a hard run's escape; the run's mode once it is chosen; the dawn a normal run keeps as its checkpoint; and the checkpoint it went back to when its last nerve was spent, from which day |
+| `ending` | the run's calendar (`RunCalendar`) | How the run finished, and how long the world was actually moving to get there — `run.header.play_seconds()`, the run's play ticks in seconds, formatted `%d:%02d.%03d` |
 | `save` | `GameSave` | When the run was written to disk, and whether a day was under way at the time — the only record of the one thing a trace cannot otherwise see, since a closed window and a reopened one are two different runs of the game and not two lines in the same log. Followed by whether the save was kept: on the web, a line when the browser's IndexedDB copy is confirmed ("the browser kept the save") or not ("the browser did not keep the save", with the browser's own error or the timeout); anywhere, a line when the save could not be kept at all ("the save was not kept": the file could not be written, or the page's storage was refused at boot). **Deleting the save file writes the same kind** — "deleted the save" when the file was removed, then on the web "the browser dropped the deleted save" or "the browser did not drop the deleted save" (with the browser's own error or the timeout), and "the deletion was not kept" when the file could not be removed or the page's storage was refused at boot; a deletion with no file to delete writes nothing. A held restart logs its deletion's first line, because it deletes the save before the run log closes; a web deletion's later answer is logged only if a log is open when it arrives, so it may land in the next run's log after the reload |
 | `shot` | `RunSession`, `Telemetry` | **A person requested a screenshot or animation burst** — where she was, what the meters read, which screen was up, and capture start/completion/refusal context. This entry records somebody observing the game |
 | `still` | `StillWatch` | **`--quit-when-still` fired** — she moved once, then held within a few pixels of one spot for the given time. Excludes any frame she is detained (`Stroller.is_detained()`, every `detain_seconds` row), a checkpoint hold that outlives the input lock (`CheckpointController.door_holding_her_at()`), or the signalled junction nearest her among those visible on screen showing her red on the main road's own light (`StillWatch.facing_a_red_light()`) — wherever on screen she herself is standing, since a mother who is really stuck is still stuck once the light turns green and the watch catches her then. A held frame restarts the count rather than freezing it, so it cannot fire the instant she is released. Her tile and the nearest live event or vehicle, so the picture that follows has a reason attached to it rather than only a place |
@@ -1046,7 +1046,7 @@ each through something it was handed:
 - **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
   point of decision.
 - **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink
-  `RunSession` makes, which `main` hands to `GameState` (and its `CityState`), to the `City` (and
+  `RunSession` makes, which `main` hands to the run it takes from the sitting (`RunState`, and its `CityState`), to the `City` (and
   from there its posters, its `EventManager`, every instance it creates and the day's planners) and
   to the `ResistanceDirector`. A component handed none writes nowhere, so a test builds the part it
   wants and hands it a trace that records into a list. These are the lines a decision writes at the
