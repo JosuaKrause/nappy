@@ -526,12 +526,19 @@ func _walked_tiles(path: Array[Vector2i]) -> Array[Vector2i]:
 			walked.append(a)
 			break
 		var b := path[i + 1]
-		var step := Vector2i(signi(b.x - a.x), signi(b.y - a.y))
 		var tile := a
 		while tile != b:
 			walked.append(tile)
-			tile += step
+			tile += _step_toward(tile, b)
 	return walked
+
+## One tile step from `tile` toward `to`, along the row first: a straight run is walked tile by
+## tile, and a pair that is not straight (which a plan never hands out) is walked as an L rather
+## than never arriving.
+func _step_toward(tile: Vector2i, to: Vector2i) -> Vector2i:
+	if tile.x != to.x:
+		return Vector2i(signi(to.x - tile.x), 0)
+	return Vector2i(0, signi(to.y - tile.y))
 
 ## A re-plan keeps off the ground round what has caught her this leg (`RouteRig._leg_avoid`, which
 ## it hands every re-plan), rather than ringing her own position and walking her straight back to
@@ -1304,13 +1311,12 @@ func _passes_within(map: CityMap, path: Array[Vector2i], point: Vector2, reach: 
 	for k in path.size():
 		var tile := path[k]
 		var stop := path[mini(k + 1, path.size() - 1)]
-		var step := (stop - tile).sign()
 		while true:
 			if map.tile_to_world(tile).distance_to(point) <= reach:
 				return true
 			if tile == stop:
 				break
-			tile += step
+			tile += _step_toward(tile, stop)
 	return false
 
 ## A door body stands in the middle of its two-lane sidewalk
