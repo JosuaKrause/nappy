@@ -71,10 +71,10 @@ func run(t) -> void:
 	await _test_on_day_finished_won_still_finishes(t)
 	await _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t)
 	await _test_a_mark_leg_follows_the_mark_when_it_moves(t)
-	await _test_a_mark_leg_ends_when_the_director_records_the_mark(t)
 	await _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t)
 	await _test_a_real_leg_walks_her_there_and_reports_it(t)
 	_free_day()
+	await _test_a_mark_leg_ends_when_the_director_records_the_mark(t)
 	var doors := _build_day_with_doors(t)
 	_test_a_door_between_two_lanes_opens_both_as_its_crossing(t, doors)
 	_test_a_plan_never_goes_through_the_boom(t, doors)
@@ -239,11 +239,14 @@ func _pressed() -> Vector2:
 
 ## One real physics frame and the process frame after it, at `FAST` times real time: every node in
 ## the tree takes its `_physics_process()` once — the rig presses, she walks — before the test reads
-## on. Answers the length of the frame.
+## on. Answers the time the physics ticks it covered took, counted rather than assumed: after a slow
+## frame the engine runs up to `physics/common/max_physics_steps_per_frame` ticks in one frame, and
+## the rig's clock runs with every one of them.
 func _frame(t) -> float:
+	var before := Engine.get_physics_frames()
 	await t.get_tree().physics_frame
 	await t.get_tree().process_frame
-	return 1.0 / Engine.physics_ticks_per_second * Engine.time_scale
+	return (Engine.get_physics_frames() - before) / float(Engine.physics_ticks_per_second) * Engine.time_scale
 
 ## Real frames for `seconds` of day time at `FAST`.
 func _frames_for(t, seconds: float) -> void:
@@ -1085,8 +1088,9 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	Engine.time_scale = FAST
 	var elapsed := 0.0
 	while elapsed < 9.5:
-		elapsed += await _frame(t)
-		timeline.append({"at": elapsed, "replans": _count("re-planned"), "pressed": _pressed()})
+		var length := await _frame(t)
+		elapsed += length
+		timeline.append({"at": elapsed, "length": length, "replans": _count("re-planned"), "pressed": _pressed()})
 	Engine.time_scale = clock
 	# The first frame resolves the target and plans the leg; the second presses along it.
 	t.check(timeline[1]["pressed"] != Vector2.ZERO, "the leg starts with a real plan she is pressed along")
@@ -1103,7 +1107,7 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 
 	var released := _first_at(timeline, func(f: Dictionary) -> bool:
 		return f["replans"] == 1 and f["pressed"] == Vector2.ZERO)
-	t.check(released > first and timeline[released]["at"] - timeline[first]["at"] < 0.75,
+	t.check(released > first and timeline[released]["at"] - timeline[first]["at"] < 0.75 + _slack(timeline, released),
 			"a second stall in a row waits for a crowd to clear rather than forcing a maneuver")
 
 	var resumed := _first_at(timeline, func(f: Dictionary) -> bool: return f["replans"] >= 2)
@@ -1111,7 +1115,8 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	for k in range(maxi(released, 0), maxi(resumed, 0)):
 		still = still and timeline[k]["pressed"] == Vector2.ZERO
 	t.check(released > 0 and resumed > released and still
-			and absf(timeline[resumed]["at"] - timeline[released]["at"] - 3.0) < 0.3,
+			and absf(timeline[resumed]["at"] - timeline[released]["at"] - 3.0)
+			< 0.3 + _slack(timeline, released) + _slack(timeline, resumed),
 			"waiting ends once three seconds have passed, with a fresh plan (%.2fs)"
 			% (timeline[resumed]["at"] - timeline[released]["at"] if resumed > 0 and released > 0
 					else -1.0))
@@ -1126,12 +1131,18 @@ func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
 	for k in range(maxi(resumed, 0) + 1, timeline.size()):
 		never_released = never_released and timeline[k]["pressed"] != Vector2.ZERO
 	t.check(up > resumed and down > up and never_released
-			and timeline[up]["at"] - timeline[resumed]["at"] < 0.75,
+			and timeline[up]["at"] - timeline[resumed]["at"] < 0.75 + _slack(timeline, up),
 			"still stuck right after waiting escalates to the physical maneuver, not a second wait"
 			+ " (north first, then south)")
 	_end_rig(rig, day)
 	_stroller.set_physics_process(true)
 	_stroller.reset_at(_city.map.doorstep_world_position())
+
+## How far a time read off frame `k` of `timeline` can be out: the frame is read where it ends, and a
+## frame that caught up after a slow one covers several ticks, so the moment inside it is unknown to
+## its length.
+func _slack(timeline: Array[Dictionary], k: int) -> float:
+	return timeline[k]["length"]
 
 ## The index of the first frame in `timeline` that `matches`, or -1.
 func _first_at(timeline: Array[Dictionary], matches: Callable) -> int:
