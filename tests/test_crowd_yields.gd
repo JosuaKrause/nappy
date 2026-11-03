@@ -58,12 +58,12 @@ func _a_figure(map: CityMap, at: Vector2, stood_round: bool) -> MoveProposal:
 ## never moved.
 func _walk_at_a_standing_figure(city: City, map: CityMap, stood_round: bool,
 		walked_first: bool) -> Dictionary:
-	var run: Vector2i = _rig._a_straight_run(map, Tuning.BLOCK_SIZE)
+	var run: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return {}
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
-	var walker: CrowdAgent = _rig._agent_on(city, map, CrowdAgent.Kind.WALKER, run.x, 0,
+	var walker: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.WALKER, run.x, 0,
 			float(run.y) * Tuning.TILE_SIZE + 4.0, 1.0)
 	var at := Vector2(walker.position.x, float(run.y + 5) * Tuning.TILE_SIZE)
 	var figure := _a_figure(map, at - Vector2(0.0, 6.0) if walked_first else at, stood_round)
@@ -94,7 +94,7 @@ func _a_vehicle(map: CityMap, at: Vector2, parked: bool) -> MoveProposal:
 ## and three tiles past the box: the corridor and the first along tile of the stretch, or `(-1, -1)`.
 func _a_block_before_a_box(map: CityMap) -> Vector2i:
 	var length := 2 * CityMap.period() + Tuning.STREET_WIDTH
-	var run: Vector2i = _rig._a_straight_run(map, length)
+	var run: Vector2i = _rig.a_straight_run(map, length)
 	if run.x < 0:
 		return run
 	for along in range(run.y, run.y + length):
@@ -115,7 +115,7 @@ func _drive_at_a_vehicle(city: City, map: CityMap, corridor: int, car_along: flo
 	city.crowd.start_day(1, _rng(1), Vector2.ZERO)
 	city.crowd.clear()
 	var lane: int = CrowdLanes.road_lane(true, 1.0)
-	var car: CrowdAgent = _rig._agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane, car_along,
+	var car: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane, car_along,
 			1.0)
 	var at := Vector2(CrowdLanes.lane_centre(corridor, lane), figure_along)
 	var figure := _a_vehicle(map, at + Vector2(6.0, 0.0), parked)
@@ -134,11 +134,11 @@ func _drive_at_a_vehicle(city: City, map: CityMap, corridor: int, car_along: flo
 		if figure.on_the_list and _overlaps(car, figure):
 			overlapping += 1
 		in_the_box = in_the_box or car.junction_occupied().x >= 0
-		if car._vertical and car._corridor == corridor and car._direction > 0.0:
+		if _rig.still_driving_down(car, corridor):
 			deepest = maxf(deepest, car.position.y)
 	if figure.on_the_list:
 		map.moves.leave(figure)
-	var turned := car._corridor != corridor or not car._vertical or car._direction < 0.0
+	var turned: bool = not _rig.still_driving_down(car, corridor)
 	return {"overlapping": overlapping, "in_the_box": in_the_box, "speed": speed_when_it_left,
 			"turned": turned, "deepest": deepest, "at": at, "car": car}
 
