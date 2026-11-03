@@ -8,9 +8,10 @@ extends RefCounted
 ## caret or a badge that is owed is drawn on the frame its thing comes into view, never a frame late
 ## — so each one is walked in from off screen a step at a time, and the frame it asks for its redraw
 ## is checked against the first frame any of its drawing reaches the screen itself, measured from
-## the drawing's own numbers rather than from the reach the gate asks with. Headless runs never call
-## `_draw()`, so what is checked is that the redraw is asked for and that the caret it would draw is
-## up; `_draw()` reads nothing the redraw does not.
+## the drawing's own numbers rather than from the reach the gate asks with. What is checked is that
+## the redraw is asked for and that the caret it would draw is up; `_draw()` reads nothing the redraw
+## does not. The badge edge runs on real frames, and its redraws are the engine's `draw` signal, which
+## a headless run emits like any other.
 
 const STEP := 1.0 / 60.0
 ## The design box, and the camera's zoom on it: the world a screen shows is half of it each way.
@@ -25,7 +26,7 @@ func run(t) -> void:
 	_test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
 	_test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
 	_test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
-	_test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
+	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
 ## A screen of its own for the gates to ask about: a `SubViewport` the size of the design box whose
@@ -135,7 +136,7 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
-		car.excitement._clock += STEP
+		car.excitement.advance(STEP)
 		var before: Variant = car.excitement._caret_key_was
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
@@ -288,19 +289,34 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	screen.free()
 
 ## **The badge is drawn on the frame it goes up, redrawn every frame it is up, and redrawn once to
-## come off** — and with none up and none drawn there is nothing to redraw.
+## come off** — and with none up and none drawn there is nothing to redraw. The edge runs its own
+## frames; a frame "redraws" when the engine drew the edge in it (its `draw` signal). The fire engine
+## is moved by hand at its own speed over each frame's own length, and the manager's tick is off, so
+## nothing else moves it.
 func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
+	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var manager := EventManager.new()
 	t.add_child(manager)
+	# After it enters the tree: entering turns on the tick of a node that defines one.
+	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	t.add_child(edge)
+	edge.atlas = atlas
 	edge.setup(manager, standing)
-	t.check(not edge._watch_the_edge(STEP), "nothing coming, nothing drawn: no redraw")
+	var drawn := [0]
+	edge.draw.connect(func() -> void: drawn[0] += 1)
+	t.add_child(edge)
+	# The draw every canvas item gets as it enters the tree, before the edge's own frames say anything.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(not await _redraws(t, edge, drawn), "nothing coming, nothing drawn: no redraw")
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := EventInstance.new()
+	engine.atlas = atlas
 	engine.setup(def, Vector2(1200.0, 0.0))
 	engine.set_process(false)
 	manager.add_child(engine)
@@ -308,23 +324,31 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	var asked_when_up := false
 	var went_up := false
 	for i in 120:
-		engine.global_position -= Vector2(def.speed * STEP, 0.0)
-		var asked := edge._watch_the_edge(STEP)
+		engine.global_position -= Vector2(def.speed * t.get_process_delta_time(), 0.0)
+		var asked := await _redraws(t, edge, drawn)
 		if not edge.model.coming.is_empty() and not went_up:
 			went_up = true
 			asked_when_up = asked
 		if went_up:
 			break
 	t.check(went_up and asked_when_up, "the frame the badge goes up is the frame it is drawn")
-	t.check(edge._watch_the_edge(STEP) and not edge.model.coming.is_empty(),
+	t.check(await _redraws(t, edge, drawn) and not edge.model.coming.is_empty(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
 	manager.world.instances.erase(engine)
-	t.check(edge._watch_the_edge(STEP), "the frame it comes down redraws once to take it off")
-	t.check(not edge._watch_the_edge(STEP), "and then the empty edge is not redrawn again")
+	t.check(await _redraws(t, edge, drawn), "the frame it comes down redraws once to take it off")
+	t.check(not await _redraws(t, edge, drawn), "and then the empty edge is not redrawn again")
 	edge.free()
 	standing.free()
 	manager.free()
+	atlas.release(&"events")
+
+## Lets one real frame pass and answers whether the engine drew `edge` in it (`drawn`, its count of
+## `draw` signals).
+static func _redraws(t, _edge: DangerEdge, drawn: Array) -> bool:
+	var before: int = drawn[0]
+	await t.get_tree().process_frame
+	return drawn[0] > before
 
 ## The arrow is hidden every frame it is not wanted; only the frame it goes from shown to hidden has
 ## anything to take off the screen.
