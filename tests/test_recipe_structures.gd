@@ -183,7 +183,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRun
 	errors = runtime.install(city, player, baby, day)
 	t.check(errors.is_empty() and city.events.ahead.holds_the_home_streets
 			and city.events.ahead.sends_poster_pursuits,
-			"and the same spec, with a day's settings, is the one its events own_run under: %s" % [errors])
+			"and the same spec, with a day's settings, is the one its events run under: %s" % [errors])
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().size() == 1,
 			"so a torn poster on a day scene sends its pursuer (%d warnings)"

@@ -172,18 +172,20 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
 
-## A held event walked away by hand (`EventInstance.walk_on_by_hand()`, which the runtime calls on
-## each drawn frame for an event it holds) walks straight away from her at its departure's pace and
-## is moved outside its own step, so its move stands where it now does (`MoveProposal.place()`): the
-## crowd's separation pass reads the map's moves (`WorldMap.moves`), not the node, and a move left
-## behind would have the crowd step round a dog that is no longer there. The dog is a real one in a
-## city of its own run's, turned away from her by its own departure
-## (`EventInstance.leave_for_a_completed_task()`) once a real frame has told it where she is.
+## A held event is walked away by the runtime itself (`SceneRecipeRuntime._process()`, which walks
+## the events a recipe `hold`s once a drawn frame, `EventInstance.walk_on_by_hand()`): away from
+## her at its departure's pace, and moved outside its own step, so its move stands where it now
+## does (`MoveProposal.place()`): the crowd's separation pass reads the map's moves (`WorldMap.moves`),
+## not the node, and a move left behind would have the crowd step round a dog that is no longer
+## there. The dog is a real one, installed by a recipe's `hold` through the runtime's own `install()`
+## and `begin()` in a city of its own run's, turned away from her by its own departure
+## (`EventInstance.leave_for_a_completed_task()`); the walking is whatever real frames make of it.
 func _test_a_held_departure_places_its_move(t) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 	var own_run := RunState.new()
 	own_run.start_run(4242)
+	own_run.header.day = 3
 	var city: City = CITY_SCENE.instantiate()
 	city.run = own_run
 	t.add_child(city)
@@ -193,24 +195,54 @@ func _test_a_held_departure_places_its_move(t) -> void:
 	city.start_day(state, 3, own_run.calendar.day_rng(3, "closures"))
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
-	var her := city.map.doorstep_world_position()
+	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
+	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
+	var row := EventCatalogue.by_id("charging_dog")
+	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.offscreen_notice)
+	var her := Vector2.INF
+	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		var stand := city.map.tile_to_world(tile)
+		if city.map.navigator().passable_at(stand + Vector2.DOWN * lead, EventInstance.mover_for(row)) \
+				and city.map.navigator().passable_at(stand, EventInstance.mover_for(row)):
+			her = stand
+			break
+	t.check(her != Vector2.INF, "the city has a sidewalk the dog can be sent down at")
+	var at := her + Vector2.DOWN * lead
 	player.global_position = her
-	city.events.use_player(player)
-	var dog := city.events.spawn_extra(EventCatalogue.by_id("charging_dog"), her + Vector2(60.0, 0.0))
-	await t.get_tree().physics_frame
-	dog.leave_for_a_completed_task()
-	t.check(dog.is_leaving, "the dog is leaving")
-	dog.held_by_hand = true
-	var from := dog.position
-	dog.walk_on_by_hand(0.5)
-	var walked := dog.position - from
-	t.check(is_equal_approx(walked.length(), dog.departure.speed() * 0.5)
-			and walked.dot(from - player.global_position) > 0.0,
-			"the held dog is walked straight on away from her at its departure's pace: %s" % walked)
-	var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
-			return move.from == dog.position and move.to == dog.position)
-	t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
-	city.events.retire(dog)
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"setup": {"day": 3, "events": [{"name": "dog", "row": "charging_dog",
+			"at": [at.x, at.y], "hold": true}], "player": {"at": [her.x, her.y]}}},
+			"manifest": {}, "anchors": {}, "map": city.map}, _recipe_config(false), own_run)
+	t.add_child(runtime)
+	var errors := runtime.install(city, player, player.get_node("Baby"),
+			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.is_empty(), "the held dog is installed: %s" % [errors])
+	runtime.begin()
+	var dog: EventInstance = runtime.named.get("dog")
+	t.check(dog != null, "the recipe's dog is live")
+	if dog != null:
+		await t.get_tree().physics_frame
+		dog.leave_for_a_completed_task()
+		t.check(dog.is_leaving, "the dog is leaving")
+		# The runtime takes the dog into its hand on the first drawn frame after it starts leaving;
+		# what it has walked since is the runtime's and not the dog's own step before that.
+		for _frame in 8:
+			if dog.held_by_hand:
+				break
+			await t.get_tree().process_frame
+		t.check(dog.held_by_hand, "the runtime has the dog in its hand")
+		var from := dog.position
+		for _frame in 8:
+			await t.get_tree().process_frame
+		var walked := dog.position - from
+		t.check(dog.held_by_hand and walked.length() > 0.0 and dog.position.distance_to(
+				player.global_position) > from.distance_to(player.global_position),
+				"the runtime walks the held dog on, farther from her: %s" % walked)
+		var placed := city.map.moves.all().any(func(move: MoveProposal) -> bool:
+				return move.from == dog.position and move.to == dog.position)
+		t.check(placed, "its move on the map stands where it does, at %s" % dog.position)
+		city.events.retire(dog)
+	runtime.free()
 	player.free()
 	city.free()
 	own_run.free()

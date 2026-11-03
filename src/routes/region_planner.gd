@@ -697,14 +697,6 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
 
-## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
-## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
-## give the wall, `SealPlanner.positions_across` at `Tuning.TILE_SIZE`, which comes out at three
-## across the street's own `STREET_WIDTH` (sidewalk, road, sidewalk, each exactly two tiles).
-##
-## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
-## re-deriving a position these three already sit exactly on — see that function's own doc on why a
-## continuous, non-tile-aligned position disagrees with what the recentring assumes.
 ## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its
 ## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
 ## each of the day's street doors through, and a scene recipe's authored checkpoint
@@ -713,6 +705,14 @@ static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: Regio
 	plan.doors.append(segment)
 	_add_door_bodies(map, segment, plan)
 
+## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
+## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
+## give the wall, `SealPlanner.positions_across` at `Tuning.TILE_SIZE`, which comes out at three
+## across the street's own `STREET_WIDTH` (sidewalk, road, sidewalk, each exactly two tiles).
+##
+## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
+## re-deriving a position these three already sit exactly on — see that function's own doc on why a
+## continuous, non-tile-aligned position disagrees with what the recentring assumes.
 static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
