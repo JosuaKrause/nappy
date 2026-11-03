@@ -358,6 +358,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	station.scenery_resident = false
 	t.add_child(station)
 	station.set_scenery_resident(true)
+	ledger.process_start(Time.get_ticks_usec())
 	var layers := 0
 	for child in station.get_children():
 		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
@@ -366,7 +367,12 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 				if connection["callable"].get_object() == recorder:
 					connection["callable"].call()
 	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
-	t.check(ledger._counters[FrameLedger.DRAWS_SCENERY] == 1,
+	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
+	ledger.keep = true
+	ledger.process_end(Time.get_ticks_usec())
+	ledger.process_start(Time.get_ticks_usec())
+	var rows := ledger.rows()
+	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 1,
 			"a yard layer built into a listening tree is counted as scenery")
 	station.free()
 	recorder.free()

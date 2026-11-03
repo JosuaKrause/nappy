@@ -182,6 +182,6 @@ func _test_examples(t) -> void:
 		t.check(found, "%s uses the generator's real adjoining dead-end building" % side)
 		var exterior := Rect2(-20000, -20000, 640, 480)
 		city.scenery.update(exterior)
-		t.check(not city._ground.chunks.is_empty(), "fallback ground streams beyond the original map")
-		t.check(city._ground.pending.is_empty(), "scripted scenery drains preparation independent of wall-clock budget")
+		t.check(not city.scenery_ground.chunks.is_empty(), "fallback ground streams beyond the original map")
+		t.check(city.scenery_ground.pending.is_empty(), "scripted scenery drains preparation independent of wall-clock budget")
 		city.free()
