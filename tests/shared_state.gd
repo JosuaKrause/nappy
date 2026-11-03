@@ -9,18 +9,19 @@ extends RefCounted
 ##   - the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, and the nodes under the root and
 ##     under the runner;
 ##   - `InputMap`: each action's deadzone and events, and whether `Input` holds it pressed;
-##   - every autoload's script variables, and every connection on its signals;
+##   - every autoload's script variables, the script variables of each `RefCounted` it holds in
+##     one, and every connection on its signals;
 ##   - every `static var` declared under `src/`, found by reading the sources, so a new one is
 ##     checked without anybody adding it to a list.
 ##
 ## A snapshot is a flat `Dictionary` from a field's name to a string describing its value, so a
 ## difference reads as "field: before -> after". Objects are described by class and instance id
 ## (a replaced object is a change; a mutated one is seen through its own fields only when it is
-## an autoload), arrays and dictionaries by their contents down to `DEPTH` levels.
+## an autoload or a `RefCounted` an autoload holds, as `<autoload>.<field>.<its field>`), arrays and
+## dictionaries by their contents down to `DEPTH` levels.
 ##
-## The runner resets some of this on purpose before every suite (`_reset_globals`); the check does
-## not look past that, so a field the runner resets and a suite changes is named in `EXEMPT` with
-## that as its reason, and every other field is the suite's own to give back.
+## Every field is the suite's own to give back, except the memoised ones in `EXEMPT` and the parts
+## of the `GameState` autoload (see `_autoload`).
 
 const DEPTH := 3
 const MAX_ITEMS := 64
@@ -28,7 +29,8 @@ const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "GameState"
 
 ## The only fields whose change is not a leak, each named with the one-line reason. A field is
 ## exempt by its own name, never its owner: a new field of the same script is checked until it is
-## listed here. A key is `<script file name without .gd>.<field>` (or the autoload's name).
+## listed here. A key is `<script file name without .gd>.<field>` (or the autoload's name), and
+## `<autoload>.<field>.<its field>` for a part an autoload holds.
 ##
 ## Memoised from constant data or files, filled by whichever suite first needs it, and read as the
 ## same answer ever after:
@@ -158,7 +160,14 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 		if not (int(property["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
 			continue
 		var name: String = property["name"]
-		out["%s.%s" % [autoload, name]] = _describe(node.get(name), DEPTH)
+		var value: Variant = node.get(name)
+		out["%s.%s" % [autoload, name]] = _describe(value, DEPTH)
+		# The parts of the run's state are not compared: the runner's own `start_run()` and
+		# `use_trace()` put them back before every suite, so a suite's change to one cannot be told
+		# from the reset. `docs/todo/2026-10-18-minty-quail/run-state-handed-in.md` makes the run's
+		# state something each test is handed fresh rather than a global, and removes this skip.
+		if autoload != "GameState":
+			_held(out, "%s.%s" % [autoload, name], value)
 	for info in node.get_signal_list():
 		var signal_name: String = info["name"]
 		var targets: Array[String] = []
@@ -171,6 +180,23 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 			targets.append("%s.%s" % [_describe(callable.get_object(), 0), callable.get_method()])
 		targets.sort()
 		out["%s.signal.%s" % [autoload, signal_name]] = str(targets)
+
+## The script variables of a `RefCounted` an autoload holds in `value`, each under `key` and its own
+## name, so a part an autoload keeps its state in (a queue, a counter) is compared as the
+## autoload's own fields are. One level deep: what such a part holds in turn is described by class
+## and instance id, as any other object is. A `Node` an autoload holds is not followed, since it is
+## not the autoload's to give back.
+static func _held(out: Dictionary[String, String], key: String, value: Variant) -> void:
+	if not (value is RefCounted) or not is_instance_valid(value):
+		return
+	var part: RefCounted = value
+	if part.get_script() == null:
+		return
+	for property in part.get_property_list():
+		if not (int(property["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		var name: String = property["name"]
+		out["%s.%s" % [key, name]] = _describe(part.get(name), DEPTH)
 
 static func _statics(out: Dictionary[String, String]) -> void:
 	if not _static_scanned:

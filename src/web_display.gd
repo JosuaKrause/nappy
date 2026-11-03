@@ -27,7 +27,7 @@ static func dpr_cap(config: RunConfig, on_web := OS.get_name() == "Web") -> floa
 	return _cap_from_query(config.page_query)
 
 ## The decision behind the gate, a pure function of its two inputs so a test can drive the table
-## (the same shape as `Telemetry._reads_the_url()`).
+## (the same shape as `TelemetryPage.reads_the_url()`).
 static func _reads_the_url(flags_open: bool, on_web: bool) -> bool:
 	return flags_open and on_web
 
