@@ -21,12 +21,13 @@ extends RefCounted
 ## **The halo and its rims run on real frames.** `ExcitementHalo` picks and every `EntityHalo` eases
 ## on its own `_process()`, which the engine calls; nothing here calls a frame function. A rim eases
 ## by the frame's own `delta`, so time in a check is the frame time the rims were handed, summed by a
-## node of the suite's own that the engine processes beside them (`FrameClock`); it is not
+## node of the suite's own that the engine processes beside them (`HaloRig.FrameClock`); it is not
 ## physics ticks, which no rim reads. What a rim was told is read through the rim a body hands its
-## source (`ExcitementSource.rim`, wrapped in a `ToldRim`), what it draws through the renderer's own
-## channel (`halo_colour`, the instance parameter the shader reads) and the engine's `draw` signal,
-## which a headless run emits like any other.
+## source (`ExcitementSource.rim`, wrapped in a `HaloRig.ToldRim`), what it draws through the
+## renderer's own channel (`halo_colour`, the instance parameter the shader reads) and the engine's
+## `draw` signal, which a headless run emits like any other.
 
+const HaloRig = preload("res://tests/halo_rig.gd")
 const STEP := 1.0 / 60.0
 
 ## The events' atlas page, held for the suite: an event in the tree is drawn on real frames, and the
@@ -67,61 +68,6 @@ func run(t) -> void:
 	await _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t)
 	_atlas.release(&"events")
 
-## The frame time every node in the tree has been handed since this one entered it: the engine
-## processes it beside the rims, so at any point between frames `elapsed` is the time each rim in
-## the tree since then has eased by, and `longest` the longest single frame.
-class FrameClock extends Node:
-	var elapsed := 0.0
-	var frames := 0
-	var longest := 0.0
-
-	func _process(delta: float) -> void:
-		elapsed += delta
-		frames += 1
-		longest = maxf(longest, delta)
-
-## **The rim a body hands its source, wrapped** so a test reads what `ExcitementHalo` told it: the
-## body's own rim (`inner`) does everything, and this keeps the last strength and colour it was
-## told. Handed to the source the way a body hands its own (`ExcitementSource.rim`), so the halo
-## asks this one and nothing else changes.
-class ToldRim extends SourceRim:
-	var inner: SourceRim
-	var strength := 0.0
-	var colour := Color(0.0, 0.0, 0.0, 0.0)
-	var told := 0
-
-	func _init(rim: SourceRim) -> void:
-		super(Callable())
-		inner = rim
-
-	func set_strength(to: float, tint: Color) -> void:
-		strength = to
-		colour = tint
-		told += 1
-		inner.set_strength(to, tint)
-
-	func is_held() -> bool:
-		return inner.is_held()
-
-	func release() -> void:
-		inner.release()
-
-	func forget() -> void:
-		inner.forget()
-
-	func entity_halo() -> EntityHalo:
-		return inner.entity_halo()
-
-	## Whether its rim is lit — held and told a nonzero target — rather than absent or fading.
-	func is_lit() -> bool:
-		return inner.is_held() and strength > 0.0
-
-## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
-static func _told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.excitement.rim as SourceRim)
-	instance.excitement.rim = rim
-	return rim
-
 ## A meter whose decay over the window is a number the test sets: what `ExcitementHalo` asks the
 ## baby it is handed (`setup()`), and nothing else. Never in the tree (`Baby._ready()` wants a
 ## stroller parent).
@@ -140,7 +86,7 @@ static func _drawn(halo: EntityHalo) -> Color:
 ## Lets real frames pass until `done` answers true or `seconds` of frame time have passed on
 ## `clock`, and answers whether `done` came true. Bounded in frames too, so a tree that stopped
 ## processing ends the wait rather than hanging the suite.
-static func _frames_until(t, clock: FrameClock, done: Callable, seconds: float) -> bool:
+static func _frames_until(t, clock: HaloRig.FrameClock, done: Callable, seconds: float) -> bool:
 	var from := clock.elapsed
 	var frames := 0
 	while not done.call():
@@ -151,7 +97,7 @@ static func _frames_until(t, clock: FrameClock, done: Callable, seconds: float) 
 	return true
 
 ## Lets real frames pass until `seconds` of frame time have passed on `clock`.
-static func _frames_for(t, clock: FrameClock, seconds: float) -> void:
+static func _frames_for(t, clock: HaloRig.FrameClock, seconds: float) -> void:
 	var from := clock.elapsed
 	while clock.elapsed - from < seconds:
 		await t.get_tree().process_frame
@@ -343,7 +289,7 @@ func _test_net_landed_sums_to_the_bars_rise_while_climbing(t) -> void:
 ## colour is asserted to differ from what its *gross* landed value would have coloured it, not only
 ## to equal its net.
 func _test_process_reads_net_shared_by_baby_decay(t) -> void:
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := EventManager.new()
 	t.add_child(manager)
@@ -362,7 +308,7 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 	manager.add_child(strong)
 	manager.world.instances.append(strong)
 	strong.excitement.accumulate_landed(30.0)
-	var strong_rim := _told(strong)
+	var strong_rim := HaloRig.told(strong)
 
 	var weak := EventInstance.new()
 	weak.atlas = _atlas
@@ -370,7 +316,7 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 	manager.add_child(weak)
 	manager.world.instances.append(weak)
 	weak.excitement.accumulate_landed(10.0)
-	var weak_rim := _told(weak)
+	var weak_rim := HaloRig.told(weak)
 
 	t.add_child(halo)
 	var told := await _frames_until(t, clock,
@@ -450,7 +396,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
 			func() -> float: return 0.0)
 	halo.draw.connect(func() -> void: drawn_frames[0] += 1)
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	t.add_child(halo)
 	# The frame the two entered on passes first, so every frame after the glow is set is one both
@@ -558,7 +504,7 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 # who gets a nonzero target and who gets zero must come out exactly the same either way.
 
 func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := EventManager.new()
 	t.add_child(manager)
@@ -575,7 +521,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
 	manager.add_child(strong)
 	manager.world.instances.append(strong)
-	var strong_rim := _told(strong)
+	var strong_rim := HaloRig.told(strong)
 	# Out of reach at her position (400px against a 150px outer radius), so it clears neither the
 	# floor nor `select_sources()`'s cap -- the case the old `in` scan and the new lookup both have
 	# to answer "no" to.
@@ -771,7 +717,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 			+ "traces is a different silhouette every frame")
 
 	# And the rim over them is exactly the state that used to stop re-tracing.
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	(flock.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = flock.rim()
@@ -905,7 +851,7 @@ class RimProbe:
 ## faded. A rim built in `_ready()` for every live event is what filled the web's blocks at dawn
 ## and left the man shouting beside her doorstep dark however hard he was charging her.
 func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var instance := _rig_instance(t, EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
 	var rim_of := instance.excitement.rim as SourceRim
@@ -946,7 +892,7 @@ func _test_the_lit_rims_always_fit_the_budget(t) -> void:
 ## budget full waits, and the walk checks that it waits only then.
 func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := EventManager.new()
 	t.add_child(manager)
@@ -1020,7 +966,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 ## left to go with its body would leave beside it, after the new pick had found the budget full.
 func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := EventManager.new()
 	t.add_child(manager)
@@ -1100,7 +1046,7 @@ class ChurnSource extends Node2D:
 	var strength := 0.0
 	var excitement := Excitement.new(self)
 	## Its rim, as every body holds one (`SourceRim`), wrapped so a test reads what it was told.
-	var rim := ToldRim.new(SourceRim.new(_build_rim))
+	var rim := HaloRig.ToldRim.new(SourceRim.new(_build_rim))
 
 	func _init() -> void:
 		excitement.rim = rim
@@ -1159,7 +1105,7 @@ static func _sets(manager: EventManager, crowd: Crowd = null) -> Array[Excitemen
 ## tells each zero (none is picked yet), the budget is full of fading rims, one finishing every few
 ## frames from the shortest fade on, which is still over half of `EntityHalo.FADE_OUT_SECONDS`.
 ## Returns the sources.
-func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: FrameClock) -> Array:
+func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.FrameClock) -> Array:
 	var fading: Array = []
 	for i in EntityHalo.RIM_BUDGET:
 		var source := ChurnSource.new()
@@ -1182,7 +1128,7 @@ func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: FrameClock
 ## rims finish one at a time, and the first block that comes back goes to the stronger, newer pick.
 func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_earlier(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var events := ChurnEvents.new()
 	t.add_child(events)
@@ -1229,7 +1175,7 @@ func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_ear
 ## k most intensive show" that says the weaker newcomer does not get in ahead of it.
 func _test_a_repicked_fading_rim_is_lit_again_at_once(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var events := ChurnEvents.new()
 	t.add_child(events)
@@ -1299,7 +1245,7 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 		var set_strengths: Callable = turnover[2]
 		var weak_from: int = turnover[3]
 		var probe := RimProbe.new(t.get_tree())
-		var clock := FrameClock.new()
+		var clock := HaloRig.FrameClock.new()
 		t.add_child(clock)
 		var events := ChurnEvents.new()
 		t.add_child(events)
@@ -1375,7 +1321,7 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 ## not count would let that pick in at once, one rim past the budget.
 func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
-	var clock := FrameClock.new()
+	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := EventManager.new()
 	t.add_child(manager)
@@ -1393,7 +1339,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 	instance.setup(_def("dropped", 20.0), Vector2.ZERO)
 	manager.add_child(instance)
 	manager.world.instances.append(instance)
-	var rim := _told(instance)
+	var rim := HaloRig.told(instance)
 	var others: Array = []
 	for i in EntityHalo.RIM_BUDGET - 1:
 		var source := ChurnSource.new()
