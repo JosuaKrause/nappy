@@ -45,8 +45,9 @@ static func base_transform_of(canvas: CanvasItem) -> Transform2D:
 ## Where a mirrored `draw_standing()` actually puts its texture: the mirror about `at` composed
 ## **under** whatever transform `canvas` was told it is under, rather than the mirror alone.
 ##
-## A function of its own rather than an expression inside the branch below, because headless runs
-## never call `_draw()` -- so this is the only shape of it a test can hold. See
+## A function of its own rather than an expression inside the branch below, because a transform set
+## inside a draw pass cannot be read back from the canvas, headless or not -- so this is the only
+## shape of it a test can hold. See
 ## `tests/test_halo.gd`, "the rim's mirrored copies land on the ring".
 static func mirrored_transform(canvas: CanvasItem, at: Vector2) -> Transform2D:
 	return base_transform_of(canvas) * Transform2D(0.0, at).scaled_local(Vector2(-1.0, 1.0))

@@ -32,46 +32,57 @@ func run(t) -> void:
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")
 	summary.queue_free()
 
+	var run := RunState.new()
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
-	pause.use_run(GameState)
+	pause.use_run(run)
 	t.add_child(pause)
 	var pause_body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
 		_check_help(t, pause.body_for(joystick), pause_body, "the pause body (joystick %s)" % joystick)
-	pause.queue_free()
+	pause.free()
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
-	hud.use_run(GameState)
+	hud.use_run(run)
 	t.add_child(hud)
 	var teach: HelpText = hud.get_node("Root/Teach")
 	for step in ResistanceSteps.all():
 		if step.is_pickup and step.brief != "":
 			_check_help(t, step.brief, teach, "the chalk mark's message \"%s\"" % step.title)
-	hud.queue_free()
+	hud.free()
+	run.free()
 
 ## The label as the screen lays it out: the width it asks for, as the box it sits in gives it.
 func _check_label(t, source: String, label: Label, what: String) -> void:
 	var wrapped := SentenceLines.break_for_label(source, label)
-	label.text = wrapped
-	label.size.x = maxf(label.custom_minimum_size.x, label.get_combined_minimum_size().x)
-	_compare(t, wrapped, label.get_line_count(), source, label.size.x,
-			label.get_theme_font_size("font_size"), what)
+	var lines_of := func(text: String) -> int:
+		label.text = text
+		label.size.x = maxf(label.custom_minimum_size.x, label.get_combined_minimum_size().x)
+		return label.get_line_count()
+	_compare(t, wrapped, lines_of, source, label.custom_minimum_size.x, what)
 
 func _check_help(t, source: String, label: HelpText, what: String) -> void:
 	var wrapped := SentenceLines.break_for_help(source, label)
-	label.show_line(wrapped)
-	label.size.x = label.custom_minimum_size.x
-	_compare(t, wrapped, label.get_line_count(), source, label.size.x,
-			label.get_theme_font_size("normal_font_size"), what)
+	var lines_of := func(text: String) -> int:
+		label.show_line(text)
+		label.size.x = label.custom_minimum_size.x
+		return label.get_line_count()
+	_compare(t, wrapped, lines_of, source, label.custom_minimum_size.x, what)
 
 ## Every sentence has to fit the label's width on its own (a label that wraps one moves its last
 ## word down, though the screen has room), and then the label's own line count is `SentenceLines`'s.
-func _compare(t, wrapped: String, shown: int, source: String, width: float, font_size: int,
+## The sentences are the lines `SentenceLines` breaks the text into at a width no two can share
+## (a label 1 px wide), and each is shown alone in the screen's own
+## label (`lines_of`), which has to lay it out on one line.
+func _compare(t, wrapped: String, lines_of: Callable, source: String, width: float,
 		what: String) -> void:
 	var broken := wrapped.split("\n").size()
-	for sentence in SentenceLines._split_sentences(source):
-		t.check(SentenceLines._width(sentence, font_size) <= width,
+	var narrow := Label.new()
+	narrow.custom_minimum_size.x = 1.0
+	for sentence in SentenceLines.break_for_label(source, narrow).split("\n"):
+		t.check(lines_of.call(sentence) == 1,
 				"%s: the sentence \"%s\" fits the %d px the label has, so the label never wraps it"
 						% [what, sentence, width])
+	narrow.free()
+	var shown: int = lines_of.call(wrapped)
 	t.check(shown == broken,
 			"%s shows %d lines at %d px where SentenceLines broke it into %d" % [what, shown, width, broken])

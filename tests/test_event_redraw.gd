@@ -6,11 +6,12 @@ extends RefCounted
 ## instances a day that was the largest drawing cost in a frame
 ## (`docs/evidence/m124-frame-cost-2026-09-13/README.md`).
 ##
-## **What a suite can hold here is the gate's answer, not the drawing.** `_draw()` never runs
-## headless, and nothing exposes whether a `queue_redraw()` is pending — so what is asserted is what
-## `redraw_if_the_picture_changed()` answers each time the game's `_process()` would ask it, which is
-## the whole of its decision: a gate that does not ask is a draw list that is not rebuilt, and a gate
-## that asks while the picture moves is the guarantee that nothing animated was frozen by it. The rendered half is the bursts in
+## **What this suite holds is the gate's answer, because the answer is the decision.** What is
+## asserted is what `redraw_if_the_picture_changed()` answers each time the game's `_process()`
+## would ask it, which is the whole of its decision: a gate that does not ask is a draw list that is
+## not rebuilt, and a gate that asks while the picture moves is the guarantee that nothing animated
+## was frozen by it. A headless run does draw, so a count of `draw` signals could hold the same
+## thing, but it says nothing about what was drawn, and the key the gate compares does. The rendered half is the bursts in
 ## `docs/evidence/m124-frame-fixes-2026-09-13/`.
 ##
 ## Nothing here calls a `_draw_*` function — `Sprites.draw_standing()` inside them is only valid

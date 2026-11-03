@@ -1,6 +1,6 @@
 extends RefCounted
-## A closure's cause lies across the street it closes, whichever way the street runs. Headless runs
-## never call `_draw()` (the **verify** skill), so this pins the two queries
+## A closure's cause lies across the street it closes, whichever way the street runs. A headless
+## draw pass makes no pixels to read (the **verify** skill), so this pins the two queries
 ## `ClosureMarker._draw_cause()` draws from — which picture, and where it stands — against the
 ## baked pictures' own sizes. Whether each picture reads as the thing it is lying the right way is
 ## a screenshot's question: the sheets under `docs/evidence/m187-closures-across-2026-09-23/`.

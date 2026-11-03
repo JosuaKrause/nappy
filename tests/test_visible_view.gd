@@ -14,30 +14,32 @@ func run(t) -> void:
 	_test_just_out_of_sight_is_never_nearer_than_its_floor(t)
 	_test_the_view_follows_the_camera_and_the_scheme(t)
 	_test_a_rotated_window_shows_the_same_world_under_the_same_corners(t)
-	_test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t)
-	_test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t)
+	await _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t)
+	await _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t)
 
 ## Whichever side the title chose, every consumer sees the painted footprint, while spawning stays
-## outside the complete camera. The ground inward of the focal discs is visible.
+## outside the complete camera. The ground inward of the focal discs is visible. What the badge sees
+## is read off the badge itself (`_badge_sees()`), on the edge's own frames.
 func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> void:
 	var paused: bool = t.get_tree().paused
 	t.get_tree().paused = false
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var player := Node2D.new()
+	# The controls find her the way they find the game's own stroller, by its group.
+	player.add_to_group("player")
 	t.add_child(player)
 	player.global_position = Vector2(2000.0, 2000.0)
 	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
 	t.add_child(controls)
-	controls._rig = player
 	var source := _Source.new()
 	source.view.controls = controls.covering
 	var edge := DangerEdge.new()
+	edge.atlas = atlas
 	t.add_child(edge)
 	edge.setup(source, player)
 	var row := EventCatalogue.by_id("cyclist")
-	var bike := EventInstance.new()
-	bike.setup(row, player.global_position)
-	bike.resume(row.telegraph_time, 0.0)
-	source.live.append(bike)
+	var at := player.global_position
 	for rotated: bool in [false, true]:
 		controls.rotated = rotated
 		for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
@@ -48,28 +50,51 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 					"the title's side puts Run on the opposite focus, rotated=%s" % rotated)
 			source.view.look_through(player)
 			for design: Vector2 in [Vector2(350.0, 620.0), Vector2(930.0, 620.0)]:
-				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
-				t.check(edge._shows(bike), "ground inward of either focal disc is visible to the badge")
+				at = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
+				t.check(await _badge_sees(t, edge, source, row, at),
+						"ground inward of either focal disc is visible to the badge")
 			for design: Vector2 in [Vector2(160.0, 650.0), Vector2(1120.0, 650.0)]:
-				bike.global_position = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
-				t.check(not edge._shows(bike), "both covered corners remain unseen on either side")
-				var way := (bike.global_position - player.global_position).normalized()
-				var at := SpawnSiting.just_out_of_sight(
+				at = player.global_position + (design - ScreenOrientation.DESIGN_SIZE * 0.5) * 0.5
+				t.check(not await _badge_sees(t, edge, source, row, at),
+						"both covered corners remain unseen on either side")
+				var way := (at - player.global_position).normalized()
+				var arrival := SpawnSiting.just_out_of_sight(
 						SpawnSiting.seen_from(source.view, player.global_position),
 						EventFootprints.footprint_of(row), player.global_position, way)
 				var box := EventFootprints.footprint_of(row)
-				t.check(not source.view.view.intersects(Rect2(at + box.position, box.size)),
+				t.check(not source.view.view.intersects(Rect2(arrival + box.position, box.size)),
 						"the same covered bearing places the whole arrival outside the camera")
 		controls.set_mode(ControlsMode.Mode.TAP)
 		source.view.look_through(player)
-		t.check(edge._shows(bike) and controls.run_button_center() == Vector2.INF,
+		t.check(await _badge_sees(t, edge, source, row, at)
+				and controls.run_button_center() == Vector2.INF,
 				"tap mode reveals the corner and removes the Run disc")
 	controls.free()
 	edge.free()
 	source.free()
-	bike.free()
 	player.free()
+	atlas.release(&"events")
 	t.get_tree().paused = paused
+
+## **Whether the badge counts a cyclist standing at `at` as in sight**, read off the badge: one that
+## arrives under a warning arrives with its badge already up (`BadgeModel`), and the edge takes the
+## badge down on its first frame if any of the cyclist shows, by its own test of the cyclist's point
+## and drawing against the view it is handed. So after the edge's own frames the badge is down
+## exactly where the edge saw it. A fresh cyclist each time, so no earlier frame has seen it.
+static func _badge_sees(t, edge: DangerEdge, source: _Source, row: EventDef, at: Vector2) -> bool:
+	var bike := EventInstance.new()
+	bike.setup(row, at)
+	bike.resume(row.telegraph_time, 0.0)
+	bike.came_under_a_warning = true
+	source.live.append(bike)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	var badged := false
+	for badge in edge.announcing():
+		badged = badged or badge["id"] == "cyclist"
+	source.live.erase(bike)
+	bike.free()
+	return not badged
 
 ## The view's centre, and points well inside each bottom corner, at its bottom middle, and in the
 ## middle — the middle and the bottom middle seen in both schemes, the corners only in the tap one.
@@ -246,6 +271,8 @@ class _Source extends Node:
 ## sight in the joystick scheme, so `DangerEdge` keeps its badge; in the tap scheme it is in sight,
 ## and there is none.
 func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var her := Vector2(2000.0, 2000.0)
 	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var start := her + corner * 0.5
@@ -261,13 +288,16 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		source.live.append(bike)
 		source.view.look(VisibleView.around(her, null).view, TouchControls.covered_screen() if joystick else null)
 		var edge := DangerEdge.new()
-		t.add_child(edge)
+		edge.atlas = atlas
 		edge.setup(source, player)
+		t.add_child(edge)
+		# Six of the edge's own frames, the cyclist stepped a sixtieth of a second before each, as
+		# far as it ever rode here: still under the corner.
 		var step := 1.0 / 60.0
 		for i in 6:
 			bike.player_at = her
 			bike.step(step)
-			edge._measure(step)
+			await t.get_tree().process_frame
 		var badged := false
 		for badge in edge.announcing():
 			badged = badged or badge["id"] == "cyclist"
@@ -277,3 +307,4 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		bike.free()
 		player.free()
 		source.free()
+	atlas.release(&"events")

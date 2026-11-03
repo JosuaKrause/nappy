@@ -202,9 +202,10 @@ nearly settled baby, which reaches the summary and day 2, and days 8 and 14 are 
 rather than reached), and judges no picture: its screenshots, kept with `result.json` as the job's
 artifact when it does not pass, are evidence somebody has to open.
 
-**A green `check.sh` says nothing about whether the game looks right** — headless runs never call
-`_draw()`. Real bugs found only by opening a screenshot: building extrusions overhanging every
-sidewalk, zebra crossings rendering as visual static, a fire always spawning against the map wall.
+**A green `check.sh` says nothing about whether the game looks right** — a headless run calls
+`_draw()` and emits `draw` like any other, but its dummy renderer makes no pixels. Real bugs found
+only by opening a screenshot: building extrusions overhanging every sidewalk, zebra crossings
+rendering as visual static, a fire always spawning against the map wall.
 
 **Where a run cannot be played, walk a rig and read the meter.** A throwaway `tests/test_zz_*.gd`
 that prints numbers and is deleted before committing is the headless stand-in for the minute of

@@ -515,9 +515,10 @@ live in `src/game_enums.gd` rather than on `GameState`.
 
 ### Verifying visuals
 
-A headless run never calls `_draw()`, so `tools/check.sh` passing says nothing about
-whether the game renders correctly. `tools/shot.sh out.png [frames]` runs the game
-windowed, saves the viewport after N frames and quits.
+A headless run calls `_draw()` and emits `draw` like any other, but its dummy renderer makes no
+pixels, so `tools/check.sh` passing says nothing about whether the game renders correctly.
+`tools/shot.sh out.png [frames]` runs the game windowed, saves the viewport after N frames and
+quits.
 
 ### Dev flags and release builds
 

@@ -12,6 +12,7 @@ extends RefCounted
 ##     How dangerous a thing is has to be visible from looking at *the thing*.
 
 func run(t) -> void:
+	_atlas.acquire(&"events")
 	_test_the_rings_are_gone(t)
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
@@ -25,20 +26,25 @@ func run(t) -> void:
 	_test_a_walker_brushing_past_is_unmarked(t)
 	_test_the_arterial_at_ordinary_density_marks_nobody(t)
 	_test_the_mark_still_breathes(t)
-	_test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
-	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
+	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
+	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
 	_test_a_director_sited_pursuer_earns_an_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
-	_test_the_badge_measures_the_things_own_speed(t)
-	_test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t)
-	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
+	await _test_the_badge_measures_the_things_own_speed(t)
+	await _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t)
+	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
 	_test_the_babys_cue_only_steps_aside_for_something(t)
 	_test_the_carried_babys_cue_stays_over_her_head(t)
+	_atlas.release(&"events")
 
 const STEP := 1.0 / 60.0
+
+## The events' atlas page, held for the suite: an event or a badge in the tree is drawn on real
+## frames, and the game hands each the library it draws from.
+var _atlas := AtlasLibrary.new()
 
 # ---------------------------------------------------------------- no circles ---
 
@@ -495,7 +501,7 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 			"the louder warning survives a quieter one raised in the same frame")
 
 	# And it goes away on its own rather than needing to be told to.
-	rig._physics_process(0.6)
+	await _physics_ticks(t, rig, 0.6)
 	t.check(rig.alert_level() == Stroller.Alert.NONE, "a warning expires by itself")
 
 	rig.warn(Stroller.Alert.SOON, 0.5)
@@ -518,6 +524,9 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var manager := EventManager.new()
 	t.add_child(manager)
+	# Its own tick off (after it enters the tree, which turns it on): the warning under test is run
+	# through `_warn_through()`, and a bare manager's whole tick wants a director.
+	manager.set_physics_process(false)
 	var rig := _rig(t)
 	manager.use_player(rig)
 	rig.global_position = Vector2(1000.0, 1000.0)
@@ -549,7 +558,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 
 	# Far enough away and it is somebody else's problem again.
 	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius + 50.0, 0.0)
-	rig._physics_process(1.0)
+	await _physics_ticks(t, rig, 1.0)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"outside its outer radius there is nothing over her head")
@@ -573,8 +582,8 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 
 	# And turning round takes it away again, from the same place, on the same frame.
 	rig.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	rig._alert = Stroller.Alert.NONE
-	rig._alert_left = 0.0
+	# The doubled mark the step before raised is the warnings' own, and theirs to take down.
+	rig.stand_down(WarningBoard.WARNING_SOURCE)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"and walking away from the same spot takes it down — the danger has been avoided")
@@ -703,14 +712,17 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 			"and nothing slower than a stroll is announced at any distance")
 
 	# And the same thing through the real measurement, because the defect was in the plumbing
-	# rather than in the arithmetic: what the two static functions above are *given*.
+	# rather than in the arithmetic: what the two static functions above are *given*. The edge runs
+	# its own frames, and each thing moves by hand at its own speed over the frame's own length.
 	var manager := EventManager.new()
 	t.add_child(manager)
+	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	t.add_child(edge)
+	edge.atlas = _atlas
 	edge.setup(manager, standing)
+	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := _instance(def)
@@ -719,16 +731,24 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	manager.world.instances.append(engine)
 
 	# A second of her walking straight at a stopped fire engine.
-	for i in 60:
-		standing.global_position += Vector2(walk, 0.0)
-		edge._process(step)
-	t.check(edge.model.coming.is_empty(),
+	var announced_while_walking := false
+	var walked := 0.0
+	while walked < 1.0:
+		var delta: float = t.get_process_delta_time()
+		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
+		walked += delta
+		await t.get_tree().process_frame
+		announced_while_walking = announced_while_walking or not edge.model.coming.is_empty()
+	t.check(not announced_while_walking,
 			"walking towards something lethal does not announce it at the edge of the screen")
 
 	# And a second of it driving at her while she stands still.
-	for i in 60:
-		engine.global_position -= Vector2(def.speed * step, 0.0)
-		edge._process(step)
+	var driven := 0.0
+	while driven < 1.0:
+		var delta: float = t.get_process_delta_time()
+		engine.global_position -= Vector2(def.speed * delta, 0.0)
+		driven += delta
+		await t.get_tree().process_frame
 	t.check(edge.model.coming.size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
@@ -743,11 +763,13 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	var manager := EventManager.new()
 	t.add_child(manager)
+	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	t.add_child(edge)
+	edge.atlas = _atlas
 	edge.setup(manager, standing)
+	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := _instance(def)
@@ -756,16 +778,17 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	manager.world.instances.append(engine)
 	var id := engine.get_instance_id()
 
-	edge._process(STEP)
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
 	t.check(edge.model.watch.has(id), "a live instance gets an entry in _watch")
 	var entry: Dictionary = edge.model.watch[id]
-	edge._process(STEP)
+	await t.get_tree().process_frame
 	t.check(edge.model.watch[id] == entry,
 			"the same instance's entry is the same Dictionary object next frame, mutated in " +
 			"place rather than torn down and rebuilt")
 
 	manager.world.instances.erase(engine)
-	edge._process(STEP)
+	await t.get_tree().process_frame
 	t.check(not edge.model.watch.has(id),
 			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
 			"to sit there forever")
@@ -800,7 +823,7 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 
 	# An upgrade takes the new caller's hold rather than inheriting the old one's remainder,
 	# or a second of leftover `SOON` outlives the `NOW` that replaced it.
-	rig._physics_process(0.4)
+	await _physics_ticks(t, rig, 0.4)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"and the doubled mark expires on its own hold, not on the one underneath it")
 	rig.free()
@@ -937,6 +960,7 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 
 func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
+	instance.atlas = _atlas
 	instance.setup(def, Vector2.ZERO, route)
 	return instance
 
@@ -954,9 +978,9 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs
-## and `_physics_process` can be stepped by hand. `SomeNode.new()` is not named `SomeNode`, so
-## the camera has to be named explicitly or the lookup fails silently.
+## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs, its
+## own tick off until a test lets real ticks pass (`_physics_ticks()`). `SomeNode.new()` is not
+## named `SomeNode`, so the camera has to be named explicitly or the lookup fails silently.
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -966,3 +990,20 @@ func _rig(t) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	return rig
+
+## Lets `seconds` of the stroller's own physics ticks pass for real, counted in ticks, one tick a
+## frame (record busy-puffin: a slow frame would pack several), its tick switched on only for them.
+## Ends on the frame after the last tick, so the rig has run every one of them.
+func _physics_ticks(t, rig: Stroller, seconds: float) -> void:
+	var steps := Engine.max_physics_steps_per_frame
+	Engine.max_physics_steps_per_frame = 1
+	rig.set_physics_process(true)
+	var ticks := ceili(seconds * Engine.physics_ticks_per_second - 0.001)
+	var ran := 0
+	while ran < ticks:
+		var before := Engine.get_physics_frames()
+		await t.get_tree().physics_frame
+		ran += Engine.get_physics_frames() - before
+	await t.get_tree().process_frame
+	rig.set_physics_process(false)
+	Engine.max_physics_steps_per_frame = steps

@@ -191,11 +191,11 @@ func _draw() -> void:
 		return
 	_draw_chalk()
 
-## Whether this contact draws a chalk picture at all — `_draw()`'s one question, pure, so a headless
-## test (which never calls `_draw()`) can ask it. Only a pickup is a chalk mark. A perform's contact
-## is invisible, untouched or done: a rider has to look exactly like the ordinary row it rides on,
-## or approaching it would already answer "is this the one", and a bare point's destination is the
-## item the world draws there.
+## Whether this contact draws a chalk picture at all — `_draw()`'s one question, pure, so a test can
+## ask it without a picture to read (a headless draw pass makes no pixels). Only a pickup is a chalk
+## mark. A perform's contact is invisible, untouched or done: a rider has to look exactly like the
+## ordinary row it rides on, or approaching it would already answer "is this the one", and a bare
+## point's destination is the item the world draws there.
 func draws_a_mark() -> bool:
 	return step != null and step.is_pickup
 

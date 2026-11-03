@@ -1071,8 +1071,8 @@ stands on the carriageway's centre line, level with the gatehouses on either pav
 by the near post alone puts its whole arm to one side of where the body is — along a kerb, with the
 lanes it exists to bar open underneath it. Anchored between the posts, each post lands just outside
 a kerb and the striped arm crosses the lanes. `EventPictures.boom_arm_span()` states that reach as
-a number, because `_draw()` never runs in a headless test and the arm's own extent is the whole of
-what the player sees.
+a number, because a headless test's draw pass makes no pixels to measure and the arm's own extent
+is the whole of what the player sees.
 
 ### Which way a spread lies
 

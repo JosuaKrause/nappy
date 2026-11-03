@@ -5,6 +5,7 @@ extends RefCounted
 
 ## The one file that may write a `z_index` or a `z_as_relative`.
 const MODULE := "res://src/world/draw_layer.gd"
+const EastWestStreet = preload("res://tests/east_west_street.gd")
 
 func run(t) -> void:
 	_test_no_z_index_is_written_outside_the_module(t)
@@ -162,11 +163,10 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		var instance := EventInstance.new()
 		instance.atlas = atlas
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
-				_open_ground_in(world))
-		instance._spread_vertical = vertical
+				_ground_in(world, vertical))
 		world.add_entity(instance)
 		instance.look.attach_nodes()
-		var slices := (instance.look as SpreadLook)._slices
+		var slices := _slices_of(instance)
 		t.check(slices.size() > 1, "%s: the spread is drawn in slices (%d)" % [what, slices.size()])
 		var ahead := true
 		var on_its_layer := true
@@ -189,11 +189,13 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 			for i in range(1, slices.size()):
 				rising = rising and slices[i].global_position.y > slices[i - 1].global_position.y
 			t.check(rising, "end-on, each slice stands nearer the camera than the one before")
-		instance._rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-		t.check(instance._rim.entity_halo() != null and instance._rim.entity_halo().get_parent() == slices[0]
-				and (instance._rim.entity_halo().global_position - instance.global_position).is_zero_approx(),
+		var rim_of := instance.excitement.rim as SourceRim
+		rim_of.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		var rim := instance.rim()
+		t.check(rim != null and rim.get_parent() == slices[0]
+				and (rim.global_position - instance.global_position).is_zero_approx(),
 				"%s: the rim stands behind the first slice, at the instance's own origin" % what)
-		instance._rim.release()
+		rim_of.release()
 		world.free()
 	atlas.release(&"events")
 
@@ -227,6 +229,26 @@ static func _open_ground_in(world: WorldContext) -> WorldMap:
 	ground.world = world
 	return ground
 
+## The ground an instance stands on in `world`: an east-west street where it is to run down the
+## screen (`vertical`), which it reads its axis off as it does in a city, and open ground otherwise.
+static func _ground_in(world: WorldContext, vertical: bool) -> WorldMap:
+	if not vertical:
+		return _open_ground_in(world)
+	var ground: WorldMap = EastWestStreet.new()
+	ground.world = world
+	return ground
+
+## The slices `instance`'s picture is drawn in, found where the look stood them, beside it in the
+## world's entity layer, in their own order (`SpreadLook.Slice.index`, far end first).
+static func _slices_of(instance: EventInstance) -> Array[SpreadLook.Slice]:
+	var found: Array[SpreadLook.Slice] = []
+	for child in instance.get_parent().get_children():
+		if child is SpreadLook.Slice and child.instance == instance:
+			found.append(child)
+	found.sort_custom(func(a: SpreadLook.Slice, b: SpreadLook.Slice) -> bool:
+		return a.index < b.index)
+	return found
+
 static func _slices_in(layer: Node) -> int:
 	var count := 0
 	for child in layer.get_children():
@@ -252,11 +274,10 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			var instance := EventInstance.new()
 			instance.atlas = atlas
 			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
-					Vector2.RIGHT, _open_ground_in(world))
-			instance._spread_vertical = vertical
+					Vector2.RIGHT, _ground_in(world, vertical))
 			world.add_entity(instance)
 			instance.look.attach_nodes()
-			var slices := (instance.look as SpreadLook)._slices
+			var slices := _slices_of(instance)
 			var ahead := slices.size() > 1
 			for slice in slices:
 				ahead = ahead and slice.get_parent() == instance.get_parent() \

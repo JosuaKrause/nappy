@@ -2,6 +2,7 @@ extends RefCounted
 ## Exact projection parity under same-frame writes, with counters on actual sampled work.
 
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
+const HaloRig = preload("res://tests/halo_rig.gd")
 
 ## An event whose source counts the samplings it really runs.
 class CountedEvent extends EventInstance:
@@ -11,8 +12,9 @@ class CountedEvent extends EventInstance:
 
 	func _init() -> void:
 		super()
+		var rim: RefCounted = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = _rim
+		excitement.rim = rim
 
 	class Source extends EventExcitement:
 		var sampling_runs := 0
@@ -29,8 +31,9 @@ class CountedCrowd extends CrowdAgent:
 
 	func _init() -> void:
 		super()
+		var rim: RefCounted = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = _rim
+		excitement.rim = rim
 
 	class Source extends CrowdExcitement:
 		var sampling_runs := 0
@@ -43,8 +46,9 @@ class CountedCrowd extends CrowdAgent:
 class ReferenceEvent extends EventInstance:
 	func _init() -> void:
 		super()
+		var rim: RefCounted = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = _rim
+		excitement.rim = rim
 
 	class Source extends EventExcitement:
 		func expected_gross_at(at: Vector2) -> float:
@@ -54,8 +58,9 @@ class ReferenceEvent extends EventInstance:
 class ReferenceCrowd extends CrowdAgent:
 	func _init() -> void:
 		super()
+		var rim: RefCounted = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = _rim
+		excitement.rim = rim
 
 	class Source extends CrowdExcitement:
 		func expected_gross_at(at: Vector2) -> float:
@@ -66,7 +71,7 @@ func run(t) -> void:
 	_test_crowd_mutations(t)
 	_test_live_net_and_skipped_work(t)
 	_test_consumer_order(t)
-	_test_halo_and_removal(t)
+	await _test_halo_and_removal(t)
 
 func _same_bits(a: float, b: float) -> bool:
 	return var_to_bytes(a) == var_to_bytes(b)
@@ -97,6 +102,8 @@ func _crowd_parity(t, source: CountedCrowd, at: Vector2, label: String) -> void:
 	t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _test_catalogue_and_mutations(t) -> void:
+	# What retires an instance from outside its tick (`EventManager.retire()`).
+	var retiring := EventManager.new()
 	var sampled := 0
 	var positive := 0
 	var flock_queries := 0
@@ -180,12 +187,13 @@ func _test_catalogue_and_mutations(t) -> void:
 		source.transition(EventInstance.Phase.LEAVING)
 		_event_parity(t, source, at, definition.id + " leaving")
 		source.transition(EventInstance.Phase.ACTIVE)
-		source._finish()
+		retiring.retire(source)
 		_event_parity(t, source, at, definition.id + " retired")
 		sampled += source.sampling_runs
 		source.free()
 	t.check(sampled > 100 and positive > 20, "catalogue sweep samples live positive projections")
 	t.check(flock_queries > 0, "flock bypass assertions exercise constructed birds")
+	retiring.free()
 
 func _test_crowd_mutations(t) -> void:
 	for kind: int in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
@@ -222,12 +230,11 @@ func _test_crowd_mutations(t) -> void:
 		var turn := CarTurn.new()
 		turn.radius = 16.0
 		turn.sweep = PI
-		source._turn = turn
-		source._turn_run_up = 0.0
+		source.take_the_turn(turn, 0.0)
 		for distance: float in [0.0, 3.0, 9.0, 15.0]:
 			turn.travelled = distance
 			_crowd_parity(t, source, at, "crowd changing turn tangent")
-		source._turn = null
+		source.drop_the_turn()
 		source.excitement.player_velocity = Vector2(0.0, 92.0)
 		_crowd_parity(t, source, at, "crowd player velocity")
 		source.excitement.player_sensitivity = 0.22
@@ -278,8 +285,8 @@ func _test_consumer_order(t) -> void:
 		var at := Vector2(210.0 - float(step) * 4.0, 20.0)
 		cached.age += 0.1
 		reference.age = cached.age
-		car.excitement._clock += 0.1
-		reference_car.excitement._clock = car.excitement._clock
+		car.excitement.advance(0.1)
+		reference_car.excitement.advance(0.1)
 		cached.player_at = at
 		reference.player_at = at
 		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(), "pre-halo event mark parity")
@@ -293,26 +300,34 @@ func _test_consumer_order(t) -> void:
 			source.excitement.set_expected_total_gross(total)
 		t.check(_same_bits(cached.excitement.expected_impact_at(at), reference.excitement.expected_impact_at(at)), "event net parity")
 		t.check(_same_bits(car.excitement.expected_impact_at(at), reference_car.excitement.expected_impact_at(at)), "car net parity")
-		t.check(cached.look._picture_key() == reference.look._picture_key(), "redraw/caret key parity")
+		# The picture key's one term that reads the prediction is the caret's strength; every other
+		# term reads state the two instances share by construction.
+		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(),
+				"event mark parity after the halo's total")
 		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "draw car mark parity")
 		t.check(cached.excitement.will_be_lethal(at) == reference.excitement.will_be_lethal(at), "event lethal prediction parity")
 		t.check(car.excitement.will_be_lethal(at) == reference_car.excitement.will_be_lethal(at), "car lethal prediction parity")
 	for source in [cached, reference, car, reference_car]:
 		source.free()
 
-## `[colour, alpha]` a source's rim is easing toward, or a transparent colour and zero when it
+## `[colour, alpha]` the halo last told a source's rim, or a transparent colour and zero when it
 ## holds no rim: an event builds its rim only once `ExcitementHalo` picks it and gives it back once
 ## faded (`EventInstance.Rim`), so a missing rim is a rim told nothing.
-func _rim_target(source: EventInstance) -> Array:
-	if not source._rim.is_held():
+static func _rim_target(rim: HaloRig.ToldRim) -> Array:
+	if not rim.is_held():
 		return [Color(0.0, 0.0, 0.0, 0.0), 0.0]
-	var rim := source._rim.entity_halo()
-	return [rim._target_colour, rim._target_alpha]
+	return [rim.colour, rim.strength]
 
+## The two halos run on real frames, one pass each per frame. The managers' own tick is off
+## (`set_physics_process(false)`): what is compared is the halo's pass, and the manager's would
+## step the sources and sweep the retired ones out of the list between the checks.
 func _test_halo_and_removal(t) -> void:
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var managers: Array[EventManager] = []
 	var halos: Array[ExcitementHalo] = []
 	var sources: Array[EventInstance] = []
+	var rims: Array[HaloRig.ToldRim] = []
 	var player := CharacterBody2D.new()
 	t.add_child(player)
 	player.position = Vector2(-40.0, 0.0)
@@ -321,8 +336,11 @@ func _test_halo_and_removal(t) -> void:
 	for cached: bool in [true, false]:
 		var manager := EventManager.new()
 		t.add_child(manager)
+		# After it enters the tree: entering turns on the tick of a node that defines one.
+		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
+		source.atlas = atlas
 		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
 		source.age = 3.0
 		manager.add_child(source)
@@ -330,26 +348,34 @@ func _test_halo_and_removal(t) -> void:
 		manager.world.instances.append(source)
 		source.excitement.accumulate_landed(20.0)
 		sources.append(source)
+		rims.append(HaloRig.told(source))
 		var halo := ExcitementHalo.new()
-		t.add_child(halo)
 		var sets: Array[ExcitementSources] = [manager.sources]
 		halo.setup(sets, player, baby)
 		halos.append(halo)
+	for halo: ExcitementHalo in halos:
+		t.add_child(halo)
 	for tick in 3:
-		for halo: ExcitementHalo in halos:
-			halo._process(0.1)
+		# Until each halo has made one more pass, which tells each source's rim once (both are
+		# picked or held on every tick here); bounded, so a halo that stops telling fails the checks
+		# below rather than hanging the suite.
+		var told := rims[0].told
+		for frame in 100:
+			await t.get_tree().process_frame
+			if rims[0].told > told and rims[1].told == rims[0].told:
+				break
 		t.check(_same_bits(sources[0].excitement.player_expected_total_gross,
 				sources[1].excitement.player_expected_total_gross), "real halo publishes identical totals")
-		t.check(sources[0]._rim.is_held() == sources[1]._rim.is_held(),
+		t.check(rims[0].is_held() == rims[1].is_held(),
 				"real halo builds a rim for both sources or for neither")
-		t.check(_rim_target(sources[0])[0] == _rim_target(sources[1])[0],
+		t.check(_rim_target(rims[0])[0] == _rim_target(rims[1])[0],
 				"real halo selection/color agrees with baseline source")
-		t.check(_same_bits(_rim_target(sources[0])[1], _rim_target(sources[1])[1]),
+		t.check(_same_bits(_rim_target(rims[0])[1], _rim_target(rims[1])[1]),
 				"real halo strength agrees with baseline source")
 		t.check(sources[0].excitement.caret_strength() == sources[1].excitement.caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
-			t.check(_rim_target(sources[0])[1] > 0.0,
+			t.check(_rim_target(rims[0])[1] > 0.0,
 					"real halo comparison selects a source rather than two empty sets")
 			player.velocity = Vector2(43.0, 12.0)
 		if tick == 1:
@@ -357,10 +383,11 @@ func _test_halo_and_removal(t) -> void:
 				managers[i].retire(sources[i])
 	for manager: EventManager in managers:
 		manager.world.instances.clear()
+	await t.get_tree().process_frame
 	for halo: ExcitementHalo in halos:
-		halo._process(0.1)
 		halo.free()
 	for manager: EventManager in managers:
 		manager.free()
 	player.free()
 	baby.free()
+	atlas.release(&"events")
