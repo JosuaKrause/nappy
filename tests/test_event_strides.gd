@@ -13,6 +13,8 @@ extends RefCounted
 ## every family's frame a beside frame b, and a burst capturing an actual flip in play.
 
 const STEP := 1.0 / 60.0
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 ## Every family that gained a stride this round, its "a" and "b" tables paired so the
 ## completeness, distinctness and "differs from a" checks below run once over the whole set.
@@ -49,11 +51,11 @@ func run(t) -> void:
 	_test_moving_instance_alternates_gait_frames(t)
 	_test_waiting_robber_holds_frame_a(t)
 	_test_chatting_mother_freezes_gait_when_talking(t)
-	_test_crouched_cat_never_reads_the_running_b_frame(t)
+	await _test_crouched_cat_never_reads_the_running_b_frame(t)
 	_test_dog_walker_and_dog_share_one_phase(t)
 	_test_the_normal_dog_has_three_pictures_in_four_beats(t)
 	_test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t)
-	_test_a_standing_normal_dog_rests(t)
+	await _test_a_standing_normal_dog_rests(t)
 	_test_victim_gait_starts_on_frame_a_and_later_steps(t)
 	_test_idle_families_alternate_on_time_without_moving(t)
 	_test_idle_phase_offset_differs_by_siting(t)
@@ -151,18 +153,29 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 	instance.free()
 
 ## The crouch is the telegraph, held still by construction (`still_while_telegraphing`) — it must
-## never read the running family's own b frame, whatever `gait_is_stepping()` says, since crouched
-## has no second frame of its own at all.
+## never draw the running family's own b frame, whatever `gait_is_stepping()` says, since crouched
+## has no second frame of its own at all. A cat the game would never see striding while it crouches
+## is walked on by hand, as a scene recipe's held event is (`walk_on_by_hand()`, which advances the
+## stride by the ground covered), until its stride is on a step, and drawn on real frames: the
+## pictures it tells its drawer to stand are the crouched ones.
 func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
-	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cat_dash"), false)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
-	# Force the gait phase into its stepping half, the state a real stride would eventually reach,
-	# to prove the crouch branch never consults it.
-	instance._gait_phase = PI * 0.25
-	instance._gait_moving = true
-	t.check(instance.look.gait_is_stepping(), "the phase itself would read as stepping")
+	instance.held_by_hand = true
+	var walked := 0
+	while not instance.look.gait_is_stepping() and walked < 600:
+		instance.walk_on_by_hand(STEP)
+		walked += 1
+	t.check(instance.look.gait_is_stepping() and instance.is_telegraphing(),
+			"the stride is on a step while it still crouches (walked %d ticks)" % walked)
+	await DrawnEvent.frames(t)
+	var crouched := EventPictures.CAT_CROUCHED_BY_VIEW.values()
+	var running_b := EventPictures.CAT_RUNNING_BY_VIEW_B.values()
+	var shown := DrawnEvent.shown(instance)
+	t.check(not shown.is_empty(), "the cat is drawn")
+	for entry in shown:
+		t.check(entry.picture in crouched and not entry.picture in running_b,
+				"it draws a crouched picture, never the running b frame (%s)" % entry.picture)
 	t.check(EventPictures.CAT_CROUCHED_BY_VIEW["side"] != EventPictures.CAT_RUNNING_BY_VIEW_B["side"],
 			"the crouch and the running b frame are not the same picture regardless")
 	instance.free()
@@ -253,24 +266,48 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 	instance.free()
 
 ## Standing still is the rest pose, not a step held mid-air: before a dog walker has covered any
-## ground, and whenever `_advance_gait()` last saw none, whatever half of the stride the phase
-## happens to be sitting in.
+## ground, and whenever the last tick saw none, whatever half of the stride the phase happens to be
+## sitting in. The walker is walked on by hand (`walk_on_by_hand()`, a scene recipe's way of
+## walking a held event) until its stride is on a step in each half, then given a tick that covers no
+## ground (a walk of no time), and the dog it draws on real frames is on its rest picture.
 func _test_a_standing_normal_dog_rests(t) -> void:
-	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
-	for view in VIEWS:
-		t.check(EventPictures.dog_picture(view, instance.look.gait_is_stepping(),
-				instance.look.gait_is_second_half()) == EventPictures.dog_picture(view, false, false),
+	# The heading each view is drawn from.
+	var headings := {"side": Vector2.RIGHT, "front": Vector2.DOWN, "back": Vector2.UP,
+			"front_diagonal": Vector2(1.0, 1.0).normalized(),
+			"back_diagonal": Vector2(1.0, -1.0).normalized()}
+	for view: String in headings:
+		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("dog_walker"),
+				false, null, null, DrawnEvent.AT, headings[view])
+		instance.held_by_hand = true
+		var rest: String = EventPictures.dog_picture(view, false, false)
+		t.check(_the_dog_drawn(instance) == [rest],
 				"a %s dog that has not moved stands in its rest pose" % view)
-	for phase in [PI * 0.25, PI * 1.25]:
-		instance._gait_phase = phase
-		instance._advance_gait(0.0)
-		t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
-		t.check(EventPictures.dog_picture("side", instance.look.gait_is_stepping(),
-				instance.look.gait_is_second_half()) == "events/dog_b",
-				"a dog stopped at phase %.2f stands in its rest pose" % phase)
-	instance.free()
+		for second_half in [false, true]:
+			var half := "second" if second_half else "first"
+			var walked := 0
+			while not (instance.look.gait_is_stepping()
+					and instance.look.gait_is_second_half() == second_half) and walked < 2000:
+				instance.walk_on_by_hand(STEP)
+				walked += 1
+			t.check(instance.look.gait_is_stepping() and instance.look.gait_is_second_half() == second_half,
+					"the %s stride is on a step in its %s half" % [view, half])
+			await DrawnEvent.frames(t)
+			t.check(not _the_dog_drawn(instance).has(rest),
+					"a %s dog mid-step in the %s half is not on its rest picture" % [view, half])
+			instance.walk_on_by_hand(0.0)
+			await DrawnEvent.frames(t)
+			t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
+			t.check(_the_dog_drawn(instance) == [rest],
+					"a %s dog stopped in the %s half stands in its rest pose" % [view, half])
+		instance.free()
+
+## The pictures of the dog (`events/dog…`) that `instance` was last drawn with.
+func _the_dog_drawn(instance: EventInstance) -> Array[String]:
+	var pictures: Array[String] = []
+	for entry in DrawnEvent.shown(instance):
+		if entry.picture.begins_with("events/dog"):
+			pictures.append(entry.picture)
+	return pictures
 
 ## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
 ## rather than anything that touches `_path_travelled`, so it gets its own derived query
@@ -331,7 +368,7 @@ func _test_idle_phase_offset_differs_by_siting(t) -> void:
 	a.setup(def, Vector2(0.0, 0.0))
 	var b := EventInstance.new()
 	b.setup(def, Vector2(517.0, 233.0))
-	t.check(a._idle_phase_offset != b._idle_phase_offset,
+	t.check(a.idle_offset() != b.idle_offset(),
 			"two different sitings draw two different idle-phase offsets")
 	a.free()
 	b.free()
