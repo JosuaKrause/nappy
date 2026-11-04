@@ -387,16 +387,19 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 ## Whether `WalkSiting.ahead_of()` finds the routed mast a place from some point along the day's
 ## longest route, heading along it: the question `_walk_until_the_route_mast()` answers by walking.
 func _a_mast_can_be_sited_along_her_route() -> bool:
-	var siting: EventScheduler.WalkSiting = _city.events.ahead._siting
+	var siting: EventScheduler.WalkSiting = _city.events.ahead.walk_siting()
 	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
-	var band: Vector2 = _city.events.ahead.director()._siting_band()
+	# The band the director sites the walk's events in: from the streaming radius out to
+	# `EventDirector.ON_HER_WAY_SIGHT` seconds of walking beyond it.
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()
 		if heading != Vector2.ZERO and siting.ahead_of(def, rng, _city.events.plans(), path[i],
-				heading, band.x, band.y) != null:
+				heading, near, far) != null:
 			return true
 	return false
 
