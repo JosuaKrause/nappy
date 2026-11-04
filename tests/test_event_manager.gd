@@ -589,8 +589,8 @@ func _walker(t, at: Vector2) -> Stroller:
 	# Set here rather than left to the engine: a camera built in code under physics interpolation is
 	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	# Never the current camera: a rig walked by hand never runs a frame for its camera to work out
-	# where it is drawing from, so what she can see (`VisibleView.look_through()`) is about her,
+	# Never the current camera: this camera is not the viewport's, so it works out nothing about where
+	# it is drawing from, and what she can see (`VisibleView.look_through()`) is about her,
 	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
 	camera.enabled = false
 	rig.add_child(camera)
@@ -1097,8 +1097,9 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		while _city.events.pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
 			await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
-		# To the tick: the one that puts it up and the one that creates the engine both count.
-		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + 2.0 * WALK_STEP + 0.001,
+		# To the tick: `put_up()` adds nothing to `shown`, only `tick()` does, so the badge is over on
+		# the first tick that takes it to a second, at most one tick past it.
+		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + WALK_STEP + 0.001,
 				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown)
 		var arrived: EventInstance = null
 		for instance in _city.events.instances():
