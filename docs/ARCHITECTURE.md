@@ -70,6 +70,7 @@ src/
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
 	roof_drawer.gd        what a building draws its roof units through; the city hands it in
+	front_drawer.gd       what a building paints its front through; the city hands it in
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
 	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
@@ -81,6 +82,7 @@ src/
 	prop.gd               small scenery, feet-anchored so it y-sorts against the player
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
+	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
   routes/
 	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts;
 	                      an instance per city map, read through the map it is handed
