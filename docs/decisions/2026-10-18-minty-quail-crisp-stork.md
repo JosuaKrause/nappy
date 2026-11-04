@@ -6,8 +6,8 @@ shape after the roof drawer (record sandy-raven), from the player's answer to dr
 
 **Built.**
 - `FrontDrawer` (`src/city/front_drawer.gd`) lays a picture of a building's front grid and stands an
-  overlay (the door, the portico, a fire escape, the station door): every atlas picture of a front
-  goes through it, in the same order, place and tint as before. `City._spawn_buildings()` builds one
+  overlay (the door, the portico, a fire escape, the station door and its yard, mirrored when the
+  yard is west of the hall): every atlas picture of a building goes through it, in the same order, place and tint as before. `City._spawn_buildings()` builds one
   over its atlas and hands it to every building through `Building.front_drawer`; a building handed
   none makes its own.
 - `TrafficLightDrawer` (`src/city/traffic_light_drawer.gd`) draws a signal head in one of its views
@@ -23,8 +23,9 @@ shape after the roof drawer (record sandy-raven), from the player's answer to dr
 - `test_blackout.gd` (private-read lines 4 to 0) draws a head handed the city's signals and checks it
   shows one lamp while lit and none in the blackout, and draws a station hall dressed with the
   city's own station members, checking its clerestory band after each change of power;
-  `test_city_decay.gd` (2 to 1) checks every picture each burnt front was drawn with. Checks 36 and
-  164858 to 38 and 165354; twelve mutation runs.
+  `test_city_decay.gd` (2 to 1) checks, from what the recording drawer recorded alone, that each burnt
+  front drew a parapet over every column, a burnt window in every window cell and its burnt door
+  once. Checks 36 and 164858 to 39 and 165226; fifteen mutation runs.
 
 **Open to overturn:** one drawer for a whole front rather than one per element, as the roof drawer
 does; the lamp drawer beside the light in the world layer; where a lamp sits on the head, worked out
