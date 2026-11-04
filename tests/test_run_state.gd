@@ -17,7 +17,8 @@ extends RefCounted
 ## would erase what it proves): the comparisons that no longer hold are narrowed to the keys the
 ## fixture holds, and a new fixture is added for the new format with its own provenance line.
 ##
-## `run()` puts back the run it found, so nothing leaks into the next suite.
+## Every check makes a fresh `RunState` of its own and hands it to the part it tests; nothing reads
+## the `GameState` autoload, so nothing is put back.
 
 const SCENARIO := preload("res://tests/fixtures/run_state_scenario.gd")
 const FIXTURE_PATH := "res://tests/fixtures/run_state_saved_by_main.json"
@@ -26,14 +27,22 @@ const _SCRATCH_PATH := "user://test_run_state_scratch.json"
 ## The save under test, at a scratch path.
 var _save := GameSave.new(_SCRATCH_PATH)
 
+## The runs this suite made, each freed when it is over.
+var _runs: Array[RunState] = []
+
+## A fresh run in `run_seed`, handed to what a check tests.
+func _fresh(run_seed: int) -> RunState:
+	var run := RunState.new()
+	run.start_run(run_seed)
+	_runs.append(run)
+	return run
+
 ## An owner holding one part, for the check that a part left off the list is caught.
 class FakeOwner:
 	extends RefCounted
 	var part := RunHeader.new()
 
 func run(t) -> void:
-	t.gives_back_observers()
-	var baseline := GameSave.file_data(GameState, false)
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
 
 	_test_the_scenario_writes_what_main_wrote(t, fixture)
@@ -48,10 +57,8 @@ func run(t) -> void:
 
 	_with_saving(func() -> void: _save.clear())
 	_save.free()
-	GameState.start_run(1)
-	GameState.run_parts.restore_run_data(baseline)
-	GameState.calendar.hard_mode = false
-	GameState.calendar.checkpoint = {}
+	for run in _runs:
+		run.free()
 
 ## `callable` run as a windowed release run, which saves, against the scratch file `run()` set.
 func _with_saving(callable: Callable) -> void:
@@ -59,10 +66,10 @@ func _with_saving(callable: Callable) -> void:
 	callable.call()
 	_save.configure(null)
 
-## What the scratch file resumes into `GameState`, `{}` when nothing.
-func _resumed_from_the_scratch_file() -> Dictionary:
+## What the scratch file resumes into `run`, `{}` when nothing.
+func _resumed_from_the_scratch_file(run: RunState) -> Dictionary:
 	var resumed := [{}]
-	_with_saving(func() -> void: resumed[0] = _save.try_resume(GameState))
+	_with_saving(func() -> void: resumed[0] = _save.try_resume(run))
 	return resumed[0]
 
 ## Everything the file holds but the build that wrote it.
@@ -72,8 +79,9 @@ func _without_build(file: Dictionary) -> Dictionary:
 	return kept
 
 func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
-	SCENARIO.build()
-	var written: Dictionary = SCENARIO.written()
+	var run := _fresh(1)
+	SCENARIO.build(run)
+	var written: Dictionary = SCENARIO.written(run)
 	t.check(_without_build(written) == _without_build(fixture["written"]),
 			"the scenario's save is the file main wrote, key for key (%s)"
 			% _first_difference(_without_build(written), _without_build(fixture["written"])))
@@ -81,30 +89,31 @@ func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
 			"and the format version is the one the fixture was written in")
 
 func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
-	SCENARIO.build()
-	var after: Dictionary = SCENARIO.after_a_loss()
+	var run := _fresh(1)
+	SCENARIO.build(run)
+	var after: Dictionary = SCENARIO.after_a_loss(run)
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a lost day on the scenario leaves the file main's give-back left (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))
 
 func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> void:
-	GameState.start_run(5)
+	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	var resume := _resumed_from_the_scratch_file()
+	var resume := _resumed_from_the_scratch_file(run)
 	t.check(resume.get("day_under_way", false) == true, "main's save resumes, a day under way")
-	t.check(_without_build(SCENARIO.written()) == _without_build(fixture["written"]),
+	t.check(_without_build(SCENARIO.written(run)) == _without_build(fixture["written"]),
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
-			_without_build(SCENARIO.written()), _without_build(fixture["written"])))
+			_without_build(SCENARIO.written(run)), _without_build(fixture["written"])))
 
 func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
-	GameState.start_run(5)
+	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
-	_resumed_from_the_scratch_file()
-	var after: Dictionary = SCENARIO.after_a_loss()
+	_resumed_from_the_scratch_file(run)
+	var after: Dictionary = SCENARIO.after_a_loss(run)
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a day lost after resuming main's save gives back what main's did (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))
@@ -121,11 +130,12 @@ func _first_difference(a: Dictionary, b: Dictionary) -> String:
 			return "missing " + key
 	return "same"
 
-## Every part `GameState` declares is on its registry.
+## Every part a `RunState` declares is on its registry.
 func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
-	var missing := RunStateRegistry.unregistered_in(GameState, GameState.run_parts)
-	t.check(missing.is_empty(), "every run sub-state GameState declares is registered (%s)" % [missing])
-	t.check(GameState.run_parts.parts().size() == 7, "and the list holds the seven parts")
+	var run := _fresh(1)
+	var missing := RunStateRegistry.unregistered_in(run, run.run_parts)
+	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
+	t.check(run.run_parts.parts().size() == 7, "and the list holds the seven parts")
 
 func _test_a_part_left_off_the_list_is_caught(t) -> void:
 	var owner := FakeOwner.new()
@@ -139,28 +149,30 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 ## Photographs a run, spends more of every kind of thing an attempt can spend, gives back: the run
 ## is what it was at the photograph, every part of it.
 func _test_every_part_gives_back_what_it_photographed(t) -> void:
-	SCENARIO.build()
-	GameState.run_parts.photograph()
-	var photographed := GameState.run_parts.run_data()
-	GameState.complete_resistance_step(9)
-	GameState.fail_resistance_step(8)
-	GameState.resistance.sabotage_done = not GameState.resistance.sabotage_done
-	GameState.resistance.carrying_package = not GameState.resistance.carrying_package
-	GameState.attempt_spend.consumed_one_shots.append("spent_after_the_photograph")
-	GameState.add_scar("scarred_after_the_photograph", Vector2(1.0, 2.0))
-	GameState.posters.paste(Vector2i(40, 41), 2, false, 1)
-	GameState.posters.tears += 2
-	GameState.pelican.draws += 4
-	t.check(GameState.run_parts.run_data() != photographed, "the attempt spent something of every part")
-	GameState.run_parts.give_back()
-	t.check(GameState.run_parts.run_data() == photographed,
+	var run := _fresh(1)
+	SCENARIO.build(run)
+	run.run_parts.photograph()
+	var photographed := run.run_parts.run_data()
+	run.complete_resistance_step(9)
+	run.fail_resistance_step(8)
+	run.resistance.sabotage_done = not run.resistance.sabotage_done
+	run.resistance.carrying_package = not run.resistance.carrying_package
+	run.attempt_spend.consumed_one_shots.append("spent_after_the_photograph")
+	run.add_scar("scarred_after_the_photograph", Vector2(1.0, 2.0))
+	run.posters.paste(Vector2i(40, 41), 2, false, 1)
+	run.posters.tears += 2
+	run.pelican.draws += 4
+	t.check(run.run_parts.run_data() != photographed, "the attempt spent something of every part")
+	run.run_parts.give_back()
+	t.check(run.run_parts.run_data() == photographed,
 			"and giving back puts every part back (%s)"
-			% _first_difference(GameState.run_parts.run_data(), photographed))
+			% _first_difference(run.run_parts.run_data(), photographed))
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.
 func _test_every_part_declares_each_field_once_in_its_data(t) -> void:
-	for part in GameState.run_parts.parts():
+	var run := _fresh(1)
+	for part in run.run_parts.parts():
 		var variables := 0
 		for property in part.get_property_list():
 			if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
@@ -172,8 +184,9 @@ func _test_every_part_declares_each_field_once_in_its_data(t) -> void:
 
 ## Each part, written through JSON and read back into a reset part, writes the same data.
 func _test_every_part_round_trips_through_json(t) -> void:
-	SCENARIO.build()
-	for part in GameState.run_parts.parts():
+	var run := _fresh(1)
+	SCENARIO.build(run)
+	for part in run.run_parts.parts():
 		var data := part.to_data()
 		var through: Dictionary = JSON.parse_string(JSON.stringify(data))
 		var name: String = part.get_script().get_global_name()
