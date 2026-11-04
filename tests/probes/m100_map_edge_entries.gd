@@ -13,7 +13,7 @@ extends RefCounted
 ##     tools/test.sh probes/m100_map_edge_entries.gd
 ##
 ## "Unsafe" below means the agent's own centre is legal by every existing bounds check
-## (`CityMap.in_bounds`, the invariant `tests/test_crowd.gd`'s `_test_nobody_enters_across_a_
+## (`CityMap.in_bounds`, the invariant `tests/crowd_rig.gd`'s `_test_nobody_enters_across_a_
 ## plain_edge` already holds) while its picture — read off the same texture sizes and anchor
 ## arithmetic `AgentLook.draw_body()` draws from, in `_picture_clearance()` below — still
 ## reaches past the true edge, which is exactly what none of those checks can see because they all
@@ -30,7 +30,7 @@ func run(t) -> void:
 	t.check(true, "probe finished")
 
 ## Candidate 1: `CrowdAgent._recycle()`, driven directly the way M120's own entry test
-## (`tests/test_crowd.gd`, `_test_the_entry_roll_is_kept_inside_its_own_room`) drives it, at each of
+## (`tests/crowd_rig.gd`, `_test_the_entry_roll_is_kept_inside_its_own_room`) drives it, at each of
 ## the four plain edges `_test_nobody_enters_across_a_plain_edge` stands on — the same points, so
 ## this is the same scenario that test already passes (centre never out of bounds) read for the
 ## picture instead of the centre.

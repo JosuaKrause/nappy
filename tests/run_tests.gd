@@ -162,7 +162,7 @@ func _hand_the_stand_in(node: Node) -> void:
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
-## Substring rather than exact, so `crowd` finds `test_crowd.gd` without anybody having to
+## Substring rather than exact, so `crowd` finds `test_crowd_bodies.gd` without anybody having to
 ## remember the prefix — and a filter that matches nothing is an error rather than a run of
 ## nought suites reporting no failures.
 ##

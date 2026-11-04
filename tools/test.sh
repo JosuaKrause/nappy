@@ -337,7 +337,7 @@ fi
 ##
 ## **A linear scan of a file rather than an associative array, because macOS ships bash 3.2** —
 ## the last GPLv2 release, which has no `declare -A`. It does not fail on one either: it quietly
-## makes an *indexed* array, and every `${COST[test_crowd.gd]}` then gets its subscript evaluated
+## makes an *indexed* array, and every `${COST[test_crowd_bodies.gd]}` then gets its subscript evaluated
 ## as arithmetic. The first version of this file did exactly that, every cost came back empty, and
 ## the bin-packer below put all twenty-three suites in one shard — a "parallel" run that was
 ## serial and looked fine apart from being no faster. A few dozen lines read per suite is free

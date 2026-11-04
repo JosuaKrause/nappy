@@ -1873,12 +1873,12 @@ is loud, and the reason a park is quiet.
   the car population (`CROWD_CARS_PER_ACT`) is smaller than an uncontrolled network would want — a
   car waiting at a light beside you is louder for longer than one going past, and a population set
   before the box was rationed puts the arterial's noise floor above the ceiling
-  `tests/test_crowd.gd` states. **The honest answer to *"the main road is too quiet"* has twice
+  `tests/crowd_rig.gd` states. **The honest answer to *"the main road is too quiet"* has twice
   been something other than more cars.**
 - **Density is per act.** The crowd thins as the occupation settles in: act III's streets
   are close to deserted, which makes the city *easier*. See docs/NARRATIVE.md.
 - **Nobody walks through a park.** The crowd lives on the street lattice only, which is the
-  structural half of "a park is quiet because nobody is in it". `tests/test_crowd.gd`
+  structural half of "a park is quiet because nobody is in it". `tests/crowd_rig.gd`
   asserts the middle of every park is out of earshot.
 
 - **A car leaves the city by the bridge and the tunnel, and nowhere else — and the same is true of
@@ -1909,7 +1909,7 @@ is loud, and the reason a park is quiet.
   clamped to the map, so beside the tunnel the band a southbound spine car enters through is the
   stretch past the north edge, and `LaneMover._entry_band_fits` accepts a band that reaches that
   far only for the agent `entry_room()` already grants it. Refusing it for everybody would make the
-  traffic through both holes one-way — cars that only ever leave — and `tests/test_crowd.gd` stands
+  traffic through both holes one-way — cars that only ever leave — and `tests/crowd_rig.gd` stands
   at each end and counts spine cars out of bounds by which way they point, and at each plain edge
   and asserts nobody else is ever out of bounds there at all.
 
@@ -1921,7 +1921,7 @@ is loud, and the reason a park is quiet.
   it, so an agent entering the street from the junction beside the wall never sees it. Walking the
   tiles is also *cheaper* than the probe, because an agent covers a tile in about twenty frames.
   Measured with the probe: **eight agents inside a wall at once, and something in one on 87% of
-  frames**; zero now, and `tests/test_crowd.gd` stands the field at a dead end so it can see it at
+  frames**; zero now, and `tests/crowd_rig.gd` stands the field at a dead end so it can see it at
   all.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
@@ -2003,7 +2003,7 @@ which must not say *"at a zebra"* on a street that has none.
   at chance. Measured on the wave alone: **93% green with it, 51% against**. It is not fixable —
   a two-way wave needs a 5.7s cycle and the side green plus its ambers is 9.0s — and the
   asymmetric offset beats every symmetric one on average. `Tuning.SIGNAL_PROGRESSION_BLOCKS`
-  carries the derivation; `tests/test_crowd.gd` walks a car down the platoon rather than
+  carries the derivation; `tests/crowd_rig.gd` walks a car down the platoon rather than
   restating the arithmetic.
 - **The side street's green is the fairness contract.** She crosses a main road while the main road
   is red, which is while the side street is green, so that green has to be longer than the walk
