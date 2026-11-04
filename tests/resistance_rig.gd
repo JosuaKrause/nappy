@@ -427,7 +427,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 
 const REACHABILITY_SWEEP_DAYS := [6, 7, 8, 9, 10, 11, 12, 13]
 
-## `GameState.calendar.day_rng()`'s own hash, built without touching the `GameState.header.run_seed` global this
+## the run calendar's `day_rng()` own hash, built without a run's `header.run_seed` this
 ## sweep has no other use for — same stream a played day actually draws from, for a seed and a day
 ## this test chooses rather than the run's own.
 func _production_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:

@@ -101,7 +101,7 @@ func _the_building(t, seed_value: int) -> int:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := GameState.calendar.day_rng(GameState.header.day, "finale-interior")
-	var events := BuildingEvents.events_in(t, scene, rng)
+	var events := BuildingEvents.events_in(t, scene, rng, GameState)
 	var printed := _walk(t, "building seed %d" % seed_value, scene, events, null,
 			scene.map.start_world_position(), BUILDING_TICKS)
 	events.clear()
