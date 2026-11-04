@@ -1639,6 +1639,8 @@ func _build_roof_layers() -> void:
 		var span: int = entry["span"]
 		var at := _cell(cell.x, wall_tiles() + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
+		# The picture comes from `kind`, not the entry's `texture`: the roof preview rig
+		# (`src/dev/roof_network_preview.gd`) writes cache entries of its own that carry no texture.
 		var object := roof_drawer.draw(parent, cell, _furniture_texture(entry["kind"]),
 				parent.to_local(to_global(anchor)) if parent != self else anchor,
 				entry.get("links", -1), _vent_frame_b)
