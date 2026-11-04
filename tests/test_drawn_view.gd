@@ -29,6 +29,26 @@ func run(t) -> void:
 	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
+## A crowd body's source that counts how often it is asked for its caret, handed to the agent it
+## stands for in place of its own: the caret is the projection of a course against her, the expensive
+## answer an off-screen body must not work out (`CrowdAgent.end_the_frame()`).
+class CountedCrowdCaret extends CrowdExcitement:
+	var asked := 0
+
+	func caret_strength() -> int:
+		asked += 1
+		return super()
+
+## An event's source that counts how often it is asked for its caret, which the picture key asks
+## first of everything (`EventLook._picture_key()`) and the mark asks again (`wants_a_mark()`): so a
+## count that does not move is a key and a caret that were not worked out.
+class CountedEventCaret extends EventExcitement:
+	var asked := 0
+
+	func caret_strength() -> int:
+		asked += 1
+		return super()
+
 ## A screen of its own for the gates to ask about: a `SubViewport` the size of the design box whose
 ## canvas shows the world from `top_left` at the game's zoom, so no other suite's camera moves it.
 func _screen(t, top_left := Vector2.ZERO) -> SubViewport:
@@ -122,7 +142,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	var shown := _world_shown(Vector2.ZERO)
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
-	car._speed = 100.0
+	var caret := CountedCrowdCaret.new(car)
+	car.excitement = caret
 	car.set_process(false)
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -137,13 +158,13 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		car.position = Vector2(x, 180.0)
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
 		car.excitement.advance(STEP)
-		var before: Variant = car.excitement._caret_key_was
+		var before := caret.asked
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or car.excitement._caret_key_was != before
+			projected_off_screen = projected_off_screen or caret.asked != before
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -151,7 +172,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 			first_seen_asked = asked_since_off
 		x += 4.0
 	t.check(skipped > 50, "off screen the car asked for no redraw on %d frames" % skipped)
-	t.check(not projected_off_screen, "and its caret was never projected there")
+	t.check(not projected_off_screen, "and its caret was never asked for there")
+	t.check(caret.asked > 0, "though it was asked for once the car showed (%d)" % caret.asked)
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
 	t.check(car.excitement.caret_strength() == 2,
@@ -164,7 +186,6 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 	var screen := _screen(t)
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
-	walker._speed = 0.0
 	walker.set_process(false)
 	screen.add_child(walker)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -192,15 +213,17 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 		return
 	var screen := _screen(t, Vector2(-2000.0, 0.0))
 	var cyclist := EventInstance.new()
+	var caret := CountedEventCaret.new(cyclist)
+	cyclist.excitement = caret
 	cyclist.setup(def, Vector2(320.0, 180.0),
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
 	cyclist.excitement.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
-	var key_before := cyclist.look._picture
+	var asked_before := caret.asked
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(cyclist.look._picture == key_before and not cyclist.excitement._caret_known,
-			"and works out neither its key nor its caret")
+	t.check(caret.asked == asked_before,
+			"and works out neither its key nor its caret (the key asks for the caret first)")
 	var drawn := cyclist.look.drawn_rect_now()
 	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 			"the caret it is owed is the doubled red")
@@ -232,14 +255,27 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			"back on screen with the same key, it redraws once")
 	screen.free()
 
+## The ground of a street fire's long building: open ground that answers, for the tile the fire is
+## sited on, that the pavement's inward step is north and the building's lot is `LOT` tiles, wholly
+## walkable along its frontage, as `WorldMap` answers of a city's long block.
+class LongFrontage extends WorldMap:
+	const LOT := Rect2i(-1, -10, 20, 10)
+
+	func pavement_inward(_tile: Vector2i) -> Vector2i:
+		return Vector2i(0, -1)
+
+	func lot_at(_tile: Vector2i) -> Rect2i:
+		return LOT
+
 ## **A street fire burns along the whole front of its building, far past its own picture, and it is
 ## redrawn on every tick any of that front can be on the screen** — its flames flicker and its
 ## smoke billows, so a front whose far end showed while the fire's own point was still out of the
-## box would stand frozen there. The front here is set by hand, 640px of it running east from just
-## west of the fire's point, the width `_facade_runs_at()` gives a long building; the screen pans
-## along it from the east, so the far end shows long before the point does. What can be seen is
-## worked out from the flames' and plumes' own numbers (`_flames_across()`, `_smoke_across()`, the
-## tallest flicker), not from the box the gate asks with.
+## box would stand frozen there. The fire is sited on a map whose building is 20 tiles (640px) wide,
+## running east from just west of the fire's point, and finds the front itself, as it does in a city;
+## the screen pans along it from the east, so the far end shows long before the point does. What can
+## be seen is worked out from the building's own width and the tallest the flames and the smoke
+## stand (`FireLook`'s flame and smoke sizes, at the flicker's tallest), not from the box the gate
+## asks with.
 func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
@@ -247,24 +283,21 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 		return
 	var screen := _screen(t, Vector2(2000.0, 0.0))
 	var fire := EventInstance.new()
-	fire.setup(def, Vector2(0.0, 180.0))
+	var map := LongFrontage.new()
+	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT, map)
 	fire.set_process(false)
-	(fire.look as FireLook)._fire_facade = PackedVector2Array([Vector2(-40.0, 600.0)])
-	(fire.look as FireLook)._fire_facade_found = true
 	screen.add_child(fire)
-	var drawn := Rect2()
-	var any := false
-	for flame in FireLook._flames_across((fire.look as FireLook)._fire_facade):
-		var tallest := (FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) * 1.25
-		var one := Rect2(flame.x - flame.y * 0.5, -tallest, flame.y, tallest)
-		drawn = one if not any else drawn.merge(one)
-		any = true
-	for plume in FireLook._smoke_across((fire.look as FireLook)._fire_facade):
-		var top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) \
-				- FireLook._SMOKE_SIZE.y
-		drawn = drawn.merge(Rect2(plume.x - plume.y * 0.5, top, plume.y, FireLook._SMOKE_SIZE.y))
-	t.check(fire.look._drawn_reach().encloses(drawn) and fire.look.drawn_rect_now().encloses(drawn),
-			"the reach and the drawn rect hold the whole front and its smoke (%s)" % drawn)
+	# The front, from the building's lot: its west and east ends from the fire's point, half a tile
+	# toward the wall, and from the ground up to the smoke's top over the tallest flame.
+	var lot := map.tile_rect_to_world(LongFrontage.LOT)
+	var toward_the_wall := Vector2(map.pavement_inward(Vector2i.ZERO)) * (Tuning.TILE_SIZE * 0.5)
+	var smoke_top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) - FireLook._SMOKE_SIZE.y
+	var drawn := Rect2(lot.position.x - fire.global_position.x, smoke_top, lot.size.x, -smoke_top)
+	drawn.position += toward_the_wall
+	t.check(drawn.size.x > Tuning.TILE_SIZE * 10.0,
+			"the building is a long one, as this check is about (%s)" % drawn)
+	t.check(fire.look.drawn_rect_now().encloses(drawn),
+			"the drawn rect holds the whole front and its smoke (%s)" % drawn)
 	var shown_unasked := 0
 	var shown_point_outside := 0
 	var left := 1200.0
