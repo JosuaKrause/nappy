@@ -17,28 +17,34 @@ var _walker_node: Walker
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
-	_build_city(t)
-	_test_day_populates_the_manager(t)
-	await _test_finished_instances_are_dropped(t)
-	await _test_successor_replaces_its_parent(t)
-	_test_excitement_sums_over_instances(t)
-	_test_an_event_waits_until_she_is_near_it(t)
-	await _test_an_event_that_has_run_does_not_run_again(t)
-	_test_a_running_event_comes_back_where_it_got_to(t)
-	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
-	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
-	_test_a_streamed_pursuer_resumes_the_chase(t)
-	await _test_the_fire_is_sited_on_the_way_she_is_walking(t)
-	await _test_the_fire_burns_where_her_walk_put_it(t)
-	await _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
-	await _test_the_engine_waits_on_its_road_to_the_fire(t)
-	_test_the_fire_under_a_covered_corner_is_not_sighted(t)
-	_test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t)
-	await _test_a_fire_that_was_never_lit_was_not_spent(t)
-	_test_a_won_day_with_the_fire_unmet_still_burns(t)
-	_test_the_first_dog_of_the_run_day_is_the_lesson(t)
-	_test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t)
-	_teardown()
+	# Every test builds a city and a run of its own, so none leans on what an earlier one left
+	# behind: the scars a fire writes, the streaming radius, the day a test started.
+	var tests: Array[Callable] = [
+		_test_day_populates_the_manager,
+		_test_finished_instances_are_dropped,
+		_test_successor_replaces_its_parent,
+		_test_excitement_sums_over_instances,
+		_test_an_event_waits_until_she_is_near_it,
+		_test_an_event_that_has_run_does_not_run_again,
+		_test_a_running_event_comes_back_where_it_got_to,
+		_test_a_set_piece_happens_at_exactly_one_of_its_sites,
+		_test_a_day_started_through_the_manager_alone_still_carries_seals,
+		_test_a_streamed_pursuer_resumes_the_chase,
+		_test_the_fire_is_sited_on_the_way_she_is_walking,
+		_test_the_fire_burns_where_her_walk_put_it,
+		_test_the_fire_she_did_not_choose_leaves_her_a_way_out,
+		_test_the_engine_waits_on_its_road_to_the_fire,
+		_test_the_fire_under_a_covered_corner_is_not_sighted,
+		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
+		_test_a_fire_that_was_never_lit_was_not_spent,
+		_test_a_won_day_with_the_fire_unmet_still_burns,
+		_test_the_first_dog_of_the_run_day_is_the_lesson,
+		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
+	]
+	for test in tests:
+		_build_city(t)
+		await test.call(t)
+		_teardown()
 
 func _build_city(t) -> void:
 	_walker_node = Walker.new()
@@ -463,14 +469,6 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
 ## convention, written against this exact gap before it had a fix.
 func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
-	# **A city of its own**: `City.start_day()` writes the day's route tree, closures and region plan
-	# onto the city and nothing un-starts a day, so on the shared city every later test's "manager
-	# alone" day would read this day's corridor and closures rather than growing its own.
-	var shared := _city
-	_city = RunCity.with_own_run(CITY_SCENE, SEED)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
-	_city.events.stream_radius = INF
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
 	_start(day)
 	var alone: Dictionary = _city.map.held_segments.duplicate()
@@ -490,8 +488,6 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
 
-	_city.free()
-	_city = shared
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly

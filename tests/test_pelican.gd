@@ -414,6 +414,9 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 		return
 	t.check(told["spawned"] == 1, "its creation is told once (%d)" % told["spawned"])
 
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(told["sighted"] == 0, "created just off screen, it is not yet seen")
+
 	# `reset_at()` rather than a bare move, so the camera's screen centre, which a headless run never
 	# smooths along, is on her: what counts as on screen is measured about it.
 	stroller.reset_at(pelican.global_position + Vector2(200.0, 0.0))
