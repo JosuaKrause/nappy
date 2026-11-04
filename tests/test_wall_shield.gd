@@ -427,8 +427,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 		var stopped := 0
 		var wrong := 0
 		for tile in scene.map.stairwell_walk("stairwell_right"):
-			# Moved as the manager moves an event it stands elsewhere (`EventInstance.move_to()`),
-			# which lets go of the answer he gave where he last stood.
+			# Moved as the manager moves an event it stands elsewhere (`EventInstance.move_to()`).
 			man.move_to(scene.map.tile_to_world(tile))
 			for her in shaft:
 				var field := man.field_at(her, -1.0, Vector2.INF)

@@ -753,6 +753,15 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 			city.crowd.set_gates(city.region_plan().gates)
 			var cars := _car_bodies(map, city.events)
 			cars_seen += cars.size()
+			# The cars as an instance stands them are where the record put them: the middle of
+			# each is on ground the day marked as a body.
+			var off_the_record := 0
+			for car: Array in cars:
+				if not map.is_obstructed(map.world_to_tile(car[0])):
+					off_the_record += 1
+			t.check(off_the_record == 0,
+					"seed %d day %d: every crashed car's middle is on ground the record holds (%d are not)"
+					% [city_seed, day, off_the_record])
 			var inside := 0
 			var in_a_car := 0
 			var reached_a_car := 0
