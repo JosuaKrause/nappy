@@ -91,8 +91,8 @@ static func _home_buildings_by_lot(city: City) -> Dictionary:
 ## The roof units standing on `building`'s roof, as the city's entity layer holds them (the layer a
 ## live city parents `Building.RoofObject` to): each a node at its feet, so a unit belongs to the
 ## building whose lot its feet are on (a cell's feet are at its bottom edge, so they are below the
-## lot's north edge and at most on its south one, which keeps two lots that meet from sharing one). Each is `[where, picture]`, `where` taken from the building's
-## own origin so the same roof on two cities compares directly, in the layer's own order.
+## lot's north edge and at most on its south one, which keeps two lots that meet from sharing one).
+## Each is `[where, picture]`, `where` taken from the building's own origin so the same roof on two cities compares directly, in the layer's own order.
 static func _roof_units_on(city: City, building: Building) -> Array:
 	var lot := city.map.tile_rect_to_world(building.lot)
 	var units: Array = []
@@ -204,8 +204,10 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 				"lot %s: window style and lit-window pattern match across seeds" % lot)
 		t.check(a.scenery_resident and b.scenery_resident,
 				"lot %s: the scenery is built on both seeds, so the roof is drawn" % lot)
-		t.check(_roof_units_on(short, a) == _roof_units_on(other, b),
-				"lot %s: roof furniture matches across seeds" % lot)
+		# Every home-block roof is empty (see the class doc), so comparing the two seeds' lists would
+		# compare empty with empty; each is asked to be empty instead.
+		t.check(_roof_units_on(short, a).is_empty() and _roof_units_on(other, b).is_empty(),
+				"lot %s: no roof furniture on either seed" % lot)
 	short.free()
 	other.free()
 
@@ -328,6 +330,46 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 			heights[roundi(tiles)] = true
 			checked += 1
 		t.check(checked > 0, "seed %d: the rebuild found a non-home building to check" % seed_value)
+		# Within one block the lots roll separately: among those of one block (and one depth, whose
+		# cap would otherwise tell them apart) there are at least two heights, and among those of
+		# one block at least two variants.
+		var by_block := {}
+		var by_block_and_depth := {}
+		for building: Building in city.buildings():
+			if building.is_home_building or building.power_station:
+				continue
+			var block := _block_of(building.lot)
+			by_block[block] = by_block.get(block, []) + [building]
+			var key := [block, building.lot.size.y]
+			by_block_and_depth[key] = by_block_and_depth.get(key, []) + [building]
+		var varied_heights := 0
+		var height_groups := 0
+		for group: Array in by_block_and_depth.values():
+			if group.size() < 2:
+				continue
+			height_groups += 1
+			var seen := {}
+			for building: Building in group:
+				seen[roundi(building.height)] = true
+			if seen.size() >= 2:
+				varied_heights += 1
+		var varied_variants := 0
+		var variant_groups := 0
+		for group: Array in by_block.values():
+			if group.size() < 2:
+				continue
+			variant_groups += 1
+			var seen := {}
+			for building: Building in group:
+				seen[building.variant] = true
+			if seen.size() >= 2:
+				varied_variants += 1
+		t.check(height_groups > 0 and varied_heights > 0,
+				"seed %d: some block rolls different heights for lots of one depth (%d of %d blocks)"
+				% [seed_value, varied_heights, height_groups])
+		t.check(variant_groups > 0 and varied_variants > 0,
+				"seed %d: some block rolls different colour variants for its lots (%d of %d blocks)"
+				% [seed_value, varied_variants, variant_groups])
 		t.check(heights.size() >= 2, "seed %d: the non-home heights take more than one value (%s)"
 				% [seed_value, heights.keys()])
 		city.free()

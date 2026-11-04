@@ -7,9 +7,9 @@ extends RefCounted
 
 ## How far the probe that asks the physics world "is anything solid here" reaches round its point,
 ## in px: small enough that a probe a few pixels off a body's edge is clear of it.
-const _PROBE_RADIUS := 1.0
+const _PROBE_RADIUS := 0.5
 ## How far past an edge (or inside it) a probe stands to be clearly on one side of it, in px.
-const _PROBE_MARGIN := 3.0
+const _PROBE_MARGIN := 1.0
 
 func run(t) -> void:
 	_test_reach_and_across(t)
@@ -273,6 +273,12 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 			t.check(not _solid_at(instance, centre + along * sign * (thickness + _PROBE_MARGIN)),
 					("and is not solid beyond it along the street, which a disc of its reach "
 							+ "would be (%.0fpx out)") % (thickness + _PROBE_MARGIN))
+			# The corner of the capsule's bounding box lies outside the rounded end, so a body
+			# that is a rectangle of the same extent is solid there and a capsule is not.
+			for side in [-1.0, 1.0]:
+				t.check(not _solid_at(instance, centre + cross * sign * (reach - _PROBE_MARGIN)
+						+ along * side * (thickness - _PROBE_MARGIN)),
+						"and the bounding box's corner is clear: the end is rounded, not square")
 		instance.free()
 	atlas.release(&"events")
 
