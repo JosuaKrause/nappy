@@ -184,6 +184,9 @@ func _test_pacing_switches_after_the_return_is_owed(t) -> void:
 	t.check(before.max() > EventDirector.RETURN_PATROL_INTERVAL.y + 2.0,
 			"and the ordinary pacing does leave gaps over the return's ceiling (longest %.2fs)"
 			% before.max())
+	t.check(before.max() <= EventDirector.AHEAD_INTERVAL.y + 1.5,
+			"and none is over AHEAD_INTERVAL's ceiling (longest %.2fs of %s)"
+			% [before.max(), EventDirector.AHEAD_INTERVAL])
 
 	var returning := _a_route_of_cats_and_cyclists(map)
 	returning.owe_the_return(RETURN_DAY, 0)
