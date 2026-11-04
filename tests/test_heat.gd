@@ -453,8 +453,11 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
-	t.check(not (band.drawer as RecordingEventDrawer).draws.is_empty(),
-			"the band was drawn in the frames that passed")
+	var segments := 0
+	for entry in (band.drawer as RecordingEventDrawer).draws:
+		if entry.picture == EventPictures.roadblock_segment_texture(band.runs_vertically()):
+			segments += 1
+	t.check(segments > 0, "the band was drawn in the frames that passed (%d segments)" % segments)
 	t.check(band.is_solid(), "a cold roadblock is a solid band")
 	t.check(not band.is_lethal_at(band.player_at) and not band.is_lethal_at(post),
 			"and it takes nobody, at its own edge or standing in it")
