@@ -15,5 +15,6 @@ bodies after a real tick, and hands the short archway and the day's park closure
 through `recipe_closures` and `start_recipe_day()`.
 
 **Not done:** a place waiting for its site sits in the director's private list until it is sited,
-and nothing a game class asks reads it; `EventsAhead.walk_siting()`, which the route bag, fire and
-arrow suites read, has no game caller.
+and nothing a game class asks reads it; `EventsAhead.walk_siting()`, which the route bag and fire
+suites and two probes read, has no game caller; the route bag reads it where it read the private
+siting before.
