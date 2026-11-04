@@ -15,6 +15,9 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+## How many times real time the walks run at (`PhysicsTicks.pass_ticks()`'s `scale`).
+const TIME_SCALE := 4.0
+
 ## How long `_test_the_arterial_never_settles_her` walks the arterial for — see that test's own
 ## docstring for the measurement behind the number.
 const ARTERIAL_WINDOW := 60.0
@@ -83,24 +86,27 @@ func _teardown_rig() -> void:
 		_stroller = null
 		_baby = null
 
-## Walks the rig on the spot for `seconds` of real physics ticks, one a rendered frame
+## Walks the rig on the spot for `seconds` of game time on real physics ticks, one a rendered frame
 ## (`PhysicsTicks`), with the world running underneath it: the city's crowd and events take their
-## own live ticks and the baby takes its own, as in play. Returns how long it took her to settle,
-## or -1.0 if she never did.
+## own live ticks and the baby takes its own, as in play. The ticks run at `TIME_SCALE` times real
+## time, each `TIME_SCALE` times as long as a tick, so a day's seconds take a quarter of the
+## frames; what is measured is what the ground and the noise do, and a longer step does not change
+## it. Returns how long it took her to settle in game seconds, or -1.0 if she never did.
 func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 	_stroller.global_position = at
-	var total := int(round(seconds / STEP))
+	var total := PhysicsTicks.ticks_for(seconds, TIME_SCALE)
 	# A lambda copies a local number, so the tick she fell asleep on is kept in an array.
 	var settled: Array[float] = [-1.0]
 	var ticked := 0
-	# A second of ticks at a time, the settling tick noted on the tick it happens; the walk ends at
-	# the end of the second she fell asleep in.
+	# Fifteen ticks at a time, the settling tick noted on the tick it happens; the walk ends at the
+	# end of the chunk she fell asleep in.
 	while ticked < total and settled[0] < 0.0:
-		var chunk := mini(60, total - ticked)
+		var chunk := mini(15, total - ticked)
 		var before := ticked
-		await PhysicsTicks.pass_ticks(t, chunk, func(ran: int) -> void:
+		var note := func(ran: int) -> void:
 			if settled[0] < 0.0 and _baby.state == GameEnums.BabyState.ASLEEP:
-				settled[0] = (before + ran) * STEP)
+				settled[0] = (before + ran) * STEP * TIME_SCALE
+		await PhysicsTicks.pass_ticks(t, chunk, note, TIME_SCALE)
 		ticked += chunk
 	return settled[0]
 
