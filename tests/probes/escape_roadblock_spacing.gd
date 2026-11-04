@@ -12,15 +12,21 @@ extends RefCounted
 
 const SEEDS := 40
 
+## The seed the run starts from: the one the runner's reset gave the stand-in this probe used to
+## read, so the probe measures what it did.
+const RUN_SEED := 2
+
 func run(t) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
 	var total := 0
 	var pairs := 0
 	var under := 0
 	var nearest_of_all := INF
 	for seed_value in range(1, SEEDS + 1):
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(own_run.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
@@ -48,6 +54,7 @@ func run(t) -> void:
 				% [seed_value, bands.size(), nearest, nearest_pair])
 	print("ESCAPE_SPACING | %d seeds | %d roadblocks | %d pairs, %d nearer than their two notices | nearest %.0fpx"
 			% [SEEDS, total, pairs, under, nearest_of_all])
+	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 ## The escape city's section spec, the one the run flow walks the city under.

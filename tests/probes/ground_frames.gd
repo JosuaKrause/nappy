@@ -29,8 +29,7 @@ func _process(_delta: float) -> void:
 		get_tree().quit(1)
 
 func _run() -> void:
-	GameState.start_run(4242)
-	_city = RunCity.of_the_run(CITY)
+	_city = RunCity.with_own_run(CITY, 4242)
 	add_child(_city)
 	_city.build(CityGenerator.generate(4242))
 	_city.scenery.set_process(false)

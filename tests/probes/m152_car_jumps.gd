@@ -56,6 +56,9 @@ extends RefCounted
 ## Run it with `tools/test.sh probes/m152_car_jumps.gd`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const STEP := 1.0 / 60.0
 
 ## The cities and the days. Day 1 is the busiest road the game has (34 cars, act I) and day 13 the
@@ -102,7 +105,7 @@ func run(t) -> void:
 	for rig: Array in rig_days():
 		var city_seed: int = rig[0]
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(map)
 		for day: int in rig[1]:

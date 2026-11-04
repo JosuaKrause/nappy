@@ -25,6 +25,9 @@ extends RefCounted
 ## about a rate — the whole reason the figure needed measuring rather than eyeballing.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const SEEDS_TO_SWEEP := 200
 
 func run(t) -> void:
@@ -46,7 +49,7 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 	var no_clear_run := 0
 	var no_legal_start := 0
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()

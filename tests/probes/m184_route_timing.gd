@@ -32,7 +32,7 @@ extends RefCounted
 ##
 ## **Day 14's `mark` and `task` read `unavailable` on their own**, by design rather than by a
 ## defect this probe or the rig owns: the last night has no mark
-## (`ResistanceSteps._finale()`) and is only offered once `GameState.sabotage_available()` holds
+## (`ResistanceSteps._finale()`) and is only offered once `RunState.sabotage_available()` holds
 ## (`Tuning.RESISTANCE_GOAL` earlier tasks done), which a bare `--day 14` subprocess with nothing
 ## played first never carries. `calm` and `home` still time normally on that day.
 

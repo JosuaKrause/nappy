@@ -39,6 +39,9 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS_TO_SWEEP := 30
 const DAYS: Array[int] = [8, 9, 11, 12, 14]
 const STEP := 1.0 / 60.0
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const HEADINGS: Array[Vector2] = [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]
 
 ## Columns of the start table, in print order.
@@ -56,19 +59,13 @@ const A_WALK_ESCAPES := 3
 
 func run(t) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-	var saved_state := GameState.attempt_spend.city_state
 	var starts := {}
 	var walks := {}
 	for day in DAYS:
 		starts[day] = [0, 0, 0, 0, 0, 0]
 		walks[day] = [0, 0, 0, 0]
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in DAYS:
@@ -79,13 +76,13 @@ func run(t) -> void:
 			for step in ResistanceSteps.all():
 				if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 					done.append(step.index)
-			GameState.resistance.completed_steps = done
-			GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-			GameState.facts.completed_resistance_alley_tiles = []
-			GameState.attempt_spend.scars.clear()
-			GameState.header.day = day
+			city.run.resistance.completed_steps = done
+			city.run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+			city.run.facts.completed_resistance_alley_tiles = []
+			city.run.attempt_spend.scars.clear()
+			city.run.header.day = day
 			var state := CityState.new()
-			GameState.attempt_spend.city_state = state
+			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -136,12 +133,6 @@ func run(t) -> void:
 							% [seed_value, day, ", ".join(escaped), start - her])
 			director.free()
 		city.free()
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.progress = saved_progress
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
-	GameState.attempt_spend.scars = saved_scars
-	GameState.header.day = saved_day
-	GameState.attempt_spend.city_state = saved_state
 	print("\n== grassy-goose: where a touched target's robber starts, %d seeds ==" % SEEDS_TO_SWEEP)
 	print("| day | across the street | above/below, clear run | beside, clear run | no clear run at all | no legal start | no task |")
 	print("|---|---|---|---|---|---|---|")

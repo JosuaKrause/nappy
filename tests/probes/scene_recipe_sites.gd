@@ -9,9 +9,10 @@ func run(_t) -> void:
 	var map: CityMap = built.map
 	print("HOME ", map.doorstep_world_position())
 	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
+	var own_run := RunState.new()
 	for day: int in [1, 13]:
-		GameState.start_run(11)
-		GameState.header.day = day
+		own_run.start_run(11)
+		own_run.header.day = day
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -40,12 +41,12 @@ func run(_t) -> void:
 			accepted += 1
 			if accepted >= 5:
 				break
-	GameState.header.day = 14
+	own_run.header.day = 14
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 14)
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
-	DayPlanner.plan_the_escape_city(map, finale, GameState.calendar.day_rng(14, "finale"), _city_spec())
+	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar.day_rng(14, "finale"), _city_spec())
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
@@ -62,6 +63,7 @@ func run(_t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
 	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
 			dog.chase_speed() + Tuning.WALK_SPEED, dog.offscreen_notice))
+	own_run.free()
 
 ## The escape city's section spec, the one the run flow walks the city under.
 static func _city_spec() -> DaySpec:

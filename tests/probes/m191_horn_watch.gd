@@ -22,6 +22,9 @@ extends RefCounted
 const _SPEEDS: Array[float] = [130.0, 140.0, 150.0, 157.0, 165.0, 175.0, 181.0, 185.0]
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const _HORN_CALLS := 200000
 
 func run(t) -> void:
@@ -72,7 +75,7 @@ func run(t) -> void:
 ## query, only a wider band of cars for which `_horn()` itself now runs. So the added cost per
 ## frame is bounded by (live cars) × (one `_horn()` call), measured directly rather than guessed.
 func _measure_cost(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	city.crowd.start_day(1, RandomNumberGenerator.new())

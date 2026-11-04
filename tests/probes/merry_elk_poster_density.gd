@@ -25,21 +25,17 @@ const ACCIDENT_SHARE := 0.10
 const PURSUIT_PER_TEAR := 0.1
 
 func run(t) -> void:
-	var saved_seed := GameState.header.run_seed
-	var saved_posters := GameState.posters.to_data()
 	var rows := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
 		city.build(map)
-		GameState.header.run_seed = seed_value
-		GameState.posters.reset()
 		var state := CityState.new()
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)
-			GameState.posters.photograph()
-			city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
+			city.run.posters.photograph()
+			city.start_day(state, day, city.run.calendar.day_rng(day, "closures"))
 			if day < PosterWalls.FIRST_DAY:
 				continue
 			_measure(city, map, day, rows)
@@ -65,16 +61,14 @@ func run(t) -> void:
 				100.0 * float(r["empty"]) / maxi(1, int(r["cells"])), sum / maxi(1, routes.size()),
 				worst, 100.0 * bare / maxi(1, routes.size())])
 	t.check(rows.size() > 0, "measured")
-	GameState.header.run_seed = saved_seed
-	GameState.posters.restore(saved_posters)
 
 func _measure(city: City, map: CityMap, day: int, rows: Dictionary) -> void:
 	if not rows.has(day):
 		rows[day] = {"city": 0, "view_sum": 0, "cells": 0, "empty": 0, "route_counts": [],
 				"underfoot": []}
 	var r: Dictionary = rows[day]
-	for tile: Vector2i in GameState.posters.cells:
-		r["city"] = int(r["city"]) + (1 if GameState.posters.has_intact_sheet(tile) else 0)
+	for tile: Vector2i in city.run.posters.cells:
+		r["city"] = int(r["city"]) + (1 if city.run.posters.has_intact_sheet(tile) else 0)
 	var w: Dictionary = POSTER_VIEW.walk(city, map)
 	r["view_sum"] = int(r["view_sum"]) + int(w["view_sum"])
 	r["cells"] = int(r["cells"]) + int(w["cells"])

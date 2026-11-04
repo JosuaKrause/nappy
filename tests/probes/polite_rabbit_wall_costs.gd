@@ -29,6 +29,9 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 30.0
 const SEEDS: Array[int] = [4242, 90210, 1337]
 const DAYS: Array[int] = [1, 5, 9, 13]
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 
 ## The three ways of asking, in print order: no wall test, as built, half a tile everywhere.
 const NONE := 0
@@ -52,11 +55,11 @@ func run(t) -> void:
 	print("  %6s %4s %6s %8s   %-26s   %-26s" % ["seed", "day", "routes", "seconds",
 			"events", "crowd"])
 	for city_seed in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		for day in DAYS:
-			GameState.header.day = day
+			city.run.header.day = day
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("polite-rabbit-walls:%d:%d" % [city_seed, day])
 			city.start_day(CityState.new(), day, rng)

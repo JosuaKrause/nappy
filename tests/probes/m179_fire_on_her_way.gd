@@ -33,6 +33,9 @@ const STEP := 1.0 / 30.0
 const WALK_SECONDS := 240.0
 ## How far down the wrong branch the second rig goes before it changes its mind, in route cells.
 const PAST_THE_FORK := 6
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 
 func run(t) -> void:
 	print("seed   walk        sited at   lead px   seen after   total    widened  waited on")
@@ -44,7 +47,7 @@ func run(t) -> void:
 	var worst_frame := 0.0
 	var attempt_frames: Array[float] = []
 	for seed_value: int in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -78,7 +81,8 @@ func run(t) -> void:
 
 func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var scars := GameState.attempt_spend.scars.duplicate()
+	# Every walk on this city's run starts from the scars it began with.
+	var scars := city.run.attempt_spend.scars.duplicate()
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -130,7 +134,7 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
 					plan.position.distance_to(rig.global_position)])
 	rig.free()
-	GameState.attempt_spend.scars = scars
+	city.run.attempt_spend.scars = scars
 	var out := state.duplicate()
 	out["met"] = met
 	out["never_real"] = never_real

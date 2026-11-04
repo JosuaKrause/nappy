@@ -11,6 +11,9 @@ extends RefCounted
 ## sides of the lane-mover split have (`_picture` and `drawn_heading` through `get()`), so the
 ## same file runs on either. Interleave the two revisions' runs when comparing the times.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const STEP := 1.0 / 30.0
 const SEEDS: Array[int] = [478156010, 4242]
 const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY, 14]
@@ -30,7 +33,7 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.crowd_view = ScreenCrowdView.new(t)
 		city.build(CityGenerator.generate(city_seed))

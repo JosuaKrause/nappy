@@ -16,19 +16,18 @@ func run(t) -> void:
 	for case: Array in CASES:
 		var seed_value: int = case[0]
 		var day: int = case[1]
-		GameState.start_run(seed_value)
-		GameState.header.day = day
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+		city.run.header.day = day
 		t.add_child(city)
 		city.build(map)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, day)
-		city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"))
+		city.run.attempt_spend.city_state.begin_day(map.block_plans, day)
+		city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"))
 		var doorstep := map.doorstep_world_position()
-		city.events.start_day(DaySpec.for_day(day), GameState.calendar.day_rng(), GameState.attempt_spend.consumed_one_shots, doorstep)
+		city.events.start_day(DaySpec.for_day(day), city.run.calendar.day_rng(), city.run.attempt_spend.consumed_one_shots, doorstep)
 		var at := map.tile_to_world(case[2])
 		city.events.stream_around(at)
-		city.crowd.start_day(day, GameState.calendar.day_rng(day, "crowd"), at)
+		city.crowd.start_day(day, city.run.calendar.day_rng(day, "crowd"), at)
 		city.crowd.set_gates(city.region_plan().gates)
 		var most := 0
 		var total := 0

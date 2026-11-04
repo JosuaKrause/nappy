@@ -19,22 +19,23 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 
 func run(t) -> void:
-	var saved_steps := GameState.resistance.completed_steps.duplicate()
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var totals := {"dawn": [0, 0, 0], "moved": [0, 0, 0]}
 	for seed_value in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in range(6, 14):
-			GameState.facts.completed_resistance_alley_tiles = []
+			city.run.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			GameState.resistance.completed_steps = done
+			city.run.resistance.completed_steps = done
 			var state := CityState.new()
-			GameState.attempt_spend.city_state = state
+			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -60,8 +61,6 @@ func run(t) -> void:
 				_count(totals["moved"], city, director, target, shut, by_tiles, "")
 			director.free()
 		city.free()
-	GameState.resistance.completed_steps = saved_steps
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	for kind in ["dawn", "moved"]:
 		print("[downy] %-5s marks %d: only through a district door %d, unreachable by tiles %d"
 				% [kind, totals[kind][0], totals[kind][1], totals[kind][2]])

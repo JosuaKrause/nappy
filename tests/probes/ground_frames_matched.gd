@@ -139,8 +139,7 @@ func _run() -> void:
 	var cases: Array[Dictionary] = []
 	for spec: Array in [["south60", 60, Vector2.DOWN], ["south15", 15, Vector2.DOWN],
 			["diagonal15", 15, Vector2.ONE.normalized()]]:
-		GameState.start_run(4242)
-		_city = RunCity.of_the_run(CITY)
+		_city = RunCity.with_own_run(CITY, 4242)
 		add_child(_city)
 		_city.build(CityGenerator.generate(4242))
 		_city.scenery.set_process(false)
