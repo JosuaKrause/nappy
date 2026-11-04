@@ -1,4 +1,5 @@
 priority: now
+upnext: true
 
 # plaid-moose — The verify skill says how to design unit tests: isolated components, injection · filed 2026-11-04
 
@@ -25,5 +26,7 @@ much at once, not injecting as intended, or testing internals where outside beha
 those reasons are examples, not the only ones. The drawn-art case itself is filed in minty-quail's
 item tests-public-seams, not here.
 
-*Proposed, not asked for:* the band, `now` (the player named none), and that the guidance goes in
+**When.** Told the band proposed was `now`, the player: "proposed at the now band, -- let's do immediate instead", and then "there are tiers higher than now!" (inbox #1024 in brisk-ferret). Read as: up next, the marker above every band that the player once put as "immediately after the current items are done" (mossy-ferret), so the entry keeps `now` and carries `upnext: true`; not `bug`, which the player did not name.
+
+*Proposed, not asked for:* that the guidance goes in
 the **verify** skill's "Testing policy" section, worded as guidance.

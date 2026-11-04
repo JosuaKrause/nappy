@@ -43,3 +43,29 @@
 10. **The player's words.**
 
     > and hypotheticals here are also not exhaustive. there could be other reasons to end up in this situation that I don't mention
+
+## #1024
+
+1. **Context** (the assistant's):
+
+   Asked how the filing of inbox #1018 would band its testing-guidance entry (plaid-moose, the verify skill's unit-test guidance), the orchestrator said it was proposed at the now band. The player's answer:
+
+2. **The note.**
+
+   > proposed at the now band, -- let's do immediate instead
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   There is no band called immediate; read as: keep the entry at now with upnext: true so it prints first, and start the verify skill edit right away rather than in queue order.
+
+4. **Context** (the assistant's):
+
+   Said right after, while the orchestrator was reading "immediate" as no band of its own. Above now there are the band bug, filed only when the player names it, and the up-next marker (upnext: true), which the player once described as "immediately after the current items are done" (mossy-ferret).
+
+5. **The player's words.**
+
+   > there are tiers higher than now!
+
+6. **Read as:** (the assistant's interpretation, not the player's words)
+
+   "immediate" is the up-next marker: the entry keeps band now, carries upnext: true, and prints first, ahead of bug.
