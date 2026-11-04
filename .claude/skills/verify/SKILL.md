@@ -368,7 +368,8 @@ internals where the outside behaviour is what matters, and those are examples, n
 - **Integration-tested against a real `City`:** anything about wiring — retirement, successors,
   scars. `tests/test_event_manager.gd` exists because a freed-node-left-in-a-list bug is invisible
   to a data-level test.
-- **`tests/test_full_run.gd`** plays three seeds through all 14 days with time actually advancing.
+- **`tests/test_full_run_a.gd`, `_b.gd` and `_c.gd`** (one seed each, the run in `tests/full_run_rig.gd`)
+  play three seeds through all 14 days with time actually advancing.
   Keep it that way: a version that only *plans* each day leaves the mobile one-shots unfinished and
   the whole successor-and-scar chain untested while the test passes.
 - **Not tested, checked by eye:** layout, colour, readability, whether a cue is legible from across

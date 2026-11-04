@@ -37,7 +37,7 @@ extends RefCounted
 ## played first never carries. `calm` and `home` still time normally on that day.
 
 const DAYS := [6, 7, 8, 9, 10, 11, 12, 13, 14]
-## The same spread `tests/test_full_run.gd` already uses, for the same reason: a single city can
+## The same spread `tests/test_full_run_a.gd`, `_b.gd` and `_c.gd` already use, for the same reason: a single city can
 ## be lucky, and a fact about one seed is not yet a fact about the day.
 const SEEDS := [4242, 90210, 1234567]
 const _TIMEOUT_SECONDS := 220.0
