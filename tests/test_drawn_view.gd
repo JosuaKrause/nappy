@@ -29,26 +29,6 @@ func run(t) -> void:
 	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
-## A crowd body's source that counts how often it is asked for its caret, handed to the agent it
-## stands for in place of its own: the caret is the projection of a course against her, the expensive
-## answer an off-screen body must not work out (`CrowdAgent.end_the_frame()`).
-class CountedCrowdCaret extends CrowdExcitement:
-	var asked := 0
-
-	func caret_strength() -> int:
-		asked += 1
-		return super()
-
-## An event's source that counts how often it is asked for its caret, which the picture key asks
-## first of everything (`EventLook._picture_key()`) and the mark asks again (`wants_a_mark()`): so a
-## count that does not move is a key and a caret that were not worked out.
-class CountedEventCaret extends EventExcitement:
-	var asked := 0
-
-	func caret_strength() -> int:
-		asked += 1
-		return super()
-
 ## A screen of its own for the gates to ask about: a `SubViewport` the size of the design box whose
 ## canvas shows the world from `top_left` at the game's zoom, so no other suite's camera moves it.
 func _screen(t, top_left := Vector2.ZERO) -> SubViewport:
@@ -142,8 +122,6 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	var shown := _world_shown(Vector2.ZERO)
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
-	var caret := CountedCrowdCaret.new(car)
-	car.excitement = caret
 	car.set_process(false)
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -158,13 +136,13 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		car.position = Vector2(x, 180.0)
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
 		car.excitement.advance(STEP)
-		var before := caret.asked
+		var before: Variant = car.excitement._caret_key_was
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or caret.asked != before
+			projected_off_screen = projected_off_screen or car.excitement._caret_key_was != before
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -172,16 +150,15 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 			first_seen_asked = asked_since_off
 		x += 4.0
 	t.check(skipped > 50, "off screen the car asked for no redraw on %d frames" % skipped)
-	t.check(not projected_off_screen, "and its caret was never asked for there")
-	t.check(caret.asked > 0, "though it was asked for once the car showed (%d)" % caret.asked)
+	t.check(not projected_off_screen, "and its caret was never projected there")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
 	t.check(car.excitement.caret_strength() == 2,
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
 
-## A walker whose picture did not change while it was off screen — standing, its view and stride
-## where they were — still redraws on its first frame back, since what it shows was not kept.
+## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
+## it), its view and stride where they were — still redraws on its first frame back, since what it shows was not kept.
 func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> void:
 	var screen := _screen(t)
 	var walker := CrowdAgent.new()
@@ -213,17 +190,15 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 		return
 	var screen := _screen(t, Vector2(-2000.0, 0.0))
 	var cyclist := EventInstance.new()
-	var caret := CountedEventCaret.new(cyclist)
-	cyclist.excitement = caret
 	cyclist.setup(def, Vector2(320.0, 180.0),
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
 	cyclist.excitement.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
-	var asked_before := caret.asked
+	var key_before := cyclist.look._picture
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(caret.asked == asked_before,
-			"and works out neither its key nor its caret (the key asks for the caret first)")
+	t.check(cyclist.look._picture == key_before and not cyclist.excitement._caret_known,
+			"and works out neither its key nor its caret")
 	var drawn := cyclist.look.drawn_rect_now()
 	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 			"the caret it is owed is the doubled red")
@@ -255,17 +230,19 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			"back on screen with the same key, it redraws once")
 	screen.free()
 
-## The ground of a street fire's long building: open ground that answers, for the tile the fire is
-## sited on, that the pavement's inward step is north and the building's lot is `LOT` tiles, wholly
-## walkable along its frontage, as `WorldMap` answers of a city's long block.
+## The ground of a street fire's long building, answering per tile as a city's long block does: the
+## sidewalk row in front of the building (`FRONT_ROW`) points north, at the building's lot (`LOT`,
+## the tiles above that row), and no other tile has an inward step or a lot, so a fire that asks
+## about the wrong tile finds no front.
 class LongFrontage extends WorldMap:
-	const LOT := Rect2i(-1, -10, 20, 10)
+	const FRONT_ROW := 5
+	const LOT := Rect2i(-1, -5, 20, FRONT_ROW + 5)
 
-	func pavement_inward(_tile: Vector2i) -> Vector2i:
-		return Vector2i(0, -1)
+	func pavement_inward(tile: Vector2i) -> Vector2i:
+		return Vector2i(0, -1) if tile.y == FRONT_ROW else Vector2i.ZERO
 
-	func lot_at(_tile: Vector2i) -> Rect2i:
-		return LOT
+	func lot_at(tile: Vector2i) -> Rect2i:
+		return LOT if LOT.has_point(tile) else Rect2i()
 
 ## **A street fire burns along the whole front of its building, far past its own picture, and it is
 ## redrawn on every tick any of that front can be on the screen** — its flames flicker and its
@@ -290,7 +267,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	# The front, from the building's lot: its west and east ends from the fire's point, half a tile
 	# toward the wall, and from the ground up to the smoke's top over the tallest flame.
 	var lot := map.tile_rect_to_world(LongFrontage.LOT)
-	var toward_the_wall := Vector2(map.pavement_inward(Vector2i.ZERO)) * (Tuning.TILE_SIZE * 0.5)
+	var toward_the_wall := Vector2(map.pavement_inward(map.world_to_tile(fire.global_position))) * (Tuning.TILE_SIZE * 0.5)
 	var smoke_top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) - FireLook._SMOKE_SIZE.y
 	var drawn := Rect2(lot.position.x - fire.global_position.x, smoke_top, lot.size.x, -smoke_top)
 	drawn.position += toward_the_wall
