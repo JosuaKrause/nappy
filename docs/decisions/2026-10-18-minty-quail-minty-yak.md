@@ -9,13 +9,16 @@ booted game on real physics ticks and matches the poses of what the game draws (
 bodies with `is_turning()`, cordon officers) against the map's `moves.all()`, flagging a listed
 move no mover stands at. The cordon suites (5 to 2, 3 to 1) no longer read the director's
 happenings or its blocked reach: the fixture builds a `ResistanceHappenings` of its own and hands it
-`director.reach_obstruction()` through `take_the_park()`, as the director does at the swing, so the
+`director.reach_obstruction()` through `take_the_park()`, as the director does at the swing (the
+director's own call now reads `reach_obstruction()` too, so the seam has a game caller), so the
 happenings are tested apart from the director; the reaching-the-swing test plays through the
 director with a real `Stroller` handed to `use_player()` and `director.tick()`, and the officers and
-whether the park is shut are read off the world. The count of those still to leave is the escort
-count with the park's own leaving events. Both cordon files give the observers back, since the
-director opens the swing's task in the visit counter and the suite's own happenings never finish
-it.
+whether the park is shut are read off the world. The count of those taken on is read just after the first tick: one per escort and one per
+leaving event in the park of a kind `ParkCordon._walks_out()` takes; it reads 0 on every seed swept,
+so the check that the gap closes when the cordon said it would always holds it to its deadline.
+Both cordon files give the observers back: finishing the swing's task the game's way would make the
+director's own happenings take the park first, so the suite's own `take_the_park()` would refuse,
+and the task the director opened in the visit counter stays open.
 
 **Not done:** `ParkCordon._exit`, the way out, which no game class outside the cordon reads;
 `ParkCordon._still_to_come_out()`, kept in the check that the gap waits for him, since both public
