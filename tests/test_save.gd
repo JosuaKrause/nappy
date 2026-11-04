@@ -1,5 +1,5 @@
 extends RefCounted
-## `GameSave`, and the two functions on `GameState` it reads and writes through
+## `GameSave`, and the two functions on `RunState` it reads and writes through
 ## (`save_snapshot()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The
 ## checks that go through `main` (the title, the resume gate, the focus loss and the day-14
 ## hand-over) are in `tests/test_save_wiring.gd`.
@@ -11,9 +11,9 @@ extends RefCounted
 ## the scratch path it was built with points that run's `write()`, `try_resume()` and `clear()` at
 ## the scratch file. The file format is exercised through those three, the calls the game itself makes.
 ##
-## `run()` snapshots the live `GameState` first and restores it last, so this suite — which
-## mutates nearly every field `GameState` owns — leaves nothing behind for a suite that runs
-## after it in the same process.
+## **Every test makes the run it saves and loads** (`_a_run()`, a fresh `RunState` it frees at its
+## end) and hands it to the save, as `main` hands the save the run its sitting holds; nothing here
+## reads or sets a global run, so nothing is put back for the suite that runs after it.
 
 const _SCRATCH_PATH := "user://test_save_scratch.json"
 
@@ -23,7 +23,6 @@ var _save := GameSave.new(_SCRATCH_PATH)
 
 func run(t) -> void:
 	t.gives_back_observers()
-	var baseline := GameState.save_snapshot()
 
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)
@@ -113,17 +112,6 @@ func run(t) -> void:
 
 	_save.clear()
 	_save.free()
-	GameState.restore_snapshot(baseline)
-	# `restore_snapshot()` writes every field the *snapshot* carries, and the escape's own section,
-	# the resistance's used alley tiles and the one fenced park are deliberately not among them —
-	# see `RunSubState.Slot.RIDER` — so this suite has to put all three back by hand or the next
-	# one starts in the middle of an escape with somebody else's used alleys and fenced park still on.
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	GameState.facts.completed_resistance_alley_tiles.clear()
-	GameState.facts.fenced_park = Vector2i(-1, -1)
-	GameState.facts.fenced_park_act = 0
-	GameState.calendar.hard_mode = false
-	GameState.calendar.checkpoint = {}
 
 ## The configuration of a windowed run on a release build (or, with `args` and `query`, a debug one
 ## given those flags): the shape `main` hands `_save.configure()` outside a headless runner.
@@ -134,9 +122,15 @@ func _windowed_run(args := PackedStringArray(), query := "", debug_build := fals
 func _headless_run() -> RunConfig:
 	return RunConfig.parse(PackedStringArray(), "", false)
 
-## `GameState` written to the scratch file the way a game writes it. Whether the write was kept.
-func _saved(day_under_way: bool) -> bool:
-	return _save.write(GameState, day_under_way) == GameSave.Result.CONFIRMED
+## A fresh run on `run_seed`, the run a test saves and loads and frees at its end.
+func _a_run(run_seed := 2) -> RunState:
+	var run := RunState.new()
+	run.start_run(run_seed)
+	return run
+
+## `run` written to the scratch file the way a game writes it. Whether the write was kept.
+func _saved(run: RunState, day_under_way: bool) -> bool:
+	return _save.write(run, day_under_way) == GameSave.Result.CONFIRMED
 
 ## Operation ids a test hands the bus or a flush table for changes of its own, larger for every
 ## change begun later, as `GameSave`'s own are.
@@ -221,26 +215,28 @@ func _test_web_debug_flag_used_query_parsing(t) -> void:
 ## outright under the headless runner, and touch no file at all in doing so — the property every
 ## other suite, and `tools/check.sh`'s own boot, are safe *because* of.
 func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> void:
+	var run := _a_run()
 	_save.configure(_windowed_run())
 	_save.clear()
 	_save.configure(_headless_run())
-	t.check(_save.write(GameState, true) == GameSave.Result.REFUSED,
+	t.check(_save.write(run, true) == GameSave.Result.REFUSED,
 			"the gated write refuses under the headless runner")
 	t.check(not _save.has_save(), "and leaves no file behind")
 	_save.configure(_windowed_run())
-	t.check(_saved(true), "while the run saves, the same write lands")
+	t.check(_saved(run, true), "while the run saves, the same write lands")
 	_save.configure(_headless_run())
-	t.check(_save.try_resume(GameState).is_empty(),
+	t.check(_save.try_resume(run).is_empty(),
 			"the gated resume also refuses, even with a real file sitting at the scratch path")
 	t.check(_save.clear() == GameSave.Result.REFUSED,
 			"the gated deletion refuses too")
 	t.check(_save.has_save(), "and leaves the file where it was")
 	_save.configure(_windowed_run())
 	_save.clear()
+	run.free()
 
 # ------------------------------------------------------------------- round trip ---
 
-## The guard the brief asks for: a field declared on `GameState` and saved by nothing fails here
+## The guard the brief asks for: a field declared on `RunState` and saved by nothing fails here
 ## rather than quietly not being saved. A field is saved when the registered parts write a key of
 ## its name, or it is a part itself, or it is the calendar, whose mode and checkpoint ride at the
 ## top of the save beside `"day_under_way"` (`GameSave.file_data()`, held by
@@ -249,18 +245,20 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## `PROPERTY_USAGE_SCRIPT_VARIABLE` is what separates a field this script declares from the base
 ## `Node` properties `get_property_list()` also reports (`name`, `process_mode`, and the rest).
 func _test_round_trip_field_list_matches_the_property_list(t) -> void:
+	var run := _a_run()
 	var declared: Array[String] = []
-	for property in GameState.get_property_list():
+	for property in run.get_property_list():
 		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			declared.append(property["name"])
-	var written := GameState.run_parts.state_keys()
-	written.append_array(GameState.run_parts.rider_data().keys())
+	var written := run.run_parts.state_keys()
+	written.append_array(run.run_parts.rider_data().keys())
 	for name in declared:
-		var value: Variant = GameState.get(name)
+		var value: Variant = run.get(name)
 		if value is RunSubState or value is RunStateRegistry or value is RunCalendar:
 			continue
 		t.check(name in written,
-				"'%s' is a GameState field the save format does not mention" % name)
+				"'%s' is a run field the save format does not mention" % name)
+	run.free()
 
 ## The run's play time is counted in physics ticks (inbox #866 in minty-dolphin) and saved as seconds
 ## (`to_data()`), so any save's seconds, whatever number they hold, load to the nearest tick, and
@@ -284,65 +282,66 @@ func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:
 ## the actual file — `write()`/`try_resume()`, not the in-memory dictionaries, so a JSON
 ## int-becomes-float or a `Vector2i` key that cannot survive `JSON.stringify()` would show up here.
 func _test_round_trip_preserves_every_field(t) -> void:
-	GameState.start_run(778899)
-	GameState.header.day = 6
-	GameState.header.nerves = 3
+	var run := _a_run(778899)
+	run.header.day = 6
+	run.header.nerves = 3
 	# The dawn the run stands at is photographed first, then the live work moves on from it, so the
 	# file has to carry both.
-	GameState.resistance.completed_steps = [0]
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 1
-	GameState.resistance.sabotage_done = false
-	GameState.resistance.carrying_package = false
-	GameState.resistance.photograph()
-	GameState.resistance.progress = 2
-	GameState.header.ending = GameEnums.Ending.NONE
-	GameState.header.play_ticks = 3704
-	GameState.attempt_spend.consumed_one_shots = ["a_one_shot", "another_one_shot"]
-	GameState.resistance.completed_steps = [0, 2]
-	GameState.resistance.failed_steps = [1]
-	GameState.attempt_spend.scars = [{"id": "fire", "position": Vector2(140.5, -30.25), "since_day": 4}]
-	GameState.attempt_spend.city_state.reset()
-	GameState.attempt_spend.city_state.apply_cause(
+	run.resistance.completed_steps = [0]
+	run.resistance.failed_steps = []
+	run.resistance.progress = 1
+	run.resistance.sabotage_done = false
+	run.resistance.carrying_package = false
+	run.resistance.photograph()
+	run.resistance.progress = 2
+	run.header.ending = GameEnums.Ending.NONE
+	run.header.play_ticks = 3704
+	run.attempt_spend.consumed_one_shots = ["a_one_shot", "another_one_shot"]
+	run.resistance.completed_steps = [0, 2]
+	run.resistance.failed_steps = [1]
+	run.attempt_spend.scars = [{"id": "fire", "position": Vector2(140.5, -30.25), "since_day": 4}]
+	run.attempt_spend.city_state.reset()
+	run.attempt_spend.city_state.apply_cause(
 			{Vector2i(3, 4): _fake_block_plan()}, Vector2i(3, 4), GameEnums.BlockCause.FIRE, 6)
-	GameState.resistance.sabotage_done = false
-	GameState.resistance.carrying_package = true
-	GameState.settled.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
+	run.resistance.sabotage_done = false
+	run.resistance.carrying_package = true
+	run.settled.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
 
-	var written := GameState.save_snapshot()
-	t.check(_saved(true), "the write reports success")
-	var resume := _save.try_resume(GameState)
+	var written := run.save_snapshot()
+	t.check(_saved(run, true), "the write reports success")
+	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way", false) == true, "day_under_way round-trips as true")
 
-	t.check(GameState.header.run_seed == 778899, "run_seed survives")
-	t.check(GameState.header.day == 6, "day survives")
-	t.check(GameState.header.nerves == 3, "nerves survives")
-	t.check(GameState.resistance.progress == 2, "resistance_progress survives")
-	t.check(GameState.header.play_ticks == 3704, "the play time survives to the tick, saved as seconds")
-	t.check(GameState.attempt_spend.consumed_one_shots == ["a_one_shot", "another_one_shot"],
+	t.check(run.header.run_seed == 778899, "run_seed survives")
+	t.check(run.header.day == 6, "day survives")
+	t.check(run.header.nerves == 3, "nerves survives")
+	t.check(run.resistance.progress == 2, "resistance_progress survives")
+	t.check(run.header.play_ticks == 3704, "the play time survives to the tick, saved as seconds")
+	t.check(run.attempt_spend.consumed_one_shots == ["a_one_shot", "another_one_shot"],
 			"consumed_one_shots survives, string array and all")
-	t.check(GameState.resistance.completed_steps == [0, 2], "completed_resistance_steps survives")
-	t.check(GameState.resistance.failed_steps == [1], "failed_resistance_steps survives")
-	t.check(GameState.attempt_spend.scars.size() == 1
-			and GameState.attempt_spend.scars[0]["id"] == "fire"
-			and (GameState.attempt_spend.scars[0]["position"] as Vector2).distance_to(Vector2(140.5, -30.25)) < 0.01
-			and GameState.attempt_spend.scars[0]["since_day"] == 4,
+	t.check(run.resistance.completed_steps == [0, 2], "completed_resistance_steps survives")
+	t.check(run.resistance.failed_steps == [1], "failed_resistance_steps survives")
+	t.check(run.attempt_spend.scars.size() == 1
+			and run.attempt_spend.scars[0]["id"] == "fire"
+			and (run.attempt_spend.scars[0]["position"] as Vector2).distance_to(Vector2(140.5, -30.25)) < 0.01
+			and run.attempt_spend.scars[0]["since_day"] == 4,
 			"a scar survives with its Vector2 position intact")
-	t.check(GameState.attempt_spend.city_state.changed_on(Vector2i(3, 4)) == 6,
+	t.check(run.attempt_spend.city_state.changed_on(Vector2i(3, 4)) == 6,
 			"the city's own block-arc history survives — a fire that burned did happen")
-	t.check(GameState.resistance.carrying_package == true, "resistance_carrying_package survives")
-	t.check(GameState.settled.settled_in.get(5) == Vector2i(-2, 7)
-			and GameState.settled.settled_in.get(6) == Vector2i(9, 9),
+	t.check(run.resistance.carrying_package == true, "resistance_carrying_package survives")
+	t.check(run.settled.settled_in.get(5) == Vector2i(-2, 7)
+			and run.settled.settled_in.get(6) == Vector2i(9, 9),
 			"settled_in survives with its Vector2i values and integer day keys intact")
-	t.check(GameState.save_snapshot() == written,
+	t.check(run.save_snapshot() == written,
 			"and the whole snapshot taken before the write matches the one read back after it")
 	# The dawn snapshot, read through what it is for: a lost day gives it back.
-	GameState.resistance.give_back()
-	t.check(GameState.resistance.completed_steps == [0] and GameState.resistance.failed_steps.is_empty(),
+	run.resistance.give_back()
+	t.check(run.resistance.completed_steps == [0] and run.resistance.failed_steps.is_empty(),
 			"the dawn snapshot's own steps survive")
-	t.check(GameState.resistance.progress == 1, "the dawn's progress survives")
-	t.check(not GameState.resistance.sabotage_done and not GameState.resistance.carrying_package,
+	t.check(run.resistance.progress == 1, "the dawn's progress survives")
+	t.check(not run.resistance.sabotage_done and not run.resistance.carrying_package,
 			"and the dawn's sabotage and package")
+	run.free()
 
 ## Player, 2026-09-27: *"a won day recovers a nerve up to the max"*. `nerves` was already carried by
 ## the snapshot's keys, but the count it carries now has to be the one a win just gave back, not the one
@@ -350,15 +349,16 @@ func _test_round_trip_preserves_every_field(t) -> void:
 ## wipes the live count before reading it back, so a save that quietly dropped the regained nerve
 ## rather than the round trip itself is what would fail this.
 func _test_a_won_days_regained_nerve_survives_a_round_trip(t) -> void:
-	GameState.start_run(240927)
-	GameState.header.nerves = 3
-	GameState.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(GameState.header.nerves == 4, "winning regains a nerve before the save is even written")
+	var run := _a_run(240927)
+	run.header.nerves = 3
+	run.calendar.finish_day(GameEnums.DayResult.WON)
+	t.check(run.header.nerves == 4, "winning regains a nerve before the save is even written")
 
-	t.check(_saved(true), "the write reports success")
-	GameState.header.nerves = 0
-	_save.try_resume(GameState)
-	t.check(GameState.header.nerves == 4, "and the regained count is what loading the save gives back")
+	t.check(_saved(run, true), "the write reports success")
+	run.header.nerves = 0
+	_save.try_resume(run)
+	t.check(run.header.nerves == 4, "and the regained count is what loading the save gives back")
+	run.free()
 
 ## The smallest fake `BlockPlan`-shaped dictionary `CityState.apply_cause()` needs to take a
 ## `FIRE` step — a `Dictionary` because `CityState` reads `plan.steps`, not a real `BlockPlan`
@@ -375,33 +375,40 @@ func _fake_block_plan() -> BlockPlan:
 
 
 func _test_missing_file_is_dropped(t) -> void:
+	var run := _a_run()
 	_save.clear()
-	t.check(_save.try_resume(GameState).is_empty(), "no file at all resumes nothing")
+	t.check(_save.try_resume(run).is_empty(), "no file at all resumes nothing")
+	run.free()
 
 
 func _test_garbled_text_is_dropped(t) -> void:
-	var before := GameState.save_snapshot()
+	var run := _a_run()
+	var before := run.save_snapshot()
 	_write_raw("not valid json at all {{{")
-	t.check(_save.try_resume(GameState).is_empty(), "text that is not valid JSON resumes nothing")
-	t.check(GameState.save_snapshot() == before, "and GameState is left exactly as it was")
+	t.check(_save.try_resume(run).is_empty(), "text that is not valid JSON resumes nothing")
+	t.check(run.save_snapshot() == before, "and the run is left exactly as it was")
+	run.free()
 
 
 func _test_wrong_format_version_is_dropped(t) -> void:
-	var before := GameState.save_snapshot()
+	var run := _a_run()
+	var before := run.save_snapshot()
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION + 1,
 		"build": "some other build",
 		"day_under_way": true,
-		"state": GameState.save_snapshot(),
+		"state": run.save_snapshot(),
 	}))
-	t.check(_save.try_resume(GameState).is_empty(),
+	t.check(_save.try_resume(run).is_empty(),
 			"a save this build's own format version does not match resumes nothing")
-	t.check(GameState.save_snapshot() == before, "and GameState is untouched by trying")
+	t.check(run.save_snapshot() == before, "and the run is untouched by trying")
+	run.free()
 
 
 func _test_incomplete_state_is_dropped(t) -> void:
-	var before := GameState.save_snapshot()
-	var state := GameState.save_snapshot()
+	var run := _a_run()
+	var before := run.save_snapshot()
+	var state := run.save_snapshot()
 	state.erase("nerves")
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
@@ -409,9 +416,10 @@ func _test_incomplete_state_is_dropped(t) -> void:
 		"day_under_way": true,
 		"state": state,
 	}))
-	t.check(_save.try_resume(GameState).is_empty(),
+	t.check(_save.try_resume(run).is_empty(),
 			"a state missing a field this build writes resumes nothing rather than half-loading")
-	t.check(GameState.save_snapshot() == before, "and GameState is untouched by trying")
+	t.check(run.save_snapshot() == before, "and the run is untouched by trying")
+	run.free()
 
 
 func _write_raw(text: String) -> void:
@@ -421,11 +429,12 @@ func _write_raw(text: String) -> void:
 
 
 func _test_clear_deletes_the_file(t) -> void:
+	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		var answers := _Answers.new()
 		t.check(_save.clear(answers.take) == GameSave.Result.REFUSED,
 				"with no file there is nothing to delete, which changes nothing")
-		t.check(_saved(true), "a write lands")
+		t.check(_saved(run, true), "a write lands")
 		t.check(_save.has_save(), "and the file exists")
 		t.check(_save.clear(answers.take) == GameSave.Result.CONFIRMED,
 				"deleting it off the web is confirmed at once")
@@ -434,237 +443,247 @@ func _test_clear_deletes_the_file(t) -> void:
 				"clearing an already-absent save changes nothing and answers refused")
 		t.check(answers.results.is_empty(), "and nothing is left for a later answer to settle")
 	)
+	run.free()
 
 func _test_write_refuses_once_the_run_has_ended(t) -> void:
+	var run := _a_run()
 	_save.clear()
-	var ending := GameState.header.ending
-	GameState.header.ending = GameEnums.Ending.BAD
-	t.check(not _saved(true), "a write refuses once the run has an ending")
+	run.header.ending = GameEnums.Ending.BAD
+	t.check(not _saved(run, true), "a write refuses once the run has an ending")
 	t.check(not _save.has_save(), "and touches no file at all")
-	GameState.header.ending = ending
+	run.free()
 
 ## Closing the game inside a section of the escape and opening it again comes back to that
-## section's own brief, which is `GameState.facts.escape_section` surviving the file — the same
+## section's own brief, which is `RunState.facts.escape_section` surviving the file — the same
 ## mechanism a day under way already rides on, and deliberately the same one rather than a second
 ## save path beside it.
 func _test_the_escape_section_survives_a_round_trip(t) -> void:
-	GameState.start_run(313131)
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.facts.escape_section = DaySpec.Section.CITY
-	t.check(_saved(false), "a section of the escape writes a save")
+	var run := _a_run(313131)
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.facts.escape_section = DaySpec.Section.CITY
+	t.check(_saved(run, false), "a section of the escape writes a save")
 	# Wiped the way a fresh process would find it, so what is read back has to come off the file.
-	GameState.start_run(1)
-	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
+	run.start_run(1)
+	t.check(run.facts.escape_section == DaySpec.Section.NONE,
 			"a fresh run is in no section (the check below would pass vacuously otherwise)")
-	t.check(not _save.try_resume(GameState).is_empty(), "and the file resumes")
-	t.check(GameState.facts.escape_section == DaySpec.Section.CITY,
+	t.check(not _save.try_resume(run).is_empty(), "and the file resumes")
+	t.check(run.facts.escape_section == DaySpec.Section.CITY,
 			"onto the section it was closed in, not the start of the escape")
-	t.check(GameState.header.run_seed == 313131, "with the run it belonged to")
+	t.check(run.header.run_seed == 313131, "with the run it belonged to")
 	_save.clear()
+	run.free()
 
 ## **A save written before the escape was a run's ending still loads.** `"escape_section"` is a
 ## top-level key rather than a field of the run snapshot exactly so this holds: a file with no
-## mention of it at all is a complete save (`GameState.snapshot_is_complete()` asks only about
+## mention of it at all is a complete save (`RunState.snapshot_is_complete()` asks only about
 ## `"state"`) and resumes to a run in no section, which is every one of the fourteen days.
 ##
 ## The payload is assembled here rather than pasted from a real old file, so it stays a save of
 ## *this* build's snapshot shape with only the new key missing — which is the thing that has to
 ## keep working, and the only part of an older file that differs.
 func _test_a_save_from_before_the_escape_still_loads(t) -> void:
-	GameState.start_run(424242)
-	GameState.header.day = 9
-	GameState.header.nerves = 3
+	var run := _a_run(424242)
+	run.header.day = 9
+	run.header.nerves = 3
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the escape",
 		"day_under_way": true,
-		"state": GameState.save_snapshot(),
+		"state": run.save_snapshot(),
 	})
 	t.check(not old_shape.contains("escape_section"),
 			"the payload really is one with no escape section in it")
-	GameState.start_run(1)
-	GameState.facts.escape_section = DaySpec.Section.BUILDING
+	run.start_run(1)
+	run.facts.escape_section = DaySpec.Section.BUILDING
 	_write_raw(old_shape)
-	var resumed := _save.try_resume(GameState)
+	var resumed := _save.try_resume(run)
 	t.check(not resumed.is_empty(), "a save with no escape section still resumes")
-	t.check(GameState.header.run_seed == 424242 and GameState.header.day == 9 and GameState.header.nerves == 3,
+	t.check(run.header.run_seed == 424242 and run.header.day == 9 and run.header.nerves == 3,
 			"with every field it does carry")
 	t.check(bool(resumed.get("day_under_way", false)),
 			"and the day-under-way flag beside it, unchanged")
-	t.check(GameState.facts.escape_section == DaySpec.Section.NONE,
+	t.check(run.facts.escape_section == DaySpec.Section.NONE,
 			"and the run is in no section, rather than keeping whatever was in memory")
 	_save.clear()
+	run.free()
 
 ## The same mechanism `escape_section` rides on, for the alley tiles the resistance has already
 ## used this run (M177) — closing the game between days must not hand the next mark back every
 ## alley to choose from again.
 func _test_completed_resistance_alley_tiles_survive_a_round_trip(t) -> void:
-	GameState.start_run(515151)
-	GameState.facts.completed_resistance_alley_tiles = [Vector2i(4, 9), Vector2i(-2, 15)]
-	t.check(_saved(false), "a run with used alley tiles writes a save")
-	GameState.start_run(1)
-	t.check(GameState.facts.completed_resistance_alley_tiles.is_empty(),
+	var run := _a_run(515151)
+	run.facts.completed_resistance_alley_tiles = [Vector2i(4, 9), Vector2i(-2, 15)]
+	t.check(_saved(run, false), "a run with used alley tiles writes a save")
+	run.start_run(1)
+	t.check(run.facts.completed_resistance_alley_tiles.is_empty(),
 			"a fresh run has recorded none (the check below would pass vacuously otherwise)")
-	t.check(not _save.try_resume(GameState).is_empty(), "and the file resumes")
-	t.check(GameState.facts.completed_resistance_alley_tiles == [Vector2i(4, 9), Vector2i(-2, 15)],
+	t.check(not _save.try_resume(run).is_empty(), "and the file resumes")
+	t.check(run.facts.completed_resistance_alley_tiles == [Vector2i(4, 9), Vector2i(-2, 15)],
 			"onto the tiles it was closed with, Vector2i values and all")
 	_save.clear()
+	run.free()
 
 ## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload.
 func _test_an_expired_fence_survives_a_round_trip(t) -> void:
-	GameState.start_run(14040)
-	GameState.facts.fenced_park = Vector2i(6, 8)
-	GameState.facts.fenced_park_act = 3
-	GameState.header.day = 12
-	GameState.facts.remember_fenced_park(Vector2i(-1, -1), 0)
-	t.check(_saved(false), "the act-boundary run writes a save")
-	GameState.start_run(1)
-	t.check(not _save.try_resume(GameState).is_empty(), "the act-boundary save resumes")
-	t.check(GameState.facts.fenced_park == Vector2i(6, 8) and GameState.facts.fenced_park_act == 3,
+	var run := _a_run(14040)
+	run.facts.fenced_park = Vector2i(6, 8)
+	run.facts.fenced_park_act = 3
+	run.header.day = 12
+	run.facts.remember_fenced_park(Vector2i(-1, -1), 0)
+	t.check(_saved(run, false), "the act-boundary run writes a save")
+	run.start_run(1)
+	t.check(not _save.try_resume(run).is_empty(), "the act-boundary save resumes")
+	t.check(run.facts.fenced_park == Vector2i(6, 8) and run.facts.fenced_park_act == 3,
 			"reloading after expiry remembers the original fence")
-	var map := CityGenerator.generate(GameState.header.run_seed)
+	var map := CityGenerator.generate(run.header.run_seed)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 13)
 	map.repaint(state)
 	var used: Array[Vector2i] = [map.calm_blocks[0]]
 	map.set_spent_calm(used)
-	map.set_fenced_park_state(GameState.facts.fenced_park, GameState.facts.fenced_park_act, 4)
+	map.set_fenced_park_state(run.facts.fenced_park, run.facts.fenced_park_act, 4)
 	map.repaint(state)
 	t.check(not map.shut_calm.is_empty(), "the resumed act has an accepted used area")
 	t.check(map.fenced_park == Vector2i(-1, -1),
 			"the resumed run cannot select a second fence in act IV")
 	_save.clear()
+	run.free()
 
 ## **A save written before this field existed still loads**, the same reasoning
 ## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
 ## mention of it is a complete save and resumes with nothing recorded, by absence.
 func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
-	GameState.start_run(626262)
+	var run := _a_run(626262)
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before this field",
 		"day_under_way": true,
-		"escape_section": GameState.facts.escape_section,
-		"state": GameState.save_snapshot(),
+		"escape_section": run.facts.escape_section,
+		"state": run.save_snapshot(),
 	})
 	t.check(not old_shape.contains("completed_resistance_alley_tiles"),
 			"the payload really is one with no alley tiles recorded in it")
-	GameState.start_run(1)
-	GameState.facts.completed_resistance_alley_tiles = [Vector2i(7, 7)]
+	run.start_run(1)
+	run.facts.completed_resistance_alley_tiles = [Vector2i(7, 7)]
 	_write_raw(old_shape)
-	var resumed := _save.try_resume(GameState)
+	var resumed := _save.try_resume(run)
 	t.check(not resumed.is_empty(), "a save with no alley tiles still resumes")
-	t.check(GameState.facts.completed_resistance_alley_tiles.is_empty(),
+	t.check(run.facts.completed_resistance_alley_tiles.is_empty(),
 			"and the list is empty, rather than keeping whatever was in memory")
 	_save.clear()
+	run.free()
 
 ## The same mechanism `escape_section` rides on, for the one calm area this run has fenced (M129) —
 ## closing the game mid-act must not let a second park get fenced on reopening, which is exactly
 ## what forgetting `fenced_park` on reload would do.
 func _test_the_fenced_park_survives_a_round_trip(t) -> void:
-	GameState.start_run(535353)
-	GameState.facts.fenced_park = Vector2i(6, 9)
-	GameState.facts.fenced_park_act = 3
-	t.check(_saved(false), "a run with a fenced park writes a save")
-	GameState.start_run(1)
-	t.check(GameState.facts.fenced_park == Vector2i(-1, -1),
+	var run := _a_run(535353)
+	run.facts.fenced_park = Vector2i(6, 9)
+	run.facts.fenced_park_act = 3
+	t.check(_saved(run, false), "a run with a fenced park writes a save")
+	run.start_run(1)
+	t.check(run.facts.fenced_park == Vector2i(-1, -1),
 			"a fresh run has fenced none (the check below would pass vacuously otherwise)")
-	t.check(not _save.try_resume(GameState).is_empty(), "and the file resumes")
-	t.check(GameState.facts.fenced_park == Vector2i(6, 9) and GameState.facts.fenced_park_act == 3,
+	t.check(not _save.try_resume(run).is_empty(), "and the file resumes")
+	t.check(run.facts.fenced_park == Vector2i(6, 9) and run.facts.fenced_park_act == 3,
 			"onto the same park and the same act it was closed with")
 	_save.clear()
+	run.free()
 
 ## **A save written before this field existed still loads**, the same reasoning
 ## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
 ## mention of it is a complete save and resumes with no park fenced, by absence — the same state a
 ## run that has not reached act III yet is already in, so nothing forces a second fence later.
 func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
-	GameState.start_run(646464)
+	var run := _a_run(646464)
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before this field",
 		"day_under_way": true,
-		"escape_section": GameState.facts.escape_section,
-		"state": GameState.save_snapshot(),
+		"escape_section": run.facts.escape_section,
+		"state": run.save_snapshot(),
 	})
 	t.check(not old_shape.contains("fenced_park"),
 			"the payload really is one with no fenced park recorded in it")
-	GameState.start_run(1)
-	GameState.facts.fenced_park = Vector2i(3, 3)
-	GameState.facts.fenced_park_act = 2
+	run.start_run(1)
+	run.facts.fenced_park = Vector2i(3, 3)
+	run.facts.fenced_park_act = 2
 	_write_raw(old_shape)
-	var resumed := _save.try_resume(GameState)
+	var resumed := _save.try_resume(run)
 	t.check(not resumed.is_empty(), "a save with no fenced park still resumes")
-	t.check(GameState.facts.fenced_park == Vector2i(-1, -1) and GameState.facts.fenced_park_act == 0,
+	t.check(run.facts.fenced_park == Vector2i(-1, -1) and run.facts.fenced_park_act == 0,
 			"and none is fenced, rather than keeping whatever was in memory")
 	_save.clear()
+	run.free()
 
 ## **The pelican bag's count survives the file, and a save from before it loads at 0.** `pelican`
 ## rides at the top level beside `posters`, for the same reason.
 func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t) -> void:
-	GameState.start_run(656565)
-	GameState.pelican.draws = 9
-	GameState.pelican.photograph()
-	GameState.pelican.draws = 12
-	var data := GameState.run_parts.run_data()
-	GameState.pelican.reset()
-	GameState.run_parts.restore_run_data(data)
-	t.check(GameState.pelican.draws == 12, "a save keeps the pelican bag's count (%d)"
-			% GameState.pelican.draws)
-	GameState.pelican.give_back()
-	t.check(GameState.pelican.draws == 9, "and the dawn's, so a lost day after a resume goes back")
-	GameState.pelican.draws = 12
+	var run := _a_run(656565)
+	run.pelican.draws = 9
+	run.pelican.photograph()
+	run.pelican.draws = 12
+	var data := run.run_parts.run_data()
+	run.pelican.reset()
+	run.run_parts.restore_run_data(data)
+	t.check(run.pelican.draws == 12, "a save keeps the pelican bag's count (%d)"
+			% run.pelican.draws)
+	run.pelican.give_back()
+	t.check(run.pelican.draws == 9, "and the dawn's, so a lost day after a resume goes back")
+	run.pelican.draws = 12
 	var old: Dictionary = data.duplicate(true)
 	old.erase("pelican")
-	GameState.run_parts.restore_run_data(old)
-	t.check(GameState.pelican.draws == 0,
+	run.run_parts.restore_run_data(old)
+	t.check(run.pelican.draws == 0,
 			"a save written before the bag loads at 0 over a run with a count (%d)"
-			% GameState.pelican.draws)
+			% run.pelican.draws)
+	run.free()
 
 ## **The walls survive the file, and a save from before there were posters loads with none up.**
 ## `posters` rides at the top level for the reason `escape_section` does.
 func _test_the_posters_survive_a_round_trip(t) -> void:
-	GameState.start_run(646464)
-	GameState.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)
-	GameState.posters.photograph()
-	GameState.posters.tear(Vector2i(5, 6), 1)
-	GameState.posters.tears = 1
-	GameState.posters.pasted_through = 4
-	var written := GameState.posters.to_data()
-	t.check(_saved(false), "a run with posters writes")
-	GameState.posters.reset()
-	_save.try_resume(GameState)
-	t.check(GameState.posters.to_data() == written,
+	var run := _a_run(646464)
+	run.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)
+	run.posters.photograph()
+	run.posters.tear(Vector2i(5, 6), 1)
+	run.posters.tears = 1
+	run.posters.pasted_through = 4
+	var written := run.posters.to_data()
+	t.check(_saved(run, false), "a run with posters writes")
+	run.posters.reset()
+	_save.try_resume(run)
+	t.check(run.posters.to_data() == written,
 			"the walls, the tear count and the photograph a lost day gives back all survive")
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the posters",
 		"day_under_way": false,
-		"state": GameState.save_snapshot(),
+		"state": run.save_snapshot(),
 	})
 	_write_raw(old_shape)
-	_save.try_resume(GameState)
-	t.check(GameState.posters.cells.is_empty() and GameState.posters.pasted_through == 0,
+	_save.try_resume(run)
+	t.check(run.posters.cells.is_empty() and run.posters.pasted_through == 0,
 			"a save with no posters in it loads with bare walls")
 	_save.clear()
+	run.free()
 
 ## **A save from before a task was one day still loads.** `pending_resistance_brief` and
-## `_dawn_brief` are gone from `GameState` (M181, the resistance has a reason, and a task is one
+## `_dawn_brief` are gone from `RunState` (M181, the resistance has a reason, and a task is one
 ## day: the day brief carries no task and no mark's words, so nothing reads them back any more) —
 ## removed rather than added, so `snapshot_is_complete()` only ever asks for a field this build
 ## still names, and an older file naming two more than that still has every one of them.
 ## `completed_resistance_steps` from an old run names indices out of the old two-beat table, which
 ## no longer exists in that shape: `ResistanceSteps.by_index()` answers null for anything the new
-## one-task-per-day table does not have at that index, which `GameState` and `ResistanceDirector`
+## one-task-per-day table does not have at that index, which `RunState` and `ResistanceDirector`
 ## already treat as nothing, so the resumed run simply offers whatever the new table's own
 ## `for_day()` finds for the day it resumes on.
 func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
-	GameState.start_run(636363)
-	GameState.header.day = 7
-	GameState.header.nerves = 4
-	GameState.resistance.completed_steps = [1, 2, 3]
-	GameState.resistance.progress = 1
-	var snapshot := GameState.save_snapshot()
+	var run := _a_run(636363)
+	run.header.day = 7
+	run.header.nerves = 4
+	run.resistance.completed_steps = [1, 2, 3]
+	run.resistance.progress = 1
+	var snapshot := run.save_snapshot()
 	snapshot["pending_resistance_brief"] = "meet at the fountain"
 	snapshot["_dawn_brief"] = "an earlier brief"
 	var old_shape := JSON.stringify({
@@ -673,43 +692,45 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
 		"day_under_way": true,
 		"state": snapshot,
 	})
-	GameState.start_run(1)
+	run.start_run(1)
 	_write_raw(old_shape)
-	var resumed := _save.try_resume(GameState)
+	var resumed := _save.try_resume(run)
 	t.check(not resumed.is_empty(), "a save naming the old brief fields still resumes")
-	t.check(GameState.header.run_seed == 636363 and GameState.header.day == 7 and GameState.header.nerves == 4,
+	t.check(run.header.run_seed == 636363 and run.header.day == 7 and run.header.nerves == 4,
 			"with every field the new build still reads")
-	t.check(GameState.resistance.completed_steps == [1, 2, 3],
+	t.check(run.resistance.completed_steps == [1, 2, 3],
 			"and its old-table step indices, carried over rather than dropped")
 	_save.clear()
+	run.free()
 
 # ------------------------------------------------------------- the lost-day path ---
 
-## What `main._ready()` does with a `day_under_way: true` resume: apply `GameState.calendar.finish_day()`
+## What `main._ready()` does with a `day_under_way: true` resume: apply `RunState.calendar.finish_day()`
 ## with a non-`WON` result, the same call an ordinary lost day makes. One nerve, the day's own
 ## resistance work undone, the same day again.
 func _test_day_under_way_load_costs_one_nerve(t) -> void:
-	GameState.start_run(55)
-	GameState.header.day = 4
-	GameState.header.nerves = 5
-	GameState.calendar.begin_day()
+	var run := _a_run(55)
+	run.header.day = 4
+	run.header.nerves = 5
+	run.calendar.begin_day()
 	# Progress made during the attempt that is about to be "left" — the dawn snapshot above this
 	# does not carry it, so a loss has something real to give back.
-	GameState.complete_resistance_step(0)
-	t.check(GameState.resistance.progress == 1, "the attempt made progress before being saved")
+	run.complete_resistance_step(0)
+	t.check(run.resistance.progress == 1, "the attempt made progress before being saved")
 
 	var resume := {"day_under_way": true}
-	var continues := GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	var continues := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 	t.check(continues, "a nerve was spent, not the last one, so the run goes on")
-	t.check(GameState.header.nerves == 4, "exactly one nerve is spent")
-	t.check(GameState.header.day == 4, "the same day is offered again, not the next one")
-	t.check(GameState.resistance.progress == 0,
+	t.check(run.header.nerves == 4, "exactly one nerve is spent")
+	t.check(run.header.day == 4, "the same day is offered again, not the next one")
+	t.check(run.resistance.progress == 0,
 			"the resistance work the attempt did is given back, the same as any other lost day")
 	t.check(resume["day_under_way"], "the resume dict this all hangs off of is the one asserted")
+	run.free()
 
 ## **A run closed mid-day gives back what that day burned, through the same path an ordinary loss
-## takes.** `main._ready()` hands a save written with `day_under_way` to `GameState.calendar.finish_day()` as
+## takes.** `main._ready()` hands a save written with `day_under_way` to `RunState.calendar.finish_day()` as
 ## a hard fail, so the whole of the give-back has to survive the file: the photograph of what the
 ## attempt may spend rides in the snapshot beside the resistance's, or a day 3 closed after the
 ## fire burned would come back with the fire spent, a shell standing and no fire owed on the retry.
@@ -718,143 +739,148 @@ func _test_day_under_way_load_costs_one_nerve(t) -> void:
 ## before the day is lost — a check that never left memory would pass with the three fields missing
 ## from the save entirely.
 func _test_a_day_under_way_gives_back_the_fire_it_lit(t) -> void:
-	GameState.start_run(59)
-	GameState.header.day = Tuning.RUN_TAUGHT_DAY
-	GameState.header.nerves = 3
-	GameState.calendar.begin_day()
-	GameState.attempt_spend.consumed_one_shots.append("burning_building")
-	GameState.add_scar("burnt_shell", Vector2(640.0, 640.0))
-	t.check(_saved(true), "the run is saved with the day under way and the fire lit")
+	var run := _a_run(59)
+	run.header.day = Tuning.RUN_TAUGHT_DAY
+	run.header.nerves = 3
+	run.calendar.begin_day()
+	run.attempt_spend.consumed_one_shots.append("burning_building")
+	run.add_scar("burnt_shell", Vector2(640.0, 640.0))
+	t.check(_saved(run, true), "the run is saved with the day under way and the fire lit")
 
 	# Wiped to a different run entirely, so what comes back can only have come out of the file.
-	GameState.start_run(60)
-	var resume := _save.try_resume(GameState)
+	run.start_run(60)
+	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way") == true, "the save says a day was under way")
-	t.check("burning_building" in GameState.attempt_spend.consumed_one_shots and GameState.attempt_spend.scars.size() == 1,
+	t.check("burning_building" in run.attempt_spend.consumed_one_shots and run.attempt_spend.scars.size() == 1,
 			"and it comes back with the fire spent and its shell standing, as the attempt left it")
 
-	GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(not "burning_building" in GameState.attempt_spend.consumed_one_shots,
+	run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(not "burning_building" in run.attempt_spend.consumed_one_shots,
 			"losing the resumed day owes the fire again")
-	t.check(GameState.attempt_spend.scars.is_empty(),
+	t.check(run.attempt_spend.scars.is_empty(),
 			"and takes the shell down with it, the same as any other lost day")
+	run.free()
 
 ## In hard mode the last nerve ends the run exactly as it does when a day is lost by playing it out —
 ## and the ending clears the save, since there is nothing left to resume.
 func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 	_save.clear_when_a_run_ends()
-	GameState.start_run(56)
-	GameState.calendar.choose_mode(true)
-	GameState.header.day = 9
-	GameState.header.nerves = 1
-	GameState.calendar.begin_day()
+	var run := _a_run(56)
+	run.calendar.choose_mode(true)
+	run.header.day = 9
+	run.header.nerves = 1
+	run.calendar.begin_day()
 	_with_a_scratch_save(func() -> void:
-		t.check(_saved(true), "a save exists before the last nerve is spent")
+		t.check(_saved(run, true), "a save exists before the last nerve is spent")
 
-		var continues := GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		var continues := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 
 		t.check(not continues, "the run does not go on")
-		t.check(GameState.header.nerves == 0, "the last nerve is gone")
-		t.check(GameState.header.ending == GameEnums.Ending.BAD,
+		t.check(run.header.nerves == 0, "the last nerve is gone")
+		t.check(run.header.ending == GameEnums.Ending.BAD,
 				"the bad ending, the same as any other run out")
 		t.check(not _save.has_save(), "and the save that named the run is gone with it")
 	)
-	GameState.header.ending = GameEnums.Ending.NONE
+	run.free()
 
 ## The same load in a normal run goes back to its checkpoint instead, through the same call: the run
 ## goes on, standing at the checkpoint's dawn with every nerve, and the save is still there to be
 ## written over by the dawn `main._write_dawn_for_a_resumed_run()` writes next.
 func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
-	GameState.start_run(57)
-	GameState.header.day = 8
-	GameState.header.nerves = 2
-	GameState.calendar.begin_day()
-	t.check(GameState.calendar.checkpoint_day() == 8, "day 8's dawn is the run's checkpoint")
-	GameState.calendar.finish_day(GameEnums.DayResult.WON)
-	GameState.calendar.begin_day()
-	GameState.header.nerves = 1
+	var run := _a_run(57)
+	run.header.day = 8
+	run.header.nerves = 2
+	run.calendar.begin_day()
+	t.check(run.calendar.checkpoint_day() == 8, "day 8's dawn is the run's checkpoint")
+	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.calendar.begin_day()
+	run.header.nerves = 1
 	_with_a_scratch_save(func() -> void:
-		t.check(_saved(true), "the mid-day save on day 9, one nerve left")
-		GameState.start_run(58)
-		var resume := _save.try_resume(GameState)
-		t.check(resume.get("day_under_way") == true and GameState.calendar.checkpoint_day() == 8,
+		t.check(_saved(run, true), "the mid-day save on day 9, one nerve left")
+		run.start_run(58)
+		var resume := _save.try_resume(run)
+		t.check(resume.get("day_under_way") == true and run.calendar.checkpoint_day() == 8,
 				"the save comes back under way, its checkpoint with it")
-		t.check(GameState.calendar.a_loss_goes_back_to_the_checkpoint(),
+		t.check(run.calendar.a_loss_goes_back_to_the_checkpoint(),
 				"and losing the day it was left on goes back")
-		var continues := GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-		t.check(continues and GameState.header.ending == GameEnums.Ending.NONE,
+		var continues := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		t.check(continues and run.header.ending == GameEnums.Ending.NONE,
 				"the run goes on rather than ending")
-		t.check(GameState.header.day == 8 and GameState.header.nerves == Tuning.STARTING_NERVES,
+		t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
 				"back at day 8 with every nerve")
 		t.check(_save.has_save(), "and the save is not deleted")
 	)
+	run.free()
 
 ## A save written before there were two modes or checkpoints — no `hard_mode` key, no `checkpoint`
 ## key — loads as a normal run whose checkpoint is day 1 of its own city, and `FORMAT_VERSION` is
 ## what it always was.
 func _test_a_save_from_before_checkpoints_still_loads(t) -> void:
-	GameState.start_run(59)
-	GameState.header.day = 10
-	t.check(_saved(false), "a save is written")
+	var run := _a_run(59)
+	run.header.day = 10
+	t.check(_saved(run, false), "a save is written")
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.READ)
 	var data: Dictionary = JSON.parse_string(file.get_as_text())
 	file.close()
 	data.erase("hard_mode")
 	data.erase("checkpoint")
 	_write_raw(JSON.stringify(data))
-	GameState.calendar.choose_mode(true)
-	GameState.calendar.checkpoint = {"state": {"day": 4}}
-	var resume := _save.try_resume(GameState)
-	t.check(not resume.is_empty() and GameState.header.day == 10, "it still loads, on its own day")
-	t.check(not GameState.calendar.hard_mode, "as a normal run")
-	t.check(GameState.calendar.checkpoint.is_empty() and GameState.calendar.checkpoint_day() == 1,
+	run.calendar.choose_mode(true)
+	run.calendar.checkpoint = {"state": {"day": 4}}
+	var resume := _save.try_resume(run)
+	t.check(not resume.is_empty() and run.header.day == 10, "it still loads, on its own day")
+	t.check(not run.calendar.hard_mode, "as a normal run")
+	t.check(run.calendar.checkpoint.is_empty() and run.calendar.checkpoint_day() == 1,
 			"whose checkpoint is checkpoint zero, day 1")
+	run.free()
 
 ## The mode and the checkpoint survive a save, and a checkpoint this build could not give back is
 ## dropped for checkpoint zero rather than half-applied later.
 func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t) -> void:
-	GameState.start_run(60)
-	GameState.header.day = 4
-	GameState.calendar.begin_day()
-	t.check(GameState.calendar.checkpoint_day() == 4, "day 4's dawn is kept")
-	GameState.calendar.finish_day(GameEnums.DayResult.WON)
-	t.check(_saved(false), "a save is written")
-	var kept := GameState.calendar.checkpoint.duplicate(true)
-	GameState.start_run(61)
-	_save.try_resume(GameState)
-	t.check(GameState.calendar.checkpoint_day() == 4 and not GameState.calendar.hard_mode,
+	var run := _a_run(60)
+	run.header.day = 4
+	run.calendar.begin_day()
+	t.check(run.calendar.checkpoint_day() == 4, "day 4's dawn is kept")
+	run.calendar.finish_day(GameEnums.DayResult.WON)
+	t.check(_saved(run, false), "a save is written")
+	var kept := run.calendar.checkpoint.duplicate(true)
+	run.start_run(61)
+	_save.try_resume(run)
+	t.check(run.calendar.checkpoint_day() == 4 and not run.calendar.hard_mode,
 			"a normal run comes back with its day 4 checkpoint")
-	t.check(int((GameState.calendar.checkpoint["state"] as Dictionary)["run_seed"])
+	t.check(int((run.calendar.checkpoint["state"] as Dictionary)["run_seed"])
 			== int((kept["state"] as Dictionary)["run_seed"]),
 			"the checkpoint read back is the one written")
 
-	GameState.calendar.choose_mode(true)
-	t.check(_saved(false), "a hard run's save is written")
-	GameState.start_run(62)
-	_save.try_resume(GameState)
-	t.check(GameState.calendar.hard_mode and GameState.calendar.checkpoint.is_empty(),
+	run.calendar.choose_mode(true)
+	t.check(_saved(run, false), "a hard run's save is written")
+	run.start_run(62)
+	_save.try_resume(run)
+	t.check(run.calendar.hard_mode and run.calendar.checkpoint.is_empty(),
 			"a hard run comes back hard, with no checkpoint")
 
-	GameState.start_run(63)
-	GameState.calendar.checkpoint = {"state": {"day": 8}}
-	t.check(_saved(false), "a save carrying a checkpoint with a broken snapshot")
-	_save.try_resume(GameState)
-	t.check(GameState.calendar.checkpoint.is_empty(),
+	run.start_run(63)
+	run.calendar.checkpoint = {"state": {"day": 8}}
+	t.check(_saved(run, false), "a save carrying a checkpoint with a broken snapshot")
+	_save.try_resume(run)
+	t.check(run.calendar.checkpoint.is_empty(),
 			"falls back to checkpoint zero rather than keeping what it could not give back")
+	run.free()
 
 ## A save written at a day's own summary (`day_under_way: false`) is never handed to
-## `GameState.calendar.finish_day()` at all in `main._ready()` — asserted here as the shape of the contract
+## `RunState.calendar.finish_day()` at all in `main._ready()` — asserted here as the shape of the contract
 ## the two booleans below make untestable any other way: nerves and day both hold whatever the
 ## save itself named, because nothing here ever touches them.
 func _test_summary_load_costs_nothing(t) -> void:
-	GameState.start_run(57)
-	GameState.header.day = 8
-	GameState.header.nerves = 4
-	t.check(_saved(false), "a save is written at a day's own summary")
-	var resume := _save.try_resume(GameState)
+	var run := _a_run(57)
+	run.header.day = 8
+	run.header.nerves = 4
+	t.check(_saved(run, false), "a save is written at a day's own summary")
+	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way") == false, "it comes back false")
-	t.check(GameState.header.day == 8 and GameState.header.nerves == 4,
+	t.check(run.header.day == 8 and run.header.nerves == 4,
 			"nothing about the run changes on a load this function never spends a nerve on")
+	run.free()
 
 ## The ordering the commit message states: after the load-time penalty is applied, the very next
 ## write (`main._start_day()`'s own dawn write, made before the resumed pause screen can even be
@@ -862,50 +888,50 @@ func _test_summary_load_costs_nothing(t) -> void:
 ## since nothing has happened in it yet. A second close-and-reopen before ever touching that screen
 ## therefore finds `day_under_way: false` and costs nothing more.
 func _test_double_load_does_not_charge_twice(t) -> void:
-	GameState.start_run(58)
-	GameState.header.day = 5
-	GameState.header.nerves = 5
-	GameState.calendar.begin_day()
-	t.check(_saved(true), "the first save: a day left mid-way")
+	var run := _a_run(58)
+	run.header.day = 5
+	run.header.nerves = 5
+	run.calendar.begin_day()
+	t.check(_saved(run, true), "the first save: a day left mid-way")
 
-	var first := _save.try_resume(GameState)
+	var first := _save.try_resume(run)
 	t.check(first.get("day_under_way") == true, "the first load finds a day under way")
-	GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-	t.check(GameState.header.nerves == 4, "the first load costs its one nerve")
+	run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+	t.check(run.header.nerves == 4, "the first load costs its one nerve")
 	# `main._ready()`'s own write for the resumed, unplayed retry — a title, and then a day brief,
 	# both stand between this and the player actually taking control, so this is what it writes
 	# before either is ever shown.
-	t.check(_saved(false), "the fresh dawn is saved before the title is shown")
+	t.check(_saved(run, false), "the fresh dawn is saved before the title is shown")
 
-	var second := _save.try_resume(GameState)
+	var second := _save.try_resume(run)
 	t.check(second.get("day_under_way") == false,
 			"a second close before pressing continue on the day brief finds nothing under way")
 	# The caller (`main._ready()`) would not call `finish_day()` at all on this result — nothing
 	# here does either, so an unchanged nerve count is the whole of the assertion.
-	t.check(GameState.header.nerves == 4, "and so the second load does not spend a second nerve")
+	t.check(run.header.nerves == 4, "and so the second load does not spend a second nerve")
+	run.free()
 
 
 func _test_either_ending_clears_the_save(t) -> void:
 	_save.clear_when_a_run_ends()
-	GameState.start_run(59)
-	GameState.header.day = 3
-	GameState.header.nerves = 2
+	var run := _a_run(59)
+	run.header.day = 3
+	run.header.nerves = 2
 	_with_a_scratch_save(func() -> void:
-		t.check(_saved(true), "a save exists")
-		GameState.calendar.finish_day(GameEnums.DayResult.WON)
-		t.check(GameState.header.ending == GameEnums.Ending.NONE,
+		t.check(_saved(run, true), "a save exists")
+		run.calendar.finish_day(GameEnums.DayResult.WON)
+		t.check(run.header.ending == GameEnums.Ending.NONE,
 				"day 3 of a run this short does not end it")
 		t.check(_save.has_save(), "so the save is untouched")
 
-		GameState.header.day = Tuning.RUN_LENGTH_DAYS
-		GameState.calendar.begin_day()
-		t.check(_saved(true), "a save exists for the final day")
-		GameState.calendar.finish_day(GameEnums.DayResult.WON)
-		t.check(GameState.header.ending != GameEnums.Ending.NONE, "winning the final day ends the run")
+		run.header.day = Tuning.RUN_LENGTH_DAYS
+		run.calendar.begin_day()
+		t.check(_saved(run, true), "a save exists for the final day")
+		run.calendar.finish_day(GameEnums.DayResult.WON)
+		t.check(run.header.ending != GameEnums.Ending.NONE, "winning the final day ends the run")
 		t.check(not _save.has_save(), "and a won run clears the save exactly as a lost one does")
 	)
-	# An ended run refuses every later write, including the next test's.
-	GameState.header.ending = GameEnums.Ending.NONE
+	run.free()
 
 # ------------------------------------------------------------ confirmation ---
 
@@ -935,31 +961,33 @@ func _test_a_save_moment_answers_by_platform_and_storage(t) -> void:
 ## Off the web, `write()` itself answers `CONFIRMED` and never calls `settled`: the file closing is
 ## the confirmation, so a desktop save shows the symbol at once.
 func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
+	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		var answers := _Answers.new()
-		var result: int = _save.write(GameState, true, answers.take)
+		var result: int = _save.write(run, true, answers.take)
 		t.check(result == GameSave.Result.CONFIRMED, "a desktop write is confirmed at once")
 		t.check(_save.has_save(), "and the file is there")
 		t.check(answers.results.is_empty(), "with nothing left for a later answer to settle")
 	)
+	run.free()
 
 ## A run `uses_save()` refuses, and a run that has already ended, answer `REFUSED`, which draws
 ## nothing — neither is a save that failed, so neither may show the strike.
 func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
+	var run := _a_run()
 	var answers := _Answers.new()
 	_headless(func() -> void:
-		t.check(_save.write(GameState, true, answers.take) == GameSave.Result.REFUSED,
+		t.check(_save.write(run, true, answers.take) == GameSave.Result.REFUSED,
 				"the headless runner's refused save is refused, not failed")
 	)
 	_with_a_scratch_save(func() -> void:
-		var ending := GameState.header.ending
-		GameState.header.ending = GameEnums.Ending.BAD
-		t.check(_save.write(GameState, true, answers.take) == GameSave.Result.REFUSED,
+		run.header.ending = GameEnums.Ending.BAD
+		t.check(_save.write(run, true, answers.take) == GameSave.Result.REFUSED,
 				"a run with an ending is refused, not failed")
 		t.check(not _save.has_save(), "and writes nothing")
-		GameState.header.ending = ending
 	)
 	t.check(answers.results.is_empty(), "neither ever answers later")
+	run.free()
 
 ## The race `Flushes`' settling exists for: the page's answer and the timeout both settle the same
 ## flush, and only the first counts. A flush that answers after timing out stays failed rather than
@@ -1116,9 +1144,10 @@ func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 ## to show the symbol"* — a deletion that removes a file raises the symbol, answered at once off
 ## the web, and a pending one holds it fully shown until the browser's answer reaches the bus.
 func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
+	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		# Written before the symbol is built: a write raises the symbol too.
-		t.check(_saved(true), "a save exists")
+		t.check(_saved(run, true), "a save exists")
 		var timeline := SaveIndicator.Showing.new()
 		var indicator := SaveIndicator.new(timeline)
 		t.add_child(indicator)
@@ -1142,6 +1171,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 				"the browser's answer settles it, kept")
 		waiting.free()
 	)
+	run.free()
 
 ## The same strike as a write that was not kept, for a deletion that was not: answered at once, or
 ## by the browser later, and for the full ten seconds.
@@ -1171,49 +1201,48 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 ## nothing and shows nothing.
 func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 	_save.clear_when_a_run_ends()
-	GameState.start_run(61)
-	GameState.header.day = 3
+	var run := _a_run(61)
+	run.header.day = 3
 	_with_a_scratch_save(func() -> void:
-		t.check(_saved(true), "a save exists")
+		t.check(_saved(run, true), "a save exists")
 		# Built after the write, which raises the symbol too: only the deletions are watched.
 		var indicator := SaveIndicator.new()
 		t.add_child(indicator)
-		GameState.calendar.finish_day(GameEnums.DayResult.WON)
+		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(not indicator.is_showing(), "a day that does not end the run shows nothing")
 
-		GameState.header.day = Tuning.RUN_LENGTH_DAYS
-		GameState.calendar.begin_day()
-		GameState.calendar.finish_day(GameEnums.DayResult.WON)
-		t.check(GameState.header.ending != GameEnums.Ending.NONE, "the final day ends the run")
+		run.header.day = Tuning.RUN_LENGTH_DAYS
+		run.calendar.begin_day()
+		run.calendar.finish_day(GameEnums.DayResult.WON)
+		t.check(run.header.ending != GameEnums.Ending.NONE, "the final day ends the run")
 		t.check(not _save.has_save(), "which deletes the save")
 		t.check(indicator.is_showing() and not indicator.shows_struck(),
 				"and the symbol shows the deletion, kept")
 		indicator.free()
 	)
-	# An ended run refuses every later write, including the next suite's.
-	GameState.header.ending = GameEnums.Ending.NONE
+	run.free()
 
 ## The charge a reopened run pays can end it: the lost day was the last nerve. That deletion shows
 ## the symbol too, provided a symbol is listening when `main._ready()` charges it.
 func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
 	_save.clear_when_a_run_ends()
-	GameState.start_run(62)
-	GameState.calendar.choose_mode(true)
-	GameState.header.day = 4
-	GameState.header.nerves = 1
-	GameState.calendar.begin_day()
+	var run := _a_run(62)
+	run.calendar.choose_mode(true)
+	run.header.day = 4
+	run.header.nerves = 1
+	run.calendar.begin_day()
 	_with_a_scratch_save(func() -> void:
-		t.check(_saved(true), "the mid-day save")
+		t.check(_saved(run, true), "the mid-day save")
 		var indicator := SaveIndicator.new()
 		t.add_child(indicator)
-		var resume := _save.try_resume(GameState)
+		var resume := _save.try_resume(run)
 		t.check(resume.get("day_under_way", false), "it resumes with its day under way")
-		var kept_going := GameState.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		var kept_going := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 		t.check(not kept_going and not _save.has_save(), "the charge ends the run and deletes it")
 		t.check(indicator.is_showing(), "and the symbol that was already there shows it")
 		indicator.free()
 	)
-	GameState.header.ending = GameEnums.Ending.NONE
+	run.free()
 
 ## Statement 8: a restart after the run already ended finds no save to delete, changes nothing and
 ## shows nothing.
@@ -1285,30 +1314,31 @@ func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
 ## begins exactly once for one save. A write
 ## `GameSave` refuses (a headless run, an ended run) announces nothing.
 func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> void:
+	var run := _a_run()
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
 	EventBus.save_written.connect(listen)
 	_headless(func() -> void:
-		t.check(_save.write(GameState, true) == GameSave.Result.REFUSED and heard.is_empty(),
+		t.check(_save.write(run, true) == GameSave.Result.REFUSED and heard.is_empty(),
 				"a headless run's write is refused and announces nothing")
 	)
 	_with_a_scratch_save(func() -> void:
 		var timeline := SaveIndicator.Showing.new()
 		var indicator := SaveIndicator.new(timeline)
 		t.add_child(indicator)
-		_save.write(GameState, true)
+		_save.write(run, true)
 		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
 		t.check(timeline.begun == 1, "and the symbol began once for it, with nobody relaying it")
 		t.check(indicator.is_showing() and timeline.pending == 0,
 				"and that one change is already answered")
 		indicator.free()
-		GameState.header.ending = GameEnums.Ending.BAD
+		run.header.ending = GameEnums.Ending.BAD
 		heard.clear()
-		t.check(_save.write(GameState, true) == GameSave.Result.REFUSED and heard.is_empty(),
+		t.check(_save.write(run, true) == GameSave.Result.REFUSED and heard.is_empty(),
 				"a run that has ended refuses the write and announces nothing")
-		GameState.header.ending = GameEnums.Ending.NONE
 	)
 	EventBus.save_written.disconnect(listen)
+	run.free()
 
 ## A write's web answer reaches `EventBus.save_write_settled`, and only a write's: a deletion's goes
 ## to `save_deletion_settled`, so one answer settles one change however many are out.
@@ -1394,6 +1424,7 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 ## Every announced change carries its own operation id, larger for every change begun later, and its
 ## web answer carries the same id back — the tie between an answer and its change.
 func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
+	var run := _a_run()
 	var announced: Array[int] = []
 	var announce := func(operation: int, _result: int) -> void: announced.append(operation)
 	var answered: Array[int] = []
@@ -1404,9 +1435,9 @@ func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
 	EventBus.save_deletion_settled.connect(answer)
 	_save.clear()
 	var before := announced.size()
-	_save.write(GameState, true)
+	_save.write(run, true)
 	_save.clear()
-	_save.write(GameState, false)
+	_save.write(run, false)
 	announced = announced.slice(before)
 	t.check(announced.size() == 3 and announced[0] < announced[1] and announced[1] < announced[2],
 			"a write, a deletion and a write announce increasing ids from one sequence")
@@ -1421,6 +1452,7 @@ func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
 	EventBus.save_write_settled.disconnect(answer)
 	EventBus.save_deletion_settled.disconnect(answer)
 	_save.clear()
+	run.free()
 
 # ----------------------------------------------------------------- the symbol ---
 
@@ -1714,26 +1746,30 @@ func _test_a_stray_answer_shows_nothing(t) -> void:
 ## relays nothing of: a run `_save.uses_save()` refuses — here the headless runner — leaves the
 ## symbol dark rather than struck.
 func _test_a_refused_save_leaves_the_symbol_dark(t) -> void:
+	var run := _a_run()
 	var timeline := SaveIndicator.Showing.new()
 	var indicator := SaveIndicator.new(timeline)
 	t.add_child(indicator)
 	_headless(func() -> void:
-		t.check(_save.write(GameState, true) == GameSave.Result.REFUSED, "the write is refused")
+		t.check(_save.write(run, true) == GameSave.Result.REFUSED, "the write is refused")
 	)
 	t.check(timeline.is_idle() and not timeline.struck, "a refused save leaves the symbol dark")
 	indicator.free()
+	run.free()
 
 func _test_a_desktop_save_shows_the_symbol_confirmed_at_once(t) -> void:
+	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		var timeline := SaveIndicator.Showing.new()
 		var indicator := SaveIndicator.new(timeline)
 		t.add_child(indicator)
-		_save.write(GameState, true)
+		_save.write(run, true)
 		t.check(timeline.pending == 0 and not timeline.is_idle(),
 				"a desktop save is answered at once and the symbol is already showing")
 		t.check(not timeline.struck and not indicator.shows_struck(), "showing the plain picture")
 		indicator.free()
 	)
+	run.free()
 
 ## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
 ## in for the plain one rather than drawn over it — so the region has to exist and be a different

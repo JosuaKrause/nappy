@@ -17,6 +17,7 @@ extends RefCounted
 
 const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
@@ -130,23 +131,6 @@ func _is_a(node: Node, type_name: String) -> bool:
 func _one(root: Node, type_name: String) -> Node:
 	var found := _all(root, type_name)
 	return found[0] if found.size() == 1 else null
-
-## What one boot plays: a run made fresh for it and the node standing for the tree's root its
-## sitting is parked in (`Boot.home_playing()`), so no check reads or sets a run another shares. Hand
-## `home` to the boot (`_boot()`, `main.use_sitting_home()`) and read the run off `run`; `end()` frees
-## both and gives the observers back what they held before it, since a boot hands them its run.
-class Seat:
-	var run := RunState.new()
-	var home: Node
-	var observers := Boot.hold_observers()
-
-	func _init(t) -> void:
-		home = Boot.home_playing(t, run)
-
-	func end() -> void:
-		home.free()
-		run.free()
-		Boot.give_back_observers(observers)
 
 ## What a boot is handed to count a reload or a quit that would otherwise take the runner's scene
 ## away: `reloads` and `quits` gain an entry each time `main` asks for one.
