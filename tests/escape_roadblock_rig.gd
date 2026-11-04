@@ -28,8 +28,9 @@ const LANE_SCAN := 4.0
 ## (`plan`) and what stands on it (`placements`).
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.attempt_spend.city_state)
+	var state := CityState.new()
+	state.begin_day(map.block_plans, 1)
+	map.repaint(state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
@@ -117,14 +118,17 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 	return true
 
 ## The street's roadblocks, live: `[holder, Array[EventInstance]]`. Freeing the holder frees them
-## and their bands.
-static func build(t: Node, map: CityMap, group: Array[EventScheduler.Planned]) -> Array:
+## and their bands. Each is handed `atlas` (the pages the spawner hands every event it makes) when a
+## case lets real frames draw them.
+static func build(t: Node, map: CityMap, group: Array[EventScheduler.Planned],
+		atlas: AtlasLibrary = null) -> Array:
 	var holder := Node2D.new()
 	t.add_child(holder)
 	var made: Array[EventInstance] = []
 	for placement in group:
 		var instance := EventInstance.new()
 		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
+		instance.atlas = atlas
 		holder.add_child(instance)
 		instance.set_process(false)
 		instance.look.attach_nodes()
@@ -166,7 +170,7 @@ static func view_round(her: Vector2, heading: Vector2) -> Rect2:
 ## One frame of the world round her: every instance told where she is and stepped, then asked
 ## whether it catches her. True on a catch. With a `heading` (the way she faces), each is handed the
 ## camera's view round her too (`view_round()`).
-static func _tick(instances: Array[EventInstance], her: Vector2, running: bool,
+static func tick(instances: Array[EventInstance], her: Vector2, running: bool,
 		heading := Vector2.ZERO) -> bool:
 	for instance in instances:
 		instance.player_at = her
@@ -206,7 +210,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var strongest := 0.0
 	while walked < length:
 		her = from + heading * walked
-		if _tick(instances, her, false, heading):
+		if tick(instances, her, false, heading):
 			caught = true
 			break
 		for instance in instances:
@@ -243,7 +247,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var warned := false
 	while _charging(instances) == 0 and her.distance_to(from) < from.distance_to(to) \
 			and frames < int(20.0 / STEP):
-		if _tick(instances, her, false, heading):
+		if tick(instances, her, false, heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, speed == 0.0)
@@ -263,7 +267,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		var running := speed < -Tuning.WALK_SPEED
-		if _tick(instances, her, running, heading if speed >= 0.0 else -heading):
+		if tick(instances, her, running, heading if speed >= 0.0 else -heading):
 			caught = true
 			break
 		meter.feed(instances, her, running, false)
@@ -276,7 +280,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			gone = gone and instance.barrier_post.is_spent() and not instance.is_leaving
 		if gone:
 			break
-		if _tick(instances, her, false, -heading):
+		if tick(instances, her, false, -heading):
 			caught = true
 			break
 		meter.feed(instances, her, false, true)
