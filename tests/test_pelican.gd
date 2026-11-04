@@ -327,7 +327,7 @@ func _ride() -> PackedVector2Array:
 
 ## *(Inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on screen, and when it's hitting the
 ## player ... logs should be correctly identifying it from the beginning".)* One pelican sent the
-## way the director sends every cyclist (`EventsAhead._warn_down_her_line()`), from its warning to its hit:
+## way the director sends every cyclist (she walks, and `EventManager`'s ticks warn of the one she is owed), from its warning to its hit:
 ##
 ## - **the roll is made as the warning goes up**, so the badge already names the pelican;
 ## - **its creation is told once** (`EventBus.pelican_spawned`), and the run log's `ahead` line for
@@ -374,12 +374,33 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var observer := TelemetryObserver.new()
 	observer.setup(_run, _city, stroller, baby, clock, null, false)
 
+	# The director owes her one cyclist from a route bag holding nothing else, as a scene's recipe
+	# hands it (`EventManager.start_recipe_route()`), due as soon as she is walking. She walks up the
+	# sidewalk by hand (the rig's own physics is off), and the manager's own ticks send it:
+	# `place_what_is_owed_ahead()` warns of it down her line, the roll made as the warning goes up.
+	stroller.set_physics_process(false)
+	var owed := events.start_recipe_route(["cyclist"], ["cyclist"], 1, 0.0)
+	t.check(owed == 1, "the director owes her the one cyclist (%d)" % owed)
 	var before := events.instances().size()
 	events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
-	events.ahead._warn_down_her_line(def, her, Vector2.UP)
+	# A lambda holds its own copy of a local, so the warning is carried out in an array.
+	var sent: Array[PendingWarning] = []
+	var walk := func(_n: int) -> void:
+		if not sent.is_empty():
+			return
+		if not events.pending_warnings().is_empty():
+			sent.append(events.pending_warnings().back())
+			stroller.velocity = Vector2.ZERO
+			return
+		stroller.velocity = Vector2.UP * Tuning.WALK_SPEED
+		stroller.global_position += stroller.velocity * STEP
+	var walked := 0
+	while sent.is_empty() and walked < PhysicsTicks.ticks_for(10.0):
+		await PhysicsTicks.pass_ticks(t, 1, walk)
+		walked += 1
+	var warning: PendingWarning = sent[0] if not sent.is_empty() else null
 	events.pelican_rig = EventSpawner.PelicanRig.BAG
-	var warning: PendingWarning = events.pending_warnings().back() \
-			if not events.pending_warnings().is_empty() else null
+	stroller.velocity = Vector2.ZERO
 	t.check(warning != null and warning.is_pelican and warning.logged_name() == "pelican",
 			"the roll is made as the warning goes up, so the warning is already the pelican's")
 	# The danger edge measures on a real frame, as it does in play.

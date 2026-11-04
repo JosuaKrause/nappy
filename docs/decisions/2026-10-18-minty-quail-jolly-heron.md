@@ -8,7 +8,9 @@ vanish, barrier and solid suites, subtask W7b of the scoped plan. No `src/` chan
   to 0) puts the manager in the tree before a real stroller and lets its own physics ticks run, one
   a frame through `PhysicsTicks` at four times real time, counting its stretches in ticks; plans come
   in through `EventStreaming.add()`, and the officer a heated patrol lets out is followed by flags set
-  while he is alive, since he is freed at the frame's end.
+  while he is alive, since he is freed at the frame's end. The test no longer marks the day as a
+  recipe's, so the city's own director runs beside the patrols, as in a real day; it sites nothing
+  in these scenes.
 - `test_event_behaviours.gd` (1 to 0) streams its plan in through `EventStreaming.add()`.
 - `test_barrier_stays.gd` (10 to 0) reads the band through its look's `band_node()`, the barrier's
   body as the `StaticBody2D` under the instance, its rim through the excitement's `rim` and the band's
