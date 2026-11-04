@@ -769,6 +769,10 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
 	# Turning out of the wall in the doorway ends the slide: the next sheet waits for the time.
 	_stand_at(run[1], 4.0, Vector2.RIGHT)
 	await _wait(t, 0.1)
+	# The diagonal is held before she is put in front of the sheet, so that the walls have read
+	# the new heading by the first tick she is there.
+	_steer(diagonal)
+	await _wait(t, 0.1)
 	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[2], 1.0, diagonal)
 	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
@@ -783,6 +787,10 @@ func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
 	_steer(diagonal)
 	await _wait(t, 0.5)
 	_stand_at(run[1], 4.0, diagonal, 5.0 * Tuning.TILE_SIZE)
+	await _wait(t, 0.1)
+	# The diagonal is held before she is put in front of the sheet, so that the walls have read
+	# the new heading by the first tick she is there.
+	_steer(diagonal)
 	await _wait(t, 0.1)
 	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
 	_stand_at(run[2], 1.0, diagonal)
