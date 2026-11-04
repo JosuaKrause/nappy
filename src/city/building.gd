@@ -1178,11 +1178,10 @@ func hall_cols() -> Vector2i:
 func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
 	if station_yard_cols.y <= 0:
 		return
-	var yard := atlas.region(POWER_STATION_YARD)
 	var left := _cell(station_yard_cols.x, 0).x
 	var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
 	var mirrored := station_yard_cols.x < hall.x
-	Sprites.draw_standing(canvas, yard, foot, Vector2.ZERO, mirrored)
+	front_drawer.stand(canvas, POWER_STATION_YARD, foot, mirrored)
 
 ## Where the power station's stacks stand, in this building's own coordinates: the foot of each, at
 ## its roof cell's bottom centre (`_STACK_CELLS`, clamped to the hall and its roof). Empty for every

@@ -4,7 +4,8 @@ extends RefCounted
 ## which picture and where. `paint()` lays a picture of the front's grid (a wall cell, a window, a
 ## wall or roof edge, a ground-floor shop, a roof cell, the power station's cladding and clerestory
 ## band) with its top-left corner at a spot; `stand()` stands an overlay (a door, the civic portico,
-## a fire-escape balcony, the power station's door) on its foot. The city builds one over its atlas
+## a fire-escape balcony, the power station's door, and its yard, which `Building` stands on a layer
+## of its own under the stacks) on its foot. The city builds one over its atlas
 ## and hands it to every building it builds (`City._spawn_buildings()`); a building nobody handed
 ## one (a suite's, a developer's preview rig) makes its own over its own atlas when it first enters
 ## the tree.
@@ -28,6 +29,7 @@ func paint(canvas: CanvasItem, picture: StringName, at: Vector2, colour := Color
 	canvas.draw_texture(_atlas.region(picture), at, colour)
 
 ## Stands `picture` on `canvas` with the middle of its bottom edge at `foot`, in `canvas`'s own
-## space (`Sprites.draw_standing()`).
-func stand(canvas: CanvasItem, picture: StringName, foot: Vector2) -> void:
-	Sprites.draw_standing(canvas, _atlas.region(picture), foot)
+## space, mirrored about that foot when `mirrored` (`Sprites.draw_standing()`, the one place that
+## mirrors).
+func stand(canvas: CanvasItem, picture: StringName, foot: Vector2, mirrored := false) -> void:
+	Sprites.draw_standing(canvas, _atlas.region(picture), foot, Vector2.ZERO, mirrored)

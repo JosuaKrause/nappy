@@ -206,6 +206,8 @@ func _test_the_station_hall_is_lit_only_on_the_last_night(t) -> void:
 	t.check(columns > 0 and band.size() == columns
 			and band.count(Building.POWER_STATION_CLERESTORY_LIT) == columns,
 			"on the last night, with the power on, the hall is lit (%s)" % [band])
+	var yards := front.pictures().count(Building.POWER_STATION_YARD)
+	t.check(yards == 1, "and its yard is stood beside it, once (%d)" % yards)
 	front.draws.clear()
 	hall.powered = false
 	await UI.frames(t, 2)
