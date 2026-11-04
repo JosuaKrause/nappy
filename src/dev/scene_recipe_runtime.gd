@@ -293,7 +293,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	_number(playback.get("capture_at", 0.5), "playback.capture_at", 0,
 			float(playback.get("duration", 5)) - 1.0 / 60.0, errors)
 	var walk: Variant = playback.get("walk", "")
-	if not walk is String or (not str(walk).is_empty() and AutoScreenshot._parse_script(walk).is_empty()):
+	if not walk is String or (not str(walk).is_empty() and AutoScreenshot.parse_script(walk).is_empty()):
 		errors.append("playback.walk is not a valid timed movement script")
 	if not playback.get("smooth", false) is bool:
 		errors.append("playback.smooth must be boolean")
@@ -490,7 +490,7 @@ func configure(result: Dictionary, config: RunConfig, run: RunState) -> void:
 	for label: String in result.anchors:
 		var at: Vector2 = result.anchors[label]
 		manifest.anchors[label] = [at.x, at.y]
-	_plan = WalkPlan.make(AutoScreenshot._parse_script(str(data.get("playback", {}).get("walk", ""))),
+	_plan = WalkPlan.make(AutoScreenshot.parse_script(str(data.get("playback", {}).get("walk", ""))),
 			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)

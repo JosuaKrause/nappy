@@ -3,20 +3,27 @@ extends RefCounted
 ## parsing that reaches its own key, `5`.
 ##
 ## The tree-presence and key-toggle tests build a `DebugReadout` the way `tests/test_debug_layers.gd`
-## and `tests/test_main.gd` do — on its own, its handful of dependencies handed in by hand — because
-## `main._ready()` boots a whole city and none of these questions need one.
+## does — in a tree, handed the `RunConfig` that `RunConfig.parse()` makes from the words a player
+## types, its label and layer, and the run's header — because `main._ready()` boots a whole city and
+## none of these questions need one. What the readout built is read as the node `RouteLines` under
+## it, whether the engine would draw it (`is_visible_in_tree()`), and the keys are real events pushed
+## through the viewport.
 
 const SEEDS := 6
 const BASE_SEED := 5300
 const DAYS := [1, 5, 9, 14]
+
+const UI := preload("res://tests/ui_screens.gd")
 
 func run(t) -> void:
 	_test_parse_layers_accepts_five_and_still_rejects_four(t)
 	_test_no_route_lines_node_exists_outside_a_debug_build(t)
 	_test_the_readout_flag_alone_builds_the_node_off(t)
 	_test_a_debug_build_builds_the_node_off_by_default(t)
-	_test_key_five_resolves_to_the_route_lines_layer(t)
+	_test_the_layers_flag_starts_the_node_on(t)
+	_test_key_five_is_the_route_lines_layer(t)
 	_test_key_five_toggles_visibility(t)
+	_test_key_five_does_nothing_in_a_release_build(t)
 	_test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_calm(t)
 
 # ------------------------------------------------------------------ DevFlags.parse_layers ---
@@ -31,47 +38,74 @@ func _test_parse_layers_accepts_five_and_still_rejects_four(t) -> void:
 	t.check(DevFlags.parse_layers("1,9,0") == [1],
 			"still-invalid entries (there is no layer 9 or 0) are dropped the same way as before")
 
-# ------------------------------------------------------------------ tree presence ---
+# ------------------------------------------------------------------ the readout ---
+
+## A readout in a tree, set up the way `main` sets it up: handed its configuration, its label and
+## layer and the run's header, then asked to draw the routes over a map. What a check reads is the
+## node the readout built (`routes()`, null where it built none) and what a pressed key changes in it.
+class Rig:
+	var readout := DebugReadout.new()
+	var label := Label.new()
+	var layer := CanvasLayer.new()
+	var city := City.new()
+	var run := RunState.new()
+
+	func _init(t, config: RunConfig) -> void:
+		t.add_child(layer)
+		layer.add_child(label)
+		readout.setup(config, label, layer, run.header, null, Callable())
+		t.add_child(readout)
+		readout.draw_routes(city.map)
+
+	## The layer node the readout built under itself, or null where it built none.
+	func routes() -> RouteLines:
+		return readout.get_node_or_null("RouteLines") as RouteLines
+
+	func free_all() -> void:
+		readout.free()
+		layer.free()
+		city.free()
+		run.free()
+
+func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
+	return RunConfig.parse(PackedStringArray(words), query, debug_build)
 
 func _test_no_route_lines_node_exists_outside_a_debug_build(t) -> void:
-	var readout := DebugReadout.new()
-	readout._debug = false
-	var city := City.new()
-	readout.draw_routes(city.map)
-	t.check(readout._route_lines == null,
+	var rig := Rig.new(t, _config([], false))
+	t.check(rig.routes() == null,
 			"a release build never builds the route-lines node, not merely leaves it invisible")
-	city.free()
-	readout.free()
+	rig.free_all()
 
 ## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone builds the node —
 ## the same shape `test_debug_layers.gd`'s own readout-flag-alone case pins — since a release
 ## page's own `?debug=1&layers=5` needs somewhere to draw into, still off until `?layers=` names it.
 func _test_the_readout_flag_alone_builds_the_node_off(t) -> void:
-	var readout := DebugReadout.new()
-	readout._debug = false
-	readout._readout_requested = true
-	var city := City.new()
-	readout.draw_routes(city.map)
-	t.check(readout._route_lines != null,
+	var rig := Rig.new(t, _config([], false, "?debug=1"))
+	t.check(rig.routes() != null,
 			"?debug=1 builds the route-lines node so a release page's own ?layers=5 has somewhere "
 			+ "to draw")
-	t.check(not readout._route_lines.visible, "and it starts off, since ?layers= itself named none")
-	readout._route_lines.free()
-	city.free()
-	readout.free()
+	t.check(rig.routes() != null and not rig.routes().visible,
+			"and it starts off, since ?layers= itself named none")
+	rig.free_all()
 
 func _test_a_debug_build_builds_the_node_off_by_default(t) -> void:
-	var readout := DebugReadout.new()
-	readout._debug = true
-	var city := City.new()
-	readout.draw_routes(city.map)
-	t.check(readout._route_lines != null and readout._route_lines.get_parent() == readout,
+	var rig := Rig.new(t, _config([], true))
+	t.check(rig.routes() != null and rig.routes().get_parent() == rig.readout,
 			"a debug build adds the one node, parented under the readout")
-	t.check(not readout._route_lines.visible,
+	t.check(rig.routes() != null and not rig.routes().visible,
 			"and it starts off, so an unflagged debug run looks like today's")
-	readout._route_lines.free()
-	city.free()
-	readout.free()
+	rig.free_all()
+
+## `--layers 5` is the keypress-free request for the layer: the node starts on, drawn in the tree.
+func _test_the_layers_flag_starts_the_node_on(t) -> void:
+	var rig := Rig.new(t, _config(["--layers", "5"], true))
+	t.check(rig.routes() != null and rig.routes().is_visible_in_tree(),
+			"--layers 5 starts the route lines on")
+	rig.free_all()
+	var other := Rig.new(t, _config(["--layers", "1,3"], true))
+	t.check(other.routes() != null and not other.routes().visible,
+			"and --layers naming other layers leaves them off")
+	other.free_all()
 
 # ------------------------------------------------------------------ key toggle ---
 
@@ -82,27 +116,41 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 	event.echo = echo
 	return event
 
-func _test_key_five_resolves_to_the_route_lines_layer(t) -> void:
-	t.check(DebugReadout._debug_layer_key(_key(KEY_5)) == 5, "5 is the day's routes")
-	t.check(DebugReadout._debug_layer_key(_key(KEY_5, false)) == 0, "a release, not a press, does nothing")
-	t.check(DebugReadout._debug_layer_key(_key(KEY_5, true, true)) == 0,
+## A press of `5` turns the layer on; a release, an echo (a held key is one request, not a flood of
+## them) and every other digit that is not a layer of this node leave it as it is.
+func _test_key_five_is_the_route_lines_layer(t) -> void:
+	var rig := Rig.new(t, _config([], true))
+	var routes := rig.routes()
+	UI.push(rig.readout, _key(KEY_5, false))
+	t.check(not routes.visible, "a release, not a press, does nothing")
+	UI.push(rig.readout, _key(KEY_5, true, true))
+	t.check(not routes.visible,
 			"an echo does nothing — a held key is one request, not a flood of them")
+	for code in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_6, KEY_7]:
+		UI.push(rig.readout, _key(code))
+		t.check(not routes.visible, "key %s is not the day's routes" % OS.get_keycode_string(code))
+	UI.push(rig.readout, _key(KEY_5))
+	t.check(routes.is_visible_in_tree(), "5 is the day's routes")
+	rig.free_all()
 
 func _test_key_five_toggles_visibility(t) -> void:
-	var readout := DebugReadout.new()
-	readout._debug = true
-	var city := City.new()
-	readout.draw_routes(city.map)
+	var rig := Rig.new(t, _config([], true))
+	var routes := rig.routes()
+	t.check(not routes.visible, "the layer starts off")
+	UI.push(rig.readout, _key(KEY_5))
+	t.check(routes.is_visible_in_tree(), "5 turns it on")
+	UI.push(rig.readout, _key(KEY_5))
+	t.check(not routes.visible, "and back off again")
+	rig.free_all()
 
-	t.check(not readout._route_lines.visible, "the layer starts off")
-	readout._toggle_debug_layer(5)
-	t.check(readout._route_lines.visible, "5 turns it on")
-	readout._toggle_debug_layer(5)
-	t.check(not readout._route_lines.visible, "and back off again")
-
-	readout._route_lines.free()
-	city.free()
-	readout.free()
+## The number keys answer a debug build alone: a release page can ask for the picture, never
+## toggle it by hand.
+func _test_key_five_does_nothing_in_a_release_build(t) -> void:
+	var rig := Rig.new(t, _config([], false, "?debug=1"))
+	var routes := rig.routes()
+	UI.push(rig.readout, _key(KEY_5))
+	t.check(not routes.visible, "5 on a release page with ?debug=1 does not toggle the routes on")
+	rig.free_all()
 
 # ------------------------------------------------------------------ the picture ---
 
