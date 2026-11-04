@@ -11,32 +11,39 @@ const SEED := 4242
 
 var _city: City
 
+## Moves her down the route a walking test sets it, on its own physics tick, before the city's
+## (it is added to the tree first), so the manager's tick sees her where this tick put her.
+var _walker_node: Walker
+
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	_build_city(t)
 	_test_day_populates_the_manager(t)
-	_test_finished_instances_are_dropped(t)
-	_test_successor_replaces_its_parent(t)
+	await _test_finished_instances_are_dropped(t)
+	await _test_successor_replaces_its_parent(t)
 	_test_excitement_sums_over_instances(t)
 	_test_an_event_waits_until_she_is_near_it(t)
-	_test_an_event_that_has_run_does_not_run_again(t)
+	await _test_an_event_that_has_run_does_not_run_again(t)
 	_test_a_running_event_comes_back_where_it_got_to(t)
 	_test_a_set_piece_happens_at_exactly_one_of_its_sites(t)
 	_test_a_day_started_through_the_manager_alone_still_carries_seals(t)
 	_test_a_streamed_pursuer_resumes_the_chase(t)
-	_test_the_fire_is_sited_on_the_way_she_is_walking(t)
-	_test_the_fire_burns_where_her_walk_put_it(t)
-	_test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
-	_test_the_engine_waits_on_its_road_to_the_fire(t)
+	await _test_the_fire_is_sited_on_the_way_she_is_walking(t)
+	await _test_the_fire_burns_where_her_walk_put_it(t)
+	await _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t)
+	await _test_the_engine_waits_on_its_road_to_the_fire(t)
 	_test_the_fire_under_a_covered_corner_is_not_sighted(t)
 	_test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t)
-	_test_a_fire_that_was_never_lit_was_not_spent(t)
+	await _test_a_fire_that_was_never_lit_was_not_spent(t)
 	_test_a_won_day_with_the_fire_unmet_still_burns(t)
 	_test_the_first_dog_of_the_run_day_is_the_lesson(t)
 	_test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t)
 	_teardown()
 
 func _build_city(t) -> void:
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_walker_node = Walker.new()
+	t.add_child(_walker_node)
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	# There is no player in this rig, so nothing would ever come within streaming reach. This
@@ -67,7 +74,7 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
 			"moved, he is the same man, still warning her on the same clock (noticed at %.2f, %.2f)"
 			% [noticed, guard.noticed_at()])
 	var walking := events.spawn_extra(EventCatalogue.task_guard(), at)
-	walking._be_done()
+	walking.leave_for_a_completed_task()
 	t.check(walking.is_leaving and walking.is_waiting(),
 			"a guard who left before he noticed her still answers waiting")
 	walking.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
@@ -122,7 +129,6 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 ## Nothing walks here, which is the case: a day nobody walked far enough into for a siting to be due
 ## is the cheapest way to produce exactly the state this is for.
 func _test_a_won_day_with_the_fire_unmet_still_burns(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	var day := Tuning.RUN_TAUGHT_DAY
 	_start(day)
 	var plan := _fire_plan()
@@ -141,7 +147,7 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t) -> void:
 			% [plan.position.distance_to(doorstep),
 			EventScheduler.WalkSiting.DUSK_CLEAR_OF_HER]) + "nowhere she could have seen it happen")
 	var scar_here := false
-	for scar in GameState.attempt_spend.scars:
+	for scar in _city.run.attempt_spend.scars:
 		scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 				and Vector2(scar["position"]).distance_to(plan.position) < 1.0)
 	t.check(scar_here, "and the shell the run keeps is standing where it burned")
@@ -154,10 +160,10 @@ func _test_a_won_day_with_the_fire_unmet_still_burns(t) -> void:
 	# A second call on the same day has nothing left to light: the one-shot is spent.
 	t.check(not _city.events.light_what_she_never_met(doorstep),
 			"a run gets exactly one fire, however many times the day ends")
-	GameState.attempt_spend.scars = scars_before
 
 func _teardown() -> void:
 	_city.free()
+	_walker_node.free()
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -177,20 +183,28 @@ func _test_day_populates_the_manager(t) -> void:
 
 func _test_finished_instances_are_dropped(t) -> void:
 	_start(1)
-	var before := _city.events.active_count()
+	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
 	for instance in _city.events.instances():
-		if instance.def.aftermath.on_finish == "":
+		if instance.def.aftermath.on_finish == "" and _run_to_its_end(instance):
 			victim = instance
 			break
-	t.check(victim != null, "there is an event that leaves nothing behind")
-
-	victim._finish()
-	_city.events._physics_process(0.016)
+	t.check(victim != null, "there is an event that leaves nothing behind and runs out")
+	var before := _city.events.active_count()
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(_city.events.active_count() == before - 1, "a finished event is dropped")
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance),
 				"no freed node is left in the list after a retirement")
+
+## Steps `instance` a second at a time, nobody told where she is, until it has run its course;
+## whether it did within an hour of them.
+func _run_to_its_end(instance: EventInstance) -> bool:
+	for _second in 3600:
+		if instance.is_finished:
+			return true
+		instance.step(1.0)
+	return instance.is_finished
 
 ## The bug this exists for: one event finishing and spawning one successor leaves the list
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
@@ -212,13 +226,13 @@ func _test_successor_replaces_its_parent(t) -> void:
 	if not convoy:
 		# The convoy is a recurring row rather than a one-shot; this seed may not have rolled
 		# one on this day. Spawn one directly rather than skip the check.
-		convoy = _city.events.spawner.spawn(
-				EventCatalogue.by_id("military_convoy"), Vector2(500, 500))
+		convoy = _city.events.spawner.spawn(EventCatalogue.by_id("military_convoy"),
+				Vector2(500, 500), PackedVector2Array([Vector2(500, 500), Vector2(900, 500)]))
 
 	var before := _city.events.active_count()
+	t.check(_run_to_its_end(convoy), "the convoy runs out on its own")
 	var where := convoy.global_position
-	convoy._finish()
-	_city.events._physics_process(0.016)
+	await PhysicsTicks.pass_ticks(t, 1)
 
 	t.check(_city.events.active_count() == before,
 			"a one-for-one replacement keeps the count the same")
@@ -307,17 +321,23 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 	var plan: EventScheduler.Planned = null
+	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's street
+	# ends; a parked van never does).
 	for candidate in _city.events.plans():
-		if candidate.is_placed() and candidate.def.aftermath.on_finish == "":
-			plan = candidate
-			break
+		if candidate.is_placed() and candidate.def.aftermath.on_finish == "" \
+				and candidate.path.size() > 1:
+			_city.events.stream_around(candidate.position)
+			if candidate.live != null and _run_to_its_end(candidate.live):
+				plan = candidate
+				break
 	if not plan:
+		t.check(false, "day 1 has an event that runs out on its own")
+		_city.events.stream_radius = INF
 		return
 
 	_city.events.stream_around(plan.position)
 	t.check(plan.live != null, "she walks up to it and it is there")
-	plan.live._finish()
-	_city.events._physics_process(0.016)
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(plan.spent and plan.live == null, "it runs its course and the plan is spent")
 
 	_city.events.stream_around(plan.position + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0))
@@ -434,7 +454,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ##
 ## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
-## `SealPlanner`'s own RNG stream (`GameState.calendar.day_rng(day, "seals")`) does not depend on `_city`
+## `SealPlanner`'s own RNG stream (`RunState.calendar.day_rng(day, "seals")`) does not depend on `_city`
 ## either, so every segment the fallback holds has to be held the real way too — a rig that skips
 ## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
 ## only ever has something to read once `City.start_day()` has run (see the comment in
@@ -443,6 +463,14 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
 ## convention, written against this exact gap before it had a fix.
 func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
+	# **A city of its own**: `City.start_day()` writes the day's route tree, closures and region plan
+	# onto the city and nothing un-starts a day, so on the shared city every later test's "manager
+	# alone" day would read this day's corridor and closures rather than growing its own.
+	var shared := _city
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
+	t.add_child(_city)
+	_city.build(CityGenerator.generate(SEED))
+	_city.events.stream_radius = INF
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
 	_start(day)
 	var alone: Dictionary = _city.map.held_segments.duplicate()
@@ -462,25 +490,8 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
 
-	# **This test's own `City.start_day()` call must not outlive it.** `_city` is shared across
-	# every function in this suite, and everywhere else drives `EventManager` alone, the way M100's
-	# gap describes above — but `City.start_day()` writes `_tree`, `_closures`, `_region_plan` and
-	# `map.closed_tiles` onto `_city` itself, and nothing before this fix ever cleared them back
-	# off. `_city.route_tree()` and `_city.closures()` have no fallback at all once non-null
-	# (`EventManager.start_day`'s own doc, above the holds it builds), so once this test called
-	# `City.start_day()` for `day`, every later test's "manager alone" day kept reading *this*
-	# day's corridor and closures — of whatever day `Tuning.REGION_WALL_FIRST_DAY` names — rather
-	# than growing its own, which is what "alone" is supposed to mean. That only ever changed which
-	# candidates a later day's own siting had to route around, so it stayed silent until a branch's
-	# own decision (M181, moving the day the region wall starts standing) chose a value whose
-	# leftover corridor and closures this seed's fire tests could not route around — see
-	# `docs/DECISIONS.md`, M181. `close_streets([])` is `CityMap`'s own way to clear `closed_tiles`;
-	# `_tree`, `_closures` and `_region_plan` have no such method, since nothing outside a test ever
-	# needs to un-start a day, so they are reset by hand.
-	_city.map.close_streets([])
-	_city._tree = null
-	_city._closures = []
-	_city._region_plan = null
+	_city.free()
+	_city = shared
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
@@ -538,12 +549,38 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 # function of where she actually walked, so it needs a real city, a real manager and something in
 # the `player` group that moves — the same reason this suite exists at all.
 
-const WALK_STEP := 1.0 / 30.0
+## A walking tick: a tenth of a second, which is what a tick is at `WALK_SCALE` times real time.
+const WALK_STEP := 1.0 / 10.0
+## The walks go at this many times real time (`PhysicsTicks`), so each tick is `WALK_STEP` long and
+## a walk of a minute takes ten seconds of the run.
+const WALK_SCALE := 6.0
 ## Long enough for a whole route out to a calm area and back again at walking pace, which is what
 ## the outbound and return legs of a 210s day are.
 const WALK_SECONDS := 240.0
 
-## A player the manager can find, out of the physics loop and moved by hand at `Tuning.WALK_SPEED`.
+## Takes her down a route on its own physics tick, at `Tuning.WALK_SPEED`: a point is walked to
+## rather than through, and `velocity` is set to match, since the director's clock only runs while
+## she is actually going somewhere and its heading is read off `velocity`. A point within a step of
+## her is passed over.
+class Walker extends Node:
+	var rig: Stroller
+	var route := PackedVector2Array()
+	var next := 0
+	var heading := Vector2.RIGHT
+
+	func _physics_process(delta: float) -> void:
+		if rig == null:
+			return
+		var step := Tuning.WALK_SPEED * delta
+		while next < route.size() and route[next].distance_to(rig.global_position) <= step:
+			next += 1
+		if next >= route.size():
+			return
+		heading = (route[next] - rig.global_position).normalized()
+		rig.velocity = heading * Tuning.WALK_SPEED
+		rig.global_position += heading * step
+
+## A player the manager can find, out of the physics loop and moved by `_walker_node` on its tick.
 ##
 ## **It walks the day's own routes**, because that is what the siting is stated over: a site is a
 ## building face on the branch of the day's `RouteTree` she is walking, so a rig holding a compass
@@ -571,32 +608,25 @@ func _walker(t, at: Vector2) -> Stroller:
 ## something happened without threading a clock through the walking itself.
 var _walk_clock := 0.0
 
-## Steps the manager along `route` — a chain of world points — until it runs out, `WALK_SECONDS` of
-## walking have gone by, or `until` answers true. Returns the direction she was travelling on the
-## last frame, which is what a caller asking "and then she turned round" needs.
+## Lets the manager's ticks pass while she walks `route` — a chain of world points — until it runs
+## out, `WALK_SECONDS` of walking have gone by, or `until` answers true after a tick. Returns the
+## direction she was travelling on the last tick, which is what a caller asking "and then she turned
+## round" needs.
 ##
-## A point is walked to rather than through: the rig is moved at `Tuning.WALK_SPEED` straight at the
-## next cell centre of the route and `velocity` is set to match, since the director's clock only
-## runs while she is actually going somewhere and its heading is read off `velocity`.
-func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
-	var heading := Vector2.RIGHT
-	# From where she already is, so a second call carries on down the same route rather than
-	# walking her back to its first point — which is what a test that stops at the siting and then
-	# keeps going needs.
-	for i in range(_nearest_on(route, rig.global_position), route.size()):
-		var toward := route[i] - rig.global_position
-		while toward.length() > Tuning.WALK_SPEED * WALK_STEP and _walk_clock < WALK_SECONDS:
-			heading = toward.normalized()
-			rig.velocity = heading * Tuning.WALK_SPEED
-			rig.global_position += heading * Tuning.WALK_SPEED * WALK_STEP
-			_city.events._physics_process(WALK_STEP)
-			_walk_clock += WALK_STEP
-			if until.is_valid() and until.call():
-				return heading
-			toward = route[i] - rig.global_position
-		if _walk_clock >= WALK_SECONDS:
-			return heading
-	return heading
+## From where she already is, so a second call carries on down the same route rather than walking
+## her back to its first point — which is what a test that stops at the siting and then keeps going
+## needs.
+func _walk(t, rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
+	_walker_node.rig = rig
+	_walker_node.route = route
+	_walker_node.next = _nearest_on(route, rig.global_position)
+	while _walker_node.next < route.size() and _walk_clock < WALK_SECONDS:
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
+		_walk_clock += WALK_STEP
+		if until.is_valid() and until.call():
+			break
+	_walker_node.rig = null
+	return _walker_node.heading
 
 ## **The engine's badge holds still for its second, and the engine is then created on its road, on
 ## its way to the fire, just out of sight.** *(PLAYTEST-145: "the spawn point follows her but must
@@ -610,7 +640,6 @@ func _walk(rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vec
 ## stops at, up the road from that kerb rather than past it, level with her or further up rather than
 ## between her and the fire, and wholly out of sight — and is given the route down to the kerb.
 func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -618,7 +647,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
 	if plan:
-		_walk(rig, route,
+		await _walk(t, rig, route,
 				func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
 	var warning: PendingWarning = null
 	for pending in _city.events.pending_warnings():
@@ -628,7 +657,6 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	if not warning:
 		rig.free()
 		_city.events.stream_radius = INF
-		GameState.attempt_spend.scars = scars_before
 		return
 	t.check(warning.left <= Tuning.WARNING_ALONE_MAX, "its badge is up alone for at most a second")
 	var stop := EventSpawner.where_the_summoned_row_stops(_city.map, plan.position)
@@ -645,7 +673,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 			jumped[0] += 1
 		return false
 	_walk_clock = 0.0
-	_walk(rig, route, watch)
+	await _walk(t, rig, route, watch)
 	t.check(looked[0] > 0 and jumped[0] == 0,
 			"its badge keeps its offset from her for all %d frames it is up (%d not)"
 			% [looked[0], jumped[0]])
@@ -678,7 +706,6 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 				"and it drives to the kerb across from the fire", 1.0)
 	rig.free()
 	_city.events.stream_radius = INF
-	GameState.attempt_spend.scars = scars_before
 
 	# The same place on a straight road, walked a long way up it toward where the engine comes from:
 	# the stretch between her and the fire goes out of view behind her long before she stops, and
@@ -788,7 +815,7 @@ func _retreat_from(from: Vector2i, blocked: Dictionary) -> Vector2i:
 ## The calm tiles of every area she has not settled in this act — what the siting's own acceptance
 ## check requires to stay reachable, worked out here from the map rather than asked of the check.
 func _calm_she_has_not_used() -> Array[Vector2i]:
-	var used := GameState.calendar.settled_this_act()
+	var used := _city.run.calendar.settled_this_act()
 	var tiles: Array[Vector2i] = []
 	for block in _city.map.calm_blocks:
 		if used.has(block):
@@ -834,7 +861,7 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(EventScheduler.WalkSiting._cell_centre(_city.map, cell))
+		points.append(_city.events.ahead.walk_siting().cell_centre(cell))
 	return points
 
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
@@ -854,6 +881,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 	var sighted: Array[String] = []
 	var on_sighted := func(id: String) -> void: sighted.append(id)
 	EventBus.event_sighted.connect(on_sighted)
+	var day_plans := events.plans().duplicate()
 	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
 	# off the view's centre at zoom 2.
 	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
@@ -864,7 +892,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		instance.setup(def, at)
 		_city.add_child(instance)
 		plan.live = instance
-		events.streaming._plans.append(plan)
+		events.streaming.add(plan)
 		sighted.clear()
 		var warnings_before := events.pending_warnings().size()
 		events.world.visible.look(view, TouchControls.covered_screen() if joystick else null)
@@ -873,8 +901,8 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
 				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
 				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
-		events.streaming._plans.erase(plan)
-		events.warnings._pending.clear()
+		events.streaming.take(day_plans.duplicate())
+		events.warnings.clear()
 		instance.free()
 	EventBus.event_sighted.disconnect(on_sighted)
 
@@ -897,7 +925,6 @@ func _fire_plan() -> EventScheduler.Planned:
 ## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
 ## visible and nothing about it is real yet.
 func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY
 	for leg: String in ["out", "home again"]:
@@ -921,7 +948,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		# where she was standing when it happened, to within one step. A lambda cannot carry that
 		# out of the walk instead: GDScript captures a local by value, so a closure assigning to one
 		# writes to its own copy and the caller reads the value it started with.
-		var heading := _walk(rig, route, func() -> bool: return plan.is_placed())
+		var heading := await _walk(t, rig, route, func() -> bool: return plan.is_placed())
 		t.check(plan.is_placed(), "walking %s: the fire is sited at all" % leg)
 		if not plan.is_placed():
 			rig.free()
@@ -938,7 +965,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
-		_walk(rig, route, func() -> bool: return _city.events.sees(plan.position))
+		await _walk(t, rig, route, func() -> bool: return _city.events.sees(plan.position))
 		if _city.events.sees(plan.position):
 			seen_at = _walk_clock
 		t.check(seen_at >= 0.0,
@@ -954,7 +981,6 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 			t.check(engine, "walking %s: and seeing it calls the engine in" % leg)
 		rig.free()
 	_city.events.stream_radius = INF
-	GameState.attempt_spend.scars = scars_before
 
 ## **The scar the run keeps is where it actually burned.** The whole point of siting the fire from
 ## her walk is that where it stands is not known at dawn, and a scar is the city's memory of a day —
@@ -966,7 +992,6 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 ## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
 ## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
 func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -977,30 +1002,29 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	_walk(rig, route, func() -> bool: return plan.is_placed())
+	await _walk(t, rig, route, func() -> bool: return plan.is_placed())
 	t.check(plan.is_placed(), "walking the day's route sites it")
 	if not plan.is_placed():
 		rig.free()
 		_city.events.stream_radius = INF
 		return
 
-	_walk(rig, route, func() -> bool: return plan.was_live)
+	await _walk(t, rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live, "and walking on puts it in the world")
 	if plan.was_live:
 		var burning_at := plan.position
 		var scar_here := false
-		for scar in GameState.attempt_spend.scars:
+		for scar in _city.run.attempt_spend.scars:
 			scar_here = scar_here or (String(scar["id"]) == "burnt_shell"
 					and Vector2(scar["position"]).distance_to(burning_at) < 1.0)
 		t.check(scar_here, "and the scar the run keeps is where it actually burned")
 		# Back down the route she came up, which is the walk home: it is real now, so nothing about
 		# turning round may move it.
-		_walk(rig, _a_route_out(Tuning.RUN_TAUGHT_DAY, false))
+		await _walk(t, rig, _a_route_out(Tuning.RUN_TAUGHT_DAY, false))
 		t.check(plan.position == burning_at,
 				"and turning round after it is real leaves it exactly where it burned")
 	rig.free()
 	_city.events.stream_radius = INF
-	GameState.attempt_spend.scars = scars_before
 
 ## **A siting she did not choose owes her a way out of it.** She walks up to this fire because the
 ## day put it in front of her rather than because she picked the street, so the fire's own body,
@@ -1012,7 +1036,6 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 ## measured from the home, and this is the other end of it — the property stated over *her*, at the
 ## one moment the milestone is about.
 func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -1023,7 +1046,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	_walk(rig, route,
+	await _walk(t, rig, route,
 			func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
 	t.check(plan.is_placed() and _city.events.sees(plan.position),
 			"she walks out and finds the fire")
@@ -1072,15 +1095,15 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var inward := _city.map.pavement_inward(_city.map.world_to_tile(plan.position))
 		var kerb: Vector2 = plan.position - Vector2(inward) \
 				* (Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE)
-		# She stands where she first saw the fire while the warning runs, frame by frame, the way
-		# `_physics_process` runs it.
+		# She stands where she first saw the fire while the warning runs on the manager's own ticks.
 		var before := _city.events.instances().size()
 		var her_at := rig.global_position
 		while _city.events.pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
-			_city.events.warnings.run(WALK_STEP, her_at)
-		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + WALK_STEP + 0.001,
-				"its badge is up alone for %.2fs, at most a second" % warning.shown)
+			await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
+		# To the tick: the one that puts it up and the one that creates the engine both count.
+		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + 2.0 * WALK_STEP + 0.001,
+				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown)
 		var arrived: EventInstance = null
 		for instance in _city.events.instances():
 			if instance.def.id == "fire_truck":
@@ -1095,10 +1118,11 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			# (`EventDef.minimum_telegraph()`), from the badge to the first frame its field reaches
 			# her (or, for a lethal row, its lethal reach does).
 			t.check(SpawnSiting.is_out_of_sight(VisibleView.around(her_at, null),
-					EventFootprints.footprint_of(arrived.def), her_at, arrived.global_position),
+					EventFootprints.footprint_of(arrived.def), her_at, arrived.path[0]),
 					"and it is created just out of sight (%.0fpx from her)"
-					% arrived.global_position.distance_to(her_at))
-			var to_reach := 0.0
+					% arrived.path[0].distance_to(her_at))
+			# Counted from its creation: the tick that made it took its first step too.
+			var to_reach := arrived.age
 			var reaches := func() -> bool:
 				return arrived.is_lethal_at(her_at) if arrived.def.hard_fail \
 						else arrived.excitement.contribution_at(her_at) > 0.0
@@ -1108,7 +1132,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 				arrived.step(WALK_STEP)
 				to_reach += WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
-					% [arrived.global_position.distance_to(her_at), warning.shown,
+					% [arrived.path[0].distance_to(her_at), warning.shown,
 					"already on her" if on_her_at_once else "reaching her %.2fs later" % to_reach])
 			t.check(warning.shown + to_reach + 0.001 >= arrived.def.minimum_telegraph(),
 					("and from its badge to the earliest it reaches her is %.2fs, at least the "
@@ -1152,7 +1176,6 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 	if her == Vector2i(-1, -1):
 		rig.free()
 		_city.events.stream_radius = INF
-		GameState.attempt_spend.scars = scars_before
 		return
 	var reached := grid.flood([her], blocked)
 	t.check(grid.reaches(_city.map.home_rect.position, blocked, reached),
@@ -1167,7 +1190,6 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			+ " — the day still works around the pair")
 	rig.free()
 	_city.events.stream_radius = INF
-	GameState.attempt_spend.scars = scars_before
 
 ## **A fire that was never lit was not spent.** *"What the run has spent stays spent ... a fire that
 ## burnt a block down did happen"* (`RunCalendar.finish_day`) — so a set piece the day owed her walk is
@@ -1175,7 +1197,6 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 ## got near it is offered it again. A day on which it burned is not: the city remembers that one, and
 ## the shell is standing in it.
 func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
-	var scars_before := GameState.attempt_spend.scars.duplicate()
 	var consumed: Array[String] = []
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY
@@ -1193,12 +1214,11 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
 	var route := _a_route_out(day)
 	var rig := _walker(t, route[0])
 	_walk_clock = 0.0
-	_walk(rig, route, func() -> bool: return plan.was_live)
+	await _walk(t, rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live and "burning_building" in consumed,
 			"walking into it is what spends it")
 	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
 	rig.free()
 	_city.events.stream_radius = INF
-	GameState.attempt_spend.scars = scars_before
 
