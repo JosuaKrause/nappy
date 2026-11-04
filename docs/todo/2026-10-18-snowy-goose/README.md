@@ -20,7 +20,7 @@ order is the filer's proposal.
   explosion"). A new badge picture is SVG, drawn by Opus under **svg-art** and **cues**; its first
   attempt comes back to the player early. The picture exists: `art/events/explosion.svg`, a
   mushroom cloud, with its atlas line, which the player likes: "btw I like the explosion badge
-  design" (inbox #1026). Nothing draws it yet; what is left of this item is the explosions going
+  design" (inbox #1026 in brisk-ferret). Nothing draws it yet; what is left of this item is the explosions going
   off out of her view and the badge pointing at them showing this picture in place of the star burst.
 - **Craters already there.** A crater she walks toward is already standing: since an explosion never
   goes off in view, no crater appears in front of her. **Read as:** craters of explosions earlier in
