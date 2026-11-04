@@ -9,6 +9,8 @@ extends RefCounted
 
 const SEED := 8817
 const STEP := 1.0 / 60.0
+const EastWestStreet := preload("res://tests/east_west_street.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 var _map: CityMap
 
@@ -27,7 +29,7 @@ func run(t) -> void:
 	_test_it_patrols_while_it_waits(t)
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_stops_once_it_notices(t)
-	_test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
+	await _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t)
 	_test_only_the_guard_on_her_side_sets_off_from_his_post(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
@@ -443,10 +445,16 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 
 	var band := EventInstance.new()
 	band.setup(cold, post)
+	# Drawn through a drawer that records what it is told instead of painting it, since this rig
+	# holds no atlas.
+	band.drawer = RecordingEventDrawer.new()
 	t.add_child(band)
-	band.set_process(false)
 	band.player_at = post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0)
-	band._process(STEP)
+	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(not (band.drawer as RecordingEventDrawer).draws.is_empty(),
+			"the band was drawn in the frames that passed")
 	t.check(band.is_solid(), "a cold roadblock is a solid band")
 	t.check(not band.is_lethal_at(band.player_at) and not band.is_lethal_at(post),
 			"and it takes nobody, at its own edge or standing in it")
@@ -528,8 +536,12 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 		for side: int in [-1, 1]:
 			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
 			var guard := EventInstance.new()
-			guard.setup(hot, post)
-			guard._spread_vertical = vertical
+			# End-on, he stands on an east-west street, which his band reads its axis off as it
+			# does in a city; broadside, on open ground.
+			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
+					EastWestStreet.new() if vertical else null)
+			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
+					"down the screen" if vertical else "across it"])
 			t.add_child(guard)
 			guard.set_process(false)
 			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)

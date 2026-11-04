@@ -82,10 +82,13 @@ var timing := FrameTiming.new():
 ## The baked atlas pages this manager holds the events' group on and every instance it creates
 ## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever builds it (`City`,
 ## `main`); a manager nobody handed one (a suite's) makes its own when it first enters the tree.
+## Each atlas comes with the one drawer every instance made here paints through (`EventDrawer`,
+## `EventWorld.drawer`).
 var atlas: AtlasLibrary = null:
 	set(value):
 		atlas = value
 		world.atlas = value
+		world.drawer = EventDrawer.new(value)
 ## How close the player has to be for a planned event to exist (`EventStreaming.stream_radius`).
 ## `INF` turns streaming off and puts the whole day in the world at once, which is what the escape's
 ## building and a test rig with no player want.

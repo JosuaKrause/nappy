@@ -6,6 +6,7 @@ extends RefCounted
 ## The one file that may write a `z_index` or a `z_as_relative`.
 const MODULE := "res://src/world/draw_layer.gd"
 const EastWestStreet = preload("res://tests/east_west_street.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 func run(t) -> void:
 	_test_no_z_index_is_written_outside_the_module(t)
@@ -14,7 +15,7 @@ func run(t) -> void:
 	_test_a_world_adds_a_node_on_its_layer(t)
 	_test_slices_stand_at_their_own_feet(t)
 	_test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t)
-	_test_every_long_picture_is_drawn_in_slices(t)
+	await _test_every_long_picture_is_drawn_in_slices(t)
 	await _test_the_slices_go_with_their_event(t)
 
 # ------------------------------------------------------------------ the module ---
@@ -261,7 +262,11 @@ static func _slices_in(layer: Node) -> int:
 ## three wide scenes, one a tile of their run.
 ## Each stands in a world in more than one slice, every slice ahead of its instance in the entity
 ## layer; a protest's back rank stands up the screen of its front rank; a wide scene's bands
-## together cover its picture's run exactly, and end-on its slices rise toward the camera.
+## together cover its picture's run exactly, and end-on its slices rise toward the camera. The bands
+## are read off a recording drawer handed in (`tests/recording_event_drawer.gd`), over the same
+## atlas, so a crash's and a burst main's scenery is still built behind each slice: the part of
+## the picture each slice of a fallen tree was drawn with, and the band each slice's scenery was
+## cut to.
 func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
@@ -273,6 +278,8 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			t.add_child(world)
 			var instance := EventInstance.new()
 			instance.atlas = atlas
+			var drawer := RecordingEventDrawer.new(atlas)
+			instance.drawer = drawer
 			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
 					Vector2.RIGHT, _ground_in(world, vertical))
 			world.add_entity(instance)
@@ -287,13 +294,24 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 				t.check(slices[0].global_position.y < slices[slices.size() - 1].global_position.y,
 						"%s: the back rank stands up the screen of the front rank" % what)
 			if id in ["fallen_tree", "car_accident", "burst_water_main"]:
+				# Two frames, so every slice has been drawn.
+				await t.get_tree().process_frame
+				await t.get_tree().process_frame
 				var covered := 0.0
-				for i in slices.size():
-					var band := (instance.look as SpreadLook)._wide_scene_band(i)
-					covered += band.size.y if vertical else band.size.x
-				t.check(is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
-						"%s: its bands cover its run, %.1f of %.1f"
-						% [what, covered, instance.def.obstructs_radius * 2.0])
+				var bands := 0
+				for slice in slices:
+					for entry in drawer.shown_on(slice):
+						if entry.kind == &"band":
+							covered += entry.band.size.y if vertical else entry.band.size.x
+							bands += 1
+				for entry in drawer.draws:
+					if entry.kind == &"scenery":
+						covered += entry.band.size.y if vertical else entry.band.size.x
+						bands += 1
+				t.check(bands == slices.size()
+						and is_equal_approx(covered, instance.def.obstructs_radius * 2.0),
+						"%s: its %d bands, one a slice, cover its run, %.1f of %.1f"
+						% [what, bands, covered, instance.def.obstructs_radius * 2.0])
 				if vertical:
 					var rising := true
 					for i in range(1, slices.size()):
