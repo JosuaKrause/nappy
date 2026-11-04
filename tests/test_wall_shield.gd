@@ -11,7 +11,8 @@ extends RefCounted
 
 const BuildingEvents := preload("res://tests/building_events.gd")
 const _SIZE := float(Tuning.TILE_SIZE)
-## How much faster than real time a long stretch of real physics frames runs (`Engine.time_scale`).
+## How much faster than real time a long stretch of real physics ticks runs (`Engine.time_scale`, put
+## back by `PhysicsTicks`).
 const FAST_SCALE := 8.0
 
 ## Lines whose two directions answered differently, checked once every hand-built case has run.
@@ -465,20 +466,18 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	events.use_player(player)
 	t.add_child(player)
 	player.global_position = stands
-	# The manager's own physics ticks, under `Engine.time_scale` (restored after) so the interval
-	# does not take its length of the suite, until the next bang comes: a tick count, not a clock,
-	# bounds the wait, and the bang is judged where it went off.
+	# The manager's own physics ticks, one a frame (`PhysicsTicks`), at `FAST_SCALE` times real time
+	# so the interval does not take its length of the suite, until the next bang comes: a tick count,
+	# not a clock, bounds the wait, and the bang is judged on the tick it appears.
 	var burst: EventInstance = null
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST_SCALE
-	var until := Engine.get_physics_frames() + int((EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0)
-			* Engine.physics_ticks_per_second)
-	while burst == null and Engine.get_physics_frames() <= until:
-		await t.get_tree().physics_frame
+	var ticks_left: int = PhysicsTicks.ticks_for(EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0,
+			FAST_SCALE)
+	while burst == null and ticks_left > 0:
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), FAST_SCALE)
+		ticks_left -= 1
 		for instance in events.instances():
 			if instance.def.id == "finale_explosion":
 				burst = instance
-	Engine.time_scale = clock
 	t.check(burst != null and burst.global_position == stands,
 			"an explosion goes off where she stands")
 	if burst and behind != Vector2.INF:

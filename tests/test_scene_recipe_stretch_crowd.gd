@@ -165,19 +165,14 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 	crowd.clear()
 	await crowd.get_tree().physics_frame
 
-## How fast the stretch of real physics frames runs (`Engine.time_scale`, restored after), so a few
-## seconds of the crowd's own tick do not take a few seconds of the suite. A frame then holds several
-## ticks, which these checks do not depend on: each landing is judged where it happened.
+## How much faster than real time the stretch of real physics ticks runs (`Engine.time_scale`,
+## restored by `PhysicsTicks`), so a few seconds of the crowd's own tick do not take a few seconds
+## of the suite. Each tick is then that many times as long, and the wait is counted in ticks.
 const FAST_SCALE := 8.0
 
 func _let_the_physics_run(crowd: Crowd, seconds: float) -> void:
-	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
-	var clock := Engine.time_scale
-	Engine.time_scale = FAST_SCALE
-	for i in maxi(1, int(round(seconds / frame))):
-		await crowd.get_tree().physics_frame
-	Engine.time_scale = clock
-	await crowd.get_tree().physics_frame
+	await PhysicsTicks.pass_ticks(crowd, PhysicsTicks.ticks_for(seconds, FAST_SCALE), Callable(),
+			FAST_SCALE)
 
 ## Where a body's drawing was reset to, each time: the one thing the crowd does to it when it enters
 ## the stretch again, and does not do to one that turns round.
