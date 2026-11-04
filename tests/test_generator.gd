@@ -37,7 +37,7 @@ func _map(i: int) -> CityMap:
 	return found
 
 func run(t) -> void:
-	_test_rect_subtraction(t)
+	_test_a_blocks_buildings_are_what_its_holes_leave(t)
 	_test_layout_maths(t)
 	_test_guarantees_hold_across_seeds(t)
 	_test_determinism(t)
@@ -62,28 +62,71 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- pieces ---
 
-func _test_rect_subtraction(t) -> void:
-	var outer := Rect2i(0, 0, 8, 8)
-
-	var untouched := CityGenerator._subtract(outer, Rect2i(20, 20, 2, 2))
-	t.check(untouched.size() == 1 and untouched[0] == outer,
-			"subtracting a disjoint rect changes nothing")
-
-	# A through-alley leaves exactly the two slabs either side of it.
-	var split := CityGenerator._subtract(outer, Rect2i(3, 0, 2, 8))
-	t.check(split.size() == 2, "a through-cut leaves two pieces")
-	t.check(_area(split) == 8 * 8 - 2 * 8, "a through-cut conserves the remaining area")
-	t.check(not _overlaps(split), "subtraction pieces never overlap")
-
-	# A corner plaza leaves an L, expressed as two rects.
-	var corner := CityGenerator._subtract(outer, Rect2i(0, 0, 4, 4))
-	t.check(_area(corner) == 8 * 8 - 16, "a corner cut conserves the remaining area")
-	t.check(not _overlaps(corner), "corner subtraction pieces never overlap")
-
-	# A notch in the middle of an edge leaves three pieces.
-	var notch := CityGenerator._subtract(outer, Rect2i(3, 6, 2, 2))
-	t.check(_area(notch) == 8 * 8 - 4, "an edge notch conserves the remaining area")
-	t.check(not _overlaps(notch), "notch subtraction pieces never overlap")
+## **Cutting a hole out of a block leaves the building pieces the cut shape implies.** The cut is
+## the generator's own business (`_subtract` is called by no other game class), so it is read off
+## what a generated city holds: `building_rects` inside each single-block lot, against the holes
+## the block's layout and the home name. A block with no hole is one building, the lot itself; a
+## through-alley splits it into two slabs either side; a corner square leaves an L of two rects;
+## the home's notch in the middle of the south edge leaves three. A block a big building spans
+## into its neighbour is left to `_test_a_big_building_joins_two_blocks`. Every piece lies inside the lot,
+## clear of every hole, and the pieces and holes together are the lot's whole area.
+func _test_a_blocks_buildings_are_what_its_holes_leave(t) -> void:
+	var seen := {"plain": 0, "alley": 0, "corner": 0, "home": 0, "court": 0}
+	for i in 40:
+		var map := _map(i)
+		for block: Vector2i in map.block_layouts:
+			if map.lot_blocks(block).size != Vector2i.ONE:
+				continue
+			var layout: BlockLayout = map.block_layouts[block]
+			var lot := CityMap.block_rect(block)
+			var holes: Array[Rect2i] = []
+			for hole in [layout.square, layout.alley, layout.passage]:
+				if BlockLayout.has(hole):
+					holes.append(hole)
+			if BlockLayout.has(layout.open_rect):
+				if layout.open_rect == lot:
+					continue  # open ground, nothing built on it
+				holes.append(layout.open_rect)
+			if block == map.home_block:
+				holes.append(map.home_rect)
+			var pieces: Array[Rect2i] = []
+			var joined := false
+			for rect in map.building_rects:
+				if lot.encloses(rect):
+					pieces.append(rect)
+				elif lot.intersects(rect):
+					joined = true  # a big building spans this block and its neighbour
+			if joined:
+				continue
+			var where := "seed %d: block %s" % [_seed(i), block]
+			var hole_area := _area(holes)
+			t.check(_area(pieces) + hole_area == lot.size.x * lot.size.y,
+					"%s: its buildings and holes make up the lot (%d + %d of %d)"
+					% [where, _area(pieces), hole_area, lot.size.x * lot.size.y])
+			t.check(not _overlaps(pieces), "%s: its building pieces never overlap" % where)
+			for piece in pieces:
+				for hole in holes:
+					t.check(not piece.intersects(hole),
+							"%s: building %s stands clear of the hole %s" % [where, piece, hole])
+			if holes.is_empty():
+				seen.plain += 1
+				t.check(pieces == [lot], "%s: with no hole the lot is one building" % where)
+			elif holes.size() == 1 and BlockLayout.has(layout.alley):
+				seen.alley += 1
+				t.check(pieces.size() == 2, "%s: a through-alley leaves two slabs (got %d)"
+						% [where, pieces.size()])
+			elif holes.size() == 1 and BlockLayout.has(layout.square):
+				seen.corner += 1
+				t.check(pieces.size() == 2, "%s: a corner square leaves an L of two (got %d)"
+						% [where, pieces.size()])
+			elif holes.size() == 1 and block == map.home_block:
+				seen.home += 1
+				t.check(pieces.size() == 3, "%s: the home's notch leaves three (got %d)"
+						% [where, pieces.size()])
+			elif BlockLayout.has(layout.open_rect):
+				seen.court += 1
+	for kind: String in seen:
+		t.check(seen[kind] > 0, "some generated block is a %s one (%d found)" % [kind, seen[kind]])
 
 func _area(rects: Array) -> int:
 	var total := 0
@@ -827,8 +870,35 @@ func _test_an_alley_is_exactly_one_cell_wide(t) -> void:
 					"seed %d: alley %s starts on an even tile coordinate" % [_seed(i), alley])
 	t.check(checked > 0, "some generated city has an alley to check (%d found)" % checked)
 
+	# The roll behind it: the offset from the block's edge is even and leaves at least two tiles of
+	# building either side, which is the range `_alley_rect` asks `_even_offset` for.
+	var rolled := 0
+	for i in 40:
+		var map := _map(i)
+		for block: Vector2i in map.block_layouts:
+			var alley: Rect2i = (map.block_layouts[block] as BlockLayout).alley
+			if not BlockLayout.has(alley):
+				continue
+			rolled += 1
+			var lot := CityMap.block_rect(block)
+			var vertical := alley.size.x == Tuning.ALLEY_WIDTH_TILES
+			var offset := alley.position.x - lot.position.x if vertical \
+					else alley.position.y - lot.position.y
+			t.check(offset % 2 == 0, "seed %d: alley %s sits an even %d from the block's edge"
+					% [_seed(i), alley, offset])
+			t.check(offset >= 2 and offset <= Tuning.BLOCK_SIZE - Tuning.ALLEY_WIDTH_TILES - 2,
+					"seed %d: alley %s leaves two tiles of building either side (offset %d)"
+					% [_seed(i), alley, offset])
+	t.check(rolled > 0, "some block's layout holds an alley (%d found)" % rolled)
+
 ## `CityGenerator._even_offset` never returns an odd number, whatever range it is asked for —
 ## including a degenerate one where the whole range collapses to its low end.
+##
+## **Still reads `_even_offset` directly.** The generator's one caller, `_alley_rect`, always asks
+## for the range 2 to 4 (a block is `BLOCK_SIZE` tiles and an alley `ALLEY_WIDTH_TILES` wide), so no
+## city reaches an odd bound or a collapsed range; the alley test above reads what the roll gives
+## for the range it is asked. These edge cases need `_even_offset` handed an rng and a range,
+## which is a seam only this test would call.
 func _test_even_offset_is_always_even(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
@@ -840,6 +910,14 @@ func _test_even_offset_is_always_even(t) -> void:
 						% [low, high, offset])
 				t.check(offset >= low + (low % 2) and offset <= maxi(low + (low % 2), high),
 						"_even_offset(%d, %d) returned %d, out of range" % [low, high, offset])
+
+## The blocks a rect of blocks covers, row by row.
+func _blocks_in(blocks: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	for y in range(blocks.position.y, blocks.end.y):
+		for x in range(blocks.position.x, blocks.end.x):
+			found.append(Vector2i(x, y))
+	return found
 
 func _seed(index: int) -> int:
 	# Spread the seeds out; consecutive integers are what generate() retries with.
@@ -866,7 +944,7 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
 		var map := _map(i)
 		for anchor in map.calm_blocks:
 			var lot := map.lot_blocks(anchor)
-			for block in CityGenerator._blocks_in(lot):
+			for block in _blocks_in(lot):
 				t.check(block.x > 0 and block.y > 0 and block.x < last.x and block.y < last.y,
 						"seed %d: calm area %s has a block at the map edge (%s)"
 						% [_seed(i), anchor, block])
