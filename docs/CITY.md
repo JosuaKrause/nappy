@@ -2330,7 +2330,7 @@ Top-down camera with a fake vertical extrusion:
   `SealPlanner.plan_day` steps its seals off one — **with one exception the escape has and a
   day does not**: a seal stepped off a tree may land on ground one of the chains walks, and there
   it stands in the tree instead, since a picture overlapping a picture is better than the one way
-  out of the city being walled. `tests/test_finale.gd` holds that exception to a small share of
+  out of the city being walled. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) holds that exception to a small share of
   the escape's bodies rather than letting it become the ordinary case.
 - **A pit the day emptied has no tree in it.** A `FALLEN_TREE` closure and a `fallen_tree_seal`
   each take one of their street's own pits — see "What closes a street" above —

@@ -164,9 +164,9 @@ func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
 
 ## A rig's `setup()` erases every game action's `InputMap` bindings, and `InputMap` belongs to the
 ## process, not to the `main` that built the lock. A suite that boots a rig-flagged `main` (`--route`
-## in `test_finale.gd`) and frees it must leave the bindings as it found them, or every later suite in
+## in the finale suites) and frees it must leave the bindings as it found them, or every later suite in
 ## the same process hears no key as any action: `test_touch.gd`'s check that a D press replaces a
-## clicked heading failed that way, run after `test_finale.gd` in one CI shard. Fails without
+## clicked heading failed that way, run after the finale suites in one CI shard. Fails without
 ## `RigLock._exit_tree()` putting the bindings back. `setup()` is called twice, since a second call
 ## finds the bindings already empty and must not record that over the real ones; that half fails
 ## without `_erase_real_input()` recording an action only the first time.

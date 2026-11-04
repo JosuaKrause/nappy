@@ -5,7 +5,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_density.gd      (prints ESCAPE_DENSITY lines)
 ##
-## The plan is `DayPlanner.plan_the_escape_city()`'s, built the way `tests/test_finale.gd` builds it, on the seeds
+## The plan is `DayPlanner.plan_the_escape_city()`'s, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds it, on the seeds
 ## below; "streets" is how many open streets the chains walk.
 
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808]

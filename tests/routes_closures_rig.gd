@@ -1,4 +1,7 @@
 extends RefCounted
+## **The cases behind `test_routes_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
+## part `prepare()`s the maps it owns and runs the cases it owns, so no suite runs two minutes
+## serial; the three together make every check the one suite made.
 ## Road closures and the day-level route invariant: at least two distinct routes to at least two
 ## distinct calm areas, "distinct" meaning sharing no street -- stated once here and enforced in
 ## `ClosurePlanner`. This is the suite that has to be right, because the failure it guards against
@@ -14,7 +17,7 @@ extends RefCounted
 
 ## Enough seeds to catch a layout that only goes wrong in one arrangement.
 ##
-## **Twelve is the count `_test_every_planned_day_keeps_the_invariant` needs and it does not
+## **Twelve is the count `case_every_planned_day_keeps_the_invariant` needs and it does not
 ## shrink.** That check is the reason this file exists -- a day that leaves nowhere to walk to is
 ## unwinnable and invisible until somebody has crossed the city -- and it is a property of a
 ## *layout* against a *plan*, so a seed is a genuinely new question rather than the same question
@@ -31,24 +34,15 @@ const BASE_SEED := 5150
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
-	for i in SEEDS:
+## The maps `first` to `first + count - 1` of the sweep, each generated from the seed it has in the
+## whole sweep (`BASE_SEED + index * 13`), so a part sees the cities the one suite saw.
+func prepare(first: int, count: int) -> void:
+	for i in range(first, first + count):
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 13))
-	_test_every_planned_day_keeps_the_invariant(t)
-	_test_the_home_street_is_never_closed(t)
-	_test_closures_are_deterministic(t)
-	_test_closure_counts_follow_the_act(t)
-	_test_a_closed_street_is_out_of_the_network(t)
-	_test_most_of_a_closed_streets_ground_stays_closed(t)
-	_test_a_mid_segment_opening_stays_reachable_from_its_own_side(t)
-	_test_calm_ground_is_still_walkable_to(t)
-	_test_closures_land_where_a_wall_belongs(t)
-	_test_a_closure_never_lands_on_a_calm_areas_own_access(t)
-	_test_a_wall_off_the_corridor_never_fails_the_invariant(t)
 
 
 ## The whole point. Every seed, every day, after the planner has taken what it wants.
-func _test_every_planned_day_keeps_the_invariant(t) -> void:
+func case_every_planned_day_keeps_the_invariant(t) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var closures := _plan(map, day)
@@ -64,7 +58,7 @@ func _test_every_planned_day_keeps_the_invariant(t) -> void:
 
 ## docs/CITY.md's oldest exemption: the home is a notch in a block with one exit, so sealing
 ## the street outside it seals the player in however well connected the rest of the city is.
-func _test_the_home_street_is_never_closed(t) -> void:
+func case_the_home_street_is_never_closed(t) -> void:
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -82,7 +76,7 @@ func _test_the_home_street_is_never_closed(t) -> void:
 ## maps buy is the chance that some *layout* makes it non-deterministic where another does not —
 ## which is not a thing a seeded RNG can do. Four rather than one so a single unlucky city cannot
 ## be the whole evidence.
-func _test_closures_are_deterministic(t) -> void:
+func case_closures_are_deterministic(t) -> void:
 	for map: CityMap in _maps.slice(0, 4):
 		for day in [1, 7, 14]:
 			var first := _plan_uncached(map, day)
@@ -103,7 +97,7 @@ func _test_closures_are_deterministic(t) -> void:
 ## all three". Asked against `Tuning.closures_for_day()`, the act's own quota, rather than against
 ## `ClosurePlanner.closures_wanted()`, which would read the rule back to itself: on a day whose act
 ## quota is more than one street, the day shuts fewer than that quota.
-func _test_closure_counts_follow_the_act(t) -> void:
+func case_closure_counts_follow_the_act(t) -> void:
 	var thinned_days := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -127,7 +121,7 @@ func _test_closure_counts_follow_the_act(t) -> void:
 ## Both mouths always come out, and nothing a closure marks closed ever stops being walkable —
 ## `close_streets` narrows *how much* of a street is unreachable, never whether the ground itself
 ## is still there.
-func _test_a_closed_street_is_out_of_the_network(t) -> void:
+func case_a_closed_street_is_out_of_the_network(t) -> void:
 	var map := _maps[0]
 	var closures := _plan(map, 12)
 	map.close_streets(closures)
@@ -146,7 +140,7 @@ func _test_a_closed_street_is_out_of_the_network(t) -> void:
 ## How much of a closed street's own ground stays genuinely unreachable, on one (map, day) rather
 ## than the sweep below: a single street can go either way, since which of its cells sit beside an
 ## alley or a courtyard archway is a fact about that one street, not about closures in general —
-## see `_test_a_mid_segment_opening_stays_reachable_from_its_own_side` for the bypass itself. Only
+## see `case_a_mid_segment_opening_stays_reachable_from_its_own_side` for the bypass itself. Only
 ## the sweep's aggregate is the thing this milestone promises: most of a closed street's ground
 ## stays closed, and a bypass is the exception it exists to let through, not the rule.
 ##
@@ -154,7 +148,7 @@ func _test_a_closed_street_is_out_of_the_network(t) -> void:
 ## `_plan`'s cache has not already paid for): 168 (map, day) pairs, aggregate ratio 0.81 — a floor
 ## with room under it, not the number itself, because the aggregate moves with which candidates
 ## `RouteTree.for_day` leaves off the tree and is not the milestone's own promise.
-func _test_most_of_a_closed_streets_ground_stays_closed(t) -> void:
+func case_most_of_a_closed_streets_ground_stays_closed(t) -> void:
 	var sum_closed := 0
 	var sum_total := 0
 	for map in _maps:
@@ -183,7 +177,7 @@ func _test_most_of_a_closed_streets_ground_stays_closed(t) -> void:
 ## already establish.
 const _OPENINGS_PER_SEED := 6
 
-func _test_a_mid_segment_opening_stays_reachable_from_its_own_side(t) -> void:
+func case_a_mid_segment_opening_stays_reachable_from_its_own_side(t) -> void:
 	var openings := 0
 	for map in _maps:
 		var grid := ReachabilityGrid.build(map)
@@ -234,7 +228,7 @@ func _mid_segment_opening(map: CityMap, segment: StreetNetwork.Segment) -> Array
 
 ## The tile-level version of the promise, which is what the player actually experiences:
 ## with today's streets shut, walking from the doorstep still reaches calm ground.
-func _test_calm_ground_is_still_walkable_to(t) -> void:
+func case_calm_ground_is_still_walkable_to(t) -> void:
 	for map in _maps:
 		for day in [1, 6, 11, 14]:
 			map.close_streets(_plan(map, day))
@@ -271,7 +265,7 @@ func _test_calm_ground_is_still_walkable_to(t) -> void:
 ## 0.5 and at 0.15/0.7 that noise cannot reach either. The days stay whole because the act decides
 ## how many streets a day shuts, so sampling days would sample the proportion unevenly. The
 ## absolute half — never on the corridor — is asked once per closure either way.
-func _test_closures_land_where_a_wall_belongs(t) -> void:
+func case_closures_land_where_a_wall_belongs(t) -> void:
 	var on_the_rim := 0
 	var in_a_gap := 0
 	var gaps := 0
@@ -323,7 +317,7 @@ func _test_closures_land_where_a_wall_belongs(t) -> void:
 ## park, since a barrier there closes nothing the ground itself does not already leave open on
 ## every other side; never on a courtyard's one archway street, since that is the one street
 ## closing it seals the courtyard for real rather than merely making the walk longer.
-func _test_a_closure_never_lands_on_a_calm_areas_own_access(t) -> void:
+func case_a_closure_never_lands_on_a_calm_areas_own_access(t) -> void:
 	var checked := 0
 	for map in _maps:
 		var access := {}
@@ -380,7 +374,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 ## nodes rather than a max flow over a couple of hundred, so trying every street of every day of
 ## every seed costs minutes rather than seconds. The property is about the construction rather
 ## than about a layout, so a sample of days still exercises it.
-func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
+func case_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
 	for i in 2:
 		var map := _maps[i]
 		var home := ClosurePlanner.home_street(map)
@@ -409,7 +403,7 @@ func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
 ## floods it rather than asking a couple-hundred-node max flow, and a dozen functions in this file
 ## each plan every day of every seed independently — recomputing the same plan eight times over
 ## turned this suite from seconds into minutes without checking anything an eighth time did not
-## already check. `_test_closures_are_deterministic` is the one caller that has to see two genuinely
+## already check. `case_closures_are_deterministic` is the one caller that has to see two genuinely
 ## independent calls and goes round this cache on purpose.
 var _plan_cache := {}
 
@@ -425,7 +419,7 @@ func _repaint_for(map: CityMap, day: int) -> void:
 	state.begin_day(map.block_plans, day)
 	map.repaint(state)
 
-## The real thing, with no memory of having been asked before — what `_test_closures_are_
+## The real thing, with no memory of having been asked before — what `case_closures_are_
 ## deterministic` calls twice to find out whether `ClosurePlanner.plan_day` itself repeats itself,
 ## rather than whether a cache does.
 func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:

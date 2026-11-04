@@ -5,9 +5,9 @@ extends RefCounted
 ## its full quota from what it does have.
 ##
 ## Split from `tests/test_routes.gd` under M125, "the test suite is slow again"; split out of
-## `test_routes_closures.gd` on its own because `_test_a_fallen_tree_only_falls_where_a_tree_stood`
+## `tests/routes_closures_rig.gd` on its own because `_test_a_fallen_tree_only_falls_where_a_tree_stood`
 ## re-plans a seed's whole fourteen days **uncached** -- the one place in the suite where that
-## happens -- which the eleven invariant tests in `test_routes_closures.gd` never pay for.
+## happens -- which the eleven invariant tests in `tests/routes_closures_rig.gd` never pay for.
 
 const SEEDS := 12
 const BASE_SEED := 5150

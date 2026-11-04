@@ -35,7 +35,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
-## Twenty-four run seeds: `tests/test_finale.gd`'s own four, the probe seeds the escape's other
+## Twenty-four run seeds: `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`)'s own four, the probe seeds the escape's other
 ## probes use, the seed the player could not win (inbox #771 in minty-lemur), and small primes.
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808, 4216201080, 11, 13, 17,
 		19, 29, 31, 37, 41, 43, 47, 53, 59, 61]
