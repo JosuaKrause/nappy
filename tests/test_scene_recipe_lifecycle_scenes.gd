@@ -6,4 +6,4 @@ extends RefCounted
 const LIFECYCLE := preload("res://tests/scene_recipe_lifecycle.gd")
 
 func run(t) -> void:
-	LIFECYCLE.new().lifecycle(t, LIFECYCLE.PREFIX_OTHER)
+	await LIFECYCLE.new().lifecycle(t, LIFECYCLE.PREFIX_OTHER)
