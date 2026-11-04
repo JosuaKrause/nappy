@@ -41,6 +41,7 @@ func _play_a_run(t, seed_value: int) -> void:
 
 	var one_shots_seen := {}
 	var contacts_offered := 0
+	var events_that_moved := 0
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		run.header.day = day
@@ -74,8 +75,14 @@ func _play_a_run(t, seed_value: int) -> void:
 		# Let the day actually run for a while. Without this the mobile one-shots never
 		# finish their routes, so the fire engine never leaves a fire and the convoy never
 		# leaves a barricade — and the whole successor-and-scar chain goes untested.
+		var placed := {}
+		for instance in city.events.instances():
+			placed[instance] = instance.global_position
 		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
 				Callable(), SIMULATION_SCALE)
+		for instance in placed.keys():
+			if is_instance_valid(instance) and instance.global_position != placed[instance]:
+				events_that_moved += 1
 
 		if director.current_step():
 			contacts_offered += 1
@@ -94,6 +101,9 @@ func _play_a_run(t, seed_value: int) -> void:
 		# The day was survivable, so bank the win and move on.
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 
+	t.check(events_that_moved > 0,
+			"seed %d: the physics ticks of the played days moved the events that travel (%d)"
+			% [seed_value, events_that_moved])
 	t.check(contacts_offered >= Tuning.RESISTANCE_GOAL,
 			"seed %d offers at least %d contacts over a run (%d)"
 			% [seed_value, Tuning.RESISTANCE_GOAL, contacts_offered])
