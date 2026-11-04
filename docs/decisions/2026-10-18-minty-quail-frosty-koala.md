@@ -10,19 +10,22 @@ from outside its class.
   `EventManager.force()` and `start_day()`, walks her toward where it will be sent, and lets the
   manager's own physics ticks run `place_what_is_owed_ahead()`, one tick per frame through
   `PhysicsTicks`, instead of calling `EventsAhead._send_down_her_line()` by hand. The far dog is
-  still placed by the spawner, since the director never sites one that far.
+  still placed by the spawner, since the director never sites one that far, and the suite checks it
+  is retired where it stands, never walked off by leaving its route first.
 - `test_tutorial_dog.gd` (2 to 0) hands the director's rows out through `due()` and rigs the second
   dog with `rig_her_route()`, so that dog is a bag marble rather than a row owed as itself.
 - `test_route_bag.gd` (18 to 9, `GameState` lines 10 to 0) reads the route rows through
   `EventDirector.route_rows_on()`, finishes the mark through `contact().complete_now()`, reads the
   rigged bag from the resistance director's own run-log line, and uses `WalkSiting.cell_centre()` and
   `cells_ahead()`; its refused-siting check asks whether the mast's marble was drawn and whether
-  `site_what_is_on_her_way()` ever returned it.
+  the refusing siting was asked. Its check that reading the mark ends within 1.5 s of wall clock
+  goes, since no wall-clock budget decides a check; the work is counted in the tiles the rig asks,
+  which an existing check holds at none.
 - The loose dog and the route-bag mark tests build their city on a run of their own. Checks 122,
-  200 and 7 to 122, 248 and 9; eleven mutation runs.
+  200 and 7 to 120, 248 and 10; eleven mutation runs.
 
-**Open to overturn:** the loose dog suite runs on seed 2, since on seed 4242 the far dog leaves by
-another path and a mutation of its give-up time goes unseen. The city mark test still calls the
+**Open to overturn:** the loose dog suite runs on seed 2, whose far dog's line is clear; on seed
+4242 a solid cuts its route, so it leaves by walking off instead of giving up. The city mark test still calls the
 public `site_what_is_on_her_way()` and `place_what_is_owed_ahead()` by hand on a 0.1 s step, since
 600 s of walking would be about twelve thousand real ticks.
 
