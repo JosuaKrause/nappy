@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## The measure is `tests/seal_reach_rig.gd`'s. A day's seals are `SealPlanner.plan_day()`'s, on
 ## `RouteTree.for_day()`'s tree and the rng `tests/test_seals.gd` seeds them with; the escape's are
-## every placement `DayPlanner.plan_the_escape_city()` makes, built the way `tests/test_finale.gd` builds it.
+## every placement `DayPlanner.plan_the_escape_city()` makes, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds it.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const FIRST_SEED := 1
