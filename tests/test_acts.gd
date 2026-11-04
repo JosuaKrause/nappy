@@ -5,6 +5,8 @@ extends RefCounted
 const SEED := 4242
 const STEP := 1.0 / 60.0
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 var _map: CityMap
 
@@ -13,7 +15,7 @@ func run(t) -> void:
 	_test_acts_are_gated_by_day(t)
 	_test_a_protest_grows(t)
 	_test_scars_outlive_the_day_that_made_them(t)
-	_test_the_scarred_building_shows_burnt(t)
+	await _test_the_scarred_building_shows_burnt(t)
 	_test_a_park_stays_reachable_every_day(t)
 	_test_act_tints_differ(t)
 
@@ -103,7 +105,8 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
 ## `Building`s directly north of it — never the edge of the world, which `CityMap.tile_at()` reads
-## as `BUILDING` — and the flames drawn there (`FireLook._flames_across()`) burn along the
+## as `BUILDING` — and the flames a fire sited there draws, read off the pictures its look tells
+## its drawer to stand (`tests/recording_event_drawer.gd`) on real frames, burn along the
 ## whole of that building's own facade and stay inside it, including at a site on the first or last
 ## column of its lot: every column the city draws a facade on carries a flame, and no column another
 ## building's roof covers does. *"the fire should be on the whole building not only the door"*
@@ -124,6 +127,14 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 		sites[tile] = true
 	t.check(sites.size() > 100,
 			"seed %d: there are fronts for the fire to catch on (%d)" % [SEED, sites.size()])
+	# Every site holds a street fire of its own on the city's map, found and drawn as the game does,
+	# all drawn by the same three frames.
+	var def := EventCatalogue.by_id("burning_building")
+	var fires := {}
+	for tile: Vector2i in sites:
+		if _building_at(city, tile + Vector2i.UP):
+			fires[tile] = DrawnEvent.build(t, def, false, null, city.map, city.map.tile_to_world(tile))
+	await DrawnEvent.frames(t)
 	var nothing_behind: Array[Vector2i] = []
 	var spilled: Array[Vector2i] = []
 	var bare: Array[Vector2i] = []
@@ -138,23 +149,28 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			continue
 		if tile.x == behind.lot.position.x or tile.x == behind.lot.end.x - 1:
 			at_a_lot_end += 1
-		var at := city.map.tile_to_world(tile)
+		var fire: EventInstance = fires[tile]
 		var facade := city.map.tile_rect_to_world(behind.lot)
 		if facade.size.x > 80.0:
 			wider_than_five += 1
-		var flames := FireLook._flames_across(FireLook._facade_runs_at(city.map, at))
+		# Each flame as the span of x it covers in the world.
+		var flames: Array[Vector2] = []
+		for entry in DrawnEvent.shown(fire):
+			if entry.picture == EventPictures.FLAME:
+				var rect := RecordingEventDrawer.rect_about(entry, fire)
+				flames.append(Vector2(fire.global_position.x + rect.position.x,
+						fire.global_position.x + rect.end.x))
 		for flame in flames:
-			if at.x + flame.x - flame.y * 0.5 < facade.position.x - 0.01 \
-					or at.x + flame.x + flame.y * 0.5 > facade.end.x + 0.01:
+			if flame.x < facade.position.x - 0.01 or flame.y > facade.end.x + 0.01:
 				spilled.append(tile)
 				break
-		# Each column's middle, against every flame's own width: a column the building draws is
+		# Each column's middle, against every flame's own span: a column the building draws is
 		# burning, one another building's roof covers (`Building.covered_ground_cols`) is not.
 		for col in behind.lot.size.x:
 			var middle := facade.position.x + (col + 0.5) * size
 			var burning := false
 			for flame in flames:
-				if absf(at.x + flame.x - middle) <= flame.y * 0.5:
+				if flame.x <= middle and middle <= flame.y:
 					burning = true
 			var drawn := not behind.is_covered(col)
 			if drawn and not burning:
@@ -163,6 +179,8 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			if burning and not drawn:
 				on_a_roof.append(tile)
 				break
+	for fire: EventInstance in fires.values():
+		fire.free()
 	t.check(nothing_behind.is_empty(),
 			"every front the fire can catch on has a building behind it (%d do not, first %s)"
 			% [nothing_behind.size(), nothing_behind.slice(0, 3)])

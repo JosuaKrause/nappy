@@ -14,6 +14,8 @@ extends RefCounted
 ## a headless run emits like any other.
 
 const STEP := 1.0 / 60.0
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 ## The design box, and the camera's zoom on it: the world a screen shows is half of it each way.
 const SCREEN := Vector2(1280.0, 720.0)
 const ZOOM := 2.0
@@ -25,7 +27,7 @@ func run(t) -> void:
 	_test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t)
 	_test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
 	_test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
-	_test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
+	await _test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
 	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
@@ -136,13 +138,12 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		car.position = Vector2(x, 180.0)
 		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
 		car.excitement.advance(STEP)
-		var before: Variant = car.excitement._caret_key_was
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or car.excitement._caret_key_was != before
+			projected_off_screen = projected_off_screen or _the_gate_projected_her_caret(car)
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -156,6 +157,18 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	t.check(car.excitement.caret_strength() == 2,
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
+
+## Whether the frame the gate just ended projected `car`'s caret. A caret is cached against the
+## excitement's clock, which the gate has not moved since, and the answer reads where she stands,
+## which is no part of that key: so she is moved far from the car and asked about, and a car whose
+## caret the gate had projected answers what it was projected as (the doubled red the rig owes it),
+## while one it had not answers afresh, for a car she is far from (none). She is put back as she was.
+func _the_gate_projected_her_caret(car: CrowdAgent) -> bool:
+	var at := car.excitement.player_at
+	car.excitement.set_player_at(at + Vector2(5000.0, 0.0))
+	var answered := car.excitement.caret_strength()
+	car.excitement.set_player_at(at)
+	return answered != 0
 
 ## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
 ## it), its view and stride where they were — still redraws on its first frame back, since what it shows was not kept.
@@ -195,10 +208,23 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
 	cyclist.excitement.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
-	var key_before := cyclist.look._picture
-	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
-	t.check(cyclist.look._picture == key_before and not cyclist.excitement._caret_known,
+	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
+	# cached (below), and reading it works the caret out.
+	var twin := EventInstance.new()
+	twin.setup(def, Vector2(320.0, 180.0),
+			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
+	twin.set_process(false)
+	screen.add_child(twin)
+	twin.excitement.set_player_at(twin.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
+	# The caret is cached on the age and where she stands, so a change to whether the event may carry
+	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a
+	# gate that left nothing cached, and with the doubled red it was owed by one that worked it out.
+	twin.leave_for_a_completed_task()
+	t.check(twin.is_leaving and twin.excitement.caret_strength() == 0,
 			"and works out neither its key nor its caret")
+	twin.free()
+	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
 	var drawn := cyclist.look.drawn_rect_now()
 	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 			"the caret it is owed is the doubled red")
@@ -250,9 +276,8 @@ class LongFrontage extends WorldMap:
 ## box would stand frozen there. The fire is sited on a map whose building is 20 tiles (640px) wide,
 ## running east from just west of the fire's point, and finds the front itself, as it does in a city;
 ## the screen pans along it from the east, so the far end shows long before the point does. What can
-## be seen is worked out from the building's own width and the tallest the flames and the smoke
-## stand (`FireLook`'s flame and smoke sizes, at the flicker's tallest), not from the box the gate
-## asks with.
+## be seen is what a fire of the same siting tells its drawer to stand (flames and smoke), on real
+## frames, not the box the gate asks with.
 func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
@@ -261,16 +286,26 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	var screen := _screen(t, Vector2(2000.0, 0.0))
 	var fire := EventInstance.new()
 	var map := LongFrontage.new()
+	# The window's tree draws it while the reference below is awaited, so it paints through a drawer
+	# that records rather than one over an atlas it was not given.
+	fire.drawer = RecordingEventDrawer.new()
 	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT, map)
 	fire.set_process(false)
 	screen.add_child(fire)
-	# The front, from the building's lot: its west and east ends from the fire's point, half a tile
-	# toward the wall, and from the ground up to the smoke's top over the tallest flame.
+	# What the front draws, from a fire of the same siting drawn on real frames in the window's own
+	# tree: every picture it tells its drawer to stand, flames and smoke, merged, in its own space.
+	var reference := await DrawnEvent.stand(t, def, false, null, map, Vector2(0.0, 180.0))
+	var drawn := Rect2()
+	var any := false
+	for entry in DrawnEvent.shown(reference):
+		var rect := RecordingEventDrawer.rect_about(entry, reference)
+		drawn = rect if not any else drawn.merge(rect)
+		any = true
+	reference.free()
 	var lot := map.tile_rect_to_world(LongFrontage.LOT)
-	var toward_the_wall := Vector2(map.pavement_inward(map.world_to_tile(fire.global_position))) * (Tuning.TILE_SIZE * 0.5)
-	var smoke_top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) - FireLook._SMOKE_SIZE.y
-	var drawn := Rect2(lot.position.x - fire.global_position.x, smoke_top, lot.size.x, -smoke_top)
-	drawn.position += toward_the_wall
+	t.check(any and drawn.position.x <= lot.position.x - fire.global_position.x + 0.01
+			and drawn.end.x >= lot.end.x - fire.global_position.x - 0.01,
+			"the fire draws along the building's whole width (%s)" % drawn)
 	t.check(drawn.size.x > Tuning.TILE_SIZE * 10.0,
 			"the building is a long one, as this check is about (%s)" % drawn)
 	t.check(fire.look.drawn_rect_now().encloses(drawn),
