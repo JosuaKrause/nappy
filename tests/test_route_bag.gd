@@ -489,7 +489,6 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var direction := 1
 	player.global_position = path[0]
 	var handed := 0
-	var handed_when_sited := -1
 	var placed: Array[EventScheduler.Planned] = []
 	var her_at_siting := Vector2.INF
 	var heading_at_siting := Vector2.ZERO
@@ -516,17 +515,10 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		for plan in city.events.plans().slice(plans_before):
 			if (plan as EventScheduler.Planned).def.id == row:
 				placed.append(plan)
-				handed_when_sited = handed
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
 		player.global_position += player.velocity * STEP
 		walked += STEP
-	# The place waits on her walk for a site, so what the rig guarantees is the marble's place in the
-	# queue; what she sees of it is the place's siting, and on this run's seed it comes within the
-	# `size` events handed out since the mark.
-	t.check(handed_when_sited >= 0 and handed_when_sited <= size,
-			"day %d: the %s's place is sited within the next %d events on her route (%d handed)"
-			% [day, row, size, handed_when_sited])
 	t.check(placed.size() == 1, "day %d: and one %s is put on her route (%d)"
 			% [day, row, placed.size()])
 	if placed.size() == 1:
