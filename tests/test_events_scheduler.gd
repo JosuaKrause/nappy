@@ -582,8 +582,9 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 			if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed():
 				day_walls += 1
 		# The fill's own rows are the recurring ones: the ambient rows, the scars, the masts, the
-		# scripted rows, the one-shots and a used park's spoilers are placed before it, and none of
-		# them is `RECURRING`. (No park is used in this day, so no spoiler stands in it.)
+		# scripted rows and the one-shots are placed before it, and none of them is `RECURRING`. A
+		# used park's spoilers are drawn from the recurring pool, so this cannot tell them from the
+		# fill; no park is used in this day, so no spoiler stands in it.
 		var not_a_fill_wall: Array[String] = []
 		for plan in removed:
 			if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed() \
