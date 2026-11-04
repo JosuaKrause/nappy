@@ -54,8 +54,10 @@ const PLACES: Array[Array] = [
 ## with the seeds a part has (30 of 41 measured, rounded up so the three floors sum to at least 30; a third walked out); the largest calm zone is
 ## checked in the part that holds `LARGE_PARK_SEED`.
 func sweep(t, seeds: Array[int]) -> void:
-	# The director starts the swing's task, which the visit counter holds open until it is done; the
-	# sweep takes the park through its own happenings and never finishes it.
+	# Finishing the swing's task the game's way makes the director's own happenings take the park
+	# first, so the sweep's own `take_the_park()` would return false. The director therefore leaves
+	# the task open in `VisitCounter._open_tasks`, and this is the runner's declared way to put it
+	# back.
 	t.gives_back_observers()
 	var measured := 0
 	var walked_out := 0
@@ -186,6 +188,24 @@ func measure(t, seed_value: int) -> Dictionary:
 	run.free()
 	return result
 
+## How many of the park's people the cordon has taken on just after its first tick: an escort each,
+## and each other person it sends off on their own, who is leaving by then. Counts only the kind
+## the cordon walks out (a person in the park who is not ambient, a pursuer, a vehicle, warned
+## first or arriving chasing: `ParkCordon._walks_out()`'s question, asked of the public event).
+func _people_taken_on(city: City, cordon: ParkCordon) -> int:
+	var people := 0
+	for officer in cordon.officers:
+		if officer.job == ParkCordon.Officer.Job.ESCORT:
+			people += 1
+	for live in city.events.instances():
+		var def := live.def
+		if live.is_finished or not live.is_leaving or not cordon.area.has_point(live.global_position):
+			continue
+		if def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
+				and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+			people += 1
+	return people
+
 func _measure_the_day(city: City, director: ResistanceDirector,
 		happenings: ResistanceHappenings, swing: Vector2) -> Dictionary:
 	var her := [swing]
@@ -194,6 +214,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
 	var result := {"park_size": cordon.area.size, "walk": swing.distance_to(cordon.last_gap)}
+	result.people = _people_taken_on(city, cordon)
 	_measure_the_gap(city, director, cordon, result)
 	var standing := _play(city, cordon, her, shows, false)
 	result.first_seen = standing.first_seen
@@ -204,17 +225,6 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	result.relaid = cordon.relaid
-	# The park's people the cordon takes on: an escort each, and those sent off on their own, who
-	# are leaving the moment the first tick has run.
-	var people := 0
-	for officer in cordon.officers:
-		if officer.job == ParkCordon.Officer.Job.ESCORT:
-			people += 1
-	for live in city.events.instances():
-		if live.is_leaving and cordon.area.has_point(live.global_position) \
-				and live.def.kind != GameEnums.EventKind.AMBIENT and live.def.pursuit == null:
-			people += 1
-	result.people = people
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
 			city.spawn_siting, director.reach_obstruction())
