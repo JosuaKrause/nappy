@@ -254,14 +254,14 @@ func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
 
-## **The guard is never put on her only way to the roadblock** (`_roadblock_guard_spot()`): from
+## **The guard is never put on her only way to the roadblock** (`guard_position()`): from
 ## her where she read the mark, and at open ground 8 to 14 tiles out in each of four directions,
 ## round every live roadblock of the day, wherever a move would put him, she can still walk to touch
 ## range without coming within his notice — asked by the test's own flood fill — and he stands on
-## the far side of the roadblock from her far more often than on hers. **It still asks the move's
-## spot of the private search**: the public `guard_position()` is the spot he is placed on with the
-## task, which takes the first spot anyway where none leaves her a way, and a move, which never does,
-## asks the search only inside `tick()`, for the one roadblock the arrow points at.
+## the far side of the roadblock from her far more often than on hers. **It asks for the move's
+## spot**, `guard_position()` with `or_any` false, as `_move_the_task_guard_to_her_target()` does:
+## a move never takes a first spot anyway where none leaves her a way, as the guard placed with the
+## task does.
 func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
@@ -291,7 +291,7 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 					places.append(map.tile_to_world(tile))
 		for her in places:
 			var tile := map.world_to_tile(her)
-			var spot := director._roadblock_guard_spot(rng, body, reach, her, false, false)
+			var spot := director.guard_position(rng, body, false, her, false, reach, false)
 			if spot == Vector2.INF:
 				continue
 			asked += 1
