@@ -29,7 +29,7 @@ func run(t) -> void:
 	_test_it_stops_at_a_red_light(t)
 	_test_its_caret_stands_over_its_picture(t)
 	_test_a_far_zebra_holds_it_out_of_the_box(t)
-	_test_the_log_names_the_patrol_for_its_mark(t)
+	await _test_the_log_names_the_patrol_for_its_mark(t)
 
 # ------------------------------------------------------------------ the rig ---
 
@@ -44,11 +44,12 @@ func _car(t, def: EventDef, route: PackedVector2Array, map: CityMap = null) -> E
 	car.set_process(false)
 	return car
 
-## `car` as one already driving its route with her ahead of it, the state a car closing on her is
-## in. A car is created standing (`EventInstance.setup()`) and would go on standing for her on its
-## first frame, so a rig that asks about the warning over a driving car puts it in that state.
+## `car` as one already driving its route, the state a car closing on her is in. A car is created
+## standing (`EventInstance.setup()`) and drives off on its first step when nobody has been told
+## where she is, since there is nobody in its way, so a rig that asks about the warning over a
+## driving car takes that step before it tells the car about her.
 func _already_driving(car: EventInstance) -> void:
-	car.car._standing = false
+	car.step(STEP)
 
 ## Her real rig, facing `facing`, with the pram body on her circumference as `_physics_process()`
 ## puts it.
@@ -63,20 +64,17 @@ func _her(t, at: Vector2, facing: Vector2) -> Stroller:
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
 
-## What `EventManager._tell_them_where_she_is()` tells every instance once a frame.
+## What `EventManager` tells every instance once a frame: where she is and where her pram is.
 func _tell(car: EventInstance, player: Stroller) -> void:
 	car.player_at = player.global_position
 	car.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
 
-## One frame of the car, its body's transform pushed to the physics server at once rather than at
-## the tree's next flush, which a synchronous sweep never reaches.
+## One frame of the car, its body's transform (the car and everything under it) pushed to the physics
+## server at once rather than at the tree's next flush, which a synchronous sweep never reaches.
 func _drive(car: EventInstance, player: Stroller) -> void:
 	_tell(car, player)
 	car.step(STEP)
-	if car._obstruction:
-		car._obstruction.force_update_transform()
-		for child in car._obstruction.get_children():
-			(child as Node2D).force_update_transform()
+	car.propagate_call("force_update_transform", [], true)
 
 ## How far she gets walking `heading` for up to `distance`, stopping at the first contact.
 func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
@@ -88,7 +86,7 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 	return walked
 
 func _gap(car: EventInstance) -> float:
-	return car.car.gap_to_her(car.position, car._heading)
+	return car.car.gap_to_her(car.position, car.facing_now())
 
 # ----------------------------------------------------------------- the row ---
 
@@ -128,6 +126,13 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t) -> void:
 		player.free()
 	car.free()
 
+## The collision shape of the solid body the car carries, found by type among its children.
+func _body_shape(car: EventInstance) -> CollisionShape2D:
+	for child in car.get_children():
+		if child is StaticBody2D:
+			return child.get_child(0) as CollisionShape2D
+	return null
+
 ## The body is the car's drawn ground contact — the side view's 42px bumper to bumper and the end
 ## view's 24px flank to flank — and it turns with the car.
 func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
@@ -138,9 +143,9 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	var side := EventPictures.native_size(EventPictures.POLICE_CAR)
 	t.check(shape.reach() * 2.0 <= side.x, "and no longer than the side view is drawn (%.0fpx)"
 			% side.x)
-	var route := PackedVector2Array([Vector2.ZERO, Vector2(0.0, 400.0)])
+	var route := PackedVector2Array([Vector2.ZERO, Vector2(0.0, 80.0), Vector2(400.0, 80.0)])
 	var car := _car(t, _patrol(), route)
-	var collision := car._obstruction.get_child(0) as CollisionShape2D
+	var collision := _body_shape(car)
 	var capsule := collision.shape as CapsuleShape2D
 	t.check(capsule != null and is_equal_approx(capsule.radius, shape.radius)
 			and is_equal_approx(capsule.height, shape.reach() * 2.0),
@@ -148,8 +153,12 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	var spine := Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.DOWN)) > 0.999,
 			"driving south, the capsule lies north-south (%s)" % spine)
-	car._heading = Vector2.RIGHT
-	car.car.turn_the_body()
+	# Round the corner of its route, with nobody told where she is: the car turns east on its own.
+	var frames := 0
+	while not car.facing_now().is_equal_approx(Vector2.RIGHT) and frames < 600:
+		car.step(STEP)
+		frames += 1
+	t.check(car.facing_now().is_equal_approx(Vector2.RIGHT), "the car turns east at the corner of its route")
 	spine = Vector2.DOWN.rotated(collision.rotation)
 	t.check(absf(spine.dot(Vector2.RIGHT)) > 0.999, "and turned east, east-west (%s)" % spine)
 	t.check(car.look.body_anchor("side").y == shape.radius,
@@ -238,10 +247,14 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 ## A car that is not driving its route strikes nobody in front of it: leaving once it is over, and
 ## the investigating car, which stops where it notices her and stands for the man it lets out.
 func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
-	var leaving := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]))
+	# Its route runs out short of her, and it leaves the way it was going: at her.
+	var leaving := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(-100.0, 0.0)]))
 	var player := _her(t, Vector2(0.0, 0.0), Vector2.LEFT)
-	leaving._be_done()
-	t.check(leaving.is_leaving, "the car is leaving")
+	var frames := 0
+	while not leaving.is_leaving and frames < int(10.0 / STEP):
+		leaving.step(STEP)
+		frames += 1
+	t.check(leaving.is_leaving, "the car is leaving once its route has run out")
 	var struck := false
 	var deepest := INF
 	for i in int(5.0 / STEP):
@@ -477,7 +490,7 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 			deepest = minf(deepest, _gap(car))
 		t.check(not struck, "stepped in %.0fpx behind the raid's car at the end of its beat, it never "
 				% behind + "strikes her")
-		t.check(car.car.is_standing() and car._heading.is_equal_approx(Vector2.RIGHT),
+		t.check(car.car.is_standing() and car.facing_now().is_equal_approx(Vector2.RIGHT),
 				"%.0fpx behind: it stands, still facing away from her, rather than turning onto her"
 				% behind)
 		t.check(deepest >= -0.01, "%.0fpx behind: and its body never came into her" % behind)
@@ -485,7 +498,7 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 		player.global_position = Vector2(player.global_position.x, 80.0)
 		for i in int(1.0 / STEP):
 			_drive(car, player)
-		t.check(not car.car.is_standing() and car._heading.is_equal_approx(Vector2.LEFT),
+		t.check(not car.car.is_standing() and car.facing_now().is_equal_approx(Vector2.LEFT),
 				"%.0fpx behind: once she is out of its lane it turns and paces back" % behind)
 		player.free()
 		car.free()
@@ -765,29 +778,65 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 
 # ------------------------------------------------------------------ the log ---
 
-## The run log names the patrol for the mark it raises over her, not a crowd car's horn.
+## The run log names the patrol for the mark it raises over her, not a crowd car's horn. The
+## observer is handed what `main` hands it (the run, the city, her, the baby, the day's clock); the
+## patrol drives a carriageway lane of a city in a run of its own, the mark is raised over her head
+## as the game raises it (`Stroller.warn()`), and real frames let the observer write the cue.
 func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
-	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(800.0, 0.0)]))
-	var player := _her(t, Vector2(150.0, 0.0), Vector2.LEFT)
-	_tell(car, player)
+	var city := RunCity.with_own_run(preload("res://scenes/world/city.tscn"), 4242)
+	t.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var kerb := _a_kerb(city.map)
+	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
+	if kerb.size() != 3:
+		city.free()
+		return
+	var lane: Vector2 = kerb[0]
+	var outward: Vector2 = kerb[1]
+	var along: Vector2 = kerb[2]
+	var car := city.events.spawn_extra(_patrol(), lane - along * 150.0,
+			PackedVector2Array([lane - along * 150.0, lane + along * 650.0]))
 	_already_driving(car)
-	var source := GDScript.new()
-	source.source_code = "extends Node\nvar list: Array[EventInstance] = []\n" \
-			+ "func instances() -> Array[EventInstance]:\n\treturn list\n"
-	source.reload()
-	var events: Node = source.new()
-	events.list.append(car)
-	var observer := TelemetryObserver.new()
-	observer._events = events
-	observer._player = player
-	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")
-	t.check(observer._what_raised_the_mark().begins_with("police_patrol "),
-			"the log names the patrol for the mark (%s)" % observer._what_raised_the_mark())
-	player.global_position = Vector2(150.0, 80.0)
+	var player := _her(t, lane, -along)
 	_tell(car, player)
-	t.check(not observer._what_raised_the_mark().begins_with("police_patrol"),
-			"and out of its lane it names nothing of it (%s)" % observer._what_raised_the_mark())
+	var baby := Baby.new()
+	var clock := DayController.new()
+	var observer := TelemetryObserver.new()
+	observer.setup(city.run, city, player, baby, clock, null, false)
+	t.add_child(observer)
+	clock.start(180.0)
+	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")
+	Telemetry.begin_memory_log()
+	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	await t.get_tree().process_frame
+	var in_lane := await _the_mark_cue(t, player)
+	t.check(in_lane.contains("| police_patrol "),
+			"the log names the patrol for the mark (%s)" % in_lane)
+	player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
+	_tell(car, player)
+	var out_of_lane := await _the_mark_cue(t, player)
+	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
+			"and out of its lane it names nothing of it (%s)" % out_of_lane)
+	# Whichever test ran last leaves its clock and attempt count behind; a log opened and closed puts
+	# both back (`tests/test_telemetry.gd` ends the same way).
+	Telemetry.begin_memory_log()
+	Telemetry.end_run()
 	observer.free()
-	events.free()
+	clock.free()
+	baby.free()
 	player.free()
-	car.free()
+	city.free()
+
+## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
+## and lets another pass for it to write the cue; returns the cue line the log gained, or "".
+func _the_mark_cue(t, player: Stroller) -> String:
+	var before := Telemetry.current_log().lines.size()
+	player.warn(Stroller.Alert.SOON, 5.0)
+	await t.get_tree().process_frame
+	player.stand_down(&"")
+	await t.get_tree().process_frame
+	var lines: Array = Telemetry.current_log().lines
+	for i in range(before, lines.size()):
+		if String(lines[i]).contains("the mark over her head"):
+			return String(lines[i])
+	return ""
