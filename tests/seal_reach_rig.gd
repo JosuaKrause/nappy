@@ -30,13 +30,18 @@ static func drawing_overhang(map: CityMap, plan: EventScheduler.Planned) -> floa
 	var box := EventFootprints.box_of(def)
 	if not box.has_area():
 		return 0.0
-	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
-	if not def.mobile and def.obstructs_radius > 0.0 and def.pavement_side == EventDef.Pavement.ANY:
-		at = EventInstance._centred_on_the_pavement_band(map, at)
+	# Set up the way the scheduler's placement sets a row up: `setup()` centres a stationary,
+	# unpinned row on the sidewalk band and decides which way its spread runs from the street it
+	# stands on, so the rig reads the instance's own position and `runs_vertically()`.
+	var instance := EventInstance.new()
+	instance.setup(def, plan.position, plan.path, Vector2.RIGHT, map)
+	var at := instance.position
+	var vertical := instance.runs_vertically()
+	instance.free()
 	var ground := Rect2(at.x - box.size.x * 0.5, at.y, box.size.x, 0.0)
 	if def.has_a_spread:
 		var half := maxf(11.0, def.obstructs_radius)
-		if EventInstance._spread_is_vertical(map, at):
+		if vertical:
 			ground = Rect2(at.x - box.size.x * 0.5, at.y - half, box.size.x, half * 2.0)
 		else:
 			ground = Rect2(at.x - half, at.y, half * 2.0, 0.0)
