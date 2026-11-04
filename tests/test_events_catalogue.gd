@@ -604,7 +604,8 @@ func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
 			# near end — inside the last segment's own slice of ground, which ends at the end of the
 			# body — rather than half a post's height in toward the middle.
 			var last_segment := _entry_of(last, segment)
-			var last_slice_starts := RecordingEventDrawer.rect_about(last_segment, instance).position.y
+			var last_slice_starts := RecordingEventDrawer.rect_about(last_segment, instance) \
+					.position.y if not last_segment.is_empty() else INF
 			var near := posts[posts.size() - 1] if not posts.is_empty() else 0.0
 			t.check(half - near <= cap_size.x and near > last_slice_starts,
 					"end-on, the near post stands at the barrier's end (%.1f of %.1f), inside the last"

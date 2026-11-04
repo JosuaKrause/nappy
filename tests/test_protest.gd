@@ -169,6 +169,8 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 			objective + Vector2(0.0, 300.0))
 	t.check(protest.points_at.call() == objective,
 			"a protest the city's events make asks the director it was handed")
+	t.check(protest.drawer != null and protest.drawer == _city.events.world.drawer,
+			"and draws through the drawer its manager's spawner hands every instance it makes")
 	var expected := EventPictures.protester_texture(protest.global_position, objective)
 	var rank: Array[String] = await _rank_drawn(t, protest)
 	var pointing := rank.size() > 1 and expected != EventPictures.PROTESTER

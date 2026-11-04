@@ -61,16 +61,18 @@ func _pass_of(canvas: CanvasItem) -> int:
 		canvas.draw.connect(func() -> void: _passes[id] += 1)
 	return _passes[id]
 
-## What `canvas` shows now: the draws of the last time it was drawn, in order, since a retained
-## `_draw()` paints the whole of its part again each time it runs. Empty before its first draw.
+## What `canvas` shows now: the draws of the time it was last drawn, in order, since a retained
+## `_draw()` paints the whole of its part again each time it runs. Keyed on the canvas's own count
+## of draws (`_pass_of()`), so a canvas drawn again with nothing on it shows nothing, rather than
+## what an earlier draw left. Empty before its first draw.
 func shown_on(canvas: CanvasItem) -> Array[Dictionary]:
 	var last: Array[Dictionary] = []
-	var latest := -1
+	var id := canvas.get_instance_id()
+	if not _passes.has(id):
+		return last
+	var current: int = _passes[id]
 	for entry in draws:
-		if entry.canvas == canvas:
-			latest = entry.pass
-	for entry in draws:
-		if entry.canvas == canvas and entry.pass == latest:
+		if entry.canvas == canvas and entry.pass == current:
 			last.append(entry)
 	return last
 
