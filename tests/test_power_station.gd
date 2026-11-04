@@ -129,6 +129,14 @@ func _test_industrial_ground_is_preferred(t) -> void:
 
 # ------------------------------------------------------------------ the day ---
 
+## Cities of their own for a test that plans days on them: repainting and closing streets change a
+## map, so a test that does it is handed maps no other test reads, from the same seeds as `_maps`.
+func _maps_to_plan_days_on() -> Array[CityMap]:
+	var fresh: Array[CityMap] = []
+	for i in DAY_SEEDS:
+		fresh.append(CityGenerator.generate(BASE_SEED + i * 211))
+	return fresh
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -159,7 +167,7 @@ func _reaches_any(grid: ReachabilityGrid, reached: Dictionary, blocked: Dictiona
 ## a region door, which is what the story asks of it.
 func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 	var day := Tuning.POWER_STATION_DAY
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
 		var door_street := map.power_station_door_street()
@@ -217,22 +225,23 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 ## The day before, the corridor is what it would be with no station at all — the spur is the one
 ## thing the station's day adds, and nothing else in the tree moves for it on that day either.
 func _test_no_other_day_is_bent_toward_it(t) -> void:
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		var day := Tuning.POWER_STATION_DAY
 		_repaint_for(map, day)
 		var with_spur := RouteTree.for_day(map, day)
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
 				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
 				_routes_rng(map, day))
-		# Asked of the trees' own node ids, which agree because both grids are built from the same
-		# map the same way — a cell can hold two nodes, so a cell-to-tile round trip cannot ask it.
+		# Asked of the cells the trees cover (`RouteTree.cells()`, what the dusk map draws), one entry
+		# per node, so a cell two nodes share is counted twice and the question stays the nodes'.
 		var kept := 0
-		for node: int in without._colours:
-			if with_spur._colours.has(node):
-				kept += 1
-		t.check(kept == without._colours.size(),
+		var held := _nodes_by_cell(with_spur)
+		var wanted := _nodes_by_cell(without)
+		for cell: Vector2i in wanted:
+			kept += mini(wanted[cell], held.get(cell, 0))
+		t.check(kept == without.cells().size(),
 				"seed %d: the station's day keeps every cell of the corridor it would have had (%d of %d)"
-				% [map.seed_used, kept, without._colours.size()])
+				% [map.seed_used, kept, without.cells().size()])
 		t.check(with_spur.cells().size() >= without.cells().size(),
 				"seed %d: and only adds to it" % map.seed_used)
 
@@ -243,6 +252,13 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 				_routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])
+
+## How many of the tree's nodes stand in each cell it covers.
+func _nodes_by_cell(tree: RouteTree) -> Dictionary:
+	var counts := {}
+	for cell in tree.cells():
+		counts[cell] = counts.get(cell, 0) + 1
+	return counts
 
 func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -288,7 +304,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
 ## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
 ## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s.
 func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
