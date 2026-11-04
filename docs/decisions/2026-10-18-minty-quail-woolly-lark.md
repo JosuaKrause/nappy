@@ -24,7 +24,8 @@ why the day was lost that the plan named already exists, `EventManager.what_stru
 
 **Open to overturn:** the `Walker` moves a bare `Stroller` on its own tick rather than through
 input, since steering a real stroller round corners would change what the siting tests measure; the
-check that the engine's badge is up alone at most a second allows two ticks of slack.
+check that the engine's badge is up alone at most a second allows one tick of slack, since only the
+warning's tick adds to how long it has shown.
 
 **Not done:** `EventsAhead._warn_down_her_line()` and `_send_down_her_line()`, called by nothing
 but the director itself (they want the director to owe the cyclist or the dog, and real frames to
