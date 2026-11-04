@@ -9,12 +9,14 @@ minty-quail's `tests-public-seams.md`: `tests/test_events_scheduler.gd`,
 day keeps, `DaySpec.wall_row_share`, which `DaySpec.for_day()` sets (the gatehouse day's share
 moved there from the scheduler) and `EventScheduler.build_day()` reads, so the scheduler suite
 plans a day twice through `build_day()`, as the game plans it and with every wall kept, and
-compares the two; it checks that only placed wall plans are taken out, since where the fill starts
-is not exposed. The arrow suite reads the siting through `EventsAhead.walk_siting()`; the event
-phase suite holds the robber's notice by standing her inside his stand-off, where
-`notice_her_at()` holds it every tick; the event manager suite reads an arrival's intensity through
-`current_intensity()`. Five mutation runs; narrowing the siting band to nothing is not caught,
-since the offer widens an empty band.
+compares the two; every plan taken out must be a placed wall of a recurring row, which the fill
+is (a used park's spoilers are recurring rows too, and the day the suite plans uses no park). The arrow suite reads the siting through `EventsAhead.walk_siting()` and the band through
+`EventDirector.siting_band()`, made public for the director's own siting loop to call, which the
+siting suite's two copies of the band now read too; the event phase suite holds the robber's
+notice by standing her inside his stand-off, where `notice_her_at()` holds it every tick, and
+checks that a notice streamed back in has run the time since and not the time it was held; the event manager suite reads an arrival's intensity through
+`current_intensity()`. Narrowing the siting band to nothing is not caught, since the offer
+widens an empty band.
 
 **Not done:** the pursuer suite's tick, which calls the manager's private tell and hard-fail check:
 real manager ticks over its fifty-six whole encounters ran past eight minutes against about twenty
