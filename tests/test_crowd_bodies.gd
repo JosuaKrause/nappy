@@ -19,7 +19,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -484,9 +484,12 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 		if def == null or def.shape == null or def.obstructs_radius <= 0.0:
 			continue
 		t.check(def.parts().size() == 1, "'%s' is one piece, so it is this test's business" % id)
-		var placed := at
-		if def.pavement_side == EventDef.Pavement.ANY:
-			placed = EventInstance._centred_on_the_pavement_band(map, at)
+		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
+		# stationary, unpinned body on the middle of its pavement band when it is set up.
+		var sited := EventInstance.new()
+		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+		var placed := sited.position
+		sited.free()
 		var axis := EventFootprints.body_axis(map, def, placed, Vector2.RIGHT)
 		var before := def.shape.tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
@@ -726,7 +729,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, city_seed)
 		t.add_child(city)
 		city.build(map)
 		for day: int in [1, 6]:
@@ -785,10 +788,13 @@ func _car_bodies(map: CityMap, events: EventManager) -> Array:
 	for plan in events.plans():
 		if not plan.is_placed() or plan.def == null or plan.def.solid_parts.is_empty():
 			continue
-		var placed := plan.position
-		if plan.def.pavement_side == EventDef.Pavement.ANY:
-			placed = EventInstance._centred_on_the_pavement_band(map, placed)
-		var vertical := EventInstance._spread_is_vertical(map, placed)
+		# The instance the spawner would make for the plan: where it stands and which way its
+		# pieces are laid out are what it decides when it is set up.
+		var sited := EventInstance.new()
+		sited.setup(plan.def, plan.position, PackedVector2Array(), plan.facing, map)
+		var placed := sited.position
+		var vertical := sited.runs_vertically()
+		sited.free()
 		for piece in plan.def.parts():
 			var offset := piece.offset_for(vertical)
 			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))

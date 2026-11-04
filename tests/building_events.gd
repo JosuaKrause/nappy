@@ -7,13 +7,14 @@ extends RefCounted
 ## `tests/test_wall_shield.gd`, `tests/basement_walk_rig.gd` and the probes that walk the building.
 
 ## The building's events in `scene`, added under `parent`, started from `rng`'s next draw. The seed
-## is kept on the manager's metadata so `restart()` starts the same building again.
+## is kept on the manager's metadata so `restart()` starts the same building again. The manager is
+## handed `run`, a suite's own `RunState` where it made one, the stand-in `GameState` otherwise.
 static func events_in(parent: Node, scene: InteriorScene,
-		rng: RandomNumberGenerator) -> EventManager:
+		rng: RandomNumberGenerator, run: RunState = GameState) -> EventManager:
 	var events := EventManager.new()
 	events.stream_radius = INF
 	parent.add_child(events)
-	events.setup_world(scene.map, GameState)
+	events.setup_world(scene.map, run)
 	scene.excitement_sources = [events.sources]
 	events.set_meta(&"building_seed", rng.randi())
 	restart(events, scene)
