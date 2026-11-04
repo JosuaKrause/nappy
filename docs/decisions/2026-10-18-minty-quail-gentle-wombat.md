@@ -19,5 +19,7 @@ city decay suite's read of the scheduler's sack-pile preference, which wants a p
 placing one row at one site that the scheduler and the mouse's placement both call; the route rig's
 line of sight, which wants a public cut query the planner's smoothing also calls; the 45-degree
 walk helper, whose callers apply her body's displacement by hand each tick; and the balance suite's
-calm-park checks, not shown to fail by mutation, since a mutation that stops her settling runs every
-day to its end.
+calm-park checks, which a walking sleepiness gain low enough to push her settling past their bound
+(about 103 s against 99 s) would fail, not run, since every later day of such a mutation walks a
+hundred seconds of game time or its whole length; their bound lets her settling grow about
+thirty-five-fold before they fail, which is a balance decision.
