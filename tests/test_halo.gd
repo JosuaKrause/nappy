@@ -19,7 +19,7 @@ extends RefCounted
 ## in isolation from it.
 ##
 ## **The halo and its rims run on real frames.** `ExcitementHalo` picks and every `EntityHalo` eases
-## on its own `_process()`, which the engine calls; nothing here calls a frame function but `SteppedHalo`'s one check. A rim eases
+## on its own `_process()`, which the engine calls; nothing here calls a frame function. A rim eases
 ## by the frame's own `delta`, so time in a check is the frame time the rims were handed, summed by a
 ## node of the suite's own that the engine processes beside them (`HaloRig.FrameClock`); it is not
 ## physics ticks, which no rim reads. What a rim was told is read through the rim a body hands its
@@ -29,6 +29,8 @@ extends RefCounted
 
 const HaloRig = preload("res://tests/halo_rig.gd")
 const STEP := 1.0 / 60.0
+## The fewest frames the rim-budget walk takes, so it fills the budget at any frame length.
+const WALK_FRAMES := 40
 
 ## The events' atlas page, held for the suite: an event in the tree is drawn on real frames, and the
 ## game hands every one it places its world's library (`EventInstance.atlas`).
@@ -48,7 +50,7 @@ func run(t) -> void:
 	_test_colour_for_the_ramp_ends(t)
 	_test_magnitude_for_emphasises_low_values(t)
 	await _test_entity_halo_eases_toward_its_target(t)
-	_test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t)
+	await _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t)
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
@@ -78,13 +80,6 @@ class DecayedBaby extends Baby:
 
 	func decay_in_window() -> float:
 		return decay
-
-## A rim the test steps by a frame length it chooses, with the engine's own stepping switched off:
-## the one place here a frame function is called, because the question is what a *particular* frame
-## length leaves behind and a real frame's length is not the test's to pick.
-class SteppedHalo extends EntityHalo:
-	func step(delta: float) -> void:
-		_process(delta)
 
 ## What `halo` draws: the colour and alpha its shader is handed (`halo_colour`), transparent before
 ## it has eased at all.
@@ -459,30 +454,31 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	halo.free()
 	clock.free()
 
-## `has_settled()` reads a hair of alpha above a target of zero as arrived, so a fade-out whose last
-## step stopped a hair short (whatever the frame lengths summed to) would be left showing, and
-## re-traced every frame, for good. Stepped by a chosen frame length so it stops short on purpose.
+## `has_settled()` reads a hair of alpha above a target of zero as arrived, so a rim whose fade-out
+## stopped a hair short -- which the frame lengths a fade is stepped by can leave -- would be left
+## showing, and re-traced every frame, for good. The hair is reached with real frames and public
+## calls: fade in, a target of 5e-6 (which `move_toward` lands on exactly), then zero in the same
+## colour, so the rim reads settled while it is still showing.
 func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
 	var traced := [0]
-	var halo := SteppedHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
+	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
 			func() -> float: return 0.0)
-	halo.set_process(false)
+	var clock := HaloRig.FrameClock.new()
+	t.add_child(clock)
 	t.add_child(halo)
+	await t.get_tree().process_frame
 	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	halo.step(EntityHalo.FADE_IN_SECONDS)
-	t.check(halo.has_settled() and halo.is_showing(), "the rim is lit before it is faded")
-	# One step covering all of the fade but a hair: 5e-6 of alpha is left over.
-	var hair := 5e-6
-	var step := (ExcitementHalo.MAX_ALPHA - hair) / ExcitementHalo.MAX_ALPHA \
-			* EntityHalo.FADE_OUT_SECONDS
-	halo.set_glow(0.0, Palette.HALO_WEAK)
-	halo.step(step)
-	t.check(halo.is_faded_out() and halo.has_settled(),
-			"the fade stopped a hair short of zero, which the approximate comparison calls arrived")
-	halo.step(STEP)
-	t.check(not halo.is_showing() and halo.is_faded_out(),
-			"a rim a hair short of zero is closed to zero on the next frame, not left showing")
+	await _frames_for(t, clock, EntityHalo.FADE_IN_SECONDS + STEP)
+	halo.set_glow(5e-6, Palette.HALO_STRONG)
+	await _frames_for(t, clock, EntityHalo.FADE_OUT_SECONDS + STEP)
+	halo.set_glow(0.0, Palette.HALO_STRONG)
+	await _frames_for(t, clock, 0.2)
+	var traced_before: int = traced[0]
+	await _frames_for(t, clock, 0.05)
+	t.check(not halo.is_showing() and traced[0] == traced_before,
+			"a rim left a hair above zero reaches zero and stops being traced, not left showing")
 	halo.free()
+	clock.free()
 
 # ------------------------------------------------------------ the crowd joins ---
 # *(2026-09-08, the player: "a busy street is noisy because of cars and a busy sidewalk is noisy
@@ -947,14 +943,17 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	var ever_lit := {}
 	var waits := 0
 	var waits_with_room := 0
-	# The walk is laid out in STEPs of frame time rather than in frames, as the rims' fades are, so
-	# it is the same walk however long the engine's frames are: `step` is how many STEPs the rims
-	# have been handed.
+	# The walk is laid out in frames, a jump a frame, so that however long the engine's frames are
+	# each one turns the picked set over: laid out in time, a frame of 200 ms would jump a whole lap
+	# of the row and land beside where the last one did, and no pick would ever wait for a block. The
+	# walk runs for the rims' time (the fades are in frame time) and for enough frames to fill the
+	# budget however long they are.
 	var from := clock.elapsed
-	while clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 3.0:
-		var step := floori((clock.elapsed - from) / STEP)
-		# 96px a STEP along the row: past the picked set's whole reach every couple of STEPs.
-		player.global_position = Vector2(fmod(96.0 * float(step), 32.0 * float(count)), 0.0)
+	var frames_from := clock.frames
+	while clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 3.0 or clock.frames - frames_from < WALK_FRAMES:
+		var step := clock.frames - frames_from
+		# 352px a frame along the row: past the picked set's whole reach every frame.
+		player.global_position = Vector2(fmod(352.0 * float(step), 32.0 * float(count)), 0.0)
 		await t.get_tree().process_frame
 		# What the halo picked on that frame, by the same selection at the same point.
 		var candidates: Array = []
