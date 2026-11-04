@@ -24,26 +24,36 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- the mask ---
 
-## Sixteen masks. Fourteen are zero or one component; the two diagonals — `NW+SE` (bit 0 and bit
-## 3, mask 9) and `NE+SW` (bit 1 and bit 2, mask 6) — are two components that do not connect to
-## each other, because a diagonal pair of tiles shares no edge.
+## Sixteen masks, read off a grid built over a map that is exactly one cell. Fourteen are zero or
+## one component; the two diagonals — `NW+SE` (bit 0 and bit 3, mask 9) and `NE+SW` (bit 1 and bit
+## 2, mask 6) — are two components that do not connect to each other, because a diagonal pair of
+## tiles shares no edge. A component is a node, so the grid's `node_count()` is the component count
+## and `node_at()` says which component each tile is in.
 func _test_the_mask_table(t) -> void:
 	var counts := {
 		0: 0, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 1,
 		8: 1, 9: 2, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1,
 	}
+	var slot_tiles: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]
 	for mask in 16:
-		var components: Array = ReachabilityGrid._components_by_mask()[mask]
-		t.check(components.size() == counts[mask],
-				"mask %d has %d component(s) (got %d)" % [mask, counts[mask], components.size()])
-		var seen := {}
-		for component: Array in components:
-			for slot in component:
-				t.check(not seen.has(slot), "mask %d: slot %d claimed by one component only"
-						% [mask, slot])
-				seen[slot] = true
-				t.check(mask & (1 << slot) != 0,
-						"mask %d: component only names walkable slots" % mask)
+		var map := CityMap.new(Vector2i(2, 2))
+		map.tiles.fill(GameEnums.TileType.BUILDING)
+		for slot in 4:
+			if mask & (1 << slot) != 0:
+				map.set_tile(slot_tiles[slot], GameEnums.TileType.SIDEWALK)
+		var grid := ReachabilityGrid.build(map)
+		t.check(grid.node_count() == counts[mask],
+				"mask %d has %d component(s) (got %d)" % [mask, counts[mask], grid.node_count()])
+		var nodes := {}
+		for slot in 4:
+			var node := grid.node_at(slot_tiles[slot])
+			t.check((node >= 0) == (mask & (1 << slot) != 0),
+					"mask %d: slot %d is in a component exactly when it is walkable" % [mask, slot])
+			if node >= 0:
+				nodes[node] = true
+		t.check(nodes.size() == counts[mask],
+				"mask %d: the walkable slots fall into %d component(s) (got %d)"
+				% [mask, counts[mask], nodes.size()])
 
 # ------------------------------------------------------------ agreement with tiles ---
 
@@ -148,6 +158,11 @@ func _test_a_diagonal_split_is_two_components(t) -> void:
 ## negative coordinate, not a truncating `/`'s — the two disagree exactly at `-1` (floor: cell
 ## `-1`; truncate: cell `0`), and `_dirty_cells()` calls this on a caller's raw `blocked` tiles,
 ## which are not guaranteed to be in-bounds the way a tile `node_at()` has already passed is.
+##
+## **Still reads `_cell_of_tile()` directly, and no answer can stand in for it:** a cell wrongly
+## marked dirty is answered at tile resolution, which agrees with the cell's node answer for every
+## tile, so the flooring shows only in the cost of a query, never in what it returns. Reading it
+## through the grid's answers needs a seam that reports the dirty cells, which no game class calls.
 func _test_cell_of_tile_floors_rather_than_truncates(t) -> void:
 	var map := CityMap.new(Vector2i(2, 2))
 	map.tiles.fill(GameEnums.TileType.SIDEWALK)
@@ -160,11 +175,13 @@ func _test_cell_of_tile_floors_rather_than_truncates(t) -> void:
 	t.check(grid._cell_of_tile(Vector2i(3, 3)) == Vector2i(1, 1),
 			"and the far corner of a two-tile cell still lands on that same cell")
 
-## `docs/TODO.md`, M124: `reaches()` used to call `_dirty_cells(blocked)` again on every single
-## call, even though `flood()` had already built exactly that set for the same `blocked`. It now
-## reads back the set `flood()` stashed in `reached` under `ReachabilityGrid._DIRTY_KEY` — this
-## holds that the seam actually carries the data, since every other test in this file already
-## holds that `reaches()` still answers correctly once it does.
+## `docs/TODO.md`, M124: `reaches()` reads back the dirty-cell set `flood()` stashed in the `reached`
+## dictionary it returned instead of rebuilding it from `blocked`. A flood with a blocked tile
+## answers the tiles of the blocked tile's cell at tile resolution, so `reaches()` has to look them
+## up at that resolution too; a `reached` that did not carry the set would look every tile up by its
+## cell's node and miss the tile keys the flood stored, calling every tile in the blocked cell
+## unreachable. Asked through the answers only: flood round one blocked tile, ask for the tiles
+## of its cell.
 func _test_reaches_uses_the_dirty_set_flood_already_built(t) -> void:
 	var map := CityMap.new(Vector2i(4, 4))
 	map.tiles.fill(GameEnums.TileType.SIDEWALK)
@@ -172,18 +189,16 @@ func _test_reaches_uses_the_dirty_set_flood_already_built(t) -> void:
 	var blocked := {Vector2i(2, 2): true}
 	var reached := grid.flood([Vector2i(0, 0)], blocked)
 
-	t.check(reached.has(ReachabilityGrid._DIRTY_KEY),
-			"flood() stashes its own dirty-cell set inside the reached dictionary it returns")
-	var stashed: Dictionary = reached[ReachabilityGrid._DIRTY_KEY]
-	t.check(stashed.has(grid._cell_of_tile(Vector2i(2, 2))),
-			"and the stashed set actually names the cell the blocked tile sits in")
+	t.check(not grid.reaches(Vector2i(2, 2), blocked, reached), "the blocked tile itself is not reached")
+	for tile in [Vector2i(3, 2), Vector2i(2, 3), Vector2i(3, 3)]:
+		t.check(grid.reaches(tile, blocked, reached),
+				"%s shares the blocked tile's cell and is still reached round it" % tile)
+	t.check(grid.reaches(Vector2i(0, 0), blocked, reached), "the source is reached")
 
-	# A `reached` with no stash at all (built by hand rather than by flood()) still answers rather
-	# than crashing -- `reaches()`'s own `.get(_DIRTY_KEY, {})` falls back to treating nothing as
-	# dirty, which only means every tile answers at the cheaper cached resolution.
-	var bare := {}
-	for key in reached:
-		if key != ReachabilityGrid._DIRTY_KEY:
-			bare[key] = true
+	# A `reached` built by hand rather than by flood() -- one node key and no stash -- still answers
+	# rather than crashing, treating nothing as dirty: every tile answers at its node's resolution.
+	var bare := {grid.node_at(Vector2i(0, 0)): true}
 	t.check(grid.reaches(Vector2i(0, 0), blocked, bare),
 			"a reached dictionary with no dirty stash at all still answers, rather than crashing")
+	t.check(not grid.reaches(Vector2i(3, 3), blocked, bare),
+			"and only for the node it holds")
