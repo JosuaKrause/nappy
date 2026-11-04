@@ -224,15 +224,16 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
 				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
 				_routes_rng(map, day))
-		# Asked of the trees' own node ids, which agree because both grids are built from the same
-		# map the same way — a cell can hold two nodes, so a cell-to-tile round trip cannot ask it.
+		# Asked of the cells the trees cover (`RouteTree.cells()`, what the dusk map draws), one entry
+		# per node, so a cell two nodes share is counted twice and the question stays the nodes'.
 		var kept := 0
-		for node: int in without._colours:
-			if with_spur._colours.has(node):
-				kept += 1
-		t.check(kept == without._colours.size(),
+		var held := _nodes_by_cell(with_spur)
+		var wanted := _nodes_by_cell(without)
+		for cell: Vector2i in wanted:
+			kept += mini(wanted[cell], held.get(cell, 0))
+		t.check(kept == without.cells().size(),
 				"seed %d: the station's day keeps every cell of the corridor it would have had (%d of %d)"
-				% [map.seed_used, kept, without._colours.size()])
+				% [map.seed_used, kept, without.cells().size()])
 		t.check(with_spur.cells().size() >= without.cells().size(),
 				"seed %d: and only adds to it" % map.seed_used)
 
@@ -243,6 +244,13 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 				_routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])
+
+## How many of the tree's nodes stand in each cell it covers.
+func _nodes_by_cell(tree: RouteTree) -> Dictionary:
+	var counts := {}
+	for cell in tree.cells():
+		counts[cell] = counts.get(cell, 0) + 1
+	return counts
 
 func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -288,7 +296,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
 ## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
 ## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s.
 func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
