@@ -19,8 +19,7 @@ const LARGE_PARK_SEED := 90210
 const STEP := 1.0 / 60.0
 const PATIENCE := 90.0
 const SAMPLE_EVERY := 15
-## The seed each sample's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did. Each sample plays a run of its own.
+## The seed each sample's run starts from: fixed, so the probe measures the same runs on every machine. Each sample plays a run of its own.
 const RUN_SEED := 2
 
 func run(t) -> void:

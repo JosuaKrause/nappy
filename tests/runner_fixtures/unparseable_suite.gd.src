@@ -9,7 +9,7 @@ extends RefCounted
 ## when `.godot/`'s class-name cache is cold — a fresh clone's first run, or any checkout with
 ## `.godot/` removed — a single unparseable `.gd` anywhere in the tree, this file's own directory
 ## included, makes every autoload that resolves through a `class_name` lookup (`Tuning`,
-## `EventBus`, `Telemetry`, `GameState`) fail to instantiate for that one process: measured
+## `EventBus`, `Telemetry`) fail to instantiate for that one process: measured
 ## directly against this file's own contents, moved to `res://tests/runner_fixtures/`, with
 ## `.godot/` and the baked atlas manifest both removed to match a fresh clone. `tools/test.sh`
 ## stages this source to its real `.gd` path only for the one process that names it — after its

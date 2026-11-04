@@ -33,8 +33,7 @@ const STEP := 1.0 / 30.0
 const WALK_SECONDS := 240.0
 ## How far down the wrong branch the second rig goes before it changes its mind, in route cells.
 const PAST_THE_FORK := 6
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 func run(t) -> void:

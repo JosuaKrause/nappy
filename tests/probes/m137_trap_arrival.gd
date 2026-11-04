@@ -25,8 +25,7 @@ extends RefCounted
 ## about a rate — the whole reason the figure needed measuring rather than eyeballing.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS_TO_SWEEP := 200
 
