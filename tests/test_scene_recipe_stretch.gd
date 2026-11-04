@@ -9,6 +9,42 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 
+## A scripted scene begun in a game of its own: one camera at `--zoom`, one named actor standing
+## `--where`, and an observation that the actor `appeared` by the fifth tick. The scene ends the
+## game itself, on success when its duration is up and on failure when the observation is unmet.
+const PROBE := """extends Node
+func _ready() -> void:
+	var words := OS.get_cmdline_user_args()
+	var zoom := float(words[words.find("--zoom") + 1])
+	var where: String = words[words.find("--where") + 1]
+	# The zoom is fixed before the camera enters the tree: a Camera2D applies a zoom it is changed to
+	# on its next process step, and `appeared` is asked of every tick from the first.
+	var camera := Camera2D.new()
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	camera.zoom = Vector2.ONE * zoom
+	add_child(camera)
+	camera.make_current()
+	var half_view := get_viewport().get_visible_rect().size / zoom / 2.0
+	var actor := Node2D.new()
+	add_child(actor)
+	match where:
+		"far":
+			actor.position = Vector2(10000, 10000)
+		"just_outside":
+			actor.position = Vector2(half_view.x + 16.0 + 40.0, 0.0)
+		"just_inside":
+			actor.position = Vector2(half_view.x - 16.0 - 40.0, 0.0)
+	var runtime := SceneRecipeRuntime.new()
+	var config := RunConfig.parse(PackedStringArray(["--recipe", "sight.json", "--recipe-mode",
+			"scripted"]), "", true)
+	var data := {"name": "sight", "playback": {"duration": 0.5,
+			"observations": [{"tick": 5, "subject": "actor", "condition": "appeared"}]}}
+	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, config, RunState.new())
+	add_child(runtime)
+	runtime.named.actor = actor
+	runtime.begin()
+"""
+
 func run(t) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
@@ -26,78 +62,58 @@ func run(t) -> void:
 	_test_the_draft_takes_whole_streets(t, data)
 	_test_the_route_bag(t, map, data)
 	_test_the_city_draws_the_stretch_alone(t, map)
+	_test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t)
 	_test_appeared_requires_sight(t)
 
+## `appeared` asks that a subject has been in the picture the camera draws, by the tick the
+## observation names: the camera's real view at its zoom, not a constant half-extent. A scripted
+## recipe begun in a game of its own (`PROBE`: a camera, one named actor, `SceneRecipeRuntime.begin()`
+## and its own physics ticks) ends in success when the observation holds and in failure, the
+## observation unmet and the game quit non-zero, when it does not. An actor wholly outside the view
+## fails whether it is far off or only just outside the real half-width at a close zoom (the stale
+## `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes at the
+## default zoom and zoomed out.
 func _test_appeared_requires_sight(t) -> void:
-	var ordinary := _visibility_rig(t, 1.0)
-	var runtime: SceneRecipeRuntime = ordinary.runtime
-	var camera: Camera2D = ordinary.camera
-	var recipe := {"playback": {"duration": 1, "observations": [
-			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
-	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}},
-			RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode", "scripted"]),
-				"", true), GameState)
-	var event := Node2D.new()
-	runtime.add_child(event)
-	runtime.named["event"] = event
-	event.position = Vector2(10000, 10000)
-	runtime._observe()
-	t.check(not runtime._appeared.has("event"),
-			"an existing event that never enters the camera does not satisfy appeared")
-	event.position = Vector2.ZERO
-	runtime._observe()
-	t.check(runtime._appeared.has("event") and runtime._she_can_see(event),
-			"at the default camera zoom, the same event counts once it enters view")
-	(ordinary.viewport as SubViewport).free()
-	# At zoom 4, this 32px body sits wholly beyond the real 160px half-width although it remains
-	# inside `Tuning.VIEW_HALF_EXTENT.x` (320px), the stale constant this regression replaces.
-	var close := _visibility_rig(t, 4.0)
-	runtime = close.runtime
-	camera = close.camera
-	event = Node2D.new()
-	runtime.add_child(event)
-	event.position = camera.get_screen_center_position() + Vector2(250.0, 0.0)
-	var half_view := runtime.get_viewport().get_visible_rect().size / camera.zoom / 2.0
-	t.check(event.position.x - 16.0 > camera.get_screen_center_position().x + half_view.x
-			and not runtime._she_can_see(event),
-			("at zoom 4, an actor wholly outside the actual %.0fpx camera half-width does not count "
-			+ "(world view %s)") % [half_view.x, runtime._camera_world_rect()])
-	(close.viewport as SubViewport).free()
-	var wide := _visibility_rig(t, 0.5)
-	runtime = wide.runtime
-	camera = wide.camera
-	event = Node2D.new()
-	runtime.add_child(event)
-	event.position = camera.get_screen_center_position() + Vector2(250.0, 0.0)
-	half_view = runtime.get_viewport().get_visible_rect().size / camera.zoom / 2.0
-	t.check(event.position.x + 16.0 < camera.get_screen_center_position().x + half_view.x
-			and runtime._she_can_see(event),
-			"zoomed out, that same actor counts when the actual camera includes its body")
-	(wide.viewport as SubViewport).free()
+	var seen := _sight(t, 1.0, "centre")
+	t.check(seen.status == 0 and not seen.output.contains("unmet observation"),
+			"at the default camera zoom, an actor in view counts once it enters view: %s" % seen.output)
+	var far := _sight(t, 1.0, "far")
+	t.check(far.status == 1 and far.output.contains("unmet observation"),
+			"an existing event that never enters the camera does not satisfy appeared: %s" % far.output)
+	# At zoom 4 the real half-width is 160px of a 1280px window; 216px out is wholly outside it
+	# although inside `Tuning.VIEW_HALF_EXTENT.x` (320px), the stale constant this regression replaces.
+	var close := _sight(t, 4.0, "just_outside")
+	t.check(close.status == 1 and close.output.contains("unmet observation"),
+			"at zoom 4, an actor wholly outside the actual camera half-width does not count: %s"
+			% close.output)
+	var wide := _sight(t, 0.5, "just_inside")
+	t.check(wide.status == 0 and not wide.output.contains("unmet observation"),
+			"zoomed out, an actor the actual camera includes counts: %s" % wide.output)
 
-## A runtime and current camera in their own 1280x720 viewport, with `zoom` fixed before the camera
-## enters the tree. Camera2D applies a changed zoom on its next process step; separate synchronous
-## rigs let the headless unit test inspect each real canvas transform without advancing the tree.
-func _visibility_rig(t, zoom: float) -> Dictionary:
-	var viewport := SubViewport.new()
-	viewport.size = Vector2i(1280, 720)
-	t.add_child(viewport)
-	var player := Stroller.new()
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	camera.zoom = Vector2.ONE * zoom
-	player.add_child(camera)
-	player._camera = camera
-	viewport.add_child(player)
-	player.set_physics_process(false)
-	camera.make_current()
-	camera.force_update_scroll()
-	var runtime := SceneRecipeRuntime.new()
-	viewport.add_child(runtime)
-	runtime.set_physics_process(false)
-	runtime._player = player
-	return {"viewport": viewport, "player": player, "camera": camera, "runtime": runtime}
+## One run of `PROBE` in a child process: `zoom` the camera is begun at and where the actor stands
+## ("centre" of the view, "far" away, "just_outside" or "just_inside" the real half-width, a body
+## 32px across). `{"status": exit status, "output": what it printed}`.
+func _sight(t, zoom: float, where: String) -> Dictionary:
+	var stem := "user://scene_recipe_sight_%d" % OS.get_process_id()
+	var script_path := stem + ".gd"
+	var scene_path := stem + ".tscn"
+	var script := FileAccess.open(script_path, FileAccess.WRITE)
+	script.store_string(PROBE)
+	script.close()
+	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
+	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
+	scene.close()
+	var output: Array = []
+	var status := OS.execute(OS.get_executable_path(), PackedStringArray([
+			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "300",
+			scene_path, "--", "--zoom", str(zoom), "--where", where]), output, true)
+	DirAccess.remove_absolute(scene_path)
+	DirAccess.remove_absolute(script_path)
+	DirAccess.remove_absolute(script_path + ".uid")
+	var text := "\n".join(output)
+	t.check(not text.contains("SCRIPT ERROR"), "the sight probe at zoom %s, %s, runs without script errors: %s"
+			% [zoom, where, text])
+	return {"status": status, "output": text}
 
 ## The live map against the recipe's own lists, never against a generated city *(mossy-marmot,
 ## inbox #618, the player's choice: "Finish fully handcrafted layouts now")*: each stretch tile
@@ -160,6 +176,9 @@ func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, labe
 			"%s: some of the void is ground the stretch cut off from its saved context (%d tiles)"
 			% [label, cut_off])
 
+## The ground every sweep of the red arrow starts from (`WalkField.ground_for()`, which the
+## director's `_ground_for_the_arrow()` lays out once for each state of what blocks her and the
+## day-13 guard's walk reads too) is the authored street's, not the hidden context's.
 func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 	# A U-shaped authored street: from the left tip, target A is five tiles along the visible
 	# ground. Target B is twelve tiles along it, but only four through the hidden context between
@@ -185,9 +204,7 @@ func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 	var raw := WalkField.start(map, targets, Vector2i.ZERO)
 	while not raw.done:
 		raw.advance(map, raw_ground, map.tiles.size())
-	var director := ResistanceDirector.new()
-	director._map = map
-	var ground := director._ground_for_the_arrow()
+	var ground := WalkField.ground_for(map)
 	var authored := WalkField.start(map, targets, Vector2i.ZERO)
 	while not authored.done:
 		authored.advance(map, ground, map.tiles.size())
@@ -196,7 +213,6 @@ func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 			"the counterexample's raw context chooses the target across its hidden shortcut")
 	t.check(authored.nearest_at(start) == "near_on_stretch",
 			"the task arrow chooses the target actually nearer along the authored U-shaped street")
-	director.free()
 
 func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	var original := RecipeCityBuilder.build(data)
@@ -379,24 +395,90 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 			"the field stays over the whole stretch while the camera moves")
 
 ## Drafting is the one place a stretch meets generation: the draft walks the whole city its
-## drafting inputs make (`SceneRecipeDraft.base_of()`).
+## drafting inputs make (`SceneRecipeDraft.base_of()`). Asked as a draft run asks it: a city of the
+## witness, the tiles she walked recorded (`SceneRecipeDraft.record()`), the stretch composed
+## (`SceneRecipeDraft.compose()`), and `stretch.tiles` read back.
 func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
+	var city: City = RunCity.of_the_run(CITY_SCENE)
+	t.add_child(city)
+	city.build(witness)
 	var segment := witness.network.by_key(Vector3i(5, 5, 1))
-	var ground := {}
-	SceneRecipeDraft._add_the_ground_of(witness, segment.tile_rect().get_center(), ground)
+	var drafted := _drafted(t, city, data, [Vector2i(segment.tile_rect().get_center())], [])
+	var ground := _listed(drafted)
 	var whole := true
 	for tile in witness.rect_tiles(segment.tile_rect()):
 		whole = whole and (ground.has(tile) or not witness.is_walkable(tile))
 	var box := Rect2i(segment.a * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
 	for tile in witness.rect_tiles(box):
 		whole = whole and (ground.has(tile) or not witness.is_walkable(tile))
-	t.check(whole, "a step on a street takes the whole street and the junction at each end")
+	t.check(whole and not ground.is_empty(),
+			"a step on a street takes the whole street and the junction at each end")
+	# A mark she reads from beside it, pinned by the task: its own corner and not the alley behind
+	# it, which only walking the alley takes in (`SceneRecipeDraft.compose()` adds a pin as unwalked).
 	var mouth := Vector2i(92, 69)
-	var pinned := {}
-	SceneRecipeDraft._add_the_ground_of(witness, mouth, pinned, false)
-	t.check(not pinned.has(mouth + Vector2i.UP * 4),
+	var behind := mouth + Vector2i.UP * 4
+	var home := witness.world_to_tile(witness.doorstep_world_position())
+	var pinned := _listed(_drafted(t, city, data, [home], [witness.tile_to_world(mouth)]))
+	t.check(pinned.has(mouth) and not pinned.has(behind),
 			"a pinned mark brings its own corner, not the alley behind it")
+	var walked := _listed(_drafted(t, city, data, [home, mouth], []))
+	t.check(walked.has(behind), "walking in at the same mouth takes the whole alley behind it")
+	city.free()
+
+## The stretch a draft that walked `walked` (tiles, in order) and was pinned `pinned` (world points)
+## composes for `data`'s recipe in `city`, in a run of its own on day 7.
+func _drafted(t, city: City, data: Dictionary, walked: Array[Vector2i],
+		pinned: Array[Vector2]) -> Dictionary:
+	var draft := SceneRecipeDraft.new()
+	var walker := Node2D.new()
+	for tile in walked:
+		walker.position = city.map.tile_to_world(tile)
+		draft.record(walker, city, null)
+	walker.free()
+	var own_run := RunState.new()
+	own_run.start_run(7)
+	own_run.header.day = 7
+	var problems: Array[String] = []
+	var drafted := draft.compose(data, own_run, city, city.map.tile_to_world(walked[0]), pinned,
+			problems)
+	own_run.free()
+	return drafted
+
+## The tiles a drafted recipe's `stretch.tiles` lists, as a set.
+func _listed(drafted: Dictionary) -> Dictionary:
+	var listed := {}
+	for type_name: String in drafted.stretch.tiles:
+		for run: Array in drafted.stretch.tiles[type_name]:
+			for x in range(int(run[1]), int(run[2]) + 1):
+				listed[Vector2i(x, int(run[0]))] = true
+	return listed
+
+## The street door a recipe's `setup.gates` stands is the one the day's own plan stands
+## (`RegionPlanner.stand_door()`), at the points `MastSites` keeps a mast's field clear of: so a mast
+## `SceneRecipeRuntime` places is already clear of every door it stands, by `MastSites.is_eligible()`
+## alone. Asked of every street door a day plans (`RegionPlanner.plan_day()`) on the context city,
+## from the first day with checkpoints and on the last.
+func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t) -> void:
+	var map: CityMap = RecipeCityBuilder.build({"version": 1, "name": "doors", "seed": 11,
+			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}).map
+	var points := MastSites.possible_door_points(map)
+	var bodies := 0
+	var off_a_point := 0
+	for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1]:
+		var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
+		var stood := RegionPlanner.RegionPlan.new()
+		for door in plan.doors:
+			RegionPlanner.stand_door(map, door, stood)
+		for body in stood.door_bodies:
+			bodies += 1
+			var nearest := INF
+			for point in points:
+				nearest = minf(nearest, point.distance_to(body.position))
+			off_a_point += int(nearest > 0.01)
+	t.check(bodies > 0 and off_a_point == 0,
+			"every one of the %d bodies of a day's street doors stands on a point a mast keeps clear of (%d do not)"
+			% [bodies, off_a_point])
 
 func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 	var director := EventDirector.new(map)

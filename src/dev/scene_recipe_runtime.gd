@@ -924,7 +924,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
 		if def.role == EventDef.Role.MAST:
-			plan = _mast_placement(def, at, plans, doors)
+			plan = _mast_placement(def, at, plans)
 		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
@@ -983,23 +983,21 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 ## An authored mast stands where the day's masts may, by the checks `EventScheduler.place_masts()`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
 ## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
-## off a calm interior and off every place a region door could stand); it is not closed, not on a
-## held street and not on the home block; the mast's field is clear of the day's own doors
-## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
-## (`EventScheduler.room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
-## `WalkSiting` asks beyond those: the calm she has not used. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
-## placement refuses it.
-func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Planned],
-		doors: PackedVector2Array) -> EventScheduler.Planned:
+## off a calm interior and off every place a region door could stand, which holds the doors this
+## scene stands: each is a street door of the day's plan, at a point `MastSites.possible_door_points()`
+## lists); it is not closed, not on a held street and not on the home block; and no body placed
+## before it is too near (`EventScheduler.room_around()`). It does not ask what
+## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
+## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
+func _mast_placement(def: EventDef, at: Vector2,
+		prior: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if _run.header.day < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
-			or not MastSites.is_eligible(at, map) \
-			or not EventScheduler.clear_of_the_doors(at, PackedVector2Array(), doors,
-					def.field_reach()):
+			or not MastSites.is_eligible(at, map):
 		return null
 	return EventScheduler.place_at(def, map, tile, RandomNumberGenerator.new(), prior)
 
