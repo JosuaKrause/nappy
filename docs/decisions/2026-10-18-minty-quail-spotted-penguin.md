@@ -8,7 +8,7 @@ the game. No `src/` change; `tests/booted_main.gd` needed no extension.
 - `test_observers.gd` (private-read lines 29 to 0, `GameState` lines 23 to 0) boots the real
   `main.tscn` on a fresh `RunState` handed in through `home_playing`, with a scratch save. `main`'s
   `_on_summary_continued` calls become presses on the summary's Continue through the viewport, with
-  the tree paused again in the same signal so no physics tick moves the logged times; the day ends on
+  the tree paused again as soon as the press returns, so no physics tick moves the logged times; the day ends on
   the clock's own `day_finished`, the building is left on the interior's `exit_requested`, and the
   title's two answers are its `start_requested` signal with the title skipped (`--no-title`), since
   the city keeps running behind an open title and moved the neighbour the loss line reports. The
