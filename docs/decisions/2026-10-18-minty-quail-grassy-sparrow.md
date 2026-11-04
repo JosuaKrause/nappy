@@ -14,9 +14,10 @@ scheduler suites, subtask W7a of the scoped plan. No `src/` change and no seam a
   stale ones ten to one.
 - `test_acts.gd` (6 to 1, `GameState` lines 25 to 0) hands each test a fresh `RunState`, reads the
   city through `City.buildings()` and `CityMap.block_at()`, and a park's reach through
-  `EventScheduler.blocked_by()` and the grid's `flood()` and `reaches()`, on every day, days 2 to 14
-  planned with barricade scars on rings of three, five and seven tiles round home (day 1 has no scar
-  in effect), so a day that would seal home off from every park has to be opened by the scheduler. Its friction check reads the
+  `EventScheduler.blocked_by()` and the grid's `flood()` and `reaches()`, on every day of the run;
+  days 2 to 14 are planned with barricade scars on rings of three, five and seven tiles round home
+  (day 1 has no scar in effect), so a day that would seal home off from every park has to be opened
+  by the scheduler. Its friction check reads the
   poster crew on days 8 and 14, since it is not on offer on day 1, and its solid-row check asks that
   each narrow row places on at least one day.
 - `test_events_scheduler.gd` (4 to 3) reads the alley crossing through what the scheduler places.
