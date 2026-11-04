@@ -357,15 +357,12 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 	var made := _day(t, 11)
 	var city: City = made[0]
 	t.check(_mast_installs(t, made, at), "a mast stands on an eligible sidewalk of a day with masts")
-	# The doors a recipe stands are the day's own, and a site near one is already off the ground a
-	# mast site is offered (`MastSites`), so the doors' own check is asked of the placement directly.
-	var runtime := SceneRecipeRuntime.new()
-	runtime._run = made[2]
-	runtime._city = city
-	t.check(runtime._mast_placement(EventCatalogue.by_id("loudspeaker"), at,
-			[] as Array[EventScheduler.Planned], PackedVector2Array([at + Vector2(40, 0)])) == null,
-			"but not with its field on one of the day's doors")
-	runtime.free()
+	# A site within the reach of a door a street could stand at (`MastSites`, the ground a mast is
+	# offered) is refused: found as a tile that only that reach rules out, so the install's refusal
+	# is the door's.
+	var beside_a_door := _a_site_only_a_door_rules_out(city.map)
+	t.check(beside_a_door != Vector2.INF and not _mast_installs(t, made, beside_a_door),
+			"but not with its field on the ground a door could stand beside")
 	var tile: Vector2i = city.map.world_to_tile(at)
 	city.map.closed_tiles[tile] = true
 	t.check(not _mast_installs(t, made, at), "nor on a closed tile")
@@ -376,6 +373,27 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 	made = _day(t, Tuning.MAST_FIRST_DAY - 1)
 	t.check(not _mast_installs(t, made, at), "nor on a day before the masts")
 	_free_day(made)
+
+## A sidewalk or square point of `map` that a mast site is refused only for lying within the reach of
+## a point a street door could stand at: ground that is open, unheld, off the home block, and that
+## `MastSites.is_eligible()` accepts when no door is handed in, or `Vector2.INF` when there is none.
+func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
+	var reach := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
+	var nowhere := PackedVector2Array([Vector2(-1.0e7, -1.0e7)])
+	for door in MastSites.possible_door_points(map):
+		var centre := map.world_to_tile(door)
+		var span := ceili(reach / Tuning.TILE_SIZE)
+		for dy in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var tile := centre + Vector2i(dx, dy)
+				if not map.in_bounds(tile) \
+						or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
+						or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
+					continue
+				var at := map.tile_to_world(tile)
+				if MastSites.is_eligible(at, map, nowhere) and not MastSites.is_eligible(at, map):
+					return at
+	return Vector2.INF
 
 ## Whether a recipe's loudspeaker at `at` installs on the day `made` (`_day()`) stands, through the
 ## runtime's own `install()` with her at the alley mouth: false when the install refuses the mast.

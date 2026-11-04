@@ -417,7 +417,7 @@ func is_covered(col: int) -> bool:
 ## meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty for a front covering
 ## nothing; `extension_rows()` reads an index past the end as 0, the same convention
 ## `is_covered()` already uses. A geometry fact, not a roll, but the roof furniture's own pool
-## reaches onto the extension (`_build_roof_furniture()`), so the setter rebuilds rather than only
+## reaches onto the extension (`roof_layout()`), so the setter rebuilds rather than only
 ## redrawing — before `add_child()`, where `City` already sets it, that is a no-op.
 @export var roof_extension_rows: Array[int] = []:
 	set(value):
@@ -589,10 +589,11 @@ var _fire_escape_pots: Dictionary = {}
 ## `_build_entrance()` whether or not it ends up with one — `entrance_door_col()` is what decides
 ## that, so the home flag and the district's own entrance can change without rolling anything.
 var _door_col := 0
-## One entry per roof unit: `{"cell": Vector2i, "kind": _Furniture, "span": int}`. Sorted
-## north-most (highest row) first at build time, so the roof layers can paint far units
-## before near ones without re-sorting every frame — the same back-to-front order a unit taller
-## than one tile (the water tank) needs to lie correctly over whatever is in the row behind it.
+## The roof layout the roof layers draw (`roof_layout()`, one entry per unit), cached at build
+## time and cleared while the building's scenery is not resident. Sorted north-most (highest row)
+## first, so the roof layers can paint far units before near ones without re-sorting every frame —
+## the same back-to-front order a unit taller than one tile (the water tank) needs to lie correctly
+## over whatever is in the row behind it.
 var _roof_furniture: Array[Dictionary] = []
 ## Null uses the ordinary seeded layout; an authored array replaces this roof's units.
 var recipe_roof_furniture: Variant = null
@@ -605,6 +606,16 @@ var _station_layer: Node2D
 ## Parent for roof art that must participate in world y-sorting. City sets this before the building
 ## enters the tree; a null parent retains the standalone Building path used by focused fixtures.
 var roof_object_parent: Node2D
+## What the roof units are drawn through (`RoofDrawer`), one `draw()` per unit of the roof layout:
+## handed by the city before the building enters the tree, the same one to every building it
+## builds; a building nobody handed one makes its own over its `atlas` when it first enters the
+## tree.
+var roof_drawer: RoofDrawer = null
+## What the front's pictures are painted through (`FrontDrawer`), one call per picture `_draw()`
+## puts on the wall and the roof: handed by the city before the building enters the tree, the same
+## one to every building it builds; a building nobody handed one makes its own over its `atlas`
+## when it first enters the tree.
+var front_drawer: FrontDrawer = null
 ## The baked atlas pages this front draws from (`AtlasLibrary`), handed by the city before the
 ## building enters the tree and handed on to its roof objects; a building nobody handed one (a
 ## suite's) makes its own when it first enters the tree.
@@ -617,6 +628,10 @@ var atlas: AtlasLibrary = null
 func _enter_tree() -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
+	if roof_drawer == null:
+		roof_drawer = RoofDrawer.new(atlas)
+	if front_drawer == null:
+		front_drawer = FrontDrawer.new(atlas)
 	atlas.acquire(&"buildings")
 
 func _exit_tree() -> void:
@@ -1018,7 +1033,7 @@ func _draw() -> void:
 			if is_covered(col):
 				continue
 			var at := _cell(col, row)
-			draw_texture(atlas.region(WALL), at, wall_colour)
+			front_drawer.paint(self, WALL, at, wall_colour)
 			if draws_window_at(row, col):
 				var index := row * cols + col
 				var window_at := at
@@ -1026,16 +1041,16 @@ func _draw() -> void:
 					# A 36px storefront or door rises four pixels into this row; lift every upper
 					# window two pixels so its sill remains visible, the whole row alike.
 					window_at.y -= 2.0
-				draw_texture(atlas.region(window_texture(index)), window_at)
+				front_drawer.paint(self, window_texture(index), window_at)
 				if col == neighbor_window_col and row == neighbor_window_row():
-					draw_texture(atlas.region(NEIGHBOR_WINDOW_SEALED), window_at)
+					front_drawer.paint(self, NEIGHBOR_WINDOW_SEALED, window_at)
 			if col == hall.x:
-				draw_texture(atlas.region(WALL_EDGE_W), at)
+				front_drawer.paint(self, WALL_EDGE_W, at)
 			if col == hall.y - 1:
-				draw_texture(atlas.region(WALL_EDGE_E), at)
+				front_drawer.paint(self, WALL_EDGE_E, at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
-				draw_texture(atlas.region(ROOF_EDGE_N), at)
+				front_drawer.paint(self, ROOF_EDGE_N, at)
 
 	# Ground-floor substitutions are drawn after every wall cell, so a 64px storefront cannot be
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
@@ -1044,9 +1059,8 @@ func _draw() -> void:
 	for col in range(hall.x, hall.y if not power_station else hall.x):
 		var ground_name := ground_floor_texture(col)
 		if ground_name != &"":
-			var texture := atlas.region(ground_name)
-			var y_offset := TILE - texture.get_height()
-			draw_texture(texture, _cell(col, 0) + Vector2(0.0, y_offset))
+			var y_offset := TILE - atlas.region(ground_name).get_height()
+			front_drawer.paint(self, ground_name, _cell(col, 0) + Vector2(0.0, y_offset))
 
 	_draw_posters()
 	_draw_front_overlay()
@@ -1063,16 +1077,16 @@ func _draw() -> void:
 			if row >= roof_rows + extension_rows(col):
 				continue
 			var at := _cell(col, wall_rows + row)
-			draw_texture(atlas.region(ROOF), at, roof_colour)
+			front_drawer.paint(self, ROOF, at, roof_colour)
 			var edges := roof_cell_edges(col, row)
 			if edges & ROOF_EDGE_BIT_S:
-				draw_texture(atlas.region(_front_parapet_texture(col)), at)
+				front_drawer.paint(self, _front_parapet_texture(col), at)
 			if edges & ROOF_EDGE_BIT_N:
-				draw_texture(atlas.region(ROOF_EDGE_N), at)
+				front_drawer.paint(self, ROOF_EDGE_N, at)
 			if edges & ROOF_EDGE_BIT_W:
-				draw_texture(atlas.region(ROOF_EDGE_W), at)
+				front_drawer.paint(self, ROOF_EDGE_W, at)
 			if edges & ROOF_EDGE_BIT_E:
-				draw_texture(atlas.region(ROOF_EDGE_E), at)
+				front_drawer.paint(self, ROOF_EDGE_E, at)
 
 	if _station_layer != null:
 		_station_layer.queue_redraw()
@@ -1128,14 +1142,14 @@ func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 			var tile := POWER_STATION_WALL
 			if row == 0:
 				tile = POWER_STATION_BASE
-			draw_texture(atlas.region(tile), at)
+			front_drawer.paint(self, tile, at)
 	if has_band:
-		var band := atlas.region(_clerestory_texture())
+		var band := _clerestory_texture()
 		for col in range(hall.x, hall.y):
-			draw_texture(band, _cell(col, wall_rows - 1))
+			front_drawer.paint(self, band, _cell(col, wall_rows - 1))
 	for row in wall_rows:
-		draw_texture(atlas.region(WALL_EDGE_W), _cell(hall.x, row))
-		draw_texture(atlas.region(WALL_EDGE_E), _cell(hall.y - 1, row))
+		front_drawer.paint(self, WALL_EDGE_W, _cell(hall.x, row))
+		front_drawer.paint(self, WALL_EDGE_E, _cell(hall.y - 1, row))
 
 ## The hall's high windows: dimly lit on the last night while the city still has power, unlit
 ## otherwise. The last night only, because that is the night the hall is watched going out — the
@@ -1164,11 +1178,10 @@ func hall_cols() -> Vector2i:
 func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
 	if station_yard_cols.y <= 0:
 		return
-	var yard := atlas.region(POWER_STATION_YARD)
 	var left := _cell(station_yard_cols.x, 0).x
 	var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
 	var mirrored := station_yard_cols.x < hall.x
-	Sprites.draw_standing(canvas, yard, foot, Vector2.ZERO, mirrored)
+	front_drawer.stand(canvas, POWER_STATION_YARD, foot, mirrored)
 
 ## Where the power station's stacks stand, in this building's own coordinates: the foot of each, at
 ## its roof cell's bottom centre (`_STACK_CELLS`, clamped to the hall and its roof). Empty for every
@@ -1343,14 +1356,14 @@ func _draw_front_overlay() -> void:
 	var door_col := entrance_door_col()
 	if door_col >= 0:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
-		Sprites.draw_standing(self, atlas.region(entrance_door_texture()), Vector2(door_x, 0.0))
+		front_drawer.stand(self, entrance_door_texture(), Vector2(door_x, 0.0))
 	if not _fire_escape_cols.is_empty():
 		_draw_fire_escape()
 	if portico_is_drawn():
-		Sprites.draw_standing(self, atlas.region(CIVIC_PORTICO), Vector2(0.0, 0.0))
+		front_drawer.stand(self, CIVIC_PORTICO, Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
-		Sprites.draw_standing(self, atlas.region(POWER_STATION_DOOR), Vector2(x, 0.0))
+		front_drawer.stand(self, POWER_STATION_DOOR, Vector2(x, 0.0))
 
 ## The rows whose floor line carries one of this front's fire-escape balconies, lowest first, or
 ## empty for a front with none. The same rows for every escape the front has — a floor's height
@@ -1397,40 +1410,59 @@ func _draw_fire_escape() -> void:
 		for i in range(landings.size() - 1, -1, -1):
 			var row := landings[i]
 			var foot := Vector2(x, _cell(col, row - 1).y + TILE)
-			Sprites.draw_standing(self, atlas.region(fire_escape_texture(col, row)), foot)
+			front_drawer.stand(self, fire_escape_texture(col, row), foot)
 
 # ------------------------------------------------------------- roof furniture ---
 
-## Rolls this building's roof units, once per `_rebuild()` rather than once per frame — the same
-## contract `_build_windows()` already keeps — over the cells `roof_interior_cells()` offers.
-## Nothing is placed on a roof too shallow to have an interior cell at all: one under three
-## columns wide, or whose tallest column, extension included, is under three rows deep.
+## Caches this building's roof layout (`roof_layout()`) for the roof layers to draw, once per
+## `_rebuild()` rather than once per frame, the same contract `_build_windows()` already keeps,
+## and notes whether any unit is a vent, whose rotor turns on the building's own clock.
+func _build_roof_furniture() -> void:
+	_roof_furniture.assign(roof_layout())
+	_has_vent = false
+	for entry: Dictionary in _roof_furniture:
+		_has_vent = _has_vent or entry.kind == _Furniture.VENT
+
+## Where this building's roof units stand and what each one shows, farthest (highest row) first,
+## so they draw back to front: the layout its roof layers draw (`_prepare_scenery()` caches it and
+## `_build_roof_layers()` hands each unit to the `roof_drawer`). One entry per unit:
+## `{"cell": Vector2i, "cells": Array[Vector2i], "span": int, "kind": _Furniture, "texture":
+## StringName}`, and on a duct section `"links"`, its west, east, south and north neighbours as
+## bits 0 to 3. `cell` is the west cell of the unit's base, `cells` every roof cell its base
+## reserves, `span` how many columns that is. An authored recipe (`recipe_roof_furniture`)
+## replaces the roll outright.
+##
+## Otherwise it is rolled over the cells `roof_interior_cells()` offers, keyed on `variant` and the
+## building's position alone, so it is a pure function of the seed and the lot: asking twice gives
+## the same layout, and nothing is written. It reads where the building stands, so it is asked of
+## a building in the tree. Nothing is placed on a roof too shallow to have an interior cell at all:
+## one under three columns wide, or whose tallest column, extension included, is under three rows
+## deep.
 ##
 ## **An extended roof carries furniture too** (`roof_extension_rows`): the pool reaches onto the
 ## extension as anywhere else on the roof, so a building whose own roof is too shallow for an
-## interior cell carries units once its extension gives it one. The roll is keyed on `variant` and
-## position alone, so a fixed seed gives the same roof every time — but a covering building's pool
-## is larger than its unextended roof's, so its whole layout is a different shuffle from the one
-## the same building would have with nothing to cover. A unit never sits on a cell the roof's own
-## lips already draw: the perimeter, as on every roof, and on the extension any cell
+## interior cell carries units once its extension gives it one. A covering building's pool is
+## larger than its unextended roof's, so its whole layout is a different shuffle from the one the
+## same building would have with nothing to cover. A unit never sits on a cell the roof's own lips
+## already draw: the perimeter, as on every roof, and on the extension any cell
 ## `roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter one.
-func _build_roof_furniture() -> void:
-	_roof_furniture.clear()
-	_has_vent = false
+func roof_layout() -> Array[Dictionary]:
+	var units: Array[Dictionary] = []
 	if recipe_roof_furniture != null:
-		_roof_furniture.assign(recipe_roof_furniture)
-		for entry: Dictionary in _roof_furniture:
-			_has_vent = _has_vent or entry.kind == _Furniture.VENT
-		_roof_furniture.sort_custom(func(a, b): return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
-		return
+		for entry: Dictionary in recipe_roof_furniture:
+			var unit := entry.duplicate(true)
+			unit["texture"] = _furniture_texture(entry.kind)
+			units.append(unit)
+		units.sort_custom(func(a, b): return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
+		return units
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var compact_kinds: Array = _COMPACT_KINDS_BY_DISTRICT.get(district, [])
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
 	if kinds.is_empty() or density <= 0.0:
-		return
+		return units
 	var interior := roof_interior_cells()
 	if interior.is_empty():
-		return
+		return units
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("roof:%d:%d:%d" % [variant, int(global_position.x), int(global_position.y)])
 	_shuffle(interior, rng)
@@ -1440,7 +1472,7 @@ func _build_roof_furniture() -> void:
 	for candidate in interior:
 		interior_set[candidate] = true
 	if district == GameEnums.BlockPurpose.INDUSTRIAL:
-		wanted -= _place_duct_network(interior, wanted, used, rng)
+		wanted -= _place_duct_network(units, interior, wanted, used, rng)
 	var placed := 0
 	for cell in interior:
 		if placed >= wanted:
@@ -1460,13 +1492,13 @@ func _build_roof_furniture() -> void:
 		if span == 2:
 			used[east] = true
 			cells.append(east)
-		_roof_furniture.append({"cell": cell, "kind": kind, "span": span, "cells": cells})
-		if kind == _Furniture.VENT:
-			_has_vent = true
+		units.append({"cell": cell, "kind": kind, "span": span, "cells": cells,
+			"texture": _furniture_texture(kind)})
 		placed += 1
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
-	_roof_furniture.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+	units.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+	return units
 
 ## Displayed bases up to one tile stand on one cell. Wider equipment is centered across two reserved
 ## cells; height is deliberately unrelated to this footprint and may extend several tiles north.
@@ -1524,7 +1556,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 		_rebuild()
 	return errors
 
-## The cells a roof unit may stand on, in the fixed order `_build_roof_furniture()` shuffles:
+## The cells a roof unit may stand on, in the fixed order `roof_layout()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only
 ## below its own column's top (extension included) and leaving out any extension cell
 ## `roof_cell_edges()` gives a lip. Empty for a roof under three columns wide or whose tallest
@@ -1554,8 +1586,9 @@ func roof_interior_cells() -> Array[Vector2i]:
 ## Grow one connected tree inside the actual eligible roof, extensions included. A free cell
 ## joins only one occupied neighbor, so branches stay readable rather than filling a solid patch.
 ## Leave at least one ordinary equipment roll; a tiny roof keeps its compact furniture instead.
-func _place_duct_network(interior: Array[Vector2i], budget: int, used: Dictionary,
-		rng: RandomNumberGenerator) -> int:
+## Appends one unit per duct cell to `units` and returns how many it placed.
+func _place_duct_network(units: Array[Dictionary], interior: Array[Vector2i], budget: int,
+		used: Dictionary, rng: RandomNumberGenerator) -> int:
 	if budget < 4:
 		return 0
 	var target := rng.randi_range(3, budget - 1)
@@ -1583,8 +1616,8 @@ func _place_duct_network(interior: Array[Vector2i], budget: int, used: Dictionar
 				links |= 1 << index
 		used[cell] = true
 		var cells: Array[Vector2i] = [cell]
-		_roof_furniture.append({"cell": cell, "kind": _Furniture.DUCT_RUN, "span": 1,
-			"cells": cells, "links": links})
+		units.append({"cell": cell, "kind": _Furniture.DUCT_RUN, "span": 1,
+			"cells": cells, "links": links, "texture": DUCT_RUN})
 	return network.size()
 
 ## A Fisher-Yates shuffle over `rng` rather than `Array.shuffle()`, which reads the engine's own
@@ -1597,7 +1630,9 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 		cells[i] = cells[j]
 		cells[j] = tmp
 
-## A live City supplies `roof_object_parent`, so each roof unit becomes a feet-anchored entity and
+## Hands each unit of the cached roof layout to the `roof_drawer`, foot first: a unit stands
+## centred across its span of columns with its foot on the floor line of its cell's row. A live
+## City supplies `roof_object_parent`, so each roof unit becomes a feet-anchored entity and
 ## y-sorts against street actors. A standalone fixture parents the same visual-only objects to the
 ## building at their local feet; it does not retain a second rendering path for the direct PNGs.
 func _build_roof_layers() -> void:
@@ -1609,16 +1644,14 @@ func _build_roof_layers() -> void:
 		var span: int = entry["span"]
 		var at := _cell(cell.x, wall_tiles() + cell.y)
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
-		var object := RoofObject.new()
-		object.atlas = atlas
-		object.name = "RoofObject_%d_%d" % [cell.x, cell.y]
-		object.texture_key = _furniture_texture(entry["kind"])
-		object.duct_links = entry.get("links", -1)
-		object.position = parent.to_local(to_global(anchor)) if parent != self else anchor
-		parent.add_child(object)
+		# The picture comes from `kind`, not the entry's `texture`: the roof preview rig
+		# (`src/dev/roof_network_preview.gd`) writes cache entries of its own that carry no texture.
+		var object := roof_drawer.draw(parent, cell, _furniture_texture(entry["kind"]),
+				parent.to_local(to_global(anchor)) if parent != self else anchor,
+				entry.get("links", -1), _vent_frame_b)
 		_roof_objects.append(object)
-		if entry["kind"] == _Furniture.VENT:
-			_rotor_layers.append(object.add_rotor(_vent_frame_b))
+		if object.rotor != null:
+			_rotor_layers.append(object.rotor)
 	if power_station:
 		_station_layer = Node2D.new()
 		# Tagged before it enters the tree: the recorder classifies a node as it is added.
@@ -1675,6 +1708,9 @@ class RoofObject extends Node2D:
 	var texture_key: StringName
 	## West, east, south and north neighbors in roof-cell coordinates; -1 draws the whole asset.
 	var duct_links := -1
+	## The vent housing's turning rotor (`add_rotor()`), whose frame the building flips on its own
+	## clock; null on every other unit.
+	var rotor: SceneryLayer = null
 
 	func _enter_tree() -> void:
 		atlas.acquire(&"buildings")
@@ -1724,6 +1760,7 @@ class RoofObject extends Node2D:
 				Rect2(top_left + VENT_ROTOR_RECT.position, VENT_ROTOR_RECT.size),
 				atlas.region(VENT_ROTOR_B))
 		add_child(layer)
+		rotor = layer
 		return layer
 
 ## One of the power station's stacks, standing in `City`'s y-sorted `Entities` layer at its foot

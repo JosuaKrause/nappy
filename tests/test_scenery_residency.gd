@@ -4,6 +4,12 @@ extends RefCounted
 ## in the default.
 
 const CITY := preload("res://scenes/world/city.tscn")
+const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+
+## The recording drawer each building was handed, building to drawer: what a building drew is read
+## off its own, since a building's roof is placed by `Building.roof_layout()` and drawn through
+## `Building.roof_drawer`, as the city hands it.
+var _drawers := {}
 
 func run(t) -> void:
 	for seed_value in [4242, 3265820891]:
@@ -20,6 +26,7 @@ func _test_city(t, seed_value: int) -> void:
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	city.build(map)
+	_record_the_roofs(city)
 	await _test_all_mode(t, city)
 	await _test_all_mode_budget(t, city)
 	await _test_one_mode(t, city)
@@ -37,19 +44,33 @@ func _test_city(t, seed_value: int) -> void:
 		if not building.scenery_resident:
 			unloaded += 1
 			t.check(not building.is_processing(), "unprepared roofs run no animation callbacks")
-			t.check(building._roof_objects.is_empty() and building._windows.is_empty(),
+			t.check(_drawer_of(building).standing().is_empty() and _lit_windows(building) == 0,
 					"a distant building has no window/roof preparation")
 			t.check(_collision_shape(building) != null and building.shape != null,
 					"a distant building keeps its complete collision")
 	t.check(unloaded > city.buildings().size() / 2, "most buildings are unprepared at home")
-	var building := city.buildings()[0]
+	var lit_in_view := 0
+	for resident in city.buildings():
+		if resident.scenery_resident:
+			lit_in_view += _lit_windows(resident)
+	t.check(lit_in_view > 0, "the prepared buildings show lit windows, so an unprepared one showing"
+			+ " none says something")
+	var building := _a_building_with_a_roof(city)
 	var identity := building.get_instance_id()
 	var collision := _collision_shape(building)
 	var target := _view(building.scenery_bounds().get_center())
 	city.scenery.update(target, true)
-	var windows := building._windows.duplicate()
-	var roof := building._roof_furniture.duplicate(true)
-	var layers := building._roof_objects.duplicate()
+	# Lived in and powered, so the pictures say which windows the roll lit.
+	building.condition = Building.Condition.LIVED_IN
+	building.powered = true
+	var windows := _window_pictures(building)
+	t.check(_lit_windows(building) > 0, "the building watched has lit windows to compare")
+	var roof := _drawer_of(building).drawn()
+	t.check(roof == RecordingRoofDrawer.placed(building.roof_layout()) and not roof.is_empty(),
+			"a prepared building draws the roof its layout places")
+	var layers: Array[Building.RoofObject] = []
+	for entry in _drawer_of(building).standing():
+		layers.append(entry.object)
 	var cells := city.scenery_ground.get_used_cells()
 	var chunk_ids := {}
 	for key: Vector2i in city.scenery_ground.chunks:
@@ -89,8 +110,12 @@ func _test_city(t, seed_value: int) -> void:
 	t.check(randi() == expected_rng, "scenery reconstruction consumes no global gameplay RNG")
 	t.check(building.get_instance_id() == identity and _collision_shape(building) == collision,
 			"residency preserves building identity and its collision resource")
-	t.check(building._windows == windows and building._roof_furniture == roof,
+	building.condition = Building.Condition.LIVED_IN
+	building.powered = true
+	t.check(_window_pictures(building) == windows and _drawer_of(building).drawn() == roof,
 			"returning artwork reconstructs the same seeded window and furniture layout")
+	building.condition = Building.Condition.BOARDED
+	building.powered = false
 	_check_roof_ownership(t, city)
 	for cycle in 3:
 		city.scenery.update(far, true)
@@ -133,11 +158,11 @@ func _test_roof_phase(t, city: City) -> void:
 			continue
 		var view := _view(building.scenery_bounds().get_center())
 		city.scenery.update(view, true)
-		if building._rotor_layers.is_empty():
+		if _rotors_of(building).is_empty():
 			continue
 		for cycle in 3:
-			var old_rotors := building._rotor_layers.duplicate()
-			var old_objects := building._roof_objects.duplicate()
+			var old_rotors := _rotors_of(building)
+			var old_objects := _objects_of(building)
 			city.scenery.update(_view(Vector2(-10000, -10000)), true)
 			t.check(not building.scenery_resident, "the actual fan owner crosses the eviction boundary")
 			for rotor in old_rotors:
@@ -146,9 +171,9 @@ func _test_roof_phase(t, city: City) -> void:
 				t.check(not is_instance_valid(object), "eviction frees the actual fan housing owner")
 			await _run_the_city_clock(t, city, Building.VENT_FRAME_INTERVAL * 1.25)
 			city.scenery.update(view, true)
-			t.check(not building._rotor_layers.is_empty(), "returning fan owner reconstructs actual rotors")
+			t.check(not _rotors_of(building).is_empty(), "returning fan owner reconstructs actual rotors")
 			var expected_phase := int(city.scenery_ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
-			for rotor: SceneryLayer in building._rotor_layers:
+			for rotor in _rotors_of(building):
 				observed += 1
 				t.check(rotor.frame_b == expected_phase,
 						"reentered fan rotors resume the shared city clock's phase")
@@ -163,9 +188,9 @@ func _check_roof_ownership(t, city: City) -> void:
 	var entities: Node2D = city.buildings()[0].roof_object_parent
 	for building in city.buildings():
 		if not building.scenery_resident:
-			t.check(building._roof_objects.is_empty() and building._rotor_layers.is_empty(),
+			t.check(_objects_of(building).is_empty() and _rotors_of(building).is_empty(),
 					"unloaded buildings retain no external roof objects or rotor textures")
-		for object: Building.RoofObject in building._roof_objects:
+		for object in _objects_of(building):
 			owned[object] = true
 			t.check(object.get_parent() == entities,
 					"resident roof art is rebuilt in the city's y-sorted entity layer")
@@ -174,6 +199,61 @@ func _check_roof_ownership(t, city: City) -> void:
 			count += 1
 			t.check(owned.has(child), "every entity roof object has a live resident building owner")
 	t.check(count > 0 and count == owned.size(), "the ownership check covers actual roof objects")
+
+## Hands every building a recording drawer that also stands each unit through the real one, and
+## prepares again the buildings that were prepared at the build, so what each draws from here on is
+## recorded. The city handed the real drawer to every building; this is the same member, handed
+## again.
+func _record_the_roofs(city: City) -> void:
+	_drawers.clear()
+	for building in city.buildings():
+		var drawer := RecordingRoofDrawer.new()
+		drawer.real = RoofDrawer.new(city.atlas)
+		building.roof_drawer = drawer
+		_drawers[building] = drawer
+		if building.scenery_resident:
+			building.set_scenery_resident(false)
+			building.set_scenery_resident(true)
+
+## The first building whose roof places units, so what it draws is something to compare.
+func _a_building_with_a_roof(city: City) -> Building:
+	for building in city.buildings():
+		if not building.roof_layout().is_empty():
+			return building
+	return city.buildings()[0]
+
+func _drawer_of(building: Building) -> RecordingRoofDrawer:
+	return _drawers[building]
+
+## The roof objects the building has standing: its draws whose object it has not freed.
+func _objects_of(building: Building) -> Array[Building.RoofObject]:
+	var objects: Array[Building.RoofObject] = []
+	for entry in _drawer_of(building).standing():
+		objects.append(entry.object)
+	return objects
+
+## The turning rotors the building's standing roof objects carry (the vent housings').
+func _rotors_of(building: Building) -> Array[SceneryLayer]:
+	var rotors: Array[SceneryLayer] = []
+	for object in _objects_of(building):
+		if object.rotor != null:
+			rotors.append(object.rotor)
+	return rotors
+
+## The picture each wall cell's window shows, row-major: the style and which cells are lit in one list.
+func _window_pictures(building: Building) -> Array[StringName]:
+	var pictures: Array[StringName] = []
+	for index in building.columns() * building.wall_tiles():
+		pictures.append(building.window_texture(index))
+	return pictures
+
+## How many of the building's wall cells show a lit window.
+func _lit_windows(building: Building) -> int:
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+	var count := 0
+	for picture in _window_pictures(building):
+		count += int(picture in lit)
+	return count
 
 ## The physics shape the building keeps for its complete collision, found among its children.
 func _collision_shape(building: Building) -> Shape2D:
