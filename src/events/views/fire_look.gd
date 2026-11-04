@@ -52,15 +52,14 @@ func _draw_fire(canvas: CanvasItem) -> void:
 	for i in flames.size():
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.FLAME),
-				against_the_wall + Vector2(flames[i].x, 0.0),
-				Vector2(flames[i].y, height))
+		event.drawer.stand(canvas, EventPictures.FLAME,
+				against_the_wall + Vector2(flames[i].x, 0.0), Vector2(flames[i].y, height))
 	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
 	var billowing := idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
 	var plumes := _smoke_across(_fire_facade_runs())
 	for i in plumes.size():
 		var picture := EventPictures.STEAM_B if billowing != (i % 2 == 1) else EventPictures.STEAM
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, picture), against_the_wall
+		event.drawer.stand(canvas, picture, against_the_wall
 				+ Vector2(plumes[i].x, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)),
 				Vector2(plumes[i].y, _SMOKE_SIZE.y))
 
@@ -99,8 +98,7 @@ func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.FLAME), Vector2(offset,
-				0.0), Vector2(18.0, height))
+		event.drawer.stand(canvas, EventPictures.FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## The facade a fire sited at `at` burns on, as the stretches of it the city draws, each as its
 ## west and east ends in local x measured from `at`: the lot (`CityMap.building_rects`, one per

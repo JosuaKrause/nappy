@@ -671,9 +671,19 @@ var _may_park_on_commit := true
 ## call into a second function made every player's frame measurably longer on a desktop
 ## (docs/evidence/m159-frame-record-2026-10-04/).
 var timing := FrameTiming.new()
-## The baked atlas pages this event's look draws from (`AtlasLibrary`), handed in by whoever makes
-## it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
+## The baked atlas pages this event's pictures come from (`AtlasLibrary`), handed in by whoever
+## makes it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
+## The drawer it is handed is built over the same pages; one it makes for itself is built over these.
 var atlas: AtlasLibrary
+## What its look paints its pictures through (`EventDrawer`), handed in by whoever makes it
+## (`EventSpawner.create()`, its manager's own, built over the same atlas). An instance nobody handed
+## one (a suite's, a developer's rig) draws through one of its own over `atlas`, made the first time
+## its look asks, so a rig that hands the atlas after it enters the tree still draws from it.
+var drawer: EventDrawer:
+	get:
+		if drawer == null:
+			drawer = EventDrawer.new(atlas)
+		return drawer
 
 ## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
 ## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),

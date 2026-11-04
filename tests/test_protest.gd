@@ -4,6 +4,7 @@ extends RefCounted
 ## and `EventPictures.protester_texture()`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const SEED := 4242
 
 var _city: City
@@ -16,8 +17,8 @@ func run(t) -> void:
 	_test_plain_pose_with_no_objective(t)
 	_test_plain_pose_on_a_mark_step(t)
 	_test_pointing_pose_on_a_perform_step(t)
-	_test_a_protest_the_city_makes_points_where_its_director_does(t)
-	_test_a_protest_with_no_director_points_at_nothing(t)
+	await _test_a_protest_the_city_makes_points_where_its_director_does(t)
+	await _test_a_protest_with_no_director_points_at_nothing(t)
 	if _city != null:
 		_city.free()
 	for child in t.get_children():
@@ -74,16 +75,20 @@ func _test_plain_pose_with_no_objective(t) -> void:
 # The same city-and-director rig `tests/resistance_rig.gd` builds `ResistanceDirector` with, kept
 # separate rather than shared so this file never writes to one the resistance suite also owns.
 
+## The city of `SEED` in a run of its own (`RunCity.with_own_run()`), which it hands every director
+## built over it (`ResistanceDirector.setup()` takes the city's run when it is handed none): the run
+## starts fresh, with no step done and nothing carried, and goes with the city.
+##
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires
 ## the "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
-## `_exit_tree()` (`src/events/event_manager.gd`). Two tests here each call this once, so a
+## `_exit_tree()` (`src/events/event_manager.gd`). Several tests here each call this once, so a
 ## `_city` never freed would leave the group resident for the rest of the process — a suite
 ## sharing a later shard with `tests/test_telemetry.gd` then finds "events" already held before
 ## its own load/release test even starts.
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -99,36 +104,33 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:resistance" % [SEED, day])
 	return rng
 
-func _with_clean_run(action: Callable) -> void:
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_package := GameState.resistance.carrying_package
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
-	GameState.resistance.carrying_package = false
-	action.call()
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.failed_steps = saved_failed
-	GameState.resistance.progress = saved_progress
-	GameState.resistance.carrying_package = saved_package
+## The pictures a protest the city's events made stands its rank in, drawn: it is handed a
+## recording drawer through `EventInstance.drawer`, the member its manager's spawner assigns, and
+## real frames pass so its slices are put in beside it and drawn, one protester each.
+func _rank_drawn(t, protest: EventInstance) -> Array[String]:
+	var drawer := RecordingEventDrawer.new()
+	protest.drawer = drawer
+	for i in 3:
+		await t.get_tree().process_frame
+	var pictures: Array[String] = []
+	for entry in drawer.shown():
+		if entry.kind == &"stand":
+			pictures.append(entry.picture)
+	return pictures
 
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
 ## that.")* A pickup gives `ResistanceDirector.pointable_objective()` nothing to hand back.
 func _test_plain_pose_on_a_mark_step(t) -> void:
 	_build_city(t)
-	_with_clean_run(func() -> void:
-		var director := _director(t)
-		director.start_day(6, _rng(6), 300.0)
-		var step := director.current_step()
-		t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
-		t.check(director.pointable_objective() == Vector2.INF,
-				"a mark step gives a protester nothing to point at")
-		t.check(EventPictures.protester_texture(Vector2.ZERO, director.pointable_objective())
-				== EventPictures.PROTESTER,
-				"...so a protester anywhere in the city draws the plain rank")
-	)
+	var director := _director(t)
+	director.start_day(6, _rng(6), 300.0)
+	var step := director.current_step()
+	t.check(step != null and step.is_pickup, "day 6 offers the first chalk mark")
+	t.check(director.pointable_objective() == Vector2.INF,
+			"a mark step gives a protester nothing to point at")
+	t.check(EventPictures.protester_texture(Vector2.ZERO, director.pointable_objective())
+			== EventPictures.PROTESTER,
+			"...so a protester anywhere in the city draws the plain rank")
 
 ## *(2026-09-11, the player: "but the other tasks are not as easy and need pointing.")* A perform
 ## step activates the protester's objective the moment the mark it belongs to is touched rather
@@ -136,56 +138,56 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 ## settles, that objective is the contact `_begin_step()` already placed.
 func _test_pointing_pose_on_a_perform_step(t) -> void:
 	_build_city(t)
-	_with_clean_run(func() -> void:
-		var director := _director(t)
-		director.start_day(6, _rng(6), 300.0)
-		director.contact().complete_now()
-		var step := director.current_step()
-		t.check(step != null and not step.is_pickup, "the yeller perform is active")
+	var director := _director(t)
+	director.start_day(6, _rng(6), 300.0)
+	director.contact().complete_now()
+	var step := director.current_step()
+	t.check(step != null and not step.is_pickup, "the yeller perform is active")
 
-		var objective := director.pointable_objective()
-		t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
-		t.check(objective == director.contact_position(),
-				"before its first arrow choice, it is the step's own contact")
+	var objective := director.pointable_objective()
+	t.check(objective != Vector2.INF, "a perform step gives a protester somewhere to point")
+	t.check(objective == director.contact_position(),
+			"before its first arrow choice, it is the step's own contact")
 
-		var texture := EventPictures.protester_texture(objective + Vector2(0.0, 300.0), objective)
-		t.check(texture != EventPictures.PROTESTER,
-				"a protester standing away from the objective points rather than standing plain")
-	)
+	var texture := EventPictures.protester_texture(objective + Vector2(0.0, 300.0), objective)
+	t.check(texture != EventPictures.PROTESTER,
+			"a protester standing away from the objective points rather than standing plain")
 
 # ---------------------------------------------------------------- the wiring ---
 
 ## A protest the city's events make asks the director it was handed (`ResistanceDirector.setup()`
 ## hands `EventManager.points_at` its `pointable_objective()`), not a node it looks up: its rank
-## points where the director's objective is.
+## points where the director's objective is, every protester drawn in the pose that points there.
 func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 	_build_city(t)
-	_with_clean_run(func() -> void:
-		var director := _director(t)
-		director.start_day(6, _rng(6), 300.0)
-		director.contact().complete_now()
-		var objective := director.pointable_objective()
-		t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
-		var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
-				objective + Vector2(0.0, 300.0))
-		var look := protest.look as RankLook
-		t.check(protest.points_at.call() == objective,
-				"a protest the city's events make asks the director it was handed")
-		var picture: String = look._protest_pose_now()[0]
-		t.check(picture != EventPictures.PROTESTER
-				and picture == EventPictures.protester_texture(protest.global_position, objective),
-				"and its rank points at the objective (%s)" % picture)
-	)
+	var director := _director(t)
+	director.start_day(6, _rng(6), 300.0)
+	director.contact().complete_now()
+	var objective := director.pointable_objective()
+	t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
+	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
+			objective + Vector2(0.0, 300.0))
+	t.check(protest.points_at.call() == objective,
+			"a protest the city's events make asks the director it was handed")
+	t.check(protest.drawer != null and protest.drawer == _city.events.world.drawer,
+			"and draws through the drawer its manager's spawner hands every instance it makes")
+	var expected := EventPictures.protester_texture(protest.global_position, objective)
+	var rank: Array[String] = await _rank_drawn(t, protest)
+	var pointing := rank.size() > 1 and expected != EventPictures.PROTESTER
+	for picture in rank:
+		pointing = pointing and picture == expected
+	t.check(pointing, "and its rank of %d points at the objective (%s, drew %s)"
+			% [rank.size(), expected.get_file(), rank])
 
 ## With no director handed in (the escape building, a bare rig) a protest has nothing to point at
 ## and stands its rank plain.
 func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
 	_build_city(t)
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
-	var look := protest.look as RankLook
 	t.check(not protest.points_at.is_valid() or protest.points_at.call() == Vector2.INF,
 			"a protest with no director handed in has nothing to point at")
-	var picture: String = look._protest_pose_now()[0]
-	t.check(not EventPictures.POINTING_POSES.has(picture),
-			"and stands its rank plain rather than pointing (%s)" % picture)
-
+	var rank: Array[String] = await _rank_drawn(t, protest)
+	var plain := rank.size() > 1
+	for picture in rank:
+		plain = plain and not EventPictures.POINTING_POSES.has(picture)
+	t.check(plain, "and stands its rank of %d plain rather than pointing (%s)" % [rank.size(), rank])

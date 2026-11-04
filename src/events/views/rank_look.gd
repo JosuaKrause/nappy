@@ -73,8 +73,8 @@ func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: 
 	var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sitter_sector]
 	var sitter: String = by_view[view]
 	var mirror := EightDirection.is_mirrored(sitter_sector)
-	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, sitter),
-			origin + event.spread_at(chair_along) + Vector2(0.0, -7.0), Vector2.ZERO, mirror)
+	event.drawer.stand(canvas, sitter, origin + event.spread_at(chair_along) + Vector2(0.0, -7.0),
+			Vector2.ZERO, mirror)
 
 ## Table `i` of the frontage, standing at the middle of its share of the run, alternate ones
 ## mirrored.
@@ -83,8 +83,7 @@ func _draw_cafe_table(canvas: CanvasItem, origin: Vector2, half: float, width: f
 	var segment := EventPictures.native_size(EventPictures.CAFE_TABLE)
 	var thickness := segment.x if event.runs_vertically() else segment.y
 	var along := -half + width * (i + 0.5)
-	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.CAFE_TABLE),
-			origin + event.spread_at(along),
+	event.drawer.stand(canvas, EventPictures.CAFE_TABLE, origin + event.spread_at(along),
 			_spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
@@ -125,7 +124,7 @@ func _draw_protest(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> vo
 	var feet := _protest_feet(picture)
 	for i in feet.size():
 		if only < 0 or i == only:
-			Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, picture), origin + feet[i],
+			event.drawer.stand(canvas, picture, origin + feet[i],
 					Vector2.ZERO, mirror)
 
 ## The protest's picture this frame and whether it is mirrored.
@@ -191,7 +190,7 @@ func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> 
 			continue
 		var side := -1.0 if index == 0 else 1.0
 		var at := origin + Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, EventPictures.GUNMAN), at, Vector2.ZERO,
+		event.drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
 				side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(event.age * 17.0 + side * 2.1))
