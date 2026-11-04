@@ -34,7 +34,8 @@ func run(t) -> void:
 	_test_the_caret_asks_the_wall_where_the_bodies_will_be(t)
 	await _test_the_building_inside_stops_it_at_its_own_walls(t)
 	_test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t)
-	_test_the_fields_layer_skips_only_where_no_wall_can_block(t)
+	_test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t)
+	_test_the_fields_layer_asks_no_wall_where_none_can_block(t)
 	_test_the_fields_layer_follows_the_wall_along_the_whole_outline(t)
 	_test_the_fields_layer_cuts_a_moved_source_again(t)
 	_test_the_fields_layer_never_culls_an_outline_on_screen(t)
@@ -545,13 +546,13 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	behind.free()
 	beside.free()
 
-## The layer skips the wall questions for an outline when nothing within its bounds is deep enough in
-## a building to wall a line (`DebugLayers._deep_ground_meets()`), which is only right if every line
-## a wall does block crosses such ground. Asked of seeded lines from open ground, up to the widest
+## `DebugLayers.open_runs()` cuts an outline from a source by the grid's walls, and a line a wall blocks
+## must leave nothing of the outline open. Asked of seeded lines from open ground, up to the widest
 ## field's reach, on a real city and on hand-built maps of scattered buildings, where one-tile walls,
-## bends and corners open only diagonally are common: every blocked line has deep ground in its
-## bounds, and the guards count both that some were blocked and that the skip is taken for others.
-func _test_the_fields_layer_skips_only_where_no_wall_can_block(t) -> void:
+## bends and corners open only diagonally are common: the outline is the one point the line ends at,
+## so a blocked line leaves no run and an open one exactly one. The guards count both that some were
+## blocked and that some were open.
+func _test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t) -> void:
 	var maps: Array[CityMap] = [CityGenerator.generate(4242)]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1004
@@ -588,6 +589,43 @@ func _test_the_fields_layer_skips_only_where_no_wall_can_block(t) -> void:
 		t.check(blocked > 50 and open_lines > 20 and missed == 0,
 				"on a %dx%d map a line a wall blocks is cut away whole and one it does not is drawn (%d of %d blocked, %d open, %d wrong)"
 				% [map.size.x, map.size.y, blocked, blocked + open_lines, open_lines, missed])
+
+## **The layer asks the grid nothing where no wall can block**: a source on open ground, or a building
+## too far from the outline to wall a line, costs no wall question, which is what keeps most of a
+## day's outlines cheap. The grid is handed to `open_runs()` as the game hands it (the emitter's
+## `wall_grid()`), one that counts the questions it is asked; beside a thick building the same
+## outline does ask, so the count is not zero for want of looking.
+func _test_the_fields_layer_asks_no_wall_where_none_can_block(t) -> void:
+	var source := Vector2(304.0, 384.0)
+	var outline := GroundShape.field_outline_at(source, Vector2.ZERO, 90.0)
+	var open := _CountingMap.of(_map_with([], 24, 24))
+	DebugLayers.open_runs(outline, source, open)
+	t.check(open.asked == 0, "on open ground the outline is cut with no wall question (%d)" % open.asked)
+	var far := _CountingMap.of(_map_with(_rect_tiles(Rect2i(21, 0, 2, 24)), 24, 24))
+	DebugLayers.open_runs(outline, source, far)
+	t.check(far.asked == 0,
+			"nor with a building too far away to reach a line of it (%d)" % far.asked)
+	var near := _CountingMap.of(_map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
+	DebugLayers.open_runs(outline, source, near)
+	t.check(near.asked > 0, "while beside a thick building the same outline asks (%d)" % near.asked)
+
+## A map that counts the wall questions it is asked.
+class _CountingMap extends CityMap:
+	var asked := 0
+
+	static func of(map: CityMap) -> _CountingMap:
+		var counting := _CountingMap.new(map.size)
+		counting.fill_rect(Rect2i(Vector2i.ZERO, map.size), GameEnums.TileType.SIDEWALK)
+		for y in map.size.y:
+			for x in map.size.x:
+				if not map.is_walkable(Vector2i(x, y)):
+					counting.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
+		return counting
+
+	func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
+			thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
+		asked += 1
+		return super(from, to, depth, thin_depth)
 
 ## **The whole outline, not only its corners.** A wall can fall between two corners of an outline —
 ## the widest rows' outlines have edges of a hundred pixels and more — so on a real city, at the

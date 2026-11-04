@@ -457,8 +457,8 @@ func _a_street(t) -> Dictionary:
 	return {"city": city, "corridor": run.x, "along": float(run.y + 2) * Tuning.TILE_SIZE}
 
 const STREET_SEED := 4242
-## `test_crowd_bodies.gd`'s rig: places a car or a walker through the crowd's own entry.
-var _street_rig = preload("res://tests/test_crowd_bodies.gd").new()
+## The street rig (`tests/crowd_street_rig.gd`): places a car or a walker through the crowd's own entry.
+var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
 
 ## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
 ## measurement rather than an argument: "the answer has to be none at ordinary density, or the
