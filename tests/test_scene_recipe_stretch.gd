@@ -6,6 +6,8 @@ extends RefCounted
 ## `tools/scene-recipes.sh`'s.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 
@@ -63,7 +65,7 @@ func _sight(t, zoom: float, tiles: int) -> Array[int]:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
 	t.add_child(viewport)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.run = own_run
 	viewport.add_child(city)
 	city.build(CityGenerator.generate(4242))
@@ -243,7 +245,7 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 		map.repaint(state)
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"authored ground survives dawn repaint")
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(map)
 		city.start_day(state, 7, RandomNumberGenerator.new(),
@@ -291,7 +293,7 @@ func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(built.map)
 		var back: Building = null
@@ -328,7 +330,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(built.map)
 		var tint_source: Building = null
@@ -399,7 +401,7 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 ## (`SceneRecipeDraft.compose()`), and `stretch.tiles` read back.
 func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(witness)
 	var segment := witness.network.by_key(Vector3i(5, 5, 1))
@@ -500,7 +502,7 @@ func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 			"a crowd observation asks about the picture round her")
 
 func _test_the_city_draws_the_stretch_alone(t, map: CityMap) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	t.check(city.buildings().size() == map.stretch_buildings.size(),

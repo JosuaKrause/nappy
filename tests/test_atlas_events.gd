@@ -28,6 +28,8 @@ extends RefCounted
 ## or `reference_count()`, none of which loads anything.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SEED := 4242
 
 func run(t) -> void:
@@ -163,7 +165,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 	return rng
 
 func _city(t, atlas: AtlasLibrary) -> City:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
