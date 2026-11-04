@@ -1,6 +1,6 @@
 extends RefCounted
 ## **Probe, not a suite** (`tools/test.sh probes/plush_marten_cordon.gd`): day 12's police cordon
-## (`ParkCordon`) on every seed `tests/test_park_cordon_seeds.gd` sweeps, measured the way that
+## (`ParkCordon`) on every seed `tests/park_cordon_sweep.gd` sweeps, measured the way that
 ## suite measures it — with her at the swing and the camera on her — and printed as a table.
 ##
 ## For each seed it prints the park's size, the walk from the swing to the last gap and how long
@@ -14,7 +14,7 @@ extends RefCounted
 ## again or walked straight, how many stretches went up through him, and a `CORDON_STRETCHES` line
 ## of when each stretch went up, by its index, to compare two revisions run for run. Run it again after changing any `PARK_CLOSING_*` constant.
 
-const SWEEP := preload("res://tests/test_park_cordon_seeds.gd")
+const SWEEP := preload("res://tests/park_cordon_sweep.gd")
 
 func run(t) -> void:
 	var sweep: RefCounted = SWEEP.new()
