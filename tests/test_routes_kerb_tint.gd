@@ -11,6 +11,8 @@ extends RefCounted
 ## Built only by the test below, which needs a real scene tree rather than the bare
 ## `CityMap`/`RouteTree` pair every other route test works from directly.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 
 func run(t) -> void:
 	_test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t)
@@ -25,7 +27,7 @@ func run(t) -> void:
 func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(90210))
 

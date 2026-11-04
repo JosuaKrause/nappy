@@ -9,6 +9,8 @@ extends RefCounted
 ## (`CrowdAgent.setup_at()`, the pinned-actor placement the authored scenes use).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SEED := 4242
 ## How many placement rolls `place()` makes before it gives up on a heading.
 const ROLLS := 400
@@ -16,7 +18,7 @@ const ROLLS := 400
 var city: City
 
 func _init(host: Node) -> void:
-	city = RunCity.of_the_run(CITY_SCENE)
+	city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	host.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	# The atlas page every crowd picture is drawn from, held on the city's library the way

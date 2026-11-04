@@ -13,6 +13,8 @@ extends RefCounted
 ## and `EventBus.hard_fail_triggered` as the signal the game listens to.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
@@ -22,7 +24,7 @@ var _fails: Array[String] = []
 
 func run(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)

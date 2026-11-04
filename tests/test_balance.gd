@@ -12,6 +12,8 @@ extends RefCounted
 ## measured is what the ground and the noise do, not the locomotion.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
@@ -28,7 +30,7 @@ var _baby: Baby
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
