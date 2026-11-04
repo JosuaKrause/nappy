@@ -1300,16 +1300,27 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 	return {}
 
 ## The alley robber on `map`, past his notice and chasing, so what follows is about the line between
-## the two of them and not about the notice. The notice is run on open ground and the map handed
-## over after it, since the notice asks for a clear line and the origin may be anywhere on `map`.
+## the two of them and not about the notice. He is set up on `map` with its navigator as
+## `EventInstance.setup()` is handed them, at a walkable tile with a clear straight run east to her,
+## since the notice asks for a clear line; each check moves him from there.
 func _a_chasing_robber(t, map: CityMap) -> EventInstance:
 	var def := EventCatalogue.by_id("alley_robbery")
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	var run := def.notice_within() - 10.0
+	var origin := Vector2.INF
+	for tile_y in range(map.size.y / 2, map.size.y - 2):
+		for tile_x in range(2, map.size.x - 2):
+			var at := map.tile_to_world(Vector2i(tile_x, tile_y))
+			if map.is_walkable(Vector2i(tile_x, tile_y)) \
+					and _sampled_line_is_walkable(map, at, at + Vector2(run, 0.0), 0.1):
+				origin = at
+				break
+		if origin != Vector2.INF:
+			break
+	t.check(origin != Vector2.INF, "the map has a clear %.0fpx run to start the robber on" % run)
+	var instance := _instance(t, def, origin, PackedVector2Array(), map)
+	instance.player_at = origin + Vector2(run, 0.0)
 	instance.step(STEP)
 	_advance(instance, def.pursuit.warns_for + 0.1)
-	instance._map = map
-	instance._navigator = Navigator.new(map)
 	return instance
 
 ## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
