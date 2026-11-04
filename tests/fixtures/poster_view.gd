@@ -13,8 +13,8 @@ extends RefCounted
 static func walk(city: City, map: CityMap) -> Dictionary:
 	var fronts: Array[Vector2i] = []
 	var sheets: Array[Vector2] = []
-	for tile: Vector2i in GameState.posters.cells:
-		if GameState.posters.has_intact_sheet(tile):
+	for tile: Vector2i in city.run.posters.cells:
+		if city.run.posters.has_intact_sheet(tile):
 			fronts.append(tile)
 			sheets.append(map.tile_to_world(tile) + Vector2(0, -Tuning.TILE_SIZE * 0.5))
 	var found := {"cells": 0, "with_sheet": 0, "view_sum": 0, "routes": [], "underfoot": []}

@@ -185,10 +185,6 @@ func fronts() -> Dictionary:
 		found[tile] = true
 	return found
 
-## How many fronts carry a blank cell, for the tests.
-func wall_count() -> int:
-	return _walls.size()
-
 ## Today's walls. Pastes every dawn from `FIRST_DAY` up to `day` not yet pasted — one on an
 ## ordinary morning, all of them on a run started later under `--day`. `tree` is the day's route
 ## tree, what "the streets she uses most" is read against. Called by `City.start_day()` after the day's closures, which is after

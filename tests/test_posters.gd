@@ -9,30 +9,162 @@ extends RefCounted
 ## seed and given back whole by a lost day. And the tears: that a push tears and walking past does
 ## not, that the marble bag's shares are exact and its draws reproducible, and that a pursuit marble
 ## sends the pursuer on foot (`tests/test_pursuer_on_foot.gd` holds what he is and how he comes).
+##
+## **Every test makes a run of its own and hands it to the city** (`RunCity.with_own_run()`), and the
+## tears are made the way the game makes them: a real `Stroller` in the city, a held movement key
+## (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a frame), the
+## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
+## `PosterState`, what the fronts are handed to draw (`Building.posters`, `Building.neighbor_taken`),
+## the signals the counter listens to and the pursuer the events hold.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const SEEDS := [4242, 90210]
 const POSTER_VIEW := preload("res://tests/fixtures/poster_view.gd")
+## The day the pushes are made on: a day whose crews and tears run (`FIRST_DAY` on).
+const DAY := 5
+## How much faster than real time the long stretches run (`Engine.time_scale`), so a wait takes fewer
+## ticks. Every time a check compares is in seconds, counted in ticks at this scale.
+const SCALE := 2.0
+## The held movement keys a push is made with.
+const KEYS: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move_down"]
 
-var _saved_seed := 0
-var _saved_posters: Dictionary = {}
+var _map: CityMap
+var _city: City
+var _run: RunState
+var _her: Stroller
+var _walls: PosterWalls
+var _seen := {"torn": 0, "pursuit": 0}
 
 func run(t) -> void:
-	_saved_seed = GameState.header.run_seed
-	_saved_posters = GameState.posters.to_data()
+	await PhysicsTicks.settle(t)
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
 	_test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
-	_test_the_wall_draws_the_crossed_notice_from_the_run(t)
+	await _test_the_wall_draws_the_crossed_notice_from_the_run(t)
 	_test_the_state_survives_a_round_trip_and_a_lost_day(t)
 	_test_the_walls_fill_the_way_the_run_asks(t)
 	_test_the_marble_bag_is_exact_and_reproducible(t)
-	_test_a_push_tears_and_walking_past_does_not(t)
-	_test_a_held_push_tears_every_sheet_she_slides_past(t)
-	_test_a_door_in_the_wall_does_not_end_the_slide(t)
-	_test_a_crew_under_a_covered_corner_does_not_paste(t)
-	GameState.header.run_seed = _saved_seed
-	GameState.posters.restore(_saved_posters)
+	await _test_a_push_tears_and_walking_past_does_not(t)
+	await _test_a_push_held_off_the_wall_does_not_tear(t)
+	await _test_the_tears_draw_the_marbles(t)
+	await _test_a_held_push_tears_every_sheet_she_slides_past(t)
+	await _test_a_door_in_the_wall_does_not_end_the_slide(t)
+	await _test_a_crew_under_a_covered_corner_does_not_paste(t)
+
+# ----------------------------------------------------------------- the rig ---
+
+## A real city on `seed_value`'s map in the tree, over a run of its own on day `day`, and a real
+## `Stroller` in it that the events are handed, as `main` hands them (`EventManager.use_player()`).
+## The day is started with every dawn already pasted, so the walls hold what a test puts on them.
+func _open(t, seed_value: int, day := DAY) -> void:
+	_map = CityGenerator.generate(seed_value)
+	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
+	_run = _city.run
+	t.add_child(_city)
+	_city.build(_map)
+	_run.header.day = day
+	_run.posters.pasted_through = day
+	_walls = _city.poster_walls()
+	_walls.start_day(day, null)
+	_her = STROLLER_SCENE.instantiate()
+	t.add_child(_her)
+	_city.events.use_player(_her)
+	_seen = {"torn": 0, "pursuit": 0}
+
+func _close() -> void:
+	_steer(Vector2.ZERO)
+	_her.free()
+	_city.free()
+
+func _count_a_tear() -> void:
+	_seen["torn"] += 1
+
+func _count_a_pursuit() -> void:
+	_seen["pursuit"] += 1
+
+## Holds the movement keys for a heading, as a player holds them: each axis pressed with the
+## strength of its component, all four let go for `Vector2.ZERO`.
+func _steer(heading: Vector2) -> void:
+	for key in KEYS:
+		Input.action_release(key)
+	if heading.x != 0.0:
+		Input.action_press(&"move_right" if heading.x > 0.0 else &"move_left", minf(1.0, absf(heading.x)))
+	if heading.y != 0.0:
+		Input.action_press(&"move_down" if heading.y > 0.0 else &"move_up", minf(1.0, absf(heading.y)))
+
+## Lets `seconds` of game time pass on real ticks.
+func _wait(t, seconds: float) -> void:
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(seconds, SCALE), Callable(), SCALE)
+
+## Lets ticks pass one at a time until `done` answers true, at most `seconds` of game time; answers
+## whether it did.
+func _wait_until(t, done: Callable, seconds: float) -> bool:
+	for i in PhysicsTicks.ticks_for(seconds, SCALE):
+		if done.call():
+			return true
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), SCALE)
+	return done.call()
+
+## Puts her, facing north, `depth` px below the face of the wall `dx` px in from the west edge of
+## the front tile `tile`, standing, and holds `heading`. At 22px (`PLAYER_BODY_RADIUS` and
+## `Stroller.PRAM_BODY_RADIUS`) the pram's body is against the face.
+func _stand_at(tile: Vector2i, dx: float, heading: Vector2, depth := 24.0) -> void:
+	var rect := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE))
+	_her.facing = Vector2.UP
+	_her.teleport_to(Vector2(rect.position.x + dx, rect.position.y + depth))
+	_steer(heading)
+
+## Every front tile by the building it is in front of, from the buildings' own blank ground-floor
+## cells, each building's tiles west to east: the same cells `PosterWalls` reads, found without it.
+func _fronts_by_building() -> Array[Array]:
+	var fronts := _walls.fronts()
+	var found: Array[Array] = []
+	for building in _city.buildings():
+		var tiles: Array[Vector2i] = []
+		for rect in building.blank_ground_floor_cells():
+			var front := _map.world_to_tile(building.global_position
+					+ Vector2(rect.get_center().x, Building.TILE * 0.5))
+			if fronts.has(front):
+				tiles.append(front)
+		if not tiles.is_empty():
+			tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
+			found.append(tiles)
+	return found
+
+## The building whose front is `tile`, or null.
+func _building_of(tile: Vector2i) -> Building:
+	for building in _city.buildings():
+		for rect in building.blank_ground_floor_cells():
+			if _map.world_to_tile(building.global_position
+					+ Vector2(rect.get_center().x, Building.TILE * 0.5)) == tile:
+				return building
+	return null
+
+## The longest stretch of touching front cells in one building, at most `most` of them, west to east.
+func _longest_run(most: int) -> Array[Vector2i]:
+	var best: Array[Vector2i] = []
+	for tiles in _fronts_by_building():
+		var run: Array[Vector2i] = []
+		for tile: Vector2i in tiles:
+			if not run.is_empty() and tile.x != run[-1].x + 1:
+				run = []
+			run.append(tile)
+			if run.size() > best.size():
+				best.assign(run)
+	return best.slice(0, most)
+
+func _paste_all(run: Array[Vector2i]) -> void:
+	_run.posters.reset()
+	for tile in run:
+		_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+
+func _torn_in(run: Array[Vector2i]) -> int:
+	var n := 0
+	for tile in run:
+		if _run.posters.is_torn(tile):
+			n += 1
+	return n
 
 # ---------------------------------------------------------------- the tears ---
 
@@ -71,20 +203,20 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
 	t.check(art.torn(atlas, kind, 0, false) == composed, "preparing again composes nothing")
 	t.check(other.torn(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
 			"another art holds none of the first's pictures")
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	city.atlas = atlas
-	city.poster_art = art
-	t.add_child(city)
-	city.build(map)
-	var walls := city.poster_walls()
-	var fronts: Array = walls.fronts().keys()
+	_map = CityGenerator.generate(SEEDS[0])
+	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
+	_city.atlas = atlas
+	_city.poster_art = art
+	t.add_child(_city)
+	_city.build(_map)
+	_walls = _city.poster_walls()
+	var fronts: Array = _walls.fronts().keys()
 	var dressed := not fronts.is_empty()
 	for tile: Vector2i in fronts:
-		var building: Building = walls._walls[walls._by_tile[tile].x]["building"]
-		dressed = dressed and building.poster_art == art
-	t.check(walls.art == art and dressed, "the city's art reaches its walls and every front they dress")
-	city.free()
+		var building := _building_of(tile)
+		dressed = dressed and building != null and building.poster_art == art
+	t.check(_walls.art == art and dressed, "the city's art reaches its walls and every front they dress")
+	_city.free()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
 ## The wanted notice is the one-X copy until the neighbor has been taken — day 10 behind her and
@@ -92,22 +224,21 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
 func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
-	var saved_day := GameState.header.day
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var run := RunState.new()
+	run.start_run(SEEDS[0])
 	var plain := atlas.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := atlas.region(PosterArt.WANTED_CROSSED)
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
-	GameState.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
-	GameState.resistance.completed_steps = [ResistanceSteps.warning_step().index]
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, GameState.neighbor_was_taken()) == plain,
+	run.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
+	run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, run.neighbor_was_taken()) == plain,
 			"a warned neighbor's face is not crossed out")
-	GameState.resistance.completed_steps = []
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, GameState.neighbor_was_taken()) == crossed,
+	run.resistance.completed_steps = []
+	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, run.neighbor_was_taken()) == crossed,
 			"a taken neighbor's face is crossed out")
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.LEADER, GameState.neighbor_was_taken()) == atlas.region(
+	t.check(PosterArt.sheet(atlas, PosterArt.Kind.LEADER, run.neighbor_was_taken()) == atlas.region(
 			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
-	GameState.header.day = saved_day
-	GameState.resistance.completed_steps = saved_completed
+	run.free()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
 ## **The crossed notice reaches the wall from the run's state.** No front holds a run:
@@ -115,63 +246,50 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 ## with its cells (`Building.neighbor_taken`), at dawn and after a tear, and the building draws its
 ## sheets through `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a
 ## crossed notice on the wall, intact at dawn and torn after a tear, and a warned one is the plain
-## notice.
+## notice. The tear is made by a push, on real ticks.
 func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
-	var saved_day := GameState.header.day
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	city.atlas = atlas
-	t.add_child(city)
-	city.build(map)
-	GameState.header.run_seed = SEEDS[0]
-	GameState.posters.reset()
 	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
-	GameState.header.day = day
-	# Every dawn up to today already pasted, so the day's own pasting leaves the one sheet alone.
-	GameState.posters.pasted_through = day
-	var walls := city.poster_walls()
-	var tiles: Array = walls.fronts().keys()
+	await _open(t, SEEDS[0], day)
+	var tiles: Array = _walls.fronts().keys()
 	tiles.sort()
 	t.check(not tiles.is_empty(), "there is a front to paste the wanted notice on")
 	if tiles.is_empty():
-		city.free()
+		_close()
 		atlas.release(PosterArt.ATLAS_GROUP)
 		return
 	var tile: Vector2i = tiles[0]
-	var building: Building = walls._walls[walls._by_tile[tile].x]["building"]
+	var building := _building_of(tile)
 	var plain := atlas.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := atlas.region(PosterArt.WANTED_CROSSED)
 	var drawn := func() -> Texture2D:
-		var cell: Dictionary = GameState.posters.cells[tile]
+		var cell: Dictionary = _run.posters.cells[tile]
 		return building.poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
 				building.neighbor_taken)
-	GameState.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
+	_run.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
 
-	GameState.resistance.completed_steps = []
-	walls.start_day(day, null)
+	_run.resistance.completed_steps = []
+	_walls.start_day(day, null)
 	t.check(building.neighbor_taken, "at dawn, a taken neighbor in the run reaches the front")
 	t.check(drawn.call() == crossed, "and the front draws the crossed wanted notice")
 
-	GameState.resistance.completed_steps = [ResistanceSteps.warning_step().index]
-	walls.start_day(day, null)
+	_run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	_walls.start_day(day, null)
 	t.check(not building.neighbor_taken and drawn.call() == plain,
 			"a warned neighbor's front draws the plain notice at dawn")
 
-	GameState.resistance.completed_steps = []
-	walls._tear(tile)
-	var which := int(GameState.posters.cells[tile]["tear"])
+	_run.resistance.completed_steps = []
+	_stand_at(tile, 1.0, Vector2.UP)
+	var torn := await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 3.0)
+	t.check(torn, "a push tears the wanted notice")
+	var which := int(_run.posters.cells[tile]["tear"])
 	t.check(building.neighbor_taken, "after a tear, the run's taken neighbor reaches the front")
 	t.check(drawn.call() == building.poster_art.torn(atlas, PosterArt.Kind.WANTED, which, true)
 			and drawn.call() != building.poster_art.torn(atlas, PosterArt.Kind.WANTED, which, false),
 			"and the torn sheet is the crossed notice torn")
 
-	city.free()
-	GameState.header.day = saved_day
-	GameState.resistance.completed_steps = saved_completed
-	GameState.posters.reset()
+	_close()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
 # ----------------------------------------------------------------- the state ---
@@ -206,23 +324,22 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t) -> void:
 func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city := RunCity.with_own_run(CITY_SCENE, seed_value)
+		var run := city.run
 		t.add_child(city)
 		city.build(map)
 		var walls := city.poster_walls()
-		t.check(walls.wall_count() > 0, "seed %d: there are fronts to paste on (%d)"
-				% [seed_value, walls.wall_count()])
+		t.check(walls.fronts().size() > 0, "seed %d: there are fronts to paste on (%d)"
+				% [seed_value, walls.fronts().size()])
 		_check_every_front_is_blank_wall(t, city, map, seed_value)
-		GameState.header.run_seed = seed_value
-		GameState.posters.reset()
 		var state := CityState.new()
 		var before := 0
 		var covered_on: Dictionary = {}
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			state.begin_day(map.block_plans, day)
-			GameState.posters.photograph()
-			city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
-			var cells := GameState.posters.cells
+			run.posters.photograph()
+			city.start_day(state, day, run.calendar.day_rng(day, "closures"))
+			var cells := run.posters.cells
 			if day < PosterWalls.FIRST_DAY:
 				t.check(cells.is_empty(), "seed %d: nothing is on a wall on day %d" % [seed_value, day])
 			for tile: Vector2i in cells:
@@ -249,12 +366,12 @@ func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 				% [seed_value, covered_on[PosterWalls.FIRST_DAY],
 				covered_on[Tuning.RUN_LENGTH_DAYS], Tuning.RUN_LENGTH_DAYS])
 		var offset := 0
-		for tile: Vector2i in GameState.posters.cells:
-			if int(GameState.posters.cells[tile]["under"]) != PosterState.NONE:
+		for tile: Vector2i in run.posters.cells:
+			if int(run.posters.cells[tile]["under"]) != PosterState.NONE:
 				offset += 1
-		t.check(offset > 0 and offset * 2 < GameState.posters.cells.size(),
+		t.check(offset > 0 and offset * 2 < run.posters.cells.size(),
 				"seed %d: some sheets show an older one beneath, and most do not (%d of %d)"
-				% [seed_value, offset, GameState.posters.cells.size()])
+				% [seed_value, offset, run.posters.cells.size()])
 		city.free()
 
 ## The density floors ("on the first day with posters it's very hard to find one -- increase the
@@ -307,11 +424,12 @@ func _check_every_front_is_blank_wall(t, city: City, map: CityMap, seed_value: i
 ## A lost day gives the walls back and the retry's dawn pastes them again, identically.
 func _check_a_retry_pastes_the_same_dawn(t, city: City, state: CityState, day: int,
 		seed_value: int) -> void:
-	var first := GameState.posters.to_data()
-	GameState.posters.give_back()
-	GameState.posters.pasted_through = mini(GameState.posters.pasted_through, day - 1)
-	city.start_day(state, day, GameState.calendar.day_rng(day, "closures"))
-	t.check(GameState.posters.to_data()["cells"] == first["cells"],
+	var run := city.run
+	var first := run.posters.to_data()
+	run.posters.give_back()
+	run.posters.pasted_through = mini(run.posters.pasted_through, day - 1)
+	city.start_day(state, day, run.calendar.day_rng(day, "closures"))
+	t.check(run.posters.to_data()["cells"] == first["cells"],
 			"seed %d: a retried day %d pastes the same dawn" % [seed_value, day])
 
 # ------------------------------------------------------------- the marble bag ---
@@ -349,164 +467,192 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 	var resumed := true
 	for i in range(17, first.size()):
 		resumed = resumed and skipped.draw() == first[i]
-	t.check(resumed, "a bag skipped forward draws on exactly where the drawn one does")
+	t.check(resumed, "a bag skipped forward draws on exactly as the drawn one does")
 
 # ---------------------------------------------------------------- the push ---
 
-## The push, on a real front of a built city with a stand-in for her: `_push_to_tear()` is what the
-## node runs every physics frame with her position and her steering. Pressing into the wall at its
-## face tears after `PRESS_TO_TEAR`, a diagonal included; walking along it, standing back from it,
-## or letting go before the time is up does not. Then the tears' marbles: the run's first is safe,
-## one in each ten after it sends a pursuer, and a lost day gives the tears back so the retry draws
-## the same marbles again.
 ## **A crew under a corner the joystick's controls cover does not paste** (dappled-swan's
 ## the-sightings, the filer's reading that a crew's pasting is a sighting): a `poster_crew` standing on
 ## a front, with the day's own visible area laid so the crew is only under the left corner, pastes
 ## nothing in the joystick scheme over several of `PosterWalls.PASTE_EVERY`, and pastes in the tap
-## scheme with the same view.
+## scheme with the same view. The walls work the crews on the ticks they have a player to watch for,
+## so a real `Stroller` stands in the city.
 func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(city)
-	city.build(map)
-	GameState.header.run_seed = SEEDS[0]
-	GameState.posters.reset()
-	var walls := city.poster_walls()
-	var tiles: Array = walls.fronts().keys()
+	await _open(t, SEEDS[0])
+	var tiles: Array = _walls.fronts().keys()
 	tiles.sort()
 	t.check(not tiles.is_empty(), "there is a front for a crew to stand at")
 	if tiles.is_empty():
-		city.free()
+		_close()
 		return
 	var tile: Vector2i = tiles[0]
-	var at := map.tile_to_world(tile)
-	var crew := city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
-	walls._day_running = true
-	walls._day = 5
+	var at := _map.tile_to_world(tile)
+	var crew := _city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
+	# She stands where the camera's view puts the crew only under the left corner the controls cover.
 	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
-	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	_her.teleport_to(at - corner * 0.5)
+	await _wait(t, 0.5)
 	for joystick: bool in [true, false]:
-		walls._jobs.clear()
-		city.events.visible_view().look(view, TouchControls.covered_screen() if joystick else null)
-		for i in 4:
-			walls._work_the_crews(PosterWalls.PASTE_EVERY)
-		var pasted: int = int(walls._jobs[tile]["pasted"]) if walls._jobs.has(tile) else 0
+		# A day started again clears what the crews were working at.
+		_walls.start_day(DAY, null)
+		_run.posters.reset()
+		_run.posters.pasted_through = DAY
+		_city.events.use_controls(TouchControls.covered_screen() if joystick else null)
+		await _wait(t, 0.2)
+		t.check(_city.events.sees(at) != joystick,
+				"%s scheme: the crew is %s from where she stands" % ["joystick" if joystick else "tap",
+				"under the corner" if joystick else "in view"])
+		# The tap scheme's crew is done with its first sheet at `FIRST_PASTE_AFTER`; the joystick's is
+		# given two `PASTE_EVERY` more than that to paste nothing.
+		await _wait(t, PosterWalls.FIRST_PASTE_AFTER + 2.0 * PosterWalls.PASTE_EVERY if joystick
+				else PosterWalls.FIRST_PASTE_AFTER + 0.5)
+		var pasted := _run.posters.cells.size()
 		t.check((pasted == 0) == joystick,
 				"%s scheme: a crew only under the left corner pasted %d sheets"
 				% ["joystick" if joystick else "tap", pasted])
-	city.events.retire(crew)
-	city.free()
+	_city.events.retire(crew)
+	_close()
 
+## A push tears nothing that is not a push: walking along the wall, even drifting into it, along a
+## wall of intact sheets. Her heading has to point into the wall (`PosterWalls.PRESS_INTO`).
 func _test_a_push_tears_and_walking_past_does_not(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(city)
-	city.build(map)
-	GameState.header.run_seed = SEEDS[0]
-	GameState.posters.reset()
-	var walls := city.poster_walls()
-	var tiles: Array = walls.fronts().keys()
-	tiles.sort()
+	await _open(t, SEEDS[0])
+	var tiles: Array = _walls.fronts().keys()
 	t.check(tiles.size() > 25, "there are fronts to push against (%d)" % tiles.size())
-	if tiles.size() <= 25:
-		city.free()
+	var run := _longest_run(6)
+	t.check(run.size() >= 3, "there is a wall of at least three cells to walk along (%d)" % run.size())
+	if tiles.size() <= 25 or run.size() < 3:
+		_close()
 		return
-	var tile: Vector2i = tiles[0]
-	var face := map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE)).position.y
-	var at := Vector2(map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE)).get_center().x,
-			face + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS)
-	var step := 1.0 / 60.0
-	var hold := func(steering: Vector2, from: Vector2, seconds: float) -> void:
-		for i in ceili(seconds / step):
-			walls._push_to_tear(step, from, steering)
-	walls._day_running = true
-	# A stand-in for her, the one thing a pursuit marble's `EventManager.send_a_pursuer()` asks of
-	# her: where she is, to put his warning up against.
-	var her := Node2D.new()
-	her.add_to_group("player")
-	city.events.use_player(her)
-	t.add_child(her)
-	her.global_position = at
+	var span := float(run.size()) * Tuning.TILE_SIZE / Tuning.WALK_SPEED
+	_paste_all(run)
+	_stand_at(run[0], 1.0, Vector2.RIGHT)
+	await _wait(t, span)
+	t.check(_torn_in(run) == 0, "walking along the wall tears nothing")
+	_stand_at(run[0], 1.0, Vector2(1.0, -0.2))
+	await _wait(t, span)
+	t.check(_torn_in(run) == 0 and _her.global_position.x > _map.tile_to_world(run[1]).x,
+			"and drifting into it while walking along it tears nothing")
 
-	GameState.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
-	hold.call(Vector2.RIGHT, at, 2.0)
-	hold.call(Vector2(1.0, -0.2).normalized(), at, 2.0)
-	t.check(GameState.posters.has_intact_sheet(tile), "walking along the wall, even drifting into it, tears nothing")
-	hold.call(Vector2.UP, at + Vector2(0.0, 8.0), 2.0)
-	t.check(GameState.posters.has_intact_sheet(tile), "a heading into the wall from back on the sidewalk tears nothing")
-	hold.call(Vector2.UP, at, PosterWalls.PRESS_TO_TEAR * 0.75)
-	hold.call(Vector2.ZERO, at, 0.1)
-	hold.call(Vector2.UP, at, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(GameState.posters.has_intact_sheet(tile), "letting go before the time is up starts it again")
-	hold.call(Vector2.UP, at, PosterWalls.PRESS_TO_TEAR * 0.5)
-	t.check(GameState.posters.is_torn(tile), "a push held for the time tears the sheet")
-	t.check(GameState.posters.tears == 1, "and counts one tear")
+	_paste_all(run)
+	var tile := run[0]
+	_stand_at(tile, 1.0, Vector2.UP)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	_steer(Vector2.ZERO)
+	await _wait(t, 0.2)
+	_stand_at(tile, 1.0, Vector2.UP)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(_run.posters.has_intact_sheet(tile), "letting go before the time is up starts it again")
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.5 + 0.1)
+	t.check(_run.posters.is_torn(tile), "a push held for the time tears the sheet")
+	t.check(_run.posters.tears == 1, "and counts one tear")
 
-	GameState.posters.paste(tile, PosterArt.Kind.LEADER, false, 1)
-	hold.call(Vector2(-1.0, -1.0).normalized(), at, PosterWalls.PRESS_TO_TEAR + 0.05)
-	t.check(GameState.posters.is_torn(tile), "a diagonal into the wall is a push too")
-	GameState.posters.paste(tile, PosterArt.Kind.CURFEW, false, 1)
-	t.check(GameState.posters.has_intact_sheet(tile), "a torn sheet pasted again is whole")
+	# The diagonal slides her along the wall at walking speed, so the sheet she stands before when
+	# the time is up is the one she has slid to: a wall of sheets, one of them comes down.
+	_steer(Vector2.ZERO)
+	await _wait(t, 0.2)
+	_paste_all(run)
+	_stand_at(tile, 1.0, Vector2(1.0, -1.0))
+	var torn := await _wait_until(t, func() -> bool: return _torn_in(run) > 0,
+			PosterWalls.PRESS_TO_TEAR + 0.4)
+	t.check(torn, "a diagonal into the wall is a push too")
+	_run.posters.paste(tile, PosterArt.Kind.CURFEW, false, 1)
+	t.check(_run.posters.has_intact_sheet(tile), "a torn sheet pasted again is whole")
+	_close()
 
-	# The marbles, tear by tear, on fresh sheets: the pre-bag and two whole bags after it.
-	GameState.posters.reset()
+## A heading into the wall from back on the sidewalk is a walk toward it, not a push: a bollard
+## across the front tile holds her past `PosterWalls.PRESS_REACH` of the face, pressing north.
+func _test_a_push_held_off_the_wall_does_not_tear(t) -> void:
+	await _open(t, SEEDS[0])
+	var tile: Vector2i = _longest_run(1)[0]
+	var rect := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE))
+	var bollard := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var box := RectangleShape2D.new()
+	box.size = Vector2(Tuning.TILE_SIZE * 1.5, 8.0)
+	shape.shape = box
+	bollard.add_child(shape)
+	bollard.position = Vector2(rect.get_center().x, rect.position.y + 2.0)
+	_city.add_child(bollard)
+	_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+	_stand_at(tile, Tuning.TILE_SIZE * 0.5, Vector2.UP, Tuning.TILE_SIZE - 1.0)
+	await _wait(t, 2.0)
+	var back := _her.global_position.y - rect.position.y
+	t.check(back > PosterWalls.PRESS_REACH and back < Tuning.TILE_SIZE,
+			"she is held on the front tile, back of the push's reach (%.1fpx from the face)" % back)
+	t.check(_run.posters.has_intact_sheet(tile),
+			"a heading into the wall from back on the sidewalk tears nothing")
+	bollard.free()
+	await _wait(t, PosterWalls.PRESS_TO_TEAR + 0.2)
+	t.check(_run.posters.is_torn(tile), "and the same push at the face tears it")
+	_close()
+
+## The tears' marbles, one push to a fresh sheet each: the pre-bag and two whole bags after it. The
+## run's first tear sends nobody, two whole bags send exactly two pursuers, every tear and every
+## pursuer tells the counter once, a lost day gives the tears back so the retry draws the same
+## marbles again, and a marble drawn while a pursuer is on his way sends nobody more.
+func _test_the_tears_draw_the_marbles(t) -> void:
+	await _open(t, SEEDS[0])
+	var tiles: Array = _walls.fronts().keys()
+	tiles.sort()
 	var tears := PosterWalls.TEAR_PRE_BAG.size() + 2 * PosterWalls.TEAR_BAG.size()
-	var sent: Array[bool] = []
-	var signalled := {"torn": 0, "pursuit": 0}
-	var on_torn := func() -> void: signalled["torn"] += 1
-	var on_pursuit := func() -> void: signalled["pursuit"] += 1
-	EventBus.poster_torn.connect(on_torn)
-	EventBus.poster_pursuit_sent.connect(on_pursuit)
-	GameState.posters.photograph()
-	for i in tears:
-		var cell: Vector2i = tiles[i]
-		var spot := Vector2(map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).get_center().x,
-				map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).position.y + 20.0)
-		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
-		_forget_the_pursuer(city.events)
-		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.ahead.a_pursuer_is_after_her())
-	t.check(GameState.posters.tears == tears, "every push tore its sheet (%d of %d)"
-			% [GameState.posters.tears, tears])
-	t.check(not sent[0], "the run's first tear sends nobody")
-	t.check(sent.count(true) == 2, "two whole bags of tears send exactly two pursuers (%d)"
-			% sent.count(true))
-	EventBus.poster_torn.disconnect(on_torn)
-	EventBus.poster_pursuit_sent.disconnect(on_pursuit)
-	t.check(signalled["torn"] == tears, "every tear tells the counter (%d of %d)"
-			% [signalled["torn"], tears])
-	t.check(signalled["pursuit"] == sent.count(true),
-			"and every pursuer a tear sent tells it too, once each (%d)" % signalled["pursuit"])
-	var first_marbles := sent.duplicate()
-	GameState.posters.give_back()
-	sent.clear()
-	for i in tears:
-		var cell: Vector2i = tiles[i]
-		var spot := Vector2(map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).get_center().x,
-				map.tile_rect_to_world(Rect2i(cell, Vector2i.ONE)).position.y + 20.0)
-		GameState.posters.paste(cell, PosterArt.Kind.RULES, false, 1)
-		_forget_the_pursuer(city.events)
-		hold.call(Vector2.UP, spot, PosterWalls.PRESS_TO_TEAR + 0.05)
-		sent.append(city.events.ahead.a_pursuer_is_after_her())
-	t.check(sent == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
-	_forget_the_pursuer(city.events)
-	var folded := [0]
-	var on_folded := func() -> void: folded[0] += 1
-	EventBus.poster_pursuit_sent.connect(on_folded)
-	city.events.send_a_pursuer()
-	city.events.send_a_pursuer()
-	EventBus.poster_pursuit_sent.disconnect(on_folded)
-	t.check(folded[0] == 1,
+	t.check(tiles.size() > tears, "there are fronts to tear (%d)" % tiles.size())
+	if tiles.size() <= tears:
+		_close()
+		return
+	EventBus.poster_torn.connect(_count_a_tear)
+	EventBus.poster_pursuit_sent.connect(_count_a_pursuit)
+	_run.posters.photograph()
+	var first_marbles := await _tear_one_sheet_each(t, tiles, tears)
+	t.check(_run.posters.tears == tears, "every push tore its sheet (%d of %d)"
+			% [_run.posters.tears, tears])
+	t.check(not first_marbles[0], "the run's first tear sends nobody")
+	t.check(first_marbles.count(true) == 2, "two whole bags of tears send exactly two pursuers (%d)"
+			% first_marbles.count(true))
+	t.check(_seen["torn"] == tears, "every tear tells the counter (%d of %d)" % [_seen["torn"], tears])
+	t.check(_seen["pursuit"] == first_marbles.count(true),
+			"and every pursuer a tear sent tells it too, once each (%d)" % _seen["pursuit"])
+	_run.posters.give_back()
+	var again := await _tear_one_sheet_each(t, tiles, tears)
+	t.check(again == first_marbles, "a lost day gives the tears back and the retry draws the same marbles")
+	await _let_the_pursuer_go(t)
+	var before: int = _seen["pursuit"]
+	_city.events.send_a_pursuer()
+	_city.events.send_a_pursuer()
+	t.check(_seen["pursuit"] == before + 1,
 			"a second marble while the pursuer is on his way sends nobody, told to the counter once")
-	_forget_the_pursuer(city.events)
-	her.free()
-	city.free()
+	EventBus.poster_torn.disconnect(_count_a_tear)
+	EventBus.poster_pursuit_sent.disconnect(_count_a_pursuit)
+	_close()
 
-## Takes a sent pursuer's warning down, so the next tear is asked about on its own.
-func _forget_the_pursuer(events: EventManager) -> void:
-	events.warnings._pending.clear()
-	events.ahead._sent_warning = null
-	events.ahead._sent_after_her = null
+## Pushes `count` fresh sheets down one at a time, her held north against each wall, and answers for
+## each whether its tear sent a pursuer. A pursuer sent is let go once he is in the world, so the
+## next marble is asked about on its own.
+func _tear_one_sheet_each(t, tiles: Array, count: int) -> Array[bool]:
+	var sent: Array[bool] = []
+	for i in count:
+		var tile: Vector2i = tiles[i]
+		_run.posters.paste(tile, PosterArt.Kind.RULES, false, 1)
+		var pursuits: int = _seen["pursuit"]
+		_stand_at(tile, Tuning.TILE_SIZE * 0.5, Vector2.UP)
+		await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 2.0)
+		sent.append(_seen["pursuit"] > pursuits)
+		if sent[-1]:
+			t.check(_city.events.ahead.a_pursuer_is_after_her(), "the pursuer a tear sent is after her")
+			await _let_the_pursuer_go(t)
+	return sent
+
+## Waits for the pursuer a tear sent to be in the world, takes him out of it, and lets a tick pass.
+func _let_the_pursuer_go(t) -> void:
+	var def := EventCatalogue.on_foot_on(_city.events.world.day)
+	var found: Array[EventInstance] = []
+	await _wait_until(t, func() -> bool:
+		found.assign(_city.events.instances().filter(func(e: EventInstance) -> bool:
+				return e.def == def))
+		return not found.is_empty() or not _city.events.ahead.a_pursuer_is_after_her(), 3.0)
+	for pursuer in found:
+		_city.events.retire(pursuer)
+	await PhysicsTicks.pass_ticks(t, 2, Callable(), SCALE)
 
 # ---------------------------------------------------------------- the slide ---
 
@@ -516,154 +662,138 @@ func _forget_the_pursuer(events: EventManager) -> void:
 ## zero). Letting go re-arms the wait; walking past without a push tears nothing; and each sheet
 ## torn draws its own marble.
 func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(city)
-	city.build(map)
-	GameState.header.run_seed = SEEDS[0]
-	GameState.posters.reset()
-	var walls := city.poster_walls()
-	walls._day_running = true
-	var run: Array[Vector2i] = []
-	for index in walls.wall_count():
-		var cells: Array = walls._walls[index]["tiles"]
-		if cells.size() > run.size():
-			run.assign(cells)
+	await _open(t, SEEDS[0])
+	var run := _longest_run(6)
 	t.check(run.size() >= 3, "there is a wall of at least three cells to slide along (%d)" % run.size())
 	if run.size() < 3:
-		city.free()
+		_close()
 		return
-	# The longest stretch of cells that touch, from the wall's west end.
-	var sheets := 1
-	while sheets < mini(run.size(), 6) and run[sheets].x == run[sheets - 1].x + 1:
-		sheets += 1
-	var rect := map.tile_rect_to_world(Rect2i(run[0], Vector2i.ONE))
-	var face := rect.position.y
-	var y := face + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
-	var step := 1.0 / 60.0
-	var speed := 92.0
-	var paste_all := func() -> void:
-		GameState.posters.reset()
-		for i in sheets:
-			GameState.posters.paste(run[i], PosterArt.Kind.RULES, false, 1)
-	var torn_count := func() -> int:
-		var n := 0
-		for i in sheets:
-			if GameState.posters.is_torn(run[i]):
-				n += 1
-		return n
-	# Slides from the west end of the run, `seconds` of walking at `steering`; returns the x reached.
-	var slide := func(steering: Vector2, from_x: float, seconds: float) -> float:
-		var x := from_x
-		for i in ceili(seconds / step):
-			walls._push_to_tear(step, Vector2(x, y), steering)
-			x += speed * step
-		return x
-	var start_x := rect.position.x + 1.0
-	var span := (float(sheets) * Tuning.TILE_SIZE) / speed
-	t.check(sheets >= 3, "the cells slid along touch (%d)" % sheets)
+	var sheets := run.size()
+	var diagonal := Vector2(1.0, -1.0)
+	var last_left := _map.tile_rect_to_world(Rect2i(run[-1], Vector2i.ONE)).position.x
+	var reached_the_last := func() -> bool: return _her.global_position.x > last_left + 8.0
+	var guard := float(sheets) * Tuning.TILE_SIZE / 40.0 + PosterWalls.PRESS_TO_TEAR
 
-	paste_all.call()
-	slide.call(Vector2.RIGHT, start_x, span)
-	t.check(torn_count.call() == 0, "walking the whole wall without a push tears nothing")
+	# She stops against the first sheet until it gives (a heading straight into the wall), then
+	# slides on with the push held (the diagonal).
+	_paste_all(run)
+	_stand_at(run[0], 1.0, Vector2.UP)
+	await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+			PosterWalls.PRESS_TO_TEAR + 0.2)
+	_steer(diagonal)
+	await _wait_until(t, reached_the_last, guard)
+	t.check(reached_the_last.call(), "she slid along the whole run")
+	t.check(_torn_in(run) == sheets, "a diagonal held along %d adjacent sheets tears all of them (%d)"
+			% [sheets, _torn_in(run)])
+	t.check(_run.posters.tears == sheets, "and draws one marble for each (%d)" % _run.posters.tears)
 
-	paste_all.call()
-	var diagonal := Vector2(1.0, -1.0).normalized()
-	# She stops against the first sheet until it gives, then slides on with the push held.
-	var stood := PosterWalls.PRESS_TO_TEAR + 0.05
-	for i in ceili(stood / step):
-		walls._push_to_tear(step, Vector2(start_x, y), diagonal)
-	slide.call(diagonal, start_x, span - 0.1)
-	t.check(torn_count.call() == sheets, "a diagonal held along %d adjacent sheets tears all of them (%d)"
-			% [sheets, torn_count.call()])
-	t.check(GameState.posters.tears == sheets, "and draws one marble for each (%d)" % GameState.posters.tears)
+	# The first sheet of a push still waits for the time.
+	_steer(Vector2.ZERO)
+	await _wait(t, 0.1)
+	_paste_all(run)
+	_stand_at(run[0], 1.0, Vector2.UP)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(_torn_in(run) == 0, "the first sheet of a push still waits for the time")
+	var passed := await _wait_until(t, func() -> bool: return _torn_in(run) > 0,
+			PosterWalls.PRESS_TO_TEAR)
+	t.check(passed and _torn_in(run) == 1 and _run.posters.is_torn(run[0]),
+			"and tears once it has passed")
 
-	paste_all.call()
-	walls._sliding = false
-	walls._pressed_for = 0.0
-	slide.call(diagonal, start_x, PosterWalls.PRESS_TO_TEAR * 0.75)
-	t.check(torn_count.call() == 0, "the first sheet of a push still waits for the time")
-	slide.call(diagonal, start_x, PosterWalls.PRESS_TO_TEAR * 0.5)
-	t.check(torn_count.call() == 1, "and tears once it has passed")
-
-	# The push a player makes: a diagonal held while walking into the wall, never stopping. She
-	# slides at the speed the other checks here use, so the 0.4s covers about 37px, more than a
-	# 32px cell: entering the wall 20px into the first cell, that sheet is slid past before it
-	# elapses and escapes, the second tears, and every sheet after it comes down as she reaches it
-	# (the old rule restarted the count after each tear and so skipped every second one).
-	paste_all.call()
-	walls._sliding = false
-	walls._pressed_for = 0.0
-	var slide_speed := speed
-	var x := rect.position.x + 20.0
-	for i in ceili((float(sheets) * Tuning.TILE_SIZE) / slide_speed / step):
-		walls._push_to_tear(step, Vector2(x, y), diagonal)
-		x += slide_speed * step
-	t.check(GameState.posters.has_intact_sheet(run[0]),
+	# The push a player makes: a diagonal held while walking into the wall, never stopping, slides
+	# her along at walking speed (the wall keeps her speed along it), so the 0.4s covers about 37px,
+	# more than a 32px cell. Entering the wall 20px into the first cell, that sheet is slid past before it elapses and
+	# escapes, the second tears, and every sheet after it comes down as she reaches it (the old rule
+	# restarted the count after each tear and so skipped every second one).
+	_steer(Vector2.ZERO)
+	await _wait(t, 0.1)
+	_paste_all(run)
+	_stand_at(run[0], 20.0, diagonal)
+	await _wait_until(t, reached_the_last, guard)
+	t.check(_run.posters.has_intact_sheet(run[0]),
 			"the sheet she was already past when the time elapsed escapes the first tear")
 	var rest_torn := true
 	for i in range(1, sheets):
-		rest_torn = rest_torn and GameState.posters.is_torn(run[i])
+		rest_torn = rest_torn and _run.posters.is_torn(run[i])
 	t.check(rest_torn, "and every sheet after the first tear comes down as she reaches it")
-	t.check(GameState.posters.tears == sheets - 1, "one marble each (%d)" % GameState.posters.tears)
+	t.check(_run.posters.tears == sheets - 1, "one marble each (%d)" % _run.posters.tears)
 
 	# Letting go re-arms the wait: the next sheet she stands before takes the time again.
-	GameState.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
-	walls._push_to_tear(step, Vector2(start_x, y), Vector2.ZERO)
-	t.check(not walls._sliding, "letting go ends the slide")
-	walls._push_to_tear(step, Vector2(start_x, y), diagonal)
-	t.check(GameState.posters.has_intact_sheet(run[0]), "and the next push waits for the time again")
-	city.free()
+	_steer(Vector2.ZERO)
+	await _wait(t, 0.2)
+	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_stand_at(run[0], 1.0, Vector2.UP)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(_run.posters.has_intact_sheet(run[0]),
+			"after letting go the next push waits for the time again")
+	_close()
 
 ## A door, a portico or a fire escape's column is a front tile with no sheet. Crossing one at
 ## walking speed takes under 0.4s, so a slide that ended there would start its count again and the
-## sheet after the door would escape. The door is made by taking the middle cell of a run of three
-## out of the wall's cells, which is what `blank_ground_floor_cells()` does for a real one. Without
-## the fix the slide resets on the door's tile and the third cell, slid past in 0.35s, is not torn.
+## sheet after the door would escape. The door is a real one: a front tile of the city between two
+## cells of the same wall that carry no sheet. A push held across it tears the sheet beyond at once;
+## turning out of the wall in the doorway, or walking off the front, ends the slide so that the next
+## push waits for the time again.
 func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
-	var city: City = RunCity.of_the_run(CITY_SCENE)
-	t.add_child(city)
-	city.build(map)
-	GameState.header.run_seed = SEEDS[0]
-	GameState.posters.reset()
-	var walls := city.poster_walls()
-	walls._day_running = true
+	await _open(t, SEEDS[0])
+	var fronts := _walls.fronts()
 	var run: Array[Vector2i] = []
-	for index in walls.wall_count():
-		var cells: Array = walls._walls[index]["tiles"]
-		for i in range(0, cells.size() - 2):
-			if run.is_empty() and cells[i + 1].x == cells[i].x + 1 and cells[i + 2].x == cells[i].x + 2:
-				run.assign(cells.slice(i, i + 3))
-	t.check(run.size() == 3, "there are three touching cells to put a door in the middle of")
+	for tile: Vector2i in fronts:
+		var door := tile + Vector2i.RIGHT
+		# A front by the map's own reading (the sidewalk in front of a building) that no sheet goes on.
+		if not fronts.has(door) and fronts.has(door + Vector2i.RIGHT) \
+				and _map.pavement_inward(door) == Vector2i.UP \
+				and _map.tile_at(door + Vector2i.UP) == GameEnums.TileType.BUILDING \
+				and (run.is_empty() or tile < run[0]):
+			run.assign([tile, door, door + Vector2i.RIGHT])
+	t.check(run.size() == 3, "there are two cells with a door between them to push across")
 	if run.size() != 3:
-		city.free()
+		_close()
 		return
-	var door := run[1]
-	walls._by_tile.erase(door)
-	t.check(PosterWalls._is_a_front(map, door), "the door's tile is still the building's front")
-	var rect := map.tile_rect_to_world(Rect2i(run[0], Vector2i.ONE))
-	var y := rect.position.y + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
-	var step := 1.0 / 60.0
-	var speed := 92.0
-	var diagonal := Vector2(1.0, -1.0).normalized()
-	GameState.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
-	GameState.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	var diagonal := Vector2(1.0, -1.0)
+	var across := func() -> bool: return _run.posters.is_torn(run[2])
+	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
 	# She stands against the first sheet until it gives, then slides across the door to the third.
-	var x := rect.position.x + 1.0
-	for i in ceili((PosterWalls.PRESS_TO_TEAR + 0.05) / step):
-		walls._push_to_tear(step, Vector2(x, y), diagonal)
-	t.check(GameState.posters.is_torn(run[0]), "the sheet before the door tears")
-	for i in ceili(3.0 * Tuning.TILE_SIZE / speed / step):
-		walls._push_to_tear(step, Vector2(x, y), diagonal)
-		x += speed * step
-	t.check(GameState.posters.is_torn(run[2]), "a push held across a door tears the next sheet at once")
-	t.check(walls._sliding, "and the slide is still going")
-	# Turning out of the wall on the door's tile ends it.
-	walls._push_to_tear(step, Vector2(rect.position.x + 40.0, y), Vector2.RIGHT)
-	t.check(not walls._sliding, "turning out of the wall in the doorway ends the slide")
+	_stand_at(run[0], 1.0, Vector2.UP)
+	var first := await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+			PosterWalls.PRESS_TO_TEAR + 0.2)
+	t.check(first, "the sheet before the door tears")
+	_steer(diagonal)
+	var crossed := await _wait_until(t, across, 3.0 * Tuning.TILE_SIZE / 40.0)
+	t.check(crossed, "a push held across a door tears the next sheet at once")
+	var tears: int = _run.posters.tears
+	var beyond_door := _map.tile_rect_to_world(Rect2i(run[2], Vector2i.ONE)).position.x
+	t.check(_her.global_position.x > beyond_door and tears == 2,
+			"she tore it as she came in front of it, not before the door (%d tears)" % tears)
+
+	# Turning out of the wall in the doorway ends the slide: the next sheet waits for the time.
+	_stand_at(run[1], 4.0, Vector2.RIGHT)
+	await _wait(t, 0.1)
+	# The diagonal is held before she is put in front of the sheet, so that the walls have read
+	# the new heading by the first tick she is there.
+	_steer(diagonal)
+	await _wait(t, 0.1)
+	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	_stand_at(run[2], 1.0, diagonal)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(_run.posters.has_intact_sheet(run[2]),
+			"turning out of the wall in the doorway ends the slide")
+
 	# Leaving the front altogether ends it too: a point far from the wall is no front tile.
-	walls._sliding = true
-	walls._push_to_tear(step, Vector2(rect.position.x + 40.0, y + 5.0 * Tuning.TILE_SIZE), diagonal)
-	t.check(not walls._sliding, "walking off the front ends the slide")
-	city.free()
+	_run.posters.paste(run[0], PosterArt.Kind.RULES, false, 1)
+	_stand_at(run[0], 1.0, Vector2.UP)
+	await _wait_until(t, func() -> bool: return _run.posters.is_torn(run[0]),
+			PosterWalls.PRESS_TO_TEAR + 0.2)
+	_steer(diagonal)
+	await _wait(t, 0.5)
+	_stand_at(run[1], 4.0, diagonal, 5.0 * Tuning.TILE_SIZE)
+	await _wait(t, 0.1)
+	# The diagonal is held before she is put in front of the sheet, so that the walls have read
+	# the new heading by the first tick she is there.
+	_steer(diagonal)
+	await _wait(t, 0.1)
+	_run.posters.paste(run[2], PosterArt.Kind.RULES, false, 1)
+	_stand_at(run[2], 1.0, diagonal)
+	await _wait(t, PosterWalls.PRESS_TO_TEAR * 0.75)
+	t.check(_run.posters.has_intact_sheet(run[2]), "walking off the front ends the slide")
+	_close()
