@@ -29,4 +29,4 @@ warning's tick adds to how long it has shown.
 
 **Not done:** `EventsAhead._warn_down_her_line()` and `_send_down_her_line()`, called by nothing
 but the director itself (they want the director to owe the cyclist or the dog, and real frames to
-run `place_what_is_owed_ahead()`); `EventInstance._notice_damping()`, which no game class reads.
+run `place_what_is_owed_ahead()`); `EventInstance._notice_damping()`, which no other game class reads (its own class calls it).
