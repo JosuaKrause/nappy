@@ -438,13 +438,13 @@ const CAR_STOPPED_SPEED := 5.0
 ## streets *around her* rather than what is scattered over ten thousand tiles. A whole-city figure
 ## reads about a third as dense as it looks — a hundred cars over sixteen corridors is one every six
 ## seconds in your lane, which is a road you can ignore. **Measure these, never convert them by
-## area**: `tests/test_crowd.gd`, "the road has to be waited for".
+## area**: `tests/crowd_rig.gd`, "the road has to be waited for".
 ##
 ## **A junction is a place a car can be stopped, which is what gives the road a capacity.** Without
 ## it two cars on crossing arms drive through each other, the network's throughput is unbounded, and
 ## a car count means whatever it happens to look like. With the box rationed, a car waiting at a
 ## light beside you is louder for longer than one going past, so the same population puts the
-## arterial floor over the ceiling `tests/test_crowd.gd` states — *"expensive to cross, not
+## arterial floor over the ceiling `tests/crowd_rig.gd` states — *"expensive to cross, not
 ## impossible"*.
 ##
 ## **The honest answer to "the main road is too quiet" has twice been something other than more
@@ -613,7 +613,7 @@ const CAR_HORN_OUTER_RADIUS := 132.0
 ## clear road in front of it and never closes to less than `CAR_GAP_MIN`, which is a car's own
 ## length plus a nose.
 ##
-## The relationship that matters, and the one `tests/test_crowd.gd` states: the headway has to
+## The relationship that matters, and the one `tests/crowd_rig.gd` states: the headway has to
 ## be longer than the *braking* time from cruise, or a car physically cannot honour it and the
 ## queue resolves by interpenetration again. `CarStrategy.CAR_BRAKE` is shared with the zebra, so this is
 ## free to check and cheap to get wrong.

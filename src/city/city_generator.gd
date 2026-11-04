@@ -250,7 +250,7 @@ static func _assign_regions(map: CityMap) -> void:
 ## are holes punched through the ring of frontages.
 ##
 ## **Two corridors of clearance is too near**, measured rather than judged: at corridor 9 of eleven
-## the city east of the spine is two block-columns, and `tests/test_crowd.gd` sees it before a
+## the city east of the spine is two block-columns, and `tests/crowd_rig.gd` sees it before a
 ## player could — 256 overlapping crossing-axis pairs in a junction box over a minute against a
 ## tolerance of 180, where a central spine gives well under it. A sliver has the spine's whole
 ## traffic funnelling through junctions that have nowhere to spread to.

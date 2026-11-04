@@ -247,7 +247,7 @@ arithmetic, and why the asymmetric offset is the best answer rather than a compr
 
 - **An identity is not the property.** Asserting `cycle / travel` is an even multiple is *true* and
   pins nothing, because it is not the condition the sentence beside it claims.
-  `tests/test_crowd.gd` walks a car down the platoon instead.
+  `tests/test_crowd_streets.gd` (its case in `tests/crowd_rig.gd`) walks a car down the platoon instead.
 - **The stopped fraction is not the speed spread.** A car's speed drifts it against the wave, but
   it does not live long enough on the spine to drift out of a green band, and the fast half stops
   more than the slow half. The mechanism is the main arm's red share of the cycle and that only half

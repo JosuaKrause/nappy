@@ -71,7 +71,7 @@ const ROAD_OFFSETS: Array[int] = [2, 3]
 ## so nowhere on a street is more than seven tiles from one. What is not fine is a road that cannot
 ## be crossed at all and does not say so.
 ##
-## At 5.0 the arterial keeps the noise floor it has to keep (see `tests/test_crowd.gd`, "a busy
+## At 5.0 the arterial keeps the noise floor it has to keep (see `tests/crowd_rig.gd`, "a busy
 ## street never lets the meter fall") and jaywalking it is a real gamble rather than an
 ## impossibility. Measured with a probe, not derived; re-measure if the population moves.
 const ARTERIAL_BUSYNESS := 5.0

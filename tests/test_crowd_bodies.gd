@@ -3,7 +3,7 @@ extends "res://tests/crowd_street_rig.gd"
 ## kerbed van, a stall. *("yes every solid body should do that -- not necessarily force a turn
 ## around but at least avoid the solid".)*
 ##
-## Kept apart from `test_crowd.gd` because that file is already the longest suite on disk and these
+## Kept apart from `crowd_rig.gd` because that file already holds the longest cases on disk and these
 ## all want the same rig: a real generated city with **no day planned on it**, so `held_segments`
 ## and `soft_sealed_tiles` are empty and the only thing standing anywhere is the body the test put
 ## there. The wiring that fills `CityMap.obstructed_tiles` from a real day is `EventManager`'s and
@@ -664,7 +664,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t, city: City, map: C
 
 ## Nobody is ever inside a body's own footprint, over a day's real crowd on a day's real plan,
 ## across several seeds. The property the whole item is for, asked the way
-## `test_crowd.gd`'s hard-seal test asks its own: a count of frames, and the count is zero.
+## `crowd_rig.gd`'s hard-seal test asks its own: a count of frames, and the count is zero.
 ##
 ## **Stated over the record rather than over the catalogue**, because the record is what the crowd
 ## reads: a seed whose day happened to place nothing solid would pass vacuously, so the tile count

@@ -1,7 +1,7 @@
 extends RefCounted
 ## `GiveWay`, the street rules a crowd car and an event car both give way by: the box ahead, the red
 ## light, the zebra she waits at and the exemption for the main road. The two drivers' own tests
-## (`test_police_car.gd`, `test_crowd.gd`, `test_turns.gd`) hold what each does with the answer; this
+## (`test_police_car.gd`, `test_crowd_traffic.gd`, `test_turns.gd`) hold what each does with the answer; this
 ## holds the answers themselves, asked of a real map in plain values.
 
 const TILE := float(Tuning.TILE_SIZE)

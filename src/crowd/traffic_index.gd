@@ -106,7 +106,7 @@ func rearmost(key: int) -> float:
 
 ## How many cars the index believes are on the road. Also for tests, and for the other half of the
 ## same question: `claim()` is written to be thrown away once a frame, and with nothing throwing it
-## away it grows for as long as the day lasts. See `test_crowd.gd`, "the index is emptied".
+## away it grows for as long as the day lasts. See `crowd_rig.gd`, "the index is emptied".
 func entry_count() -> int:
 	var total := 0
 	for key: int in _lanes:

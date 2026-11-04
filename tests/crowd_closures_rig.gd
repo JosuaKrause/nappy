@@ -8,10 +8,10 @@ extends RefCounted
 ## Split from a single `test_crowd.gd` under M125 -- "the test suite is slow again" -- by
 ## subject rather than trimmed: this half is simulation-bound the same way the other half is, so
 ## nothing here shrinks for speed. It keeps everything about what a placed obstruction does to
-## the crowd once the lattice underneath it stops being plain open street. `test_crowd.gd` keeps
+## the crowd once the lattice underneath it stops being plain open street. `test_crowd_traffic.gd`, `_field.gd` and `_streets.gd` keep
 ## the crowd as ordinary traffic -- population, contact, and the street hierarchy.
 ##
-## This runs against a real generated City, for the same reason `test_crowd.gd` does: these
+## This runs against a real generated City, for the same reason `crowd_rig.gd` does: these
 ## failures are geometric and invisible to a data-level test.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

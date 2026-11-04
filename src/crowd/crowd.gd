@@ -594,7 +594,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 ##
 ## The world first and movement after, which is what a drawn frame did in the game: the tick before
 ## the agents' own frame. A car that moves into another's space is pulled apart by the next tick's
-## resolve before anything reads it; see `test_crowd.gd`, "cars do not drive through each other".
+## resolve before anything reads it; see `crowd_rig.gd`, "cars do not drive through each other".
 func step(delta: float) -> void:
 	_advance_the_world(delta)
 	_step_the_agents(delta)
