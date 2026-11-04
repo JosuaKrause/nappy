@@ -18,6 +18,9 @@
 # named on stderr, the same "missing row costs more than a stale one" rule tools/test.sh's own
 # _cost_of() states. Nothing here ever drops a row silently.
 set -uo pipefail
+# Byte order for every sort and join below, so the file's rows come out in one order whatever the
+# shell's locale, the order tools/test.sh --record-costs writes them in.
+export LC_ALL=C
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
