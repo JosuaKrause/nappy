@@ -1,4 +1,5 @@
 extends RefCounted
+## **The sweep behind `test_park_cordon_seeds_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.**
 ## Day 12's police cordon (`ParkCordon`) across a sweep of seeds, on every size of park the
 ## generator builds, with her standing where the task sent her, at the swing.
 ##
@@ -46,11 +47,13 @@ const PLACES: Array[Array] = [
 	[Vector2(0.5, 0.0), Vector2(0.0, Tuning.TILE_SIZE * 0.5)],
 ]
 
-func run(t) -> void:
-	var seeds: Array[int] = []
-	for seed_value in range(SEEDS_FROM, SEEDS_TO + 1):
-		seeds.append(seed_value)
-	seeds.append(LARGE_PARK_SEED)
+## The sweep over `seeds`: every seed measured and checked the same way, then the checks that hold
+## over the seeds together. `tests/test_park_cordon_seeds_a.gd`, `_b.gd` and `_c.gd` each call it
+## on a third of `SEEDS_FROM..SEEDS_TO` plus `LARGE_PARK_SEED`, so no suite runs two minutes serial;
+## the three together make the checks one sweep over all 41 seeds makes. The together-checks scale
+## with the seeds a part has (30 of 41 measured, a third walked out); the largest calm zone is
+## checked in the part that holds `LARGE_PARK_SEED`.
+func sweep(t, seeds: Array[int]) -> void:
 	var measured := 0
 	var walked_out := 0
 	var largest := 0.0
@@ -63,14 +66,25 @@ func run(t) -> void:
 			walked_out += 1
 		largest = maxf(largest, (m.park_size as Vector2).x * (m.park_size as Vector2).y)
 		_check(t, seed_value, m)
-	t.check(measured >= 30, "the sweep measured a swing park on most seeds (%d of %d)"
+	t.check(measured >= seeds.size() * 30 / 41, "the sweep measured a swing park on most seeds (%d of %d)"
 			% [measured, seeds.size()])
-	t.check(largest >= 704.0 * 704.0 - 1.0,
-			"and the largest calm zone the generator builds among them (%.0f px²)" % largest)
+	if seeds.has(LARGE_PARK_SEED):
+		t.check(largest >= 704.0 * 704.0 - 1.0,
+				"and the largest calm zone the generator builds among them (%.0f px²)" % largest)
 	# On the rest she walks on out of his sight while he is still inside, and he is gone there.
 	t.check(walked_out >= measured / 3,
 			"a busker was walked out of the park on a third of them or more (%d of %d)"
 			% [walked_out, measured])
+
+## The seeds of part `index` (0 to 2) of `parts`: every `parts`th seed of the sweep from the
+## `index`th, so each part holds parks of every size; the last part also holds `LARGE_PARK_SEED`.
+static func part(index: int, parts: int) -> Array[int]:
+	var seeds: Array[int] = []
+	for seed_value in range(SEEDS_FROM + index, SEEDS_TO + 1, parts):
+		seeds.append(seed_value)
+	if index == parts - 1:
+		seeds.append(LARGE_PARK_SEED)
+	return seeds
 
 func _check(t, seed_value: int, m: Dictionary) -> void:
 	var size: Vector2 = m.park_size
