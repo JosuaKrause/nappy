@@ -28,6 +28,9 @@ const UI := preload("res://tests/ui_screens.gd")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE := preload("res://scenes/ui/title_screen.tscn")
+## The seed the runs these screens stand over start on, fixed so a test repeats; no check depends
+## on it.
+const RUN_SEED := 2
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
 func run(t) -> void:
@@ -73,10 +76,21 @@ func run(t) -> void:
 	await _test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
 
-## A pause screen on a platform, in the tree and closed.
-func _pause(t, touch := false, can_quit := true) -> PauseScreen:
+## A fresh run, started on the seed every test here reads it on. The caller frees it, or hands it to
+## a screen as a child (`_pause()`, `_title()`), which frees it with the screen.
+func _fresh_run() -> RunState:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
+	return run
+
+## A pause screen on a platform, in the tree and closed, standing over `run`, or over a fresh run of
+## its own that it frees with itself.
+func _pause(t, touch := false, can_quit := true, run: RunState = null) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
-	pause.use_run(GameState)
+	if run == null:
+		run = _fresh_run()
+		pause.add_child(run)
+	pause.use_run(run)
 	pause.use_platform(touch, can_quit)
 	t.add_child(pause)
 	return pause
@@ -84,9 +98,12 @@ func _pause(t, touch := false, can_quit := true) -> PauseScreen:
 ## A title screen on a platform, in the tree and closed. Its clock runs well past any restart the
 ## process stamped (the stamp is process-wide, and the guard test makes one), so only the guard
 ## test meets the guard.
-func _title(t, touch := false, can_quit := true) -> TitleScreen:
+func _title(t, touch := false, can_quit := true, run: RunState = null) -> TitleScreen:
 	var title: TitleScreen = TITLE.instantiate()
-	title.use_run(GameState)
+	if run == null:
+		run = _fresh_run()
+		title.add_child(run)
+	title.use_run(run)
 	title.use_platform(touch, can_quit)
 	title.use_clock(func() -> int: return Time.get_ticks_msec() + 100000)
 	t.add_child(title)
@@ -99,9 +116,18 @@ func _summary(t, touch := false) -> CanvasLayer:
 	t.add_child(summary)
 	return summary
 
+## The ending screen's model over a fresh run, which the model does not keep (it holds the text).
+func _ending(which: GameEnums.Ending) -> SummaryModel:
+	var run := _fresh_run()
+	var model := SummaryModel.ending(run, which)
+	run.free()
+	return model
+
 ## Shows an ordinary day's summary that ended as `result`.
 func _show_day_over(summary: CanvasLayer, result: GameEnums.DayResult) -> void:
-	summary.show_summary(SummaryModel.day_over(GameState, UI.ended(result)), RunFlow.Mode.DAY_OVER)
+	var run := _fresh_run()
+	summary.show_summary(SummaryModel.day_over(run, UI.ended(result)), RunFlow.Mode.DAY_OVER)
+	run.free()
 
 ## A restart button whose hold is measured on a clock the test moves.
 func _clocked(restart: ModeButton, clock: UI.FakeClock) -> void:
@@ -263,34 +289,32 @@ func _test_space_carries_on_from_every_screen(t) -> void:
 ## `open()` rather than kept in step with `EventBus`: a screen only ever looked at while the game is
 ## stopped cannot go stale, and a listener that has to stay correct across fourteen days will not.
 func _test_the_pause_says_where_the_run_stands(t) -> void:
-	var pause := _pause(t)
+	var run := _fresh_run()
+	var pause := _pause(t, false, true, run)
 	var standing := UI.control(pause, "Standing") as Label
-	var day := GameState.header.day
-	var nerves := GameState.header.nerves
 
-	GameState.header.day = 7
-	GameState.header.nerves = 3
+	run.header.day = 7
+	run.header.nerves = 3
 	t.get_tree().paused = false
 	pause.open()
 	var line: String = standing.text
 	t.check(line.contains("7") and line.contains("***"),
 			"the pause says which day it is and how many nerves are left, as stars ('%s')" % line)
-	t.check(line == SummaryModel.standing_line(GameState),
+	t.check(line == SummaryModel.standing_line(run),
 			"and the line is the summary model's own standing line, the one formatter")
 	pause.close()
 
 	# A single nerve is one star, drawn through the same `Texts.nerve_stars()` every other screen
 	# reads the count through — never a digit and never the word.
-	GameState.header.nerves = 1
+	run.header.nerves = 1
 	pause.open()
 	t.check(standing.text.contains(Texts.nerve_stars(1)) and not standing.text.contains("1 nerve"),
 			"and the last one is one star, not a number ('%s')" % standing.text)
 	pause.close()
 
-	GameState.header.day = day
-	GameState.header.nerves = nerves
 	t.get_tree().paused = false
 	pause.free()
+	run.free()
 
 ## **The dead end.** *(M38: "the lost screen doesn't allow for restarting the game — you can just
 ## cycle between pause screen and loss screen at that point.")*
@@ -319,7 +343,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 
 	# And the other end of the same dead end: the last screen of a run has a key on it.
 	var summary := _summary(t)
-	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
+	summary.show_summary(_ending(GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check(summary.is_showing(), "the ending screen is up")
 	var carried_on := [0]
 	summary.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
@@ -570,13 +594,13 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 ## A title whose mode is already decided (a save brought back) names it, "Normal" or "Hard Mode",
 ## in place of the checkbox; a new game shows the checkbox and no name.
 func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
-	var title := _title(t)
-	var was_hard: bool = GameState.calendar.hard_mode
-	GameState.calendar.hard_mode = false
+	var run := _fresh_run()
+	var title := _title(t, false, true, run)
+	run.calendar.hard_mode = false
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Normal", "a decided Normal run is named 'Normal'")
 	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
-	GameState.calendar.hard_mode = true
+	run.calendar.hard_mode = true
 	title.open(false, false, true)
 	t.check(title.mode_name_shown() == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)
@@ -585,8 +609,8 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	title.open(true)
 	t.check(title.mode_name_shown() == "" and not title.hard_mode_shown(),
 			"a title with no run behind it shows neither")
-	GameState.calendar.hard_mode = was_hard
 	title.free()
+	run.free()
 
 ## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
 ## longer begins anything ... the screen instructs the player to do the one thing that will not
@@ -1171,7 +1195,7 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 	t.check(hint.text == "", "the touch hint says nothing either — the buttons say it now")
 	t.check(UI.control(summary, "Buttons").visible, "and the continue/restart pair is what shows instead")
 
-	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.GOOD),
+	summary.show_summary(_ending(GameEnums.Ending.GOOD),
 			RunFlow.Mode.ENDING)
 	t.check(hint.text == "", "and the ending screen agrees too ('%s')" % hint.text)
 	t.check(UI.control(summary, "Buttons").visible, "the row still shows, for the restart button")
@@ -1194,7 +1218,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 	_show_day_over(summary, GameEnums.DayResult.WON)
 	t.check(continue_column.visible, "an ordinary day summary still offers continue")
 
-	summary.show_summary(SummaryModel.ending(GameState, GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
+	summary.show_summary(_ending(GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check(not continue_column.visible, "but the ending screen does not")
 	t.check(UI.button(summary, "Restart").get_parent().visible,
 			"the restart button stays, hold and all")

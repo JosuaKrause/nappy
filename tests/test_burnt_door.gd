@@ -16,9 +16,7 @@ const DAY := 8
 
 func run(t) -> void:
 	t.gives_back_observers()
-	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
-	var saved_state := GameState.attempt_spend.city_state
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
@@ -31,7 +29,7 @@ func run(t) -> void:
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
 		var shell_at := city.map.tile_to_world(fronts[i])
-		GameState.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
+		city.run.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
 		var director := _task_on_offer(t, city)
 		var door := city.way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
@@ -75,7 +73,7 @@ func run(t) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	GameState.attempt_spend.scars = []
+	city.run.attempt_spend.scars = []
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director.rider() != null:
@@ -84,22 +82,20 @@ func run(t) -> void:
 				"with no recorded scar the arrow %s ends on the burnt building's door %s"
 				% [director.red_arrow_target(), door])
 	director.free()
-
-	GameState.attempt_spend.scars = saved_scars
-	GameState.attempt_spend.city_state = saved_state
 	city.free()
 
 ## Whether the frontage tile `tile` cannot be stood on today, whatever the reason.
 func tile_is_taken(city: City, tile: Vector2i) -> bool:
 	return not city.map.is_walkable(tile) or city.map.is_obstructed(tile)
 
-## Day 8 started through the real order and its mark read, so the task is placed.
+## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
+## completes a step of the city's run, so the run's resistance starts over for each front.
 func _task_on_offer(t, city: City) -> ResistanceDirector:
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
+	city.run.resistance.completed_steps = []
+	city.run.resistance.failed_steps = []
+	city.run.resistance.progress = 0
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []

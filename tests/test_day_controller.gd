@@ -33,7 +33,10 @@ func _rig(t) -> DayController:
 	day.set_process(false)
 	# No map: `_is_home()` guards on it being null, and nothing in this suite reaches the return
 	# phase, so a real `CityMap` would only cost time nothing here asks about.
-	day.setup(null, player, GameState)
+	# A run of its own for each rig, freed with the rest of what the suite added.
+	var run := RunState.new()
+	t.add_child(run)
+	day.setup(null, player, run)
 	return day
 
 func _test_the_clock_emits_once_per_second_crossed(t) -> void:
@@ -113,7 +116,7 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	var labels := []
 	var on_emit := func(remaining: float, _total: float) -> void:
-		labels.append(GameState.format_clock_hundredths(remaining))
+		labels.append(RunState.format_clock_hundredths(remaining))
 	EventBus.day_time_changed.connect(on_emit)
 	escape.start(180.0)
 	labels.clear()
@@ -189,11 +192,11 @@ func _one_drawn_frame(t, clock: DayController, shown: Array) -> void:
 	clock.set_process(false)
 
 func _test_the_formatters(t) -> void:
-	t.check(GameState.format_clock_hundredths(179.43) == "2:59.43",
-			"hundredths: 2:59.43 (%s)" % GameState.format_clock_hundredths(179.43))
-	t.check(GameState.format_clock_hundredths(0.0) == "0:00.00", "hundredths at zero")
-	t.check(GameState.format_clock(179.432) == "2:59.432",
-			"the ending's run length keeps three digits (%s)" % GameState.format_clock(179.432))
+	t.check(RunState.format_clock_hundredths(179.43) == "2:59.43",
+			"hundredths: 2:59.43 (%s)" % RunState.format_clock_hundredths(179.43))
+	t.check(RunState.format_clock_hundredths(0.0) == "0:00.00", "hundredths at zero")
+	t.check(RunState.format_clock(179.432) == "2:59.432",
+			"the ending's run length keeps three digits (%s)" % RunState.format_clock(179.432))
 
 ## The escape's two sections say their clock reads to the hundredth (`DaySpec.clock_hundredths`),
 ## which is what the day's clock emits every frame by: drop it and the escape's label goes back to

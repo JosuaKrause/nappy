@@ -17,18 +17,15 @@ const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
 ## Most of the walks, not all: a walk that never passes a sidewalk of its own is not a defect.
 const AT_LEAST := 4
 const DAY := 6
+## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
+## on it: it holds on seed 1 as well.
+const RUN_SEED := 2
 const ROW := "homeless_yeller"
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
 
 func run(t) -> void:
 	t.gives_back_observers()
-	# Whether the rigged man is sited in view depends on the run's seed; this was checked on seed 2.
-	GameState.start_run(2)
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var met := 0
 	var outcomes: Array[String] = []
 	for seed_value in SEEDS:
@@ -38,14 +35,10 @@ func run(t) -> void:
 			met += 1
 	t.check(met >= AT_LEAST, "the rigged man shouting is in her view on most walks of day %d (%d of %d: %s)"
 			% [DAY, met, SEEDS.size(), outcomes])
-	GameState.resistance.completed_steps.assign(saved_completed)
-	GameState.resistance.failed_steps.assign(saved_failed)
-	GameState.resistance.progress = saved_progress
-	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 ## "seen", "sited, never in view", "never sited", or "no mark".
 func _walk(t, seed_value: int) -> String:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
@@ -57,10 +50,7 @@ func _walk(t, seed_value: int) -> String:
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.resistance.completed_steps.assign(done)
-	GameState.resistance.failed_steps.assign([])
-	GameState.resistance.progress = 0
-	GameState.facts.completed_resistance_alley_tiles.assign([])
+	city.run.resistance.completed_steps.assign(done)
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
