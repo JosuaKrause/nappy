@@ -21,6 +21,7 @@ extends RefCounted
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 const _SCRATCH_SAVE := "user://test_orientation_scratch.json"
 
 func run(t) -> void:
@@ -270,7 +271,8 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	var window: Window = t.get_window()
 	var original_size: Vector2i = window.size
 	var original_scale: Vector2i = window.content_scale_size
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--touch"]))
+	var seat := Seat.new(t)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, ["--touch"])
 	var main := booted.main
 
 	# Every layer `main` builds for the HUD, the screens, the controls, the edge badge and the
@@ -299,7 +301,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	window.size = original_size
 	window.content_scale_size = original_scale
 	booted.free_all()
-	GameState.start_run(4242)
+	seat.end()
 
 
 ## Global `Input` state, same reason `test_touch.gd` cleans it up: nothing here is scoped to this
