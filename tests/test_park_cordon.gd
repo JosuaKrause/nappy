@@ -8,6 +8,7 @@ extends RefCounted
 ## day planned and the swing's task reached through the director, as play reaches it.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 ## How long a check waits for the cordon to close before calling it stuck.
@@ -24,6 +25,9 @@ var _run: RunState
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
+	# The director starts the swing's task, which the visit counter holds open until it is done; the
+	# tests that take the park through their own happenings never finish it.
+	t.gives_back_observers()
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
 	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)
@@ -41,9 +45,16 @@ func run(t) -> void:
 # ------------------------------------------------------------------ fixture ---
 
 ## Day 12 on the suite's city with the mark read and the swing's task offered; `before_the_touch`
-## runs before she reaches the swing. Answers the director, its happenings, the park, the swing and
+## runs before she reaches the swing. Answers the director, the happenings, the park, the swing and
 ## the city state; `_end()` frees the director, the city and the run.
-func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
+##
+## **By default the park is taken by happenings of the suite's own**, handed what the director hands
+## its own when the swing is reached (`take_the_park()` with `reach_obstruction()`), so the cordon
+## is read off `ResistanceHappenings.cordon` without the director's tick or its other duties.
+## `through_the_director` reaches the swing through the director as play does, which takes the park
+## in the director's own happenings; `happenings` is then null and the cordon is read off the world
+## (`CordonInTheWorld`).
+func _at_the_swing(t, before_the_touch := Callable(), through_the_director := false) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	_city = RunCity.in_run(CITY_SCENE, _run)
@@ -74,8 +85,15 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	_swing_now = swing
 	if before_the_touch.is_valid():
 		before_the_touch.call()
-	director.contact().complete_now()
-	return {"director": director, "happenings": director._happenings, "state": state,
+	var happenings: ResistanceHappenings = null
+	if through_the_director:
+		director.contact().complete_now()
+	else:
+		happenings = ResistanceHappenings.new()
+		happenings.setup(_city, _city.map)
+		happenings.start_day(day, false)
+		happenings.take_the_park(director.reach_obstruction())
+	return {"director": director, "happenings": happenings, "state": state,
 			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day}
 
 func _end(fixture: Dictionary) -> void:
@@ -158,7 +176,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
 		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
-				director._reach_blocked)
+				director.reach_obstruction())
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
@@ -179,30 +197,55 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 	_end(fixture)
 
 ## Reaching the swing takes the park, as before — requisitioned and no longer calm — and starts the
-## cordon rather than mud: no tile of its ground changes, during the closing or after it.
+## cordon rather than mud: no tile of its ground changes, during the closing or after it. **Played
+## through the director** as the game plays it: the swing's contact completed, a real `Stroller`
+## handed to the director standing outside the park, and `director.tick()` run; the cordon is read
+## off what it puts in the world (its officers, and whether the park is shut), never off the
+## director's happenings.
 func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t) -> void:
-	var fixture := _at_the_swing(t)
+	var fixture := _at_the_swing(t, Callable(), true)
 	var state: CityState = fixture.state
 	var park: Vector2i = fixture.park
-	var happenings: ResistanceHappenings = fixture.happenings
+	var director: ResistanceDirector = fixture.director
 	t.check(state.purpose_of(_city.map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
 			"reaching the swing takes the park")
 	t.check(not (park in _city.map.calm_blocks), "and the city stops counting it as calm")
-	t.check(happenings.cordon != null and happenings.is_closing(),
-			"and the police are sent to cordon it")
 	var rect := ClosurePlanner.calm_area_rect(_city.map, park)
+	var area := _city.map.tile_rect_to_world(rect)
+	var inside := area.get_center()
+	# A real `Stroller` as `main` hands one, with the camera node its `_ready()` looks for and its
+	# own physics off: it stands where it is put.
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	t.add_child(player)
+	player.set_physics_process(false)
+	player.global_position = inside + Vector2(area.size.x, 0.0)
+	director.use_player(player)
+	_look(_city, player.global_position)
+	director.tick(STEP)
+	t.check(not CordonInTheWorld.officers(_city).is_empty()
+			and not CordonInTheWorld.is_shut(_city.map, inside),
+			"and the police are sent to cordon it")
 	var before := {}
 	for tile in _city.map.rect_tiles(rect):
 		before[tile] = _city.map.tile_at(tile)
-	var outside := happenings.cordon.area.get_center() + Vector2(happenings.cordon.area.size.x, 0.0)
-	_run_until_closed(happenings, [outside], Callable())
-	t.check(not happenings.is_closing(), "the cordon closes")
+	var waited := 0.0
+	while not CordonInTheWorld.is_shut(_city.map, inside) and waited < PATIENCE:
+		_look(_city, player.global_position)
+		director.tick(STEP)
+		waited += STEP
+	t.check(CordonInTheWorld.is_shut(_city.map, inside), "the cordon closes")
 	var changed := 0
 	for tile: Vector2i in before:
 		if _city.map.tile_at(tile) != before[tile]:
 			changed += 1
 	t.check(changed == 0, "and not one tile of the park's ground changed (%d of %d)"
 			% [changed, before.size()])
+	director.use_player(null)
+	player.free()
 	_end(fixture)
 
 ## Nothing of an officer is in the camera's view where he is placed; each then walks into it, so
@@ -432,7 +475,7 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
 			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
-					_city.spawn_siting, director._reach_blocked)
+					_city.spawn_siting, director.reach_obstruction())
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				_look(_city, null)

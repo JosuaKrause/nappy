@@ -54,6 +54,9 @@ const PLACES: Array[Array] = [
 ## with the seeds a part has (30 of 41 measured, rounded up so the three floors sum to at least 30; a third walked out); the largest calm zone is
 ## checked in the part that holds `LARGE_PARK_SEED`.
 func sweep(t, seeds: Array[int]) -> void:
+	# The director starts the swing's task, which the visit counter holds open until it is done; the
+	# sweep takes the park through its own happenings and never finishes it.
+	t.gives_back_observers()
 	var measured := 0
 	var walked_out := 0
 	var largest := 0.0
@@ -169,8 +172,13 @@ func measure(t, seed_value: int) -> Dictionary:
 	var task := director.current_step()
 	if task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		var swing := director.contact_position()
-		director.contact().complete_now()
-		var happenings: ResistanceHappenings = director._happenings
+		# The park is taken by happenings of the sweep's own, handed what the director hands its
+		# own when the swing is reached (`take_the_park()` with `reach_obstruction()`), so the
+		# cordon is the happenings' public one and no director tick stands between it and the sweep.
+		var happenings := ResistanceHappenings.new()
+		happenings.setup(city, city.map)
+		happenings.start_day(day, false)
+		happenings.take_the_park(director.reach_obstruction())
 		result = _measure_the_day(city, director, happenings, swing)
 		happenings.start_day(day + 1)
 	director.free()
@@ -196,9 +204,15 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	result.relaid = cordon.relaid
-	var people := cordon._leaving.size()
+	# The park's people the cordon takes on: an escort each, and those sent off on their own, who
+	# are leaving the moment the first tick has run.
+	var people := 0
 	for officer in cordon.officers:
 		if officer.job == ParkCordon.Officer.Job.ESCORT:
+			people += 1
+	for live in city.events.instances():
+		if live.is_leaving and cordon.area.has_point(live.global_position) \
+				and live.def.kind != GameEnums.EventKind.AMBIENT and live.def.pursuit == null:
 			people += 1
 	result.people = people
 	cordon.clear()
@@ -300,7 +314,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	return result
 
 ## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached
-## from home with the park's ground blocked under the director's `_reach_blocked`, some other calm
+## from home with the park's ground blocked under the director's `reach_obstruction()`, some other calm
 ## tile reached the same way, and the point a tile out from each stretch farther from every placed
 ## body than its obstruction and her whole shape, and outside the field of any body that carries
 ## one and the lethal reach of anything that ends the day.
