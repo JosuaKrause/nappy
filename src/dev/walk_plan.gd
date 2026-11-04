@@ -1,6 +1,6 @@
 class_name WalkPlan
 extends RefCounted
-## What a movement script (`AutoScreenshot._parse_script()`'s steps) presses on each physics tick —
+## What a movement script (`AutoScreenshot.parse_script()`'s steps) presses on each physics tick —
 ## abruptly, one step's direction after the next, or with its turns smoothed. `--walk` with
 ## `--smooth-walk` and a scene recipe's `playback.walk` with `playback.smooth` both read it, so the
 ## two drivers of a script cannot disagree about where a smoothed turn puts her.
@@ -54,7 +54,7 @@ var _ticks_per_second := 30
 ## `centre` and `width` in ticks. See `_plan_turns()`.
 var _turns: Array[Dictionary] = []
 
-## A plan for `steps` (`AutoScreenshot._parse_script()`'s shape) at `ticks_per_second`, smoothing
+## A plan for `steps` (`AutoScreenshot.parse_script()`'s shape) at `ticks_per_second`, smoothing
 ## its turns when `smooth` is true.
 static func make(steps: Array[Dictionary], ticks_per_second: int, smooth: bool) -> WalkPlan:
 	var plan := WalkPlan.new()

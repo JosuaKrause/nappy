@@ -102,7 +102,7 @@ class Solid extends RefCounted:
 
 ## The pitch of the lattice her centre is asked about on, a quarter of a tile: fine enough that
 ## a gap her 28px body fits through has a point in it, and the same lattice
-## `tests/test_finale.gd` floods the finished plan over.
+## `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) floods the finished plan over.
 const STEP := 8.0
 ## The side of the square buckets standing pieces are filed in, so a question about one
 ## candidate's ground reads the handful of bodies near it rather than all of them.
@@ -288,7 +288,7 @@ func leaves_a_sidewalk_open(own: Array[Solid]) -> bool:
 ## passes through the box enters and leaves it through the rim, and the candidate changes
 ## nothing outside the box, so if every pair of rim points the box joined is still joined, every
 ## walk that existed still does — and the seals alone leave the walk's ends reachable (the escape's
-## both exits, `tests/test_finale.gd`), so by induction over the placements the finished plan does
+## both exits, `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`)), so by induction over the placements the finished plan does
 ## too.
 ## It refuses more than it has to — two rim points the box joined may also be joined round the
 ## outside — and that is the safe direction: the copy is rolled again, or not placed.

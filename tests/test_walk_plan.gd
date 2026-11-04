@@ -6,38 +6,42 @@ extends RefCounted
 ## as with the abrupt version … they should end up in the same exact place no matter whether smooth
 ## is on or off".)*
 ##
-## Every walk here drives a real `Stroller` through the real input actions — `WalkPlan.press()`
-## into `Input.get_vector()`, the acceleration ramp, the facing turn — one physics tick at a time,
-## in the order a recipe's playback presses (the input pressed for tick `n` is read on tick
-## `n + 1`). Her position is integrated by hand from the `velocity` each tick computes rather than
-## left to `move_and_slide()`: a hand-stepped body in this suite has no synced collision shape for
-## the slide to move.
+## Every walk here drives a real `Stroller` in the tree through the real input actions —
+## `WalkPlan.press()` into `Input.get_vector()`, the acceleration ramp, the facing turn — on real
+## physics ticks, one a frame (`tests/physics_ticks.gd`), and reads where she stands after each. What
+## presses is the rig a player types the words for: `AutoScreenshot.from_config()` on `--walk`, with
+## `--smooth-walk` for the smoothed one, so the order is the game's own (the input pressed for tick
+## `n` is read on tick `n + 1`). The abrupt rig reads a clock handed to it that counts physics ticks
+## (`simulation_clock`, the one a scene recipe hands its screenshot), so its steps change on the same
+## tick the plan's do.
 ##
 ## **Equal means within `TOLERANCE`**, a hundredth of a pixel: the construction is exact on open
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of
 ## `Vector2` arithmetic over a few hundred ticks.
 
-const STEP := 1.0 / 30.0
+const UI := preload("res://tests/ui_screens.gd")
 const TOLERANCE := 0.01
 ## Ticks walked past the end of a script, so both versions have come to rest.
 const RUN_OUT := 30
 
 func run(t) -> void:
-	_test_west_then_north_ends_where_the_abrupt_script_does(t)
-	_test_the_turn_sweeps_through_the_bearings_between(t)
-	_test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t)
-	_test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does(t)
-	_test_a_running_turn_and_a_turn_after_a_short_lead_in(t)
+	await PhysicsTicks.settle(t)
+	await _test_west_then_north_ends_where_the_abrupt_script_does(t)
+	await _test_the_turn_sweeps_through_the_bearings_between(t)
+	await _test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t)
+	await _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does(t)
+	await _test_a_running_turn_and_a_turn_after_a_short_lead_in(t)
 	_test_smooth_off_presses_exactly_the_abrupt_script(t)
 	_test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t)
 	_test_a_blended_press_reads_back_as_the_blend(t)
-	_test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t)
+	await _test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t)
+	await _test_the_step_clock_never_advances_a_smooth_script(t)
 	_test_a_recipe_says_smooth_with_a_boolean(t)
 
 # ----------------------------------------------------------------- the walks ---
 
-## A Stroller with the camera it looks up by path, in the tree so its `@onready` runs, with its
-## physics stepped by hand — the same rig `tests/test_danger.gd` builds.
+## A Stroller with the camera it looks up by path, in the tree so its `@onready` runs and its own
+## physics ticks move her — the same rig `tests/test_danger.gd` builds.
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -45,29 +49,50 @@ func _rig(t) -> Stroller:
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	rig.add_child(camera)
 	t.add_child(rig)
-	rig.set_physics_process(false)
+	return rig
+
+## The seconds a rig's script has run, counted in the physics ticks the walk has let pass (the
+## walk sets `ticks` after each one, before the frame's `_process()` runs).
+class TickClock extends RefCounted:
+	var ticks := 0
+
+	func read() -> float:
+		return float(ticks) / Engine.physics_ticks_per_second
+
+## The rig a player gets from `--walk script` (and `--smooth-walk`), built by the game's own
+## `from_config()`. `--after 600` keeps it from ever reaching its capture, which quits a headless
+## process.
+func _walk_rig(script: String, smooth: bool, clock: TickClock) -> AutoScreenshot:
+	var words := ["--screenshot", "scratch_unused.png", "--after", "600", "--walk", script]
+	if smooth:
+		words.append("--smooth-walk")
+	var rig := AutoScreenshot.from_config(RunConfig.parse(PackedStringArray(words), "", true))
+	rig.simulation_clock = clock.read
 	return rig
 
 ## Walks `script` from a standstill at the origin, smooth or abrupt, and returns where she is after
 ## every tick (`positions[n]` after `n` ticks), her velocity after every tick, and the plan.
 func _walk(t, script: String, smooth: bool) -> Dictionary:
-	var steps := AutoScreenshot._parse_script(script)
+	var steps := AutoScreenshot.parse_script(script)
 	var plan := WalkPlan.make(steps, Engine.physics_ticks_per_second, smooth)
 	var total := 0.0
 	for step: Dictionary in steps:
 		total += float(step.seconds)
-	var rig := _rig(t)
-	var at := Vector2.ZERO
-	var positions: Array[Vector2] = [at]
+	var stroller := _rig(t)
+	var clock := TickClock.new()
+	var rig := _walk_rig(script, smooth, clock)
+	t.add_child(rig)
+	var positions: Array[Vector2] = [stroller.global_position]
 	var velocities: Array[Vector2] = [Vector2.ZERO]
-	for tick in ceili(total * Engine.physics_ticks_per_second) + RUN_OUT:
-		WalkPlan.press(plan.input_at(tick))
-		rig._physics_process(STEP)
-		at += rig.velocity * STEP
-		positions.append(at)
-		velocities.append(rig.velocity)
-	_release()
+	var after_a_tick := func(ran: int) -> void:
+		clock.ticks = ran
+		positions.append(stroller.global_position)
+		velocities.append(stroller.velocity)
+	await PhysicsTicks.pass_ticks(t, ceili(total * Engine.physics_ticks_per_second) + RUN_OUT,
+			after_a_tick)
 	rig.free()
+	_release()
+	stroller.free()
 	return {"positions": positions, "velocities": velocities, "plan": plan}
 
 func _release() -> void:
@@ -79,8 +104,8 @@ func _release() -> void:
 ## the smoothed turn has caught up with the abrupt one — and end at rest at the same point. The
 ## count of agreeing ticks after the first turn keeps "wherever" from being vacuous.
 func _check_same_place(t, script: String, smoothed: int) -> Dictionary:
-	var abrupt := _walk(t, script, false)
-	var smooth := _walk(t, script, true)
+	var abrupt: Dictionary = await _walk(t, script, false)
+	var smooth: Dictionary = await _walk(t, script, true)
 	var plan: WalkPlan = smooth.plan
 	t.check(plan.smoothed_turns() == smoothed,
 			"'%s' smooths %d turn(s) (got %d)" % [script, smoothed, plan.smoothed_turns()])
@@ -114,15 +139,15 @@ func _check_same_place(t, script: String, smoothed: int) -> Dictionary:
 
 ## The player's own case: one second west, one second north, from one spot.
 func _test_west_then_north_ends_where_the_abrupt_script_does(t) -> void:
-	_check_same_place(t, "1w1n", 1)
+	await _check_same_place(t, "1w1n", 1)
 	# And with a turn on each side of a middle step, so a position after one turn and before the
 	# next is compared, not only the end.
-	_check_same_place(t, "1w1n1e", 2)
+	await _check_same_place(t, "1w1n1e", 2)
 
 ## "Gradually": the smooth walk heads through bearings strictly between west and north, which
 ## the abrupt one only crosses in the few ticks its velocity takes to swing.
 func _test_the_turn_sweeps_through_the_bearings_between(t) -> void:
-	var walks := _check_same_place(t, "1w1n", 1)
+	var walks: Dictionary = await _check_same_place(t, "1w1n", 1)
 	var smooth_between := 0
 	var abrupt_between := 0
 	for pair in [["smooth", walks.smooth], ["abrupt", walks.abrupt]]:
@@ -143,11 +168,11 @@ func _test_the_turn_sweeps_through_the_bearings_between(t) -> void:
 
 ## Two bearings neither of which is an axis, through an angle that is not a right angle.
 func _test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t) -> void:
-	_check_same_place(t, "1.5@30@1.5@145@", 1)
+	await _check_same_place(t, "1.5@30@1.5@145@", 1)
 
 ## A reversal cannot sweep without drifting sideways, so it slows to a stop and walks back.
 func _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does(t) -> void:
-	var walks := _check_same_place(t, "1e1w", 1)
+	var walks: Dictionary = await _check_same_place(t, "1e1w", 1)
 	var velocities: Array[Vector2] = walks.smooth.velocities
 	var sideways := 0.0
 	for velocity in velocities:
@@ -157,15 +182,15 @@ func _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does
 ## A turn at a run, and a turn after a lead-in too short for the full window, which a trailer
 ## shot's first legs are.
 func _test_a_running_turn_and_a_turn_after_a_short_lead_in(t) -> void:
-	_check_same_place(t, "1.5W1.5N", 1)
-	_check_same_place(t, "0.3s2w", 1)
+	await _check_same_place(t, "1.5W1.5N", 1)
+	await _check_same_place(t, "0.3s2w", 1)
 
 # --------------------------------------------------------------- unchanged ---
 
 ## Smooth off presses on every tick exactly the step that tick falls in — the step's own vector and
 ## run, bit for bit, never a blend.
 func _test_smooth_off_presses_exactly_the_abrupt_script(t) -> void:
-	var steps := AutoScreenshot._parse_script("1w0.5p1.2@45@0.6S1n")
+	var steps := AutoScreenshot.parse_script("1w0.5p1.2@45@0.6S1n")
 	var plan := WalkPlan.make(steps, Engine.physics_ticks_per_second, false)
 	var mismatches := 0
 	var ticks := 0
@@ -187,7 +212,7 @@ func _test_smooth_off_presses_exactly_the_abrupt_script(t) -> void:
 ## abrupt: the smooth plan presses on every tick what the abrupt one does.
 func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t) -> void:
 	for script in ["1e1W", "1e0.5p1w", "1e0.1n1w"]:
-		var steps := AutoScreenshot._parse_script(script)
+		var steps := AutoScreenshot.parse_script(script)
 		var abrupt := WalkPlan.make(steps, Engine.physics_ticks_per_second, false)
 		var smooth := WalkPlan.make(steps, Engine.physics_ticks_per_second, true)
 		var differ := 0
@@ -212,31 +237,63 @@ func _test_a_blended_press_reads_back_as_the_blend(t) -> void:
 
 # ------------------------------------------------------------------ callers ---
 
-## `--smooth-walk`: the rig presses the plan from its physics tick, not the script's step clock.
-## `_ready()` and `_physics_process()` are called by hand on a node never added to the tree, the
-## way `tests/test_auto_screenshot.gd` reaches them.
+## `--smooth-walk`: the rig presses the plan from its physics tick, not the script's step clock. The
+## rig stands in the tree and its own ticks run; what it pressed is read off `Input` after each.
 func _test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t) -> void:
-	var node := AutoScreenshot.new()
-	node._script = AutoScreenshot._parse_script("1w1n")
-	node._smooth = true
-	node._seconds_to_wait = 100.0
-	node._ready()
+	var node := _walk_rig("1w1n", true, TickClock.new())
+	t.add_child(node)
 	var read := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
 	t.check(read == Vector2.LEFT, "a smooth script starts on its first step's own press")
-	var blended := 0
+	var blended := [0]
+	var last := [Vector2.ZERO]
 	# Fifty ticks: past the turn's window, and short of the script's end at sixty.
-	for tick in 50:
-		node._physics_process(STEP)
-		read = Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
-		if read.x < -0.01 and read.y < -0.01:
-			blended += 1
-	t.check(blended > 6, "and presses between west and north through the turn (%d ticks)" % blended)
-	t.check(read.is_equal_approx(Vector2.UP), "and north once the turn is over")
-	# A step clock reading past the first one-second step would advance an abrupt script.
-	node._process(1.5)
-	t.check(node._script_index == 0, "the step clock never advances a smooth script")
-	_release()
+	var after_a_tick := func(_ran: int) -> void:
+		var pressed := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
+		last[0] = pressed
+		if pressed.x < -0.01 and pressed.y < -0.01:
+			blended[0] += 1
+	await PhysicsTicks.pass_ticks(t, 50, after_a_tick)
+	t.check(blended[0] > 6, "and presses between west and north through the turn (%d ticks)"
+			% blended[0])
+	t.check((last[0] as Vector2).is_equal_approx(Vector2.UP), "and north once the turn is over")
 	node.free()
+	_release()
+
+## Reads what is pressed after the rig's own `_process()` of every frame (a probe that runs later in
+## the frame), since a step clock's press is overwritten by the plan's on the next tick.
+class Probe extends Node:
+	var seen: Array[Vector2] = []
+
+	func _init() -> void:
+		process_priority = 100
+
+	func _process(_delta: float) -> void:
+		seen.append(Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down"))
+
+## A step clock reading past the first one-second step would advance an abrupt script to north; a
+## smooth script is pressed by its plan alone, so with the clock read at 1.5s while the plan is
+## still on its first step the press stays west on every frame.
+func _test_the_step_clock_never_advances_a_smooth_script(t) -> void:
+	var clock := UI.FakeClock.new()
+	var node := _walk_rig("1w1n", true, TickClock.new())
+	node.simulation_clock = clock.read
+	t.add_child(node)
+	var probe := Probe.new()
+	t.add_child(probe)
+	await PhysicsTicks.pass_ticks(t, 4)
+	clock.now = 1.5
+	probe.seen.clear()
+	await PhysicsTicks.pass_ticks(t, 4)
+	var west := 0
+	for pressed in probe.seen:
+		if pressed == Vector2.LEFT:
+			west += 1
+	t.check(probe.seen.size() >= 4 and west == probe.seen.size(),
+			"the step clock never advances a smooth script (west on %d of %d frames)"
+					% [west, probe.seen.size()])
+	node.free()
+	probe.free()
+	_release()
 
 ## `playback.smooth` is a boolean or the recipe is refused, like every other playback switch.
 func _test_a_recipe_says_smooth_with_a_boolean(t) -> void:

@@ -69,6 +69,7 @@ src/
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
 	building.gd           one lot, assembled from 32px facade and roof tiles
+	roof_drawer.gd        what a building draws its roof units through; the city hands it in
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
 	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary

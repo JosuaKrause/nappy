@@ -1,4 +1,7 @@
 extends RefCounted
+## **The cases behind `test_finale_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each part runs
+## the cases it owns, so no suite runs two minutes serial; the parts together make every check the
+## one suite made.
 ## The escape: the two chains through the city, the walls off them, the clock, and what a lost
 ## section costs.
 ##
@@ -29,60 +32,67 @@ const WHERE_THE_PLAYER_WAS_CAUGHT := Vector2i(74, 22)
 ## property of one city's own geometry, so a single seed proves nothing about the next.
 const SEEDS := [4242, 1, 77, 9001]
 
-func run(t) -> void:
+## Every case of the escape, in the order the one suite ran them.
+const CASES: Array[String] = [
+	"_test_the_two_chains_part_at_the_door_and_never_meet_again",
+	"_test_each_chain_passes_three_distinct_calm_areas",
+	"_test_each_chain_reaches_its_own_edge",
+	"_test_every_street_off_the_chains_is_sealed",
+	"_test_both_exits_are_reachable_through_the_open_cells_alone",
+	"_test_both_exits_are_reachable_past_every_body_the_escape_stands",
+	"_test_both_exits_are_reachable_past_every_standing_lethal_reach",
+	"_test_a_street_of_vans_leaves_a_walk_past_every_reach",
+	"_test_no_street_of_the_walk_stands_two_roadblocks",
+	"_test_a_roadblock_band_costs_nothing",
+	"_test_the_far_guard_leaves_with_his_partner",
+	"_test_neither_guard_walks_off_over_a_building",
+	"_test_a_lured_off_roadblock_raises_no_mark_over_her",
+	"_test_luring_its_guard_off_is_the_way_past_a_roadblock",
+	"_test_no_two_roadblocks_notice_her_from_the_same_ground",
+	"_test_an_escape_guard_warns_on_the_screen_and_on_top",
+	"_test_the_players_seed_is_winnable_past_its_roadblocks",
+	"_test_the_escape_stands_its_rows_on_the_days_own_ground",
+	"_test_an_alley_mouth_wall_fits_the_mouth",
+	"_test_nothing_the_escape_stands_reaches_over_a_building",
+	"_test_a_restart_plans_the_same_escape_on_the_kept_ground",
+	"_test_the_manager_plans_a_restart_on_the_ground_it_kept",
+	"_test_the_escape_bag_keeps_the_players_order",
+	"_test_every_slot_of_every_street_draws_one_marble",
+	"_test_the_game_draws_the_escape_from_tunings_bag",
+	"_test_the_service_exit_is_beside_the_home_block",
+	"_test_nothing_the_finale_places_stands_where_she_comes_out",
+	"_test_no_lethal_field_covers_the_ground_she_comes_out_on",
+	"_test_the_finale_city_has_nobody_in_it",
+	"_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart",
+	"_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture",
+	"_test_the_clock_reads_hundredths_only_in_the_finale",
+	"_test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome",
+	"_test_the_escape_counts_its_time_and_closes_its_charges",
+	"_test_the_two_sections_are_named_for_the_player",
+	"_test_only_a_won_last_day_with_every_task_done_hands_over",
+	"_test_the_city_word_boots_the_second_section",
+	"_test_every_part_word_reaches_its_own_walkable_position",
+	"_test_the_escape_owes_no_return_leg",
+	"_test_a_day_owes_its_return_only_as_its_spec_says",
+	"_test_nothing_the_escape_places_stands_in_a_street_tree",
+	"_test_finale_entities_stop_when_the_tree_pauses",
+	"_test_the_escape_pauses_the_same_way_a_day_does",
+	"_test_pause_does_not_open_over_a_section_brief_or_the_epilogue",
+	"_test_escape_section_came_from_the_file",
+	"_test_a_resumed_escape_opens_on_the_title_before_its_first_brief",
+	"_test_a_route_rig_carries_the_building_on_into_the_city",
+	"_test_a_route_rig_boots_the_city_section_and_walks",
+	"_test_without_a_route_the_briefs_wait_for_a_person",
+	"_test_a_route_rig_presses_only_the_first_brief_of_a_section",
+	"_test_a_handover_does_not_open_on_the_title",
+	"_test_the_held_restart_from_the_escape_clears_the_section",
+]
+
+## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
+func run_cases(t, indices: Array[int]) -> void:
 	t.gives_back_observers()
-	_test_the_two_chains_part_at_the_door_and_never_meet_again(t)
-	_test_each_chain_passes_three_distinct_calm_areas(t)
-	_test_each_chain_reaches_its_own_edge(t)
-	_test_every_street_off_the_chains_is_sealed(t)
-	_test_both_exits_are_reachable_through_the_open_cells_alone(t)
-	_test_both_exits_are_reachable_past_every_body_the_escape_stands(t)
-	_test_both_exits_are_reachable_past_every_standing_lethal_reach(t)
-	_test_a_street_of_vans_leaves_a_walk_past_every_reach(t)
-	_test_no_street_of_the_walk_stands_two_roadblocks(t)
-	_test_a_roadblock_band_costs_nothing(t)
-	_test_the_far_guard_leaves_with_his_partner(t)
-	_test_neither_guard_walks_off_over_a_building(t)
-	_test_a_lured_off_roadblock_raises_no_mark_over_her(t)
-	_test_luring_its_guard_off_is_the_way_past_a_roadblock(t)
-	_test_no_two_roadblocks_notice_her_from_the_same_ground(t)
-	_test_an_escape_guard_warns_on_the_screen_and_on_top(t)
-	await _test_the_players_seed_is_winnable_past_its_roadblocks(t)
-	_test_the_escape_stands_its_rows_on_the_days_own_ground(t)
-	_test_an_alley_mouth_wall_fits_the_mouth(t)
-	_test_nothing_the_escape_stands_reaches_over_a_building(t)
-	_test_a_restart_plans_the_same_escape_on_the_kept_ground(t)
-	_test_the_manager_plans_a_restart_on_the_ground_it_kept(t)
-	_test_the_escape_bag_keeps_the_players_order(t)
-	_test_every_slot_of_every_street_draws_one_marble(t)
-	_test_the_game_draws_the_escape_from_tunings_bag(t)
-	_test_the_service_exit_is_beside_the_home_block(t)
-	_test_nothing_the_finale_places_stands_where_she_comes_out(t)
-	_test_no_lethal_field_covers_the_ground_she_comes_out_on(t)
-	_test_the_finale_city_has_nobody_in_it(t)
-	_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t)
-	await _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t)
-	_test_the_clock_reads_hundredths_only_in_the_finale(t)
-	await _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t)
-	await _test_the_escape_counts_its_time_and_closes_its_charges(t)
-	_test_the_two_sections_are_named_for_the_player(t)
-	_test_only_a_won_last_day_with_every_task_done_hands_over(t)
-	_test_the_city_word_boots_the_second_section(t)
-	_test_every_part_word_reaches_its_own_walkable_position(t)
-	_test_the_escape_owes_no_return_leg(t)
-	_test_a_day_owes_its_return_only_as_its_spec_says(t)
-	_test_nothing_the_escape_places_stands_in_a_street_tree(t)
-	_test_finale_entities_stop_when_the_tree_pauses(t)
-	await _test_the_escape_pauses_the_same_way_a_day_does(t)
-	await _test_pause_does_not_open_over_a_section_brief_or_the_epilogue(t)
-	_test_escape_section_came_from_the_file(t)
-	await _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t)
-	await _test_a_route_rig_carries_the_building_on_into_the_city(t)
-	await _test_a_route_rig_boots_the_city_section_and_walks(t)
-	await _test_without_a_route_the_briefs_wait_for_a_person(t)
-	await _test_a_route_rig_presses_only_the_first_brief_of_a_section(t)
-	await _test_a_handover_does_not_open_on_the_title(t)
-	await _test_the_held_restart_from_the_escape_clears_the_section(t)
+	for index in indices:
+		await call(CASES[index], t)
 
 # --------------------------------------------------------------- the chains ---
 
