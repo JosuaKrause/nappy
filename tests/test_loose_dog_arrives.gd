@@ -9,10 +9,8 @@ extends RefCounted
 ## closing, rather than run its whole route there — which is what a check on `main` fails.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The run's seed, the one the suite ran under when the run's state was the shared stand-in's. On
-## run seed 4242, with `EventUnreachable.GIVES_UP` made very long, the far dog was still finished
-## within 3s (by `EventDeparture.leave()`), so the run-away checks could not fail on the retirement
-## they are about; on seed 2 the dog runs its route out then.
+## The run's seed: on run seed 4242 a solid stands across the far dog's line, so it leaves its route
+## there and is finished by leaving; on seed 2 the line is clear.
 const RUN_SEED := 2
 ## The engine's clock for the walks: each physics tick carries `1 / Engine.physics_ticks_per_second
 ## * Engine.time_scale` seconds, so the stretch is sped up and put back after it.
@@ -57,6 +55,8 @@ func run(t) -> void:
 	_start_the_day(false)
 	var far := _send_from_behind_far()
 	var far_run := await _run_away(t, far, Tuning.RUN_SPEED)
+	t.check(not far_run["left"],
+			"the dog was retired where it stood, not walked off by leaving its route first")
 	t.check(far_run["over_at"] < 7.0,
 			"a dog she runs away from, sent from behind the furthest out, is retired within 7s (%.1fs)"
 			% far_run["over_at"])
@@ -131,13 +131,15 @@ func _meet_and_turn(t, speed: float) -> Dictionary:
 func _run_away(t, dog: EventInstance, speed: float) -> Dictionary:
 	var route_end := dog.path[dog.path.size() - 1]
 	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
-	var seen := {"over_at": INF, "gap": INF, "from_end": INF, "dog": dog}
+	var seen := {"over_at": INF, "gap": INF, "from_end": INF, "dog": dog, "left": false}
 	var each := func(n: int) -> void:
 		if seen["over_at"] != INF:
 			return
 		_rig.velocity = Vector2.UP * speed
 		_rig.global_position += _rig.velocity * step
 		var the_dog: EventInstance = seen["dog"]
+		if is_instance_valid(the_dog) and the_dog.is_leaving:
+			seen["left"] = true
 		if not is_instance_valid(the_dog) or the_dog.is_finished:
 			seen["over_at"] = (n - 1) * step
 			return
@@ -145,4 +147,4 @@ func _run_away(t, dog: EventInstance, speed: float) -> Dictionary:
 		seen["from_end"] = the_dog.global_position.distance_to(route_end)
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(RUN_AWAY_FOR, FAST_SCALE), each, FAST_SCALE)
 	return {"over_at": seen["over_at"], "gap_when_over": seen["gap"],
-			"distance_to_route_end": seen["from_end"]}
+			"distance_to_route_end": seen["from_end"], "left": seen["left"]}

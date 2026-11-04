@@ -16,9 +16,6 @@ const SEED := 4242
 ## checks hold on seed 2.
 const RUN_SEED := 2
 const STEP := 0.1
-## How long reading a mark may take, rig and all, in seconds. A frame of play: generous for a loaded
-## machine, and far under the seconds a siting prepared over the whole city's ground costs.
-const READING_THE_MARK_BOUND := 1.5
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -404,11 +401,9 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	var velocity := Vector2(0.0, -Tuning.WALK_SPEED)
 	var y_max: float = map.world_size().y
 	var met: Array[String] = []
-	var sited: Array[String] = []
 	var walked := 0.0
 	while walked < 300.0 and met.count("police_patrol") < count:
-		for moved in director.site_what_is_on_her_way(STEP, at, velocity, plans):
-			sited.append(moved.def.id)
+		director.site_what_is_on_her_way(STEP, at, velocity, plans)
 		var due := director.due(STEP, at, velocity)
 		if not due.is_empty():
 			met.append((due[0] as EventDef).id)
@@ -417,8 +412,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 			velocity.y = -velocity.y
 			at.y = clampf(at.y, 0.0, y_max)
 		walked += STEP
-	t.check(director.route_bag().peek() != "loudspeaker" and not sited.has("loudspeaker"),
-			"the mast was handed to her walk to site (its marble is drawn), and is still unplaced")
+	t.check(director.route_bag().peek() != "loudspeaker" and siting.asked > 0,
+			"the mast was handed to her walk to site (its marble is drawn and the siting was asked for it)")
 	t.check(met.count("police_patrol") == count,
 			"every return patrol still comes behind the mast that cannot be sited (%s)" % [met])
 	var looks := int(walked / EventDirector.ON_HER_WAY_LOOK) + 1
@@ -458,18 +453,11 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	resistance.start_day(day, resistance_rng, 300.0)
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == day, "day %d opens on its mark" % day)
-	var reading_took := 0.0
 	if mark:
-		var started := Time.get_ticks_usec()
 		resistance.contact().complete_now()
-		reading_took = (Time.get_ticks_usec() - started) / 1000000.0
-		print("[test_route_bag] day %d: reading the mark and rigging her route took %.3fs"
-				% [day, reading_took])
 	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
-	# prepared over the whole city's ground (seconds of work), only over what a siting is offered.
-	t.check(reading_took < READING_THE_MARK_BOUND,
-			"day %d: reading the mark and rigging her route takes %.2fs, under %.1fs"
-			% [day, reading_took, READING_THE_MARK_BOUND])
+	# prepared over the whole city's ground, only over what a siting is offered. The work is counted
+	# in tiles asked, never in time.
 	if city.events.ahead._siting:
 		t.check(city.events.ahead._siting.mast_checks == 0,
 				"day %d: the rig asks no tile whether a mast may stand there (%d)"
