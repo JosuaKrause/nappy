@@ -591,7 +591,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 ## excitement field that prevents the player from walking past it".)* The body is the two cars, so
 ## the debris and the two pavements are walkable ground; what stands in the way instead is the
 ## field, and the promise is that squeezing through costs more than half the meter — the
-## `Tuning.METER_MAX / 2` line `tests/test_crowd.gd` draws between *expensive* and *fatal*, taken
+## `Tuning.METER_MAX / 2` line `tests/crowd_rig.gd` draws between *expensive* and *fatal*, taken
 ## deliberately on the fatal side.
 ##
 ## **Walked, not asserted about the constant.** `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from
@@ -645,7 +645,7 @@ func _blocked_at(instance: EventInstance, offset: float) -> bool:
 
 ## What one straight crossing of the sealed street at `offset` puts on the meter: the crash's field
 ## less the walking decay, integrated at `WALK_SPEED` from outside its reach to outside it again.
-## The same arithmetic `tests/test_crowd.gd` prices a main-road crossing with.
+## The same arithmetic `tests/crowd_rig.gd` prices a main-road crossing with.
 func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	var step := 1.0 / 60.0
 	var vertical := instance.solid_axis() == Vector2.DOWN

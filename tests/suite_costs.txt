@@ -38,12 +38,14 @@ test_car_views.gd 711
 test_checkpoints.gd 85223
 test_city_decay.gd 7134
 test_closure_marker.gd 33
-test_crowd.gd 169467
 test_crowd_bodies.gd 50923
 test_crowd_closures_a.gd 60182
 test_crowd_closures_b.gd 73504
 test_crowd_closures_c.gd 63649
 test_crowd_contributions.gd 938
+test_crowd_field.gd 58343
+test_crowd_streets.gd 50491
+test_crowd_traffic.gd 65252
 test_crowd_yields.gd 681
 test_danger.gd 15338
 test_day13_guard.gd 32101

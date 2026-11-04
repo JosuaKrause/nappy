@@ -286,7 +286,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	# precinct is three blocks of an otherwise ordinary street, so the corridor keeps its car weight
 	# and the *stretch in the field* may be entirely pedestrianised. The position re-rolls below then
 	# land among the bollards every time and the last one places it there anyway: a car standing in a
-	# precinct, which `tests/test_crowd.gd` asks about by name. **A retry is not a guarantee** — when
+	# precinct, which `tests/crowd_rig.gd` asks about by name. **A retry is not a guarantee** — when
 	# re-rolling the small decision keeps failing, re-take the big one.
 	# The best spot the rolls below have refused so far: open street the agent could never leave
 	# again. Preferred over nothing at all, and given back only if no roll finds a street with a way

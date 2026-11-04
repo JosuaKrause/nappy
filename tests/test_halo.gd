@@ -562,7 +562,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 # ``CrowdExcitement`'s field` deliberately has no such cache -- see that method's own doc for
 # why (its position and jolt are written from outside its own `_process()`, by `Crowd`, so a
 # `_clock`-keyed cache would miss a fresh bump or startle for the rest of the tick it landed on);
-# `tests/test_crowd.gd`'s `_test_walking_into_somebody_displaces_and_startles_them` is the check
+# `tests/crowd_rig.gd`'s `_test_walking_into_somebody_displaces_and_startles_them` is the check
 # that would have caught it, and did, while this fix was still on `CrowdAgent`.
 
 func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> void:

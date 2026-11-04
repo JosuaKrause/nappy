@@ -5,7 +5,7 @@ extends RefCounted
 ## The crash is solid only where its two cars are, so its picture's own gaps are ground she can
 ## walk. This walks every one of those gaps at `Tuning.WALK_SPEED`, straight across the sealed
 ## street, and prints what the pass puts on the meter: the field integrated along the line less the
-## walking decay, the same arithmetic `tests/test_crowd.gd` prices a main-road crossing with.
+## walking decay, the same arithmetic `tests/crowd_rig.gd` prices a main-road crossing with.
 ##
 ## **The cheapest line is the one that matters.** A guarantee about a price is a guarantee about
 ## the price she can actually get, so the figure to set the constant against is the minimum over

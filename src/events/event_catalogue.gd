@@ -27,7 +27,7 @@ const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
 ## through them, since a guarantee about a price is a guarantee about the price she can get. At
 ## this number that line costs a little over 54 of the hundred-point meter, against the
 ## `Tuning.METER_MAX / 2` line
-## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
+## `tests/crowd_rig.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
 ## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
 ## this number, so a change to `Field.falloff` or the geometry fails where it is felt.
 ##

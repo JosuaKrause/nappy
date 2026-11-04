@@ -169,7 +169,7 @@ several of them, because the load is a sum and a crowded pavement never stops em
 another one, and the ground itself gives back next to nothing to offset it — the arterial's mean
 load runs many times what its own ground recovers, where an ordinary street's load stays under
 what it recovers. Above about half the meter to cross it, it is a street nobody can use rather than
-a route decision; `tests/test_crowd.gd` holds both ends of that.
+a route decision; `tests/crowd_rig.gd` holds both ends of that.
 
 **Every one of those comparisons is against the decay on the ground it is measured on**, not
 against the walking rate on its own. The spine gives back `0.12/s` and a back street `6.0/s`, so
@@ -633,7 +633,7 @@ on purpose; see docs/CITY.md, "Traffic signals".
 
 Belt and braces: a car in its lane has a strike box geometrically incapable of reaching over the
 kerb. A car sits half a tile off the middle of the carriageway, so its far edge is `16 + 14 = 30 px`
-out and the kerb is at `32`. `tests/test_crowd.gd` asserts it, because a box that reached the
+out and the kerb is at `32`. `tests/crowd_rig.gd` asserts it, because a box that reached the
 pavement would kill people who never stepped off it and would look exactly like a fair death.
 
 **The one manoeuvre that puts a car's body over a kerb is an about-face in a street**, and it cannot
@@ -762,7 +762,7 @@ frame the camera is not on it, the same rule a body caught in a pocket already f
 runs the positive way along the axis" is eastbound in the southern lane on an east-west street,
 which is right-hand traffic, and southbound in the eastern lane on a north-south street, which is
 left-hand traffic. `road_direction()` and `road_lane()` are a pair that both take the axis, and
-`tests/test_crowd.gd` asserts it for both axes and both directions: the lane a car is in is the one
+`tests/crowd_rig.gd` asserts it for both axes and both directions: the lane a car is in is the one
 on its own right.
 
 **Nothing in a suite or a screenshot can see that going wrong.** Separation, headway, capacity and

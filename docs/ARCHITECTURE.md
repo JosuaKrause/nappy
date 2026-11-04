@@ -1065,7 +1065,7 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.
-- `test_crowd.gd` — the crowd against a real city: population per act, determinism, agents
+- `test_crowd_traffic.gd`, `test_crowd_field.gd` and `test_crowd_streets.gd` (cases in `crowd_rig.gd`) — the crowd against a real city: population per act, determinism, agents
   staying on the right surface through a corner, and the emergent noise floor (a busy street
   never lets the meter fall; a back street does; a park is out of earshot).
 - `test_tuning_fairness.gd` — the traffic, signal and return-patrol contracts over `Tuning`'s numbers.

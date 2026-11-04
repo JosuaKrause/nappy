@@ -128,7 +128,7 @@ const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
 ## this corridor — the pedestrian field above only reaches `Tuning.PEDESTRIAN_OUTER_RADIUS` now, short
 ## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
 ## be loud on every street it also drives down rather than only this one. Crossing the road stays a
-## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## soft block rather than a wall: `tests/crowd_rig.gd`'s worst-of-eight crossing reads 27.76 of a
 ## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
 ## the ground its own recovery also lightens what a crossing itself loads.
 ##
