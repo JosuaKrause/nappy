@@ -122,7 +122,6 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 	var shown := _world_shown(Vector2.ZERO)
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
-	car._speed = 100.0
 	car.set_process(false)
 	screen.add_child(car)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -158,13 +157,12 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
 
-## A walker whose picture did not change while it was off screen — standing, its view and stride
-## where they were — still redraws on its first frame back, since what it shows was not kept.
+## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
+## it), its view and stride where they were — still redraws on its first frame back, since what it shows was not kept.
 func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> void:
 	var screen := _screen(t)
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
-	walker._speed = 0.0
 	walker.set_process(false)
 	screen.add_child(walker)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
@@ -232,14 +230,29 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			"back on screen with the same key, it redraws once")
 	screen.free()
 
+## The ground of a street fire's long building, answering per tile as a city's long block does: the
+## sidewalk row in front of the building (`FRONT_ROW`) points north, at the building's lot (`LOT`,
+## the tiles above that row), and no other tile has an inward step or a lot, so a fire that asks
+## about the wrong tile finds no front.
+class LongFrontage extends WorldMap:
+	const FRONT_ROW := 5
+	const LOT := Rect2i(-1, -5, 20, FRONT_ROW + 5)
+
+	func pavement_inward(tile: Vector2i) -> Vector2i:
+		return Vector2i(0, -1) if tile.y == FRONT_ROW else Vector2i.ZERO
+
+	func lot_at(tile: Vector2i) -> Rect2i:
+		return LOT if LOT.has_point(tile) else Rect2i()
+
 ## **A street fire burns along the whole front of its building, far past its own picture, and it is
 ## redrawn on every tick any of that front can be on the screen** — its flames flicker and its
 ## smoke billows, so a front whose far end showed while the fire's own point was still out of the
-## box would stand frozen there. The front here is set by hand, 640px of it running east from just
-## west of the fire's point, the width `_facade_runs_at()` gives a long building; the screen pans
-## along it from the east, so the far end shows long before the point does. What can be seen is
-## worked out from the flames' and plumes' own numbers (`_flames_across()`, `_smoke_across()`, the
-## tallest flicker), not from the box the gate asks with.
+## box would stand frozen there. The fire is sited on a map whose building is 20 tiles (640px) wide,
+## running east from just west of the fire's point, and finds the front itself, as it does in a city;
+## the screen pans along it from the east, so the far end shows long before the point does. What can
+## be seen is worked out from the building's own width and the tallest the flames and the smoke
+## stand (`FireLook`'s flame and smoke sizes, at the flicker's tallest), not from the box the gate
+## asks with.
 func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
@@ -247,24 +260,21 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 		return
 	var screen := _screen(t, Vector2(2000.0, 0.0))
 	var fire := EventInstance.new()
-	fire.setup(def, Vector2(0.0, 180.0))
+	var map := LongFrontage.new()
+	fire.setup(def, Vector2(0.0, 180.0), PackedVector2Array(), Vector2.RIGHT, map)
 	fire.set_process(false)
-	(fire.look as FireLook)._fire_facade = PackedVector2Array([Vector2(-40.0, 600.0)])
-	(fire.look as FireLook)._fire_facade_found = true
 	screen.add_child(fire)
-	var drawn := Rect2()
-	var any := false
-	for flame in FireLook._flames_across((fire.look as FireLook)._fire_facade):
-		var tallest := (FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) * 1.25
-		var one := Rect2(flame.x - flame.y * 0.5, -tallest, flame.y, tallest)
-		drawn = one if not any else drawn.merge(one)
-		any = true
-	for plume in FireLook._smoke_across((fire.look as FireLook)._fire_facade):
-		var top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) \
-				- FireLook._SMOKE_SIZE.y
-		drawn = drawn.merge(Rect2(plume.x - plume.y * 0.5, top, plume.y, FireLook._SMOKE_SIZE.y))
-	t.check(fire.look._drawn_reach().encloses(drawn) and fire.look.drawn_rect_now().encloses(drawn),
-			"the reach and the drawn rect hold the whole front and its smoke (%s)" % drawn)
+	# The front, from the building's lot: its west and east ends from the fire's point, half a tile
+	# toward the wall, and from the ground up to the smoke's top over the tallest flame.
+	var lot := map.tile_rect_to_world(LongFrontage.LOT)
+	var toward_the_wall := Vector2(map.pavement_inward(map.world_to_tile(fire.global_position))) * (Tuning.TILE_SIZE * 0.5)
+	var smoke_top := -(FireLook._FIRE_HEIGHT + FireLook._FIRE_HEIGHT_TALL) - FireLook._SMOKE_SIZE.y
+	var drawn := Rect2(lot.position.x - fire.global_position.x, smoke_top, lot.size.x, -smoke_top)
+	drawn.position += toward_the_wall
+	t.check(drawn.size.x > Tuning.TILE_SIZE * 10.0,
+			"the building is a long one, as this check is about (%s)" % drawn)
+	t.check(fire.look.drawn_rect_now().encloses(drawn),
+			"the drawn rect holds the whole front and its smoke (%s)" % drawn)
 	var shown_unasked := 0
 	var shown_point_outside := 0
 	var left := 1200.0
