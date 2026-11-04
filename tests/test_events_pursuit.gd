@@ -63,37 +63,52 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-## A failed placement is retried without starving the director's independent clock.
+## A director that hands the day-3 dog out once, then nothing, and counts the time it is given: a
+## placement that fails must not starve its independent clock.
 class _RetryDirector extends EventDirector:
 	var elapsed := 0.0
-	func due(delta: float, _at: Vector2, _velocity: Vector2,
-			_plans: Array[EventScheduler.Planned] = []) -> Array:
+	var handed := false
+	func due(delta: float, _at: Vector2, _velocity: Vector2) -> Array:
 		elapsed += delta
-		return []
+		if handed:
+			return []
+		handed = true
+		return [EventCatalogue.by_id("charging_dog"),
+				PackedVector2Array([Vector2(400.0, 0.0), Vector2(300.0, 0.0)])]
 
-class _BlockedLesson extends EventsAhead:
-	var attempts := 0
-	func _warn_down_her_heading(def: EventDef, _her: Vector2, _sited: Vector2) -> void:
-		attempts += 1
-		_owe_pursuer_again(def)
+## The board the lesson puts its warning up on, counting how often it is asked to; on the empty
+## ground below there is nowhere off screen to stand, so every ask is refused.
+class _CountingBoard extends WarningBoard:
+	var asked := 0
+	func warn_first(def: EventDef, her: Vector2, where: Callable,
+			arrive: Callable) -> PendingWarning:
+		asked += 1
+		return super(def, her, where, arrive)
 
 func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 	var manager := EventManager.new()
-	var lesson := _BlockedLesson.new(manager.world, manager.streaming, manager.spawner,
-			manager.warnings)
-	manager.ahead = lesson
+	manager.world.city_map = CityMap.new()
+	var told: Array[String] = []
+	manager.world.trace = RunTrace.recording(told)
+	var board := _CountingBoard.new(manager.world)
+	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board)
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
-	var director := _RetryDirector.new(CityMap.new())
+	var director := _RetryDirector.new(manager.world.city_map)
+	lesson.use_director(director, null)
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
 	manager.use_player(body)
-	lesson._director = director
-	lesson._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
 	for frame in 150:
 		lesson.place_what_is_owed_ahead(STEP)
-	t.check(lesson.attempts == 2 and lesson._pursuer_owed != null,
-			"a blocked lesson remains owed and retries twice in 2.5s, rather than every frame")
+	t.check(board.asked == 3,
+			"a blocked lesson is asked at once, then retried twice in 2.5s, rather than every frame (%d)"
+			% board.asked)
+	t.check(told.any(func(line: String) -> bool:
+			return line.contains("has nowhere off screen to stand")),
+			"and the run log says the lesson is owed again")
 	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
+	lesson.clear()
+	board.clear()
 	manager.free()
 	body.free()
 
