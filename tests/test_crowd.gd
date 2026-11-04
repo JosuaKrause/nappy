@@ -1978,14 +1978,6 @@ class _ResetMark extends Node:
 			resets += 1
 			reset_at = (get_parent() as Node2D).global_position
 
-## A crowd agent that counts the interpolation resets that reach it while it is shown in the tree.
-class _ResetSpy extends CrowdAgent:
-	var resets_shown := 0
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION and is_visible_in_tree():
-			resets_shown += 1
-
 # ------------------------------------------------------------------- helpers ---
 
 func _first_of(kind: CrowdAgent.Kind, except: CrowdAgent = null) -> CrowdAgent:
