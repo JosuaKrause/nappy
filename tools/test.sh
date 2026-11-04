@@ -547,7 +547,7 @@ if [[ $record_costs -eq 1 ]]; then
 			grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
 				| sed -E 's/^-- +//; s/ +ms$//' \
 				| awk '{ printf "%s %s\n", $1, $2 }' \
-				| sort -u
+				| LC_ALL=C sort -u
 		} > "$tmp_costs"
 
 		got="$(grep -cE '^test_.*\.gd [0-9]+$' "$tmp_costs")"

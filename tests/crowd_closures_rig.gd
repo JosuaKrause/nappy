@@ -828,7 +828,7 @@ func _open_a_door_day(t) -> Dictionary:
 ## with the answer it is to have at the door. Added to the day's own (emptied) crowd, so
 ## `Crowd.step()` walks it exactly as it walks anybody.
 func _walker_approaching(scene: Dictionary, hut_at: Vector2, back: float,
-		answer: int) -> CrowdAgent:
+		answer: int, inward := false) -> CrowdAgent:
 	var city: City = scene["city"]
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
@@ -838,6 +838,8 @@ func _walker_approaching(scene: Dictionary, hut_at: Vector2, back: float,
 	var lane := CrowdLanes.nearest_sidewalk(corridor, hut_across)
 	# Toward the mouth from inside the door's own segment, whichever end the mouth is at.
 	var direction := -1.0 if scene["at_a"] else 1.0
+	if inward:
+		direction = -direction
 	var centre := CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
 	var along := hut_along - direction * back
 	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
@@ -922,23 +924,21 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 			"the hut is free again once it has let somebody through")
 
 	# The cooldown: the same hut may not take it again until it has actually left the hut's area,
-	# which is why the flag is cleared by distance rather than by a clock. **Left on the walker's
-	# private door state**: the emerging state and the hut it still holds are shown by nothing the
-	# game reads (the hut and the walker show only inside and not inside), so these two checks put
-	# a walker in that state and read it back.
-	var held_again := _walker_approaching(scene, hut.position, 0.0,
-			WalkerStrategy.DoorAnswer.HELD)
-	held_again.strategy._door_state = WalkerStrategy.DoorState.EMERGING
-	held_again.strategy._door_hold = hut
-	held_again._set_along(held_again._along() + WalkerStrategy.WALKER_DOOR_STOP_DISTANCE
-			* held_again._direction)
-	city.crowd.step(STEP)
-	t.check(held_again.strategy._door_state == WalkerStrategy.DoorState.EMERGING and hut.inside == null,
-			"a walker that has just come out is not taken again while it is still at the door")
-	for frame in int(round(4.0 / STEP)):
-		city.crowd.step(STEP)
-	t.check(held_again.strategy._door_hold == null,
-			"and it is only clear of that door once it has left the hut's area")
+	# which is why the flag is cleared by distance rather than by a clock. What it rules out is a
+	# walker turned round by the crowd's own steering a few pixels past the door, so a solid body
+	# is stood across the walker's footway beyond the hut, where the walker meets it and turns back
+	# to the hut: nothing but the hut's own lines shows the walker is being let out and not taken in
+	# again (`WalkerDoorHold.inside`, and which of them it is in the line of, `place_of()`).
+	var inside_the_area := _times_the_hut_takes_a_walker_turned_round_beyond_it(scene, hut,
+			WalkerStrategy.WALKER_DOOR_COOLDOWN_RADIUS * 0.8)
+	t.check(inside_the_area == 1,
+			"a walker that has just come out is not taken again when it is turned round at the door "
+			+ "(taken %d times)" % inside_the_area)
+	var outside_the_area := _times_the_hut_takes_a_walker_turned_round_beyond_it(scene, hut,
+			WalkerStrategy.WALKER_DOOR_COOLDOWN_RADIUS * 2.0)
+	t.check(outside_the_area == 2,
+			"and it is taken again once it has left the hut's area and come back (taken %d times)"
+			% outside_the_area)
 
 	# And the answer the player asked to keep: a small fraction walk through as they always did.
 	var passing := _walker_approaching(scene, hut.position, 160.0,
@@ -953,6 +953,42 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 			"a walker that walks through a door never stops at the hut (%d frames it did)"
 			% stopped)
 	t.check(_past_the_hut(passing, hut) > 0.0, "and it is through the door")
+
+## How many times `hut` takes a walker in (`WalkerDoorHold.inside` becoming it) that is held at the hut
+## and then meets a body standing across its footway `beyond` px past the hut: the body turns it round
+## once it is out (`WalkerStrategy.divert()`), so it walks back toward the hut. The body is stood
+## in the tiles of the footway the walker is on, the way a stationary solid body is
+## (`WorldMap.obstruct_tiles()`, which an event's body fills), and taken away again.
+func _times_the_hut_takes_a_walker_turned_round_beyond_it(scene: Dictionary, hut: WalkerDoorHold,
+		beyond: float) -> int:
+	var city: City = scene["city"]
+	var map: CityMap = scene["map"]
+	var vertical: bool = scene["vertical"]
+	city.crowd.clear()
+	var hut_across: float = hut.position.x if vertical else hut.position.y
+	var hut_along: float = hut.position.y if vertical else hut.position.x
+	var corridor := CrowdLanes.corridor_at(hut_across)
+	var first := 0 if CrowdLanes.nearest_sidewalk(corridor, hut_across) < 2 else 2
+	var direction := 1.0 if scene["at_a"] else -1.0
+	var body_along := floori((hut_along + direction * beyond) / float(Tuning.TILE_SIZE))
+	var body: Array[Vector2i] = []
+	for offset: int in [CrowdLanes.SIDEWALK_OFFSETS[first], CrowdLanes.SIDEWALK_OFFSETS[first + 1]]:
+		var across_tile := corridor * CityMap.period() + offset
+		body.append(Vector2i(across_tile, body_along) if vertical else Vector2i(body_along, across_tile))
+	var owner := 987654
+	map.obstruct_tiles(owner, body)
+	var walker := _walker_approaching(scene, hut.position, 100.0, WalkerStrategy.DoorAnswer.HELD, true)
+	var takes := 0
+	var was_inside := false
+	for frame in int(round(14.0 / STEP)):
+		city.crowd.step(STEP)
+		var inside := hut.inside == walker
+		if inside and not was_inside:
+			takes += 1
+		was_inside = inside
+	map.release_obstruction(owner)
+	city.crowd.clear()
+	return takes
 
 ## What a walker held at a door is doing, read off the hut and the walker: inside the hut, standing
 ## in its line, out again after being inside, or on its way (in the line or not).
