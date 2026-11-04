@@ -99,7 +99,7 @@ test_heat.gd 25437
 test_held_restart.gd 401
 test_home_block.gd 29609
 test_hud.gd 2886
-test_interior.gd 75000
+test_interior.gd 35034
 test_invincible.gd 6077
 test_loose_dog_arrives.gd 13391
 test_loss_cause.gd 18
