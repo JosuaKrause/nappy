@@ -8,5 +8,7 @@ booted `main` through `Boot.home_playing()` on a scratch-path save, a city throu
 `RunCity.with_own_run()`; the reads of the global run and their writes back, and the helpers that
 saved and restored it, are gone, with every check kept. Seven mutation runs fail it.
 
-**Not done:** an untyped empty-array ternary in `RunSession` fails only the runner's script-error
-gate, since the summary still comes up and every check passes; it was so before.
+**Not done:** the untyped empty-array ternary `RunSession`'s comment warns against, written back
+in, is caught only by the runner's script-error gate, since the summary still comes up and every
+check passes; and the retry check does not see the day's seed go unused, since both directors draw
+from the same run. Both were so before.
