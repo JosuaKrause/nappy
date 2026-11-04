@@ -16,9 +16,12 @@ pictures follow on the same shape.
   its atlas and hands it to every building through `Building.roof_drawer`; a building nobody handed
   one (the preview rigs) makes its own as it does its atlas.
 - `tests/recording_roof_drawer.gd` extends it and records every unit it is told to draw, so a test
-  compares what was drawn with what was placed. `test_roof_entities.gd` (private-read lines 17 to 0)
-  and `test_recipe_roofs.gd` (8 to 0) read the layout, hand in the recording drawer, and read what the
-  real drawer stood off the layer. Checks 2212 and 67 to 2298 and 68; eighteen mutation runs.
+  compares what was drawn with what was placed, the rotor's frame included, against the scenery clock
+  the city hands the building. The real drawer is tested on its own, handed a bare layer and told to
+  draw a vent on either rotor frame, a duct and a plain unit. A narrow roof is checked to lay out as
+  many units as a wide one with the same interior, instead of rebuilding the count from the private
+  density. `test_roof_entities.gd` (private-read lines 17 to 0) and `test_recipe_roofs.gd` (8 to 0)
+  read no private member or constant. Checks 2212 and 67 to 2723 and 68; twenty-nine mutation runs.
 - Before and after stills of a roofed stretch differ only by encoder noise
   (`docs/evidence/roof-drawer-2026-11-04/`).
 
@@ -26,8 +29,7 @@ pictures follow on the same shape.
 general drawing calls, since the general drawing code is tested elsewhere (inbox #1018); the event
 pictures follow it at that level. The layer goes in with each call, so one drawer serves the city and
 the preview rigs unchanged. The layout keeps the private kind beside the texture, since the cache and
-the vent clock use it. The roof entities suite still reads `Building._FURNITURE_DENSITY`, the share
-of cells a district fills.
+the vent clock use it.
 
 **Not done:** `test_scenery_residency.gd`, `test_scenery_animation.gd` and the scenery animation
 probe still read the roof objects and rotor layers; they follow this shape, with the rotor's frame
