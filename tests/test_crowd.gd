@@ -31,7 +31,7 @@ var _city: City
 var _rig = RIG.new()
 
 func run(t) -> void:
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -53,7 +53,7 @@ func run(t) -> void:
 	_test_the_strike_box_never_crosses_the_kerb(t)
 	_test_the_car_picture_agrees_with_its_strike_box(t)
 	_test_a_bump_costs_and_one_of_them_is_survivable(t)
-	_test_walking_into_somebody_displaces_and_startles_them(t)
+	await _test_walking_into_somebody_displaces_and_startles_them(t)
 	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
 	_test_traffic_gives_way_at_a_crossing(t)
 	_test_the_crowd_stays_in_the_field(t)
@@ -75,6 +75,7 @@ func run(t) -> void:
 	await _test_the_motion_skip_stops_an_agent_in_its_tracks(t)
 	_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t)
 	_test_the_morning_resolve_is_not_drawn_as_a_slide(t)
+	_test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t)
 
 	_city.free()
 
@@ -119,66 +120,114 @@ func _test_walkers_follow_the_selected_presentation(t) -> void:
 ## M110: the three answers a walker may be given at a region door come out of the placement draw in
 ## the fractions `Tuning` pins.
 ##
-## Asserted against the constants rather than against literals — this is "the draw honours the
-## fractions", not "the fractions are 0.125 and 0.25" — and over a sweep of days rather than one
-## morning, because the question is about the draw and not about any one day's crowd. The sample is
-## every walker four days put on the streets, which is several hundred: the tolerance below is wide
-## enough that a correct draw cannot fail it by luck and narrow enough that swapping two of the
-## three answers cannot pass.
+## Asked through what the game asks. **The cut** is `WalkerStrategy.door_answer_for()`, which
+## `draw_the_door_answer()` calls with the first roll of the walker's own stream: swept over evenly
+## spaced rolls, its three answers come out in exactly the fractions the constants pin, so swapping
+## two of them cannot pass. **The crowd's draw** is read off the walkers a few days put on the streets
+## through `WalkerStrategy.door_is_shut()`, which the look-ahead asks: a walker that turns back at doors
+## treats every door's street as shut, so the share of walkers a door is shut to is the share that
+## turns back. The sample is every walker four days put on the streets, which is several hundred: the
+## tolerance is wide enough that a correct draw cannot fail it by luck. The other two answers (walks
+## through, is held) are told apart only at a hut, which no query answers, so their shares are the cut's
+## alone.
 const DOOR_ANSWER_TOLERANCE := 0.05
 
+## A key no segment has, asked of a walker's `door_is_shut()` so that only its own answer can shut it.
+const NO_SEGMENT := Vector3i(-7, -7, -7)
+
 func _test_a_walker_draws_its_own_answer_at_a_door(t) -> void:
-	var counts := {
+	var cut := {
 		WalkerStrategy.DoorAnswer.HELD: 0,
 		WalkerStrategy.DoorAnswer.PASSES: 0,
 		WalkerStrategy.DoorAnswer.TURNS_BACK: 0,
 	}
+	var rolls := 1000
+	for i in rolls:
+		cut[WalkerStrategy.door_answer_for((float(i) + 0.5) / float(rolls))] += 1
+	t.close_to(float(cut[WalkerStrategy.DoorAnswer.PASSES]) / float(rolls),
+			WalkerStrategy.WALKER_DOOR_PASS_FRACTION,
+			"WALKER_DOOR_PASS_FRACTION of the rolls give the answer to walk through a door", 0.002)
+	t.close_to(float(cut[WalkerStrategy.DoorAnswer.TURNS_BACK]) / float(rolls),
+			WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION,
+			"WALKER_DOOR_TURN_BACK_FRACTION of them give the answer to turn back", 0.002)
+	t.close_to(float(cut[WalkerStrategy.DoorAnswer.HELD]) / float(rolls),
+			1.0 - WalkerStrategy.WALKER_DOOR_PASS_FRACTION
+			- WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION,
+			"and everybody else is held", 0.002)
+
 	var walkers := 0
-	var cars := 0
-	var cars_that_drew := 0
-	var walkers_that_drew := 0
+	var shut := 0
 	for day in [1, 2, 5, 9]:
 		_city.crowd.start_day(day, _rng(day))
 		for agent: CrowdAgent in _city.crowd.agents():
-			# Whether the moment a walker draws its answer spends a number of this agent's own
-			# stream, asked of every agent and put back afterwards so the day runs on unchanged.
-			var before := agent._rng.state
 			if agent.kind != CrowdAgent.Kind.WALKER:
-				cars += 1
-				agent.strategy.draw_the_door_answer()
-				if agent._rng.state != before:
-					cars_that_drew += 1
-				agent._rng.state = before
 				continue
 			walkers += 1
-			var answer: int = agent.strategy._door_answer
-			counts[answer] += 1
-			agent.strategy.draw_the_door_answer()
-			if agent._rng.state != before:
-				walkers_that_drew += 1
-			agent._rng.state = before
-			agent.strategy._door_answer = answer
+			if agent.strategy.door_is_shut(NO_SEGMENT):
+				shut += 1
 	t.check(walkers > 300, "there were walkers to ask (%d)" % walkers)
-	var passing := float(counts[WalkerStrategy.DoorAnswer.PASSES]) / float(maxi(1, walkers))
-	var turning := float(counts[WalkerStrategy.DoorAnswer.TURNS_BACK]) / float(maxi(1, walkers))
-	var held := float(counts[WalkerStrategy.DoorAnswer.HELD]) / float(maxi(1, walkers))
-	t.check(absf(passing - WalkerStrategy.WALKER_DOOR_PASS_FRACTION) < DOOR_ANSWER_TOLERANCE,
-			"about WALKER_DOOR_PASS_FRACTION of walkers walk through a door (%.3f vs %.3f)"
-			% [passing, WalkerStrategy.WALKER_DOOR_PASS_FRACTION])
+	var turning := float(shut) / float(maxi(1, walkers))
 	t.check(absf(turning - WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION) < DOOR_ANSWER_TOLERANCE,
-			"about WALKER_DOOR_TURN_BACK_FRACTION of them turn back (%.3f vs %.3f)"
+			"about WALKER_DOOR_TURN_BACK_FRACTION of the crowd's walkers turn back at a door, so a "
+			+ "door's street is shut to that share (%.3f vs %.3f)"
 			% [turning, WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION])
-	t.check(absf(held - (1.0 - WalkerStrategy.WALKER_DOOR_PASS_FRACTION
-			- WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION)) < DOOR_ANSWER_TOLERANCE,
-			"and everybody else is held (%.3f)" % held)
-	# A car's own answer is never drawn — the boom is what stops a car, and a car that spent a
-	# number here would turn differently at every junction it has ever turned at. The walkers'
-	# count is what shows the question was asked at the right moment rather than vacuously.
-	t.check(cars > 100 and cars_that_drew == 0,
-			"no car spends a number of its own stream on a door answer (%d of %d did)"
-			% [cars_that_drew, cars])
-	t.check(walkers_that_drew == walkers,
-			"while every walker does (%d of %d)" % [walkers_that_drew, walkers])
+
+	# **The question is asked at the right moment, and only of a walker.** A pinned actor is placed from
+	# its seed alone (`Crowd.add_recipe_actor()` with a speed left to roll): the walker's answer is the
+	# first roll of that stream, and the speed it is then dealt is the second. A car's own answer is
+	# never drawn -- the boom is what stops a car, and a car that spent a number here would turn
+	# differently at every junction it has ever turned at -- so its speed is the stream's first roll.
+	var run: Vector2i = _rig.a_straight_run(_city.map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch of street to pin actors on")
+	if run.x < 0:
+		return
+	_city.crowd.start_day(1, _rng(1))
+	_city.crowd.clear()
+	var along := float(run.y + 2) * Tuning.TILE_SIZE
+	var car_lane: int = CrowdLanes.road_lane(true, 1.0)
+	var walkers_placed := 0
+	var cars_placed := 0
+	var wrong_answers := 0
+	var wrong_walker_speeds := 0
+	var wrong_car_speeds := 0
+	for seed_value in range(1, 41):
+		var stream := RandomNumberGenerator.new()
+		stream.seed = seed_value
+		var first_roll := stream.randf()
+		var second_draw := stream.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+		stream.seed = seed_value
+		var first_draw := stream.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
+		var walker := _city.crowd.add_recipe_actor("walker-%d" % seed_value,
+				CrowdAgent.Kind.WALKER, Vector2(CrowdLanes.walker_lane_centre(run.x, 0,
+				CrowdLanes.SIDEWALK_OFFSETS), along), Vector2.DOWN, -1.0, seed_value)
+		if walker["error"] == "":
+			walkers_placed += 1
+			var pinned: CrowdAgent = walker["actor"]
+			var turns_back := WalkerStrategy.door_answer_for(first_roll) \
+					== WalkerStrategy.DoorAnswer.TURNS_BACK
+			if pinned.strategy.door_is_shut(NO_SEGMENT) != turns_back:
+				wrong_answers += 1
+			if not is_equal_approx(pinned.speed(), second_draw):
+				wrong_walker_speeds += 1
+		var car := _city.crowd.add_recipe_actor("car-%d" % seed_value, CrowdAgent.Kind.CAR,
+				Vector2(CrowdLanes.lane_centre(run.x, car_lane), along), Vector2.DOWN, -1.0,
+				seed_value)
+		if car["error"] == "":
+			cars_placed += 1
+			if not is_equal_approx((car["actor"] as CrowdAgent).speed(), first_draw):
+				wrong_car_speeds += 1
+		_city.crowd.clear()
+	t.check(walkers_placed > 30 and cars_placed > 30,
+			"seeds pinned walkers and cars to ask (%d, %d)" % [walkers_placed, cars_placed])
+	t.check(wrong_answers == 0,
+			"a pinned walker's answer is the cut of the first roll of its seed (%d of %d differ)"
+			% [wrong_answers, walkers_placed])
+	t.check(wrong_walker_speeds == 0,
+			"and it spent exactly that one roll on it: its speed is the second (%d of %d differ)"
+			% [wrong_walker_speeds, walkers_placed])
+	t.check(wrong_car_speeds == 0,
+			"while no car spends a roll of its own stream on a door answer: its speed is the first "
+			+ "(%d of %d differ)" % [wrong_car_speeds, cars_placed])
 
 ## The point of the number, not the number: from act III there is nobody left going out, and
 ## the city becomes an easier place to put a baby to sleep. If that ever inverts, the horror
@@ -711,72 +760,114 @@ func _test_a_bump_costs_and_one_of_them_is_survivable(t) -> void:
 			% [CrowdLanes.SIDEWALK_LANE_SPREAD, Tuning.TILE_SIZE])
 
 ## The contact resolves as a *position*, so two bodies can never end up inside each other
-## however fast she is going, and the person she walked into is the thing that gets loud —
+## however fast she is going, and the person she walked into is the thing that gets loud --
 ## nothing writes to `Baby.excitement` from outside. See the invariant in CLAUDE.md.
+##
+## Run on the crowd's own physics frames, with a real `Stroller` handed to it as `main` hands her
+## (`Crowd.use_player()`) standing 4px from a walker: the crowd's player half meets her every tick
+## (`Crowd._meet_the_player()`), and what is read is what the game shows of a contact -- the bump
+## the crowd announces (`EventBus.crowd_bumped`), the walker's `touching` and startle, where the walker
+## stands, and where she is after her own step.
+##
+## **She stands still while the contact lasts** (her own step is off), as she did when the contact
+## was called by hand, so only the walker's share of each separation lands; her own step is let run
+## once the contact is over, which is what shows that she was shoved the other way.
 func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
+	var map := _city.map
+	var run: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "there is a stretch of pavement to walk into somebody on")
+	if run.x < 0:
+		return
 	_city.crowd.start_day(1, _rng(1))
-	var walker := _first_of(CrowdAgent.Kind.WALKER)
-	t.check(walker != null, "there is somebody on the pavement to walk into")
-	if not walker:
+	_city.crowd.clear()
+	var along := float(run.y + 4) * Tuning.TILE_SIZE
+	var walker: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.WALKER, run.x, 0, along, 1.0)
+	# Another on the next lane over, the width of a lane away from her, to be passed wide.
+	var other: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.WALKER, run.x, 1, along, 1.0)
+	var other_from := other.global_position
+	var here := walker.global_position - Vector2(4.0, 0.0)
+	var quiet := walker.excitement.contribution_at(here)
+
+	var rig := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	rig.add_child(camera)
+	_city.add_child(rig)
+	rig.global_position = here
+	rig.set_physics_process(false)
+	t.check(other.global_position.distance_to(here) > Tuning.BUMP_CLEAR_RADIUS * 1.5,
+			"the other walker is a lane's width from her, well outside a contact")
+
+	# What the walker is and what the crowd has done with it at the moment the bump is announced: the
+	# announcement follows the push and the startle in the same call.
+	var first := {}
+	var bumps: Array[Vector2] = []
+	var on_bump := func(at: Vector2) -> void:
+		bumps.append(at)
+		if first.is_empty():
+			first["apart"] = walker.global_position.distance_to(at)
+			first["startled"] = walker.excitement.is_startled()
+			first["loud"] = walker.excitement.contribution_at(at)
+			first["push"] = walker.global_position - at
+	EventBus.crowd_bumped.connect(on_bump)
+	_city.crowd.use_player(rig)
+	_city.crowd.set_focus(here)
+	var frames := 0
+	while frames < 120 and (bumps.is_empty() or walker.touching):
+		await _city.get_tree().physics_frame
+		frames += 1
+	EventBus.crowd_bumped.disconnect(on_bump)
+	_city.crowd.use_player(null)
+	t.check(not first.is_empty(), "walking into somebody is announced")
+	if first.is_empty():
+		rig.free()
 		return
 
-	var here := walker.global_position
-	var quiet := walker.excitement.contribution_at(here)
-	walker.global_position = here + Vector2(4.0, 0.0)
-	var share: Vector2 = _city.crowd._bump(walker, here)
-
 	# They take the larger share of the separation and she takes the rest, so a contact moves
-	# them both — finding 2 asked for exactly that, and it is why a crowd is somewhere you get
+	# them both -- finding 2 asked for exactly that, and it is why a crowd is somewhere you get
 	# pushed around rather than a wall you bounce off.
-	t.close_to(walker.global_position.distance_to(here),
-			4.0 + (Tuning.BUMP_CLEAR_RADIUS - 4.0) * (1.0 - Crowd.BUMP_PLAYER_SHARE),
+	t.close_to(first["apart"], 4.0 + (Tuning.BUMP_CLEAR_RADIUS - 4.0) * (1.0 - Crowd.BUMP_PLAYER_SHARE),
 			"the person she walked into takes most of the separation", 0.01)
 	# *(Playtest 07, finding 5.)* Resolved **past** the radius that releases the contact, not to
 	# it. Resolving to it leaves the pair sitting on their own threshold, flickering across it and
 	# firing a fresh jolt every other frame, which is the "instant death" the player reported.
 	t.check(Tuning.BUMP_CLEAR_RADIUS > Crowd.BUMP_RADIUS,
 			"a resolved contact is pushed past the radius that counts as touching")
-	# Held against her — she is not moving in this rig, so only the walker's share of each
-	# separation lands — the pair still converge on the clear radius and let go, and the
+	# Held against her -- she is not moving in this rig, so only the walker's share of each
+	# separation lands -- the pair still converge on the clear radius and let go, and the
 	# startle fires exactly **once** across the whole contact. The old code resolved to
 	# `BUMP_RADIUS` itself, which is the release threshold, so the pair sat on it and re-fired
 	# a fresh 26/s jolt every other frame for as long as she stayed there.
-	var startles := 1
-	for frame in 30:
-		if _city.crowd._bump(walker, here) == Vector2.ZERO:
-			break
-		if not walker.touching:
-			startles += 1
-	t.check(not walker.touching,
+	t.check(not walker.touching and frames < 120,
 			"a contact she stands in ends by itself (%.1fpx apart)"
 			% walker.global_position.distance_to(here))
-	t.check(startles == 1, "and it startles them once, not once per frame (%d)" % startles)
-	t.check(share.length() > 0.0 and share.dot(walker.global_position - here) < 0.0,
-			"and she is pushed the other way")
-	t.check(walker.excitement.is_startled(), "the person is startled")
-	t.check(walker.excitement.contribution_at(here) > quiet + Tuning.EXCITEMENT_DECAY_WALKING,
-			"which is what reaches the baby — a source on a body, not a write to the meter")
-
+	t.check(bumps.size() == 1, "and it startles them once, not once per frame (%d)" % bumps.size())
+	t.check(first["startled"], "the person is startled")
+	t.check(first["loud"] > quiet + Tuning.EXCITEMENT_DECAY_WALKING,
+			"which is what reaches the baby -- a source on a body, not a write to the meter")
 	# The property that actually matters: standing in somebody resolves rather than sticking.
 	# A single frame does not clear the overlap, and it must not have to.
-	var frames := 0
-	while _city.crowd._bump(walker, here) != Vector2.ZERO and frames < 60:
-		frames += 1
-	t.check(frames < 60 and walker.global_position.distance_to(here) >= Crowd.BUMP_RADIUS,
+	t.check(walker.global_position.distance_to(here) >= Crowd.BUMP_RADIUS,
 			"and a few frames of contact push them clear of each other (%d)" % frames)
 
-	# A contact well outside the radius does nothing at all.
-	var other := _first_of(CrowdAgent.Kind.WALKER, walker)
-	if other:
-		other.global_position = here + Vector2(Crowd.BUMP_RADIUS * 3.0, 0.0)
-		var was := other.global_position
-		t.check(_city.crowd._bump(other, here) == Vector2.ZERO
-				and other.global_position == was,
-				"passing somebody wide is free, which is what makes it a choice")
+	# She is pushed the other way: let her own step run, and she goes away from the walker.
+	rig.set_physics_process(true)
+	for i in 6:
+		await _city.get_tree().physics_frame
+	t.check((first["push"] as Vector2).x > 0.0 and rig.global_position.x < here.x - 0.5,
+			"and she is pushed the other way (%s -> %s)" % [here, rig.global_position])
+	rig.free()
+
+	# A contact well outside the radius does nothing at all: the walker a lane over was never
+	# touched, was not pushed across and was announced to nobody.
+	t.check(not other.touching and absf(other.global_position.x - other_from.x) < 1.0,
+			"passing somebody wide is free, which is what makes it a choice")
 
 ## The lethal half. Checked directly rather than by walking a player into traffic, because the
 ## interesting cases are the ones that must *not* fire.
 func _test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t) -> void:
+	_city.crowd.start_day(1, _rng(1))
 	var car := _first_of(CrowdAgent.Kind.CAR)
 	t.check(car != null, "there is traffic on the roads")
 	if not car:
@@ -807,6 +898,7 @@ func _test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t) -> void:
 func _test_traffic_gives_way_at_a_crossing(t) -> void:
 	_city.crowd.start_day(1, _rng(1))
 	var tested := 0
+	var pulled_away := 0
 	var extent := _city.map.world_size()
 	for agent in _city.crowd.agents():
 		if tested >= 3 or agent.kind != CrowdAgent.Kind.CAR:
@@ -824,8 +916,7 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		# lookahead is braking for that barrier and planning its way round it, so what it does once
 		# the crossing clears is a statement about the barrier rather than about the zebra — and the
 		# claim below is that the *courtesy* ends when the pedestrian steps off.
-		agent._look_ahead()
-		if agent._blocked_in <= CrowdAgent.LOOKAHEAD_TILES:
+		if not _road_is_clear_ahead(agent):
 			continue
 		tested += 1
 		# The crowd is a field around the player, and this rig has no player: without moving the
@@ -858,21 +949,35 @@ func _test_traffic_gives_way_at_a_crossing(t) -> void:
 		_step(agent, 3.0)
 		# Back to road speed, or down to turn speed if it has committed to a turn in the three
 		# seconds since — a car easing into a junction it is turning at is not a car still waiting
-		# for a pedestrian who has gone, which is the failure this is watching for. **Or down to
-		# what a barrier it has come up to since allows**, for the reason the selection above gives:
-		# that is a statement about the barrier. It happens here because this rig steps the one car
-		# and never the frame around it, so `TrafficIndex` stays the morning's — every car standing
-		# where `start_day()` put it — and a turn round the barrier can find its landing taken by a
-		# car that in a running day would long since have driven on.
+		# for a pedestrian who has gone, which is the failure this is watching for. **A barrier it has
+		# come up to since is a statement about the barrier**, for the reason the selection above gives,
+		# so such a car is not asked: it happens because this rig steps the one car and never the frame
+		# around it, so `TrafficIndex` stays the morning's — every car standing where `start_day()` put
+		# it — and a turn round the barrier can find its landing taken by a car that in a running day
+		# would long since have driven on.
+		if not _road_is_clear_ahead(agent):
+			continue
+		pulled_away += 1
 		var pulling_away := Tuning.CAR_TURN_SPEED if agent.is_turning() \
 				else Tuning.CAR_SPEED.x * 0.5
-		var room: float = agent.strategy._room_to_stop_in()
-		if room < INF:
-			pulling_away = minf(pulling_away,
-					sqrt(2.0 * CarStrategy.CAR_ZEBRA_APPROACH_BRAKE * room))
 		t.check(agent.speed() >= pulling_away * 0.99,
 				"and pulls away again once the crossing is clear (%.0fpx/s)" % agent.speed())
 	t.check(tested > 0, "at least one car had a zebra ahead of it to give way at")
+	t.check(pulled_away > 0, "and at least one had a clear road to pull away down (%d of %d)"
+			% [pulled_away, tested])
+
+## Whether the road in front of a car is clear as far as it looks: none of the next
+## `CrowdAgent.LOOKAHEAD_TILES` tiles along its lane is one its strategy cannot go on to
+## (`LaneStrategy.cannot_go_on()`), the question the car's own look-ahead asks of each.
+func _road_is_clear_ahead(agent: CrowdAgent) -> bool:
+	var forward := agent.heading()
+	var step_tile := Vector2i(roundi(forward.x), roundi(forward.y))
+	var vertical := absf(forward.y) > 0.0
+	var here := _city.map.world_to_tile(agent.global_position)
+	for step in range(1, CrowdAgent.LOOKAHEAD_TILES + 1):
+		if agent.strategy.cannot_go_on(vertical, here + step_tile * step):
+			return false
+	return true
 
 ## Distance from a car's centre to the near edge of the first zebra in front of it, walked tile by
 ## tile the way the car walks it. `INF` when there is none within sight.
@@ -1334,28 +1439,28 @@ func _test_cars_do_not_drive_through_each_other(t) -> void:
 ##
 ## **A recycle is excluded and is the one teleport the design allows**, since it only ever happens
 ## where nobody is looking — `CrowdAgent._out_of_view()` is the condition on every one of them. It is
-## named the same way `tests/probes/m152_car_jumps.gd` names it: `_cruise` is written only where a
-## car is handed a fresh lane, so a car whose cruise changed over the frame was placed rather than
-## moved.
+## told by what the game does at one: every recycle resets the agent's physics interpolation so that
+## the jump is drawn where it lands (`_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not`), and
+## a `_ResetMark` handed to each car as it enters the tree counts the resets that reach it. A car
+## whose count rose over the frame was placed rather than moved.
 func _test_the_morning_is_unpacked_before_the_first_frame(t) -> void:
 	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
 	var watched := 0
 	var worst := 0.0
 	var worst_day := 0
 	for day in [1, 5, 9, 13]:
-		_city.crowd.start_day(day, _rng(day))
 		var before := {}
-		for agent in _city.crowd.agents():
+		for mark in _start_a_day_marked(day):
+			var agent := mark.get_parent() as CrowdAgent
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
-			before[agent.get_instance_id()] = [agent.position, agent._cruise]
+			before[mark] = [agent.position, mark.resets]
 			watched += 1
 		_city.crowd.step(STEP)
-		for agent in _city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
-				continue
-			var was: Array = before.get(agent.get_instance_id(), [])
-			if was.is_empty() or not is_equal_approx(float(was[1]), agent._cruise):
+		for mark: _ResetMark in before:
+			var agent := mark.get_parent() as CrowdAgent
+			var was: Array = before[mark]
+			if mark.resets != was[1]:
 				continue
 			var moved: float = (was[0] as Vector2).distance_to(agent.position)
 			if moved > worst:
@@ -1401,29 +1506,13 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	var bucket: float = Crowd._LINE_BUCKET
 	t.check(bucket == float(4 * Tuning.TILE_SIZE),
 			"a bucket is four tiles wide, which the hut test below straddles in whole tiles")
-	var edge := bucket * 3.0
-	# Both axes, both directions, and a gate's wider tolerance. A column holds points by x (a body
-	# heading north or south looks along it), a row by y.
-	var lines := crowd._bucket_by_line([Vector2(edge + 20.0, edge - 20.0),
-			Vector2(edge - 20.0, edge + 20.0)])
-	var walker_tolerance := Crowd.WALKER_DOOR_LANE_TOLERANCE
-	for tolerance in [walker_tolerance, Crowd.GATE_LANE_TOLERANCE]:
-		var from_below: Array[int] = crowd._near_a_line(lines, 2, Vector2.DOWN,
-				Vector2(edge - 10.0, 0.0), tolerance)
-		t.check(from_below.has(0),
-				"a body heading south finds a point 30px east of it across a bucket edge (%d)" % tolerance)
-		var from_above: Array[int] = crowd._near_a_line(lines, 2, Vector2.DOWN,
-				Vector2(edge + 10.0, 0.0), tolerance)
-		t.check(from_above.has(1),
-				"and one 30px west of it across the edge, the other way (%d)" % tolerance)
-		var row_from_below: Array[int] = crowd._near_a_line(lines, 2, Vector2.RIGHT,
-				Vector2(0.0, edge - 10.0), tolerance)
-		t.check(row_from_below.has(1),
-				"a body heading east finds a point 30px south of it across a bucket edge (%d)" % tolerance)
-		var row_from_above: Array[int] = crowd._near_a_line(lines, 2, Vector2.RIGHT,
-				Vector2(0.0, edge + 10.0), tolerance)
-		t.check(row_from_above.has(0),
-				"and one 30px north of it across the edge, the other way (%d)" % tolerance)
+	# **A gate across a bucket edge from a car's line still holds the car** (`Crowd._stop_for_gates()`
+	# looks at the gates on its own line through `_near_a_line()`): on both axes and in both directions,
+	# so a column and a row are each asked from both sides of an edge, with a gate that stands just past
+	# the nearest bucket edge from the line the car drives along.
+	for vertical in [true, false]:
+		for direction in [1.0, -1.0]:
+			_check_a_gate_across_a_bucket_edge_holds_the_car(t, vertical, direction, bucket)
 	# A walker finds a hut across the edge, and of two huts at the same distance the lower index
 	# wins whichever bucket is visited first. The huts stand on corridor tiles either side of a
 	# bucket edge at a multiple of four tiles.
@@ -1472,6 +1561,82 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	walker.free()
 	above = null
 	below = null
+
+## A car driving `direction` along a straight stretch of ordinary street on the axis `vertical`, with a
+## closed gate (`Crowd.set_gates()`, which `main` hands the day's gates) sited ahead of it where the
+## car begins to stop for one, a few pixels past the bucket edge nearest to the line the car drives
+## along, so that the gate stands in the next bucket over and `Crowd._stop_for_gates()` finds it only by
+## looking into the neighbour: the car is told to hold for it (`CrowdAgent.gate_hold`).
+func _check_a_gate_across_a_bucket_edge_holds_the_car(t, vertical: bool, direction: float,
+		bucket: float) -> void:
+	var map := _city.map
+	var way: String = ("south" if direction > 0.0 else "north") if vertical \
+			else ("east" if direction > 0.0 else "west")
+	var lane: int = CrowdLanes.road_lane(vertical, direction)
+	# A corridor whose lane for this direction is near enough a bucket edge that a gate within the
+	# gate tolerance of it stands on the other side (a lane tile is 32px and an edge falls every 128, so
+	# which corridors qualify is a fact about the city).
+	var run := _a_straight_run_on(vertical, Tuning.BLOCK_SIZE, func(corridor: int) -> bool:
+		var cross := CrowdLanes.lane_centre(corridor, lane)
+		return absf(cross - roundf(cross / bucket) * bucket) <= Crowd.GATE_LANE_TOLERANCE - 8.0 - 1.0)
+	t.check(run.x >= 0, "%s: this city has a straight stretch of street with a lane near a bucket edge" % way)
+	if run.x < 0:
+		return
+	_city.crowd.start_day(1, _rng(1))
+	_city.crowd.clear()
+	var start_tile := run.y + 1 if direction > 0.0 else run.y + Tuning.BLOCK_SIZE - 2
+	var car: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.CAR, run.x, lane,
+			(float(start_tile) + 0.5) * Tuning.TILE_SIZE, direction, vertical)
+	var line := car.global_position.x if vertical else car.global_position.y
+	var edge := roundf(line / bucket) * bucket
+	var past_the_edge := edge + 8.0 * signf(edge - line)
+	var ahead := CarStrategy.braking_distance(car.speed()) + Tuning.CAR_STOP_LINE_SETBACK - 24.0
+	var gate := RegionPlanner.GateState.new()
+	gate.position = car.global_position + car.heading() * ahead
+	if vertical:
+		gate.position.x = past_the_edge
+	else:
+		gate.position.y = past_the_edge
+	t.check(floori(past_the_edge / bucket) != floori(line / bucket)
+			and absf(past_the_edge - line) < Crowd.GATE_LANE_TOLERANCE,
+			"%s: the gate stands in the next bucket over (%.0fpx from the car's line, tolerance %.0f)"
+			% [way, absf(past_the_edge - line), Crowd.GATE_LANE_TOLERANCE])
+	var gates: Array[RegionPlanner.GateState] = [gate]
+	_city.crowd.set_gates(gates)
+	_city.crowd.set_focus(car.global_position)
+	_city.crowd.step(STEP)
+	t.check(car.gate_hold < INF,
+			"%s: a gate across a bucket edge from the car's line is found, and the car holds for it" % way)
+	var none: Array[RegionPlanner.GateState] = []
+	_city.crowd.set_gates(none)
+
+## A straight stretch of ordinary street, `length` tiles of it street all the way across and all the way
+## down, on the axis `vertical` (a column of vertical streets or a row of horizontal ones), in the
+## first corridor that `wanted` says yes to: the corridor and the first along tile, or `(-1, -1)`.
+func _a_straight_run_on(vertical: bool, length: int, wanted: Callable) -> Vector2i:
+	var map := _city.map
+	var blocks := Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
+	var extent := map.size.y if vertical else map.size.x
+	for corridor in range(1, CrowdLanes.corridor_count(blocks) - 1):
+		if (vertical and corridor == map.main_road) or not wanted.call(corridor):
+			continue
+		for start in range(4, extent - length - 4):
+			var ordinary := true
+			for along in range(start, start + length):
+				if map.street_kind(vertical, corridor, along) != GameEnums.StreetKind.ORDINARY:
+					ordinary = false
+					break
+				for offset in range(Tuning.STREET_WIDTH):
+					var tile := Vector2i(corridor * CityMap.period() + offset, along) if vertical \
+							else Vector2i(along, corridor * CityMap.period() + offset)
+					if not map.is_street(tile) or map.is_closed(tile):
+						ordinary = false
+						break
+				if not ordinary:
+					break
+			if ordinary:
+				return Vector2i(corridor, start)
+	return Vector2i(-1, -1)
 
 ## **A turn is a placement, and it has to look before it commits.** *(M38: "when a car turns into an
 ## occupied lane the other car just disappears.")*
@@ -1630,50 +1795,151 @@ func _test_the_motion_skip_stops_an_agent_in_its_tracks(t) -> void:
 ## glided across: a recycle and a walker coming out of a checkpoint hut each reset the node's
 ## interpolation, while it is shown, since Godot drops a reset made on a node hidden in the tree.
 func _test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t) -> void:
+	var map := _city.map
+	var run: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch of street to drive a car on")
+	if run.x < 0:
+		return
 	_city.crowd.start_day(1, _rng(1))
-	var car := _ResetSpy.new()
-	car.traffic = _city.crowd.traffic()
-	car.pockets = _city.crowd.pockets()
-	car.setup(CrowdAgent.Kind.CAR, _city.map, _city.crowd.field(), 7, 0.5)
-	_city.add_entity(car)
+	_city.crowd.clear()
+	var car: CrowdAgent = _rig.agent_on(_city, map, CrowdAgent.Kind.CAR, run.x,
+			CrowdLanes.road_lane(true, 1.0), float(run.y + 2) * Tuning.TILE_SIZE, 1.0)
+	var mark := _ResetMark.new()
+	car.add_child(mark)
 	t.check(car.is_physics_interpolated_and_enabled(),
 			"an agent is drawn interpolated between ticks")
-	car.resets_shown = 0
-	car._recycle()
-	t.check(car.resets_shown == 1, "a recycle resets the drawing to where the agent lands (%d)"
-			% car.resets_shown)
-	var walker := _ResetSpy.new()
-	walker.setup(CrowdAgent.Kind.WALKER, _city.map, _city.crowd.field(), 11, 0.5)
-	_city.add_entity(walker)
-	var rules := walker.strategy as WalkerStrategy
-	var hut := WalkerDoorHold.new()
-	hut.position = walker.position
-	rules._door_hold = hut
-	hut.join(walker)
-	rules._enter_the_hut()
-	walker.resets_shown = 0
-	rules._emerge_from_the_hut()
-	t.check(walker.visible and walker.resets_shown == 1,
-			"a walker out of a hut is shown and drawn from where it comes out (%d)"
-			% walker.resets_shown)
-	car.free()
-	walker.free()
+	# Driving on in the field is no jump: nothing resets its drawing.
+	_city.crowd.set_focus(car.global_position)
+	_city.crowd.step(STEP)
+	t.check(mark.resets == 0, "a car driving on is drawn gliding, not reset (%d)" % mark.resets)
+	# The field moves away from it, as it does when she walks on: the car has left it, and the crowd
+	# recycles it at the edge of the new one, where it lands.
+	var was := car.global_position
+	_city.crowd.set_focus(map.world_size() - was)
+	_city.crowd.step(STEP)
+	t.check(car.global_position.distance_to(was) > Tuning.TILE_SIZE,
+			"the field moving away recycles the car to somewhere else (%s -> %s)"
+			% [was, car.global_position])
+	t.check(mark.resets == 1 and mark.reset_at == car.global_position,
+			"a recycle resets the drawing to where the agent lands (%d)" % mark.resets)
+
+## A walker held at a checkpoint hut goes in and comes out again drawn from where it comes out: it is
+## shown again on the far side and the node's interpolation is reset there, while it is shown, so the
+## hut's middle is not glided out of. Walked on a day with a region door, a walker whose answer is to be
+## held (`_walker_held_at_a_hut()`) coming at the hut from 160px, on the crowd's own steps.
+func _test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t) -> void:
+	var scene := _open_a_door_day(t)
+	if scene.is_empty():
+		return
+	var city: City = scene["city"]
+	var walker := _walker_held_at_a_hut(scene, scene["huts"][0], 160.0)
+	var mark := _ResetMark.new()
+	walker.add_child(mark)
+	var went_in := false
+	var came_out_at := -1
+	var resets_when_out := -1
+	var drawn_from := Vector2.INF
+	var stands_at := Vector2.INF
+	var frames := int(round(10.0 / STEP))
+	for frame in frames:
+		city.crowd.step(STEP)
+		if not walker.visible:
+			went_in = true
+		elif went_in and came_out_at < 0:
+			came_out_at = frame
+			resets_when_out = mark.resets
+			drawn_from = mark.reset_at
+			stands_at = walker.global_position
+	t.check(went_in and came_out_at >= 0,
+			"a walker held at a hut goes in (hidden) and comes out again (frame %d of %d)"
+			% [came_out_at, frames])
+	t.check(resets_when_out == 1,
+			"it is shown out of the hut with the drawing reset there, once (%d resets)"
+			% resets_when_out)
+	# The tick that lets it out also steps it on, by no more than a frame's walk.
+	t.check(drawn_from.distance_to(stands_at) <= Tuning.PEDESTRIAN_SPEED.y * STEP * 2.0,
+			"and drawn from where it comes out (%s, %s)" % [drawn_from, stands_at])
+	city.free()
+
+## A city in a run of its own on the first day with a region door, the crowd started round the door's
+## mouth and emptied, and the door's two sidewalk huts: the day's detaining door bodies standing on a
+## sidewalk of the mouth, as the crowd builds its own huts from them (`Crowd.start_day()`).
+func _open_a_door_day(t) -> Dictionary:
+	var map := CityGenerator.generate(SEED)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	t.add_child(city)
+	city.build(map)
+	var door: StreetNetwork.Segment = null
+	var used_day := -1
+	for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		var closures_rng := RandomNumberGenerator.new()
+		closures_rng.seed = hash("crowd-door-closures:%d:%d" % [SEED, day])
+		city.start_day(state, day, closures_rng)
+		var events_rng := RandomNumberGenerator.new()
+		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
+		var consumed: Array[String] = []
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
+		if not city.region_plan().doors.is_empty():
+			door = city.region_plan().doors[0]
+			used_day = day
+			break
+	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
+	if not door:
+		city.free()
+		return {}
+	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
+			< RegionPlanner.region_of_junction(map, door.b)
+	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
+	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
+	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
+	city.crowd.set_gates(city.region_plan().gates)
+	city.crowd.clear()
+	var vertical := not door.horizontal
+	var huts: Array[Vector2] = []
+	for body in city.region_plan().door_bodies:
+		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
+			continue
+		var across: float = body.position.x if vertical else body.position.y
+		if CityMap.is_road_offset(
+				CityMap.corridor_offset(floori(across / float(Tuning.TILE_SIZE)))):
+			continue    # the boom over the roadway, which is the cars' own
+		huts.append(body.position)
+	t.check(huts.size() == 2, "the door stands a hut on each of its two sidewalks (%d)" % huts.size())
+	if huts.size() != 2:
+		city.free()
+		return {}
+	return {"city": city, "vertical": vertical, "at_a": at_a, "huts": huts}
+
+## A walker on the sidewalk lane the hut at `hut` stands beside, `back` px short of it and walking at it,
+## with a seed whose first roll gives it the answer to be held there
+## (`test_crowd_bodies.gd`'s `seed_for_door_answer()`), pinned through the entry a task scene's actors
+## take (`Crowd.add_recipe_actor()`).
+func _walker_held_at_a_hut(scene: Dictionary, hut: Vector2, back: float) -> CrowdAgent:
+	var city: City = scene["city"]
+	var vertical: bool = scene["vertical"]
+	var hut_across: float = hut.x if vertical else hut.y
+	var hut_along: float = hut.y if vertical else hut.x
+	var corridor := CrowdLanes.corridor_at(hut_across)
+	var lane := CrowdLanes.nearest_sidewalk(corridor, hut_across)
+	# Toward the mouth from inside the door's own segment, whichever end the mouth is at.
+	var direction := -1.0 if scene["at_a"] else 1.0
+	var centre := CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
+	var along := hut_along - direction * back
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	var placed := city.crowd.add_recipe_actor("walker-%d" % city.crowd.agent_count(),
+			CrowdAgent.Kind.WALKER, Vector2(centre, along) if vertical else Vector2(along, centre),
+			heading, 60.0, _rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.HELD))
+	assert(placed["error"] == "", "the walker is placed: %s" % placed["error"])
+	return placed["actor"]
 
 ## The morning's overlap resolve nudges some cars apart after every agent has entered the tree, so
 ## the drawing is reset after it: each agent's last reset (noted by a child that every agent is
 ## handed as it enters the tree, since a reset reaches an agent's children) was made where the agent
 ## stands now, never where it stood before the resolve moved it.
 func _test_the_morning_resolve_is_not_drawn_as_a_slide(t) -> void:
-	_city.crowd.start_day(1, _rng(3))
-	var layer := _city.crowd.agents()[0].get_parent()
-	var marks: Array[_ResetMark] = []
-	var hand_one_out := func(node: Node) -> void:
-		var mark := _ResetMark.new()
-		marks.append(mark)
-		node.add_child(mark)
-	layer.child_entered_tree.connect(hand_one_out)
-	_city.crowd.start_day(1, _rng(3))
-	layer.child_entered_tree.disconnect(hand_one_out)
+	var marks := _start_a_day_marked(1, 3)
 	var off := 0
 	for mark in marks:
 		var agent := mark.get_parent() as CrowdAgent
@@ -1683,21 +1949,34 @@ func _test_the_morning_resolve_is_not_drawn_as_a_slide(t) -> void:
 			"after start_day no agent's drawing was last reset away from where it stands (%d of %d)"
 			% [off, marks.size()])
 
+## Starts the day `day` (from the stream of `stream_day`, which is the day's own unless given) with a
+## `_ResetMark` handed to every agent as the day's crowd enters the tree: the first start finds the
+## layer the agents are added to, and the second is the day itself, the same one over again
+## (`_test_the_same_day_makes_the_same_crowd`).
+func _start_a_day_marked(day: int, stream_day := -1) -> Array[_ResetMark]:
+	var rng_day := day if stream_day < 0 else stream_day
+	_city.crowd.start_day(day, _rng(rng_day))
+	var layer := _city.crowd.agents()[0].get_parent()
+	var marks: Array[_ResetMark] = []
+	var hand_one_out := func(node: Node) -> void:
+		var mark := _ResetMark.new()
+		marks.append(mark)
+		node.add_child(mark)
+	layer.child_entered_tree.connect(hand_one_out)
+	_city.crowd.start_day(day, _rng(rng_day))
+	layer.child_entered_tree.disconnect(hand_one_out)
+	return marks
+
 ## Notes where its parent stood each time the parent's physics interpolation was reset.
 class _ResetMark extends Node:
 	var reset_at := Vector2.INF
+	## How many resets have reached the agent since the mark was handed to it.
+	var resets := 0
 
 	func _notification(what: int) -> void:
 		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION:
+			resets += 1
 			reset_at = (get_parent() as Node2D).global_position
-
-## A crowd agent that counts the interpolation resets that reach it while it is shown in the tree.
-class _ResetSpy extends CrowdAgent:
-	var resets_shown := 0
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_RESET_PHYSICS_INTERPOLATION and is_visible_in_tree():
-			resets_shown += 1
 
 # ------------------------------------------------------------------- helpers ---
 

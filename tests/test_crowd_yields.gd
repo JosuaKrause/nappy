@@ -26,7 +26,7 @@ func run(t) -> void:
 	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
 	_test_a_placement_is_not_a_walk(t)
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -157,6 +157,22 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 # ------------------------------------------------------- what a figure is ---
 
+## An event of the row `id` set up over a map of its own (`EventInstance.setup()`'s map argument, as
+## `EventSpawner.create()` hands it) and put in the tree, where it joins its move to that map's list as
+## it does in the game (`EventInstance._enter_tree()`). The move is what the crowd's separation pass
+## reads off the list (`ProposedMoves.keeping_their_course()`), so it is read there and not off the
+## instance. `move` is null when the list does not hold exactly the one move.
+func _a_row_on_a_map(t, id: String) -> Dictionary:
+	var map := WorldMap.open_ground()
+	var instance := EventInstance.new()
+	instance.skip_draw = true
+	instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0), PackedVector2Array(),
+			Vector2.RIGHT, map)
+	t.add_child(instance)
+	var listed := map.moves.keeping_their_course()
+	return {"instance": instance, "map": map,
+			"move": listed[0] if listed.size() == 1 and map.moves.size() == 1 else null}
+
 ## **Each row's `stands_as` reaches its move** (`EventInstance.setup()`): the patrol car and the
 ## fire engine, vehicles, are walked round while they stand; the charging dog and the policeman on
 ## foot, an animal and a person, are not, so the dog waiting on the map before its charge may be
@@ -166,11 +182,13 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
 	var expected := {"police_patrol": true, "fire_truck": true, "market_stall": true,
 			"charging_dog": false, "policeman_giving_chase": false, "busker": false}
 	for id: String in expected:
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0))
-		t.check(instance._move.stood_round == expected[id],
-				"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
-		instance.free()
+		var rig := _a_row_on_a_map(t, id)
+		var move: MoveProposal = rig["move"]
+		t.check(move != null, "%s puts one move on its map's list" % id)
+		if move != null:
+			t.check(move.stood_round == expected[id],
+					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
+		rig["instance"].free()
 	var undeclared: Array[String] = []
 	for def in EventCatalogue.all():
 		if def.stands_as == EventDef.StandsAs.UNDECLARED:
@@ -180,26 +198,29 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
 ## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
 ## a stall, which never moves, has parked from the start; the fire engine has not while it
 ## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
-## dog go on, so never. And every row of the catalogue declares it, which `EventDef.validate()` also
-## refuses to load without.
+## dog go on, so never. And every row of the catalogue declares it, which
+## `EventDef.validate()` also refuses to load without.
 func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
-	var stall := EventInstance.new()
-	stall.setup(EventCatalogue.by_id("market_stall"), Vector2(100.0, 100.0))
-	t.check(stall._move.parked, "a stall, which never moves, has parked from the start")
-	stall.free()
-	var engine := EventInstance.new()
-	engine.setup(EventCatalogue.by_id("fire_truck"), Vector2(100.0, 100.0))
-	t.check(not engine._move.parked, "the fire engine has not parked while it drives")
-	engine.transition(EventInstance.Phase.PARKED)
-	t.check(engine._move.parked, "and has once it stops at its fire")
-	engine.transition(EventInstance.Phase.LEAVING)
-	t.check(not engine._move.parked, "and nothing leaving has parked")
-	engine.free()
+	var stall := _a_row_on_a_map(t, "market_stall")
+	var stall_move: MoveProposal = stall["move"]
+	t.check(stall_move != null and stall_move.parked,
+			"a stall, which never moves, has parked from the start")
+	stall["instance"].free()
+	var engine := _a_row_on_a_map(t, "fire_truck")
+	var engine_move: MoveProposal = engine["move"]
+	var engine_instance: EventInstance = engine["instance"]
+	t.check(engine_move != null and not engine_move.parked, "the fire engine has not parked while it drives")
+	engine_instance.transition(EventInstance.Phase.PARKED)
+	t.check(engine_move != null and engine_move.parked, "and has once it stops at its fire")
+	engine_instance.transition(EventInstance.Phase.LEAVING)
+	t.check(engine_move != null and not engine_move.parked, "and nothing leaving has parked")
+	engine_instance.free()
 	for id: String in ["police_patrol", "charging_dog"]:
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(id), Vector2(100.0, 100.0))
+		var rig := _a_row_on_a_map(t, id)
+		var instance: EventInstance = rig["instance"]
 		instance.transition(EventInstance.Phase.PARKED)
-		t.check(not instance._move.parked, "%s goes on, so it never reads as parked" % id)
+		var move: MoveProposal = rig["move"]
+		t.check(move != null and not move.parked, "%s goes on, so it never reads as parked" % id)
 		instance.free()
 	var undeclared: Array[String] = []
 	for def in EventCatalogue.all():
@@ -210,18 +231,28 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
 # -------------------------------------------------- the list of moves keeps up ---
 
 ## An event manager over a bare map, with `alley_robbery` planned at `at` and streamed in: the rig
-## `test_event_behaviours.gd` streams a plan with.
+## `test_event_behaviours.gd` streams a plan with. The manager is handed its world as the escape's
+## building is (`EventManager.setup_world()`: a map and a run of its own, here a fresh `RunState`), the
+## plan joins the day's as one planned after dawn does (`EventStreaming.add()`, which the events
+## ahead of her call) and is streamed in around `at`. `move` is the one move the streamed-in event put
+## on the map's list.
 func _a_manager_with_a_live_event(t, at: Vector2) -> Dictionary:
 	var world := WorldContext.new()
 	t.add_child(world)
+	var run := RunState.new()
+	run.start_run(SEED)
+	world.add_child(run)
+	var map := CityMap.new()
+	map.world = world
 	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	manager.world.map.world = world
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(EventCatalogue.by_id("alley_robbery"), at)
-	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
+	manager.streaming.add(plan)
 	manager.stream_around(at)
-	return {"world": world, "manager": manager, "plan": plan}
+	var listed := map.moves.all()
+	return {"world": world, "manager": manager, "plan": plan,
+			"move": listed[0] if listed.size() == 1 else null}
 
 func _free_the_manager(rig: Dictionary) -> void:
 	rig.manager.free()
@@ -236,14 +267,15 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
 	var manager: EventManager = rig.manager
 	var moves: ProposedMoves = manager.world.map.moves
 	var live: EventInstance = rig.plan.live
-	t.check(live != null and moves.has(live._move), "a streamed-in event is on the list")
-	if live == null:
+	var move: MoveProposal = rig.move
+	t.check(live != null and move != null and moves.has(move), "a streamed-in event is on the list")
+	if live == null or move == null:
 		_free_the_manager(rig)
 		return
-	live._finish()
-	t.check(moves.has(live._move), "a finished event stays until the manager retires it")
+	live.transition(EventInstance.Phase.DONE)
+	t.check(moves.has(move), "a finished event stays until the manager retires it")
 	manager.streaming.retire_finished()
-	t.check(not moves.has(live._move) and live.is_queued_for_deletion(),
+	t.check(not moves.has(move) and live.is_queued_for_deletion(),
 			"retired once finished, it is off the list in the same call, with no frame between")
 	_free_the_manager(rig)
 
@@ -251,20 +283,21 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
 	manager = rig.manager
 	moves = manager.world.map.moves
 	live = rig.plan.live
+	move = rig.move
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
-	t.check(rig.plan.live == null and not moves.has(live._move),
+	t.check(move != null and rig.plan.live == null and not moves.has(move),
 			"streamed out, it is off the list in the same call")
 	_free_the_manager(rig)
 
 	rig = _a_manager_with_a_live_event(t, at)
 	manager = rig.manager
 	moves = manager.world.map.moves
-	live = rig.plan.live
-	manager.world.instances.append(live)
+	move = rig.move
+	t.check(move != null and moves.has(move), "a streamed-in event is on the list to be cleared")
 	manager.clear()
-	t.check(not moves.has(live._move) and moves.size() == 0,
+	t.check(move != null and not moves.has(move) and moves.size() == 0,
 			"EventManager.clear() empties the list (%d left)" % moves.size())
 	_free_the_manager(rig)
 
@@ -278,7 +311,12 @@ func _test_a_placement_is_not_a_walk(t) -> void:
 	var moves: ProposedMoves = manager.world.map.moves
 	var live: EventInstance = rig.plan.live
 	var pass_over := SeparationPass.new(moves)
-	live._move.radius = EventInstance.FIGURE_RADIUS
+	var live_move: MoveProposal = rig.move
+	t.check(live_move != null, "the streamed-in figure is on the list to be placed")
+	if live_move == null:
+		_free_the_manager(rig)
+		return
+	live_move.radius = EventInstance.FIGURE_RADIUS
 	pass_over.gather()
 	manager.move_extra(live, at + Vector2(400.0, 0.0))
 	pass_over.gather()
