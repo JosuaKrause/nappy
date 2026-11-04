@@ -1855,14 +1855,15 @@ func _test_the_boom_never_inspects_her(t) -> void:
 ## **The arm never comes down on her.** A raised boom's body goes back down with the arm, so an arm
 ## lowered with her rig beneath it would put a solid body around her. `Crowd._stop_for_gates()`
 ## keeps a raised gate up while any of her rig is under it, as it does for a car within a length,
-## and lowers it the moment the road and she are both clear.
+## and lowers it the moment the road and she are both clear. Driven by the crowd's own rig tick,
+## `Crowd.step()`, which runs it with the rest of the tick's first half.
 func _test_the_arm_never_comes_down_on_her(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	var stroller := _real_stroller(t)
-	city.crowd._player = stroller
+	city.crowd.use_player(stroller)
 
 	var gate := RegionPlanner.GateState.new()
 	gate.position = Vector2(-5000.0, -5000.0)
@@ -1871,10 +1872,10 @@ func _test_the_arm_never_comes_down_on_her(t) -> void:
 	city.crowd.set_gates(gates)
 
 	stroller.global_position = gate.position + Vector2(40.0, 10.0)
-	city.crowd._stop_for_gates(STEP)
+	city.crowd.step(STEP)
 	t.check(gate.raised, "with no car anywhere near it, the arm stays up while she is under it")
 	stroller.global_position = gate.position + Vector2(200.0, 0.0)
-	city.crowd._stop_for_gates(STEP)
+	city.crowd.step(STEP)
 	t.check(not gate.raised, "and comes down once she is out from under it")
 
 	stroller.free()
