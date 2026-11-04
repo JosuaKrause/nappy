@@ -7,20 +7,20 @@ extends RefCounted
 ## "day 12 throws" — which no amount of unit coverage does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## A handful of run seeds, since a single city can be lucky.
-const SEEDS := [4242, 90210, 1234567]
-## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s),
-## short enough that three runs stay quick. A coarse step is fine for a smoke test.
+## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s).
 const SIMULATED_SECONDS := 25.0
-## How many times real time the engine runs the physics ticks of a played day, so that a tick is a
-## third of a second of game time (`PhysicsTicks.pass_ticks()`): a coarse step is fine for a smoke
-## test, and a day takes 75 ticks, not 1500.
-const SIMULATION_SCALE := 20.0
+## How many times real time the engine runs the physics ticks of a played day (`PhysicsTicks.pass_ticks()`),
+## so that a tick is a tenth of a second of game time, the step the suite always took by hand. A coarser
+## step is not used: a mobile event moves by speed times the step and an arrival or a lifetime is read
+## on a tick, so a different step could change what the suite sees, and nothing here shows it cannot.
+## A day takes 250 ticks.
+const SIMULATION_SCALE := 6.0
 
-func run(t) -> void:
+## Plays the run of `seed_value` (the parts of this suite are one seed each, so none runs two minutes
+## serial).
+func run(t, seed_value: int) -> void:
 	await PhysicsTicks.settle(t)
-	for seed_value in SEEDS:
-		await _play_a_run(t, seed_value)
+	await _play_a_run(t, seed_value)
 
 ## One run: the city is built over a run of its own (`RunCity.with_own_run()`, freed with the city),
 ## and every day of it is started and played the way `main._start_day()` does, on real physics ticks.
