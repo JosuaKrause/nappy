@@ -16,4 +16,7 @@ suite reads its mask table through sixteen one-cell maps and the cells a flood d
 **Not done:** the generator's even-offset helper on odd bounds and a collapsed range, which no city
 asks for, since its one caller passes two to four; the grid's tile-to-cell floor, where a wrongly
 dirty cell changes what a query costs and never its answer, so only a reader of the dirty cells,
-which no game class calls, would see it.
+which no game class calls, would see it;
+`LaneMover.lane_key_parts()`, which the recipe composition, crowd and turns suites read and no game
+class calls; the heading a recycled walker rolls when it chooses its lane again, which no suite
+guards, the composition check reaching only the heading rolled where the crowd places a walker.
