@@ -16,7 +16,9 @@
 # A suite the fetched logs never mention -- a new suite CI has not measured yet, or an old one
 # whose every fetched run crashed before it printed -- keeps its row from the current file and is
 # named on stderr, the same "missing row costs more than a stale one" rule tools/test.sh's own
-# _cost_of() states. Nothing here ever drops a row silently.
+# _cost_of() states. A row whose suite no longer exists under tests/ -- one deleted or split since
+# -- is dropped, whether the fetched logs measured it or the current file held it, and is named on
+# stderr too. Nothing here ever drops a row silently.
 set -uo pipefail
 # Byte order for every sort and join below, so the file's rows come out in one order whatever the
 # shell's locale, the order tools/test.sh --record-costs writes them in.
@@ -167,6 +169,29 @@ awk '{ sum[$1] += $2; cnt[$1]++ } END { for (n in sum) printf "%s %d\n", n, int(
 # The rows already on disk, same "name ms" shape, so the two files can be compared by name.
 old_rows="$work_dir/old_rows.txt"
 awk '$1 !~ /^#/ && NF { print $1, $2 }' "$COST_FILE" | sort > "$old_rows"
+
+# A row for a suite that is no longer under tests/ (deleted, or split into others) is dropped from
+# both, and named on stderr, so the file holds one row per suite that exists.
+gone_names="$work_dir/gone_names.txt"
+: > "$gone_names"
+for rows in "$averaged" "$old_rows"; do
+    still="$rows.still"
+    : > "$still"
+    while IFS= read -r row; do
+        [[ -z "$row" ]] && continue
+        name="${row%% *}"
+        if [[ -f "$root/tests/$name" ]]; then
+            printf '%s\n' "$row" >> "$still"
+        else
+            printf '%s\n' "$name" >> "$gone_names"
+        fi
+    done < "$rows"
+    mv "$still" "$rows"
+done
+if [[ -s "$gone_names" ]]; then
+    echo "tools/ci-costs.sh: dropping the row of each suite no longer under tests/:" >&2
+    sort -u "$gone_names" | sed 's/^/    /' >&2
+fi
 
 # Old suites the fetched logs never measured keep their row and are named on stderr -- comm -23
 # wants both inputs sorted by the compared field, which both files already are (sort on "name ms"
