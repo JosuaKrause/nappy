@@ -41,8 +41,13 @@ func _ready() -> void:
 		save.free()
 		get_tree().quit(12)
 		return
-	# The desktop policy is checked independently of headless's unconditional no-save gate.
-	if GameSave._debug_run_uses_save(config.active_args, false):
+	# The desktop policy is checked independently of headless's unconditional no-save gate: the same
+	# words, parsed for a window, still take no save.
+	var windowed := GameSave.new()
+	windowed.configure(RunConfig.parse(OS.get_cmdline_user_args(), "", true, false, {}, false))
+	var desktop_saves := windowed.uses_save()
+	windowed.free()
+	if desktop_saves:
 		save.free()
 		get_tree().quit(13)
 		return
@@ -144,13 +149,14 @@ func _probe_the_camera() -> void:
 """
 
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
 	await _test_a_held_departure_places_its_move(t)
 	_test_charging_is_for_a_pursuer_that_waits(t)
 	_test_relentless_is_for_a_pursuer(t)
 	_test_heat_installs_the_heated_row(t)
-	_test_a_task_gone_after_the_read(t)
+	await _test_a_task_gone_after_the_read(t)
 	_test_arguments(t)
 	await _test_inputs(t)
 	_test_real_argv_and_failure(t)
@@ -389,45 +395,54 @@ func _test_heat_installs_the_heated_row(t) -> void:
 	own_run.free()
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
-## played day's task can (day 10's neighbor home first): the manifest records the tick, `task`
-## names nothing from then on, and the setup has not failed. Never placed, the director refused
-## it: a failed setup, noticed and recorded in a scene played by hand as well, with the director's
-## reasons printed.
+## played day's task can (the thing it rode on finishing, day 10's neighbor home first): the manifest
+## records the tick, `task` names nothing from then on, and the setup has not failed. Never placed,
+## the director refused it: a failed setup, noticed and recorded in a scene played by hand as well,
+## with the director's reasons printed. Each is a free-play scene begun as `main` begins it, in a city
+## of a run of its own with a real director, the mark read by her touch (`ContactPoint.complete_now()`),
+## and the runtime's own ticks passing; the director is ticked as `main` ticks it.
 func _test_a_task_gone_after_the_read(t) -> void:
-	var own_run := RunState.new()
-	var director := ResistanceDirector.new()
-	var mark := ContactPoint.new()
-	director._read_mark = mark
-	director._contact = null
-	var placed := _task_runtime(director, own_run)
-	var expired := ContactPoint.new()
-	placed.named["task"] = expired
-	placed.manifest.task["read_tick"] = 40
-	placed.tick = 90
-	placed._bind_task_names()
-	placed.tick = 91
-	placed._bind_task_names()
-	t.check(placed.manifest.task.get("expired_tick") == 90 and not placed.named.has("task")
-			and not placed.manifest.get("setup_failed", false),
-			"a placed task that is gone expired at the tick it went: %s" % [placed.manifest.task])
-	# Played by hand, the runtime's own tick is what notices the read, as it does in play.
-	var refused := _task_runtime(director, own_run)
-	t.add_child(refused)
-	refused.set_physics_process(false)
-	refused._hand_played = true
-	var reason := "setup.task: nowhere for it in this test"
-	director._scene_task_errors.append(reason)
+	var placed := _task_scene(t, 7, {})
+	t.check(placed.errors.is_empty(), "the task scene is installed: %s" % [placed.errors])
+	var runtime: SceneRecipeRuntime = placed.runtime
+	var director: ResistanceDirector = placed.director
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(runtime.named.has("mark") and not runtime.manifest.task.has("read_tick"),
+			"before she reads it the mark stands unread and no task is named")
+	director.contact().complete_now()
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(runtime.named.has("task") and runtime.manifest.task.get("read_tick") == runtime.tick,
+			"the tick after she reads it, the task is named and the read is recorded: %s"
+			% [runtime.manifest.task])
+	# The thing the task rides on finishes before she gets there.
+	var rider := director.rider()
+	t.check(rider != null, "the task rides on a live event")
+	if rider:
+		placed.city.events.retire(rider)
+	director.tick(1.0 / Engine.physics_ticks_per_second)
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(runtime.manifest.task.get("expired_tick") == runtime.tick and not runtime.named.has("task")
+			and not runtime.manifest.get("setup_failed", false),
+			"a placed task that is gone expired at the tick it went: %s" % [runtime.manifest.task])
+	_free_task_scene(placed)
+	# Played by hand, the runtime's own tick is what notices the read, as it does in play. Day 10's
+	# neighbor is pinned to a start the day could not draw, which the read refuses.
+	var refused := _task_scene(t, 10, {"neighbor": true})
+	t.check(refused.errors.is_empty(), "the refused task's scene is installed: %s" % [refused.errors])
+	runtime = refused.runtime
+	director = refused.director
+	director.contact().complete_now()
 	var printed := PrintedLines.new()
 	OS.add_logger(printed)
-	refused._physics_process(1.0 / Engine.physics_ticks_per_second)
+	await PhysicsTicks.pass_ticks(t, 1)
 	OS.remove_logger(printed)
-	t.check(refused.tick == 1 and refused.manifest.get("setup_failed", false)
-			and not refused.manifest.task.has("expired_tick"),
+	t.check(runtime.tick == 1 and runtime.manifest.get("setup_failed", false)
+			and not runtime.manifest.task.has("expired_tick"),
 			"a task refused at the read fails the setup, noticed by a scene played by hand too")
+	var reason := "is not a start the day could draw"
 	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
 			"and the director's reasons are printed: %s" % [printed.lines])
-	for node: Node in [placed, refused, expired, mark, director, own_run]:
-		node.free()
+	_free_task_scene(refused)
 
 ## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
 class PrintedLines extends Logger:
@@ -441,15 +456,62 @@ func _recipe_config(scripted: bool) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode",
 			"scripted" if scripted else "free"]), "", true)
 
-## A runtime for `_bind_task_names()` alone, played by hand, its task's mark already started, in
-## `own_run`.
-func _task_runtime(director: ResistanceDirector, own_run: RunState) -> SceneRecipeRuntime:
+## The context city every task scene is built on (`test_scene_recipe_task.gd`'s), the alley mouth
+## the day-7 and day-10 scenes start at, and the one the day-10 scene pins its neighbor's start near
+## home with: a sidewalk a block from her door, nowhere near the walk the day draws a start from.
+const CONTEXT := 1917501
+const MOUTH := Vector2i(92, 69)
+const MARK := Vector2i(92, 68)
+const NEAR_HOME := Vector2i(62, 84)
+
+## A task scene installed and begun as `main` begins one: the context city on `day`, in a run of its
+## own with the recipes' seed, a real director handed to the runtime's `install()` as the day director
+## hands it, a stroller at the alley mouth, and the free-play runtime begun. `task` is the recipe's
+## `setup.task`: a day-7 mark at the alley's mark tile, or (`"neighbor": true`) a day-10 mark with the
+## neighbor pinned near home. `errors` are what `install()` returned. `_free_task_scene()` frees it.
+func _task_scene(t, day: int, task: Dictionary) -> Dictionary:
+	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
+			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
+	var map: CityMap = built.map
+	var own_run := RunState.new()
+	own_run.start_run(11)
+	own_run.header.day = day
+	var state := CityState.new()
+	own_run.attempt_spend.city_state = state
+	state.begin_day(map.block_plans, day)
+	var city: City = load("res://scenes/world/city.tscn").instantiate()
+	city.run = own_run
+	t.add_child(city)
+	city.build(map)
+	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
+	var director := ResistanceDirector.new()
+	t.add_child(director)
+	director.set_process(false)
+	director.setup(city, map)
+	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	t.add_child(player)
+	var mark := map.tile_to_world(MARK)
+	var pinned := {"mark": [mark.x, mark.y]}
+	if task.get("neighbor", false):
+		mark = map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
+		var near := map.tile_to_world(NEAR_HOME)
+		pinned = {"mark": [mark.x, mark.y], "neighbor": [near.x, near.y]}
+	var start := map.tile_to_world(MOUTH)
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": {"setup": {"task": {"mark": "mark"}}}, "manifest": {},
-			"anchors": {}}, _recipe_config(false), own_run)
-	runtime._resistance = director
-	runtime.manifest["task"] = {"mark": [0, 0]}
-	return runtime
+	runtime.configure({"data": {"setup": {"day": day, "task": pinned,
+			"player": {"at": [start.x, start.y]}}}, "manifest": {}, "anchors": {}, "map": map},
+			_recipe_config(false), own_run)
+	t.add_child(runtime)
+	var errors := runtime.install(city, player, player.get_node("Baby"),
+			DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), director)
+	if errors.is_empty():
+		runtime.begin()
+	return {"errors": errors, "runtime": runtime, "director": director, "city": city,
+			"player": player, "run": own_run}
+
+func _free_task_scene(made: Dictionary) -> void:
+	for node: Node in [made.runtime, made.player, made.director, made.city, made.run]:
+		node.free()
 
 func _test_arguments(t) -> void:
 	for args: PackedStringArray in [
