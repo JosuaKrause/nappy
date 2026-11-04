@@ -1,4 +1,4 @@
-extends RefCounted
+extends "res://tests/crowd_street_rig.gd"
 ## The crowd against the things standing in the street: a café's tables, a construction band, a
 ## kerbed van, a stall. *("yes every solid body should do that -- not necessarily force a turn
 ## around but at least avoid the solid".)*
@@ -19,7 +19,7 @@ const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -39,29 +39,6 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- the rig ---
 
-## A straight stretch of ordinary vertical street this city actually has, as the corridor index and
-## the first along tile of a run of `length` tiles that is street all the way across and all the way
-## down. Returns `-1` for the corridor when the city has no such run, which no generated city does —
-## the caller checks, so a rig that has quietly stopped testing anything says so.
-func a_straight_run(map: CityMap, length: int) -> Vector2i:
-	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
-		if corridor == map.main_road:
-			continue
-		for start in range(4, map.size.y - length - 4):
-			if _run_is_ordinary_street(map, corridor, start, length):
-				return Vector2i(corridor, start)
-	return Vector2i(-1, -1)
-
-func _run_is_ordinary_street(map: CityMap, corridor: int, start: int, length: int) -> bool:
-	for along in range(start, start + length):
-		if map.street_kind(true, corridor, along) != GameEnums.StreetKind.ORDINARY:
-			return false
-		for offset in range(Tuning.STREET_WIDTH):
-			var tile := Vector2i(corridor * CityMap.period() + offset, along)
-			if not map.is_street(tile) or map.is_closed(tile):
-				return false
-	return true
-
 ## Stands a solid body on `lanes` over the along tiles `[from, to]`, straight into the record the
 ## crowd reads. The rasterising of a real `GroundShape` into those tiles is `GroundShape.
 ## tiles_under()`'s own job and `EventManager`'s to call; what these tests are about is what the
@@ -72,25 +49,6 @@ func _stand_a_body(map: CityMap, corridor: int, lanes: Array, from: int, to: int
 		for along in range(from, to + 1):
 			tiles.append(Vector2i(corridor * CityMap.period() + lane, along))
 	map.obstruct_tiles(1, tiles)
-
-## An agent on one lane of one corridor, walking or driving at a given along position, added to the
-## day's (emptied) crowd so `Crowd.step()` moves it exactly as it moves anybody.
-func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
-		along: float, direction: float, vertical := true,
-		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0,
-		seed_value := 1) -> CrowdAgent:
-	var centre := CrowdLanes.lane_centre(corridor, lane) if kind == CrowdAgent.Kind.CAR \
-			else CrowdLanes.walker_lane_centre(corridor, lane, offsets)
-	var at := Vector2(centre, along) if vertical else Vector2(along, centre)
-	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
-	# The same entry the game gives a pinned actor in a task scene (`SceneRecipeRuntime`): the
-	# lane, the body clearance and the pocket are checked as a rolled morning's are.
-	if speed < 0.0:
-		speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
-	var placed := city.crowd.add_recipe_actor("rig-%d" % city.crowd.agent_count(), kind, at,
-			heading, speed, seed_value)
-	assert(placed["error"] == "", "the rig's agent is placed: %s" % placed["error"])
-	return placed.get("actor")
 
 ## A body of `kind` the crowd accepts somewhere on this city's ordinary streets, whatever a day has
 ## sealed or held there: the first spot along any vertical corridor that the entry
@@ -484,9 +442,12 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 		if def == null or def.shape == null or def.obstructs_radius <= 0.0:
 			continue
 		t.check(def.parts().size() == 1, "'%s' is one piece, so it is this test's business" % id)
-		var placed := at
-		if def.pavement_side == EventDef.Pavement.ANY:
-			placed = EventInstance._centred_on_the_pavement_band(map, at)
+		# Where the row's body stands once sited at `at`: the instance the spawner makes puts a
+		# stationary, unpinned body on the middle of its pavement band when it is set up.
+		var sited := EventInstance.new()
+		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+		var placed := sited.position
+		sited.free()
 		var axis := EventFootprints.body_axis(map, def, placed, Vector2.RIGHT)
 		var before := def.shape.tiles_under(placed, axis)
 		var after := EventSpawner.obstructed_footprint(map, def, at, Vector2.RIGHT)
@@ -726,7 +687,7 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, city_seed)
 		t.add_child(city)
 		city.build(map)
 		for day: int in [1, 6]:
@@ -750,6 +711,15 @@ func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
 			city.crowd.set_gates(city.region_plan().gates)
 			var cars := _car_bodies(map, city.events)
 			cars_seen += cars.size()
+			# The cars as an instance stands them are where the record put them: the middle of
+			# each is on ground the day marked as a body.
+			var off_the_record := 0
+			for car: Array in cars:
+				if not map.is_obstructed(map.world_to_tile(car[0])):
+					off_the_record += 1
+			t.check(off_the_record == 0,
+					"seed %d day %d: every crashed car's middle is on ground the record holds (%d are not)"
+					% [city_seed, day, off_the_record])
 			var inside := 0
 			var in_a_car := 0
 			var reached_a_car := 0
@@ -785,10 +755,13 @@ func _car_bodies(map: CityMap, events: EventManager) -> Array:
 	for plan in events.plans():
 		if not plan.is_placed() or plan.def == null or plan.def.solid_parts.is_empty():
 			continue
-		var placed := plan.position
-		if plan.def.pavement_side == EventDef.Pavement.ANY:
-			placed = EventInstance._centred_on_the_pavement_band(map, placed)
-		var vertical := EventInstance._spread_is_vertical(map, placed)
+		# The instance the spawner would make for the plan: where it stands and which way its
+		# pieces are laid out are what it decides when it is set up.
+		var sited := EventInstance.new()
+		sited.setup(plan.def, plan.position, PackedVector2Array(), plan.facing, map)
+		var placed := sited.position
+		var vertical := sited.runs_vertically()
+		sited.free()
 		for piece in plan.def.parts():
 			var offset := piece.offset_for(vertical)
 			var centre := placed + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0))
