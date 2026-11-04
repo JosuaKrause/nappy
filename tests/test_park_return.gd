@@ -12,10 +12,24 @@ extends RefCounted
 ## she asleep inside the park and leaving through the last gap with the baby asleep, the baby put to
 ## sleep elsewhere with the park taped behind her, and shut in with the baby asleep.
 ##
-## `run()` snapshots the whole save first and puts it back last, and points `GameSave` at a scratch
-## file, so nothing here leaks into the next suite or reaches the player's save.
+## **Each case boots `main` on a run of its own** (`RunState`, parked in a sitting of the suite's
+## own, `Boot.home_playing()`) with a save at a scratch path, so nothing here leaks into the next
+## suite or reaches the player's save, and nothing is put back afterwards.
+##
+## **Who takes the park.** The two cases that walk out through the last gap need to know where it
+## is, which only the cordon holds (`ParkCordon.last_gap`; the world shows the gap only once it has
+## closed), so they take the park with happenings of their own, handed what the director hands its
+## own at the swing (`take_the_park(director.reach_obstruction())`) and ticked by the suite with the
+## day's clock; the director's own task for the swing is left open, since finishing it would send
+## the task's pursuer after her too. The case that stands in the park until the day is lost has no
+## use for the gap, so it finishes the swing's task as she does and ticks the director
+## (`ResistanceDirector.tick()`, which runs the director's own happenings), and everything it asks
+## of the cordon it reads off the world (`tests/cordon_in_the_world.gd`): the officers, and the
+## park shut or not. That is also the only case in which the game clears the cordon when the lost
+## day is played again, which is what it checks.
 
 const Boot := preload("res://tests/booted_main.gd")
+const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 const SEEDS: Array[int] = [4242, 11, 13]
 const STEP := 1.0 / 60.0
 ## How long a check lets the cordon work before calling it stuck, in seconds of day.
@@ -24,71 +38,85 @@ const PATIENCE := 40.0
 const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
-## The save the boots read from, at a scratch path, handed to each (`main.use_save()`).
-var _save := GameSave.new(_SCRATCH_PATH)
+## What the case in progress booted (`_day_twelve()`): the boot with its scratch save, the home the
+## suite's sitting is parked in, and the run that sitting holds, freed by `_finish()`.
+var _booted: Boot.Booted
+var _home: Node
+var _run: RunState
+## The happenings of the suite's own that took the park (`_touch_the_swing()`), or null when the
+## director took it.
+var _happenings: ResistanceHappenings
+## Where the swing is, set by `_touch_the_swing()`.
+var _swing := Vector2.INF
 
 func run(t) -> void:
-	t.gives_back_observers()
-	var baseline := GameSave.file_data(GameState, false)
 	for seed_value in SEEDS:
 		await _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value)
 		await _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
 		await _test_shut_in_with_the_baby_asleep(t, seed_value)
-	_with_saving(func() -> void: _save.clear())
-	_save.free()
-	GameState.run_parts.restore_run_data(baseline)
-	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
-	GameState.calendar.checkpoint = baseline["checkpoint"]
 
 # ------------------------------------------------------------------ fixture ---
 
-## `callable` run as a windowed release run, which saves, against the scratch file `run()` set; the
-## configuration is taken back off afterwards, since a booted `main` hands its own.
-func _with_saving(callable: Callable) -> void:
-	_save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
-	callable.call()
-	_save.configure(null)
-
 ## A booted `Main` standing at day 12's dawn on `seed_value`, a normal run, with the mark read and
-## the swing offered.
+## the swing offered. The run is the suite's own, in a sitting of its own the boot takes
+## (`Boot.home_playing()`), so the game plays that seed at that day; the save is at a scratch path.
 func _day_twelve(t, seed_value: int) -> Node2D:
 	# `Main` rolls its own seed unless a command line or a save gives one: a save of this seed's run,
-	# standing at day 12's dawn, is the way a test gives it, and is read back through the scratch
-	# file this suite points `GameSave` at.
-	GameState.start_run(seed_value)
-	GameState.header.day = ResistanceSteps.swing_day()
-	_with_saving(func() -> void: _save.write(GameState, true))
-	var main: Node2D = Boot.MAIN_SCENE.instantiate()
-	main.use_save(_save)
+	# standing at day 12's dawn, is the way a test gives it, written to the scratch path the boot
+	# reads. The run the boot plays is the sitting's, a fresh one the resume reads that save into.
+	var written := RunState.new()
+	written.start_run(seed_value)
+	written.header.day = ResistanceSteps.swing_day()
+	var save := GameSave.new(_SCRATCH_PATH)
+	save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
+	save.write(written, true)
+	save.free()
+	written.free()
+	_run = RunState.new()
+	_home = Boot.home_playing(t, _run)
 	# A run with no flag at all, whatever this process's own command line says.
-	main.configure(RunConfig.parse(PackedStringArray(), "", true, false, {}, false))
-	t.add_child(main)
-	await Boot.until_booted(t, main)
+	_booted = await Boot.boot(t, _SCRATCH_PATH,
+			RunConfig.parse(PackedStringArray(), "", true, false, {}, false),
+			func(unbooted: Node) -> void: unbooted.use_sitting_home(_home))
+	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
 	t.check(Boot.city(main).map.seed_used == seed_value, "seed %d is the city under test (%d)"
 			% [seed_value, Boot.city(main).map.seed_used])
-	t.check(GameState.header.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
-			% [ResistanceSteps.swing_day(), GameState.header.day])
+	t.check(_run.header.day == ResistanceSteps.swing_day(), "booted at day %d (day %d)"
+			% [ResistanceSteps.swing_day(), _run.header.day])
 	# A resumed run opens on the day's brief; leaving it is what puts her on the street.
 	if Boot.summary(main).is_showing():
 		await Boot.press_continue(t, main)
 	t.check(Boot.day(main).is_running() and not Boot.summary(main).is_showing(),
-			"seed %d: day %d is under way" % [seed_value, GameState.header.day])
+			"seed %d: day %d is under way" % [seed_value, _run.header.day])
 	_touch_the_contact(Boot.resistance(main))
 	return main
 
-## Completes the step on offer the way her touch does: through the contact's own completion
-## (`ContactPoint.complete_now()`), which the director hears.
 func _touch_the_contact(director: ResistanceDirector) -> void:
 	var contact := director.contact()
 	if contact:
 		contact.complete_now()
 
-func _touch_the_swing(main: Node2D) -> Vector2:
+## Puts her at the swing and answers where it is. The park is then taken either by the director,
+## as the swing's task being done takes it (`through_the_director`: the cordon is the director's
+## own, read off the world), or by happenings of the suite's own, handed what the director hands
+## its own at the touch (`take_the_park(reach_obstruction())`), whose `cordon` says where its last
+## gap is: the one thing a walk out through the gap needs, which nothing in the world shows before
+## the gap closes.
+func _touch_the_swing(t, main: Node2D, through_the_director := false) -> Vector2:
 	var director := Boot.resistance(main)
 	var swing := director.contact_position()
 	Boot.player(main).global_position = swing
-	_touch_the_contact(director)
+	_swing = swing
+	_happenings = null
+	if through_the_director:
+		_touch_the_contact(director)
+		return swing
+	_happenings = ResistanceHappenings.new()
+	_happenings.setup(Boot.city(main), Boot.city(main).map)
+	_happenings.start_day(_run.header.day, false)
+	t.check(_happenings.take_the_park(director.reach_obstruction()),
+			"reaching the swing takes the park")
 	return swing
 
 func _camera_on(main: Node2D) -> Callable:
@@ -108,11 +136,14 @@ func _look(main: Node2D, camera: bool) -> void:
 			Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0) if camera
 			else Rect2(), null)
 
-## One frame of the day: the happenings and the day's own clock and win check.
+## One frame of the day: the happenings that hold the cordon (the suite's own, or the director's
+## tick that runs the director's) and the day's own clock and win check.
 func _frame(main: Node2D, shows: Callable) -> void:
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
 	_look(main, shows.is_valid())
-	happenings.tick(STEP, Boot.player(main).global_position, Vector2.ZERO)
+	if _happenings:
+		_happenings.tick(STEP, Boot.player(main).global_position, Vector2.ZERO)
+	else:
+		Boot.resistance(main).tick(STEP)
 	Boot.day(main).tick(STEP)
 
 ## Walks her toward `to` at the walking speed for `seconds`, a frame at a time.
@@ -125,19 +156,19 @@ func _walk(main: Node2D, to: Vector2, seconds: float, shows: Callable) -> void:
 		Boot.player(main).global_position = here.move_toward(to, Tuning.WALK_SPEED * STEP)
 		_frame(main, shows)
 
-## Waits out the cordon with her where she stands, until it closes or `PATIENCE` runs out.
+## Waits out the cordon with her where she stands, until it closes (the suite's own happenings say
+## so; the director's cordon ends the day with her inside it) or `PATIENCE` runs out.
 func _wait_for_the_close(main: Node2D, shows: Callable) -> void:
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
 	var waited := 0.0
-	while happenings.is_closing() and Boot.day(main).is_running() and waited < PATIENCE:
+	while (_happenings == null or _happenings.is_closing()) and Boot.day(main).is_running() \
+			and waited < PATIENCE:
 		_frame(main, shows)
 		waited += STEP
 
 ## Out through the last gap, `REACTION` after the touch, and on a tile's width past the tape.
 func _walk_out_through_the_gap(main: Node2D, swing: Vector2, shows: Callable) -> void:
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
 	_walk(main, swing, REACTION, shows)
-	var exit := happenings.cordon.last_gap
+	var exit := _happenings.cordon.last_gap
 	var out := exit + (exit - swing).normalized() \
 			* (Tuning.CLOSURE_BARRIER_DEPTH + Tuning.TILE_SIZE)
 	_walk(main, out, 20.0, shows)
@@ -148,17 +179,16 @@ func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 	t.check(Boot.summary(main).is_showing(), "%s: the won day's summary is up" % label)
 	var map: CityMap = Boot.city(main).map
 	await Boot.press_continue(t, main)
-	t.check(GameState.header.day == ResistanceSteps.swing_day() + 1,
+	t.check(_run.header.day == ResistanceSteps.swing_day() + 1,
 			"%s: leaving the summary starts day %d (day %d)"
-			% [label, ResistanceSteps.swing_day() + 1, GameState.header.day])
+			% [label, ResistanceSteps.swing_day() + 1, _run.header.day])
 	t.check(not Boot.summary(main).is_showing() and not t.get_tree().paused,
 			"%s: with the summary gone and the tree running" % label)
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING,
 			"%s: the new day is running and she is walking" % label)
 	t.check(Boot.baby(main).state == GameEnums.BabyState.AWAKE,
 			"%s: the baby wakes with the day" % label)
-	t.check(Boot.resistance(main)._happenings.cordon == null,
-			"%s: no cordon stands in the new day" % label)
+	_check_no_cordon_stands(t, main, label, "the new day")
 	var here: Vector2 = Boot.player(main).global_position
 	t.check(here.distance_to(map.doorstep_world_position()) < Tuning.TILE_SIZE * 3.0,
 			"%s: she stands at her own door (%s)" % [label, here])
@@ -167,10 +197,20 @@ func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 	Boot.day(main).tick(1.0)
 	t.check(Boot.day(main).time_remaining < before, "%s: the clock runs" % label)
 
-func _finish(t, main: Node2D) -> void:
+## Nothing of yesterday's cordon is left in the world: no officer on the city's entities, and the
+## park no longer shut to anyone walking.
+func _check_no_cordon_stands(t, main: Node2D, label: String, when: String) -> void:
+	var city := Boot.city(main)
+	t.check(CordonInTheWorld.officers(city).is_empty()
+			and not CordonInTheWorld.is_shut(city.map, _swing),
+			"%s: no cordon stands in %s" % [label, when])
+
+func _finish(t) -> void:
 	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
+	_booted.free_all()
+	_home.free()
+	_run.free()
 
 # -------------------------------------------------------------------- cases ---
 
@@ -180,9 +220,8 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> voi
 	var label := "seed %d, asleep in the park" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)
-	var swing := _touch_the_swing(main)
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
-	t.check(happenings.cordon != null, "%s: reaching the swing starts the cordon" % label)
+	var swing := _touch_the_swing(t, main)
+	t.check(_happenings.cordon != null, "%s: reaching the swing starts the cordon" % label)
 	_frame(main, shows)
 	Boot.baby(main).force_sleep()
 	t.check(Boot.day(main).phase == GameEnums.DayPhase.RETURNING,
@@ -191,7 +230,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> voi
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	_walk_out_through_the_gap(main, swing, shows)
 	_wait_for_the_close(main, shows)
-	t.check(happenings.cordon.is_closed() and not happenings.cordon.trapped,
+	t.check(_happenings.cordon.is_closed() and not _happenings.cordon.trapped,
 			"%s: the gap closes behind her, with her outside" % label)
 	t.check(Boot.day(main).is_running() and results.is_empty(),
 			"%s: the day is still on, the baby asleep (%s)" % [label, results])
@@ -201,7 +240,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> voi
 	t.check(results == [GameEnums.DayResult.WON], "%s: home with her asleep wins (%s)"
 			% [label, results])
 	await _check_the_next_morning(t, main, label)
-	_finish(t, main)
+	_finish(t)
 
 ## Out first, settled elsewhere with the park taped behind her, then home: the rig's own route, on
 ## to the summary and the next morning.
@@ -209,11 +248,10 @@ func _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value: int) -
 	var label := "seed %d, settled outside" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)
-	var swing := _touch_the_swing(main)
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
+	var swing := _touch_the_swing(t, main)
 	_walk_out_through_the_gap(main, swing, shows)
 	_wait_for_the_close(main, shows)
-	t.check(happenings.cordon.is_closed() and not happenings.cordon.trapped,
+	t.check(_happenings.cordon.is_closed() and not _happenings.cordon.trapped,
 			"%s: the park is taped with her outside" % label)
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
@@ -222,7 +260,7 @@ func _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value: int) -
 	_frame(main, shows)
 	t.check(results == [GameEnums.DayResult.WON], "%s: home asleep wins (%s)" % [label, results])
 	await _check_the_next_morning(t, main, label)
-	_finish(t, main)
+	_finish(t)
 
 ## Standing in the park with the baby asleep as the last gap is taped: the day is lost to the
 ## cordon, the summary is left, and the day is played again from its dawn, with a cordon to come.
@@ -230,8 +268,10 @@ func _test_shut_in_with_the_baby_asleep(t, seed_value: int) -> void:
 	var label := "seed %d, shut in asleep" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)
-	_touch_the_swing(main)
-	var happenings: ResistanceHappenings = Boot.resistance(main)._happenings
+	_touch_the_swing(t, main, true)
+	_frame(main, shows)
+	t.check(not CordonInTheWorld.officers(Boot.city(main)).is_empty(),
+			"%s: reaching the swing sends the police" % label)
 	Boot.baby(main).force_sleep()
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
@@ -240,13 +280,13 @@ func _test_shut_in_with_the_baby_asleep(t, seed_value: int) -> void:
 			and Boot.day(main).hard_fail_reason == ParkCordon.TRAPPED,
 			"%s: shut in, the day is lost to the cordon (%s)" % [label, results])
 	t.check(Boot.summary(main).is_showing(), "%s: the lost day's summary is up" % label)
-	var day := GameState.header.day
+	var day := _run.header.day
 	await Boot.press_continue(t, main)
-	t.check(GameState.header.day == day and not Boot.summary(main).is_showing()
+	t.check(_run.header.day == day and not Boot.summary(main).is_showing()
 			and not t.get_tree().paused,
-			"%s: leaving it plays day %d again (day %d)" % [label, day, GameState.header.day])
+			"%s: leaving it plays day %d again (day %d)" % [label, day, _run.header.day])
 	t.check(Boot.day(main).is_running() and Boot.day(main).phase == GameEnums.DayPhase.WALKING
 			and Boot.baby(main).state == GameEnums.BabyState.AWAKE,
 			"%s: the retry runs with the baby awake" % label)
-	t.check(happenings.cordon == null, "%s: no cordon stands at the retry's dawn" % label)
-	_finish(t, main)
+	_check_no_cordon_stands(t, main, label, "the retry's dawn")
+	_finish(t)

@@ -833,10 +833,13 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 ## `draw_guard_position()` draws; for the roadblock, `_roadblock_guard_spot()`, in its band with a
 ## clear line to it. All measured from the contact's own `reach` (see `_maybe_set_a_trap()`).
 ## `Vector2.INF` when no candidate qualifies. Split out so a rig can ask where he would stand.
+## `or_any` is the roadblock's alone (`_roadblock_guard_spot()`): true for the guard placed with the
+## task, false for a move of the guard already there, which is how
+## `_move_the_task_guard_to_her_target()` asks.
 func guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, her: Vector2,
-		on_screen_matters: bool, reach := ContactPoint.REACH) -> Vector2:
+		on_screen_matters: bool, reach := ContactPoint.REACH, or_any := true) -> Vector2:
 	if not for_mark:
-		return _roadblock_guard_spot(rng, at, reach, her, on_screen_matters)
+		return _roadblock_guard_spot(rng, at, reach, her, on_screen_matters, or_any)
 	var robbery := EventCatalogue.mark_guard()
 	var min_distance := robbery.inner_radius + reach
 	var max_distance := robbery.notice_within() + reach
@@ -2818,8 +2821,8 @@ func _move_the_task_guard_to_her_target() -> void:
 	if asked == _task_guard_found_nothing_for \
 			and _task_guard_found_nothing_age < TASK_GUARD_RETRY_SECONDS:
 		return
-	var at := _roadblock_guard_spot(_task_guard_moves, target.body_position(),
-			_body_touch_reach(target), her, true, false)
+	var at := guard_position(_task_guard_moves, target.body_position(), false, her, true,
+			_body_touch_reach(target), false)
 	var in_band := at != Vector2.INF and _guards_the_roadblock(at, target)
 	# Nowhere, or already on the ring past this roadblock's band, where another spot on it is no
 	# nearer.
