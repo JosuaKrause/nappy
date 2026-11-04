@@ -77,7 +77,7 @@ const CASES: Array[String] = [
 	"_test_finale_entities_stop_when_the_tree_pauses",
 	"_test_the_escape_pauses_the_same_way_a_day_does",
 	"_test_pause_does_not_open_over_a_section_brief_or_the_epilogue",
-		"_test_a_resumed_escape_opens_on_the_title_before_its_first_brief",
+	"_test_a_resumed_escape_opens_on_the_title_before_its_first_brief",
 	"_test_a_route_rig_carries_the_building_on_into_the_city",
 	"_test_a_route_rig_boots_the_city_section_and_walks",
 	"_test_without_a_route_the_briefs_wait_for_a_person",
