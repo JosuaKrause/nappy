@@ -83,3 +83,65 @@
 3. **Read as:** (the assistant's interpretation, not the player's words)
 
    From now on the player's word "immediate" for an entry means the up-next marker (upnext: true beside its band), in the queue's docs and in the inbox skill, so no later session reads it as a band.
+
+## #1026
+
+1. **Context** (the assistant's):
+
+   Said in the chat, unprompted, during the minty-quail refactor. The explosion badge is the screen-edge badge snowy-goose (explosions in the escape city) asks for, pointing at an explosion out of her view; its first drawing is in draft PR #928, "the explosion badge, first attempt", parked until the refactor is done.
+
+2. **The note.**
+
+   > btw I like the explosion badge design
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   The player approves the explosion badge drawing in draft PR #928: when snowy-goose resumes, that drawing is kept as it is rather than redrawn.
+
+4. **Context** (the assistant's):
+
+   Said right after, about draft PR #928 (the explosion badge, first attempt, parked until the refactor is done).
+
+5. **The player's words.**
+
+   > we could wrap up that PR as long as we just note down that this already exists
+
+6. **Read as:** (the assistant's interpretation, not the player's words)
+
+   Finish and merge #928 now rather than waiting for the refactor, and record that the explosion badge drawing exists, so snowy-goose's badge item is not built again when the rest of snowy-goose is.
+
+7. **Context** (the assistant's):
+
+   Continuing the previous sentence about wrapping up draft PR #928 (the explosion badge's mushroom-cloud picture, art/events/explosion.svg, with its atlas membership line and review stills).
+
+8. **The player's words.**
+
+   > before actually hooking up the graphic anywhere
+
+9. **Read as:** (the assistant's interpretation, not the player's words)
+
+   Merge the picture as an asset now, wired to nothing: the finale explosion keeps its current star-burst badge until snowy-goose is built, and snowy-goose's badge item says the picture already exists.
+
+10. **Context** (the assistant's):
+
+    Answering the orchestrator's reading that #928's picture merges "as an asset only", wired to nothing.
+
+11. **The player's words.**
+
+    > if by asset only you mean graphic + atlas update
+
+12. **Read as:** (the assistant's interpretation, not the player's words)
+
+    What lands is the SVG and its atlas membership line (the atlas update); nothing draws it yet.
+
+13. **Context** (the assistant's):
+
+    Continuing: what of draft PR #928 lands. The PR holds art/events/explosion.svg, its line in assets/atlases/membership.json, and three review stills under docs/evidence/snowy-goose-explosions-2026-10-19/.
+
+14. **The player's words.**
+
+    > basically everything that already exists in the PR
+
+15. **Read as:** (the assistant's interpretation, not the player's words)
+
+    Everything already in #928 lands as it is: the picture, its atlas line and the review stills; nothing new is added beyond what merging main needs, and nothing is wired.
