@@ -82,7 +82,9 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 	instance.step(STEP * 2.0)
 	t.check(not instance.is_telegraphing() and def.has_a_spread,
 			"crossing an instance phase leaves its definition's classification true")
-	instance._be_done()
+	# The way the game ends one early: a resistance step's contact completing, which runs the
+	# instance's own `_be_done()` and, for a café that has no departure speed, finishes it.
+	instance.leave_for_a_completed_task()
 	t.check(instance.is_finished and def.has_a_spread,
 			"finishing the instance leaves the classification true")
 	instance.free()
@@ -154,9 +156,30 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## you something is that the row changed role.
 func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 	var def := EventCatalogue.by_id("protest")
-	t.check(EventScheduler._role_for(def) == GameEnums.BlockerRole.FRICTION,
-			"a protest is friction, so the day may put one on a route she walks (%.1f against "
-			% def.walk_through_cost() + "the %.1f that makes a wall)" % EventScheduler.WALL_WORTH_OF_COST)
+	var day := def.first_day
+	var map := CityGenerator.generate(4242)
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
+	t.check(role == GameEnums.BlockerRole.FRICTION,
+			"a protest is placed as friction, so the day may put one on a route she walks (%.1f against "
+			% def.walk_through_cost() + "the %.1f that makes a wall; placed as role %d)"
+			% [EventScheduler.WALL_WORTH_OF_COST, role])
+
+## The role the scheduler gives `def` on `day`, read off the placement it makes on the first tile of
+## the ground it offers that takes the row (`EventScheduler.recipe_placement()`, which the scene
+## recipes call and which judges the candidate as the day's fill does): the role the plan carries.
+## `-1` when no tile of that ground takes the row, or the day does not place it.
+func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
+	var no_doors := PackedVector2Array()
+	var nothing_down: Array[EventScheduler.Planned] = []
+	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
+		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
+				nothing_down, corridor, no_doors)
+		if plan:
+			return plan.role
+	return -1
 
 ## **A door's price is the detention, not the field, and that has to stay true of the one source a
 ## door charges as.** *(2026-09-20: "guard posts should emit less excitement by themselves, too";
@@ -419,13 +442,13 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	t.check(CityMap.corridor_offset(ns_tile.x) >= 0 and CityMap.corridor_offset(ns_tile.y) < 0,
 			"tile %s sits on a north-south street" % ns_tile)
-	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(ns_tile)),
+	t.check(not _runs_vertically_at(map, map.tile_to_world(ns_tile)),
 			"a north-south street keeps the spread's default lay along local X")
 
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
 	t.check(CityMap.corridor_offset(ew_tile.y) >= 0 and CityMap.corridor_offset(ew_tile.x) < 0,
 			"tile %s sits on an east-west street" % ew_tile)
-	t.check(EventInstance._spread_is_vertical(map, map.tile_to_world(ew_tile)),
+	t.check(_runs_vertically_at(map, map.tile_to_world(ew_tile)),
 			"an east-west street rotates the spread onto local Y")
 
 	# A junction belongs to both corridors at once, and ground off any corridor belongs to
@@ -434,17 +457,27 @@ func _test_a_spread_rotates_with_the_street(t) -> void:
 	t.check(CityMap.corridor_offset(junction_tile.x) >= 0
 			and CityMap.corridor_offset(junction_tile.y) >= 0,
 			"tile %s is a junction, on both corridors at once" % junction_tile)
-	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(junction_tile)),
+	t.check(not _runs_vertically_at(map, map.tile_to_world(junction_tile)),
 			"a junction has no single street to be wrong about")
 
 	var block_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH + 3)
 	t.check(CityMap.corridor_offset(block_tile.x) < 0 and CityMap.corridor_offset(block_tile.y) < 0,
 			"tile %s is off any corridor — a square, a park, a courtyard" % block_tile)
-	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(block_tile)),
+	t.check(not _runs_vertically_at(map, map.tile_to_world(block_tile)),
 			"ground that was never a street keeps the default lay too")
 
-	t.check(not EventInstance._spread_is_vertical(WorldMap.open_ground(), Vector2.ZERO),
+	t.check(not _runs_vertically_at(WorldMap.open_ground(), Vector2.ZERO),
 			"a data-level rig on open ground gets the unrotated default")
+
+## Whether a spread row set up at `at` on `map` runs down the screen (`EventInstance.runs_vertically()`,
+## which the looks draw and lay their slices by): `setup()` decides it once from the street it stands
+## on, as the scheduler's placement does when it makes the instance.
+func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("construction"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	var vertical := instance.runs_vertically()
+	instance.free()
+	return vertical
 
 ## Stationary seal vehicles use the street axis even though their default facing is right. The van
 ## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
