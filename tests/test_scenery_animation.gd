@@ -1,58 +1,110 @@
 extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
+const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const EastWestStreet := preload("res://tests/east_west_street.gd")
+const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const WATER_SEED := 4242
+
 func run(t) -> void:
-	_test_roof_rotors(t)
+	await _test_roof_rotors(t)
 	_test_rotor_registration_matches_authored_crops(t)
 	await _test_event_parts(t)
-	_test_water_ownership(t)
+	await _test_water_ownership(t)
 
+## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
+## standing each unit for real so a vent has its rotor), and whose own process frames run in the
+## tree. Its rotors are read off the units it was told to stand (`RoofObject.rotor`), never off what
+## the building holds. Time is the engine's `time_scale`, which scales the delta the building's
+## process frame is given: a frame at a hundredth of its length cannot reach the interval, and one at
+## a hundred thousand times its length always crosses it, so no check depends on how long a frame
+## takes.
 func _test_roof_rotors(t) -> void:
+	var atlas := AtlasLibrary.new()
+	var drawer := RecordingRoofDrawer.new()
+	drawer.real = RoofDrawer.new(atlas)
 	var building := Building.new()
+	building.atlas = atlas
+	building.roof_drawer = drawer
 	building.footprint = Vector2(256, 256)
 	building.height = 64
 	building.district = GameEnums.BlockPurpose.INDUSTRIAL
 	t.add_child(building)
 	for variant in 200:
-		if not building._rotor_layers.is_empty():
+		if not _rotors(drawer).is_empty():
 			break
 		building.variant = variant + 1
-	t.check(not building._rotor_layers.is_empty(), "the roof fixture actually has moving vents")
-	var furniture := building._roof_furniture.duplicate(true)
-	var collision: Shape2D = building._collision.shape
-	var objects := building._roof_objects.duplicate()
-	var rotors := building._rotor_layers.duplicate()
-	building._process(Building.VENT_FRAME_INTERVAL - 0.01)
-	for rotor in building._rotor_layers:
-		t.check(not rotor.frame_b, "rotor holds its first phase until the existing interval")
-	building._process(0.02)
-	for layer: SceneryLayer in rotors:
-		t.check(layer.frame_b, "the small rotor advances independently")
-		t.check(layer._alternates[0] != null, "the moving rotor owns its alternate texture")
-	for object: Building.RoofObject in objects:
+	t.check(not _rotors(drawer).is_empty(), "the roof fixture actually has moving vents")
+	var shape := building.shape
+	var drawn := drawer.draws.size()
+	var objects: Array[Building.RoofObject] = []
+	for entry in drawer.standing():
+		objects.append(entry.object)
+	var rotors := _rotors(drawer)
+	var first_phase: bool = rotors[0].frame_b
+	t.check(building.is_processing(), "a roof with a vent takes its process frames")
+	var clock := Engine.time_scale
+	Engine.time_scale = 0.01
+	for frame in 3:
+		await t.get_tree().process_frame
+		for rotor in _rotors(drawer):
+			t.check(rotor.frame_b == first_phase,
+					"rotor holds its first phase until the existing interval")
+	Engine.time_scale = clock
+	# The frame after this one is given a delta a hundred thousand times its length, so it crosses
+	# the interval once; the scale is back before the frame after that.
+	Engine.time_scale = 100000.0
+	await t.get_tree().process_frame
+	Engine.time_scale = clock
+	await t.get_tree().process_frame
+	var turned := _rotors(drawer)
+	t.check(turned[0].frame_b != first_phase,
+			"the building's own process frames turn its rotors once the interval has passed")
+	var phase: bool = turned[0].frame_b
+	for rotor in turned:
+		t.check(rotor.frame_b == phase, "the small rotors advance together")
+		t.check(rotor._alternates[0] != null, "the moving rotor owns its alternate texture")
+	for object in objects:
 		if object.texture_key != Building.VENT_HOUSING:
 			t.check(object.get_child_count() == 0,
 					"stationary roof objects own no independently redrawn child")
-	t.check(building._roof_furniture == furniture, "animation does not reroll furniture")
-	t.check(building._collision.shape == collision, "animation does not rebuild collision")
-	building._rebuild()
+	t.check(drawer.draws.size() == drawn, "animation does not redraw or reroll the roof's furniture")
+	t.check(building.shape == shape, "animation does not rebuild collision")
+	# A rebuild from the property the city's own height and footprint changes assign.
+	building.footprint = building.footprint
 	for object in objects:
 		t.check(not is_instance_valid(object), "rebuild releases every superseded roof object")
-	for rotor in building._rotor_layers:
-		t.check(rotor.frame_b, "rebuilding the roof preserves the current phase")
-	var old_rotor: WeakRef = weakref(building._rotor_layers[0]._textures[0])
+	t.check(drawer.standing().size() == objects.size()
+			and drawer.draws.size() == drawn + objects.size(),
+			"rebuild draws the roof again, once")
+	for rotor in _rotors(drawer):
+		t.check(rotor.frame_b == phase, "rebuilding the roof preserves the current phase")
+	for entry in drawer.standing():
+		if entry.texture == Building.VENT_HOUSING:
+			t.check(entry.rotor_frame_b == phase, "the rebuilt roof is told the current phase")
+	var old_rotor: WeakRef = weakref(atlas.region(Building.VENT_ROTOR))
 	t.remove_child(building)
-	t.check(building._roof_objects.is_empty() and building._rotor_layers.is_empty(),
+	t.check(drawer.standing().is_empty(),
 			"tree exit releases every roof object and moving child")
-	if not building.atlas.is_acquired(&"buildings"):
+	if not atlas.is_acquired(&"buildings"):
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
-	t.check(not building._rotor_layers.is_empty() and building._rotor_layers[0].frame_b,
+	var reentered := _rotors(drawer)
+	t.check(not reentered.is_empty() and reentered[0].frame_b == phase,
 			"reentry acquires fresh regions and preserves the animation phase")
 	building.footprint = Vector2(32, 32)
-	t.check(building._rotor_layers.is_empty() and not building.is_processing(),
+	t.check(_rotors(drawer).is_empty() and not building.is_processing(),
 			"a roof without vents releases them and stops its animation callback")
 	building.free()
+
+## The turning rotor of every vent the drawer was told to stand and the building has not released.
+func _rotors(drawer: RecordingRoofDrawer) -> Array[SceneryLayer]:
+	var rotors: Array[SceneryLayer] = []
+	for entry in drawer.standing():
+		var object: Building.RoofObject = entry.object
+		if object.rotor != null:
+			rotors.append(object.rotor)
+	return rotors
 
 ## The registered rectangle comes from the editable vector sources, whose viewBoxes retain their
 ## coordinates in the complete housing canvas. This compares two files' contract rather than
@@ -79,7 +131,9 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 				"the rotor display is centered in the generated housing's circular opening")
 
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
-## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
+## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's. The
+## axis it spreads on is the street it stands on (`EastWestStreet` is one running east-west), the
+## way the game hands `setup()` a map.
 func _test_event_parts(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
@@ -87,12 +141,13 @@ func _test_event_parts(t) -> void:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
 			instance.atlas = atlas
-			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
-			instance._spread_vertical = vertical
+			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
+					Vector2.RIGHT, EastWestStreet.new() if vertical else WorldMap.open_ground())
 			t.add_child(instance)
+			t.check(instance.runs_vertically() == vertical, "%s stands on the axis asked for" % id)
 			instance.look.attach_nodes()
 			instance.step(instance.def.telegraph_time + 0.01)
-			var sceneries := (instance.look as SpreadLook)._sceneries.duplicate()
+			var sceneries := _sceneries_of(instance)
 			var moving: Array[SceneryLayer] = []
 			var still: Array[SceneryLayer] = []
 			for scenery: EventScenery in sceneries:
@@ -100,8 +155,9 @@ func _test_event_parts(t) -> void:
 				still.append_array(scenery.static_layers)
 			t.check(sceneries.size() > 1 and not moving.is_empty(),
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
-			var body := instance._obstruction
+			var body := _body_of(instance)
 			var centers := instance.solid_part_centres()
+			t.check(body != null and instance.is_solid(), "%s/%s stands a solid body" % [id, vertical])
 			t.check(instance.look.redraw_if_the_picture_changed(),
 					"the event's first drawn frame asks for its draw, so the gate is live for the check below")
 			var initial: bool = moving[0].frame_b
@@ -118,10 +174,12 @@ func _test_event_parts(t) -> void:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
 			t.check(not asked, "animation leaves the static event key alone")
-			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
+			t.check(_body_of(instance) == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
-			instance._finish()
-			instance._process(0.0)
+			# The instance's own process frame hides what a finished event leaves.
+			instance.transition(EventInstance.Phase.DONE)
+			await t.get_tree().process_frame
+			await t.get_tree().process_frame
 			t.check(sceneries.all(func(scenery: EventScenery) -> bool: return not scenery.visible),
 					"a finished event hides every scenery layer")
 			# Detached, it takes its slices and their scenery with it; back in the tree, it builds
@@ -134,10 +192,10 @@ func _test_event_parts(t) -> void:
 			t.add_child(instance)
 			await t.get_tree().process_frame
 			var rebound := false
-			for scenery: EventScenery in (instance.look as SpreadLook)._sceneries:
+			for scenery in _sceneries_of(instance):
 				rebound = rebound or not scenery.moving_layers.is_empty()
 			t.check(rebound, "reentry rebinds event scenery regions")
-			var again := (instance.look as SpreadLook)._sceneries.duplicate()
+			var again := _sceneries_of(instance)
 			instance.free()
 			await t.get_tree().process_frame
 			t.check(again.all(func(scenery: Variant) -> bool:
@@ -145,17 +203,35 @@ func _test_event_parts(t) -> void:
 					"removing an event releases its scenery")
 	atlas.release(&"events")
 
+## The scenery behind each of `instance`'s slices, in the slices' order.
+func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
+	var found: Array[EventScenery] = []
+	for slice in (instance.look as SpreadLook).slices():
+		for child in slice.get_children():
+			if child is EventScenery:
+				found.append(child)
+	return found
+
+## The one solid body the instance stands, or null.
+func _body_of(instance: EventInstance) -> StaticBody2D:
+	for child in instance.get_children():
+		if child is StaticBody2D:
+			return child
+	return null
+
 func _test_water_ownership(t) -> void:
-	var packed: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = RunCity.of_the_run(packed)
+	var city: City = RunCity.with_own_run(CITY_SCENE, WATER_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
+	city.build(CityGenerator.generate(WATER_SEED))
 	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
 	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
 	# home boot retains none of this water.
 	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
 					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+	# Out of view, the city keeps the residency it was given: its own process frame would otherwise
+	# follow the camera home and release the shore this inspects.
+	city.visible = false
 	var surfaces: Array[SceneryWater] = []
 	for chunk: TileMapLayer in city.scenery_ground.chunks.values():
 		for child in chunk.get_children():
@@ -193,37 +269,52 @@ func _test_water_ownership(t) -> void:
 				t.check(actual.has(Vector2i(x, y)),
 						"water fills the complete requested shore, south-west and south-east corners included")
 	var cells := water.cells.duplicate()
-	water._process(0.25)
-	t.check(water.elapsed > 0.0 and water.cells == cells,
+	var ripples := water.material as ShaderMaterial
+	var before := water.elapsed
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(water.elapsed > before and water.cells == cells,
 			"ripple time advances without repainting any ground cell")
-	var first_material := water._ripples
+	t.check(float(ripples.get_shader_parameter("elapsed")) == water.elapsed,
+			"the shader's clock is the surface's")
 	water.configure(cells)
-	t.check(water._ripples != first_material and water._ripples.shader == SceneryWater.RIPPLE_SHADER,
+	t.check(water.material != ripples
+			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
+	# A surface of its own, handed no library, makes one when it enters the tree.
 	var other := SceneryWater.new()
 	city.scenery_ground.add_child(other)
 	other.configure(cells.slice(0, 1))
-	other._process(0.5)
-	t.check(other._ripples != water._ripples
-			and other._ripples.shader == water._ripples.shader,
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(other.material != water.material
+			and (other.material as ShaderMaterial).shader
+			== (water.material as ShaderMaterial).shader,
 			"two water surfaces share the shader but keep independent materials")
-	t.check(float(other._ripples.get_shader_parameter("elapsed"))
-			> float(water._ripples.get_shader_parameter("elapsed")),
+	t.check(other.elapsed > 0.0 and other.elapsed < water.elapsed
+			and float((other.material as ShaderMaterial).get_shader_parameter("elapsed"))
+			== other.elapsed,
 			"two water surfaces keep independent animation clocks")
-	other.free()
-	var owner := water.get_parent()
-	owner.remove_child(water)
-	t.check(water._texture == null and water.material == null,
+	t.check(other.atlas.is_acquired(&"ground"), "a surface holds the ground page while it stands")
+	var owner := other.get_parent()
+	owner.remove_child(other)
+	t.check(other.material == null and not other.atlas.is_acquired(&"ground"),
 			"detaching water releases its atlas region and shader material")
-	owner.add_child(water)
-	t.check(water._texture != null and water.elapsed > 0.0
-			and water._ripples.shader == SceneryWater.RIPPLE_SHADER,
+	var kept := other.elapsed
+	owner.add_child(other)
+	t.check(other.atlas.is_acquired(&"ground") and other.elapsed >= kept
+			and (other.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"reentry rebinds the region and shared shader without resetting its clock")
-	city._paint_ground()
+	other.free()
+	owner = water.get_parent()
+	owner.remove_child(water)
+	t.check(water.material == null, "detaching a city's water releases its shader material")
+	owner.add_child(water)
+	t.check(water.elapsed > 0.0 and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
+			"reentry rebinds the shared shader without resetting its clock")
+	# The escape's route tint repaints every resident chunk, shore included, as the game does.
+	city.tint_the_route(null)
 	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
-	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
-			Vector2(city.map.world_size().x + 2.0 * shore_reach,
-					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	for tile: Vector2i in expected:
 		t.check(city.scenery_ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
 	city.free()
