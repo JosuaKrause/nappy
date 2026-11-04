@@ -12,11 +12,13 @@ itself, the swing's contact completed and the director ticked, and reads the off
 the park is shut off the world, and only it checks that no cordon stands at the retry's dawn, since
 nothing clears a cordon the director's own day does not own. Each case also checks that reaching
 the swing takes the park, or sends the police. The day 13 guard suite (5 to 4) asks for the move's
-guard spot through `guard_position()`, which gains an `or_any` flag its two game callers pass: the
-move of the task's guard to her target asks it with the fallback off, where it called the private
+guard spot through `guard_position()`, which gains an `or_any` flag, on by default: the move of the
+task's guard to her target passes it off, where it called the private
 search before, and the trap keeps the default.
 
 **Not done:** the four reads of the director's `_on_her_side()`, whose one caller is the guard's
 own search over tiles the flood reached on open ground, which wants a query of the director's that
 another game class asks; a test driving the guard's move through `tick()`, which would catch the
-move asking with the fallback on.
+move asking with the fallback on, and wants a city where the arrow's roadblock leaves her no way;
+the director's dawn clear of the cordon, which only the shut-in case reaches, since the walking
+cases read a world their own happenings built.
