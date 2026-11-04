@@ -15,7 +15,10 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
 const DAY := 7
-## The seed of the run each city stands in (a run of its own, held by the city).
+## The seed of the run each city stands in (a run of its own, held by the city). The checks depend on
+## it: the day's streams come from it (`RunCalendar.day_rng()`, among them the one that seeds the
+## route bag and the sitings on her route), and on any seed but 2 the van's marble is not among the
+## next two events on her route.
 const RUN_SEED := 2
 const ROW := "delivery_van"
 const STEP := 0.1

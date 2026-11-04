@@ -28,7 +28,8 @@ const UI := preload("res://tests/ui_screens.gd")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE := preload("res://scenes/ui/title_screen.tscn")
-## The seed the runs these screens stand over start on.
+## The seed the runs these screens stand over start on, fixed so a test repeats; no check depends
+## on it.
 const RUN_SEED := 2
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 

@@ -17,8 +17,8 @@ const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
 ## Most of the walks, not all: a walk that never passes a sidewalk of its own is not a defect.
 const AT_LEAST := 4
 const DAY := 6
-## The seed of the run each walk's city stands in. Whether the rigged man is sited in view depends
-## on the run's seed; this was checked on seed 2.
+## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
+## on it: it holds on seed 1 as well.
 const RUN_SEED := 2
 const ROW := "homeless_yeller"
 const STEP := 0.1

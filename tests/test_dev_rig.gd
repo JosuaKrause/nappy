@@ -12,7 +12,10 @@ const SEED := 4242
 ## its own `day` — the same day `tests/test_resistance_steps.gd`'s determinism test uses, and the
 ## smallest day that gives `--spawn contact` something to find.
 const DAY := 6
-## The seed of the run the city stands in, which the siting reads.
+## The seed of the run the city stands in. The checks depend on it: the day's streams come from it
+## (`RunCalendar.day_rng()`, among them the one that sites the events on her route), and on seed 1
+## the placed pigeon flock leaves `--spawn event:pigeon_flock` 136px away, inside its 150px notice
+## and 168px field, where seed 2 stands her outside both.
 const RUN_SEED := 2
 
 var _city: City
@@ -42,7 +45,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## has one to find — with streaming off so a plan is placed without a player ever coming near it
 ## (the same reasoning `tests/test_event_manager.gd`'s own `_build_city()` gives), and the
 ## resistance run over the city's own fresh run, so day 6 selects step 1 on a run that has done
-## nothing. The siting reads the run's seed: these checks hold on seed 2 and fail on seed 1.
+## nothing, on the seed `RUN_SEED` names.
 func _build_day(t) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
