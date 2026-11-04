@@ -360,26 +360,9 @@ func flash_windows() -> void:
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
-## Whether a flash is on screen right now — what `tests/test_interior.gd` asks, since a texture
-## swap is not something a headless run can see.
+## Whether a flash is on screen right now: the light of a hallway follows it (`lighting_at()`).
 func windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
-
-## How many windows are showing their lit picture — the question `windows_are_flashing()` cannot
-## answer, and the one that holds *all of them or none*: a count that is neither is a window
-## flashing on its own.
-func windows_lit() -> int:
-	var lit := 0
-	var flash := atlas.region(HALLWAY_WINDOW_FLASH)
-	for sprite in _window_sprites:
-		if sprite.texture == flash:
-			lit += 1
-	return lit
-
-## How many hallway windows there are at all, so a test counting lit ones has something to compare
-## against rather than a number of its own.
-func window_count() -> int:
-	return _window_sprites.size()
 
 ## **A bang outside** (`WorldContext.bang_outside()`): the explosion outside, as the day's events
 ## bring it, lights every window at once.
@@ -408,7 +391,7 @@ var _night_running := false
 ## building's section, fresh or retried, so a retry is the same night again.
 func start_the_night(seed: int) -> void:
 	_flashes.seed = seed
-	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
 	_night_running = true
 
 ## Stops the night, because she is not in the building any more: she has walked out of the service
@@ -424,18 +407,18 @@ func _physics_process(delta: float) -> void:
 	_until_the_next_distant_flash -= delta
 	if _until_the_next_distant_flash > 0.0:
 		return
-	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
 	flash_windows()
 
-## How long until the next one: a scaled Kumaraswamy draw, short-biased and smooth, bounded by
-## `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
+## The wait a uniform draw `u` in `[0, 1)` gives: a scaled Kumaraswamy draw, short-biased and smooth,
+## bounded by `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
 ## constant — see that constant's own doc for the formula and for why `B` is not a number to edit by
 ## feel. **Its inverse CDF is closed form**, which is why this is one expression and not a rejection
 ## loop: a loop would draw a variable number of values from the stream and make how many times the
 ## windows flash depend on how many times the dice were rolled, so a seed would stop replaying the
-## same night.
-func _wait_for_the_next_distant_flash() -> float:
-	var u := _flashes.randf()
+## same night. Static and pure so that the curve is a function of the draw alone; the night's waits
+## are this applied to each next draw of its own stream.
+static func distant_flash_wait(u: float) -> float:
 	var span := FINALE_DISTANT_FLASH_MAX_SECONDS - FINALE_DISTANT_FLASH_MIN_SECONDS
 	return FINALE_DISTANT_FLASH_MIN_SECONDS \
 			+ span * sqrt(1.0 - pow(1.0 - u, 1.0 / FINALE_DISTANT_FLASH_SHAPE_B))
