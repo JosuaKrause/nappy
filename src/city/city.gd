@@ -783,11 +783,14 @@ func _spawn_buildings() -> void:
 	# against the void round the stretch, which would read every edge of it as more building.
 	var edges := map.witness_only()
 	var door_x_range := _door_world_x_range()
+	# One drawer for every roof: it holds nothing but the atlas the buildings draw from.
+	var roof_drawer := RoofDrawer.new(atlas)
 	var buildings: Array[Building] = []
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.atlas = atlas
+		building.roof_drawer = roof_drawer
 		building.scenery_resident = false
 		building.scenery_clock = scenery_ground
 		# Origin is the south edge centre of the lot (see building.gd).
