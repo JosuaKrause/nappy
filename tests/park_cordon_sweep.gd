@@ -51,7 +51,7 @@ const PLACES: Array[Array] = [
 ## over the seeds together. `tests/test_park_cordon_seeds_a.gd`, `_b.gd` and `_c.gd` each call it
 ## on a third of `SEEDS_FROM..SEEDS_TO` plus `LARGE_PARK_SEED`, so no suite runs two minutes serial;
 ## the three together make the checks one sweep over all 41 seeds makes. The together-checks scale
-## with the seeds a part has (30 of 41 measured, a third walked out); the largest calm zone is
+## with the seeds a part has (30 of 41 measured, rounded up so the three floors sum to at least 30; a third walked out); the largest calm zone is
 ## checked in the part that holds `LARGE_PARK_SEED`.
 func sweep(t, seeds: Array[int]) -> void:
 	var measured := 0
@@ -66,7 +66,7 @@ func sweep(t, seeds: Array[int]) -> void:
 			walked_out += 1
 		largest = maxf(largest, (m.park_size as Vector2).x * (m.park_size as Vector2).y)
 		_check(t, seed_value, m)
-	t.check(measured >= seeds.size() * 30 / 41, "the sweep measured a swing park on most seeds (%d of %d)"
+	t.check(measured >= ceili(seeds.size() * 30.0 / 41.0), "the sweep measured a swing park on most seeds (%d of %d)"
 			% [measured, seeds.size()])
 	if seeds.has(LARGE_PARK_SEED):
 		t.check(largest >= 704.0 * 704.0 - 1.0,
@@ -77,7 +77,9 @@ func sweep(t, seeds: Array[int]) -> void:
 			% [walked_out, measured])
 
 ## The seeds of part `index` (0 to 2) of `parts`: every `parts`th seed of the sweep from the
-## `index`th, so each part holds parks of every size; the last part also holds `LARGE_PARK_SEED`.
+## `index`th, so the parks are dealt out rather than cut in runs; the last part also holds
+## `LARGE_PARK_SEED`. The sizes are not even across the parts: the 704 by 704 parks are seeds 10, 13,
+## 34, 37 and 40 (part 1) and `LARGE_PARK_SEED` (part 3), and part 2 builds only 256 by 256 ones.
 static func part(index: int, parts: int) -> Array[int]:
 	var seeds: Array[int] = []
 	for seed_value in range(SEEDS_FROM + index, SEEDS_TO + 1, parts):
