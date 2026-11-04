@@ -165,6 +165,11 @@ static func pause(main: Node) -> PauseScreen:
 static func hud(main: Node) -> CanvasLayer:
 	return main.get_node_or_null("Hud") as CanvasLayer
 
+## The developer readout's label, the text the readout builds a few times a second on a debug build
+## (`DebugReadout`, handed this label by `main`).
+static func readout_label(main: Node) -> Label:
+	return main.get_node_or_null("CanvasLayer/Status") as Label
+
 ## The on-screen controls, on the layer `main` builds for them.
 static func touch_controls(main: Node) -> TouchControls:
 	return main.find_child("TouchControls", true, false).find_child("TouchControls", false, false) \
