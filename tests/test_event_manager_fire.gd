@@ -6,8 +6,7 @@ extends RefCounted
 ## are two suites because the walks take a real tick each and together they outran the two minutes
 ## a suite is allowed.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SEED := 4242
+const Rig := preload("res://tests/event_manager_rig.gd")
 
 var _city: City
 
@@ -36,21 +35,7 @@ func run(t) -> void:
 func _build_city(t) -> void:
 	_walker_node = Walker.new()
 	t.add_child(_walker_node)
-	_city = RunCity.with_own_run(CITY_SCENE, SEED)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
-	# There is no player in this rig, so nothing would ever come within streaming reach. This
-	# suite is about the manager's wiring over a whole day's event set — retirement, successors,
-	# the sum — and those are the same questions whether or not the day is streamed. The
-	# streaming itself is checked in `_test_an_event_waits_until_she_is_near_it`.
-	_city.events.stream_radius = INF
-
-## The page's own lifetime, and that every look a row can carry has pictures on it, are
-## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no
-## per-family group left for a rig like this one to watch come and go, and the questions that
-## replace it — the manager's reference count across days and teardown, and every picture a look
-## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
-## suite's city.
+	_city = Rig.build_city(t)
 
 ## **A day 3 she wins with the fire never in the world still burns.** *"I agree with the fire fix"*
 ## (PLAYTEST-121). The row's only day is day 3 and it is spent where it enters the world, so a day
@@ -97,14 +82,8 @@ func _teardown() -> void:
 	_city.free()
 	_walker_node.free()
 
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
-
 func _start(day: int) -> void:
-	var consumed: Array[String] = []
-	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
+	Rig.start(_city, day)
 
 # ------------------------------------------- the fire is on her way (M179) ---
 # *"the fire should come first and be on your way guaranteed (a dynamic event dependent on the
@@ -116,11 +95,6 @@ func _start(day: int) -> void:
 # function of where she actually walked, so it needs a real city, a real manager and something in
 # the `player` group that moves — the same reason this suite exists at all.
 
-## A walking tick: a tenth of a second, which is what a tick is at `WALK_SCALE` times real time.
-const WALK_STEP := 1.0 / 10.0
-## The walks go at this many times real time (`PhysicsTicks`), so each tick is `WALK_STEP` long and
-## a walk of a minute takes ten seconds of the run.
-const WALK_SCALE := 6.0
 ## Long enough for a whole route out to a calm area and back again at walking pace, which is what
 ## the outbound and return legs of a 210s day are.
 const WALK_SECONDS := 240.0
@@ -147,30 +121,6 @@ class Walker extends Node:
 		rig.velocity = heading * Tuning.WALK_SPEED
 		rig.global_position += heading * step
 
-## A player the manager can find, out of the physics loop and moved by `_walker_node` on its tick.
-##
-## **It walks the day's own routes**, because that is what the siting is stated over: a site is a
-## building face on the branch of the day's `RouteTree` she is walking, so a rig holding a compass
-## heading through the lattice spends its walk off the tree, where there is no branch to be ahead on
-## and the only correct answer is to wait. `_a_route_out()` turns a route into the line it walks.
-func _walker(t, at: Vector2) -> Stroller:
-	var rig := Stroller.new()
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	# Set here rather than left to the engine: a camera built in code under physics interpolation is
-	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	# Never the current camera: this camera is not the viewport's, so it works out nothing about where
-	# it is drawing from, and what she can see (`VisibleView.look_through()`) is about her,
-	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
-	camera.enabled = false
-	rig.add_child(camera)
-	t.add_child(rig)
-	rig.set_physics_process(false)
-	rig.global_position = at
-	_city.events.use_player(rig)
-	return rig
-
 ## Seconds of walking since the last `_start`, advanced by `_walk` so a test can say *when*
 ## something happened without threading a clock through the walking itself.
 var _walk_clock := 0.0
@@ -188,8 +138,8 @@ func _walk(t, rig: Stroller, route: PackedVector2Array, until := Callable()) -> 
 	_walker_node.route = route
 	_walker_node.next = _nearest_on(route, rig.global_position)
 	while _walker_node.next < route.size() and _walk_clock < WALK_SECONDS:
-		await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
-		_walk_clock += WALK_STEP
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), Rig.WALK_SCALE)
+		_walk_clock += Rig.WALK_STEP
 		if until.is_valid() and until.call():
 			break
 	_walker_node.rig = null
@@ -211,7 +161,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := _walker(t, route[0])
+	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
 	if plan:
 		await _walk(t, rig, route,
@@ -281,8 +231,8 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 	var kerb := Vector2.ZERO
 	var her := Vector2(Tuning.TILE_SIZE * 1.5, 0.0)
 	var behind_her := 0
-	for i in int(round(8.0 / WALK_STEP)):
-		her += Vector2.UP * Tuning.WALK_SPEED * WALK_STEP
+	for i in int(round(8.0 / Rig.WALK_STEP)):
+		her += Vector2.UP * Tuning.WALK_SPEED * Rig.WALK_STEP
 		var place := PendingWarning.on_its_route(truck, her, kerb, Vector2.DOWN, 4000.0)
 		if place == Vector2.INF or place.y > her.y:
 			behind_her += 1
@@ -440,7 +390,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 		if not plan:
 			continue
 		var route := _a_route_out(day)
-		var rig := _walker(t, route[0])
+		var rig := Rig.walker(t, _city, route[0])
 		_walk_clock = 0.0
 		if leg == "home again":
 			# Stood at the calm area with nothing sited, which is the state a walk out that dodged
@@ -505,7 +455,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 		_city.events.stream_radius = INF
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := _walker(t, route[0])
+	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route, func() -> bool: return plan.is_placed())
 	t.check(plan.is_placed(), "walking the day's route sites it")
@@ -549,7 +499,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		_city.events.stream_radius = INF
 		return
 	var route := _a_route_out(Tuning.RUN_TAUGHT_DAY)
-	var rig := _walker(t, route[0])
+	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route,
 			func() -> bool: return plan.is_placed() and _city.events.sees(plan.position))
@@ -605,10 +555,10 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var her_at := rig.global_position
 		while _city.events.pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
-			await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
+			await PhysicsTicks.pass_ticks(t, 1, Callable(), Rig.WALK_SCALE)
 		# To the tick: `put_up()` adds nothing to `shown`, only `tick()` does, so the badge is over on
 		# the first tick that takes it to a second, at most one tick past it.
-		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + WALK_STEP + 0.001,
+		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + Rig.WALK_STEP + 0.001,
 				"its badge is up alone for %.2fs, at most a second (to the tick)" % warning.shown)
 		var arrived: EventInstance = null
 		for instance in _city.events.instances():
@@ -635,8 +585,8 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
 				arrived.player_at = her_at
-				arrived.step(WALK_STEP)
-				to_reach += WALK_STEP
+				arrived.step(Rig.WALK_STEP)
+				to_reach += Rig.WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"
 					% [arrived.path[0].distance_to(her_at), warning.shown,
 					"already on her" if on_her_at_once else "reaching her %.2fs later" % to_reach])
@@ -706,24 +656,24 @@ func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
 	var consumed: Array[String] = []
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY
-	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
 	t.check(not "burning_building" in consumed and _fire_plan() != null,
 			"day 3 budgets the fire without spending it, because a plan with no position promises "
 			+ "nothing yet")
 
 	# Lost without her ever walking out to it. The same day, again, still owes her one.
-	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
 	t.check(_fire_plan() != null, "a day 3 lost before she reached it is offered it again")
 
 	# Now she walks into it. That is the fire the run remembers, and there is not a second one.
 	var plan := _fire_plan()
 	var route := _a_route_out(day)
-	var rig := _walker(t, route[0])
+	var rig := Rig.walker(t, _city, route[0])
 	_walk_clock = 0.0
 	await _walk(t, rig, route, func() -> bool: return plan.was_live)
 	t.check(plan.was_live and "burning_building" in consumed,
 			"walking into it is what spends it")
-	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
+	_city.events.start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
 	t.check(_fire_plan() == null, "and no later day plans a second one")
 	rig.free()
 	_city.events.stream_radius = INF

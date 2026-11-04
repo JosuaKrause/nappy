@@ -6,8 +6,7 @@ extends RefCounted
 ## that is freed but left in the list, a successor that is spawned but never tracked. Both
 ## of those are invisible to a data-level test and both happened.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SEED := 4242
+const Rig := preload("res://tests/event_manager_rig.gd")
 
 var _city: City
 
@@ -36,14 +35,7 @@ func run(t) -> void:
 		_teardown()
 
 func _build_city(t) -> void:
-	_city = RunCity.with_own_run(CITY_SCENE, SEED)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
-	# There is no player in this rig, so nothing would ever come within streaming reach. This
-	# suite is about the manager's wiring over a whole day's event set — retirement, successors,
-	# the sum — and those are the same questions whether or not the day is streamed. The
-	# streaming itself is checked in `_test_an_event_waits_until_she_is_near_it`.
-	_city.events.stream_radius = INF
+	_city = Rig.build_city(t)
 
 ## **A guard moved is the same man, in the middle of what he was doing** (`move_extra()`): day 13's
 ## task guard following her to her roadblock keeps his warning and its clock, where a guard retired
@@ -106,17 +98,18 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 		instance.queue_free()
 	events.world.day = day_before
 
+## The page's own lifetime, and that every look a row can carry has pictures on it, are
+## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no
+## per-family group left for a rig like this one to watch come and go, and the questions that
+## replace it — the manager's reference count across days and teardown, and every picture a look
+## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
+## suite's city.
+
 func _teardown() -> void:
 	_city.free()
 
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, day])
-	return rng
-
 func _start(day: int) -> void:
-	var consumed: Array[String] = []
-	_city.events.start_day(DaySpec.for_day(day), _rng(day), consumed)
+	Rig.start(_city, day)
 
 func _test_day_populates_the_manager(t) -> void:
 	_start(1)
@@ -398,7 +391,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ##
 ## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
-## `SealPlanner`'s own RNG stream (`RunState.calendar.day_rng(day, "seals")`) does not depend on `_city`
+## `SealPlanner`'s own RNG stream (`RunState.calendar.dayRig.rng(day, "seals")`) does not depend on `_city`
 ## either, so every segment the fallback holds has to be held the real way too — a rig that skips
 ## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
 ## only ever has something to read once `City.start_day()` has run (see the comment in
@@ -473,36 +466,6 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 		t.close_to(plan.live.chase_age(), chase_age_before,
 				"and the chase clock continued from the notice rather than restarting at it", 0.05)
 
-## A walking tick: a tenth of a second, which is what a tick is at `WALK_SCALE` times real time.
-const WALK_STEP := 1.0 / 10.0
-## The walks go at this many times real time (`PhysicsTicks`), so each tick is `WALK_STEP` long and
-## a walk of a minute takes ten seconds of the run.
-const WALK_SCALE := 6.0
-
-## A player the manager can find, out of the physics loop and moved by hand.
-##
-## **It walks the day's own routes**, because that is what the siting is stated over: a site is a
-## building face on the branch of the day's `RouteTree` she is walking, so a rig holding a compass
-## heading through the lattice spends its walk off the tree, where there is no branch to be ahead on
-## and the only correct answer is to wait. `_a_route_out()` turns a route into the line it walks.
-func _walker(t, at: Vector2) -> Stroller:
-	var rig := Stroller.new()
-	var camera := Camera2D.new()
-	camera.name = "Camera2D"
-	# Set here rather than left to the engine: a camera built in code under physics interpolation is
-	# overridden to the physics callback with a warning, and a warning in a test run is a failure.
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	# Never the current camera: this camera is not the viewport's, so it works out nothing about where
-	# it is drawing from, and what she can see (`VisibleView.look_through()`) is about her,
-	# `Stroller.camera_screen_center()`'s own answer for a camera that is not current.
-	camera.enabled = false
-	rig.add_child(camera)
-	t.add_child(rig)
-	rig.set_physics_process(false)
-	rig.global_position = at
-	_city.events.use_player(rig)
-	return rig
-
 ## **A row warned of down her line is created with its telegraph spent, at its own intensity from
 ## its first frame.** *(2026-09-20: "unleashed dog still has too little influence -- needs to be more
 ## intense".)* `EventInstance.is_lethal_at()` refuses the whole telegraph and `_notice_damping()`
@@ -539,7 +502,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 				break
 			her.y += Tuning.TILE_SIZE
 		if rig == null:
-			rig = _walker(t, her)
+			rig = Rig.walker(t, _city, her)
 		rig.global_position = her
 		rig.velocity = Vector2.ZERO
 		events.use_player(rig)
@@ -564,13 +527,13 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 					seen["warnings_at_arrival"] = events.pending_warnings().size()
 			if seen["arrived"] == null and seen["warned_at"] < 0:
 				rig.velocity = Vector2.UP * Tuning.WALK_SPEED
-				rig.global_position += rig.velocity * WALK_STEP
+				rig.global_position += rig.velocity * Rig.WALK_STEP
 			else:
 				rig.velocity = Vector2.ZERO
 		var ticks := 0
-		var limit := PhysicsTicks.ticks_for(def.telegraph_time + 10.0, WALK_SCALE)
+		var limit := PhysicsTicks.ticks_for(def.telegraph_time + 10.0, Rig.WALK_SCALE)
 		while seen["arrived"] == null and ticks < limit:
-			await PhysicsTicks.pass_ticks(t, 1, each, WALK_SCALE)
+			await PhysicsTicks.pass_ticks(t, 1, each, Rig.WALK_SCALE)
 			ticks += 1
 		if not def.telegraphs:
 			t.check(seen["warned_at"] < 0 and seen["arrived"] != null
