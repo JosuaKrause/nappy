@@ -2019,7 +2019,7 @@ obstacle survivable")* Four things make that true:
 
 So walking straight past a posted band is caught, and walking in until his hand goes up, standing
 until he charges, running back until he gives up and then walking past costs what the run costs
-and nothing more, awake or asleep. `tests/test_finale.gd` walks exactly that on every roadblock street of two seeds' plans,
+and nothing more, awake or asleep. `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) walks exactly that on every roadblock street of two seeds' plans,
 in both directions, and on seed 4216201080 booted from the building through `main.tscn`; it walks
 her in at every band from all round it and requires his warning to start in her view and above the
 street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over more seeds, and

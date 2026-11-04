@@ -1,4 +1,7 @@
 extends RefCounted
+## **The cases behind `test_crowd_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
+## part runs the scenarios and the door-day cases it owns, so no suite runs two minutes serial; the
+## three together make every check the one suite made.
 ## The crowd against a closed or shaped street: hard and soft seals, sealed junctions (pockets),
 ## region walls and their carved doors, bridges, tunnels and the map's own outer edges.
 ##
@@ -20,10 +23,10 @@ const RIG := preload("res://tests/test_crowd_bodies.gd")
 var _city: City
 var _rig = RIG.new()
 
-func run(t) -> void:
-	# Each scenario stands in a city of its own, built over a run of its own, so none leans on the
-	# closures, seals and days an earlier one left behind.
-	var scenarios: Array[Callable] = [
+## The scenarios in the order the one suite ran them; each stands in a city of its own, built over
+## a run of its own, so none leans on the closures, seals and days an earlier one left behind.
+func scenarios() -> Array[Callable]:
+	return [
 		_test_a_hard_seal_shuts_its_street_to_the_crowd,
 		_test_nobody_is_placed_in_a_sealed_junction,
 		_test_a_pocket_empties_once_it_is_out_of_view,
@@ -43,17 +46,27 @@ func run(t) -> void:
 		_test_the_entry_roll_is_kept_inside_its_own_room,
 		_test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture,
 	]
-	for scenario in scenarios:
+
+## The scenarios of `scenarios()` at `indices`, in the order given.
+func run_scenarios(t, indices: Array[int]) -> void:
+	var all := scenarios()
+	for index in indices:
+		var scenario := all[index]
 		_city = RunCity.with_own_run(CITY_SCENE, SEED)
 		t.add_child(_city)
 		_city.build(CityGenerator.generate(SEED))
 		scenario.call(t)
 		_city.free()
 
+func run_region_wall(t) -> void:
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
+
+func run_day_start(t) -> void:
 	_test_day_start_keeps_room_for_its_own_picture(t)
-	# One door day, shared: building a city and planning days until one carries a door is most of a
-	# minute, and every test below places its own bodies at the same hut anyway.
+
+## One door day, shared: building a city and planning days until one carries a door, and every test
+## below places its own bodies at the same hut anyway.
+func run_door_day(t) -> void:
 	var door_day := _open_a_door_day(t)
 	_test_a_walker_is_held_at_a_door_in_four_states(t, door_day)
 	_test_a_line_at_a_door_stays_short(t, door_day)

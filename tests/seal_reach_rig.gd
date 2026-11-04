@@ -1,6 +1,6 @@
 extends RefCounted
 ## How far a planned body, or the ground its picture is drawn over, reaches into a building tile.
-## Shared by `tests/test_seals.gd` and `tests/test_finale.gd`, which hold that no seal reaches one
+## Shared by `tests/test_seals.gd` and `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`), which hold that no seal reaches one
 ## on a day or in the escape, and `tests/probes/seal_overhang.gd`, which prints the depths.
 ##
 ## **The body** is each solid piece where it stands (`WalkGround.solids_of()`),
