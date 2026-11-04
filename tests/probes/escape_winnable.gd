@@ -12,8 +12,8 @@ extends RefCounted
 ## (`PARALLEL`).
 ##
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
-## (`--start-escape city`: `GameState.start_run(seed)`, the city built from the run seed, the plan
-## drawn from `GameState.calendar.day_rng(day, "finale")` under the city section's spec, as
+## (`--start-escape city`: `RunState.start_run(seed)`, the city built from the run seed, the plan
+## drawn from `city.run.calendar.day_rng(day, "finale")` under the city section's spec, as
 ## `main._plan_the_finale_city()` draws it): how many of the escape's four rows stand on its open
 ## streets and how many streets stand none, for every mix. **And for the game's own bag, the game
 ## walking it**: one headless run of the real game per exit, booted `--start-escape city --seed
@@ -65,8 +65,6 @@ const TIMEOUT_SECONDS := 260.0
 const POLL_MSEC := 250
 
 func run(t) -> void:
-	var saved_seed := GameState.header.run_seed
-	var saved_day := GameState.header.day
 	var mixes := _mixes()
 	var seeds := _seeds()
 	var plans: Array[Dictionary] = []
@@ -78,8 +76,6 @@ func run(t) -> void:
 			if row["mix"] == mix["name"]:
 				own.append(row)
 		_print_plans(mix["name"], own)
-	GameState.header.run_seed = saved_seed
-	GameState.header.day = saved_day
 	if OS.get_environment("ESCAPE_WINNABLE_WALK") != "0":
 		_print_walks(_walk_every_seed(seeds))
 	t.check(true, "a probe asserts nothing")
@@ -116,17 +112,16 @@ func _mixes() -> Array[Dictionary]:
 
 ## Every mix's plan for one seed, on the city a straight city boot builds.
 func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
-	GameState.start_run(seed_value)
-	var day := GameState.header.day
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var day := city.run.header.day
 	t.add_child(city)
-	city.build(CityGenerator.generate(GameState.header.run_seed))
-	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"), _city_spec())
+	city.build(CityGenerator.generate(city.run.header.run_seed))
+	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"), _city_spec())
 	var found: Array[Dictionary] = []
 	for mix in mixes:
 		var walk := FinalePlanner.route(city.map)
-		var row := _street_counts(city.map, walk, _plan(city.map, walk, day, mix))
+		var row := _street_counts(city.map, walk, _plan(city.map, city.run, walk, day, mix))
 		row["mix"] = mix["name"]
 		row["seed"] = seed_value
 		print("ESCAPE_WINNABLE [%s] seed %d | %d streets, %d with none, %d dangers | %s" % [
@@ -139,9 +134,9 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
 ## the same plan under a spec whose bag and slots are that mix's, drawn on the stream the game's own
 ## bag is drawn on (`EventScheduler.street_bag_seed()`).
-func _plan(map: CityMap, walk: FinalePlanner.Plan, day: int,
+func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		mix: Dictionary) -> Array[EventScheduler.Planned]:
-	var rng := GameState.calendar.day_rng(day, "finale")
+	var rng := own_run.calendar.day_rng(day, "finale")
 	var spec := _city_spec()
 	if mix.has("slots"):
 		var counts: Array = mix["counts"]

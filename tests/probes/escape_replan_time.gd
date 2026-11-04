@@ -9,13 +9,19 @@ extends RefCounted
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024]
 const RESTARTS := 3
 
+## The seed the run starts from: the one the runner's reset gave the stand-in this probe used to
+## read, so the probe measures what it did.
+const RUN_SEED := 2
+
 func run(t) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
 	var firsts: Array[int] = []
 	var restarts: Array[int] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.attempt_spend.city_state)
+		own_run.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(own_run.attempt_spend.city_state)
 		var took: Array[int] = []
 		var placed: Array[int] = []
 		for attempt in RESTARTS + 1:
@@ -35,6 +41,7 @@ func run(t) -> void:
 	print("ESCAPE_REPLAN | %d seeds | first %d-%d ms, median %d | restarts %d-%d ms, median %d"
 			% [SEEDS.size(), firsts[0], firsts[-1], firsts[firsts.size() / 2], restarts[0],
 			restarts[-1], restarts[restarts.size() / 2]])
+	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 ## The escape city's section spec, the one the run flow walks the city under.

@@ -19,7 +19,7 @@ const PAST_THE_FORK := 6
 func run(t) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -30,11 +30,10 @@ func run(t) -> void:
 	t.check(true, "m180_crews_on_her_way probe ran")
 
 func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	GameState.header.run_seed = seed_value
-	GameState.posters.reset()
+	city.run.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
 	city.poster_walls().start_day(day, tree)
-	var before := _pasted_cells()
+	var before := _pasted_cells(city)
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
@@ -72,14 +71,14 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 		met += 1 if plan.was_live else 0
 	var siting := city.events.ahead.walk_siting()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
-			sited, met, first_sited, _pasted_cells() - before,
+			sited, met, first_sited, _pasted_cells(city) - before,
 			_refusal_summary(siting.waits if siting else {})])
 	rig.free()
 
 ## Every cell with a sheet on it, however it got there.
-func _pasted_cells() -> int:
+func _pasted_cells(city: City) -> int:
 	var count := 0
-	for tile: Vector2i in GameState.posters.cells:
+	for tile: Vector2i in city.run.posters.cells:
 		count += 1
 	return count
 

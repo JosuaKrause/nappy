@@ -22,20 +22,16 @@ const TEARS_A_DAY := 5
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
-	var saved_day := GameState.header.day
-	var saved_state := GameState.attempt_spend.city_state
-	var saved_tears := GameState.posters.tears
 	var printed := 0
 	var nobody := 0
 	for seed_value in range(1, SEEDS + 1):
-		GameState.start_run(seed_value)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in range(PosterWalls.FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
-			GameState.header.day = day
+			city.run.header.day = day
 			var state := CityState.new()
-			GameState.attempt_spend.city_state = state
+			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -49,7 +45,7 @@ func run(t) -> void:
 			player.set_physics_process(false)
 			player.add_to_group("player")
 			city.events.use_player(player)
-			var sheets: Array = GameState.posters.cells.keys()
+			var sheets: Array = city.run.posters.cells.keys()
 			sheets.sort()
 			var picked: Array[Vector2i] = []
 			for i in mini(TEARS_A_DAY, sheets.size()):
@@ -57,7 +53,7 @@ func run(t) -> void:
 			var tears := 0
 			for tile: Vector2i in picked:
 				tears += 1
-				GameState.posters.tears = tears
+				city.run.posters.tears = tears
 				var her := city.map.tile_to_world(tile)
 				player.global_position = her
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
@@ -82,9 +78,6 @@ func run(t) -> void:
 			city.events.ahead.clear()
 			player.free()
 		city.free()
-	GameState.header.day = saved_day
-	GameState.attempt_spend.city_state = saved_state
-	GameState.posters.tears = saved_tears
 	print("PP_TOTAL %d tears, %d sent nobody" % [printed, nobody])
 	t.check(printed > 0, "there were tears to print (%d)" % printed)
 

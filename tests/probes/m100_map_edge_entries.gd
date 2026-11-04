@@ -20,6 +20,9 @@ extends RefCounted
 ## ask about the centre.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const SEED := 4242
 const SAMPLES := 150
 
@@ -111,7 +114,7 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 	}
 	for name in edges:
 		var at: Vector2 = edges[name]
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(map)
 		var rng := RandomNumberGenerator.new()

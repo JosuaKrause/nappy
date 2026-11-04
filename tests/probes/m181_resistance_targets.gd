@@ -24,10 +24,14 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 const EXTRA_SEEDS := 28
 const BASE_SEED := 181_000
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed the run starts from: the one the runner's reset gave the stand-in this probe used to
+## read, so the probe measures what it did.
+const RUN_SEED := 2
 
 func run(t) -> void:
-	var saved_progress := GameState.resistance.progress
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
+	own_run.resistance.progress = Tuning.RESISTANCE_GOAL
 	print("\n== M181: the day's resistance target, reachable from home ==")
 	print("%-12s %4s %-8s %6s %6s %6s  %s" % ["seed", "day", "target", "legal", "open", "reach",
 			"placed at (reachable?)"])
@@ -37,7 +41,7 @@ func run(t) -> void:
 	for i in EXTRA_SEEDS:
 		seeds.append(BASE_SEED + i * 7919)
 	for seed_value in seeds:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.in_run(CITY_SCENE, own_run)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
@@ -98,7 +102,7 @@ func run(t) -> void:
 			director.free()
 		city.free()
 	print("%d of %d placements unreachable or nowhere" % [failures, cases])
-	GameState.resistance.progress = saved_progress
+	own_run.free()
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

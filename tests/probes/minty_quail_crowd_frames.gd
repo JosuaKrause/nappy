@@ -19,6 +19,9 @@ extends RefCounted
 ## was in the first, and
 ## `frame-first.png`, the first whole frame, into `CROWD_FRAMES_OUT`.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const CITY_SEED := 4242
 const WARMUP_TICKS := 90
 const FRAMES := 12
@@ -28,7 +31,7 @@ const CROP := Vector2i(240, 150)
 func run(t) -> void:
 	var out := OS.get_environment("CROWD_FRAMES_OUT")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.crowd_view = ScreenCrowdView.new(t)
 	city.build(CityGenerator.generate(CITY_SEED))

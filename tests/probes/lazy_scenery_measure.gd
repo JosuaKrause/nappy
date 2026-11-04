@@ -6,6 +6,10 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
 const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
+const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
+## The save the boot is handed, so the player's own is never touched.
+const SCRATCH_SAVE := "user://lazy_scenery_measure_scratch.json"
 
 ## The library every city measured here is handed, holding the shared pages for the whole probe.
 var _atlas := AtlasLibrary.new()
@@ -29,11 +33,12 @@ func run(t) -> void:
 	_actual_boot(t)
 
 func _measure(t, seed_value: int, trial: int) -> void:
-	GameState.start_run(seed_value)
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	# The run is held here: swapping the script drops the one the city was handed.
+	var own_run := city.run
 	city.set_script(TIMED_CITY)
 	city.atlas = _atlas
 	t.add_child(city)
@@ -51,11 +56,11 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		GameState.header.day = day
+		own_run.header.day = day
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
-		city.start_day(state, day, GameState.calendar.day_rng())
+		city.start_day(state, day, own_run.calendar.day_rng())
 		row = city.get("spans").duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,
 			"total_ms": (Time.get_ticks_usec() - started) / 1000.0,
@@ -218,8 +223,14 @@ func _counterfactual(city: City, t) -> void:
 ## Observe the real first suspended boot frame, then complete its two warmup awaits as the
 ## camera regression suite does. This validates geometry, not a rendered image or boot timing.
 func _actual_boot(t) -> void:
-	var scene: PackedScene = load("res://scenes/main.tscn")
-	var main: Node2D = scene.instantiate()
+	# Booted the way `Boot.boot()` boots it, a scratch save and a sitting playing a run of its own,
+	# but not waited on: the point is the first frame, before the warm-up awaits complete.
+	var seat := Seat.new(t)
+	var save := GameSave.new(SCRATCH_SAVE)
+	var main: Node2D = Boot.MAIN_SCENE.instantiate()
+	main.use_save(save)
+	main.configure(Boot.config([]))
+	main.use_sitting_home(seat.home)
 	t.add_child(main)
 	var camera := main.get_viewport().get_camera_2d()
 	var size := main.get_viewport_rect().size / camera.zoom
@@ -234,5 +245,7 @@ func _actual_boot(t) -> void:
 	t.get_tree().process_frame.emit()
 	t.get_tree().process_frame.emit()
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	main.free()
+	save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCRATCH_SAVE))
+	seat.end()

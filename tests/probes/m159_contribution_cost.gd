@@ -3,12 +3,15 @@ extends RefCounted
 ## Run explicitly with tools/test.sh probes/m159_contribution_cost.gd; raw timings print at end.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const ORACLE := preload("res://tests/test_crowd_contributions.gd")
 const STEP := 1.0 / 30.0
 const BATCH := 32
 
 func run(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	var reports: Array = []

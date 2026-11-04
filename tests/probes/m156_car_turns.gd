@@ -32,6 +32,9 @@ extends RefCounted
 ##   "only what physically stops it".
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const STEP := 1.0 / 60.0
 const SEEDS := [4242, 24757, 91117]
 const DAYS := [1, 5, 9]
@@ -45,7 +48,7 @@ var _rows := {}
 func run(t) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(map)
 		for day: int in DAYS:

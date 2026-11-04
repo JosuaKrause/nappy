@@ -43,18 +43,17 @@ func run(t) -> void:
 ## The escape's city, built and dressed as `main._build_the_finale_city()` does and planned as
 ## `main._plan_the_finale_city()` does.
 func _the_escape_city(t, seed_value: int, day: int) -> int:
-	GameState.start_run(seed_value)
-	GameState.header.day = day
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	city.run.header.day = day
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
+	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
 	var start := FinalePlanner.service_exit_world_position(city.map)
 	var none: Array[String] = []
-	city.events.start_day(spec, GameState.calendar.day_rng(day, "finale"), none, start)
+	city.events.start_day(spec, city.run.calendar.day_rng(day, "finale"), none, start)
 	var printed := _print("escape seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())
 	city.free()
@@ -62,30 +61,31 @@ func _the_escape_city(t, seed_value: int, day: int) -> int:
 
 ## The building, with its events started as every entry into the section starts them.
 func _the_building(t, seed_value: int) -> int:
-	GameState.start_run(seed_value)
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
+	var own_run := RunState.new()
+	own_run.start_run(seed_value)
+	own_run.header.day = Tuning.RUN_LENGTH_DAYS
 	var scene := InteriorScene.new()
 	t.add_child(scene)
-	var rng := GameState.calendar.day_rng(GameState.header.day, "finale-interior")
-	var events := BuildingEvents.events_in(t, scene, rng, GameState)
+	var rng := own_run.calendar.day_rng(own_run.header.day, "finale-interior")
+	var events := BuildingEvents.events_in(t, scene, rng, own_run)
 	var printed := _print("building seed %d" % seed_value, scene.map, events.plans())
 	events.free()
 	scene.free()
+	own_run.free()
 	return printed
 
 ## A day, as `DayDirector.start_day()` plans it: the city's own morning, then the events.
 func _a_day(t, seed_value: int, day: int) -> int:
-	GameState.start_run(seed_value)
-	GameState.header.day = day
 	var spec := DaySpec.for_day(day)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	city.run.header.day = day
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-	city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"),
+	city.run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+	city.start_day(city.run.attempt_spend.city_state, day, city.run.calendar.day_rng(day, "closures"),
 			spec)
 	var consumed: Array[String] = []
-	city.events.start_day(spec, GameState.calendar.day_rng(day), consumed,
+	city.events.start_day(spec, city.run.calendar.day_rng(day), consumed,
 			city.map.doorstep_world_position())
 	var printed := _print("day seed %d day %d" % [seed_value, day], city.map,
 			city.events.plans())

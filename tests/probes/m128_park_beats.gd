@@ -15,6 +15,9 @@ extends RefCounted
 ## side by side; nothing in the game reads them any more.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const SEEDS := [4242, 90210, 1337]
 const BUSKER_DAY := 2  # `busker.first_day`.
 
@@ -66,7 +69,7 @@ func _busker_never_fills_the_day(t) -> void:
 		return
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -315,7 +318,7 @@ func _playground_settles(t) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []

@@ -15,11 +15,14 @@ extends RefCounted
 ## source's cut is reused. Headless, so drawing itself is not in any figure.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const SCREEN := Vector2(640.0, 360.0)
 
 func run(t) -> void:
 	for city_seed in [4242, 5551212]:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var day := 1

@@ -2,18 +2,21 @@ extends RefCounted
 ## Coverage of the actual daily offered route graph, after Main plans closures and events.
 ## This inspects generated options; it does not run a player or choose a new route.
 
+const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
+
 const HALF_VIEW := Vector2(320, 180)
 
 var _city: City
 var _ground: TileMapLayer
 
+## The save the boot is handed, so the player's own is never touched.
+const SCRATCH_SAVE := "user://lazy_scenery_routes_scratch.json"
+
 func run(t) -> void:
-	var scene: PackedScene = load("res://scenes/main.tscn")
-	var main: Node2D = scene.instantiate()
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	_city = main._city
+	var seat := Seat.new(t)
+	var booted := await seat.boot(t, SCRATCH_SAVE, [])
+	_city = Boot.city(booted.main)
 	_ground = _city.get_node("Ground")
 	var tree := _city.route_tree()
 	t.check(tree != null and not tree.branches.is_empty(), "real daily boot supplies route options")
@@ -23,7 +26,7 @@ func run(t) -> void:
 	var network_closed := _closed_count(network_tiles)
 	var offered := network_tiles.duplicate()
 	offered.merge(home_tiles)
-	var row := {"seed": _city.map.seed_used, "day": GameState.header.day,
+	var row := {"seed": _city.map.seed_used, "day": seat.run.header.day,
 		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
@@ -65,9 +68,8 @@ func run(t) -> void:
 	t.check(network_closed == 0, "daily closures leave sampled generated network tiles open")
 	t.check(row.network_and_home.ground_cells > 0, "generated-route coverage is nonempty")
 	print("LAZY_ROUTES " + JSON.stringify(row))
-	t.get_tree().paused = false
-	Telemetry.end_run()
-	main.free()
+	booted.free_all()
+	seat.end()
 
 ## Keep the actual connected-component node identity rather than treating each 2x2 cell as
 ## wholly walkable. The tree is generated before closures; openness is checked at coverage time.

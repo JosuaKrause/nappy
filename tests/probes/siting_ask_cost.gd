@@ -6,13 +6,16 @@ extends RefCounted
 ## `bodies` count is what the day's region holds, and `same` that two asks in a row are handed the
 ## very same region (what a cache keeps), which is always false before there is one.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const CITY_SEED := 478156010
 const DAYS: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, 10, 14]
 const CALLS := 4000
 const ROUNDS := 5
 
 func run(t) -> void:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(CITY_SEED))
 	for day in DAYS:

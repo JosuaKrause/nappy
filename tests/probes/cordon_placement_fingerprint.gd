@@ -19,6 +19,9 @@ const LARGE_PARK_SEED := 90210
 const STEP := 1.0 / 60.0
 const PATIENCE := 90.0
 const SAMPLE_EVERY := 15
+## The seed each sample's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did. Each sample plays a run of its own.
+const RUN_SEED := 2
 
 func run(t) -> void:
 	var seeds: Array[int] = []
@@ -33,24 +36,13 @@ func run(t) -> void:
 	t.check(printed > 0, "there were officers to print (%d)" % printed)
 
 func _a_seed(t, seed_value: int, walks: bool) -> int:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	var saved := {
-		"state": GameState.attempt_spend.city_state, "day": GameState.header.day,
-		"completed": GameState.resistance.completed_steps.duplicate(),
-		"failed": GameState.resistance.failed_steps.duplicate(),
-		"progress": GameState.resistance.progress,
-		"package": GameState.resistance.carrying_package,
-	}
-	GameState.resistance.completed_steps = []
-	GameState.resistance.failed_steps = []
-	GameState.resistance.progress = 0
-	GameState.resistance.carrying_package = false
 	var day := ResistanceSteps.swing_day()
-	GameState.header.day = day
+	city.run.header.day = day
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -72,12 +64,6 @@ func _a_seed(t, seed_value: int, walks: bool) -> int:
 		director._happenings.start_day(day + 1)
 	director.free()
 	city.free()
-	GameState.attempt_spend.city_state = saved.state
-	GameState.header.day = saved.day
-	GameState.resistance.completed_steps = saved.completed
-	GameState.resistance.failed_steps = saved.failed
-	GameState.resistance.progress = saved.progress
-	GameState.resistance.carrying_package = saved.package
 	return printed
 
 func _play(city: City, happenings: ResistanceHappenings, swing: Vector2, walks: bool, label: String) -> int:

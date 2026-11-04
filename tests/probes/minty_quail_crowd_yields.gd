@@ -41,6 +41,9 @@ extends RefCounted
 ## `PROBE_SEEDS` (comma-separated) runs other seeds.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
+## used to read, so the probe measures what it did.
+const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 1]
 const ROWS: Array[String] = ["charging_dog", "policeman_giving_chase", "police_patrol"]
 const SPOTS := 3
@@ -59,19 +62,13 @@ var _strikes := 0
 var _lines := 0
 
 func run(t) -> void:
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-	var saved_state := GameState.attempt_spend.city_state
 	EventBus.car_near_miss.connect(func(_at: Vector2) -> void: _horns += 1)
 	EventBus.crowd_bumped.connect(func(_at: Vector2) -> void: _bumps += 1)
 	EventBus.hard_fail_triggered.connect(func(cause: String) -> void:
 		if cause == "car_strike":
 			_strikes += 1)
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.crowd_view = ScreenCrowdView.new(t)
 		city.build(CityGenerator.generate(seed_value))
@@ -79,12 +76,6 @@ func run(t) -> void:
 			_a_day(t, city, seed_value, day)
 		city.crowd._player = null
 		city.free()
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.progress = saved_progress
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
-	GameState.attempt_spend.scars = saved_scars
-	GameState.header.day = saved_day
-	GameState.attempt_spend.city_state = saved_state
 	t.check(_lines > 0, "there were runs to print (%d)" % _lines)
 
 func _listed(name: String, fallback: Array[int]) -> Array[int]:
@@ -100,13 +91,13 @@ func _a_day(t, city: City, seed_value: int, day: int) -> void:
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):
 			done.append(step.index)
-	GameState.resistance.completed_steps = done
-	GameState.resistance.progress = 0
-	GameState.facts.completed_resistance_alley_tiles = []
-	GameState.attempt_spend.scars.clear()
-	GameState.header.day = day
+	city.run.resistance.completed_steps = done
+	city.run.resistance.progress = 0
+	city.run.facts.completed_resistance_alley_tiles = []
+	city.run.attempt_spend.scars.clear()
+	city.run.header.day = day
 	var state := CityState.new()
-	GameState.attempt_spend.city_state = state
+	city.run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],

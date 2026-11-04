@@ -28,6 +28,9 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
 const TOUCH_SHORT := 34.0
+## The seed each run starts from: the one the runner's reset gave the stand-in this probe used to
+## read, so the probe measures what it did.
+const RUN_SEED := 2
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
@@ -39,22 +42,20 @@ func run(t) -> void:
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
 func _task_guards(t) -> void:
-	var saved := GameState.resistance.completed_steps.duplicate()
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var placed := 0
 	var unguarded := 0
 	var seen := 0
 	for seed_value in SEEDS:
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in [13]:
-			GameState.facts.completed_resistance_alley_tiles = []
+			city.run.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			GameState.resistance.completed_steps = done
+			city.run.resistance.completed_steps = done
 			var state := CityState.new()
-			GameState.attempt_spend.city_state = state
+			city.run.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
 			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
@@ -92,8 +93,6 @@ func _task_guards(t) -> void:
 			player.free()
 			director.free()
 		city.free()
-	GameState.resistance.completed_steps = saved
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	print("[m213] guarded tasks %d: unguarded %d, guard body on screen %d" % [placed, unguarded,
 			seen])
 	t.check(true, "probe ran")
@@ -104,6 +103,8 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	return rng
 
 func _reachability(t) -> void:
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
@@ -115,7 +116,7 @@ func _reachability(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, GameState)
+		director.setup(null, map, null, own_run)
 		var rngs: Array[RandomNumberGenerator] = []
 		for i in 3:
 			var rng := RandomNumberGenerator.new()
@@ -165,11 +166,12 @@ func _reachability(t) -> void:
 		var all: int = counted["through"] + counted["passage"]
 		print("[m213] all      %-16s asleep %4d of %4d (%.0f%%), inside 62px of the mark %d"
 				% [names[i], total, all, 100.0 * total / maxf(1.0, all), too_close[i]])
+	own_run.free()
 	t.check(true, "probe ran")
 
 func _on_screen(t) -> void:
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	GameState.facts.completed_resistance_alley_tiles = []
+	var own_run := RunState.new()
+	own_run.start_run(RUN_SEED)
 	var marks_seen := 0
 	var guards_seen := 0
 	var guards_centre_seen := 0
@@ -178,7 +180,7 @@ func _on_screen(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, GameState)
+		director.setup(null, map, null, own_run)
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
@@ -206,7 +208,7 @@ func _on_screen(t) -> void:
 				guards_seen += 1
 			var _unused := robbery
 		director.free()
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
+	own_run.free()
 	print("[m213] relocations %d: mark picture on screen %d, guard centre on screen %d, guard body on screen %d, unguarded %d"
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
 	t.check(true, "probe ran")

@@ -113,16 +113,9 @@ static func _route_from(map: CityMap, from: Vector2i,
 
 func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	var suite = SUITE.new()
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_scars := GameState.attempt_spend.scars.duplicate()
-	var saved_state := GameState.attempt_spend.city_state
-	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var city: City = RunCity.of_the_run(SUITE.CITY_SCENE)
+	var city: City = RunCity.with_own_run(SUITE.CITY_SCENE, SUITE.RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.attempt_spend.scars = []
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director, director.contact_position())
 	var map := city.map
@@ -173,5 +166,3 @@ func _the_sent_robbers_starts(t, seed_value: int) -> void:
 				% [seed_value, kind, row[0], row[1], row[0] - row[1], row[2]])
 	print("VELVET_STORK seed %d day 13 sent robber: nobody sent from %d positions" % [seed_value, unsent])
 	suite._tear_down(player, director, city)
-	suite._restore(saved_completed, saved_failed, saved_progress, saved_scars, saved_state)
-	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
