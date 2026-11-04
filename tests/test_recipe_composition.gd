@@ -14,13 +14,17 @@ func run(t) -> void:
 	for tree in StreetTrees.planted(built.map):
 		pits[tree.tile] = tree
 	t.check(not pits.has(source) and pits.has(destination), "planning moves the original tree pit across the road")
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, 11)
 	t.add_child(city)
 	city.build(built.map)
-	t.check(not city._street_tree_pits.has(source) and city._street_tree_pits.has(destination),
-			"real tree props and pit rendering use the relocated planning source")
-	var tree: Prop = city._street_tree_pits[destination]
-	t.check(tree.position == city.map.tile_to_world(destination) and tree.kind == Prop.Kind.STREET_TREE,
+	var trees := {}
+	for prop in city.props():
+		if prop.kind == Prop.Kind.STREET_TREE:
+			trees[city.map.world_to_tile(prop.position)] = prop
+	t.check(not trees.has(source) and trees.has(destination),
+			"real tree props use the relocated planning source")
+	var tree: Prop = trees.get(destination)
+	t.check(tree != null and tree.position == city.map.tile_to_world(destination),
 			"relocation retains a real existing street-tree component")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
@@ -40,12 +44,14 @@ func run(t) -> void:
 		if agent.kind == CrowdAgent.Kind.CAR:
 			cars += 1
 			continue
-		var key := "%s%d" % ["v" if agent.travelling_vertically() else "h", agent.get("_corridor")]
+		# The agent's own lane key says its axis, corridor, lane and heading.
+		var parts := LaneMover.lane_key_parts(agent.lane_key())
+		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
 		counts[key] = int(counts.get(key, 0)) + 1
-		var lane := "%s:%s" % [key, agent.get("_lane")]
+		var lane := "%s:%s" % [key, parts[2]]
 		if not lane_directions.has(lane):
 			lane_directions[lane] = {}
-		lane_directions[lane][int(agent.get("_direction"))] = true
+		lane_directions[lane][parts[3]] = true
 		before[agent] = agent.position
 	var mixed := 0
 	for directions: Dictionary in lane_directions.values():
@@ -71,30 +77,24 @@ func run(t) -> void:
 	t.check(not city.crowd.field().uniform_walkers
 			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			"ordinary day restores its density and street hierarchy")
-	var prior_day := GameState.header.day
-	var prior_seed := GameState.header.run_seed
-	GameState.header.day = 1
-	GameState.header.run_seed = 11
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
-	city.start_recipe_day(state, 1, GameState.calendar.day_rng())
+	city.start_recipe_day(state, 1, city.run.calendar.day_rng())
 	var oversized: Dictionary = recipe.duplicate(true)
 	oversized.setup = {"day": 1, "background": {"crowd": true, "crowd_scope": "city",
 			"uniform_walkers": true, "walker_multiplier": 4}}
 	built.data = oversized
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), GameState)
+	runtime.configure(built, RunConfig.parse(PackedStringArray(["--recipe", "test.json"]), "", true), city.run)
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
-	var errors := runtime.install(city, player, player.get_node("Baby"), DaySpec.for_day(GameState.header.day, Tuning.DAY_LENGTH_SECONDS))
+	var errors := runtime.install(city, player, player.get_node("Baby"), DaySpec.for_day(city.run.header.day, Tuning.DAY_LENGTH_SECONDS))
 	t.check("\n".join(errors).contains("too few eligible sidewalk positions"),
 			"oversized city-wide uniform population rejects instead of silently truncating")
 	runtime.free()
 	player.free()
 	city.free()
-	GameState.header.day = prior_day
-	GameState.header.run_seed = prior_seed
 	for target in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target
