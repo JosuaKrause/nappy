@@ -100,17 +100,21 @@ func _test_a_resolved_config_cannot_change(t) -> void:
 	var refused := RefusedWrites.new()
 	OS.add_logger(refused)
 	config.invincible = true
-	config._open = true
-	config._given = PackedStringArray(["--invincible"])
-	config._movie = true
 	config.debug_build = false
 	OS.remove_logger(refused)
-	t.check(not config.invincible and config.debug_build
-			and not config._movie and not "--invincible" in config._given,
-			"a write after the build changes nothing, the fields that hold the gate included")
-	config.invincible = true
-	t.check(not config.invincible, "and reopening it did not work")
-	t.check(refused.count == 5, "each refused write is reported, not swallowed: %d" % refused.count)
+	t.check(not config.invincible and config.debug_build,
+			"a write after the build changes nothing, the field that holds the gate included")
+	t.check(refused.count == 2, "each refused write is reported, not swallowed: %d" % refused.count)
+	# The words and the movie flag it was parsed from are what `with_recipe()` (which `main` calls)
+	# parses the run from again, so the run it gives is the same run: a refused write to the config
+	# is not in it, and what the words and the movie flag said is.
+	t.check(not config.with_recipe({}).invincible,
+			"the run parsed again from its words does not carry the refused write")
+	var movie := RunConfig.parse(_words(["--invincible", "--layers", "1"]), "", true, true)
+	var again := movie.with_recipe({})
+	t.check(again.recording and again.invincible and again.layers_override == [1]
+			and again.active_args == movie.active_args,
+			"but does carry the movie flag and every word it was parsed from")
 	var args := config.active_args
 	args.append("--invincible")
 	t.check(not "--invincible" in config.active_args,
