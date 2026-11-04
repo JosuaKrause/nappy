@@ -858,20 +858,115 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 					no_calm, tree, 0, PackedVector2Array(), no_target, standing)
 
 			var corridor := Corridor.of(tree)
-			var ground := {}
 			# The background every row is checked against: the day's own final set beside the
 			# seals and the wall — everything `standing` stands for plus everything `build_day`
-			# placed with it in view.
+			# placed with it in view — of which what counts against a line is what a crossing's
+			# ground is taken by.
 			var everything: Array[EventScheduler.Planned] = rows.duplicate()
 			everything.append_array(standing)
-			for row: EventScheduler.Planned in rows:
-				if not row.is_placed() or not row.counts_against_the_line():
+			var counted: Array[EventScheduler.Planned] = []
+			for plan: EventScheduler.Planned in everything:
+				if plan.counts_against_the_line():
+					counted.append(plan)
+			for junction in corridor.route_junctions():
+				var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+				var world := map.tile_rect_to_world(box)
+				var here: Array[EventScheduler.Planned] = []
+				var a_row_reaches := false
+				for plan in counted:
+					if plan.distance_from(world.get_center()) \
+							> plan.def.line_reach() + world.size.length() * 0.5:
+						continue
+					here.append(plan)
+					a_row_reaches = a_row_reaches or plan in rows
+				# Only a crossing a catalogue row reaches is asked: a seal or a wall body is never
+				# asked at its own placement (see above).
+				if not a_row_reaches:
 					continue
 				checked += 1
-				t.check(EventScheduler._leaves_the_route_junctions_open(row, map, corridor, ground,
-						everything),
-						("seed %d day %d: '%s' at %s leaves a route junction closed beside the " +
-						"day's own seals and the region wall")
-						% [map.seed_used, day, row.def.id, map.world_to_tile(row.position)])
-	t.check(checked > 0, "there were catalogue rows counting against the line to check (%d)"
+				t.check(_the_crossing_is_walkable(map, corridor, junction, box, here),
+						("seed %d day %d: a route junction at %s is left closed beside the " +
+						"day's own seals and the region wall (covered by %s)")
+						% [map.seed_used, day, junction, _ids_of(here)])
+	t.check(checked > 0, "there were route junctions a catalogue row reaches to check (%d)"
 			% checked)
+
+## The ids of the rows in `rows`, for a failure message.
+func _ids_of(rows: Array[EventScheduler.Planned]) -> String:
+	var ids := {}
+	for plan in rows:
+		ids[plan.def.id] = true
+	return ", ".join(PackedStringArray(ids.keys()))
+
+## Whether a line can still cross the junction box `box` of `junction`: take every row's reach off
+## the box and ask whether what is left joins every route street that meets it, and has somewhere
+## free in it. The test's own statement of the rule `EventScheduler` refuses a candidate by, and
+## the same one `test_events_placement.gd` states: the scheduler's asker is private, and what it
+## answers is the finished day's, which both ask of the rows that are down.
+##
+## Both halves matter. A box with somewhere free left in it is not a crossing if the free ground is
+## a corner cut off from the streets, and a box whose two arms are each free is not a crossing if
+## nothing joins them, which is why this is a flood fill rather than a count.
+func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vector2i, box: Rect2i,
+		rows: Array[EventScheduler.Planned]) -> bool:
+	var free := {}
+	for y in range(box.position.y, box.end.y):
+		for x in range(box.position.x, box.end.x):
+			var tile := Vector2i(x, y)
+			if not map.is_open(tile):
+				continue
+			var taken := false
+			for plan in rows:
+				if plan.denies(map.tile_to_world(tile), plan.def.line_reach()):
+					taken = true
+					break
+			if not taken:
+				free[tile] = true
+	if free.is_empty():
+		return false
+	var arms: Array = []
+	for segment in map.network.at_junction(junction):
+		if corridor.depth(segment.tile_rect().position) != 0:
+			continue
+		var step := segment.other_end(junction) - junction
+		var open_here: Array[Vector2i] = []
+		for i in Tuning.STREET_WIDTH:
+			var tile := box.position + Vector2i(i, i)
+			if step.x > 0:
+				tile = box.position + Vector2i(Tuning.STREET_WIDTH - 1, i)
+			elif step.x < 0:
+				tile = box.position + Vector2i(0, i)
+			elif step.y > 0:
+				tile = box.position + Vector2i(i, Tuning.STREET_WIDTH - 1)
+			else:
+				tile = box.position + Vector2i(i, 0)
+			if free.has(tile):
+				open_here.append(tile)
+		if open_here.is_empty():
+			return false
+		arms.append(open_here)
+	if arms.size() < 2:
+		return true
+	var reached := {}
+	var queue: Array[Vector2i] = []
+	for tile: Vector2i in arms[0]:
+		reached[tile] = true
+		queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			var next: Vector2i = at + step
+			if free.has(next) and not reached.has(next):
+				reached[next] = true
+				queue.append(next)
+	for i in range(1, arms.size()):
+		var joined := false
+		for tile: Vector2i in arms[i]:
+			if reached.has(tile):
+				joined = true
+				break
+		if not joined:
+			return false
+	return true

@@ -2,47 +2,55 @@ extends RefCounted
 ## Real Main installs only authored subjects while keeping production crowd simulation.
 
 const PROBE := """extends Node
+const BootedMain := preload("res://tests/booted_main.gd")
 func _ready() -> void:
+	# The recipe the boot plays, loaded as `main` loads it (`SceneRecipeRuntime.load_recipe()`): its
+	# data and the places it names. The booted game's parts are read off its scene tree.
+	var config := RunConfig.at_boot()
+	var loaded := SceneRecipeRuntime.load_recipe(config.recipe_path, config.active_args)
 	var packed: PackedScene = load("res://scenes/main.tscn")
 	var main := packed.instantiate()
 	add_child(main)
-	var runtime: SceneRecipeRuntime = main.get("_flow").scene
-	var city: City = main.get("_city")
-	if not runtime or not city or runtime.manifest.get("setup_failed", false):
+	var city := BootedMain.city(main)
+	if not loaded.errors.is_empty() or not city:
 		return
+	var setup: Dictionary = loaded.data.setup
 	var run := run_of(main)
 	var act := Tuning.act_for_day(run.header.day)
-	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
-	var pins: Array = runtime.data.setup.get("actors", [])
+	var multiplier: float = setup.get("background", {}).get("walker_multiplier", 1)
+	var pins: Array = setup.get("actors", [])
 	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
 		fail("background population differs from ordinary day density")
 		return
 	for pin: Dictionary in pins:
-		var errors: Array[String] = []
-		var actor: CrowdAgent = runtime.named.get(pin.name)
-		if not actor or not actor.position.is_equal_approx(runtime.position_of(pin.at, errors)):
+		var actor := city.find_child(pin.name, true, false) as CrowdAgent
+		if not actor or not actor.position.is_equal_approx(position_of(pin.at, loaded.anchors, city)):
 			fail("background population dropped or moved an explicit walker")
 			return
-	if not city.events._recipe_plan:
-		fail("authored scene enables ordinary event filling or director")
-		return
-	var expected: int = runtime.data.setup.get("events", []).size()
-	expected += runtime.data.setup.get("seals", []).size() * 2
-	expected += runtime.data.setup.get("gates", []).size() * 3
-	expected += runtime.data.setup.get("barriers", []).size() * 3
-	if city.events.streaming._plans.size() != expected:
+	var expected: int = setup.get("events", []).size()
+	expected += setup.get("seals", []).size() * 2
+	expected += setup.get("gates", []).size() * 3
+	expected += setup.get("barriers", []).size() * 3
+	if city.events.plans().size() != expected:
 		fail("an unselected event, seal or region body is installed")
 		return
-	for entry: Dictionary in runtime.data.setup.get("events", []):
+	# No ordinary filling above, and the director owes nothing more on the walk: the baby falling
+	# asleep turns the day to its return, which a played day answers with patrols owed on the way
+	# back (acts III and IV), and a scene's day owes none beyond what its own events are.
+	var owed_before: int = city.events.owed_ahead()
+	BootedMain.baby(main).force_sleep()
+	if city.events.owed_ahead() != owed_before:
+		fail("authored scene enables ordinary event filling or director")
+		return
+	for entry: Dictionary in setup.get("events", []):
 		var matched := false
-		for plan in city.events.streaming._plans:
+		for plan in city.events.plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
-				var errors: Array[String] = []
-				matched = plan.position.is_equal_approx(runtime.position_of(entry.at, errors))
+				matched = plan.position.is_equal_approx(position_of(entry.at, loaded.anchors, city))
 		if not matched:
 			fail("construction moved the pinned subject")
 			return
-	for roof: Dictionary in runtime.data.setup.get("roof_fixtures", []):
+	for roof: Dictionary in setup.get("roof_fixtures", []):
 		var matched := false
 		for building in city.buildings():
 			if building.lot == SceneRecipe.rect(roof.lot):
@@ -50,34 +58,41 @@ func _ready() -> void:
 		if not matched:
 			fail("authored fixtures did not reach the real production building")
 			return
-	if runtime.data.setup.has("seals"):
-		for plan in city.events.streaming._plans:
+	if setup.has("seals"):
+		for plan in city.events.plans():
 			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
 				fail("restaurant guests did not move exactly one block east")
 				return
-	if runtime.data.setup.has("barriers"):
-		for plan in city.events.streaming._plans:
+	if setup.has("barriers"):
+		for plan in city.events.plans():
 			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
 					or plan.position.y < 2240 or plan.position.y > 2432):
 				fail("truck barrier is not a vertical band across the left street")
 				return
-	if runtime.data.setup.has("posters"):
-		for entry: Dictionary in runtime.data.setup.posters:
+	if setup.has("posters"):
+		for entry: Dictionary in setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
 			if not city.poster_walls().fronts().has(tile) or run.posters.cells[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return
-	if runtime.built.anchors.has("gate"):
+	if loaded.anchors.has("gate"):
 		var found := false
 		for body in city.region_plan().door_bodies:
 			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
-					runtime.built.anchors.gate + Vector2(0, 64)):
+					loaded.anchors.gate + Vector2(0, 64)):
 				found = not EventPictures.gate_runs_north_south(body.facing)
 		if not found:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return
 	print("RECIPE_ACTIVITY_OK")
+## Where the recipe puts `value`: a point, one of its named places, or the doorstep.
+func position_of(value: Variant, anchors: Dictionary, city: City) -> Vector2:
+	if value is Array:
+		return Vector2(float(value[0]), float(value[1]))
+	if anchors.has(value):
+		return anchors[value]
+	return city.map.doorstep_world_position()
 ## The run the booted `main` plays, off its sitting: its own child on a first boot, parked at the
 ## tree's root across a reload.
 func run_of(main: Node) -> RunState:
