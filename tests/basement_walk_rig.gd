@@ -27,6 +27,8 @@ const BuildingEvents := preload("res://tests/building_events.gd")
 
 var _scene: InteriorScene
 var _events: EventManager
+## The rig's run of its own, which its events are handed.
+var _run := RunState.new()
 var _points := PackedVector2Array()
 
 func _init(t: Node) -> void:
@@ -34,13 +36,14 @@ func _init(t: Node) -> void:
 	t.add_child(_scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	_events = BuildingEvents.events_in(t, _scene, rng)
+	_events = BuildingEvents.events_in(t, _scene, rng, _run)
 	for tile in _scene.map.basement_walk():
 		_points.append(_scene.map.tile_to_world(tile))
 
 func free_rig() -> void:
 	_events.free()
 	_scene.free()
+	_run.free()
 
 ## One walk. `arrival` is how many seconds of the section's own clock have run before she reaches
 ## the corridor, `delay` how long she then stands at its entry before walking, `asleep` whether the

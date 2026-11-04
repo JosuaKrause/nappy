@@ -8,9 +8,9 @@ extends RefCounted
 
 ## The building's events in `scene`, added under `parent`, started from `rng`'s next draw. The seed
 ## is kept on the manager's metadata so `restart()` starts the same building again. The manager is
-## handed `run`, a suite's own `RunState` where it made one, the stand-in `GameState` otherwise.
+## handed `run`, the caller's own `RunState`, which the caller frees after the manager.
 static func events_in(parent: Node, scene: InteriorScene,
-		rng: RandomNumberGenerator, run: RunState = GameState) -> EventManager:
+		rng: RandomNumberGenerator, run: RunState) -> EventManager:
 	var events := EventManager.new()
 	events.stream_radius = INF
 	parent.add_child(events)

@@ -17,6 +17,9 @@ const RUN_SEED := 2
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+## How many times real time the walks run at (`PhysicsTicks.pass_ticks()`'s `scale`).
+const TIME_SCALE := 4.0
+
 ## How long `_test_the_arterial_never_settles_her` walks the arterial for — see that test's own
 ## docstring for the measurement behind the number.
 const ARTERIAL_WINDOW := 60.0
@@ -26,14 +29,15 @@ var _stroller: Stroller
 var _baby: Baby
 
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
-	_test_a_calm_park_still_settles_her(t)
-	_test_the_arterial_never_settles_her(t)
-	_test_every_day_keeps_a_park_quiet_enough_to_settle_in(t)
-	_test_the_playground_itself_settles_her(t)
+	await _test_a_calm_park_still_settles_her(t)
+	await _test_the_arterial_never_settles_her(t)
+	await _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t)
+	await _test_the_playground_itself_settles_her(t)
 
 	_teardown_rig()
 	_city.free()
@@ -77,7 +81,6 @@ func _build_rig(t, at: Vector2) -> void:
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_city)
-	_baby.set_physics_process(false)
 
 func _teardown_rig() -> void:
 	if _stroller:
@@ -85,21 +88,29 @@ func _teardown_rig() -> void:
 		_stroller = null
 		_baby = null
 
-## Walks the rig on the spot for `seconds`, with the world running underneath it. Returns
-## how long it took her to settle, or -1.0 if she never did.
-func _walk_until_asleep(at: Vector2, seconds: float) -> float:
+## Walks the rig on the spot for `seconds` of game time on real physics ticks, one a rendered frame
+## (`PhysicsTicks`), with the world running underneath it: the city's crowd and events take their
+## own live ticks and the baby takes its own, as in play. The ticks run at `TIME_SCALE` times real
+## time, each `TIME_SCALE` times as long as a tick, so a day's seconds take a quarter of the
+## frames; what is measured is what the ground and the noise do, and a longer step does not change
+## it. Returns how long it took her to settle in game seconds, or -1.0 if she never did.
+func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 	_stroller.global_position = at
-	for i in int(round(seconds / STEP)):
-		# The whole crowd frame, not just the walking: a rig that only steps the agents leaves
-		# the traffic unseparated and the traffic index never emptied. See `Crowd.step`.
-		_city.crowd.step(STEP)
-		for instance in _city.events.instances():
-			if not instance.is_finished:
-				instance.step(STEP)
-		_baby._physics_process(STEP)
-		if _baby.state == GameEnums.BabyState.ASLEEP:
-			return i * STEP
-	return -1.0
+	var total := PhysicsTicks.ticks_for(seconds, TIME_SCALE)
+	# A lambda copies a local number, so the tick she fell asleep on is kept in an array.
+	var settled: Array[float] = [-1.0]
+	var ticked := 0
+	# Fifteen ticks at a time, the settling tick noted on the tick it happens; the walk ends at the
+	# end of the chunk she fell asleep in.
+	while ticked < total and settled[0] < 0.0:
+		var chunk := mini(15, total - ticked)
+		var before := ticked
+		var note := func(ran: int) -> void:
+			if settled[0] < 0.0 and _baby.state == GameEnums.BabyState.ASLEEP:
+				settled[0] = (before + ran) * STEP * TIME_SCALE
+		await PhysicsTicks.pass_ticks(t, chunk, note, TIME_SCALE)
+		ticked += chunk
+	return settled[0]
 
 # --------------------------------------------------------------------- calm ---
 
@@ -110,7 +121,7 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 	var park := _quietest_park()
 	_stand_at(1, park)
 	_build_rig(t, park)
-	var settled := _walk_until_asleep(park, Tuning.day_length(1))
+	var settled := await _walk_until_asleep(t, park, Tuning.day_length(1))
 	t.check(settled > 0.0, "a calm park settles her at all")
 	# Better than "inside the day": inside *half* of the short day, so the other half is
 	# there for the walk out and the walk home. That is what "comfortably winnable" has to
@@ -135,7 +146,7 @@ func _test_the_arterial_never_settles_her(t) -> void:
 	var street := CrowdLanes.arterial_pavement(_city.map)
 	_stand_at(1, street)
 	_build_rig(t, street)
-	var settled := _walk_until_asleep(street, ARTERIAL_WINDOW)
+	var settled := await _walk_until_asleep(t, street, ARTERIAL_WINDOW)
 	t.check(settled < 0.0,
 			"%.0fs on the arterial never settles her (settled at %.0fs)"
 			% [ARTERIAL_WINDOW, settled])
@@ -151,7 +162,7 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 		var park := _quietest_park()
 		_stand_at(day, park)
 		_build_rig(t, park)
-		var settled := _walk_until_asleep(park, Tuning.day_length(day))
+		var settled := await _walk_until_asleep(t, park, Tuning.day_length(day))
 		t.check(settled > 0.0, "day %d has a park she can actually settle in" % day)
 
 ## M128: the playground itself costs nothing, or a one-block park with one in it has no ground
@@ -166,7 +177,7 @@ func _test_the_playground_itself_settles_her(t) -> void:
 	var at: Vector2 = _city.map.tile_rect_to_world(_city.map.playgrounds[0]).get_center()
 	_stand_at(1, at)
 	_build_rig(t, at)
-	var settled := _walk_until_asleep(at, Tuning.day_length(1))
+	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))
 	t.check(settled > 0.0, "she settles standing on the playground's own ambient source")
 
 ## The calmest park centre this day, by the excitement a player standing there would be under.

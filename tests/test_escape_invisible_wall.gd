@@ -23,6 +23,7 @@ extends RefCounted
 ## street (`docs/evidence/escape-invisible-wall-2026-10-17/`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 ## The save the boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_escape_invisible_wall_scratch.json"
 const SEED := 4216201080
@@ -31,12 +32,11 @@ const DAY := 1
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
 func run(t) -> void:
-	t.gives_back_observers()
-	var saved_section := GameState.facts.escape_section
-	GameState.start_run(SEED)
-	GameState.header.day = DAY
-	GameState.facts.escape_section = DaySpec.Section.BUILDING
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE)
+	var seat := Seat.new(t, func(fresh: RunState) -> void:
+			fresh.start_run(SEED)
+			fresh.header.day = DAY
+			fresh.facts.escape_section = DaySpec.Section.BUILDING)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [])
 	var main := booted.main
 	var interior := Boot.interior(main)
 	t.check(interior != null, "the boot stands in the building")
@@ -58,7 +58,7 @@ func run(t) -> void:
 		_test_nothing_of_the_building_is_drawn_in_the_city(t, main)
 	Telemetry.end_run()
 	booted.free_all()
-	GameState.facts.escape_section = saved_section
+	seat.end()
 
 ## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
 ## north is not stopped.
