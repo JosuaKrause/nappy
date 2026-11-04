@@ -19,11 +19,11 @@ meters are not compared between a free and a scripted boot, since they move with
 lets pass before a suite can read them; each boot's meters are checked against the scene's own
 values within the ticks it has run at the fastest rate each meter moves (excitement from below
 only, since the crowd and nearby events raise it), and the two boots' `manifest.initial_actors` are
-compared. A boot parses its config as a windowed run with saving on, so the check that a played
+compared. A boot parses its config as a windowed run without `--no-save`, so the check that a played
 scene writes no save can fail.
 
 **A scene ends the game through `main`.** `main` hands `SceneRecipeRuntime.configure()` the call
-it ends every game with, which goes through the `use_quit()` hand-in when one was handed and quits
+a scene ends the game with, the one the pause screen's quit makes too, which goes through the `use_quit()` hand-in when one was handed and quits
 the tree otherwise; the runtime ends a scene, passed or failed, through it. A booted test hands a
 recorder, so a scene that fails to stand is a failed check and the runner goes on to the next
 suite.
@@ -39,4 +39,5 @@ parameter; a new stretch check states that every street door a day plans stands 
 scene of several targets on a stretch; free play past its whole duration, which real ticks cannot
 reach quickly and which wants a clock the scene is handed; the bounded scene's check that no event
 body stands outside the authored ground, vacuous on today's recipes as it was before, which wants
-a bounded recipe that names a gate.
+a bounded recipe that names a gate; the boundary probe's write of the runtime's named world, which
+wants a scene recipe actor that needs no city.
