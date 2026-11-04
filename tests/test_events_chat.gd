@@ -2,10 +2,11 @@ extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
 ## `detain_radius` locks the player's own movement input, and what she is charged while it holds
 ## depends on the baby's state rather than on anything the def can see. An `EventManager` is built
-## by hand -- nothing here needs a real `City` -- and its trigger
-## (`CheckpointController.check_detentions()`) and its per-frame handoff
-## (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
-## `WarningBoard.warn_about_the_ground_she_is_on()` in.
+## by hand and handed a bare map and a run of its own (`setup_world()`, the entry the escape's building
+## is handed its world through) -- nothing here needs a real `City` -- and put in the tree with her:
+## its own physics ticks hand every instance where she is and start the hold
+## (`CheckpointController.check_detentions()`), and hers run the lock down, on real frames of one
+## tick each (`PhysicsTicks`).
 ##
 ## Plus the van: `abduction` draws its own scripted victim rather than touching a real `CrowdAgent`
 ## (docs/TODO.md, M56) -- drawing and telemetry only, so a data-level rig can drive the whole scene
@@ -15,13 +16,18 @@ extends RefCounted
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again".
 
 const STEP := 1.0 / 60.0
+## The seed of the run each test hands its manager.
+const RUN_SEED := 2
+## The long waits go at this many times real time (`PhysicsTicks`): each tick is that much longer.
+const WAIT_SCALE := 3.0
 
 func run(t) -> void:
-	_test_a_conversation_locks_her_and_releases(t)
-	_test_a_conversation_prices_by_the_babys_state(t)
-	_test_a_conversation_only_starts_inside_detain_radius(t)
-	_test_a_conversation_happens_once_per_instance(t)
-	_test_a_mother_streamed_out_after_her_chat_does_not_come_back(t)
+	await PhysicsTicks.settle(t)
+	await _test_a_conversation_locks_her_and_releases(t)
+	await _test_a_conversation_prices_by_the_babys_state(t)
+	await _test_a_conversation_only_starts_inside_detain_radius(t)
+	await _test_a_conversation_happens_once_per_instance(t)
+	await _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t)
 	_test_the_take_begins_only_once_she_is_close(t)
 	_test_a_completed_take_is_logged_exactly_once(t)
 	_test_a_hunting_van_draws_no_victim(t)
@@ -40,24 +46,35 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-# The one row whose whole mechanic is time under compulsion rather than a field: entering
-# `detain_radius` locks the player's own movement input, and what she is charged while it holds
-# depends on the baby's state rather than on anything the def can see. An `EventManager` is built
-# by hand — nothing here needs a real `City` — and its trigger
-# (`CheckpointController.check_detentions()`) and its per-frame handoff
-# (`_tell_them_where_she_is()`) are driven directly, the same shape `test_danger.gd` drives
-# `WarningBoard.warn_about_the_ground_she_is_on()` in: a per-frame method with no signal of its own to
-# trigger from outside.
-
-## A manager with nothing in it but the map arithmetic
-## `CheckpointController.check_detentions()`'s own telemetry line needs — see
-## `TelemetryObserver._blocked_rig()` in `tests/test_telemetry.gd` for the same trick.
-func _chat_manager() -> EventManager:
+## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
+## world (`EventManager.setup_world()`), and in the tree: its own physics tick hands every instance
+## where she is and starts the hold. Added to the tree before the stroller, so on every tick it
+## runs first. `_free_manager()` frees it with the run it was handed.
+func _chat_manager(t) -> EventManager:
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
 	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
+	manager.setup_world(CityMap.new(), run)
+	t.add_child(manager)
 	return manager
 
-## A bare `Stroller`, in the tree so `_ready()` has run and its `@onready` camera lookup resolves.
+func _free_manager(manager: EventManager) -> void:
+	var run := manager.world.run
+	manager.free()
+	run.free()
+
+## Frees a rig whatever state its checks left it in: the manager first, so that no tick is left to
+## act on a mother who is still mid-conversation (or a hold a failed check never let start), then
+## the mother and her. A check that failed then reports as a FAIL, rather than the engine aborting
+## inside a `free()` before any line prints.
+func _free_the_cast(manager: EventManager, mother, stroller) -> void:
+	_free_manager(manager)
+	for node: Variant in [mother, stroller]:
+		if is_instance_valid(node):
+			node.free()
+
+## A bare `Stroller`, in the tree so `_ready()` has run, its `@onready` camera lookup resolves and
+## her own physics runs (the lock is run down on her tick).
 func _chat_stroller(t) -> Stroller:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
@@ -65,7 +82,6 @@ func _chat_stroller(t) -> Stroller:
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	stroller.add_child(camera)
 	t.add_child(stroller)
-	stroller.set_physics_process(false)
 	return stroller
 
 func _test_a_conversation_locks_her_and_releases(t) -> void:
@@ -73,15 +89,15 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	var at := Vector2(2000.0, 2000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var mother := _instance(t, def, at, path)
-	var manager := _chat_manager()
+	var manager := _chat_manager(t)
+	mother.atlas = manager.atlas
 	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 
 	stroller.global_position = at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(stroller.is_detained(), "entering detain_radius locks her input")
 	t.check(mother.is_chatting(), "and starts the instance's one conversation")
 
@@ -89,26 +105,24 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	# `move_and_slide()` to test motion against, and the mechanism under test is entirely in
 	# `_physics_process` deciding what `input_dir` is, which `velocity` shows directly.
 	Input.action_press("move_right")
-	for i in 10:
-		stroller._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 10)
 	t.close_to(stroller.velocity.length(), 0.0,
 			"holding a direction through the lock runs velocity out through friction, not held "
 			+ "at speed", 1.0)
 
-	for i in 280:
-		stroller._physics_process(STEP)
+	# Up to 0.2s short of the lock's end, the 11 ticks above counted.
+	var spent := 11.0 / Engine.physics_ticks_per_second
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds - spent - 0.2, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(stroller.is_detained(), "still locked a few frames before detain_seconds is up")
 	t.close_to(stroller.velocity.length(), 0.0, "and stays at rest for the whole lock", 1.0)
 
-	for i in 25:
-		stroller._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 4, Callable(), WAIT_SCALE)
 	Input.action_release("move_right")
 	t.check(not stroller.is_detained(), "and releases once detain_seconds has run")
 	t.check(stroller.velocity.length() > 10.0,
 			"and the same held key moves her again the instant it does")
-	mother.free()
-	stroller.free()
-	manager.free()
+	_free_the_cast(manager, mother, stroller)
 
 func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
@@ -120,9 +134,11 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		# (`WorldContext.excitement_sources_at()`), with no generated city to pull in.
 		var world := WorldContext.new()
 		t.add_child(world)
+		var manager := _chat_manager(t)
 		var stroller := Stroller.new()
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
+		camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 		stroller.add_child(camera)
 		var baby := Baby.new()
 		# Named explicitly: `Stroller`'s own `@onready var _baby := get_node_or_null("Baby")`
@@ -132,12 +148,10 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		stroller.add_child(baby)
 		baby.set_world(world)
 		t.add_child(stroller)
-		stroller.set_physics_process(false)
-		baby.set_physics_process(false)
 
 		var mother := _instance(t, def, at, path)
-		var manager := _chat_manager()
 		world.excitement_sources = [manager.sources]
+		mother.atlas = manager.atlas
 		manager.world.instances.append(mother)
 		manager.use_player(stroller)
 		stroller.global_position = at
@@ -146,14 +160,11 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 			baby.force_sleep()
 		var starting_excitement := baby.excitement
 
-		manager._tell_them_where_she_is()
-		manager.checkpoints.check_detentions()
+		await PhysicsTicks.pass_ticks(t, 1)
 		t.check(stroller.is_detained(), "a capture starts whether she is awake or asleep")
 
-		for i in int(round(def.detain_seconds / STEP)) + 5:
-			mother.step(STEP)
-			manager._tell_them_where_she_is()
-			baby._physics_process(STEP)
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds, WAIT_SCALE) + 2,
+				Callable(), WAIT_SCALE)
 
 		if awake:
 			t.close_to(baby.excitement, starting_excitement + Tuning.CHAT_EXCITEMENT,
@@ -176,7 +187,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		mother.free()
 		stroller.free()
 		world.free()
-		manager.free()
+		_free_manager(manager)
 
 ## `chatting_mother`'s capture reaches *past* `Tuning.TILE_SIZE` (32px), the spacing between the
 ## two lanes of a pavement the row used to be tucked under — see
@@ -191,21 +202,22 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
 	var far_lane := _instance(t, def, at, path)
-	var far_manager := _chat_manager()
+	var far_manager := _chat_manager(t)
+	far_lane.atlas = far_manager.atlas
 	far_manager.world.instances.append(far_lane)
 	var far_stroller := _chat_stroller(t)
 	far_manager.use_player(far_stroller)
 	far_stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
-	far_manager._tell_them_where_she_is()
-	far_manager.checkpoints.check_detentions()
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(far_stroller.is_detained(),
 			"the far lane of a two-tile pavement now starts a conversation too")
 	far_lane.free()
 	far_stroller.free()
-	far_manager.free()
+	_free_manager(far_manager)
 
 	var mother := _instance(t, def, at, path)
-	var manager := _chat_manager()
+	var manager := _chat_manager(t)
+	mother.atlas = manager.atlas
 	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
@@ -216,93 +228,86 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 			"there is ground outside her capture and inside her field to stand on (%.1f < %.1f)"
 			% [def.detain_distance(), def.inner_radius])
 	stroller.global_position = at + Vector2(0.0, def.detain_distance() + 0.5)
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(not stroller.is_detained(),
 			"just outside the capture, no conversation starts")
 	t.check(not mother.is_chatting() and not mother.has_chatted(),
 			"and the instance is untouched by it")
-	mother.free()
-	stroller.free()
-	manager.free()
+	_free_the_cast(manager, mother, stroller)
 
 func _test_a_conversation_happens_once_per_instance(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var mother := _instance(t, def, at, path)
-	var manager := _chat_manager()
+	var manager := _chat_manager(t)
+	mother.atlas = manager.atlas
 	manager.world.instances.append(mother)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 	stroller.global_position = at
 
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
 
-	_advance(mother, def.detain_seconds + 0.1)
+	# Her own ticks run the lock down; the conversation ends on the manager's, with her still
+	# standing inside its reach.
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(mother.has_chatted() and not mother.is_chatting() and mother.is_leaving,
 			"it ends, and she is spent as a detainer — see 'departs like dog_walker'")
+	t.check(not stroller.is_detained(), "and the lock from the first approach has run down")
 
-	# The lock from the first approach was never run down by a physics tick here, so it has to be
-	# cleared by hand to ask the real question: does *this* call detain her again.
-	stroller._detained_for = 0.0
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
-	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers")
-	mother.free()
-	stroller.free()
-	manager.free()
+	stroller.global_position = mother.global_position
+	await PhysicsTicks.pass_ticks(t, 1)
+	t.check(not stroller.is_detained(), "a second approach to the same instance never re-triggers (the once-only rule: it is "
+			+ "spent and leaving, which stops it as much as the has_chatted() gate does)")
+	_free_the_cast(manager, mother, stroller)
 
 ## **No second conversation across streaming**: a conversation ends with her leaving
 ## (`EventInstance._be_done()`), and a plan streamed out while its instance is leaving is spent
 ## (`EventStreaming.stream_out()`), so walking away past the stream radius and back brings no second
-## mother to stop her. Driven through the manager's own streaming on a plan, the way a day
-## puts her in the world.
+## mother to stop her. Driven through the manager's own streaming on a plan the way a scene's
+## recipe hands the day its plans (`EventManager.start_recipe()`), with her ticks streaming around
+## her as a day's do.
 func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 	var world := WorldContext.new()
 	t.add_child(world)
-	var manager := _chat_manager()
+	var manager := _chat_manager(t)
 	manager.world.map.world = world
-	t.add_child(manager)
-	var plan := EventScheduler.Planned.new(def, at, path)
-	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 	stroller.global_position = at
-	manager.stream_around(at)
+	var plan := EventScheduler.Planned.new(def, at, path)
+	manager.start_recipe([plan] as Array[EventScheduler.Planned], DaySpec.for_day(1), 1, at)
+	await PhysicsTicks.pass_ticks(t, 1)
 	var mother := plan.live
 	t.check(mother != null, "she is streamed in where the day planned her")
 	if not mother:
 		stroller.free()
-		manager.free()
+		_free_manager(manager)
 		world.free()
 		return
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
-	_advance(mother, def.detain_seconds + 0.1)
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
+			Callable(), WAIT_SCALE)
 	t.check(mother.is_leaving, "it ends with her leaving")
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	stroller.global_position = far
-	manager.stream_around(far)
+	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(plan.live == null and plan.spent,
 			"walking off past the stream radius takes her away for good (live %s, spent %s)"
 			% [plan.live != null, plan.spent])
 	stroller.global_position = at
-	stroller._detained_for = 0.0
-	manager.stream_around(at)
-	manager._tell_them_where_she_is()
-	manager.checkpoints.check_detentions()
+	await PhysicsTicks.pass_ticks(t, 2)
 	t.check(plan.live == null and not stroller.is_detained(),
 			"and walking back past her place brings no second conversation")
 	stroller.free()
-	manager.free()
+	_free_manager(manager)
 	world.free()
 
 # `abduction` draws its own scripted victim rather than touching a real `CrowdAgent` — see

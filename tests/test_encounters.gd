@@ -20,6 +20,7 @@ var _influenced: Array[String] = []
 var _ran: Array[int] = []
 
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	var on_seen := func(day: int, name: String) -> void: _seen.append("%d:%s" % [day, name])
 	var on_influenced := func(day: int, name: String, seen: bool) -> void:
 		_influenced.append("%d:%s:%s" % [day, name, "seen" if seen else "unseen"])
@@ -38,12 +39,12 @@ func run(t) -> void:
 	_test_an_influence_from_off_screen_waits_to_be_seen(t)
 	_test_a_chase_or_a_catch_is_always_an_influence(t)
 	_test_influenced_follows_the_real_catch_and_hold(t)
-	_test_a_catch_on_the_frame_a_door_releases_her_counts(t)
+	await _test_a_catch_on_the_frame_a_door_releases_her_counts(t)
 	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
-	_test_the_manager_watches_only_while_she_is_playing(t)
-	_test_the_manager_reads_the_controls_scheme(t)
+	await _test_the_manager_tells_the_encounter_under_its_day(t)
+	await _test_the_manager_reads_the_controls_scheme(t)
 
 	EventBus.encounter_seen.disconnect(on_seen)
 	EventBus.encounter_influenced.disconnect(on_influenced)
@@ -53,6 +54,21 @@ func _clear() -> void:
 	_seen.clear()
 	_influenced.clear()
 	_ran.clear()
+
+## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
+## world (`EventManager.setup_world()`), in the tree. `_free_manager()` frees it with the run.
+func _manager(t) -> EventManager:
+	var run := RunState.new()
+	run.start_run(SEED)
+	var manager := EventManager.new()
+	manager.setup_world(CityMap.new(), run)
+	t.add_child(manager)
+	return manager
+
+func _free_manager(manager: EventManager) -> void:
+	var run := manager.world.run
+	manager.free()
+	run.free()
 
 ## A watch for day `DAY`.
 func _watch() -> EncounterWatch:
@@ -328,9 +344,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	# A hold: the manager's own `CheckpointController.hold_that_would_begin()`, handed in as the
 	# watch is given it.
 	_clear()
-	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var post := _instance(t, "checkpoint_post", Vector2.ZERO)
 	manager.world.instances.append(post)
@@ -344,7 +358,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
 	manager.world.instances.clear()
 	post.free()
-	manager.free()
+	_free_manager(manager)
 
 ## Three frames with her standing at `at` and the view about her.
 func _stand(watch: EncounterWatch, instances: Array[EventInstance], at: Vector2,
@@ -360,9 +374,11 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	var map := CityMap.new(Vector2i(8, 8))
 	map.fill_rect(Rect2i(0, 0, 8, 8), GameEnums.TileType.SIDEWALK)
 	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
-	var guard := _instance(t, "alley_robbery", Vector2(122.0, 134.0))
-	guard._map = map
-	guard._navigator = Navigator.new(map)
+	var guard := EventInstance.new()
+	guard.setup(EventCatalogue.by_id("alley_robbery"), Vector2(122.0, 134.0),
+			PackedVector2Array(), Vector2.RIGHT, map, Navigator.new(map))
+	t.add_child(guard)
+	guard.set_process(false)
 	# Created where a warning pointed, so its chase has not been reported yet: this isolates the
 	# reach, since a live pursuer that is chasing her counts by the chase arm whatever the wall.
 	guard.came_under_a_warning = true
@@ -397,9 +413,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 
 	# A hold already running: the manager would begin no other, so the watch counts none.
 	_clear()
-	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var mother := _instance(t, "chatting_mother", Vector2.ZERO)
 	var post := _instance(t, "checkpoint_post", Vector2(0.0, 500.0))
@@ -414,47 +428,82 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	manager.world.instances.clear()
 	mother.free()
 	post.free()
-	manager.free()
+	_free_manager(manager)
 
 ## *(calm-pelican.)* A hut inspection sets her down within reach of a cyclist past its warning on
 ## the frame `_check_hard_fails()` strikes her, after that frame's watch: the day ends and the game
-## pauses before the watch looks again. The manager tells the watch of the catch itself.
+## pauses before the watch looks again. The manager tells the watch of the catch itself. Played as
+## the game plays it: she walks into a hut and is held (`CheckpointController.check_detentions()`),
+## the cyclist waits past the hut where its release puts her down, and the manager's own physics
+## ticks run the watch, the release and the hard fail in their order.
 func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
 	_clear()
-	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	t.add_child(manager)
-	manager.set_physics_process(false)
-	manager.world.day = DAY
-	manager._encounters.day = DAY
+	var manager := _manager(t)
+	manager.start_recipe([] as Array[EventScheduler.Planned], DaySpec.for_day(DAY), DAY,
+			Vector2.ZERO)
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
-	stroller.set_physics_process(false)
 	manager.use_player(stroller)
-	var cyclist := _instance(t, "cyclist", Vector2.ZERO)
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	var axis := Vector2.RIGHT
+	var centre := Vector2(4000.0, 4000.0)
+	var hut := EventInstance.new()
+	hut.setup(EventCatalogue.by_id("checkpoint_hut"), centre, PackedVector2Array(), axis)
+	hut.atlas = atlas
+	t.add_child(hut)
+	manager.world.instances.append(hut)
+	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
+	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
+			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
+	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
+	var cyclist := EventInstance.new()
+	cyclist.setup(EventCatalogue.by_id("cyclist"), released)
+	cyclist.atlas = atlas
+	t.add_child(cyclist)
+	cyclist.set_process(false)
 	manager.world.instances.append(cyclist)
 	cyclist.resume(cyclist.def.telegraph_time + 0.1, 0.0, 0.0)
+	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
+	cyclist.held_by_hand = true
 	var reach := cyclist.def.lethal_reach()
-	# Seen from outside its reach, the watch's tick done for the frame.
-	stroller.global_position = Vector2(0.0, reach + 40.0)
-	manager._look_through_the_camera()
-	manager._watch_the_encounters(STEP)
-	manager._check_hard_fails()
-	t.check(not cyclist.is_telegraphing() and not manager._hard_failed and _seen.size() == 1
-			and _influenced.is_empty(),
-			"seen outside its reach, past its warning, no catch and no influence yet (%s)"
-			% [_influenced])
-	# The door sets her down inside its reach; the same frame's hard-fail check strikes her.
-	stroller.global_position = Vector2(0.0, reach - 2.0)
-	manager._check_hard_fails()
-	t.check(manager._hard_failed, "the cyclist strikes her where the door set her down")
-	t.check(_influenced == ["%d:cyclist:seen" % DAY],
-			"and the catch is counted without another watch frame (%s)" % [_influenced])
+	t.check(entry.distance_to(cyclist.global_position) > reach
+			and not cyclist.is_telegraphing(),
+			"the cyclist is past its warning and out of reach of where she walks into the hut")
+	stroller.reset_at(entry)
+
+	# What had been counted on the very tick the hard fail was sent: the watch's frame is over
+	# by then, so only the manager's own word to it can have counted the catch.
+	var caught := "%d:cyclist:seen" % DAY
+	var cyclist_seen_before_the_strike := false
+	var counted_early := false
+	var counted_when_struck: Array[Array] = []
+	var on_fail := func(_id: String) -> void: counted_when_struck.append(_influenced.duplicate())
+	EventBus.hard_fail_triggered.connect(on_fail)
+	var ticks := 0
+	var limit := PhysicsTicks.ticks_for(EventCatalogue.CHECKPOINT_DETAIN_SECONDS) + 20
+	while counted_when_struck.is_empty() and ticks < limit:
+		await PhysicsTicks.pass_ticks(t, 1)
+		ticks += 1
+		if _seen.has("%d:cyclist" % DAY) and counted_when_struck.is_empty():
+			cyclist_seen_before_the_strike = true
+			counted_early = counted_early or _influenced.has(caught)
+	EventBus.hard_fail_triggered.disconnect(on_fail)
+	t.check(cyclist_seen_before_the_strike and not counted_early,
+			"held in the hut, the cyclist is seen and no catch is counted before the door lets her out")
+	t.check(counted_when_struck.size() == 1 and manager.what_struck_her() == "cyclist",
+			"the hut lets her out into the cyclist's reach and it strikes her (%s)"
+			% manager.what_struck_her())
+	t.check(not counted_when_struck.is_empty()
+			and counted_when_struck[0].has(caught) and cyclist_seen_before_the_strike,
+			"and the catch was counted on that tick, without another watch frame (%s)"
+			% [counted_when_struck])
 	manager.world.instances.clear()
 	manager.use_player(null)
+	hut.free()
 	cyclist.free()
 	stroller.free()
-	manager.free()
+	_free_manager(manager)
 
 ## *(Inbox #577: "the static things question was meant for telemetry. we need to record seen for
 ## them".)* Every row that draws something has a drawn box to be seen by, and a fallen tree in
@@ -536,7 +585,6 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
-	stroller.set_physics_process(false)
 	var her := CrowdLanes.arterial_pavement(city.map)
 	stroller.reset_at(her)
 	events.use_player(stroller)
@@ -552,24 +600,23 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	yeller.global_position = corner - yeller.drawn_box().get_center()
 	var right_corner := view.position + TouchControls.covered_right().get_center() * scale
 	var cyclist := EventCatalogue.by_id("cyclist")
-	var pelican := events.spawn_extra(cyclist, right_corner,
-			PackedVector2Array([right_corner, right_corner + Vector2(0.0, -300.0)]))
+	# Warned of as a pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
+	# roll its warning made).
+	var pelican := events.spawn_warned(cyclist,
+			PackedVector2Array([right_corner, right_corner + Vector2(0.0, -300.0)]), true)
 	# Held where the test puts it: the manager's tick does not step it off the corner.
 	pelican.held_by_hand = true
-	events.spawner._ride_as_a_pelican(pelican)
 	pelican.global_position = right_corner - pelican.drawn_box().get_center()
 	var pelican_seen: Array[int] = [0]
 	var on_pelican := func(_instance: Variant) -> void: pelican_seen[0] += 1
 	EventBus.pelican_sighted.connect(on_pelican)
-	for _i in 30:
-		events._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 30)
 	t.check(not _seen.has("%d:homeless_yeller" % DAY),
 			"under the joystick scheme's controls it is not seen (%s)" % [_seen])
 	t.check(pelican_seen[0] == 0 and not _seen.has("%d:pelican" % DAY),
 			"nor is the pelican, by either of its names")
 	controls.set_mode(ControlsMode.Mode.TAP)
-	for _i in 30:
-		events._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 30)
 	t.check(_seen.has("%d:homeless_yeller" % DAY), "in the tap scheme it is (%s)" % [_seen])
 	t.check(pelican_seen[0] == 1 and _seen.has("%d:pelican" % DAY),
 			"and so is the pelican, once by each name (%d, %s)" % [pelican_seen[0], _seen])
@@ -582,8 +629,10 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	city.free()
 
 ## The wiring: a real day's manager, with her on the street beside a yeller, tells the yeller seen
-## under the day it was started for — and tells nothing while she is stood aside for the title.
-func _test_the_manager_watches_only_while_she_is_playing(t) -> void:
+## under the day it was started for, and tells nothing while she is stood aside for the title. The
+## check is on that outcome only: removing the `player` group return inside
+## `_watch_the_encounters()` leaves it passing, so it does not name that guard.
+func _test_the_manager_tells_the_encounter_under_its_day(t) -> void:
 	_clear()
 	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
@@ -594,19 +643,16 @@ func _test_the_manager_watches_only_while_she_is_playing(t) -> void:
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
-	stroller.set_physics_process(false)
 	var her := CrowdLanes.arterial_pavement(city.map)
 	stroller.reset_at(her)
 	events.use_player(stroller)
 	var yeller := events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), her + Vector2(60.0, 0.0))
 
 	stroller.stand_aside()
-	for _i in 30:
-		events._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 30)
 	var behind_the_title := _seen.has("%d:homeless_yeller" % DAY)
 	stroller.step_back_in()
-	for _i in 30:
-		events._physics_process(STEP)
+	await PhysicsTicks.pass_ticks(t, 30)
 	t.check(not behind_the_title, "nothing is seen while she is stood aside for the title")
 	t.check(_seen.has("%d:homeless_yeller" % DAY),
 			"the yeller beside her is seen, under the day the manager was started for (%s)" % [_seen])
