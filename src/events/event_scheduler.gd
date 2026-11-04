@@ -339,7 +339,7 @@ class Planned extends RefCounted:
 	##   reaches the junction box at the end of whatever street it stands on, so held to the line it
 	##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
 	##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
-	##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
+	##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites.is_eligible()`: off the home
 	##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
 	## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
 	##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
@@ -2075,7 +2075,7 @@ class WalkSiting extends RefCounted:
 					offered.append(tile)
 		return offered
 
-	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the
+	## **A mast is offered only ground a mast site would be** (`MastSites.is_eligible()`: off the
 	## home street, its field off a calm interior and off every place a region door could stand),
 	## the same refusal day 11's mast near the mark is under — a mast is never on the home street
 	## (M180, the masts), whichever way it is put down. Asked only of the tiles `_its_ground_on()`
@@ -2087,7 +2087,7 @@ class WalkSiting extends RefCounted:
 			if _door_points.is_empty():
 				_door_points = MastSites.possible_door_points(_map)
 			mast_checks += 1
-			_mast_may_stand[tile] = MastSites._is_eligible(_map.tile_to_world(tile), _map,
+			_mast_may_stand[tile] = MastSites.is_eligible(_map.tile_to_world(tile), _map,
 					_door_points)
 		return _mast_may_stand[tile]
 
