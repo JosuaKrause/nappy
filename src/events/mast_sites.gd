@@ -100,7 +100,7 @@ static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map:
 	if seen.has(key):
 		return
 	seen[key] = true
-	if _is_eligible(at, map, door_points):
+	if is_eligible(at, map, door_points):
 		found.append(at)
 
 ## A mast's own foot may stand on her own sidewalk or on a square's paving — never a road, a
@@ -191,7 +191,7 @@ static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 ## `door_points` is `possible_door_points(map)` for a caller that asks of many tiles: it is the one
 ## costly part (every boundary segment rebuilt), and it is the same for every tile of a run. Left
 ## empty, it is computed for this one call.
-static func _is_eligible(at: Vector2, map: CityMap,
+static func is_eligible(at: Vector2, map: CityMap,
 		door_points := PackedVector2Array()) -> bool:
 	if _too_close_to_home(at, map) or _reaches_a_calm_interior(at, map):
 		return false
@@ -247,7 +247,7 @@ static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Arra
 ## Every point a street door could ever stand at — each boundary segment's two huts and gate, at the
 ## end its wall stands — for `_reaches_a_possible_door()`. Day-independent, like the sites, and the
 ## costly half of the question (`RegionPlanner.boundary_segments()` is rebuilt for it), so a caller
-## asking of many tiles computes it once and hands it to `_is_eligible()`. Never empty on a city
+## asking of many tiles computes it once and hands it to `is_eligible()`. Never empty on a city
 ## with region boundaries; on one with none, an empty answer means every call computes it again,
 ## which costs nothing there.
 static func possible_door_points(map: CityMap) -> PackedVector2Array:
