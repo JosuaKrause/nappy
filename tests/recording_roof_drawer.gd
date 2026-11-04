@@ -7,18 +7,25 @@ extends RoofDrawer
 ##
 ## Each draw returns a bare `Building.RoofObject` that never enters the tree, which the building
 ## keeps and frees as it frees a real one (a rebuild, an eviction, leaving the tree), so what is
-## still drawn is the draws whose object is still alive.
+## still drawn is the draws whose object is still alive. A suite that is about what a roof leaves
+## standing in a city (the residency suite: nothing stays behind in the layer when a building is
+## evicted) sets `real`, and each draw is then also stood by that drawer, so the object returned is
+## the real one, in the layer, and the record still says which building drew it.
 
 ## Every draw the building asked for, in order: `{"layer", "cell", "texture", "at", "links",
 ## "rotor_frame_b", "object"}`, with `at` in `layer`'s own space.
 var draws: Array[Dictionary] = []
+
+## The drawer that also stands each unit, or null to stand nothing.
+var real: RoofDrawer = null
 
 func _init() -> void:
 	super(null)
 
 func draw(layer: Node2D, cell: Vector2i, texture_key: StringName, at: Vector2, duct_links: int,
 		rotor_frame_b: bool) -> Building.RoofObject:
-	var object := Building.RoofObject.new()
+	var object: Building.RoofObject = real.draw(layer, cell, texture_key, at, duct_links,
+			rotor_frame_b) if real != null else Building.RoofObject.new()
 	draws.append({"layer": layer, "cell": cell, "texture": texture_key, "at": at,
 		"links": duct_links, "rotor_frame_b": rotor_frame_b, "object": object})
 	return object
