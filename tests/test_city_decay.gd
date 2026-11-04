@@ -7,6 +7,9 @@ extends RefCounted
 ## the same way: deterministic per tile, non-decreasing with the day, and off entirely before the
 ## city has anything to show.
 
+const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
+const UI := preload("res://tests/ui_screens.gd")
+
 const BASE_SEED := 40200
 const SEEDS := 3
 
@@ -19,7 +22,7 @@ func run(t) -> void:
 	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
 	_test_the_mouse_prefers_a_pile(t)
 	_test_boarded_storefronts_and_windows_shutter(t)
-	_test_a_burnt_building_shows_nothing_intact(t)
+	await _test_a_burnt_building_shows_nothing_intact(t)
 	_test_ambient_shuttering_waits_for_the_curve(t)
 	_test_storefront_variants_use_seeded_bags(t)
 
@@ -196,7 +199,9 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 
 ## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
 ## (olive-koala, statement 4). On a burnt front of any district, no window, door, storefront or
-## front parapet is one of the pictures an intact front draws.
+## front parapet is one of the pictures an intact front draws. Each front is handed a drawer that
+## records what it paints, as the city hands it the real one, so every picture the front was drawn
+## with is asked too, and its front parapet is asked off what was drawn over each column.
 func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 	var intact: Array[StringName] = [
 		Building.WINDOW_DARK, Building.WINDOW_LIT, Building.WINDOW_TALL_DARK,
@@ -209,8 +214,12 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 	var shops := 0
 	var doors := 0
 	var windows := 0
+	var buildings: Array[Building] = []
+	var fronts: Array[RecordingFrontDrawer] = []
 	for i in 12:
 		var building := Building.new()
+		var front := RecordingFrontDrawer.new()
+		building.front_drawer = front
 		building.district = [GameEnums.BlockPurpose.COMMERCIAL, GameEnums.BlockPurpose.RESIDENTIAL,
 				GameEnums.BlockPurpose.INDUSTRIAL][i % 3]
 		building.footprint = Vector2(128.0, 128.0)
@@ -219,7 +228,20 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 		t.add_child(building)
 		building.condition = Building.Condition.BURNT
 		building.day = Tuning.RUN_LENGTH_DAYS
-		var shown: Array[StringName] = []
+		buildings.append(building)
+		fronts.append(front)
+	await UI.frames(t, 2)
+	for i in buildings.size():
+		var building := buildings[i]
+		var drawn := fronts[i].pictures()
+		var parapets := 0
+		for picture in drawn:
+			if picture == Building.ROOF_EDGE_S or Building.ROOF_EDGE_S_BURNT.has(picture):
+				parapets += 1
+		t.check(parapets == building.columns(),
+				"a burnt front is drawn with a front parapet over each of its %d columns (%d)"
+				% [building.columns(), parapets])
+		var shown: Array[StringName] = drawn.duplicate()
 		for index in building.columns() * building.wall_tiles():
 			if building.draws_window_at(index / building.columns()):
 				shown.append(building.window_texture(index))
@@ -229,7 +251,6 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 			shown.append(ground)
 			if ground == Building.STOREFRONT_BURNT:
 				shops += 1
-			shown.append(building._front_parapet_texture(col))
 		if building.entrance_door_col() >= 0:
 			shown.append(building.entrance_door_texture())
 			doors += 1

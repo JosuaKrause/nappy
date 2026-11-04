@@ -753,6 +753,8 @@ func _spawn_signal_heads() -> void:
 	var inset := Tuning.TILE_SIZE * 0.5
 	var half := Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE) * 0.5
 	var kerb := Tuning.carriageway_width() * 0.5 + inset
+	# One drawer for every head: it holds nothing but the atlas the heads draw from.
+	var drawer := TrafficLightDrawer.new(atlas)
 	for x in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		for y in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
 			var junction := Vector2i(x, y)
@@ -770,6 +772,7 @@ func _spawn_signal_heads() -> void:
 					continue
 				var light := TrafficLight.new()
 				light.atlas = atlas
+				light.drawer = drawer
 				light.junction = junction
 				light.faces(heading)
 				light.signals = signals
@@ -783,14 +786,17 @@ func _spawn_buildings() -> void:
 	# against the void round the stretch, which would read every edge of it as more building.
 	var edges := map.witness_only()
 	var door_x_range := _door_world_x_range()
-	# One drawer for every roof: it holds nothing but the atlas the buildings draw from.
+	# One drawer for every roof and one for every front: each holds nothing but the atlas the
+	# buildings draw from.
 	var roof_drawer := RoofDrawer.new(atlas)
+	var front_drawer := FrontDrawer.new(atlas)
 	var buildings: Array[Building] = []
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
 		building.atlas = atlas
 		building.roof_drawer = roof_drawer
+		building.front_drawer = front_drawer
 		building.scenery_resident = false
 		building.scenery_clock = scenery_ground
 		# Origin is the south edge centre of the lot (see building.gd).

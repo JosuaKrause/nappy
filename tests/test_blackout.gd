@@ -7,6 +7,9 @@ extends RefCounted
 ## are three different classes that each have to hear about it in the same call.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
+const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
+const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
@@ -27,10 +30,10 @@ func run(t) -> void:
 
 	_test_nothing_goes_dark_without_the_sabotage(t)
 	_test_nothing_goes_dark_beside_the_station(t)
-	_test_everything_goes_dark_at_once(t)
+	await _test_everything_goes_dark_at_once(t)
 	_test_it_stays_dark_walking_back(t)
 	_test_a_retry_gives_the_power_back(t)
-	_test_the_station_hall_is_lit_only_on_the_last_night(t)
+	await _test_the_station_hall_is_lit_only_on_the_last_night(t)
 	_test_a_dark_junction_is_negotiated(t)
 	_test_the_dark_spine_is_crossed_on_the_horn(t)
 	_test_the_dark_spine_keeps_moving(t)
@@ -108,6 +111,19 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	var quiet: Array[bool] = []
 	var handler := func() -> void: quiet.append(true)
 	EventBus.city_went_quiet.connect(handler)
+	# A signal head on the spine's junction, handed the city's signals and a drawer that records
+	# what it draws, as the city hands a head both: face-on, so it paints its lamp.
+	var light := TrafficLight.new()
+	var head := RecordingTrafficLightDrawer.new()
+	light.drawer = head
+	light.signals = _city.signals
+	light.junction = _spine_junction()
+	light.faces(Vector2.UP)
+	t.add_child(light)
+	await UI.frames(t, 2)
+	var lit_head := head.shown()
+	t.check(lit_head.get("picture") == TrafficLight.HEAD and lit_head.get("lamps", []).size() == 1,
+			"a lit signal head shows its face with one lamp on it (%s)" % [lit_head])
 
 	_run.resistance.sabotage_done = true
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
@@ -126,9 +142,11 @@ func _test_everything_goes_dark_at_once(t) -> void:
 			still_speaking += 1
 	t.check(still_speaking == 0, "and every mast stopped with them (%d left)" % still_speaking)
 	t.check(quiet.size() == 1, "the city went quiet once (%d)" % quiet.size())
-	var light := TrafficLight.new()
-	light.signals = _city.signals
-	t.check(light._lamp() == TrafficLight.DARK, "a signal head shows no lamp at all")
+	await UI.frames(t, 2)
+	var dark_head := head.shown()
+	t.check(dark_head.get("frame", -1) > lit_head.get("frame", -1)
+			and dark_head.get("picture") == TrafficLight.HEAD and dark_head.get("lamps", [0]).is_empty(),
+			"a signal head is drawn again with no lamp at all (%s)" % [dark_head])
 	light.free()
 	EventBus.city_went_quiet.disconnect(handler)
 
@@ -158,24 +176,57 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 	t.check(lit_windows > 0, "and the same windows are lit again (%d)" % lit_windows)
 
 ## The hall is dimly lit on the one night it is seen to go out, and drawn as approved on every other.
+## A station hall dressed as the city dresses its own, handed a drawer that records its front, as the
+## city hands it the real one; what is checked is the clerestory band the front was drawn with.
 func _test_the_station_hall_is_lit_only_on_the_last_night(t) -> void:
 	var station := _station_building()
 	t.check(station != null, "the city has its station building")
 	if station == null:
 		return
-	var day := station.day
-	station.day = Tuning.POWER_STATION_DAY
-	station.powered = true
-	t.check(station._clerestory_texture() == Building.POWER_STATION_CLERESTORY_LIT,
-			"on the last night, with the power on, the hall is lit")
-	station.powered = false
-	t.check(station._clerestory_texture() == Building.POWER_STATION_CLERESTORY,
-			"and with it off, the hall is dark")
-	station.powered = true
-	station.day = Tuning.POWER_STATION_DAY - 1
-	t.check(station._clerestory_texture() == Building.POWER_STATION_CLERESTORY,
-			"on any other day the hall is unlit, as it always was")
-	station.day = day
+	var hall := Building.new()
+	var front := RecordingFrontDrawer.new()
+	hall.front_drawer = front
+	hall.power_station = true
+	hall.station_door_col = station.station_door_col
+	hall.station_yard_cols = station.station_yard_cols
+	hall.footprint = station.footprint
+	hall.height = station.height
+	hall.variant = station.variant
+	hall.district = station.district
+	hall.lot = station.lot
+	hall.position = station.position
+	hall.day = Tuning.POWER_STATION_DAY
+	hall.powered = true
+	t.add_child(hall)
+	await UI.frames(t, 2)
+	var band := _clerestory_band(front)
+	var columns := hall.hall_cols().y - hall.hall_cols().x
+	t.check(columns > 0 and band.size() == columns
+			and band.count(Building.POWER_STATION_CLERESTORY_LIT) == columns,
+			"on the last night, with the power on, the hall is lit (%s)" % [band])
+	front.draws.clear()
+	hall.powered = false
+	await UI.frames(t, 2)
+	band = _clerestory_band(front)
+	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
+			"and with it off, the hall is dark (%s)" % [band])
+	front.draws.clear()
+	hall.powered = true
+	hall.day = Tuning.POWER_STATION_DAY - 1
+	await UI.frames(t, 2)
+	band = _clerestory_band(front)
+	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
+			"on any other day the hall is unlit, as it always was (%s)" % [band])
+	hall.free()
+
+## The pictures the hall's clerestory band shows now, read off what its front was last drawn with.
+## Empty when the front has not been drawn since `front` was cleared.
+func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
+	var band: Array[StringName] = []
+	for entry in front.shown():
+		if entry.picture in [Building.POWER_STATION_CLERESTORY, Building.POWER_STATION_CLERESTORY_LIT]:
+			band.append(entry.picture)
+	return band
 
 ## With no light, nothing but the crowd's own box rule decides a spine junction: a car with
 ## nobody crossing is let through on the spine exactly as on a side street, rather than held

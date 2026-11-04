@@ -48,10 +48,16 @@ var signals: TrafficSignals
 ## The baked atlas pages this head draws from (`AtlasLibrary`), handed by the city before it is
 ## added; a head nobody handed one (a suite's) makes its own when it first enters the tree.
 var atlas: AtlasLibrary = null
+## What the head and its lit lamp are drawn through (`TrafficLightDrawer`), handed by the city
+## before the head is added, the same one to every head it stands; a head nobody handed one makes
+## its own over its `atlas` when it first enters the tree.
+var drawer: TrafficLightDrawer = null
 
 func _enter_tree() -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
+	if drawer == null:
+		drawer = TrafficLightDrawer.new(atlas)
 	atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
@@ -107,22 +113,13 @@ func _lamp() -> int:
 func _draw() -> void:
 	if not scenery_resident:
 		return
-	# The 5.0 here is the signal head's own shape, a point — small enough that a `GroundShape`
-	# instance bought nothing over the literal `Sprites.draw_shadow` already took.
-	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)
 	if arm_is_vertical and _faces_away:
-		Sprites.draw_standing(self, atlas.region(HEAD_BACK), Vector2.ZERO)
+		drawer.draw_head(self, HEAD_BACK, false)
 		return
-	Sprites.draw_standing(self, atlas.region(HEAD if arm_is_vertical else HEAD_SIDE),
-			Vector2.ZERO, Vector2.ZERO, _mirrored)
+	drawer.draw_head(self, HEAD if arm_is_vertical else HEAD_SIDE, _mirrored)
 	var lamp := _lamp()
 	# With the power out the head is all that is left: its three lenses are drawn dark in the
 	# picture itself, and no lamp is painted over any of them.
 	if lamp == DARK:
 		return
-	var colour := [Palette.SIGNAL_RED, Palette.SIGNAL_AMBER, Palette.SIGNAL_GREEN][lamp] as Color
-	var size := LAMP_SIZE if arm_is_vertical else LAMP_SIZE_SIDE
-	var across := 0.0 if arm_is_vertical \
-			else (-LAMP_SIDE_OFFSET if _mirrored else LAMP_SIDE_OFFSET)
-	var at := Vector2(across, LAMP_HEIGHTS[lamp] as float)
-	draw_rect(Rect2(at - size * 0.5, size), colour)
+	drawer.draw_lamp(self, lamp, not arm_is_vertical, _mirrored)
