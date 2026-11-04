@@ -170,11 +170,11 @@ test_save_wiring.gd 35530
 test_scene_recipe.gd 6469
 test_scene_recipe_activity.gd 18399
 test_scene_recipe_boot.gd 1748
-test_scene_recipe_lifecycle_scenes.gd 36031
-test_scene_recipe_lifecycle_tasks.gd 62643
-test_scene_recipe_lifecycle_trailers.gd 82836
-test_scene_recipe_runtime.gd 13248
-test_scene_recipe_stretch.gd 1245
+test_scene_recipe_lifecycle_scenes.gd 31000
+test_scene_recipe_lifecycle_tasks.gd 40800
+test_scene_recipe_lifecycle_trailers.gd 43600
+test_scene_recipe_runtime.gd 15500
+test_scene_recipe_stretch.gd 8800
 test_scene_recipe_stretch_crowd.gd 63271
 test_scene_recipe_task.gd 5877
 test_scenery_animation.gd 499
