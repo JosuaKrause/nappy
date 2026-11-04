@@ -16,9 +16,6 @@ const SEED := 4242
 const WALK_DAY := 9
 const TILE := float(Tuning.TILE_SIZE)
 
-## The run the suite's real city stands in (`City.run`), made fresh by `_a_day()` and freed after.
-var _run: RunState
-
 func run(t) -> void:
 	_test_each_mover_is_stopped_by_its_own_layers(t)
 	_test_is_walkable_is_the_lattice(t)
@@ -30,27 +27,24 @@ func run(t) -> void:
 	_test_a_walk_goes_round_what_was_put_down(t)
 	_test_a_car_sees_her_off_street_ground(t)
 	_test_a_cut_crossing_still_meets_her_line_on_time(t)
-	var city := _a_day(t)
-	_test_a_body_and_its_record_are_one_footprint(t, city)
-	_test_a_closure_barrier_stands_on_closed_ground(t, city)
-	_test_the_cat_crossing_never_ends_in_a_lot(t, city)
-	_test_a_departure_leaves_round_a_building(t, city)
-	_test_every_row_that_moves_stays_off_blocked_ground(t, city)
-	_test_every_mover_on_a_map_shares_its_one_navigator(t, city)
-	city.free()
-	_run.free()
+	_test_a_director_handed_only_the_map_sites_round_what_stands_there(t)
+	for check: Callable in [_test_a_body_and_its_record_are_one_footprint,
+			_test_a_closure_barrier_stands_on_closed_ground,
+			_test_the_cat_crossing_never_ends_in_a_lot,
+			_test_a_departure_leaves_round_a_building,
+			_test_every_row_that_moves_stays_off_blocked_ground,
+			_test_every_mover_on_a_map_shares_its_one_navigator]:
+		_in_a_day(t, check)
 
-## **One navigator per map** (`WorldMap.navigator()`): the city's, its event manager's, its crowd's and
-## its director's are one object, and a mover built over the map with none handed to it takes that
-## same one rather than a second.
+## **One navigator per map** (`WorldMap.navigator()`): the city's and its event manager's are the
+## map's one object. The crowd and the director take it when handed none; a crowd's is checked in
+## `test_navigator_fallbacks.gd`. A director handed only the map is checked here by what it does (it
+## sites a crossing round a body standing across it), which does not pin that it shares the map's one
+## navigator: a director that builds its own `Navigator.new(map)` passes.
 func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
 	t.check(city.map.navigator() == city.navigator
-			and city.events.world.navigator() == city.navigator
-			and city.crowd._navigator == city.navigator,
-			"the city, its events and its crowd move by the map's one navigator")
-	var director := EventDirector.new(city.map)
-	t.check(director._navigator == city.navigator,
-			"and a director handed only the map takes that same navigator, not a second")
+			and city.events.world.navigator() == city.navigator,
+			"the city and its events move by the map's one navigator")
 
 # ---------------------------------------------------------------------- ground ---
 
@@ -232,7 +226,7 @@ func _test_a_car_sees_her_off_street_ground(t) -> void:
 		t.add_child(car)
 		var her := _centre(Vector2i(3, 3))
 		t.check(car.clear_line_to(her), "a car sees her standing on %s" % ground)
-		t.check(map.passable(map.world_to_tile(her), car._mover)
+		t.check(map.passable(map.world_to_tile(her), EventInstance.mover_for(patrol))
 				== (ground == GameEnums.TileType.SIDEWALK),
 				"and drives only where street ground is (%s)" % ground)
 		car.free()
@@ -261,21 +255,85 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
 	t.check(cat.ahead_of_player_lead() >= on_time * Tuning.WALK_SPEED - 0.01,
 			"which is when she, walking, reaches it")
 
+## A director over `map` alone, handed no navigator, owing nothing but the cat every five seconds
+## (`force()`, taken up by `start_day()`, as the manager hands the flag in).
+func _a_director_owing_the_cat(map: CityMap) -> EventDirector:
+	var director := EventDirector.new(map)
+	director.force("cat_dash", 5.0)
+	var no_plans: Array[EventScheduler.Planned] = []
+	director.start_day(1, no_plans, _rng("director"))
+	return director
+
+## What the director hands out when she is at `her` walking `heading`, once its wait has passed: the
+## row, its path, the seconds it crouches beyond its telegraph and the point on her line the run is
+## sited to cross (`EventDirector.due()`, which the manager asks every tick); empty where it found
+## nowhere to put one.
+func _sited_ahead_of(director: EventDirector, her: Vector2, heading: Vector2) -> Array:
+	return director.due(10.0, her, heading * Tuning.WALK_SPEED)
+
+## A cat is sited across the line of a figure walking east on open sidewalk, with a body standing
+## across the way it would run on one side: a director handed only the map (`EventDirector.new(map)`)
+## moves by the map's navigator, so the run it sites never goes through the body, and on a map with
+## nothing standing there the same director sites the whole run.
+func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t) -> void:
+	var cat := EventCatalogue.by_id("cat_dash")
+	var mover := EventInstance.mover_for(cat)
+	var her := _centre(Vector2i(5, 20))
+	var heading := Vector2.RIGHT
+	var centre_tile := _yard(Vector2i(60, 40)).world_to_tile(her + heading * cat.ahead_of_player_lead())
+	var open := _yard(Vector2i(60, 40))
+	var whole := 0.0
+	var director := _a_director_owing_the_cat(open)
+	for _try in 6:
+		var sited := _sited_ahead_of(director, her, heading)
+		if not sited.is_empty():
+			var run: PackedVector2Array = sited[1]
+			whole = maxf(whole, run[0].distance_to(run[1]))
+	t.check(whole >= float(Tuning.STREET_WIDTH) * TILE,
+			"with nothing standing there the cat is sited a whole street's run (%.0fpx)" % whole)
+	var walled := _yard(Vector2i(60, 40))
+	var body: Array[Vector2i] = []
+	for dy in range(3, Tuning.STREET_WIDTH + 2):
+		body.append(centre_tile + Vector2i(0, dy))
+	walled.obstruct_tiles(1, body)
+	director = _a_director_owing_the_cat(walled)
+	var runs := 0
+	var through := 0
+	var cut := 0
+	for _try in 24:
+		var sited := _sited_ahead_of(director, her, heading)
+		if sited.is_empty():
+			continue
+		var run: PackedVector2Array = sited[1]
+		runs += 1
+		if not walled.clear_line(run[0], run[1], mover):
+			through += 1
+		if run[0].distance_to(run[1]) < whole - 0.01:
+			cut += 1
+	print("DIRECTOR on a walled yard: %d runs sited, %d cut short, %d through the body"
+			% [runs, cut, through])
+	t.check(runs > 0 and cut > 0, "a cat is sited and its run is cut short by the body (%d, %d)"
+			% [runs, cut])
+	t.check(through == 0, "and no run is sited through it (%d of %d)" % [through, runs])
+
 # ---------------------------------------------------------------- a real city ---
 
-## Seed 4242's day 9, its closures, seals and bodies put down.
-func _a_day(t) -> City:
-	_run = RunState.new()
-	_run.start_run(SEED)
-	var city: City = RunCity.in_run(CITY_SCENE, _run)
+## Seed 4242's day 9, its closures, seals and bodies put down, in a city and a run of its own, handed
+## to `check` and freed after, so no check leans on what another left standing.
+func _in_a_day(t, check: Callable) -> void:
+	var run_state := RunState.new()
+	run_state.start_run(SEED)
+	var city: City = RunCity.in_run(CITY_SCENE, run_state)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 	var state := CityState.new()
-	_run.attempt_spend.city_state = state
+	run_state.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
-	return city
+	check.call(t, city)
+	city.free()
+	run_state.free()
 
 static func _rng(stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -338,7 +396,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 	var map := city.map
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
-	var director := EventDirector.new(map, city.navigator)
+	var director := _a_director_owing_the_cat(map)
 	var sited := 0
 	var bad := 0
 	var cut := 0
@@ -348,10 +406,10 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 		var her := map.tile_to_world(sidewalks[i])
 		for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN,
 				Vector2(1.0, 1.0).normalized()]:
-			var crossing := director._crossing_with_its_crouch(her, heading, cat)
-			var run: PackedVector2Array = crossing[0]
-			if run.is_empty():
+			var crossing := _sited_ahead_of(director, her, heading)
+			if crossing.is_empty():
 				continue
+			var run: PackedVector2Array = crossing[1]
 			sited += 1
 			if not map.passable(map.world_to_tile(run[0]), mover) \
 					or not map.passable(map.world_to_tile(run[1]), mover) \
@@ -359,7 +417,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 				bad += 1
 			# She walks on toward it while it crouches, its telegraph and its longer crouch both,
 			# and is outside the crouching cat's field until it runs.
-			var crouch: float = crossing[1]
+			var crouch: float = crossing[2]
 			if crouch > 0.0:
 				cut += 1
 			var clock := 0.0
@@ -378,11 +436,18 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 			% in_its_field)
 	var ends := 0
 	var in_a_lot := 0
+	var none: Array[EventScheduler.Planned] = []
+	# No catalogue row is planned as a crossing (`EventDef.PathMode.CROSS_STREET`: the cat is sited by
+	# the director), so the row is the cat with the scheduler's crossing path laid for it.
+	var scheduled := cat.duplicate() as EventDef
+	scheduled.path_mode = EventDef.PathMode.CROSS_STREET
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):
 			continue
-		var crossing := EventScheduler._cross_street_path(map, tile)
-		for end in crossing:
+		var placed := EventScheduler.place_at(scheduled, map, tile, _rng("cross-street"), none)
+		if placed == null:
+			continue
+		for end in placed.path:
 			ends += 1
 			if not map.passable(map.world_to_tile(end), Mover.on_foot()):
 				in_a_lot += 1
@@ -410,8 +475,9 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 	var instance := city.events.spawn_extra(dog, start)
 	instance.set_process(false)
 	instance.excitement.set_player_at(start - into * 80.0)
-	instance._be_done()
-	instance._heading = into
+	instance.give_up_the_chase()
+	t.check(instance.is_leaving and instance.facing_now().is_equal_approx(into),
+			"it starts leaving facing the building, away from her (%s)" % instance.facing_now())
 	var mover := EventInstance.mover_for(dog)
 	var off := 0
 	var before := instance.global_position
@@ -461,7 +527,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 		for frame in 200:
 			instance.excitement.set_player_at(her)
 			if frame == 120 and not instance.is_leaving:
-				instance._be_done()
+				instance.give_up_the_chase()
 			if instance.is_leaving:
 				if left_from == Vector2.INF:
 					left_from = instance.global_position
