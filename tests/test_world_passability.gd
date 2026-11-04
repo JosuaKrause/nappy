@@ -38,14 +38,13 @@ func run(t) -> void:
 
 ## **One navigator per map** (`WorldMap.navigator()`): the city's and its event manager's are the
 ## map's one object. The crowd and the director take it when handed none; a crowd's is checked in
-## `test_navigator_fallbacks.gd`, and a director handed only the map is checked here by what it does:
-## it sites a crossing round a body standing across it (`_test_a_director_handed_only_the_map_...`).
+## `test_navigator_fallbacks.gd`. A director handed only the map is checked here by what it does (it
+## sites a crossing round a body standing across it), which does not pin that it shares the map's one
+## navigator: a director that builds its own `Navigator.new(map)` passes.
 func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
 	t.check(city.map.navigator() == city.navigator
 			and city.events.world.navigator() == city.navigator,
 			"the city and its events move by the map's one navigator")
-	t.check(city.map.navigator() == city.map.navigator(),
-			"and the map hands the same one to every caller that asks")
 
 # ---------------------------------------------------------------------- ground ---
 
