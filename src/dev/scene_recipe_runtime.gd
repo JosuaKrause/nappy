@@ -982,7 +982,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 
 ## An authored mast stands where the day's masts may, by the checks `EventScheduler.place_masts()`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
-## sidewalk or square tile `MastSites._is_eligible()` would offer (off the home street, its field
+## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand); it is not closed, not on a
 ## held street and not on the home block; the mast's field is clear of the day's own doors
 ## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
@@ -997,7 +997,7 @@ func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Pla
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
-			or not MastSites._is_eligible(at, map) \
+			or not MastSites.is_eligible(at, map) \
 			or not EventScheduler.clear_of_the_doors(at, PackedVector2Array(), doors,
 					def.field_reach()):
 		return null
