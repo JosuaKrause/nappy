@@ -154,6 +154,15 @@ var holds_the_home_streets := true
 ## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
 ## does without (minty-lemur #785) — what stands there is the slots and the bag's draws.
 var caps_per_day := true
+## The share of the **wall**-role placements the day's fill made that stay standing, rolled once per
+## placement (`EventScheduler.build_day()`, which thins the fill after planning it). A wall is only
+## ever placed off the tree, so this is the share of the catalogue's own blockers off it that the
+## day keeps. `1.0` keeps every wall: every day before `Tuning.REGION_WALL_FIRST_DAY` and every
+## section of the escape. From the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) on, `for_day()`
+## hands `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
+var wall_row_share := 1.0
+## The share `wall_row_share` is from `Tuning.REGION_WALL_FIRST_DAY` on, set by `for_day()`.
+const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
 ## (`EventScheduler._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
 var one_notice_at_a_time := false
@@ -221,6 +230,8 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 	var spec := DaySpec.new()
 	spec.number = day
 	spec.length = day_length
+	if day >= Tuning.REGION_WALL_FIRST_DAY:
+		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
 	return spec
 
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own

@@ -536,7 +536,7 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
 
-## How far the share of the fill's walls a day keeps from the gatehouse day on may sit from
+## How far the share of its walls a day keeps from the gatehouse day on may sit from
 ## `EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: a couple of hundred
 ## rolls, so a share honoured by the roll lands well
 ## inside it (about five standard deviations) and one not honoured at all, every wall kept or none,
@@ -544,73 +544,69 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 const _WALL_SHARE_TOLERANCE := 0.15
 
 ## **From the gatehouse day on, the fill keeps a share of its walls, and nothing else about the day
-## moves** — `EventScheduler._thin_the_walls`, azure-puffin point 4: "fewer of all three". The day
-## before the thinning is `EventScheduler._plan_through_the_fill()`, which is `build_day` up to it,
-## and the thinning is run on a copy of it, so the check is a relationship between the two rather
-## than the rule read back to itself: the thinned day is the same plans in the same order with only
-## the fill's own `WALL`-role placements taken out, the share kept is the constant's within
-## `_WALL_SHARE_TOLERANCE`, and a day before `Tuning.REGION_WALL_FIRST_DAY` loses nothing. And
-## `build_day` itself thins: none of the walls the thinning took out stands in the day it plans
-## (`_planned()`, the same city, seed and stream), which is what fails if the call is ever dropped.
+## moves** — `EventScheduler.build_day()` thins the fill by `DaySpec.wall_row_share` (azure-puffin
+## point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game
+## plans it (`DaySpec.for_day()`) and once with `wall_row_share` at `1.0`, every wall kept, so the
+## check is a relationship between the two days rather than the rule read back to itself: the
+## thinned day is the full day's plans in the same order with only `WALL`-role placements taken out,
+## the share kept is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`, and a day
+## before `Tuning.REGION_WALL_FIRST_DAY` loses nothing.
 func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 	var map := _map()
 	var walls := 0
 	var kept := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
-		var base := _rng(day).seed
+		var spec := DaySpec.for_day(day)
+		t.check(is_equal_approx(spec.wall_row_share, 1.0 if day < Tuning.REGION_WALL_FIRST_DAY
+				else DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE),
+				"day %d: the game's spec keeps %.2f of the walls" % [day, spec.wall_row_share])
+		var every_wall := DaySpec.for_day(day)
+		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
-		var before: Array[EventScheduler.Planned] = []
-		var no_scars: Array[Dictionary] = []
-		var no_calm_used: Array[Vector2i] = []
-		var nothing_standing: Array[EventScheduler.Planned] = []
-		var filled_from := EventScheduler._plan_through_the_fill(day, base, map, consumed, no_scars,
-				no_calm_used, null, 0, PackedVector2Array(), nothing_standing, before)
-		var after: Array[EventScheduler.Planned] = before.duplicate()
-		EventScheduler._thin_the_walls(day,
-				EventScheduler._stream(base, EventScheduler.WALL_THINNING_SALT), after, filled_from)
+		var before := EventScheduler.build_day(every_wall, _rng(day), map, consumed)
+		var after := _planned(day)
 		# `after` has to be `before` with entries taken out and nothing else: walked in step, every
 		# plan of `after` is met in `before` in the same order.
 		var removed: Array[EventScheduler.Planned] = []
 		var matched := 0
 		for plan in before:
-			if matched < after.size() and after[matched] == plan:
+			if matched < after.size() and _same_plan(after[matched], plan):
 				matched += 1
 			else:
 				removed.append(plan)
 		t.check(matched == after.size(),
-				"day %d: the thinned day is the fill's own day with plans taken out, in order, "
+				"day %d: the thinned day is the full day with plans taken out, in order, "
 				% day + "nothing added and nothing moved (%d of %d met)" % [matched, after.size()])
-		var fill_walls := 0
-		for i in range(filled_from, before.size()):
-			if before[i].role == GameEnums.BlockerRole.WALL and before[i].is_placed():
-				fill_walls += 1
+		var day_walls := 0
+		for plan in before:
+			if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed():
+				day_walls += 1
+		# The fill's own rows are the recurring ones: the ambient rows, the scars, the masts, the
+		# scripted rows and the one-shots are placed before it, and none of them is `RECURRING`. A
+		# used park's spoilers are drawn from the recurring pool, so this cannot tell them from the
+		# fill; no park is used in this day, so no spoiler stands in it.
 		var not_a_fill_wall: Array[String] = []
 		for plan in removed:
-			if before.find(plan) < filled_from or plan.role != GameEnums.BlockerRole.WALL \
-					or not plan.is_placed():
+			if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed() \
+					or plan.def.kind != GameEnums.EventKind.RECURRING:
 				not_a_fill_wall.append(plan.def.id)
 		t.check(not_a_fill_wall.is_empty(),
-				"day %d: only the fill's own walls are taken out (%s)" % [day, not_a_fill_wall])
+				"day %d: only the fill's own recurring walls are taken out (%s)" % [day, not_a_fill_wall])
 		if day < Tuning.REGION_WALL_FIRST_DAY:
-			t.check(removed.is_empty() and fill_walls > 0,
-					"day %d, before the gatehouse day, keeps all %d of the fill's walls (%d taken out)"
-					% [day, fill_walls, removed.size()])
+			t.check(removed.is_empty() and day_walls > 0,
+					"day %d, before the gatehouse day, keeps all %d of its walls (%d taken out)"
+					% [day, day_walls, removed.size()])
 			continue
-		walls += fill_walls
-		kept += fill_walls - removed.size()
-		var standing := {}
-		for plan in _planned(day):
-			if plan.is_placed():
-				standing["%s@%s" % [plan.def.id, plan.position]] = true
-		var back: Array[String] = []
-		for plan in removed:
-			if standing.has("%s@%s" % [plan.def.id, plan.position]):
-				back.append(plan.def.id)
-		t.check(not removed.is_empty() and back.is_empty(),
-				"day %d: build_day stands none of the %d walls the thinning takes out (%s)"
-				% [day, removed.size(), back])
+		t.check(not removed.is_empty(), "day %d: the thinning takes some of the %d walls out"
+				% [day, day_walls])
+		walls += day_walls
+		kept += day_walls - removed.size()
 	t.check(walls > 0, "the days from the gatehouse day had walls to thin (%d)" % walls)
 	var share := float(kept) / maxf(1.0, float(walls))
-	t.check(absf(share - EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
-			"from the gatehouse day the fill keeps %.2f of its walls (%d of %d); the share asked "
-			% [share, kept, walls] + "for is %.2f" % EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE)
+	t.check(absf(share - DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
+			"from the gatehouse day the day keeps %.2f of its walls (%d of %d); the share asked "
+			% [share, kept, walls] + "for is %.2f" % DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
+
+## Whether two plans are the same placement: the same row at the same place.
+func _same_plan(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
+	return a.def.id == b.def.id and a.position == b.position

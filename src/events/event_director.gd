@@ -590,7 +590,7 @@ const ON_HER_WAY_BEYOND_HOME := 400.0
 ## How much further she may have to walk past the streaming band to reach the site, in seconds —
 ## the width of the siting band, measured **along the route she is on** like the rest of it. Still
 ## well inside the outbound leg of a 210s day with the walk home in hand. The near end of the band
-## is not a number of seconds but the streaming band itself; see `_siting_band()`.
+## is not a number of seconds but the streaming band itself; see `siting_band()`.
 const ON_HER_WAY_SIGHT := 16.0
 
 ## How long the thing has to be behind her before it is moved, in seconds of walking. It is not
@@ -694,7 +694,7 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 			continue
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
-		var band := _siting_band()
+		var band := siting_band()
 		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT \
 				else (_place_rng if _placed_from_the_route.has(plan) else _crew_rng)
 		# A placed plan is asked about without its own body, which every other ask counts.
@@ -782,7 +782,7 @@ func _is_no_longer_on_her_way(plan: EventScheduler.Planned, at: Vector2, heading
 ## distance off the edge of the view would be the straight-line reading again, and the day's routes
 ## are loop-erased walks rather than lines: 1200px across the block is regularly 2800px of walking,
 ## and a band stated as a straight line leaves almost nothing on the route inside it.
-func _siting_band() -> Vector2:
+static func siting_band() -> Vector2:
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	return Vector2(near, near + Tuning.WALK_SPEED * ON_HER_WAY_SIGHT)
 

@@ -144,7 +144,7 @@ func _test_one_offer_per_look(t) -> void:
 			var velocity := toward.normalized() * Tuning.WALK_SPEED
 			at += velocity * STEP
 			var judged := EventScheduler.judgements
-			var band := director._siting_band()
+			var band := director.siting_band()
 			var offered: Array = siting._offer_ahead(fire, at, velocity.normalized(), band.x,
 					band.y)[1]
 			# Asking the offer here first is what the look would do; it must cost the look nothing.
@@ -193,8 +193,9 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	# stands in for them here.
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
+	var band := EventDirector.siting_band()
+	var near := band.x
+	var far := band.y
 	# Down the day's longest route until the band ahead of her holds exactly one tile of the row's
 	# ground.
 	var route := _longest_route(day)
@@ -268,8 +269,9 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
+	var band := EventDirector.siting_band()
+	var near := band.x
+	var far := band.y
 	# Down the day's longest route until the band ahead of her offers one tile that a crew is
 	# accepted on.
 	var route := _longest_route(day)

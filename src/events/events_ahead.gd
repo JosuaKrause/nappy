@@ -639,8 +639,9 @@ func light_what_she_never_met(at: Vector2) -> bool:
 	return false
 
 ## The day's placement context for the row it left for her walk, or `null` on a day that left none.
-## Read by `tests/probes/m179_fire_on_her_way.gd` for the refusals a long wait was made of; nothing
-## in the game asks.
+## No game class asks; the suites and probes that need the day's siting read it here, for the
+## refusals a long wait was made of (`tests/probes/m179_fire_on_her_way.gd`) and for sitings asked
+## from points along a route.
 func walk_siting() -> EventScheduler.WalkSiting:
 	return _siting
 

@@ -547,7 +547,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
 		if not arrived:
 			continue
-		t.check(not arrived.is_telegraphing() and arrived._notice_damping() == 1.0,
+		t.check(not arrived.is_telegraphing() and is_equal_approx(arrived.current_intensity(1.0), def.intensity),
 				("'%s' is created with its telegraph spent, emitting at its own intensity rather "
 				% def.id) + "than the telegraph's %.0f%%" % (EventInstance.TELEGRAPH_INTENSITY_FRACTION * 100.0))
 		if def.hard_fail:
