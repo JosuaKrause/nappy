@@ -257,7 +257,7 @@ func _contains(planned: Array, id: String) -> bool:
 func _test_a_park_stays_reachable_every_day(t) -> void:
 	# Stack the deck: pretend several convoys have already left barricades around, in rings of
 	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
-	# ones cannot), and plan the days after the one that left them.
+	# ones cannot), and plan every day.
 	var run := RunState.new()
 	run.start_run(SEED)
 	var home := _map.home_rect.position
@@ -270,7 +270,9 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 			})
 
 	var grid := ReachabilityGrid.build(_map)
-	for day in range(2, Tuning.RUN_LENGTH_DAYS + 1):
+	# Day 1 runs with no scar in effect (a scar applies from the day after its `since_day`), and
+	# is the plain plan whose route to a park nothing else checks.
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
 		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed, run.attempt_spend.scars)
 		# Typed deliberately: passing a bare `Array` here makes GDScript coerce it at the
