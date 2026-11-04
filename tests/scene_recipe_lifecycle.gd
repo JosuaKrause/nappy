@@ -1,6 +1,10 @@
 extends RefCounted
-## Boots the actual Main scene in isolated processes: free input, bounded travel and escape
-## retry must work through the same world and signals as interactive play.
+## **The lifecycle behind `test_scene_recipe_lifecycle_trailers.gd`, `_tasks.gd` and `_scenes.gd`;
+## not a suite itself.** Boots the actual Main scene in isolated processes: free input, bounded
+## travel and escape retry must work through the same world and signals as interactive play.
+## Each suite runs the recipes whose file name begins with its prefix (`PREFIX_TRAILER`,
+## `PREFIX_TASK`) or, for the scenes suite, all the others (`PREFIX_OTHER`), so no suite runs two
+## minutes serial; the later-day boot of the power station hall belongs to the scenes suite.
 
 const PROBE := """extends Node
 var main: Node
@@ -226,7 +230,17 @@ func fail(message: String) -> void:
 	get_tree().quit(1)
 """
 
-func run(t) -> void:
+const PREFIX_TRAILER := "trailer-"
+const PREFIX_TASK := "task-"
+const PREFIX_OTHER := ""
+
+## Whether `filename` belongs to the part named by `prefix`.
+static func belongs(filename: String, prefix: String) -> bool:
+	if prefix == PREFIX_OTHER:
+		return not filename.begins_with(PREFIX_TRAILER) and not filename.begins_with(PREFIX_TASK)
+	return filename.begins_with(prefix)
+
+func lifecycle(t, prefix: String) -> void:
 	var stem := "user://scene_recipe_lifecycle_%d" % OS.get_process_id()
 	var script_path := stem + ".gd"
 	var scene_path := stem + ".tscn"
@@ -239,7 +253,7 @@ func run(t) -> void:
 	var recipes := DirAccess.get_files_at("res://scene-recipes")
 	var tested := 0
 	for filename in recipes:
-		if not filename.ends_with(".json"):
+		if not filename.ends_with(".json") or not belongs(filename, prefix):
 			continue
 		var path := "res://scene-recipes/" + filename
 		var free := _boot(scene_path, path, "free")
@@ -264,6 +278,11 @@ func run(t) -> void:
 				"%s real summary continuation or escape retry restores authored day and actors" % filename)
 		tested += 1
 	t.check(tested > 0, "lifecycle discovery exercises saved recipes")
+	if prefix != PREFIX_OTHER:
+		DirAccess.remove_absolute(scene_path)
+		DirAccess.remove_absolute(script_path)
+		DirAccess.remove_absolute(script_path + ".uid")
+		return
 	var later_day_path := stem + "_later_power-station-hall.json"
 	var later_day: Dictionary = SceneRecipe.load_file("res://scene-recipes/power-station-hall.json").data
 	later_day.setup.day = 13
