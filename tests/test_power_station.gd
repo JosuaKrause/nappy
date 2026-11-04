@@ -129,6 +129,14 @@ func _test_industrial_ground_is_preferred(t) -> void:
 
 # ------------------------------------------------------------------ the day ---
 
+## Cities of their own for a test that plans days on them: repainting and closing streets change a
+## map, so a test that does it is handed maps no other test reads, from the same seeds as `_maps`.
+func _maps_to_plan_days_on() -> Array[CityMap]:
+	var fresh: Array[CityMap] = []
+	for i in DAY_SEEDS:
+		fresh.append(CityGenerator.generate(BASE_SEED + i * 211))
+	return fresh
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -159,7 +167,7 @@ func _reaches_any(grid: ReachabilityGrid, reached: Dictionary, blocked: Dictiona
 ## a region door, which is what the story asks of it.
 func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 	var day := Tuning.POWER_STATION_DAY
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
 		var door_street := map.power_station_door_street()
@@ -217,7 +225,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 ## The day before, the corridor is what it would be with no station at all — the spur is the one
 ## thing the station's day adds, and nothing else in the tree moves for it on that day either.
 func _test_no_other_day_is_bent_toward_it(t) -> void:
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		var day := Tuning.POWER_STATION_DAY
 		_repaint_for(map, day)
 		var with_spur := RouteTree.for_day(map, day)
