@@ -1989,8 +1989,9 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.position, times.size()])
 		for i in range(1, times.size()):
 			beats += 1
-			# Seen on a tick, so up to a tick off at either end.
-			if absf((times[i] - times[i - 1]) - vent.repeat_every) > tick_seconds * 2.0:
+			# A blow is first seen on the tick it began in, so its time is off by less than one tick
+			# and a gap between two of them by less than one tick either way.
+			if absf((times[i] - times[i - 1]) - vent.repeat_every) > tick_seconds + 0.0001:
 				off_period += 1
 	t.check(beats > 0, "there were gaps between blows to measure (%d)" % beats)
 	t.check(off_period == 0, "and every one of them is that vent's own period (%d were not)"
@@ -2377,6 +2378,8 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	t.check(not windows.is_empty(), "the building has hallway windows (%d)" % windows.size())
 	t.check(_lit(scene, windows) == 0, "the windows are dark to begin with")
 	var lit_ticks: Array[int] = []
+	# The watch runs at `process_frame`: after the tick's physics lit the windows and before that
+	# frame's `_process()` darkens them (the engine's fixed order), so a flash is seen on its tick.
 	var odd := {"neither": 0}
 	var watch := func(tick: int) -> void:
 		var lit := _lit(scene, windows)
@@ -2466,6 +2469,9 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 			% [mean, Tuning.FINALE_DISTANT_FLASH_MEAN_SECONDS])
 	t.check(median < mean,
 			"and the median (%.3fs) is under it, which is the bias toward short gaps" % median)
+	# The documented curve's 95th percentile is 2.37s (the shape constant's doc).
+	var p95: float = waits[int(DRAWS * 0.95)]
+	t.check(absf(p95 - 2.37) <= 0.1, "and the 95th percentile (%.2fs) is the curve's 2.37s" % p95)
 	print("Distant flash waits over %d draws: mean %.3fs, median %.3fs, longest %.2fs"
 			% [DRAWS, mean, median, waits[DRAWS - 1]])
 
@@ -2483,6 +2489,8 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	var when: Array[int] = []
 	var twin_when: Array[int] = []
 	var wrong := {"half_lit": 0, "lit_while_dark": 0}
+	# The watch runs when `process_frame` is emitted: after the tick's physics, which lit the windows,
+	# and before that frame's `_process()` darkens them. The engine's order, the same on every frame.
 	var watch := func(tick: int) -> void:
 		var lit := _lit(scene, windows)
 		if lit > 0:
@@ -2506,6 +2514,9 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 			"and none is left lit once a flash is over (%d ticks)" % wrong["lit_while_dark"])
 	print("Window flashes over %.0fs: %d ticks lit, against %d explosions" % [SPAN, when.size(), bangs])
 
+	# **What this holds**: the stream's seeding (the `building_seed` meta that `tests/building_events.gd`
+	# hands to `start_the_night()`) and the tick alignment of the flashes. Not the curve's shape, which
+	# is pinned above by the bounds, the mean, the median and the 95th percentile.
 	# Where the flashes fall: the night's waits are drawn from a stream of its own seeded from the
 	# building's seed, so the first of them fall on the ticks that stream's waits make. A flash is
 	# lit on the tick the wait runs out, and the next wait counts from that tick.

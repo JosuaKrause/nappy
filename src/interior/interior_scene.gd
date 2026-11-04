@@ -391,7 +391,7 @@ var _night_running := false
 ## building's section, fresh or retried, so a retry is the same night again.
 func start_the_night(seed: int) -> void:
 	_flashes.seed = seed
-	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
 	_night_running = true
 
 ## Stops the night, because she is not in the building any more: she has walked out of the service
@@ -407,13 +407,8 @@ func _physics_process(delta: float) -> void:
 	_until_the_next_distant_flash -= delta
 	if _until_the_next_distant_flash > 0.0:
 		return
-	_until_the_next_distant_flash = _wait_for_the_next_distant_flash()
+	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
 	flash_windows()
-
-## How long until the next one, drawn from the night's own stream: `distant_flash_wait()` of its
-## next uniform draw, a single draw per wait.
-func _wait_for_the_next_distant_flash() -> float:
-	return distant_flash_wait(_flashes.randf())
 
 ## The wait a uniform draw `u` in `[0, 1)` gives: a scaled Kumaraswamy draw, short-biased and smooth,
 ## bounded by `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
@@ -422,7 +417,7 @@ func _wait_for_the_next_distant_flash() -> float:
 ## loop: a loop would draw a variable number of values from the stream and make how many times the
 ## windows flash depend on how many times the dice were rolled, so a seed would stop replaying the
 ## same night. Static and pure so that the curve is a function of the draw alone; the night's waits
-## (`_wait_for_the_next_distant_flash()`) are this applied to its own stream.
+## are this applied to each next draw of its own stream.
 static func distant_flash_wait(u: float) -> float:
 	var span := FINALE_DISTANT_FLASH_MAX_SECONDS - FINALE_DISTANT_FLASH_MIN_SECONDS
 	return FINALE_DISTANT_FLASH_MIN_SECONDS \
