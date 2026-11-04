@@ -149,23 +149,32 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraph_time)
 	dog.free()
 
-## A notice that was held for a while (a held lunge, a charger behind a wall at its warning's last
-## moment, the masked man's wait) is carried across a stream-out held time and all, so the instance
-## put back is exactly as far into its notice as the one taken away.
+## A notice that was held (a held lunge with her inside its stand-off, a charger behind a wall at its
+## warning's last moment, the masked man's wait) is carried across a stream-out held time and all, so
+## the instance put back is exactly as far into its notice as the one taken away. The robber here is
+## set on her inside his stand-off (`notice_her_at()`), which holds his lunge and so his notice's clock
+## every tick (`_hold_the_notice_clock()`): a second of standing there has run none of his notice, and
+## the second he waited is in the start the stream-out carries. A walk out of the stand-off cannot
+## show the notice running afterwards, since he lunges the moment she is at the full stand-off.
 func _test_a_held_notice_comes_back_as_far_run(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO)
-	first.player_at = Vector2(def.notice.within - 10.0, 0.0)
-	first.step(STEP)
-	for i in 5:
+	var her := Vector2(60.0, 0.0)
+	t.check(her.length() < first.charge_radius(), "she stands inside the robber's stand-off")
+	first.notice_her_at(her, 5.0)
+	var held_steps := 10
+	for i in held_steps:
+		first.player_at = her
 		first.step(STEP)
-	first._notice.hold(0.3)
-	var into := first.chase_age()
+	t.check(first.phase == EventInstance.Phase.WARNING, "set on her, he is warning")
+	t.close_to(first.chase_age(), 0.0, "and his notice, held every tick, has not run", 0.0001)
+	t.close_to(first.noticed_at(), held_steps * STEP,
+			"the second he waited is counted into the start a stream-out carries", 0.0001)
 	var second := EventInstance.new()
 	second.setup(def, Vector2.ZERO)
 	second.resume(first.age, 0.0, first.noticed_at())
-	t.close_to(second.chase_age(), into, "streamed back in, it is as far into its notice", 0.0001)
+	t.close_to(second.chase_age(), first.chase_age(), "streamed back in, it is as far into its notice", 0.0001)
 	t.check(second.phase == EventInstance.Phase.WARNING, "and still warning")
 	first.free()
 	second.free()
