@@ -1403,8 +1403,8 @@ not a weight.** *(azure-puffin, point 4: "when the guard houses are set up the c
 to navigate let's loosen the density of the hard blocking events in that case"; "fewer of all
 three".)* From `Tuning.REGION_WALL_FIRST_DAY`, once the fill has spent the day's budget,
 `EventScheduler._thin_the_walls` rolls each wall-role placement it made against
-`EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE` and takes the rest back off the ground. A lighter weight could
-not do it, for the reason in the paragraph above: the tile weights only move *where* a wall stands,
+`DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day) and takes
+the rest back off the ground. A lighter weight could not do it, for the reason in the paragraph above: the tile weights only move *where* a wall stands,
 and a lighter row weight in the roll respends the budget on friction, which is aimed at the routes
 she walks. Only the fill's own walls are asked — a scripted row, a one-shot and the spoilers in a
 park she used are placed for a reason that is not density — and it is only a removal, so every guarantee

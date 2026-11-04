@@ -29,6 +29,8 @@ extends RefCounted
 
 const HaloRig = preload("res://tests/halo_rig.gd")
 const STEP := 1.0 / 60.0
+## The fewest frames the rim-budget walk takes, so it fills the budget at any frame length.
+const WALK_FRAMES := 40
 
 ## The events' atlas page, held for the suite: an event in the tree is drawn on real frames, and the
 ## game hands every one it places its world's library (`EventInstance.atlas`).
@@ -48,6 +50,7 @@ func run(t) -> void:
 	_test_colour_for_the_ramp_ends(t)
 	_test_magnitude_for_emphasises_low_values(t)
 	await _test_entity_halo_eases_toward_its_target(t)
+	await _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t)
 	_test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t)
 	_test_an_ordinary_walker_is_a_candidate(t)
 	_test_select_sources_takes_a_mixed_candidate_set(t)
@@ -448,6 +451,32 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	t.check(not halo.is_showing() and drawn_frames[0] == drawn_before and traced[0] == traced_before,
 			"and a rim drawing nothing stops asking to be traced, so the per-frame trace is paid "
 			+ "for by the handful of sources that are actually lit rather than by every body")
+	halo.free()
+	clock.free()
+
+## `has_settled()` reads a hair of alpha above a target of zero as arrived, so a rim whose fade-out
+## stopped a hair short -- which the frame lengths a fade is stepped by can leave -- would be left
+## showing, and re-traced every frame, for good. The hair is reached with real frames and public
+## calls: fade in, a target of 5e-6 (which `move_toward` lands on exactly), then zero in the same
+## colour, so the rim reads settled while it is still showing.
+func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
+	var traced := [0]
+	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
+			func() -> float: return 0.0)
+	var clock := HaloRig.FrameClock.new()
+	t.add_child(clock)
+	t.add_child(halo)
+	await t.get_tree().process_frame
+	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	await _frames_for(t, clock, EntityHalo.FADE_IN_SECONDS + STEP)
+	halo.set_glow(5e-6, Palette.HALO_STRONG)
+	await _frames_for(t, clock, EntityHalo.FADE_OUT_SECONDS + STEP)
+	halo.set_glow(0.0, Palette.HALO_STRONG)
+	await _frames_for(t, clock, 0.2)
+	var traced_before: int = traced[0]
+	await _frames_for(t, clock, 0.05)
+	t.check(not halo.is_showing() and traced[0] == traced_before,
+			"a rim left a hair above zero reaches zero and stops being traced, not left showing")
 	halo.free()
 	clock.free()
 
@@ -914,14 +943,17 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	var ever_lit := {}
 	var waits := 0
 	var waits_with_room := 0
-	# The walk is laid out in STEPs of frame time rather than in frames, as the rims' fades are, so
-	# it is the same walk however long the engine's frames are: `step` is how many STEPs the rims
-	# have been handed.
+	# The walk is laid out in frames, a jump a frame, so that however long the engine's frames are
+	# each one turns the picked set over: laid out in time, a frame of 200 ms would jump a whole lap
+	# of the row and land beside where the last one did, and no pick would ever wait for a block. The
+	# walk runs for the rims' time (the fades are in frame time) and for enough frames to fill the
+	# budget however long they are.
 	var from := clock.elapsed
-	while clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 3.0:
-		var step := floori((clock.elapsed - from) / STEP)
-		# 96px a STEP along the row: past the picked set's whole reach every couple of STEPs.
-		player.global_position = Vector2(fmod(96.0 * float(step), 32.0 * float(count)), 0.0)
+	var frames_from := clock.frames
+	while clock.elapsed - from < EntityHalo.FADE_OUT_SECONDS * 3.0 or clock.frames - frames_from < WALK_FRAMES:
+		var step := clock.frames - frames_from
+		# 352px a frame along the row: past the picked set's whole reach every frame.
+		player.global_position = Vector2(fmod(352.0 * float(step), 32.0 * float(count)), 0.0)
 		await t.get_tree().process_frame
 		# What the halo picked on that frame, by the same selection at the same point.
 		var candidates: Array = []
