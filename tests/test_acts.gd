@@ -76,33 +76,29 @@ func _peak_over(instance: EventInstance, seconds: float) -> float:
 
 ## The burnt-out shell is on the same corner on day 12 as it was the morning after the fire.
 func _test_scars_outlive_the_day_that_made_them(t) -> void:
-	var saved := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-
-	GameState.header.day = 3
-	GameState.attempt_spend.scars = []
+	var run := RunState.new()
+	run.start_run(SEED)
+	run.header.day = 3
 	var where := _map.tile_to_world(Vector2i(40, 40))
-	GameState.add_scar("burnt_shell", where)
-	GameState.add_scar("burnt_shell", where)
-	t.check(GameState.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
+	run.add_scar("burnt_shell", where)
+	run.add_scar("burnt_shell", where)
+	t.check(run.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
-	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map, consumed, GameState.attempt_spend.scars)
+	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map, consumed, run.attempt_spend.scars)
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day in [4, 9, 14]:
 		var later: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, later, GameState.attempt_spend.scars)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, later, run.attempt_spend.scars)
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
 			if plan.def.id == "burnt_shell":
 				t.close_to(plan.position.distance_to(where), 0.0,
 						"and it is on the same corner", 1.0)
-
-	GameState.attempt_spend.scars = saved
-	GameState.header.day = saved_day
+	run.free()
 
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
@@ -117,12 +113,8 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
 ## reaches `City.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t) -> void:
-	var saved := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-	GameState.header.day = 4
-	GameState.attempt_spend.scars = []
-
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	city.run.header.day = 4
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
 
@@ -191,13 +183,13 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	# **Never the power station's front**: its facade is drawn whole whatever its condition says,
 	# and its transformer yard has no wall for day 8's arrow to end on. Guarded against vacuity by
 	# the station's own fronts, which the same lane offers any row that does not burn.
-	var fire := EventCatalogue.by_id("burning_building")
 	var station := CityMap.blocks_tile_rect(city.map.power_station)
 	t.check(city.map.has_power_station(), "seed %d has a power station" % SEED)
 	var station_fronts := 0
-	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
-		if EventScheduler._wants_this_side(fire, city.map, tile) \
-				and station.has_point(tile + Vector2i.UP):
+	var lane_of_fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("cafe_tables"),
+			city.map, {}, EventDef.Pavement.AT_THE_FRONT)
+	for tile in lane_of_fronts:
+		if station.has_point(tile + Vector2i.UP):
 			station_fronts += 1
 	t.check(station_fronts > 0,
 			"seed %d: the power station has fronts on the lane (%d)" % [SEED, station_fronts])
@@ -214,15 +206,13 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 	t.check(scarred != null, "the fire's site has a building behind it")
 	if not scarred:
 		city.free()
-		GameState.attempt_spend.scars = saved
-		GameState.header.day = saved_day
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	city.start_day(CityState.new(), 4, rng)
 	t.check(_burnt_count(city) == 0, "no building is burnt before any fire has left a scar")
 
-	GameState.add_scar("burnt_shell", city.map.tile_to_world(site))
+	city.run.add_scar("burnt_shell", city.map.tile_to_world(site))
 	city.start_day(CityState.new(), 4, rng)
 	t.check(scarred.condition == Building.Condition.BURNT,
 			"the dawn after the fire, the building behind its scar is drawn burnt")
@@ -232,24 +222,23 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			"and every dawn after that, the same one")
 	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
 	# building is never boarded up with it.
-	city.present_block(city._block_of(scarred.lot), CityState.new())
+	city.present_block(city.map.block_at(city.map.tile_rect_to_world(scarred.lot).get_center()),
+			CityState.new())
 	t.check(scarred.condition == Building.Condition.BURNT,
 			"its block shown anew during the day leaves the burnt building burnt")
 
 	city.free()
-	GameState.attempt_spend.scars = saved
-	GameState.header.day = saved_day
 
 ## The one `Building` whose lot holds `tile`, or null.
 func _building_at(city: City, tile: Vector2i) -> Building:
-	for building in city._buildings:
+	for building in city.buildings():
 		if building.lot.has_point(tile):
 			return building
 	return null
 
 func _burnt_count(city: City) -> int:
 	var burnt := 0
-	for building in city._buildings:
+	for building in city.buildings():
 		if building.condition == Building.Condition.BURNT:
 			burnt += 1
 	return burnt
@@ -266,17 +255,26 @@ func _contains(planned: Array, id: String) -> bool:
 ## accumulate permanent barricades. Any combination that seals the home off from every park
 ## makes the day unwinnable in a way the player cannot see coming.
 func _test_a_park_stays_reachable_every_day(t) -> void:
-	var saved := GameState.attempt_spend.scars.duplicate(true)
-	# Stack the deck: pretend several convoys have already left barricades around.
-	GameState.attempt_spend.scars = []
-	for tile in [Vector2i(20, 45), Vector2i(45, 20), Vector2i(70, 45), Vector2i(45, 70)]:
-		GameState.attempt_spend.scars.append({
-			"id": "barricade", "position": _map.tile_to_world(tile), "since_day": 1,
-		})
+	# Stack the deck: pretend several convoys have already left barricades around, in rings of
+	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
+	# ones cannot), and plan every day.
+	var run := RunState.new()
+	run.start_run(SEED)
+	var home := _map.home_rect.position
+	for radius in [3, 5, 7]:
+		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+			run.attempt_spend.scars.append({
+				"id": "barricade", "position": _map.tile_to_world(home + step * radius),
+				"since_day": 1,
+			})
 
+	var grid := ReachabilityGrid.build(_map)
+	# Day 1 runs with no scar in effect (a scar applies from the day after its `since_day`), and
+	# is the plain plan whose route to a park nothing else checks.
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed, GameState.attempt_spend.scars)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed, run.attempt_spend.scars)
 		# Typed deliberately: passing a bare `Array` here makes GDScript coerce it at the
 		# call boundary, and that coercion leaves the CityMap alive at shutdown ("N
 		# ObjectDB instances were leaked"). Declaring the real element type avoids it.
@@ -284,11 +282,20 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 		for plan in planned:
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 				blockers.append(plan)
-		var grid := ReachabilityGrid.build(_map)
-		t.check(EventScheduler._park_is_reachable(_map, grid, blockers),
+		t.check(_a_park_is_reachable(grid, blockers),
 				"day %d leaves a walkable route from home to a park" % day)
+	run.free()
 
-	GameState.attempt_spend.scars = saved
+## Whether the grid still finds a way from the home to some calm tile with today's closures and
+## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`, the set
+## `WalkSiting` builds the same way): what the scheduler keeps true of the day it plans.
+func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventScheduler.Planned]) -> bool:
+	var blocked := EventScheduler.blocked_by(_map, blockers)
+	var reached := grid.flood([_map.home_rect.position], blocked)
+	for tile in _map.calm_tiles():
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
 
 func _test_act_tints_differ(t) -> void:
 	var seen: Array[Color] = []
