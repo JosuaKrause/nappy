@@ -303,8 +303,9 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 	for map in _maps:
 		var ordinary := 0
 		for segment in map.network.segments():
-			if map.has_street(segment.key()) \
-					and StreetTrees._street_kind_of(map, segment) == GameEnums.StreetKind.ORDINARY:
+			var middle := segment.tile_rect().get_center()
+			if map.has_street(segment.key()) and map.street_kind_at(not segment.horizontal,
+					middle) == GameEnums.StreetKind.ORDINARY:
 				ordinary += 1
 		ordinary_total += ordinary
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
