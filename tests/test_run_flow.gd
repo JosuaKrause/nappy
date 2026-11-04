@@ -9,6 +9,10 @@ const SEED := 4242
 const _SCRATCH_SAVE := "user://test_run_flow_scratch.json"
 ## Whether the tree was paused before a boot, put back once it is shut down.
 var _saved_paused := false
+## The run the boot plays and the node standing for the tree's root it is parked in (`Boot.home_playing()`):
+## made fresh for each boot, so no check reads or sets a run it shares with another.
+var _run: RunState
+var _home: Node
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -218,20 +222,27 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 	EventBus.day_started.disconnect(count)
 	t.check(started == [1], "a tap and a key inside the tap's two frames start the day once (%s)"
 			% [started])
-	t.check(main._readout._spec == main._flow.spec,
-			"the readout heard the day begun from the flow")
-	# Every reload goes through one function, which an authored scene failing its own retry calls
-	# straight from the walk: the flow says RELOADING whichever way it came.
-	# The reload parks the sitting in a node of the test's own rather than at the tree's root.
-	var home := Node.new()
-	t.add_child(home)
-	main.use_sitting_home(home)
-	main.use_reload(func() -> void: pass)
-	main._reload_the_scene()
-	t.check(main._flow.mode == RunFlow.Mode.RELOADING, "a reload from the walk leaves RELOADING (%s)"
-			% RunFlow.Mode.keys()[main._flow.mode])
+
+	# Every reload goes through one function, which the held restart calls straight from the walk
+	# (the pause screen's restart) as an authored scene failing its own retry does: the flow says
+	# RELOADING whichever way it came, and the walk's tick, which counts only while the flow says
+	# WALKING (`main._physics_process()`), stops with the reload asked for. The reload is the hand-in
+	# `main` takes in place of reloading the runner's scene, and the tree it unpauses keeps running.
+	var reloads: Array[int] = []
+	main.use_reload(func() -> void: reloads.append(1))
+	t.get_tree().paused = false
+	var ticks := _run.header.play_ticks
+	await _physics_frames(t, 4)
+	t.check(_run.header.play_ticks > ticks, "the walk's tick counts while she walks (%d to %d)"
+			% [ticks, _run.header.play_ticks])
+	Boot.pause(main).restart_requested.emit()
+	t.check(reloads.size() == 1, "a restart from the walk asks for one reload (%d)" % reloads.size())
+	ticks = _run.header.play_ticks
+	await _physics_frames(t, 4)
+	t.check(_run.header.play_ticks == ticks and not t.get_tree().paused,
+			"and leaves the flow RELOADING: the walk's tick no longer counts, with the tree running"
+			+ " (%d to %d)" % [ticks, _run.header.play_ticks])
 	_shut_down(t, booted)
-	home.free()
 
 ## A hard run's last nerve: the run-over screen's continue raises the ending, and the tap's own
 ## continue must not then reach the ending and restart the run before it has been seen. The ending
@@ -241,19 +252,17 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
 	var main := booted.main
 	var reloads: Array[int] = []
 	main.use_reload(func() -> void: reloads.append(1))
-	GameState.calendar.choose_mode(true)
-	GameState.header.nerves = 1
+	_run.calendar.choose_mode(true)
+	_run.header.nerves = 1
 	EventBus.hard_fail_triggered.emit("car_strike")
 	var summary := Boot.summary(main)
-	t.check(summary.is_showing() and _continue_shown(main) and GameState.header.nerves == 0,
+	t.check(summary.is_showing() and _continue_shown(main) and _run.header.nerves == 0,
 			"the run-over screen is up")
 	await _tap_then_key(t, main)
 	t.check(summary.is_showing() and not _continue_shown(main) and reloads.is_empty(),
 			"the ending is up and the run not restarted (continue shown %s, %d reloads)"
 			% [_continue_shown(main), reloads.size()])
 	_shut_down(t, booted)
-	GameState.header.ending = GameEnums.Ending.NONE
-	GameState.calendar.choose_mode(false)
 
 ## A lost section's retry comes up behind its brief (PLAYTEST-94 10), and the tap's own continue
 ## must not then reach that brief and start the retry before it has been read.
@@ -264,6 +273,15 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 	var day := Boot.day(main)
 	t.check(summary.is_showing() and _title_of(main) == _city_words(),
 			"the boot stands on the city section's brief")
+	# The readout is told the section begun by the flow, and names it in its day line (an ordinary
+	# day's line carries no title). It rebuilds its text a few times a second, so frames pass first.
+	var readout := Boot.readout_label(main)
+	for _frame in Boot.BOOT_FRAMES:
+		if "seed" in readout.text:
+			break
+		await t.get_tree().process_frame
+	t.check(("   " + Texts.ESCAPE_CITY.to_lower()) in readout.text,
+			"the readout names the section the flow began (%s)" % readout.text.get_slice("\n", 1))
 	await Boot.press_continue(t, main)
 	t.check(not summary.is_showing() and day.is_running(),
 			"and its continue walks the section")
@@ -279,7 +297,6 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 			"the retry's brief is up rather than the retry walked past it (%d started, '%s')"
 			% [started.size(), _title_of(main)])
 	_shut_down(t, booted)
-	GameState.facts.escape_section = DaySpec.Section.NONE
 
 ## The real `main.tscn` on `SEED` with `args`, unsaved and uncounted, once its boot has finished
 ## (its first day running, or behind its brief), with the tree paused as a screen leaves it.
@@ -288,7 +305,10 @@ func _boot(t, args: Array) -> Boot.Booted:
 	t.get_tree().paused = true
 	var words := ["--seed", str(SEED)]
 	words.append_array(args)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words))
+	_run = RunState.new()
+	_home = Boot.home_playing(t, _run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
+			func(main: Node) -> void: main.use_sitting_home(_home))
 	t.get_tree().paused = true
 	return booted
 
@@ -319,6 +339,13 @@ func _city_words() -> String:
 func _continue_shown(main: Node2D) -> bool:
 	return UI.button(Boot.summary(main), "Continue").is_visible_in_tree()
 
+## `count` physics ticks, waited on.
+func _physics_frames(t, count: int) -> void:
+	for _tick in count:
+		await t.get_tree().physics_frame
+
 func _shut_down(t, booted: Boot.Booted) -> void:
 	booted.free_all()
+	_home.free()
+	_run.free()
 	t.get_tree().paused = _saved_paused
