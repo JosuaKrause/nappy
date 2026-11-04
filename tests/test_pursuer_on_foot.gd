@@ -37,15 +37,17 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ the rig ---
 
-## A real city on `SEED`'s map in the tree, its events told it is `day`, and a stand-in for her at
-## a sidewalk beside a building, returned as `[city, her]`.
-func _city_with_her(t, day: int, seed_value := SEED) -> Array:
-	var map := CityGenerator.generate(seed_value)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+## A real city on `SEED`'s map in the tree, over a run of its own (`RunCity.with_own_run()`), its
+## events told it is `day`, and a stand-in for her at a sidewalk beside a building, returned as
+## `[city, her]`, on `on_map` when one is given. She is a body the events can read a velocity off (`EventsAhead.place_what_is_owed_ahead()`
+## asks for a `CharacterBody2D`), standing still unless a check gives her one.
+func _city_with_her(t, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
+	var map := on_map if on_map else CityGenerator.generate(seed_value)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
 	city.build(map)
 	city.events.world.day = day
-	var her := Node2D.new()
+	var her := CharacterBody2D.new()
 	her.add_to_group("player")
 	city.events.use_player(her)
 	t.add_child(her)
@@ -62,6 +64,37 @@ func _a_sidewalk(map: CityMap) -> Vector2:
 					and map.pavement_inward(tile).y != 0:
 				return map.tile_to_world(tile)
 	return map.tile_to_world(middle)
+
+## The generated map on `seed_value` as day 8's dawn leaves it: the repaint the day's closures and
+## decor give it, as the city does before it plans the day.
+func _the_map_of_day_8(seed_value: int) -> CityMap:
+	var map := CityGenerator.generate(seed_value)
+	var state := CityState.new()
+	state.begin_day(map.block_plans, 8)
+	map.repaint(state)
+	return map
+
+## The routes the day's own planning gives `police_patrol` at full heat on `seed_value`'s map: the
+## paths of the patrols a real day-8 dawn (`EventScheduler.build_day()`) places, those at least 400px
+## long. Planned once per seed for the suite, and only read by the checks that drive a patrol down them.
+func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
+	if _routes.has(seed_value):
+		return _routes[seed_value]
+	var map := _the_map_of_day_8(seed_value)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var plans := EventScheduler.build_day(DaySpec.for_day(8), rng, map, [], [], [],
+			RouteTree.for_day(map, 8), Tuning.RESISTANCE_GOAL)
+	var routes: Array[PackedVector2Array] = []
+	for plan in plans:
+		if plan.def.id == "police_patrol" and plan.path.size() >= 2 \
+				and plan.path[0].distance_to(plan.path[1]) >= 400.0:
+			routes.append(plan.path)
+	_routes[seed_value] = routes
+	return routes
+
+## `_patrol_routes()`, by seed.
+var _routes := {}
 
 func _done(city: City, her: Node2D) -> void:
 	her.free()
@@ -155,6 +188,8 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 	var on_sent := func() -> void: told[0] += 1
 	EventBus.poster_pursuit_sent.connect(on_sent)
 	var before := city.events.instances().size()
+	var account: Array[String] = []
+	city.events.world.trace = RunTrace.recording(account)
 	city.events.send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := city.events.pending_warnings()
@@ -163,12 +198,14 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 	t.check(city.events.instances().size() == before and city.events.ahead.sent_pursuer() == null,
 			"and nothing is in the world yet")
 	t.check(told[0] == 1, "the counter's poster-pursuit goes out as he is sent (%d)" % told[0])
-	var start := city.events.ahead._where_the_sent_pursuer_starts(EventCatalogue.on_foot_on(6),
-			her.global_position, Vector2.ZERO, true)
-	t.check(start.clear, "from a sidewalk in the city, his start has a clear run at her")
 	_run_the_warning(city, her)
 	var sent := city.events.ahead.sent_pursuer()
 	t.check(sent != null, "once the badge's time is up he is in the world")
+	var starts_clear := func(line: String) -> bool:
+		return line.begins_with("roll poster tear: a policeman sent after her") \
+				and line.ends_with("(a clear run at her)")
+	t.check(account.any(starts_clear),
+			"and, from a sidewalk in the city, his start has a clear run at her (%s)" % [account])
 	if sent:
 		var view := SpawnSiting.seen_from(city.events.visible_view(), her.global_position)
 		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(sent.def),
@@ -206,43 +243,84 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
 	t.check(city.events.pending_warnings().size() == 1 and told[0] == 2,
 			"once he has given up, the next marble sends the next one")
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
+	_done(city, her)
+	# A city of its own for the escape, where nothing is after her or owed yet, so what refuses
+	# him is the escape's walk (`DaySpec.poster_pursuits`) and not the pursuer already sent.
+	rig = _city_with_her(t, 6)
+	city = rig[0]
+	her = rig[1]
 	city.events.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY,
 			RunConfig.FINALE_LENGTH_SECONDS))
-	city.events.warnings._pending.clear()
-	city.events.ahead._sent_after_her = null
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().is_empty(), "and during the escape nobody is sent")
 	_done(city, her)
 
 ## **"nothing influences across them"**: on a planned day, sending him and running his warning
 ## leaves the director's owed queue, its clock, its route bag and the day's stream exactly where
-## they were.
+## they were. Read as the day it makes: two cities on the same map and the same run seed start day 6
+## alike; in one a pursuer is sent and his warning run down, and then she walks the same minute in
+## both with the director asked as the game asks it every tick
+## (`EventsAhead.place_what_is_owed_ahead()`). The two days hand her the same events, one after
+## another at the same place, and leave the same number owed and the same plan, and the day's stream
+## stands where it stood. A queue, a clock or a bag he had moved would hand her another event, or
+## the same one at another moment.
 func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t) -> void:
-	var rig := _city_with_her(t, 6)
-	var city: City = rig[0]
-	var her: Node2D = rig[1]
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [SEED, 6])
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(6), rng, consumed, her.global_position)
-	var director := city.events.ahead.director()
-	var owed := director.owed()
-	var next_in: float = director._next_in
-	var state := rng.state
-	var bag: MarbleBag = director.route_bag()
-	var drawn := bag.drawn if bag else -1
-	var in_front: Array = bag.bag_in_front().duplicate() if bag else []
-	var bag_state := bag._rng.state if bag else 0
-	var plans := city.events.plans().size()
-	city.events.send_a_pursuer()
-	_run_the_warning(city, her)
-	t.check(city.events.ahead.sent_pursuer() != null, "on a planned day he is sent")
-	t.check(director.owed() == owed and is_equal_approx(director._next_in, next_in)
-			and rng.state == state, "the day's owed queue, its clock and its stream are untouched")
-	t.check(bag == null or (bag.drawn == drawn and bag.bag_in_front() == in_front
-			and bag._rng.state == bag_state), "and the route's bag draws what it would have")
-	t.check(city.events.plans().size() == plans, "and nothing joins the day's plan")
-	_done(city, her)
+	var days: Array[Dictionary] = []
+	for sends in [false, true]:
+		var rig := _city_with_her(t, 6)
+		var city: City = rig[0]
+		var her: CharacterBody2D = rig[1]
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("%d:%d" % [SEED, 6])
+		var consumed: Array[String] = []
+		city.events.start_day(DaySpec.for_day(6), rng, consumed, her.global_position)
+		var owed_at_dawn := city.events.ahead.owed_ahead()
+		var plans := city.events.plans().size()
+		var state := rng.state
+		if sends:
+			city.events.send_a_pursuer()
+			_run_the_warning(city, her)
+			t.check(city.events.ahead.sent_pursuer() != null, "on a planned day he is sent")
+			t.check(city.events.ahead.owed_ahead() == owed_at_dawn and rng.state == state,
+					"the day's owed queue and its stream are untouched at once")
+		days.append({"city": city, "her": her, "handed": _what_the_walk_hands_her(city, her, 120.0),
+				"owed": city.events.ahead.owed_ahead(), "plans": city.events.plans().size(),
+				"stream": rng.state, "plans_at_dawn": plans})
+	var plain: Dictionary = days[0]
+	var torn: Dictionary = days[1]
+	t.check((plain["handed"] as Array).size() >= 2,
+			"the plain day hands her events to compare (%d)" % (plain["handed"] as Array).size())
+	t.check(plain["handed"] == torn["handed"],
+			"the same events at the same places, in the same order, on the day with a tear "
+			+ "(%s, then %s)" % [plain["handed"], torn["handed"]])
+	t.check(plain["owed"] == torn["owed"] and plain["stream"] == torn["stream"],
+			"and as many still owed (%d, then %d), the stream where it was"
+			% [plain["owed"], torn["owed"]])
+	t.check(torn["plans"] == torn["plans_at_dawn"], "and nothing joins the day's plan")
+	for day in days:
+		_done(day["city"], day["her"])
+
+## What the director puts in front of her as she walks `seconds` north on the spot, a tick at a
+## time as the manager's tick asks it: `"id at x,y"` for each event that appears in the world, the
+## torn poster's pursuer left out.
+func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) -> Array:
+	her.velocity = Vector2(0.0, -Tuning.WALK_SPEED)
+	var seen := {}
+	for instance in city.events.instances():
+		seen[instance] = true
+	var handed := []
+	var elapsed := 0.0
+	while elapsed < seconds:
+		city.events.ahead.place_what_is_owed_ahead(0.1)
+		elapsed += 0.1
+		for instance in city.events.instances():
+			if seen.has(instance):
+				continue
+			seen[instance] = true
+			handed.append("%s at %.0f,%.0f" % [instance.def.id, instance.global_position.x,
+					instance.global_position.y])
+	her.velocity = Vector2.ZERO
+	return handed
 
 # ------------------------------------------------------------- the chase ---
 
@@ -557,25 +635,11 @@ func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
 				least = minf(least, landed)
 		_done(city, her)
 	for seed_value: int in [4242, 90210, 314159]:
-		var rig := _city_with_her(t, 8, seed_value)
+		var rig := _city_with_her(t, 8, seed_value, _the_map_of_day_8(seed_value))
 		var city: City = rig[0]
 		var her: Node2D = rig[1]
 		var map := city.map
-		var rng := RandomNumberGenerator.new()
-		rng.seed = seed_value
-		var routes := 0
-		var tile := Vector2i(Tuning.STREET_WIDTH + 1, 0)
-		for attempt in 4000:
-			if routes >= 6:
-				break
-			tile = Vector2i(posmod(tile.x * 7 + 13 + attempt, map.size.x),
-					posmod(tile.y * 5 + 29 + attempt * 3, map.size.y))
-			if map.tile_at(tile) != GameEnums.TileType.ROAD or map.is_closed(tile):
-				continue
-			var route := EventScheduler._along_street_path(map, tile, hot, rng)
-			if route.size() < 2 or route[0].distance_to(route[1]) < 400.0:
-				continue
-			routes += 1
+		for route: PackedVector2Array in _patrol_routes(seed_value).slice(0, 6):
 			var along := (route[1] - route[0]).normalized()
 			for fraction: float in [0.4, 0.6, 0.8]:
 				var at := _beside(map, route[0].lerp(route[1], fraction), along)
@@ -646,22 +710,8 @@ func _test_an_investigating_car_never_stops_in_a_junction_box(t) -> void:
 	var in_a_box := 0
 	var drove_out := 0
 	for seed_value: int in [4242, 90210, 314159]:
-		var map := CityGenerator.generate(seed_value)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = seed_value
-		var routes := 0
-		var tile := Vector2i(Tuning.STREET_WIDTH + 1, 0)
-		for attempt in 4000:
-			if routes >= 10:
-				break
-			tile = Vector2i(posmod(tile.x * 7 + 13 + attempt, map.size.x),
-					posmod(tile.y * 5 + 29 + attempt * 3, map.size.y))
-			if map.tile_at(tile) != GameEnums.TileType.ROAD or map.is_closed(tile):
-				continue
-			var route := EventScheduler._along_street_path(map, tile, hot, rng)
-			if route.size() < 2 or route[0].distance_to(route[1]) < 400.0:
-				continue
-			routes += 1
+		var map := _the_map_of_day_8(seed_value)
+		for route: PackedVector2Array in _patrol_routes(seed_value).slice(0, 10):
 			var along := (route[1] - route[0]).normalized()
 			for fraction: float in [0.35, 0.55, 0.75, 0.9]:
 				var her := _beside(map, route[0].lerp(route[1], fraction), along)
@@ -799,13 +849,15 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	t.check(not van.is_finished and not van.is_leaving,
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraph_time + hot.duration])
-	men[0]._finish()
+	var events := EventManager.new()
+	events.retire(men[0])
 	van.step(STEP)
 	t.check(not van.is_finished and not van.is_leaving, "with one man still out it still stands")
-	men[1]._finish()
+	events.retire(men[1])
 	van.step(STEP)
 	van.step(STEP)
 	t.check(van.is_finished or van.is_leaving, "once both are back in, it leaves")
+	events.free()
 	for man in men:
 		man.free()
 	van.free()
