@@ -2,7 +2,7 @@
 
 minty-quail's `tests-public-seams.md` and `run-state-handed-in.md`: the posters suite, subtask W12 of
 the scoped plan. One `src/` change: `PosterWalls.wall_count()`, which only this suite read, goes;
-`fronts().size()` answers the same.
+the suite's checks that some walls exist read `fronts().size()`, the front tiles, several to a wall.
 
 **Built.** `test_posters.gd` (private-read lines 37 to 0, `GameState` lines 81 to 0) builds each
 test's city on a run of its own, hands the events a real `Stroller` through `use_player()`, and holds
