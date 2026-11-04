@@ -3,6 +3,7 @@ extends RefCounted
 
 const STATE_SCRIPT = preload("res://src/autoload/game_state.gd")
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_player_presentation_scratch.json"
 const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal",
@@ -47,17 +48,18 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 ## the moment it enters the tree (`SceneTree.node_added`), before anything has drawn it: the choice
 ## is bound by then on both ways in.
 func _test_main_binds_both_complete_families_before_drawing(t) -> void:
-	var baseline := GameState.save_snapshot()
 	for male in [false, true]:
 		var parent := "father" if male else "mother"
 		var in_the_escape: Array[bool] = []
-		var escape: Boot.Booted = await _boot_catching(t, ["--parent", parent, "--start-escape"],
-				in_the_escape)
+		var escape_seat := Seat.new(t)
+		var escape: Boot.Booted = await _boot_catching(t, escape_seat,
+				["--parent", parent, "--start-escape"], in_the_escape)
 		Telemetry.end_run()
 		escape.free_all()
-		GameState.facts.escape_section = DaySpec.Section.NONE
+		escape_seat.end()
 		var on_a_day: Array[bool] = []
-		var booted: Boot.Booted = await _boot_catching(t, ["--parent", parent], on_a_day)
+		var seat := Seat.new(t)
+		var booted: Boot.Booted = await _boot_catching(t, seat, ["--parent", parent], on_a_day)
 		var rig := Boot.player(booted.main)
 		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
 				and rig.is_male == male,
@@ -80,20 +82,20 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 							"both presentations retain the same west-facing mirrors")
 					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
-			t.check(rig.is_male == male and GameState.header.player_is_male == male,
+			t.check(rig.is_male == male and seat.run.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		Telemetry.end_run()
 		booted.free_all()
-	GameState.restore_snapshot(baseline)
+		seat.end()
 
-## A boot of `main` on `words`, with the family of every stroller that entered the tree during it,
-## at the moment it entered, appended to `entered`.
-func _boot_catching(t, words: Array, entered: Array[bool]) -> Boot.Booted:
+## A boot of `main` over `seat`'s run on `words`, with the family of every stroller that entered the
+## tree during it, at the moment it entered, appended to `entered`.
+func _boot_catching(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
 	var catch := func(node: Node) -> void:
 		if node is Stroller:
 			entered.append((node as Stroller).is_male)
 	t.get_tree().node_added.connect(catch)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words))
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
 	t.get_tree().node_added.disconnect(catch)
 	return booted
 

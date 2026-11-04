@@ -4,6 +4,8 @@ extends RefCounted
 ## `docs/TODO.md`, M180, "Posters she notices, and loudspeakers that are somewhere".
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SEED := 4242
 const FAST_SCALE := 5.0
 ## A handful of seeds, for the one guarantee that has to hold on more than the seed the rest of
@@ -148,7 +150,7 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> voi
 # -------------------------------------------------------------- the broadcast ---
 
 func _build_city(t) -> void:
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(_map)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`

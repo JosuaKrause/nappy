@@ -20,7 +20,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const SEEDS := 4
 const BASE_SEED := 771103
-## The seed of the run each test hands its manager.
+## The seed of the run each test hands its manager, and the city it builds.
 const RUN_SEED := 2
 ## How many times real time a wait for a hold to run its course goes at (`PhysicsTicks`): each of its
 ## ticks is that much longer, so a hold takes a third of the ticks. The checks made over it are
@@ -332,7 +332,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	# No player in this rig, so nothing would ever stream in on its own — see
@@ -1750,7 +1750,7 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 ## stop duration and the pass, per the milestone's own request.
 func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	var rng := RandomNumberGenerator.new()
@@ -1855,14 +1855,15 @@ func _test_the_boom_never_inspects_her(t) -> void:
 ## **The arm never comes down on her.** A raised boom's body goes back down with the arm, so an arm
 ## lowered with her rig beneath it would put a solid body around her. `Crowd._stop_for_gates()`
 ## keeps a raised gate up while any of her rig is under it, as it does for a car within a length,
-## and lowers it the moment the road and she are both clear.
+## and lowers it the moment the road and she are both clear. Driven by the crowd's own rig tick,
+## `Crowd.step()`, which runs it with the rest of the tick's first half.
 func _test_the_arm_never_comes_down_on_her(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	var stroller := _real_stroller(t)
-	city.crowd._player = stroller
+	city.crowd.use_player(stroller)
 
 	var gate := RegionPlanner.GateState.new()
 	gate.position = Vector2(-5000.0, -5000.0)
@@ -1871,10 +1872,10 @@ func _test_the_arm_never_comes_down_on_her(t) -> void:
 	city.crowd.set_gates(gates)
 
 	stroller.global_position = gate.position + Vector2(40.0, 10.0)
-	city.crowd._stop_for_gates(STEP)
+	city.crowd.step(STEP)
 	t.check(gate.raised, "with no car anywhere near it, the arm stays up while she is under it")
 	stroller.global_position = gate.position + Vector2(200.0, 0.0)
-	city.crowd._stop_for_gates(STEP)
+	city.crowd.step(STEP)
 	t.check(not gate.raised, "and comes down once she is out from under it")
 
 	stroller.free()
@@ -1929,7 +1930,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 func _street_door_rig(t) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
 	_repaint_for(map, day)

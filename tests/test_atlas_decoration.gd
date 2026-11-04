@@ -14,6 +14,8 @@ extends RefCounted
 ## on its own.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const SEED := 4242
 
 func run(t) -> void:
@@ -100,7 +102,7 @@ func _test_the_city_is_the_groups_only_acquire(t) -> void:
 	t.check(not atlas.is_acquired(CityDecals.DECORATION_ATLAS),
 			"nothing holds the decoration group before any city exists")
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
 	city.build(map)
@@ -121,7 +123,7 @@ func _test_the_city_is_the_groups_only_acquire(t) -> void:
 func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var map := CityGenerator.generate(SEED)
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
 	city.build(map)

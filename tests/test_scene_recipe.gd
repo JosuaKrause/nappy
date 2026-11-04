@@ -1,5 +1,7 @@
 extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 
 func _recipe() -> Dictionary:
 	return {"version": 1, "name": "construction check", "seed": 7,
@@ -76,7 +78,7 @@ func run(t) -> void:
 		var local: CityMap = bounded.map
 		t.check(local.is_walkable(Vector2i(-100, -100)), "bounded exterior permits walking beyond the original world")
 		t.check(not local.is_street(Vector2i(-100, -100)), "fallback ground never claims to be a generated street")
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(local)
 		t.check(city.scenery_ground_source(Vector2i(-100, -100)) == GroundTiles.ALLEY,
@@ -166,7 +168,7 @@ func _test_examples(t) -> void:
 			continue
 		var map: CityMap = built.map
 		t.check(map.is_walkable(map.world_to_tile(built.anchors.start)), "%s start is exactly walkable" % side)
-		var city: City = RunCity.of_the_run(CITY_SCENE)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		city.scenery_frame_locked = true
 		t.add_child(city)
 		city.build(map)

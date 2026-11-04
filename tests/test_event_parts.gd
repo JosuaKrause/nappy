@@ -17,14 +17,15 @@ func run(t) -> void:
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 
-## An `EventWorld` on fresh open ground drawn in `holder`, belonging to the live run.
+## An `EventWorld` on fresh open ground drawn in `holder`, belonging to a run of its own, which
+## `_free_world()` frees.
 func _world(t) -> EventWorld:
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	var world := EventWorld.new()
 	world.map = CityMap.new()
 	world.map.world = holder
-	world.run = GameState
+	world.run = RunState.new()
 	return world
 
 ## A Stroller with the camera it looks up by path, in the tree, its physics stepped by nobody.
@@ -40,6 +41,8 @@ func _her(t) -> Stroller:
 	return her
 
 func _free_world(world: EventWorld) -> void:
+	if world.run != null:
+		world.run.free()
 	for instance in world.instances:
 		if is_instance_valid(instance):
 			instance.free()
@@ -136,7 +139,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t) -> void:
 	var streaming := EventStreaming.new(world, spawner)
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def.aftermath.scar != "", "the fire leaves a scar")
-	var scars_before := GameState.attempt_spend.scars.duplicate()
+	t.check(world.run.attempt_spend.scars.is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventScheduler.Planned.new(def, at)
 	var plans: Array[EventScheduler.Planned] = [plan]
@@ -146,9 +149,8 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t) -> void:
 	for _i in 3:
 		streaming.stream_around(at)
 		streaming.stream_around(far)
-	var added := GameState.attempt_spend.scars.size() - scars_before.size()
+	var added := world.run.attempt_spend.scars.size()
 	t.check(added == 1, "three times in and out records the fire's scar once (%d)" % added)
-	GameState.attempt_spend.scars = scars_before
 	_free_world(world)
 
 func _test_the_pelican_bag_is_the_handed_runs(t) -> void:
@@ -158,11 +160,9 @@ func _test_the_pelican_bag_is_the_handed_runs(t) -> void:
 	world.run = run
 	var spawner := EventSpawner.new(world, WarningBoard.new(world))
 	var cyclist := EventCatalogue.by_id("cyclist")
-	var draws := GameState.pelican.draws
 	for _i in 5:
 		spawner.rolls_a_pelican(cyclist)
 	t.check(run.pelican.draws == 5, "five cyclists draw five marbles from the handed run's bag")
-	t.check(GameState.pelican.draws == draws, "and none from the game's own run")
 	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
 	t.check(run.pelican.draws == 5, "a dog draws nothing")
 	run.free()
@@ -213,7 +213,8 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	var manager := EventManager.new()
 	manager.world.map = CityMap.new()
 	manager.world.map.world = holder
-	manager.use_run(GameState)
+	var run := RunState.new()
+	manager.use_run(run)
 	t.add_child(manager)
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
@@ -244,3 +245,4 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	manager.free()
 	her.free()
 	holder.free()
+	run.free()

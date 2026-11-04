@@ -15,6 +15,11 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
 const DAY := 7
+## The seed of the run each city stands in (a run of its own, held by the city). The checks depend on
+## it: the day's streams come from it (`RunCalendar.day_rng()`, among them the one that seeds the
+## route bag and the sitings on her route), and on any seed but 2 the van's marble is not among the
+## next two events on her route.
+const RUN_SEED := 2
 const ROW := "delivery_van"
 const STEP := 0.1
 
@@ -31,7 +36,7 @@ func run(t) -> void:
 ## Answers whether a second van was put on her route in this city.
 func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var size := ResistanceSteps.VAN_WITHIN_THE_NEXT
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
@@ -40,16 +45,11 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.resistance.completed_steps.assign(done)
-	GameState.resistance.failed_steps.assign([])
-	GameState.resistance.progress = 0
+	city.run.resistance.completed_steps.assign(done)
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -183,9 +183,6 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	player.free()
 	resistance.free()
 	city.free()
-	GameState.resistance.completed_steps.assign(saved_completed)
-	GameState.resistance.failed_steps.assign(saved_failed)
-	GameState.resistance.progress = saved_progress
 	return placed.size() == 1
 
 ## **No part of the route van is in the camera's view the frame it is created** ("Nothing may be
@@ -195,7 +192,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
 func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 	var seed_value: int = SEEDS[0]
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()

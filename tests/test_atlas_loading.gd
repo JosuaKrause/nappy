@@ -31,6 +31,8 @@ extends RefCounted
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## The seed of the run the city is handed (`RunCity.with_own_run()`).
+const RUN_SEED := 2
 const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
@@ -391,7 +393,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	return rng
 
 func _city(t, atlas: AtlasLibrary) -> City:
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
