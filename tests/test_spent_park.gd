@@ -35,11 +35,11 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------------ setup ---
 
-## Repaints `map` for `day` with `used` handed over the way `Main._start_day()` hands
-## `GameState.calendar.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
-## `GameState.facts.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
+## Repaints `map` for `day` with `used` handed over the way `DayDirector.start_day()` hands
+## `RunState.calendar.settled_this_act()` over, and `fenced`/`fenced_act` the way it hands over
+## `RunState.facts.fenced_park`/`fenced_park_act` — both defaulting to "nothing fenced yet", the shape
 ## every test but the ones about the fence itself wants. Returns the pair to feed the same map's
-## next call, the way `Main._start_day()` reads them back into `GameState` for tomorrow, so a fence
+## next call, the way `DayDirector.start_day()` reads them back into the run for tomorrow, so a fence
 ## chosen on one day of the sweep carries into the next rather than being re-decided.
 func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 		fenced: Vector2i = Vector2i(-1, -1), fenced_act: int = 0) -> Array:
@@ -48,7 +48,7 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(fenced, fenced_act, Tuning.act_for_day(day))
 	map.repaint(state)
-	# Exercise Main's actual read-back policy on a run of its own, thrown away after.
+	# Exercise the director's actual read-back policy on a run of its own, thrown away after.
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	run.facts.fenced_park = fenced
@@ -65,9 +65,9 @@ func _calm_on(map: CityMap, day: int) -> Array[Vector2i]:
 	return map.calm_blocks.duplicate()
 
 ## What an act would have used by `day`: one area a day since the act began, most recent first,
-## drawn from today's calm in an order rolled from the seed — the shape `GameState.
+## drawn from today's calm in an order rolled from the seed — the shape `RunState.calendar.
 ## settled_this_act()` has, without playing the days. A block chosen as `CityMap.fenced_park` on an
-## earlier day may still be here on a later one, the same way `GameState.settled.settled_in` still carries
+## earlier day may still be here on a later one, the same way `RunState.settled.settled_in` still carries
 ## the day she used it before it was fenced — fencing does not erase the past.
 func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 	var calm := _calm_on(map, day)
@@ -133,9 +133,9 @@ func _test_the_one_fence_is_remembered_after_its_act(t) -> void:
 			t.check(first.x >= 0 and fenced_act == 3, "the fixture chooses its fence in act III")
 		if day >= 9:
 			t.check(fenced == first and fenced_act == 3,
-					"day %d remembers the original fence after Main's read-back" % day)
+					"day %d remembers the original fence after the director's read-back" % day)
 		if day >= 12:
-			t.check(map.fenced_park == Vector2i(-1, -1) and map._fenced_tiles.is_empty(),
+			t.check(map.fenced_park == Vector2i(-1, -1) and map.closed_tiles.is_empty(),
 					"day %d has no physical fence after the chosen act" % day)
 		elif day >= 9:
 			t.check(map.fenced_park == first, "the original fence stands for the rest of act III")
@@ -171,7 +171,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 				# The fenced park stays off the tree by carrying over from the day it was chosen
 				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
 				# once fenced she cannot settle there again, but a day she did before it was fenced
-				# is still one `GameState.settled.settled_in` remembers. Every other shut area is
+				# is still one `RunState.settled.settled_in` remembers. Every other shut area is
 				# recomputed fresh from `used` each day, so it has to be in it.
 				t.check(is_fenced or block in used,
 						"seed %d day %d takes %s off the tree, which she used"
@@ -297,18 +297,18 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 					var joined: bool = end[0]
 					var along: float = end[1]
 					var inward: float = end[2]
-					var point := fence._point(along)
+					var point := _on_the_line(fence, map, along)
 					if not joined:
 						open_ends += 1
-						t.check(posts.has(fence._point(along + inward * ParkClosure.POST_HALF)),
+						t.check(posts.has(_on_the_line(fence, map, along + inward * ParkClosure.POST_HALF)),
 								"seed %d %s: the open end at %s ends on its own post"
 								% [map.seed_used, block, point])
 						continue
 					corners += 1
 					var meets := 0
 					for other in fences:
-						if other != fence and (other._point(other.from_along) == point
-								or other._point(other.to_along) == point):
+						if other != fence and (_on_the_line(other, map, other.from_along) == point
+								or _on_the_line(other, map, other.to_along) == point):
 							meets += 1
 					t.check(meets == 1, "seed %d %s: the run ending at %s meets exactly one "
 							% [map.seed_used, block, point] + "other run there (%d)" % meets)
@@ -318,12 +318,23 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 	print("  fence corners: %d run ends turn a corner, %d end on a post of their own"
 			% [corners, open_ends])
 
+## The point `along` pixels down `fence`'s axis, on its fence line: the line's across coordinate is
+## its mouth centre's (`mouth_centres()`, the middle of the run on the line), the along coordinate is
+## `along`.
+func _on_the_line(fence: ParkClosure, map: CityMap, along: float) -> Vector2:
+	var middle := fence.mouth_centres(map)[0]
+	return Vector2(along, middle.y) if fence.outward.y != 0 else Vector2(middle.x, along)
+
 func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
-	var horizontal := out.y != 0
-	var length: int = rect.size.x if horizontal else rect.size.y
-	for i in length:
-		found.append(ParkClosure._edge_tile(rect, out, i))
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var on_the_edge := (out == Vector2i.UP and y == rect.position.y) \
+					or (out == Vector2i.DOWN and y == rect.end.y - 1) \
+					or (out == Vector2i.LEFT and x == rect.position.x) \
+					or (out == Vector2i.RIGHT and x == rect.end.x - 1)
+			if on_the_edge:
+				found.append(Vector2i(x, y))
 	return found
 
 ## The guarantees hold with the one fenced park closed and the day's street closures down: at least

@@ -247,13 +247,13 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		clock += STEP
 		for officer in cordon.officers:
 			if before.has(officer):
-				_count_the_step(cordon, officer, before[officer][0], before[officer][1], counts)
+				_count_the_step(city.map, officer, before[officer][0], before[officer][1], counts)
 		for i in cordon.stretches.size():
 			var stretch := cordon.stretches[i]
 			if not stretch.taped or taped_at.has(i):
 				continue
 			taped_at[i] = clock
-			if not _gone(busker) and ParkCordon._body_on(stretch, busker.global_position,
+			if not _gone(busker) and _body_on(stretch, busker.global_position,
 					ParkCordon.WALKER_REACH):
 				taped_over_him += 1
 		if _gone(busker):
@@ -362,9 +362,15 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 		clock += STEP
 		for officer in cordon.officers:
 			if before.has(officer):
-				_count_the_step(cordon, officer, before[officer][0], before[officer][1], counts)
+				_count_the_step(city.map, officer, before[officer][0], before[officer][1], counts)
 	return {"first_seen": first_seen, "closed_at": cordon.closed_at, "trapped": cordon.trapped,
 			"onto_bodies": counts.onto_bodies, "stalled": counts.stalled}
+
+## Whether a body centred at `at`, reaching `reach` from its centre, overlaps where `stretch`'s tape
+## stands — asked of the tape's two ends, which the stretch holds, and not of the cordon's own test.
+static func _body_on(stretch: ParkCordon.Stretch, at: Vector2, reach: float) -> bool:
+	var on := Geometry2D.get_closest_point_to_segment(at, stretch.a, stretch.b)
+	return on.distance_to(at) < reach
 
 ## Whether a walked-out person has gone from the world.
 static func _gone(person: EventInstance) -> bool:
@@ -372,9 +378,8 @@ static func _gone(person: EventInstance) -> bool:
 
 ## Adds one officer's step from `from`, in `phase` before it, to `counts`: onto a body's ground,
 ## or stalled.
-func _count_the_step(cordon: ParkCordon, officer: ParkCordon.Officer, from: Vector2,
+func _count_the_step(map: CityMap, officer: ParkCordon.Officer, from: Vector2,
 		phase: ParkCordon.Officer.Phase, counts: Dictionary) -> void:
-	var map: CityMap = cordon._map
 	var start := map.world_to_tile(from)
 	var steps := maxi(1, ceili(from.distance_to(officer.at) / 2.0))
 	for i in range(1, steps + 1):
