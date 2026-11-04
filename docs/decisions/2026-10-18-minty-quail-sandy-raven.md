@@ -21,7 +21,7 @@ pictures follow on the same shape.
   draw a vent on either rotor frame, a duct and a plain unit. A narrow roof is checked to lay out as
   many units as a wide one with the same interior, instead of rebuilding the count from the private
   density. `test_roof_entities.gd` (private-read lines 17 to 0) and `test_recipe_roofs.gd` (8 to 0)
-  read no private member or constant. Checks 2212 and 67 to 2723 and 68; twenty-nine mutation runs.
+  read no private member or constant. Checks 2212 and 67 to 2722 and 68; twenty-nine mutation runs.
 - Before and after stills of a roofed stretch differ only by encoder noise
   (`docs/evidence/roof-drawer-2026-11-04/`).
 
