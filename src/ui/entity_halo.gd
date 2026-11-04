@@ -203,6 +203,16 @@ func is_showing() -> bool:
 ## happening on screen.
 func _process(delta: float) -> void:
 	var settled := has_settled()
+	# `has_settled()` is approximate (within `CMP_EPSILON`), so a step that leaves `_alpha` a hair
+	# above a target of zero reads as settled and is never stepped again: the rim would stay "showing"
+	# and be re-traced every frame at an alpha no one can see. Arriving is exact, so the last hair is
+	# closed here, and the redraw below clears the rim off the screen.
+	var snapped := settled and (_alpha != _target_alpha or _colour.r != _target_colour.r
+			or _colour.g != _target_colour.g or _colour.b != _target_colour.b)
+	if snapped:
+		_alpha = _target_alpha
+		_colour = Color(_target_colour.r, _target_colour.g, _target_colour.b, _colour.a)
+		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
 	if not settled:
 		var fading_in := _target_alpha > _alpha
 		var duration := FADE_IN_SECONDS if fading_in else FADE_OUT_SECONDS
@@ -217,7 +227,7 @@ func _process(delta: float) -> void:
 		set_instance_shader_parameter("halo_colour", Color(_colour.r, _colour.g, _colour.b, _alpha))
 	# The frame a fade finally reaches zero still redraws once, which is what clears the last rim
 	# off the screen; after that a dark halo costs nothing at all.
-	if not settled or is_showing():
+	if not settled or snapped or is_showing():
 		queue_redraw()
 
 ## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
