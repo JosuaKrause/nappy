@@ -42,7 +42,8 @@ across the runs that measured it, and rewrites tests/suite_costs.txt in exactly 
 tools/test.sh --record-costs writes -- same header, same "name ms" rows, sorted the same way.
 
 A suite missing from every fetched run keeps its existing row in tests/suite_costs.txt and is
-named on stderr rather than dropped or reset to the default.
+named on stderr rather than dropped or reset to the default. A row whose suite is no longer under
+tests/ (deleted, or split into others) is dropped, and named on stderr.
 
 --dry-run fetches and averages the same way but prints the diff tools/ci-costs.sh would make
 against tests/suite_costs.txt instead of writing it.
