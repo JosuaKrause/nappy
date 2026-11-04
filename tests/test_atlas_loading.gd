@@ -33,6 +33,7 @@ const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
@@ -47,32 +48,6 @@ func run(t) -> void:
 	await _test_two_days_never_reload_a_page(t)
 	await _test_a_boot_hands_its_one_library_to_everything_it_draws(t)
 	await _test_no_boot_loads_a_page_on_a_library_of_its_own(t)
-
-## What one test plays: a run made fresh for it and the sitting that holds it, parked in a node of
-## the test's own standing for the tree's root (`Boot.home_playing()`). Boots taken with `boot()` take
-## that sitting, so its library is the one every boot builds on and outlives each of them.
-class Seat:
-	var run: RunState
-	var home: Node
-	var sitting: Sitting
-
-	## `prepare`, when given, is called with the unplayed run (a run to be played from a later day).
-	func _init(t, prepare := Callable()) -> void:
-		run = RunState.new()
-		if prepare.is_valid():
-			prepare.call(run)
-		home = Boot.home_playing(t, run)
-		sitting = home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
-
-	## The real `main.tscn` booted over this seat under `words`, a scratch save handed to it.
-	func boot(t, words: Array) -> Boot.Booted:
-		var seat := self
-		return await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-				func(unbooted: Node) -> void: unbooted.use_sitting_home(seat.home))
-
-	func end() -> void:
-		home.free()
-		run.free()
 
 # ------------------------------------------------------------------ the groups ---
 
@@ -128,7 +103,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
 	for male in [false, true]:
-		var booted := await seat.boot(t, ["--seed", str(SEED), "--parent",
+		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
 				"father" if male else "mother"])
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
@@ -211,7 +186,7 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 func _test_two_days_never_reload_a_page(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
-	(await seat.boot(t, ["--seed", str(SEED), "--parent", "mother"])).free_all()
+	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"])).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
@@ -260,7 +235,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 				if section != DaySpec.Section.NONE:
 					run.header.day = Tuning.RUN_LENGTH_DAYS
 				run.facts.escape_section = section)
-		var booted := await seat.boot(t, [])
+		var booted := await seat.boot(t, _SCRATCH_SAVE, [])
 		var main := booted.main
 		var where := "the day" if section == DaySpec.Section.NONE else "the building"
 		var atlas := seat.sitting.atlas
