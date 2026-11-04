@@ -7,8 +7,9 @@ still draws the star-burst badge.
 
 | file | what it shows |
 | --- | --- |
-| `badge-a-mushroom-attempt-1-native.png` | The mushroom-cloud badge at its native 40 by 40 size. |
-| `badge-a-mushroom-attempt-1.png` | The same badge enlarged for inspection. |
-| `badge-b-star-burst-existing.png` | The existing star-burst badge it is meant to replace, enlarged to the same scale, for comparison. |
+| `badge-a-mushroom-attempt-1-native.png` | The mushroom-cloud badge at twice the SVG's 40 by 40 canvas (80 by 80 pixels). |
+| `badge-a-mushroom-attempt-1.png` | The same badge enlarged for inspection (240 by 240 pixels). |
+| `badge-b-star-burst-existing.png` | The existing star-burst badge it is meant to replace, enlarged to the same scale (240 by 240 pixels), for comparison. |
 
-The pictures are renders of the SVG at the badge's size, not the badge in a running game.
+Each still shows the picture composited inside an orange ring on a dark disc, which is not part of
+the SVG; none is the badge in a running game.
