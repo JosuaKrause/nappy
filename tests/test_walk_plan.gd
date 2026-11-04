@@ -19,7 +19,6 @@ extends RefCounted
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of
 ## `Vector2` arithmetic over a few hundred ticks.
 
-const STEP := 1.0 / 30.0
 const UI := preload("res://tests/ui_screens.gd")
 const TOLERANCE := 0.01
 ## Ticks walked past the end of a script, so both versions have come to rest.
