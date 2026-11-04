@@ -23,7 +23,7 @@ func run(t) -> void:
 	_test_the_answer_is_priced_by_how_soon_it_is_given(t)
 	_test_a_pursuer_is_sited_where_it_can_be_seen(t)
 	_test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
-	_test_the_cyclist_is_warned_shortly_before_he_arrives(t)
+	await _test_the_cyclist_is_warned_shortly_before_he_arrives(t)
 	_test_the_day_3_dog_keeps_its_gold_timing(t)
 	_test_the_resistances_pursuers_are_fitted_to_the_dog(t)
 	_test_every_pursuer_sent_from_off_screen_is_warned_first(t)
@@ -550,7 +550,11 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var player := Node2D.new()
 	t.add_child(player)
 	player.global_position = her
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var edge := DangerEdge.new()
+	edge.atlas = atlas
+	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(manager, player)
 	manager.visible_view().look(VisibleView.around(her, null).view, null)
@@ -571,8 +575,13 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
 	if not warning:
 		manager.free()
+		edge.free()
+		atlas.release(&"events")
 		return
-	edge._measure(STEP)
+	# The edge is in the tree and measures on the frame the engine gives it; the frame after this one
+	# has read the badge up.
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
 	var badged := false
 	for badge in edge.announcing():
 		badged = badged or badge["id"] == "cyclist"
@@ -622,7 +631,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		while since < 1.0 and (into_sight == INF or gone == INF):
 			bike.step(STEP)
 			since += STEP
-			edge._measure(STEP)
+			await t.get_tree().process_frame
 			var box := EventFootprints.footprint_of(def)
 			if into_sight == INF and manager.visible_view().sees_any(
 					Rect2(bike.global_position + box.position, box.size)):
@@ -647,6 +656,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	edge.free()
 	player.free()
 	manager.free()
+	atlas.release(&"events")
 
 	var walked := 0
 	for encounter in M207Lead.encounters():
