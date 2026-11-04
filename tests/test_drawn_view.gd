@@ -152,6 +152,14 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> vo
 		x += 4.0
 	t.check(skipped > 50, "off screen the car asked for no redraw on %d frames" % skipped)
 	t.check(not projected_off_screen, "and its caret was never projected there")
+	# The probe's positive control: the car on screen, redrawn with its picture changed, projects
+	# the caret in that frame, and the probe says so.
+	car.position = Vector2(200.0, 180.0)
+	car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
+	car.excitement.advance(STEP)
+	car.end_the_frame(0.0)
+	t.check(_the_gate_projected_her_caret(car),
+			"the probe sees a caret the gate did project, on screen")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
 	t.check(car.excitement.caret_strength() == 2,

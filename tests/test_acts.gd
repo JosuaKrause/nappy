@@ -164,19 +164,26 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			if flame.x < facade.position.x - 0.01 or flame.y > facade.end.x + 0.01:
 				spilled.append(tile)
 				break
-		# Each column's middle, against every flame's own span: a column the building draws is
-		# burning, one another building's roof covers (`Building.covered_ground_cols`) is not.
+		# Each column, at its middle and a pixel in from both its edges, against every flame's own
+		# span: a column the building draws is burning end to end (so a flame dropped at the end of a
+		# stretch leaves a bare edge), one another building's roof covers (`Building.covered_ground_cols`)
+		# is not.
 		for col in behind.lot.size.x:
-			var middle := facade.position.x + (col + 0.5) * size
-			var burning := false
-			for flame in flames:
-				if flame.x <= middle and middle <= flame.y:
-					burning = true
+			var left_edge := facade.position.x + col * size
 			var drawn := not behind.is_covered(col)
-			if drawn and not burning:
+			var burning_all := true
+			var burning_any := false
+			for point in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
+				var burning := false
+				for flame in flames:
+					if flame.x <= point and point <= flame.y:
+						burning = true
+				burning_all = burning_all and burning
+				burning_any = burning_any or burning
+			if drawn and not burning_all:
 				bare.append(tile)
 				break
-			if burning and not drawn:
+			if burning_any and not drawn:
 				on_a_roof.append(tile)
 				break
 	for fire: EventInstance in fires.values():

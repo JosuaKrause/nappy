@@ -271,27 +271,35 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 ## walking a held event) until its stride is on a step in each half, then given a tick that covers no
 ## ground (a walk of no time), and the dog it draws on real frames is on its rest picture.
 func _test_a_standing_normal_dog_rests(t) -> void:
-	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("dog_walker"), false)
-	instance.held_by_hand = true
-	var rest: String = EventPictures.dog_picture("side", false, false)
-	t.check(_the_dog_drawn(instance).has(rest), "a dog that has not moved stands in its rest pose")
-	for second_half in [false, true]:
-		var walked := 0
-		while not (instance.look.gait_is_stepping()
-				and instance.look.gait_is_second_half() == second_half) and walked < 2000:
-			instance.walk_on_by_hand(STEP)
-			walked += 1
-		t.check(instance.look.gait_is_stepping() and instance.look.gait_is_second_half() == second_half,
-				"the stride is on a step in its %s half" % ("second" if second_half else "first"))
-		await DrawnEvent.frames(t)
-		t.check(not _the_dog_drawn(instance).has(rest),
-				"a dog mid-step in the %s half is not on its rest picture" % ("second" if second_half else "first"))
-		instance.walk_on_by_hand(0.0)
-		await DrawnEvent.frames(t)
-		t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
+	# The heading each view is drawn from.
+	var headings := {"side": Vector2.RIGHT, "front": Vector2.DOWN, "back": Vector2.UP,
+			"front_diagonal": Vector2(1.0, 1.0).normalized(),
+			"back_diagonal": Vector2(1.0, -1.0).normalized()}
+	for view: String in headings:
+		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("dog_walker"),
+				false, null, null, DrawnEvent.AT, headings[view])
+		instance.held_by_hand = true
+		var rest: String = EventPictures.dog_picture(view, false, false)
 		t.check(_the_dog_drawn(instance) == [rest],
-				"a dog stopped in the %s half stands in its rest pose" % ("second" if second_half else "first"))
-	instance.free()
+				"a %s dog that has not moved stands in its rest pose" % view)
+		for second_half in [false, true]:
+			var half := "second" if second_half else "first"
+			var walked := 0
+			while not (instance.look.gait_is_stepping()
+					and instance.look.gait_is_second_half() == second_half) and walked < 2000:
+				instance.walk_on_by_hand(STEP)
+				walked += 1
+			t.check(instance.look.gait_is_stepping() and instance.look.gait_is_second_half() == second_half,
+					"the %s stride is on a step in its %s half" % [view, half])
+			await DrawnEvent.frames(t)
+			t.check(not _the_dog_drawn(instance).has(rest),
+					"a %s dog mid-step in the %s half is not on its rest picture" % [view, half])
+			instance.walk_on_by_hand(0.0)
+			await DrawnEvent.frames(t)
+			t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
+			t.check(_the_dog_drawn(instance) == [rest],
+					"a %s dog stopped in the %s half stands in its rest pose" % [view, half])
+		instance.free()
 
 ## The pictures of the dog (`events/dog…`) that `instance` was last drawn with.
 func _the_dog_drawn(instance: EventInstance) -> Array[String]:

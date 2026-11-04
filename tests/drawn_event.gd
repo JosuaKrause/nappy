@@ -17,22 +17,24 @@ const AT := Vector2(300.0, 300.0)
 ## slices are put in beside it at the end of the first and drawn by the next. The caller frees the
 ## instance, which takes its slices with it.
 static func stand(parent: Node, def: EventDef, vertical: bool,
-		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT) -> EventInstance:
-	var instance := build(parent, def, vertical, atlas, map, at)
+		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT,
+		heading := Vector2.RIGHT) -> EventInstance:
+	var instance := build(parent, def, vertical, atlas, map, at, heading)
 	await frames(parent)
 	return instance
 
 ## `stand()` without the frames: the event is set up and in the tree, drawn by the frames the caller
 ## lets pass (`frames()`), so many can be drawn by one wait.
 static func build(parent: Node, def: EventDef, vertical: bool,
-		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT) -> EventInstance:
+		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT,
+		heading := Vector2.RIGHT) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = atlas
 	instance.drawer = RecordingEventDrawer.new(atlas)
 	var ground: WorldMap = map
 	if ground == null:
 		ground = EastWestStreet.new() if vertical else WorldMap.open_ground()
-	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, ground)
+	instance.setup(def, at, PackedVector2Array(), heading, ground)
 	parent.add_child(instance)
 	return instance
 
