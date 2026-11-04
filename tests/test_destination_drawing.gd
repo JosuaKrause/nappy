@@ -18,37 +18,25 @@ func run(t) -> void:
 		_city.free()
 		_city = null
 
-## Through the real day order on every task day: the mark on offer draws, the task its touch
-## activates draws nothing at its destination while the red arrow ends there, and the read mark
-## keeps its touched picture where she read it.
+## Through the real day order on every task day, each in a run of its own (the city holds it): the
+## mark on offer draws, the task its touch activates draws nothing at its destination while the red
+## arrow ends there, and the read mark keeps its touched picture where she read it.
 func _test_every_task_days_destination_draws_no_mark(t) -> void:
 	var finale_day := Tuning.RUN_LENGTH_DAYS
 	var days: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day not in days:
 			days.append(step.day)
-	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
-	var saved_day := GameState.header.day
-	var saved_state := GameState.attempt_spend.city_state
-	var saved_sabotage := GameState.resistance.sabotage_done
-	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
-	var saved_completed := GameState.resistance.completed_steps.duplicate()
-	var saved_failed := GameState.resistance.failed_steps.duplicate()
-	var saved_progress := GameState.resistance.progress
-	var saved_package := GameState.resistance.carrying_package
 	for day in days:
 		_build_city(t)
+		var run := _city.run
 		var finale := day == finale_day
-		GameState.attempt_spend.scars.clear()
-		GameState.header.day = day
-		GameState.resistance.failed_steps = []
-		GameState.resistance.completed_steps = _all_but_the_finale() if finale \
+		run.header.day = day
+		run.resistance.completed_steps = _all_but_the_finale() if finale \
 				else _completed_before(day)
-		GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
-		GameState.resistance.carrying_package = false
-		GameState.resistance.sabotage_done = false
+		run.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
 		var state := CityState.new()
-		GameState.attempt_spend.city_state = state
+		run.attempt_spend.city_state = state
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
 		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
@@ -83,20 +71,11 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 			contact.is_done = true
 			t.check(not contact.draws_a_mark(), "day %d: a done task draws no touched chalk" % day)
 		director.free()
-	GameState.attempt_spend.scars = saved_scars
-	GameState.header.day = saved_day
-	GameState.attempt_spend.city_state = saved_state
-	GameState.resistance.sabotage_done = saved_sabotage
-	GameState.facts.completed_resistance_alley_tiles = saved_tiles
-	GameState.resistance.completed_steps = saved_completed
-	GameState.resistance.failed_steps = saved_failed
-	GameState.resistance.progress = saved_progress
-	GameState.resistance.carrying_package = saved_package
 
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = RunCity.of_the_run(CITY_SCENE)
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
