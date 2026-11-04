@@ -17,8 +17,9 @@ home block suites, subtask W9c of the scoped plan. No `src/` change and no seam 
   their feet stand on, with controls that a building off the home block carries some and that every
   one lands on exactly one lot, and every lot of the home block is bare on either seed. Its copy of
   the city's height stream goes: heights are checked to be deterministic on a rebuilt city, whole
-  tiles within the lot's cap, different across seeds with variants, and varied within a block, some
-  block holding two heights among its lots of one depth and two colour variants among its lots.
+  tiles within the lot's cap, different across seeds with variants, and varied within a block: colour
+  variants differ in at least half the blocks, and heights in at least one group in eight of a
+  block's lots of one depth, since a lot's depth caps its height.
 - Checks 875, 497 and 730 to 902, 497 and 1057; fourteen mutation runs.
 
 **Open to overturn:** the exact random stream behind a building's height and variant is no longer
