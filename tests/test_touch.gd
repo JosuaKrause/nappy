@@ -204,7 +204,7 @@ func _test_the_pause_button_sends_a_real_action_event(t) -> void:
 			"a real InputEventAction, not bare polled state")
 	var event := probe.events[0] as InputEventAction
 	t.check(event.action == &"pause" and event.pressed,
-			"shaped exactly as main._unhandled_input reads a press")
+			"shaped exactly as the main scene reads a pause press")
 	probe.free()
 	controls.free()
 	_release_actions()
