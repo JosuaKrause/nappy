@@ -1530,53 +1530,90 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 		for direction in [1.0, -1.0]:
 			_check_a_gate_across_a_bucket_edge_holds_the_car(t, vertical, direction, bucket)
 	# A walker finds a hut across the edge, and of two huts at the same distance the lower index
-	# wins whichever bucket is visited first. The huts stand on corridor tiles either side of a
-	# bucket edge at a multiple of four tiles.
-	var column := -1
-	var tiles := roundi(bucket / float(Tuning.TILE_SIZE))
-	for k in range(1, 40):
-		if CityMap.corridor_offset(tiles * k) >= 0 and CityMap.corridor_offset(tiles * k - 1) >= 0:
-			column = tiles * k
-			break
-	t.check(column > 0, "a pair of corridor tiles straddles a bucket edge")
-	if column < 0:
-		return
-	var edge_x := float(column * Tuning.TILE_SIZE)
-	var above := WalkerDoorHold.new()
-	above.position = Vector2(edge_x + 16.0, 300.0)
-	var below := WalkerDoorHold.new()
-	below.position = Vector2(edge_x - 16.0, 300.0)
-	var kept := crowd._door_holds
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._vertical = true
-	walker._direction = 1.0
-	walker.position = Vector2(edge_x + 10.0, 250.0)
-	crowd._door_holds = [above] as Array[WalkerDoorHold]
-	walker.door_ahead = null
-	walker.door_ahead_along = INF
-	crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line([above.position]))
-	t.check(walker.door_ahead == above, "a walker finds a hut in its own bucket")
-	crowd._door_holds = [below] as Array[WalkerDoorHold]
-	walker.door_ahead = null
-	walker.door_ahead_along = INF
-	crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line([below.position]))
-	t.check(walker.door_ahead == below, "and one in the bucket below, across the edge")
-	walker.position = Vector2(edge_x, 250.0)
-	for order in [[above, below], [below, above]]:
-		var holds: Array[WalkerDoorHold] = []
-		holds.assign(order)
-		crowd._door_holds = holds
-		walker.door_ahead = null
-		walker.door_ahead_along = INF
-		crowd._find_the_hut_in_front_of(walker, crowd._bucket_by_line(
-				[order[0].position, order[1].position]))
-		t.check(walker.door_ahead == order[0],
-				"two huts the same distance ahead: the one first in the day's order is its hut")
-	crowd._door_holds = kept
-	walker.free()
-	above = null
-	below = null
+	# wins whichever bucket is visited first: on a sidewalk lane just below an edge and on one just
+	# above it, so the walker looks into the bucket above and into the bucket below.
+	var lanes := _sidewalk_lanes_beside_a_bucket_edge(bucket)
+	t.check(lanes.size() == 2 and lanes[0]["centre"] < lanes[0]["edge"]
+			and lanes[1]["centre"] > lanes[1]["edge"],
+			"a sidewalk lane stands just below a bucket edge and another just above one")
+	var city_plan := _city.region_plan()
+	await PhysicsTicks.settle(t)
+	for lane in lanes:
+		await _check_a_walker_finds_a_hut_across_a_bucket_edge(t, lane)
+	# The plan the huts were made from was the test's own: the city has the one it had, and no huts.
+	_city.set_region_plan(city_plan)
+	_city.crowd.start_day(1, _rng(1))
+
+## The sidewalk lanes of this city's vertical streets whose centre is within 12px of a bucket edge that
+## runs through their street (the tiles either side of the edge are both street): each as the lane's
+## `centre`, the `edge`, its `corridor` and its `offset`. The first lane found below an edge comes first
+## and the first above one second, when the city has both; which streets qualify is a fact about the
+## lattice (a street is `CityMap.period()` tiles from the next and a bucket four tiles wide).
+func _sidewalk_lanes_beside_a_bucket_edge(bucket: float) -> Array[Dictionary]:
+	var below := {}
+	var above := {}
+	var map := _city.map
+	for corridor in range(1, CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x) - 1):
+		if corridor == map.main_road:
+			continue
+		for offset in CrowdLanes.SIDEWALK_OFFSETS:
+			var centre := CrowdLanes.walker_lane_centre(corridor, offset, CrowdLanes.SIDEWALK_OFFSETS)
+			var edge := roundf(centre / bucket) * bucket
+			var column := roundi(edge / float(Tuning.TILE_SIZE))
+			if absf(centre - edge) > 12.0 or CityMap.corridor_offset(column) < 0 \
+					or CityMap.corridor_offset(column - 1) < 0:
+				continue
+			var found := {"centre": centre, "edge": edge, "corridor": corridor, "offset": offset}
+			if centre < edge and below.is_empty():
+				below = found
+			elif centre > edge and above.is_empty():
+				above = found
+	var lanes: Array[Dictionary] = []
+	for found in [below, above]:
+		if not found.is_empty():
+			lanes.append(found)
+	return lanes
+
+## A walker walking down the sidewalk lane `lane` (`_sidewalk_lanes_beside_a_bucket_edge()`'s), with huts
+## ahead of it that a region plan stands either side of the lane's bucket edge, 16px from it, handed to
+## the city (`City.set_region_plan()`, which a scene recipe's authored plan takes) so that
+## `Crowd.start_day()` makes a `WalkerDoorHold` of each detaining door body as it does every day. The
+## hut the walker is asked to find is the one in its own bucket, then the one across the edge, then of
+## two the same distance ahead the one first in the plan. The walker is pinned through
+## `Crowd.add_recipe_actor()` and the crowd's own physics tick runs; the hut it found is read off its
+## `door_ahead`, which `Crowd._hold_walkers_at_doors()` writes and the walker's strategy reads.
+func _check_a_walker_finds_a_hut_across_a_bucket_edge(t, lane: Dictionary) -> void:
+	var edge: float = lane["edge"]
+	var side := "just below the edge" if lane["centre"] < edge else "just above the edge"
+	var along := 8.0 * Tuning.TILE_SIZE
+	var hut_def := EventCatalogue.by_id("checkpoint_hut")
+	var below := EventScheduler.Planned.new(hut_def, Vector2(edge - 16.0, along + 50.0))
+	var above := EventScheduler.Planned.new(hut_def, Vector2(edge + 16.0, along + 50.0))
+	var own := below if lane["centre"] < edge else above
+	var across := above if lane["centre"] < edge else below
+	var cases: Array[Dictionary] = [
+		{"huts": [own], "found": own, "says": "a walker finds a hut in its own bucket"},
+		{"huts": [across], "found": across, "says": "and one in the bucket across the edge"},
+		{"huts": [above, below], "found": above,
+				"says": "two huts the same distance ahead: the one first in the day's order is its hut"},
+		{"huts": [below, above], "found": below,
+				"says": "two huts the same distance ahead, in the other order: the first is its hut"},
+	]
+	for case in cases:
+		var plan := RegionPlanner.RegionPlan.new()
+		plan.door_bodies.assign(case["huts"])
+		_city.set_region_plan(plan)
+		_city.crowd.start_day(1, _rng(1), Vector2(lane["centre"], along), false)
+		# A walker that walks through a door is not held at it, so it only looks.
+		var walker: CrowdAgent = _rig.agent_on(_city, _city.map, CrowdAgent.Kind.WALKER,
+				lane["corridor"], lane["offset"], along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS, -1.0,
+				_rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.PASSES))
+		await PhysicsTicks.pass_ticks(t, 1)
+		var wanted: EventScheduler.Planned = case["found"]
+		var hut := walker.door_ahead
+		t.check(hut != null and hut.position == wanted.position,
+				"%s, %s (found %s, wanted %s)" % [case["says"], side,
+				hut.position if hut else "none", wanted.position])
 
 ## A car driving `direction` along a straight stretch of ordinary street on the axis `vertical`, with a
 ## closed gate (`Crowd.set_gates()`, which `main` hands the day's gates) sited ahead of it where the
