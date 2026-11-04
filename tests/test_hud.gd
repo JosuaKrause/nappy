@@ -12,7 +12,7 @@ extends RefCounted
 ## default would otherwise leave the release shape asserted by nothing.
 ##
 ## Each test hands its HUD a run of its own (`RunState.new()`), so none leans on, or leaves behind,
-## what the `GameState` autoload holds.
+## a run shared with another test.
 
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const UIScreens := preload("res://tests/ui_screens.gd")

@@ -739,7 +739,7 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 	t.check(instance.is_finished, "gone at the six-second backstop, watched or not")
 	instance.free()
 
-## "A task is only complete if it is done on the day that won" — `GameState.calendar.finish_day()` gives
+## "A task is only complete if it is done on the day that won" — the run's `calendar.finish_day()` gives
 ## a lost day's resistance work back, and the retry starts at the mark again, not straight at the
 ## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
 ## two-beat design had.

@@ -34,11 +34,12 @@ extends RefCounted
 ## read (`WorldMap.moves`), and the movers' poses off the nodes the game draws: an event's and a
 ## crowd body's position, and the cordon's officers' figures (`CordonOfficer`).
 ##
-## `run()` snapshots the whole save first and puts it back last, and every boot is handed a save at
-## a scratch path (`main.use_save()`), so nothing here leaks into the next suite or reaches the
-## player's save.
+## Every seed plays a run of its own (`tests/seat.gd`), freed with its boot, and every boot is handed
+## a save at a scratch path (`main.use_save()`), so nothing here leaks into the next suite or
+## reaches the player's save.
 
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_move_poses_scratch.json"
 const SEEDS: Array[int] = [4242, 1]
@@ -60,22 +61,17 @@ var _bumps := 0
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
 	t.gives_back_observers()
-	var baseline := GameSave.file_data(GameState, false)
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
 	EventBus.crowd_bumped.connect(bumped)
 	for seed_value in SEEDS:
 		await _walk_the_day(t, seed_value)
 	EventBus.crowd_bumped.disconnect(bumped)
-	GameState.run_parts.restore_run_data(baseline)
-	GameState.calendar.hard_mode = bool(baseline["hard_mode"])
-	GameState.calendar.checkpoint = baseline["checkpoint"]
 
 ## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, reached
 ## with `--seed` and `--day`, walked from the title's joystick button, with the mark read.
-func _day_twelve(t, seed_value: int) -> Boot.Booted:
+func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
-			RunConfig.parse(PackedStringArray(words), "", true))
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
 	await Boot.press_title(t, booted.main, "Right")
 	var summary := Boot.summary(booted.main)
 	if summary and summary.is_showing():
@@ -86,7 +82,8 @@ func _day_twelve(t, seed_value: int) -> Boot.Booted:
 	return booted
 
 func _walk_the_day(t, seed_value: int) -> void:
-	var booted: Boot.Booted = await _day_twelve(t, seed_value)
+	var seat := Seat.new(t)
+	var booted: Boot.Booted = await _day_twelve(t, seat, seed_value)
 	var main := booted.main
 	var city := Boot.city(main)
 	var day := Boot.day(main)
@@ -123,6 +120,7 @@ func _walk_the_day(t, seed_value: int) -> void:
 			% [seed_value, counts["officers"]])
 	Telemetry.end_run()
 	booted.free_all()
+	seat.end()
 
 ## What happens to her before the physics tick `tick` runs: the walk toward the swing, stood against
 ## a walker now and then, and the swing touched when the tick comes.

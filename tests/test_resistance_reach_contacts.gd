@@ -131,7 +131,7 @@ const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 ## rig's real cases at all.
 ##
 ## **Each day is asked fresh**, the same "no history, just this day" state `--day N`
-## (`DevFlags.day_override()`) boots into — `GameState.start_run()` runs before `GameState.header.day` is
+## (`DevFlags.day_override()`) boots into — `RunState.start_run()` runs before the run's `header.day` is
 ## set, so a rig timing day 9 alone never played days 6-8 first — matching every other single-day
 ## placement test in this file (`_test_the_door_task_sits_at_a_region_door` and others call
 ## `director.start_day()` for one chosen day with no days before it either).

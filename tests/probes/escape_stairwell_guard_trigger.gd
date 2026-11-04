@@ -53,7 +53,8 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = s
-	var events := BuildingEvents.events_in(t, scene, rng)
+	var run := RunState.new()
+	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var man: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "masked_pursuer":
@@ -128,6 +129,7 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	player.free()
 	events.free()
 	scene.free()
+	run.free()
 
 func _hold(actions: Array, running: bool) -> void:
 	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
