@@ -15,35 +15,64 @@ extends RefCounted
 ## whether or not a test expected it (M164). `AtlasLibrary.moment_for_a_load()` answers what a
 ## read from disk *would* be called without performing one, which is the same claim with no noise.
 ##
-## The boot's own residency is driven through `main._hold_every_page_a_day_draws()` rather than a
-## copy of its list, so a group added to `main.RESIDENT_GROUPS` is a group this suite is asking
-## about. That `main` is never added to the tree, the same way `tests/test_main.gd` drives it: it
-## is handed a `Sitting` of the test's own, whose library it holds the pages on, and the cities and
-## rigs the test builds are handed that library as `main` hands its own. Each test builds its own
-## library, so no count it reads depends on a suite before it.
+## The boot's own residency is read off the real `main.tscn` booted under the suite
+## (`tests/booted_main.gd`), on a sitting of the test's own that it takes (`Boot.home_playing()`), so
+## a group added to `main.RESIDENT_GROUPS` is a group this suite is asking about: the pages the booted
+## game holds are read on that sitting's library (`Sitting.atlas`, the one `main` hands everything it
+## builds), and the cities and rigs the test builds by hand are handed that library as `main` hands
+## its own. Each test builds its own sitting, run and library, so no count it reads depends on a
+## suite before it.
 ##
-## Two tests boot the real `main.tscn` instead: one, on the day and in the escape's building, asks
-## that everything it built draws from the one library its sitting holds; the other reads the run
-## log across a played day, a held restart and day 14's hand-over for a page loaded on a library of
-## a node's own.
+## Two more tests boot it for what is drawn from the library: one, on the day and in the escape's
+## building, asks that everything it built draws from the one library its sitting holds; the other
+## reads the run log across a played day, a held restart and day 14's hand-over for a page loaded on a
+## library of a node's own.
 
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const UI := preload("res://tests/ui_screens.gd")
+const Boot := preload("res://tests/booted_main.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
+	await PhysicsTicks.settle(t)
 	_test_each_parent_has_a_page_of_their_own(t)
 	_test_the_indicators_share_the_ui_page(t)
-	_test_a_boot_holds_one_parent_and_never_the_other(t)
+	await _test_a_boot_holds_one_parent_and_never_the_other(t)
 	_test_a_page_may_only_be_read_in_a_window(t)
-	_test_two_days_never_reload_a_page(t)
-	_test_a_boot_hands_its_one_library_to_everything_it_draws(t)
+	await _test_two_days_never_reload_a_page(t)
+	await _test_a_boot_hands_its_one_library_to_everything_it_draws(t)
 	await _test_no_boot_loads_a_page_on_a_library_of_its_own(t)
+
+## What one test plays: a run made fresh for it and the sitting that holds it, parked in a node of
+## the test's own standing for the tree's root (`Boot.home_playing()`). Boots taken with `boot()` take
+## that sitting, so its library is the one every boot builds on and outlives each of them.
+class Seat:
+	var run: RunState
+	var home: Node
+	var sitting: Sitting
+
+	## `prepare`, when given, is called with the unplayed run (a run to be played from a later day).
+	func _init(t, prepare := Callable()) -> void:
+		run = RunState.new()
+		if prepare.is_valid():
+			prepare.call(run)
+		home = Boot.home_playing(t, run)
+		sitting = home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
+
+	## The real `main.tscn` booted over this seat under `words`, a scratch save handed to it.
+	func boot(t, words: Array) -> Boot.Booted:
+		var seat := self
+		return await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
+				func(unbooted: Node) -> void: unbooted.use_sitting_home(seat.home))
+
+	func end() -> void:
+		home.free()
+		run.free()
 
 # ------------------------------------------------------------------ the groups ---
 
@@ -96,22 +125,20 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 ## reloads the scene into the same process and rerolls the choice: without it one process that
 ## restarted once would be holding both, which is the waste the split exists to remove.
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	# The boot plays the run its sitting holds, a fresh one of the sitting's own, freed with it.
-	var sitting := Sitting.new()
-	var run := sitting.take_the_run()
-	main.use_sitting(sitting)
-	var atlas := sitting.atlas
+	var seat := Seat.new(t)
+	var atlas := seat.sitting.atlas
 	for male in [false, true]:
-		run.header.player_is_male = male
-		main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP,
-				MAIN_SCRIPT.NO_FURTHER_GROUPS)
+		var booted := await seat.boot(t, ["--seed", str(SEED), "--parent",
+				"father" if male else "mother"])
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
+		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
 		t.check(atlas.is_acquired(mine),
 				"the boot holds the '%s' page the run draws from" % mine)
 		t.check(not atlas.is_acquired(theirs),
-				"and holds nothing of '%s', which this run can never draw" % theirs)
+				"and holds nothing of '%s', which this run can never draw, with a day built and "
+				% theirs + "she standing in it")
+		booted.free_all()
 		for day in [1, 2, 3]:
 			var city := _city(t, atlas)
 			city.crowd.start_day(day, _rng("parent-%s-%d" % [male, day]))
@@ -125,8 +152,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 				"and the run's own parent is back to the boot's single reference between days")
 	t.check(not atlas.is_acquired(Stroller.MOTHER_ATLAS),
 			"a second boot that rerolled the choice gave the first run's parent back")
-	main.free()
-	sitting.free()
+	seat.end()
 
 # -------------------------------------------------------------------- the rule ---
 
@@ -183,14 +209,9 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 ## page **object**, not the reference count: a count that dips to nought and comes back would
 ## look identical from the outside and would have cost a blocking read from disk in between.
 func _test_two_days_never_reload_a_page(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	# The boot plays the run its sitting holds, a fresh one of the sitting's own, freed with it.
-	var sitting := Sitting.new()
-	sitting.take_the_run().header.player_is_male = false
-	main.use_sitting(sitting)
-	var atlas := sitting.atlas
-	main._hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, MAIN_SCRIPT.NO_FURTHER_GROUPS)
-	main.free()
+	var seat := Seat.new(t)
+	var atlas := seat.sitting.atlas
+	(await seat.boot(t, ["--seed", str(SEED), "--parent", "mother"])).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
@@ -221,7 +242,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	rig_tomorrow.free()
 	tomorrow.crowd.clear()
 	tomorrow.free()
-	sitting.free()
+	seat.end()
 
 # ------------------------------------------------------------------ the boot ---
 
@@ -233,20 +254,16 @@ func _test_two_days_never_reload_a_page(t) -> void:
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
 ## the building alike. A node with an `atlas` it was never handed fails this by name.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
-	var saved_section: int = GameState.facts.escape_section
-	var saved_day := GameState.header.day
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
-		GameState.start_run(SEED)
-		if section != DaySpec.Section.NONE:
-			GameState.header.day = Tuning.RUN_LENGTH_DAYS
-		GameState.facts.escape_section = section
-		var main: Node2D = MAIN_SCENE.instantiate()
-		main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry"]), "", true))
-		t.add_child(main)
-		t.get_tree().process_frame.emit()
-		t.get_tree().process_frame.emit()
+		var seat := Seat.new(t, func(run: RunState) -> void:
+				run.start_run(SEED)
+				if section != DaySpec.Section.NONE:
+					run.header.day = Tuning.RUN_LENGTH_DAYS
+				run.facts.escape_section = section)
+		var booted := await seat.boot(t, [])
+		var main := booted.main
 		var where := "the day" if section == DaySpec.Section.NONE else "the building"
-		var atlas: AtlasLibrary = main._sitting.atlas
+		var atlas := seat.sitting.atlas
 		var holders := 0
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
@@ -264,11 +281,8 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 				% [where, ", ".join(strays)])
 		t.check(atlas.is_resident(Crowd.ATLAS_GROUP) and atlas.is_resident(EventPictures.ATLAS_GROUP),
 				"%s: and the sitting's library is the one holding the boot's pages" % where)
-		t.get_tree().paused = false
-		main.free()
-	GameState.facts.escape_section = saved_section
-	GameState.header.day = saved_day
-	GameState.start_run(SEED)
+		booted.free_all()
+		seat.end()
 
 ## **A missed hand-off is red wherever and whenever the node is made.** A node handed no library
 ## makes its own the first time it acquires, and a library no boot has claimed the loading moments
@@ -280,11 +294,9 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 ## of the test's own (`main.use_sitting_home()`, standing for the tree's root), and no page may be
 ## loaded in the unmanaged anywhere in it.
 func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
-	var saved_section: int = GameState.facts.escape_section
-	var saved_day := GameState.header.day
-	GameState.facts.escape_section = DaySpec.Section.NONE
-	var home := Node.new()
-	t.add_child(home)
+	var seat := Seat.new(t)
+	var run := seat.run
+	var home := seat.home
 	var save := GameSave.new(_SCRATCH_SAVE)
 	var reloads: Array[int] = []
 	var lines: Array[String] = []
@@ -309,15 +321,15 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	var second := await _boot_in(t, home, save, reloads)
 	await _press_tap(t, second)
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
-	GameState.header.day = Tuning.RUN_LENGTH_DAYS
-	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
-	GameState.resistance.sabotage_done = true
+	run.header.day = Tuning.RUN_LENGTH_DAYS
+	run.resistance.progress = Tuning.RESISTANCE_GOAL
+	run.resistance.sabotage_done = true
 	(_one(second, "DayController") as DayController).day_finished.emit(GameEnums.DayResult.WON)
 	var summary := _one(second, "DaySummary")
 	await UI.frames(t)
 	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
 	await UI.frames(t)
-	t.check(reloads.size() == 2 and GameState.facts.escape_section == DaySpec.Section.BUILDING,
+	t.check(reloads.size() == 2 and run.facts.escape_section == DaySpec.Section.BUILDING,
 			"continuing past day 14's summary reloads into the escape's building")
 	t.check(parked != null and _sittings_in(home) == [parked],
 			"and the second boot took the parked sitting and parks the same one again, and no other")
@@ -343,13 +355,10 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 			% " | ".join(unmanaged.slice(0, 3)))
 
 	Telemetry.end_run()
-	home.free()
+	seat.end()
 	save.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	t.get_tree().paused = false
-	GameState.facts.escape_section = saved_section
-	GameState.header.day = saved_day
-	GameState.start_run(SEED)
 
 ## The real `main.tscn` handed the suite's scratch save, a reload that only counts, and the `home`
 ## its sitting is parked in and taken from, put in the tree with the two frames its `_ready()`

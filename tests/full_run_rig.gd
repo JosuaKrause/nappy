@@ -7,24 +7,28 @@ extends RefCounted
 ## "day 12 throws" — which no amount of unit coverage does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## A handful of run seeds, since a single city can be lucky.
-const SEEDS := [4242, 90210, 1234567]
-## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s),
-## short enough that three runs stay quick. A coarse step is fine for a smoke test.
+## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s).
 const SIMULATED_SECONDS := 25.0
-const SIMULATION_STEP := 0.1
+## How many times real time the engine runs the physics ticks of a played day (`PhysicsTicks.pass_ticks()`),
+## so that a tick is a tenth of a second of game time, the step the suite always took by hand. A coarser
+## step is not used: a mobile event moves by speed times the step and an arrival or a lifetime is read
+## on a tick, so a different step could change what the suite sees, and nothing here shows it cannot.
+## A day takes 250 ticks.
+const SIMULATION_SCALE := 6.0
 
-func run(t) -> void:
-	for seed_value in SEEDS:
-		_play_a_run(t, seed_value)
+## Plays the run of `seed_value` (the parts of this suite are one seed each, so none runs two minutes
+## serial).
+func run(t, seed_value: int) -> void:
+	await PhysicsTicks.settle(t)
+	await _play_a_run(t, seed_value)
 
+## One run: the city is built over a run of its own (`RunCity.with_own_run()`, freed with the city),
+## and every day of it is started and played the way `main._start_day()` does, on real physics ticks.
 func _play_a_run(t, seed_value: int) -> void:
-	var saved := _save_game_state()
-	GameState.start_run(seed_value)
-
-	var city: City = RunCity.of_the_run(CITY_SCENE)
+	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
+	var run := city.run
 	t.add_child(city)
-	city.build(CityGenerator.generate(GameState.header.run_seed))
+	city.build(CityGenerator.generate(run.header.run_seed))
 	# No player walks this run, so nothing would ever come within streaming reach. This suite is
 	# about a run's whole chain — one-shots, successors, scars — which is a property of the
 	# fourteen *plans*, so it puts every day in the world at once. See `EventManager`.
@@ -37,19 +41,19 @@ func _play_a_run(t, seed_value: int) -> void:
 
 	var one_shots_seen := {}
 	var contacts_offered := 0
+	var events_that_moved := 0
 
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		GameState.header.day = day
+		run.header.day = day
 		# The city becomes today's city before anything is placed in it — the real day opens
 		# the same way (`main._start_day()`), and this is where the day's region plan is built,
 		# which is what the day-9 crossing task asks for when its mark is touched.
-		GameState.attempt_spend.city_state.begin_day(city.map.block_plans, day)
-		city.start_day(GameState.attempt_spend.city_state, day, GameState.calendar.day_rng(day, "closures"))
+		run.attempt_spend.city_state.begin_day(city.map.block_plans, day)
+		city.start_day(run.attempt_spend.city_state, day, run.calendar.day_rng(day, "closures"))
 
-		city.set_act(GameState.calendar.current_act())
-		city.events.start_day(DaySpec.for_day(day), GameState.calendar.day_rng(day), GameState.attempt_spend.consumed_one_shots)
-		director.start_day(day, GameState.calendar.day_rng(day, "resistance"), Tuning.day_length(day))
-
+		city.set_act(run.calendar.current_act())
+		city.events.start_day(DaySpec.for_day(day), run.calendar.day_rng(day), run.attempt_spend.consumed_one_shots)
+		director.start_day(day, run.calendar.day_rng(day, "resistance"), Tuning.day_length(day))
 		t.check(city.events.active_count() > 0, "seed %d day %d has events" % [seed_value, day])
 
 		for instance in city.events.instances():
@@ -71,7 +75,14 @@ func _play_a_run(t, seed_value: int) -> void:
 		# Let the day actually run for a while. Without this the mobile one-shots never
 		# finish their routes, so the fire engine never leaves a fire and the convoy never
 		# leaves a barricade — and the whole successor-and-scar chain goes untested.
-		_simulate(city, SIMULATED_SECONDS)
+		var placed := {}
+		for instance in city.events.instances():
+			placed[instance] = instance.global_position
+		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
+				Callable(), SIMULATION_SCALE)
+		for instance in placed.keys():
+			if is_instance_valid(instance) and instance.global_position != placed[instance]:
+				events_that_moved += 1
 
 		if director.current_step():
 			contacts_offered += 1
@@ -88,19 +99,21 @@ func _play_a_run(t, seed_value: int) -> void:
 				_touch(director)
 
 		# The day was survivable, so bank the win and move on.
-		GameState.calendar.finish_day(GameEnums.DayResult.WON)
+		run.calendar.finish_day(GameEnums.DayResult.WON)
 
+	t.check(events_that_moved > 0,
+			"seed %d: the physics ticks of the played days moved the events that travel (%d)"
+			% [seed_value, events_that_moved])
 	t.check(contacts_offered >= Tuning.RESISTANCE_GOAL,
 			"seed %d offers at least %d contacts over a run (%d)"
 			% [seed_value, Tuning.RESISTANCE_GOAL, contacts_offered])
-	t.check(GameState.header.ending == GameEnums.Ending.GOOD,
+	t.check(run.header.ending == GameEnums.Ending.GOOD,
 			"seed %d: doing every errand and the sabotage earns the good ending" % seed_value)
-	t.check(GameState.attempt_spend.scars.size() > 0,
+	t.check(run.attempt_spend.scars.size() > 0,
 			"seed %d: the run left marks on the city" % seed_value)
 
 	director.free()
 	city.free()
-	_restore_game_state(saved)
 
 ## Completes the step on offer the way her touch does: through the contact's own completion
 ## (`ContactPoint.complete_now()`), which the director hears.
@@ -108,31 +121,3 @@ func _touch(director: ResistanceDirector) -> void:
 	var contact := director.contact()
 	if contact:
 		contact.complete_now()
-
-## Drives the day forward by hand: the manager's physics tick, which steps its instances, the way
-## the engine would, but at a coarse step.
-func _simulate(city: City, seconds: float) -> void:
-	for i in int(round(seconds / SIMULATION_STEP)):
-		city.events._physics_process(SIMULATION_STEP)
-
-func _save_game_state() -> Dictionary:
-	return {
-		"seed": GameState.header.run_seed, "day": GameState.header.day, "nerves": GameState.header.nerves,
-		"progress": GameState.resistance.progress, "ending": GameState.header.ending,
-		"one_shots": GameState.attempt_spend.consumed_one_shots.duplicate(),
-		"completed": GameState.resistance.completed_steps.duplicate(),
-		"failed": GameState.resistance.failed_steps.duplicate(),
-		"scars": GameState.attempt_spend.scars.duplicate(true), "sabotage": GameState.resistance.sabotage_done,
-	}
-
-func _restore_game_state(saved: Dictionary) -> void:
-	GameState.header.run_seed = saved["seed"]
-	GameState.header.day = saved["day"]
-	GameState.header.nerves = saved["nerves"]
-	GameState.resistance.progress = saved["progress"]
-	GameState.header.ending = saved["ending"]
-	GameState.attempt_spend.consumed_one_shots.assign(saved["one_shots"])
-	GameState.resistance.completed_steps.assign(saved["completed"])
-	GameState.resistance.failed_steps.assign(saved["failed"])
-	GameState.attempt_spend.scars.assign(saved["scars"])
-	GameState.resistance.sabotage_done = saved["sabotage"]

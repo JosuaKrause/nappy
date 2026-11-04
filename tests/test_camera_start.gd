@@ -12,7 +12,8 @@ extends RefCounted
 ## that holds the boot for its drawn frames, and hands control back here exactly at that point,
 ## which is the state a real first frame would draw from: she does not exist yet. Real frames then
 ## let the boot finish, however many it holds for (`tests/booted_main.gd`), and the title's button
-## is pressed through the viewport.
+## is pressed through the viewport. Each boot plays a run made fresh for it, parked in a sitting
+## home of the test's own (`Boot.home_playing()`).
 
 const Boot := preload("res://tests/booted_main.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
@@ -23,29 +24,36 @@ func run(t) -> void:
 	await _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 	await _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 
-## The real `main.tscn` handed a scratch save and `config`, put in the tree and left at the boot's
-## first suspension: the frame the boot camera draws.
+## The real `main.tscn` handed a scratch save, `config` and a run of its own (parked in a home the
+## test frees), put in the tree and left at the boot's first suspension: the frame the boot camera
+## draws.
 func _start_a_boot(t, config: RunConfig) -> Array:
 	var save := GameSave.new(_SCRATCH_SAVE)
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
 	var main: Node2D = Boot.MAIN_SCENE.instantiate()
 	main.use_save(save)
+	main.use_sitting_home(home)
 	main.configure(config)
 	t.add_child(main)
-	return [main, save]
+	return [main, save, home, run]
 
-func _end_the_boot(boot: Array) -> void:
+func _end_the_boot(boot: Array, observers: Dictionary) -> void:
 	var main: Node2D = boot[0]
 	main.get_tree().paused = false
 	Telemetry.end_run()
 	main.free()
 	(boot[1] as GameSave).free()
+	(boot[2] as Node).free()
+	(boot[3] as RunState).free()
+	Boot.give_back_observers(observers)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
 ## first after the title's disc is pressed.
 func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
-	var saved := _save_game_state()
+	var observers := Boot.hold_observers()
 	var boot := _start_a_boot(t, Boot.config([]))
 	var main: Node2D = boot[0]
 
@@ -83,7 +91,8 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	var dawns: Array[int] = []
 	var at_dawn := func(_day: int) -> void:
 		dawns.append(1)
-		var home_view := city._home_scenery_view()
+		var home_view := Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+				Tuning.VIEW_HALF_EXTENT * 2)
 		for key in city.scenery_ground.keys_in(home_view):
 			t.check(city.scenery_ground.chunks.has(key),
 					"real day reset prepares the home viewport before its first frame")
@@ -93,8 +102,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	EventBus.day_planned.disconnect(at_dawn)
 	t.check(dawns.size() == 1, "the lost day's continue placed the next attempt (%d)" % dawns.size())
 
-	_end_the_boot(boot)
-	_restore_game_state(saved)
+	_end_the_boot(boot, observers)
 
 ## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways", and
 ## PLAYTEST-144's still after a held restart, "This is the screen when resetting" — both on a
@@ -109,7 +117,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 ## already be the rotated one, which leaves only the camera wrong; the camera's assertion is that
 ## case.
 func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t) -> void:
-	var saved := _save_game_state()
+	var observers := Boot.hold_observers()
 	var window: Window = t.get_tree().root
 	var saved_size := window.size
 	var saved_box := window.content_scale_size
@@ -135,32 +143,6 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 	t.check(Boot.title(main).transform == ScreenOrientation.rotation_transform(),
 			"including the title it opens on")
 
-	_end_the_boot(boot)
+	_end_the_boot(boot, observers)
 	window.size = saved_size
 	window.content_scale_size = saved_box
-	_restore_game_state(saved)
-
-## Mirrors `tests/test_full_run.gd`'s own save/restore: a real boot calls `GameState.start_run()`,
-## which every other suite is entitled to assume left the state it found, not this one's seed and
-## day.
-func _save_game_state() -> Dictionary:
-	return {
-		"seed": GameState.header.run_seed, "day": GameState.header.day, "nerves": GameState.header.nerves,
-		"progress": GameState.resistance.progress, "ending": GameState.header.ending,
-		"one_shots": GameState.attempt_spend.consumed_one_shots.duplicate(),
-		"completed": GameState.resistance.completed_steps.duplicate(),
-		"failed": GameState.resistance.failed_steps.duplicate(),
-		"scars": GameState.attempt_spend.scars.duplicate(true), "sabotage": GameState.resistance.sabotage_done,
-	}
-
-func _restore_game_state(saved: Dictionary) -> void:
-	GameState.header.run_seed = saved["seed"]
-	GameState.header.day = saved["day"]
-	GameState.header.nerves = saved["nerves"]
-	GameState.resistance.progress = saved["progress"]
-	GameState.header.ending = saved["ending"]
-	GameState.attempt_spend.consumed_one_shots.assign(saved["one_shots"])
-	GameState.resistance.completed_steps.assign(saved["completed"])
-	GameState.resistance.failed_steps.assign(saved["failed"])
-	GameState.attempt_spend.scars.assign(saved["scars"])
-	GameState.resistance.sabotage_done = saved["sabotage"]

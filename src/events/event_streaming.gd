@@ -66,7 +66,7 @@ var consumed: Array[String] = []
 
 ## How close the player has to be for a planned event to exist. `INF` turns streaming off and
 ## puts the whole day in the world at once, which is what a test rig with no player wants —
-## `tests/test_event_manager.gd` and `tests/test_full_run.gd` are about a day's whole event set
+## `tests/test_event_manager.gd` and the full run suites (`tests/full_run_rig.gd`) are about a day's whole event set
 ## rather than about what one player walked past.
 var stream_radius := Tuning.EVENT_STREAM_RADIUS
 
