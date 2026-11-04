@@ -391,7 +391,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ##
 ## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
-## `SealPlanner`'s own RNG stream (`RunState.calendar.dayRig.rng(day, "seals")`) does not depend on `_city`
+## `SealPlanner`'s own RNG stream (`RunState.calendar.day_rng(day, "seals")`) does not depend on `_city`
 ## either, so every segment the fallback holds has to be held the real way too — a rig that skips
 ## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
 ## only ever has something to read once `City.start_day()` has run (see the comment in
