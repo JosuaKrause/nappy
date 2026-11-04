@@ -44,7 +44,7 @@ travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 The scheduler guarantees one unspoiled park and a walkable route from home to a park. On top of
 that, `ClosurePlanner` keeps **at least two distinct calm areas reachable**
-(`Tuning.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
+(`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
 closes a street must go through it — `tests/test_routes.gd` fails the build if it does not.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
@@ -84,7 +84,7 @@ guarantee true, this is the rule you are about to rediscover.**
 **One exception, and the direction is what makes it one:** a pass that only ever *removes*
 obstruction is safe, because every guarantee here is about **reaching** somewhere and taking a
 barrier away can only add reachable ground. The seal-thinning pass
-(`SealPlanner._thin_soft_pairs`, which drops one body of `Tuning.SEAL_THINNING_FRACTION` of the
+(`SealPlanner._thin_soft_pairs`, which drops one body of `SealPlanner.SEAL_THINNING_FRACTION` of the
 day's soft seals so the walls do not read as guardrails) is that case, where a pass that added or
 moved a seal would not be. **The test is monotonicity, not intent**: a pass that removes some things
 and places others is not covered, and neither is one whose removal could make a *cost* guarantee
@@ -109,11 +109,11 @@ The **corridor** is the ground a day's routes run through. **Do not reintroduce 
 Closures change the shape of the route and contribute nothing to the meter — the noise of a street
 is the crowd, the danger is the events, the shape is the closures. A noisy roadworks already exists
 as the `construction` event. **Do not let a closure emit**; it would be a third thing for
-`City.total_excitement_at` to sum, and that list is exactly two long on purpose.
+`WorldContext.total_excitement_at` (which `City` extends) to sum, and that list is exactly two long on purpose.
 
 **One seal is loud, and it is the shape of the exception that matters.** `car_accident` is solid
 only where its two cars are (PLAYTEST-63), so its picture's own gaps are walkable and
-`Tuning.CAR_ACCIDENT_INTENSITY` is what stands in them, an excitement field that keeps her from
+`EventCatalogue.CAR_ACCIDENT_INTENSITY` is what stands in them, an excitement field that keeps her from
 walking past. **That is a catalogue row emitting, not a closure emitting** — a seal is an
 `EventDef`, so nothing is added to the sum. A `RoadClosure` contributes nothing, and a seal whose
 picture leaves no gap (`fallen_tree`, `burst_water_main`) carries `intensity = 0.0`. The test for a
@@ -188,7 +188,9 @@ A `Tile.is_walkable()` call per tile becomes a `PackedByteArray` indexed by tile
 (`CityMap._lut`), built *from* `Tile.is_walkable`, which decides every tile type. It is not the whole answer: the
 precinct bollards are posts standing on otherwise walkable tiles (`CityMap.post_tiles()`), so a sweep
 over `_WALKABLE` that a body or a flood must obey also blocks those tiles, as `walk_field_from()`
-does, or it walks straight through every row. Only `wall_between()`'s sight walk (`_open()`) leaves
-them open, on purpose; `clear_line()`, the pursuers' notice and lunge line, asks `is_walkable()` and
-is blocked by a post. The rest of flood-fill performance
+does, or it walks straight through every row; a sweep that a figure walks lays the day's record
+over it too (`CityMap.ground_for()`, the closures, the soft seals and the bodies its `Mover` names).
+Only `wall_between()`'s sight walk (`_open()`) leaves the posts open, on purpose; `clear_line()`, the
+pursuers' notice and lunge line, asks `passable()` for the mover it is handed and is blocked by a
+post. The rest of flood-fill performance
 (a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill, "Performance".

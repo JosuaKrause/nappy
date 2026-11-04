@@ -11,7 +11,7 @@ func run(_t) -> void:
 	print("MAIN_ROAD ", map.main_road, " north lane=", CrowdLanes.lane_centre(map.main_road, CrowdLanes.road_lane(true, -1)))
 	for day: int in [1, 13]:
 		GameState.start_run(11)
-		GameState.day = day
+		GameState.header.day = day
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -40,17 +40,19 @@ func run(_t) -> void:
 			accepted += 1
 			if accepted >= 5:
 				break
-	GameState.day = 14
+	GameState.header.day = 14
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 14)
 	map.repaint(state)
-	var finale := FinalePlanner.plan(map, GameState.day_rng(14, "finale"))
+	var finale := FinalePlanner.route(map)
+	DayPlanner.plan_the_escape_city(map, finale, GameState.calendar.day_rng(14, "finale"), _city_spec())
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
 	for segment in finale.open_streets:
-		var ground := EventScheduler._finale_ground(map, segment, guards,
-				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map))
+		var ground := EventScheduler.street_ground(map, segment, guards,
+				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map), {},
+				false)
 		if ground.is_empty():
 			continue
 		print("ESCAPE_GUARD ", map.tile_to_world(ground[ground.size() / 2]), " street=", segment.key())
@@ -58,5 +60,9 @@ func run(_t) -> void:
 		if found >= 12:
 			break
 	var dog := EventCatalogue.by_id("charging_dog")
-	print("DOG_LEAD ", Tuning.offscreen_lead(Vector2.RIGHT,
-			dog.pursue_speed + Tuning.WALK_SPEED, dog.offscreen_notice))
+	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
+			dog.chase_speed() + Tuning.WALK_SPEED, dog.offscreen_notice))
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

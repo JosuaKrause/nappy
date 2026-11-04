@@ -4,32 +4,59 @@ extends RefCounted
 ## The player's words *(2026-10-07, azure-koala, finding 5, inbox #601: "police cars can disappear
 ## outright")*. Every way the manager takes a patrol car out of the world is walked here on a real
 ## city, a frame at a time through the manager's own steps, and each car that goes is asked whether
-## it went inside her view (`VisibleView`, the one answer to "can she see it").
+## it went inside her view (`VisibleView`, the one answer to "can she see it"). The manager is in the
+## tree before a real stroller, so its own physics ticks run the events, one tick a rendered frame
+## (`tests/physics_ticks.gd`), at `SPEED` times real time.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The game-time speed the long stretches run at (`PhysicsTicks.pass_ticks()`'s `scale`): each tick
+## then covers `SPEED` times `STEP`, and every stretch is counted in the seconds it covers.
+const SPEED := 4.0
 ## The patrol's body, with a margin: a box about it the view must clear of it for it not to be seen.
 const CAR_BOX := Vector2(48.0, 48.0)
 
 func run(t) -> void:
-	_test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t)
-	_test_an_investigating_car_leaves_out_of_her_sight(t)
-	_test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(t)
-	_test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t)
-	_test_a_leaving_car_streamed_out_does_not_come_back(t)
+	await PhysicsTicks.settle(t)
+	await _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t)
+	await _test_an_investigating_car_leaves_out_of_her_sight(t)
+	await _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(t)
+	await _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t)
+	await _test_a_leaving_car_streamed_out_does_not_come_back(t)
 
 func _rig(t, day: int) -> Array:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
-	city.events._day = day
-	city.events._recipe_plan = true
-	var her := Node2D.new()
-	her.add_to_group("player")
+	city.events.world.day = day
+	# The lights are off, so a red one cannot hold a car where the probe wants it to run.
+	city.events.world.signals = null
+	var her := _Her.new()
 	t.add_child(her)
+	her.set_process(false)
+	her.set_physics_process(false)
 	return [city, her]
+
+## Her, standing where the test puts her and seeing from there, carrying the baby so no pram stands
+## out in front of her, and running while `running` says so: the manager's tick reads all three off
+## her (`VisibleView.look_through()`, `EventManager._tell_them_where_she_is()`) and tells the events
+## before it steps them.
+class _Her extends Stroller:
+	var running := false
+
+	func _init() -> void:
+		carrying = true
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		add_child(camera)
+
+	func camera_screen_center() -> Vector2:
+		return global_position
+
+	func run_excess_ratio() -> float:
+		return 1.0 if running else 0.0
 
 func _done(city: City, her: Node2D) -> void:
 	her.free()
@@ -55,9 +82,9 @@ func _a_lane(map: CityMap, tiles := 8) -> Array:
 	return []
 
 ## Whether a car at `at` is anywhere in the view she has from `her`: the whole of its body and a
-## margin about it, the view the camera shows with no look-ahead on top (`VisibleView.around()`).
+## margin about it, the view the camera shows with no look-ahead on top (`VisibleView.around(, null)`).
 func _seen(at: Vector2, her: Vector2) -> bool:
-	return VisibleView.around(her).sees_any(Rect2(at - CAR_BOX * 0.5, CAR_BOX))
+	return VisibleView.around(her, null).sees_any(Rect2(at - CAR_BOX * 0.5, CAR_BOX))
 
 ## A real city on day `day` with a planned car of `def` on a stretch of carriageway and her at the
 ## sidewalk beside its middle, returned as `[city, her, plan, route]`.
@@ -70,20 +97,15 @@ func _lane_rig(t, def: EventDef) -> Array:
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]
 	var plan := EventScheduler.Planned.new(def, route[0], route)
-	city.events._plans.append(plan)
-	city.events._find_player()
+	city.events.streaming.add(plan)
+	city.events.use_player(her)
 	return [city, her, plan, route]
 
-## One frame as the game runs it: the manager's own tick, then every instance's. The lights are off
-## so a red one cannot hold the car where the probe wants it to run.
-func _frame(city: City, running := false) -> void:
-	city.events._tick_the_events(STEP)
-	for instance in city.events.instances().duplicate():
-		instance.signals = null
-		# `running` stands for her running: the manager's tick has just said she is not.
-		if running:
-			instance.player_running = true
-		instance._process(STEP)
+## One real physics tick, the manager's own (`EventManager._physics_process()`), which steps every
+## instance, with her running while `running` says so; it covers `SPEED` times `STEP`.
+func _frame(t, city: City, running := false) -> void:
+	(city.events.world.player as _Her).running = running
+	await PhysicsTicks.pass_ticks(t, 1, Callable(), SPEED)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a
 ## stream-out.
@@ -101,10 +123,10 @@ func _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t) -> void:
 	var plan: EventScheduler.Planned = rig[2]
 	var car: EventInstance = null
 	var seen_at_the_end := false
-	var elapsed := 0.0
-	while elapsed < 60.0:
-		_frame(city)
-		elapsed += STEP
+	var ticks := 0
+	while ticks < PhysicsTicks.ticks_for(60.0, SPEED):
+		await _frame(t, city)
+		ticks += 1
 		car = car if car != null else plan.live
 		if car != null and _removed(car):
 			seen_at_the_end = _seen(car.global_position, her.global_position)
@@ -123,18 +145,23 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t) -> void:
 	var plan: EventScheduler.Planned = rig[2]
 	var car: EventInstance = null
 	var officer: EventInstance = null
+	var let_out := false
+	var gave_up := false
 	var seen_at_the_end := false
-	var elapsed := 0.0
-	while elapsed < 90.0:
-		_frame(city)
-		elapsed += STEP
+	var ticks := 0
+	while ticks < PhysicsTicks.ticks_for(90.0, SPEED):
+		await _frame(t, city)
+		ticks += 1
 		car = car if car != null else plan.live
+		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
 			officer = car.its_officer()
+			let_out = let_out or officer != null
+		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
 			seen_at_the_end = _seen(car.global_position, her.global_position)
 			break
-	t.check(officer != null, "the heated patrol stopped for her and let a man out")
+	t.check(let_out, "the heated patrol stopped for her and let a man out")
 	t.check(car != null and _removed(car), "and the car, its man back in, drove on and left the world")
 	t.check(not seen_at_the_end, "out of her view, never inside it")
 	_done(city, her)
@@ -149,19 +176,24 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 	var plan: EventScheduler.Planned = rig[2]
 	var car: EventInstance = null
 	var officer: EventInstance = null
+	var let_out := false
+	var gave_up := false
 	var seen_at_the_end := false
-	var elapsed := 0.0
-	while elapsed < 120.0:
-		_frame(city, officer != null and not officer.is_finished)
-		elapsed += STEP
+	var ticks := 0
+	while ticks < PhysicsTicks.ticks_for(120.0, SPEED):
+		await _frame(t, city, is_instance_valid(officer) and not officer.is_finished)
+		ticks += 1
 		car = car if car != null else plan.live
+		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
 			officer = car.its_officer()
+			let_out = let_out or officer != null
+		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
 			seen_at_the_end = _seen(car.global_position, her.global_position)
 			break
-	t.check(officer != null, "the heated patrol stopped for her and let a man out")
-	t.check(officer != null and officer.gave_up, "she ran and he gave up the chase")
+	t.check(let_out, "the heated patrol stopped for her and let a man out")
+	t.check(gave_up, "she ran and he gave up the chase")
 	t.check(car != null and _removed(car), "and the car, its man back in, drove on and left the world")
 	t.check(not seen_at_the_end, "out of her view, never inside it")
 	_done(city, her)
@@ -180,12 +212,12 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t) -> void:
 	var route: PackedVector2Array = rig[3]
 	var reach := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var car: EventInstance = null
-	var elapsed := 0.0
+	var ticks := 0
 	var removed_in_view := false
 	var followed := 0.0
-	while elapsed < 60.0:
-		_frame(city)
-		elapsed += STEP
+	while ticks < PhysicsTicks.ticks_for(60.0, SPEED):
+		await _frame(t, city)
+		ticks += 1
 		car = car if car != null else plan.live
 		if car == null:
 			continue
@@ -217,23 +249,23 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t) -> void:
 	var her: Node2D = rig[1]
 	var plan: EventScheduler.Planned = rig[2]
 	var home := her.global_position
-	var elapsed := 0.0
-	while elapsed < 30.0 and (plan.live == null or not plan.live.is_leaving):
-		_frame(city)
-		elapsed += STEP
+	var ticks := 0
+	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) and (plan.live == null or not plan.live.is_leaving):
+		await _frame(t, city)
+		ticks += 1
 	t.check(plan.live != null and plan.live.is_leaving, "the patrol ran out of route and is leaving")
 	her.global_position = home + Vector2(0.0, 2400.0) # a teleport, see above
-	_frame(city)
+	await _frame(t, city)
 	t.check(plan.live == null, "she is far away and it is streamed out")
 	t.check(plan.spent, "and its plan is spent, a departure being over once it is streamed out")
 	var seen := false
 	while her.global_position.y > home.y:
-		her.global_position.y = maxf(her.global_position.y - Tuning.WALK_SPEED * STEP, home.y)
-		_frame(city)
+		her.global_position.y = maxf(her.global_position.y - Tuning.WALK_SPEED * STEP * SPEED, home.y)
+		await _frame(t, city)
 		for instance in city.events.instances():
 			seen = seen or _seen(instance.global_position, her.global_position)
 	for i in 30:
-		_frame(city)
+		await _frame(t, city)
 	t.check(plan.live == null and not seen,
 			"walking back to its route, nothing of it is ever in her view")
 	_done(city, her)

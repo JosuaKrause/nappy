@@ -1,7 +1,7 @@
 # Nappy — Mechanics & Tuning
 
-All constants live in `src/autoload/tuning.gd` (autoload name `Tuning`) so they can be
-balanced in one place. Values below are the design intent; the script is the source of truth.
+The balance constants two or more `src/` files read, or that `tuning.gd` itself reads, live in
+`src/autoload/tuning.gd` (autoload name `Tuning`); one that exactly one `src/` file reads is a `const` in that file. Values below are the design intent; the script is the source of truth.
 
 ## The two meters
 
@@ -25,10 +25,10 @@ at all. It does not drain either — the baby is just too interested in the worl
 At `sleepiness = 100` the baby falls asleep and the day enters its **return phase**.
 
 **In acts III and IV, the return leg owes its own pressure.** `EventDirector.owe_the_return()`
-fires the moment `EventBus.return_phase_started` does, owing `Tuning.RETURN_PATROLS_PER_ACT`
+fires the moment `EventBus.return_phase_started` does, owing `EventDirector.RETURN_PATROLS_PER_ACT`
 (`[0, 0, 2, 3]`) extra `police_patrol` rows, each rigged into her route's bag so it comes within
-`Tuning.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
-`Tuning.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
+`EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the one before, and switching its pacing to
+`EventDirector.RETURN_PATROL_INTERVAL` (9–16s, tighter than the ordinary 11–26s) for the rest of the day
 — see `docs/EVENTS.md`, "The return owes her patrols", for the siting and the fairness. Acts I
 and II are untouched, so the days she is taught the mechanic on stay exactly as they were.
 
@@ -179,17 +179,17 @@ to walk down, which is what a route is made of.
 
 **The bar may reach and sit at `excitement = 100` without ending the day.** The day ends crying
 only once a further mass of excitement has arrived while she is already sitting at the cap —
-`Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
+`Baby.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points inside `Baby.EXCITEMENT_OVERFLOW_WINDOW` (3s) —
 so a single contact that only just reaches 100 leaves almost nothing behind it and does not end
 the day, and a source that keeps her at the cap does. See "Baby state machine", "A push at the
 cap", for exactly what counts as that mass and what happens to it once she gets away from the
 source.
 
 **The entity halo reads this same subtraction, per source.** `ExcitementHalo` traces every live
-source's own gross points landed over the last `ExcitementHalo.WINDOW` (five seconds, the same
+source's own gross points landed over the last `ExcitementSource.WINDOW` (five seconds, the same
 figure `Baby.decay_in_window()` sums the decay above over) and subtracts that source's own share of
 the decay taken in the same window — shared between every source in proportion to what each landed,
-never below zero (`ExcitementHalo.net_landed()`). So the rims live at once sum to exactly what this
+never below zero (`ExcitementSource.net_landed()`). So the rims live at once sum to exactly what this
 section's net rate bought the bar over the window, and a source reads red only while the bar is
 actually climbing because of it — not merely because it is loud. See `docs/EVENTS.md`, "The visual
 vocabulary," for the whole cue and its colour and transparency curves.
@@ -216,7 +216,7 @@ obstacle in each half of a day. See docs/EVENTS.md for the row itself.
 
 `checkpoint_hut` and `checkpoint_post` — the gatehouses and the alley guard a region wall's own door
 stands, see docs/DECISIONS.md, "M62 — Checkpoints that divide the map" — reuse the conversation
-mechanism above at a shorter hold, `Tuning.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
+mechanism above at a shorter hold, `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s): a toll paid at every
 crossing of the wall has to stay cheap to repeat, where a conversation is spent once.
 
 **The boom between a street door's gatehouses, `checkpoint_gate`, is not an inspection.** *(2026-09-24,
@@ -228,7 +228,7 @@ under it is unlawful: a guard steps out of the nearer gatehouse after her — ru
 does not — and a catch ends the day. See docs/EVENTS.md, "Checkpoints".
 
 **The inspection starts as she walks up, measured from the door body's own wall** —
-`Tuning.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
+`EventCatalogue.CHECKPOINT_DETAIN_REACH` (48px) past its solid edge, rather than a radius from its middle.
 A door body is something she cannot walk through, so a trigger stated from the middle has to be
 wider than her own body *and* than whatever she is pushing in front of it; stated from the wall,
 one number covers both, and the hold cannot be switched off by a change to the pram. Only the
@@ -245,16 +245,15 @@ one hold. The escape scene's own doors reuse the same class.
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
 stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
 on the far side of the door so being let out reads as being let through
-(`EventManager._release_finished_door_detentions()`).
+(`CheckpointController.release_finished_holds()`).
 
 **Going in and coming out are owned by different halves, and that asymmetry is the whole of why
 she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
 is a physics frame, so no drawn frame can catch her between the two. Showing her again has to
-happen on the frame she is *moved*, and the move is the release — also a physics frame — while the
-hold's own seconds run down in `EventInstance._process()`, a drawn one. So the release does both,
-in order: teleport, then show, then hand the camera back. Ending the hold by un-hiding her where
-its clock ran out drew her standing at the place she went in for every frame until the next physics
-tick. The pram's cue and the alert mark hidden
+happen on the frame she is *moved*, and the move is the release, on the same physics tick as the
+step whose seconds ran the hold down and after it. So the release does both, in order: teleport,
+then show, then hand the camera back. Ending the hold by un-hiding her where its clock ran out would
+draw her standing at the place she went in. The pram's cue and the alert mark hidden
 along with her are the same drawing call that draws her, so nothing about them needs its own
 switch. The meters keep running throughout — sleepiness still drains at the idle rate, because the
 baby is still there whether or not the player can see her.
@@ -272,9 +271,10 @@ is one mechanism for every `redetains` hold: the street doors' gatehouses and th
 
 **The hold charges its toll and nothing else.** While she is inside a door — inside the trigger of
 a `redetains` instance whose hold is running — the only thing the meter sums is that hold's own
-flat `Tuning.CHAT_EXCITEMENT` (25) over `Tuning.CHECKPOINT_DETAIN_SECONDS`. Every other event field
-and the whole crowd are off: `EventManager.door_holding_her_at()` is the one question both halves
-of `City.excitement_sources_at()` ask. She is in the gatehouse for those two seconds, not on the
+flat `Tuning.CHAT_EXCITEMENT` (25) over `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. Every other event field
+and the whole crowd are off: a set of sources that holds her alone is the whole of what
+`WorldContext.excitement_sources_at()` answers (`ExcitementSources.all_at()`), and the events' set
+holds her exactly while `CheckpointController.door_holding_her_at()` finds a door. She is in the gatehouse for those two seconds, not on the
 pavement, so what happens to stand beside that particular door is not part of what the crossing
 costs — *"it works in both directions with the same cost each time"*. Nothing gives back either,
 since `EXCITEMENT_DECAY_IDLE` is zero for a player held still, so the hold is exactly the toll.
@@ -285,7 +285,7 @@ of them still drawn, so a lorry reversing beside them is part of what it costs.
 inside, not the building he works in: a checkpoint that blinks out for two seconds reads as the
 door having been removed rather than as her having gone through it. The one row where the whole
 picture goes is `checkpoint_post`, an alley guard standing alone, since he *is* all of it —
-`EventInstance.is_suppressed_by_its_own_hold()` is that narrower question and the halo gates on it
+`EventFootprints.hidden_by_its_hold()` is that narrower question and the halo gates on it
 too.
 
 **The crowd is held at the same gatehouses, and none of it is her machinery.** *(Playtest 58: "walkers
@@ -294,18 +294,18 @@ fraction can do that"; "others can turn back"; "don't want a queue that is long"
 its answer once, when it is placed: one in eight walks through, one in four turns back at the last
 junction the way it does at a wall, and the rest are held. A held walker walks up to the gatehouse on its
 own sidewalk, waits stopped beside it in its last facing behind whoever is already in the line,
-goes **inside** for `Tuning.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
+goes **inside** for `WalkerStrategy.WALKER_DOOR_HOLD_SECONDS` (1s, shorter than her own two, because a
 walker is not the one being looked for) and is not drawn, and comes out on the far side of the door
 on the same lane with a cooldown that keeps that gatehouse from taking it again until it has left the
 gatehouse's area — so the crowd's own steering turning it round just past a door cannot put it through a
 second inspection. One inside at a time, and **the line is short by construction**: a door holds
-one walker inside and `Tuning.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
+one walker inside and `WalkerStrategy.WALKER_DOOR_QUEUE_MAX` (2) behind it, and the next walker to see it
 turns back at the last junction instead of joining. The decision is taken where the lookahead first
 sees the door — the same seven tiles the crowd sees a wall from — rather than at the gatehouse, because a
 walker has no about-face to make once it is standing in a queue.
 
 It is the crowd's own state throughout — `Crowd._hold_walkers_at_doors()`, `WalkerDoorHold` and
-`CrowdAgent`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
+`WalkerStrategy`'s four `DoorState`s, keyed on the gatehouse body's ground point from the region plan. It
 reads no catalogue row: not `detain_radius`, which is the reach *she* is caught at, and none of the
 detention above, which teleports her, hides her, moves the camera and charges her meter.
 
@@ -328,8 +328,8 @@ half-second move read as a cut.
 
 **A push at the cap.** The bar may reach and sit at `Tuning.METER_MAX` without ending the day —
 `_update_excitement()` still nets `incoming − decay` every frame the way it always has, and the
-day only ends once `Tuning.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
-**while she is already sitting at the cap**, summed over the last `Tuning.EXCITEMENT_OVERFLOW_WINDOW`
+day only ends once `Baby.EXCITEMENT_OVERFLOW_TO_CRY` (9.5) points of that net have arrived
+**while she is already sitting at the cap**, summed over the last `Baby.EXCITEMENT_OVERFLOW_WINDOW`
 (3s). That sum is the bar's own would-be overflow — the part of a positive net rate the clamp would
 otherwise have piled on top of 100 — not the raw incoming: a single contact from just under the cap
 spends nearly all of itself getting *to* 100 and leaves almost nothing over, so it no longer ends
@@ -337,7 +337,7 @@ the day on its own, while a source that keeps emitting once she is there keeps f
 moment incoming drops under decay, the bar falls back from 100 at its ordinary ground-and-motion
 rate exactly as it always has, and the sum itself never resets — it simply drains as its own
 entries age out of the three-second window, the same way the decay side of the meter already ages
-out of `ExcitementHalo.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
+out of `ExcitementSource.WINDOW`. Two constants, both in `src/autoload/tuning.gd`, tightened once
 from the player's own starting point of 10 over 3s to 9.5 over 3s (`docs/DECISIONS.md`, M96 and
 M100).
 
@@ -468,11 +468,11 @@ run's own ending — is actually running: a real `InputEventAction` for `pause` 
 event and would hear nothing from `Input.action_press()` alone. It fires on release rather than on
 press, and only when the release is still over the button, so a thumb that lands wrong can slide off
 without stopping the day. **Esc** pauses too, on every device, silently. Losing the window's focus
-opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over a section's
-brief or the epilogue, the escape's own two screens between one section and the next — the same
-reason Esc opens over an ordinary day's own end-of-day message and focus loss does not: a section's
-brief stands between her and a clock that has not started yet, not between her and a day already
-decided.
+opens the same screen, unless `--no-focus-pause` says otherwise. Neither ever opens over a
+section's brief or the escape's epilogue, the same reason Esc opens over an ordinary day's own
+end-of-day message and focus loss does not: each stands between her and a walk that has not begun
+yet, not between her and a day already decided. A lost section's outcome screen is the day's own,
+and Esc opens over it as over a lost day's.
 
 The stroller faces the movement direction and lags slightly behind the mother, so the
 player can read direction at a glance.
@@ -524,9 +524,63 @@ meter, none of which a data-level test can see:
 ### The bump is a source, not a write
 
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
-the person she walked into*, and `Crowd` sums that agent like it sums every other one. So
-contacts still compose by plain addition, there is still no ordering to get wrong, and
-`City.total_excitement_at` still adds exactly two things. See the **events** skill.
+the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
+every other one. So contacts still compose by plain addition, there is still no ordering to get
+wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
+
+### The crowd gives way to event figures
+
+**When an event figure and the crowd meet, the crowd yields and the figure keeps its course and its
+timing** (inbox #884 in plaid-raven): a charging dog does not care, and a pedestrian does not want
+to be overrun. An event figure, an event car and day 12's cordon officers are given way to; nothing
+about them changes for the crowd, so every catch, notice and departure is timed as it is with an
+empty street.
+
+- **A walker gives way to every figure under way, and to an object or a vehicle standing still,
+  but may walk through a person or an animal standing still** (inbox #905 in freckled-moose): he walks round a
+  parked van, the patrol car at a light or the fire engine at its fire, and through a street
+  musician, a policeman standing for his notice or a dog waiting or crouched before its charge.
+  Each row says which it is (`EventDef.stands_as`); a figure counts as under way for a third of a
+  second after it last moved. An object with a solid body, a stall or a café's tables, is walked
+  round by its tiles as well. A person or an animal put on the map who has not yet taken a step, a dog
+  waiting for her or a policeman at his post, is a figure standing still, so he is walked through.
+  A figure set down on other ground by hand, as day 13's guard following her to her roadblock is,
+  has not walked there: a step of more than 32px in a tick (`SeparationPass.PLACEMENT_STEP`; the
+  fastest figure, the cat, covers 8) is a placement, with no speed and not under way.
+- **He makes way for a figure coming at him as he does for her** (noticed within
+  `Tuning.CROWD_YIELD_DISTANCE`, 96px, a lane over within his own footway), and his step is then
+  moved clear of every figure's body he gives way to, so a figure walking into him pushes him out
+  of its way and he slides round one he walks into. Pushed, he keeps going the way he was pushed
+  for a couple of seconds, as her bump has him do; pushed back along his own line, he steps to the
+  side his footway has room on. Squeezed against a wall he cannot go aside: overtaken, he is moved
+  on and hurries ahead; met head on along his own line by a figure under way, he walks on and the
+  figure brushes past him, the one overlap this leaves; against a standing object or vehicle he
+  waits behind it. He is not startled, so a figure walking through the crowd costs her nothing the
+  crowd did not already cost.
+- **A crowd car stands for a figure in its lane ahead, or coming into it within half a second**,
+  braking toward a point a few pixels short of its body the way it brakes for a stop line, and its
+  step is held short of the body if the brake arrives late. It never swerves and never drives
+  through a figure, moving or standing, for as long as it stands (inbox #909 in freckled-moose). **Behind a figure
+  that has parked it turns round**, as it does at a blocked street, rather than hold the lane all
+  day: the fire engine once it is at its fire. Behind one that is only stopping — the patrol car at
+  a red light or while its man is out, a dog standing for its notice — it waits until it moves.
+  Each row says whether its figure parks (`EventDef.when_it_stops`), and the figure says when it
+  has: one that drives to where it stops has parked only once it is there, so the fire engine at a
+  red light on its way is waited for. What was placed and never moved, a stall or a barricade, is left
+  to the map: it is a blockage by its tiles, as it always was, and a thing standing there with no
+  solid body is not stood for by a car until it has moved. A car stands only for a figure ahead of
+  its centre, so one that walks into its side or tail is overlapped. **A car in the middle of a turn
+  stands for nobody**: it drives its arc through a figure crossing the junction. **And a car that can still stop does not drive into a junction box it would
+  have to stand in**: a figure in its lane beyond the box, moving or standing, holds it at the line,
+  as a stopped car beyond the box does. Two cars are not held: one already within its braking distance
+  of the box, which counts as in it, and one already inside the box when a figure comes into its lane,
+  which stands there for as long as the figure stands. A car that stands for a figure is a stopped car to the strike,
+  the horn and the queue behind it. No figure reads the crowd, so a car waiting on a figure is never
+  one the figure waits on.
+
+`SeparationPass` (`src/world/`) is the world's half: which movers are given way to and the geometry
+of clearing them. The crowd asks it at each body's own step, between the step's proposal and its
+check (`MoveProposal`).
 
 ### A car is lethal
 
@@ -542,7 +596,7 @@ over, so a car halted at a zebra is scenery.
 
 A car is not an event: it has no telegraph, it is not in the catalogue, and
 `validate_event()` never sees it. Two things stand in for the telegraph, and
-`Tuning.validate_traffic()` checks the second on boot.
+`tests/test_tuning_fairness.gd`'s traffic check checks the second.
 
 1. **The road itself.** The carriageway is painted, permanent and learnable, and the kerb is
    an edge she chooses to step over. Same shape of contract as `alley_robbery`, where the
@@ -553,7 +607,7 @@ A car is not an event: it has no telegraph, it is not in the catalogue, and
    near miss costs something even when it stays a near miss. The crowd watches for it from
    `CAR_HORN_SIGHT` (296px) out — wider than the 200px the strike and the give-way scan use,
    since a fast car needs more than 200px of travel to sound the whole `1.6 s` — and
-   `Tuning.validate_traffic()` checks that reach against the fastest car on boot.
+   `tests/test_tuning_fairness.gd`'s traffic check checks that reach against the fastest car.
 
 The horn also raises the **exclamation mark over the player**, the load-bearing cue of the visual
 vocabulary. See docs/EVENTS.md.
@@ -570,7 +624,7 @@ warning — so the zebra below stays the safe way over with a patrol on the stre
 
 **On the main road the light is the contract, and with the power out the horn is.** The spine's
 traffic does not give way at a zebra, so what stands between her and a hard fail there is the length
-of the side street's green (`Tuning.validate_signals()`). On the last night, after the blackout, the
+of the side street's green (`tests/test_tuning_fairness.gd`'s signals check). On the last night, after the blackout, the
 lights are dead: a spine junction is negotiated the way a side street's is, and crossing the spine
 is kept by the same two things every other street's carriageway is — the paint and the horn. The
 spine's carriageway is the same 64px as every street's and the horn is stated in seconds of the
@@ -696,7 +750,7 @@ reached only from a state that waiting cannot mend: the ground the arc would swe
 closure, a seal or a precinct's paving. It costs a stride before the car may reverse again. **A
 reversal that lands in the same state is not an escape** — it swaps the lane the car belongs to
 without moving it, and the ordinary steering then slides the body over to the other lane's centre at
-three pixels a frame, which is a car shaking its head rather than turning round. So a car with less
+three pixels a tick, which is a car shaking its head rather than turning round. So a car with less
 than a half turn's road at *both* ends of the piece of carriageway it is on does not reverse. It
 stands where it is and leaves the way any body with nowhere to go leaves — recycled at the first
 frame the camera is not on it, the same rule a body caught in a pocket already follows.
@@ -739,8 +793,8 @@ brake from cruise**, or a car cannot physically honour the gap it is keeping and
 resolves by interpenetration again however good the controller is.
 
 **The spacing correction never places a car on ground it could not have driven onto itself.**
-`CrowdAgent.nudge_back()` and `_join_the_back_of_the_queue()` are pure arithmetic with no notion
-of the map underneath them, so both ask the same `_cannot_go_on` the forward-looking lookahead
+`LaneMover.nudge_back()` and `CarStrategy.join_the_back_of_the_queue()` are pure arithmetic with no
+notion of the map underneath them, so both ask the same `cannot_go_on()` the forward-looking lookahead
 already trusts about blocked ground — a hard seal, a region wall or a dead end's own built-over
 footprint — rather than parking a car inside it. A recycle's merge is refused whole, since the spot
 it rolled is still somewhere to stand. **A nudge goes as far back as the ground allows and stops a
@@ -750,7 +804,7 @@ overlap is paid in one jump on whichever later frame the leader has pulled far e
 whole slide to be legal — a frame nobody chooses, so possibly one she is watching.
 
 **A hard seal, a region wall, and the closed streets a car cannot see through, all read the same
-way to the traffic.** `CrowdAgent._cannot_go_on` treats a tile on a held segment (a hard seal's own
+way to the traffic.** `CarStrategy.cannot_go_on()` treats a tile on a held segment (a hard seal's own
 ground, or a region wall's) exactly like a closed one: a car turns off at the last junction rather
 than driving into a barrier it has no physics against. A soft seal takes only the pavements, so a
 car still crosses it — the street reads quiet on foot and ordinary on the road.
@@ -805,7 +859,7 @@ which turned every car on that street for something parked on the pavement.
 
 **A walker steps round it and a car turns at the junction, and the difference is that a walker has
 another lane.** A footway is two lanes wide, so a walker whose own lane is taken steers into the
-other one `Tuning.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
+other one `WalkerStrategy.WALKER_BODY_SIDESTEP_TILES` (4 tiles, 128px) before it gets there and steers back
 once it is past — the same sidestep a bump gives it, aimed at a lane rather than away from a person.
 Only a body that takes **every** lane of one footway at the same point along the street shuts that
 footway, and then the walker walks up to it and about-faces in front of it — with the other footway
@@ -965,9 +1019,9 @@ capsule about its own spine, `GroundShape.distance_to_spine()`. A moving emitter
 way — nobody builds the general capsule-and-ellipse sum, because the one emitting segment that
 moves, the patrol car, has its whole body inside its own field's core — and its field is
 `GroundShape.eccentric_distance()`: a conic with the emitter at one
-focus rather than at the centre, eccentricity from speed (`Tuning.field_eccentricity()`). **The
+focus rather than at the centre, eccentricity from speed (`Field.eccentricity()`). **The
 resting disc's own width is what the ellipse keeps**: it holds exactly `outer_radius` abeam of a
-moving thing whatever its speed, reaches `outer_radius · Tuning.field_scale(e)` ahead of it — more
+moving thing whatever its speed, reaches `outer_radius · Field.scale(e)` ahead of it — more
 than a disc's `outer_radius`, since motion only ever adds reach — and less far, `outer_radius /
 (1+e)`, behind. See docs/EVENTS.md, "The emission model", for the full derivation and the debug
 view (`DebugLayers`, layer `1`) for where the boundary is checked by eye.
@@ -1014,13 +1068,13 @@ accident to be tuned away — an event that merely emits is a *place*, and the a
 a route.
 
 The exception is the one kind of thing a route cannot answer: something that **follows**.
-`EventDef.pursues` marks it, and three properties make walking and running give *opposite
+`EventDef.pursuit` marks it, and three properties make walking and running give *opposite
 outcomes* rather than the same outcome at two prices:
 
 | | |
 | --- | --- |
 | Speed | strictly between `WALK_SPEED` and `RUN_SPEED`, by `PURSUIT_MIN_MARGIN` either side |
-| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`EventDef.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
+| Lethal | `hard_fail`, so the alternative to running is losing the day rather than paying points — except the man an investigating patrol car lets out at heat, whose catch is a 40-point stop (`PursuitSpec.stop_excitement`, docs/EVENTS.md, "The heat"), still far more than running from him costs |
 | Bounded | gives up after `Tuning.PURSUIT_SHAKEN_OFF` seconds of the gap opening, which only running does, and for a charger that waits for her only once he has charged, never while he warns — **not** to a walker *(amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks")*: its `duration` is `PURSUIT_TIME`, a long cap (30s) a walk cannot outlast, there only so a pursuer stuck against a wall lets go in the end |
 
 Its telegraph is the **approach**: it exists and visibly closes on her the whole time it
@@ -1028,7 +1082,7 @@ telegraphs. One sent at her from off screen is warned of first like everything t
 screen, its badge alone its own half second (`EventDef.offscreen_notice`): the day-3 dog is then
 placed just off screen with the whole approach still to run, where a non-pursuer warned first (the
 fire engine) spends its telegraph as the badge, with nothing in the world; the resistance's robber
-and guard arrive already chasing (`EventDef.arrives_chasing`: "the proximity rule is only for
+and guard arrive already chasing (`PursuitSpec.Start.ARRIVES_CHASING`: "the proximity rule is only for
 standing robbers"). Running while a sent pursuer is offscreen counts toward the same
 `PURSUIT_SHAKEN_OFF` timer; he need not become visible before she can shake him off. A pursuer that stands still while it
 telegraphs hands her more ground in two seconds than the entire chase can take back; what she is
@@ -1037,35 +1091,40 @@ whole contract and it runs on load.
 
 **And it stops at walls.** A chase is a straight line at whatever is chasing her (all but day 13's
 task guard, set on her from wherever he stands, who walks the way to her round buildings where no
-clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and nothing about that line asks
-the city anything — so `EventInstance._walkable_step()` clamps every step of it to
-ground `CityMap.is_walkable()` agrees with, sliding along whichever single axis is still open when
-the direct line is not, rather than cutting the corner of a building the way an unclamped chase
-would. It is not a body — a pursuer stays exempt from `obstructs_radius` for the same reason
-`dog_walker` is, a moving wall on a two-tile pavement pins her against a building — it is only ever
-a question about the one tile the next step would land on.
+clear line runs to her: `docs/EVENTS.md`, the resistance's trap), and every step of it goes through
+the one navigator every mover moves by (`Navigator.step()`): it is refused where it would enter
+ground a figure on foot may not stand on — a building, a precinct's post, a closure, a soft seal or
+a stationary body (`CityMap.passable()`) — sliding along whichever single axis is still open when
+the direct line is not, rather than cutting the corner of a building or a barrier the way an
+unclamped chase would. **The step is swept**: every tile it crosses is asked, so a long frame cannot
+carry a chaser through a wall a tile thick, and the ground his body's reach takes past where he
+lands, in the way he is going, has to be open too. It is not a body — a pursuer stays exempt from
+`obstructs_radius` for the same reason `dog_walker` is, a moving wall on a two-tile pavement pins her
+against a building.
 
 **Nor does it reach through them: it catches her only by touching her.** *(freckled-goose, #544:
 "Only if the Robert touches the player should it end instantly".)* A pursuer's catch is its reach
-**and** a clear line — `EventInstance.is_lethal_at()` asks `_clear_line_to()` whether the straight
-line from it to her crosses any ground `CityMap.is_walkable()` refuses, every tile the line enters,
-so within reach across a building's corner is not a catch. The reach itself is unchanged, and only
+**and** a clear line — `EventInstance.is_lethal_at()` asks `clear_line_to()` whether the straight
+line from it to her crosses any ground a figure on foot may not enter (`CityMap.clear_line()`),
+every tile the line enters, so within reach across a building's corner, a barrier or a café is not
+a catch. The line sees out of a band the pursuer stands in, and the tile she stands on never hides
+her. The reach itself is unchanged, and only
 a pursuer asks — every other `hard_fail` row's catch is still the straight-line distance.
 
 **Nor does it notice or lunge through them.** *(leafy-puffin, inbox #648: "yes noticing needs a
 clear line"; mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs a
-clear line".)* A waiting pursuer notices her within `pursues_within` only along the same clear line,
+clear line".)* A waiting pursuer notices her within `EventDef.notice` only along the same clear line,
 and its charge asks for it too: a waiting charger whose warning runs out with a wall between them
 goes on warning until the line clears or she leaves its radius. For a pursuer that comes for her, a
 lunge the wall holds back is not simply deferred
 until the line clears, which would clamp the approach at zero — at an alley mouth the line clears
 with her already well inside the stand-off, and it would fire from a fraction of it. Instead the
-pursuer holds the ground a pursuer that sets off beside her holds (`EventDef.sets_off_beside_her`):
+pursuer holds the ground a pursuer that sets off beside her holds (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`):
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
 lunges the moment she is back at the full stand-off with the line clear. One held while it stands
 for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
 follows nowhere: it stands where it is and lunges the same way. **A pursuer that
-waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `warns_for`), so a
+waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
 held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
@@ -1087,8 +1146,8 @@ after the first second.
 
 Two rules answer it, and they are the same rule twice: the contract restated as geometry.
 
-- **`Tuning.pursuit_standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
-  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
+- **`PursuitSpec.standoff()`.** The telegraph is spent closing to `standoff_reach() + speed ×
+  PURSUIT_REACTION` (the reach is `inner_radius` unless a row catches at a reach of its own; the alley robber catches at 26px and his lunge is measured from 38px, `PursuitSpec.lunge_reach`, so his stand-off is 116px) and *holding* it, lunging the moment she walks in, because she will: it is sited in
   front of her and forward is where she was going. Clamping the approach at zero instead leaves the
   contract true of the dog and false of the encounter — it stands politely still while she closes
   the gap herself.
@@ -1134,7 +1193,7 @@ about a tenth of the meter, and hesitating costs the day. What reacting sooner b
 against 45 — rather than a discount.
 
 **The open question is the window at the lunge**, which the table puts between 0.1s and 0.2s. She is
-walking *into* the thing at that instant, so the gap closes at `pursue_speed + WALK_SPEED` and the
+walking *into* the thing at that instant, so the gap closes at its chase speed plus `WALK_SPEED` and the
 stand-off is worth about a third of the `PURSUIT_REACTION` it was bought with; reversing a walk into
 a run costs another 0.37s on top. A player answers during the **telegraph**, where the dog is
 visible and closing for two and a half seconds, so the lunge is the worst case rather than the
@@ -1145,21 +1204,21 @@ own telegraph, which a player has watched and called nonsense. See `docs/playtes
 ### A pursuer can be a place before it is a moment
 
 `charging_dog` is a **moment**: the director sites it in front of her and the chase is the whole of
-it. `EventDef.pursues_within` is the other shape — a thing that is **somewhere**, that you can see
+it. `EventDef.notice` is the other shape — a thing that is **somewhere**, that you can see
 and price and route around, and that becomes a chase if you do not. Three states rather than two:
 
 | | it emits | it can kill | it moves |
 | --- | --- | --- | --- |
 | **waiting** | at full strength | no | no |
-| **warning** (for its `warns_for` while she is inside `pursues_within`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`EventDef.notice_walk_speed`) and stops where he is if she walks out of his radius; the others stand (`EventDef.stands_for_its_notice`: the waiting dog, the hunting roadblock's guard) |
+| **warning** (for its `PursuitSpec.warns_for` while she is inside `EventDef.notice`; out of it first, it waits again) | at full strength | no | the alley robber walks at her at a slow walk of his own (`PursuitSpec.walk_speed`) and stops where he is if she walks out of his radius; the others stand (`PursuitSpec.stands`: the waiting dog, the hunting roadblock's guard) |
 | **chasing** (`duration`) | at full strength | yes | holds, then comes |
 
 Two things are deliberately not the same as an ordinary telegraph. **The warning is one radius
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `pursues_within` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `warns_for` has run stops it, and it
+comes inside `EventDef.notice` along a clear line and with its warning picture in the camera's view,
+not when the day put it there; leaving the radius before its `PursuitSpec.warns_for` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets
@@ -1170,7 +1229,7 @@ sent at her under a badge of the same second. And its warning does **not** damp 
 that alley since she came round the corner has started. What has not started is the lunge.
 
 **The second of those flips for a row whose waiting state is the harmless one**, and
-`EventDef.quiet_until_noticed` is where a row says so. `pigeon_flock` waits the same way without
+`NoticeSpec.quiet` is where a row says so. `pigeon_flock` waits the same way without
 being a pursuer at all — birds pecking on a pavement, priced and walked around from down the
 street — and there the damping is telling the truth: what is standing there is nearly nothing and
 the event is the flock going up. With the flag, the top two rows of the table above read *at
@@ -1266,7 +1325,9 @@ once**, a policeman through day 8 and a guardsman from day 9 (`EventManager.send
 inbox #591: "the pursuer is not a scheduled event. it is instant! policemen get switched to guardman
 on day 9"): the screen-edge badge goes up the moment the marble is drawn, for half a second with
 nothing in the world, and then he is created just off screen already chasing, as a task's robber
-is — no wait for her to turn from the wall or for a street. Walking does not end his chase within
+is and under the robber's rules (`SpawnSiting`) — never anywhere on the camera's view, and never
+with a run at her through the region's wall or a district door, so where no start passes those
+nobody comes — with no wait for her to turn from the wall or for a street. Walking does not end his chase within
 `Tuning.PURSUIT_TIME`'s 30s; running shakes him off; **his catch ends the day**
 ([merry-stork](playtests/2026-10-10-merry-stork.md): "Ends the day (Recommended)"). The tears' bag
 and the day's event bags never cross: a tear draws no event marble and moves no event's turn, and
@@ -1386,7 +1447,7 @@ in reach. Its guard moves with it, to two-thirds of the way through that alley f
 nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
 distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
 courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `pursues_within` of her or in view when he is placed — so where that spot is 216px or
+his own `EventDef.notice` of her or in view when he is placed — so where that spot is 216px or
 more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
 never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
 is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
@@ -1404,17 +1465,36 @@ Each day runs for `Tuning.day_length()`'s length of in-game dusk — `DAY_LENGTH
 an ordinary day, `CURFEW_DAY_LENGTH_SECONDS` (180 s) once curfew starts (day 6 on) — and is aimed
 at being won in about a third of that.
 Running out is a day loss. The timer is shown as a light-level shift rather than a number,
-with an explicit clock in the HUD corner, `m:ss` through `GameState.format_clock_seconds()`.
+with an explicit clock in the HUD corner, `m:ss` through `RunState.format_clock_seconds()`.
 
-The summary between days (`DaySummary.show_day()`) names the same clock at the instant the day
+**The day's clock is frame locked** (inbox #866 in minty-dolphin): it counts down one 30 Hz physics
+tick at a time, on the same ticks the run clock below counts — a tick on which she walked the day,
+with the tree unpaused and no screen in front of the walk (`DayController.tick()`, run by
+`main._physics_process()`). A frame drawn late adds only the ticks the engine stepped in it, a lag
+spike past the engine's steps per frame slows the clock with the game, and a faster machine reads
+no lower time. The resistance's clocks — a task's deadline, the note's lingering rider, the mark's
+sight dwell, the red arrow's choice and its sweep, the day's happenings and the park cordon — run on
+the same tick (`ResistanceDirector.tick()`), before the day's, as the tree ordered them. The events
+step on every physics tick the city runs, which on a day includes the ticks behind the title screen,
+where the street plays on, and so does the crowd: every walker and car moves, gives way, sounds its
+horn and is bumped once a tick, on every machine, and is drawn interpolated between two ticks, as
+she is. Inside the tick the traffic is spaced out, the doors held and she is met first, and then
+every agent steps, so a strike, a horn or a bump reads where the last tick left the cars. What an agent's picture does besides move is redrawn on the tick, thirty times a second: a
+car's bob over its wheels and a walker's gait step at that rate even on a faster screen, while a
+marked car's caret, a danger cue, breathes with its horn on every drawn frame. The escape's clock,
+which reads to the hundredth, is drawn between two ticks as the tick's countdown advanced by how far
+the frame is into the next one (`Engine.get_physics_interpolation_fraction()`), so its label moves
+on every drawn frame without the countdown itself moving off the tick.
+
+The summary between days (`SummaryModel.day_over()`) names the same clock at the instant the day
 ended, as its own title: a won day reads *"She fell asleep after 1:24."*, a lost day reads its
 own reason with the clock worked into it — *"She started crying after 1:24. There is no settling
 her now."* for a crying loss, the reason then the clock as its own sentence for a hard fail —
 and a day lost to running out of daylight shows only its reason, since dusk already is the whole
 day and printing the day's own length back would only repeat it.
-`GameState.format_clock_seconds()` is the shared `m:ss` formatter the HUD clock and this line
+`RunState.format_clock_seconds()` is the shared `m:ss` formatter the HUD clock and this line
 both read through, so the two can never disagree; the ending screen's *"Time played"* line stays
-on `GameState.format_clock()`'s millisecond form, over the whole run rather than one day — see
+on `RunState.format_clock()`'s millisecond form, over the whole run rather than one day — see
 "The run clock" below.
 
 **A title, brief or body of more than one sentence breaks onto more than one line only where its
@@ -1436,45 +1516,59 @@ label's own line count is the number of lines `SentenceLines` returned.
 
 **Everything below that one line is the coming day's, not the day that just ended.** The day
 number, the nerves carried into it and the morning's own line (`Texts.DAY_BRIEF`, below) all read off
-`GameState.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
+`run.header.day` — the day about to start, whether that is tomorrow (a win moves the calendar) or
 today again (a loss with nerves left retries the same day) — never off the day that just ended.
-The day brief a resumed run opens on (`DaySummary.show_day_brief()`) is built the same way, since
+The day brief a resumed run opens on (`SummaryModel.brief_for()`) is built the same way, since
 it is the same screen showing what a load already charged rather than what a day just did.
 
 ## The run clock
 
-`GameState.play_seconds` is a second clock, over the whole run rather than one day: the sum of
-every second a day spent `WALKING` or `RETURNING` with the tree unpaused. Not wall time, and not
+`run.header.play_ticks` is a second clock, over the whole run rather than one day: the
+physics ticks on which she walked a day — a section of the escape included — `WALKING` or
+`RETURNING`, with the tree unpaused and no screen in front of the walk and no scene reload on its
+way, read in seconds at the 30 Hz tick (`play_seconds()`). **Frame locked**
+(inbox #866 in minty-dolphin): it counts the ticks the game stepped, never a drawn frame's length, so a machine that
+draws a frame late spends no extra time on the clock — a lag spike past the engine's steps per
+frame slows the game instead — and a faster machine reads no lower time. The save holds it in
+seconds and loads it to the nearest tick, whatever seconds an older save holds. Not wall time, and not
 the day timer above, which resets every day — a retried day's first attempt counts toward it, and
-neither the pause screen, the day summary nor the title screen do. It is part of a normal run's
-checkpoint, so going back to one puts it back to that dawn's reading (see "Two modes").
+neither the pause screen, the day summary nor the title screen do. It only ever grows during a run
+(inbox #920 in plaid-penguin): going back to a checkpoint, day 1's included, keeps it and does not put it back to
+that dawn's reading (see "Two modes"); only a new game from the title starts it at zero.
 
 It is hidden throughout play — no HUD, no pause screen, no day summary — and the ending screen is
 the only place it is shown, once, on every ending alike: bad, neutral and good all carry a line
 under their own body text reading the run's length as `%d:%02d.%03d`, to the millisecond.
-`GameState.format_clock()` is the one place that format is written, so a second clock reading to
+`RunState.format_clock()` is the one place that format is written, so a second clock reading to
 the millisecond calls it rather than carrying a second copy of the string.
 
 **The `BAD` ending's own line names the day the run reached** — *"You made it to day %d."*,
 beside "Time played" — the last day played rather than the last day completed, so a hard run that
 loses its last nerve on day 1 reads day 1, not 0, and one that loses it in the escape reads day
-14. `GameState.day` already holds it: the calendar
+14. `run.header.day` already holds it: the calendar
 is never advanced past the day nerves ran out on, or past the day a load spent the last one on
-(`GameState.finish_day()` ends the run before it would move the calendar). The neutral and good
+(`RunCalendar.finish_day()` ends the run before it would move the calendar). The neutral and good
 endings say nothing about the day, since both are reached by finishing day 14.
 
 ## The escape, which is the run's ending
 
 The walk out of the building and out of the city is the fifteenth and sixteenth walks of a run:
 no route to a calm area and home, but one way out, played in two sections — the building and the
-city — that are **each a day of their own**, with a day's brief, a day's clock and a checkpoint at
-the brief.
+city — that are **each a day of their own**, with a day's brief, a day's clock, a day's outcome
+screen and a checkpoint at the brief. *(minty-lemur #785: "the escape is just like a normal day
+with some special settings".)* Each is run by the day's own code: a `DaySpec`
+(`src/day/day_spec.gd`, `DaySpec.for_section()`) says what is special about it — its goal, its
+clock's precision, the night it is walked in, what losing or winning it costs — and is handed to
+the day's own `DayController`, so the clock, the three ways to lose, the loss and its cause, the
+outcome screen, the counters and the run log are a day's. Each is counted as a day of its own,
+**day 15** the building and **day 16** the city (`DaySpec.BUILDING_DAY`, `DaySpec.CITY_DAY`),
+while the calendar (`run.header.day`) stays on day 14, since the run has not moved past it.
 
-**It is where a won run ends.** A day 14 that is won with every task complete — `GameState
+**It is where a won run ends.** A day 14 that is won with every task complete — `run.calendar
 .earned_good_ending()`, `Tuning.RESISTANCE_GOAL` errands run *and* the last night's sabotage
 performed, the same pair that has always decided the good ending — goes on from its own summary to
 the building instead of to the ending screen. A won day 14 without them keeps the neutral ending it
-has. Nothing about the run is recorded as finished on the way in: `GameState.finish_day()` is not
+has. Nothing about the run is recorded as finished on the way in: `RunCalendar.finish_day()` is not
 called until she is out of the city, so the run has no `ending` and its save stays on disk for the
 whole escape, which is what the checkpoints come back to. `--start-escape` reaches the same
 sequence directly, with a fresh run behind it, so it can be walked without playing fourteen days
@@ -1482,82 +1576,92 @@ first.
 
 **Nothing about the last night is the easy half.** *([PLAYTEST-121](playtests/PLAYTEST-121.md):
 "the escape shouldn't be easy!")* The sabotage is a hand-over at the power station's door and
-changes nothing there; once she is `Tuning.BLACKOUT_DISTANCE` from the station the city's power
+changes nothing there; once she is `Blackout.BLACKOUT_DISTANCE` from the station the city's power
 goes (docs/CITY.md, "The power station"). Every mast stops with it, so the rest of the walk home
 has no loudspeaker anywhere — but it is walked under dead traffic lights, across a spine that no
 longer stops for anybody, with everything else the last day carries still out. The escape after it
 is in the dark as well.
 
-**A full clock per section, `Tuning.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
+**A full clock per section, `RunConfig.FINALE_LENGTH_SECONDS` (180s), stated on its own rather than
 reused from the ordinary day's length** — the player asked that the escape not be easy, so it does
-not grow when the ordinary day does. Each brief starts one, so the time spent walking down three
-floors is not time the city has lost: at the service door the building's clock stops and the
-city's brief starts its own.
-`FinaleController` owns a `DayController` rather than being a second one: the countdown, the three
-losing paths, the `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the
-clock still are all a day's already and none of them change. What the escape does differently is
-only what happens at the end of one.
+not grow when the ordinary day does. Each section starts one as it begins, standing still behind its
+brief the way a day's stands still behind the title, so the time spent walking down three floors is
+not time the city has lost: the service door is the building's goal, which ends its day, and the
+city's begins with a whole clock. The countdown, the three losing paths, the
+`EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
+a day's and none of them change; **the goal is the section's own**: the building's service exit,
+reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
+`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
+the baby is.
 
-**The clock reads to the hundredth** — `%d:%02d.%02d` through `GameState.format_clock_hundredths()`,
-in place of a day's `%d:%02d` — and the escape's `DayController` tells the HUD on every frame
-(`emit_every_frame`) so the digits move as often as the screen draws; a day's clock still emits
-once a second. Digits ticking make the same countdown read as faster, which is the whole of the
+**The clock reads to the hundredth** — `%d:%02d.%02d` through `RunState.format_clock_hundredths()`,
+in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
+spec says so (`DaySpec.clock_hundredths`), so the digits move as often as the screen draws; a day's
+clock still emits once a second. Digits ticking make the same countdown read as faster, which is the whole of the
 reason. *(The player: "escape clocke we can try 100s but it's not going to be much better?
 framerate is too low? all of this was on phone.")* The ending screens' run length stays at
 milliseconds, a still number.
 
-**A lost section starts again where it began, and in a normal run costs no Nerve.** Being taken,
-the meter reaching 100 and the clock running out are the same three losses a day has, and every one
-of them puts her back at the start of the section she was in — the hallway outside her own door, or
-the service exit — with a fresh clock, the baby asleep with sleepiness full again, and, in a normal
-run, `GameState` untouched. A fourteen-day run is never thrown by one wrong turn in the last
-minutes; at zero the way out is gone, and what she does about it is walk it again.
+**A lost section states its reason and starts again where it began, and in a normal run costs no
+Nerve.** Being taken, the meter reaching 100 and the clock running out are the same three losses a
+day has, and each ends the section through the day's own finish path: what ended it is named, the
+charges still running are closed, and the day's outcome screen comes up with the reason and the
+clock it was lost at, the section's own words standing where "Day N of 14" stands *(minty-lemur
+#785: "losing an escape should still state the reason like the rest of the game. nothing should be
+different")*. Its continue puts her back at the start of the section she was in — the hallway
+outside her own door, or the service exit — with a fresh clock, the baby asleep with sleepiness
+full again, and, in a normal run, the run untouched. A fourteen-day run is never thrown by one
+wrong turn in the last minutes; at zero the way out is gone, and what she does about it is walk it
+again.
 
 **A hard run's escape has nerves.** *(gentle-osprey, the player: "with hard mode the escape also
 has normal nerve counts and ends if nerves go to zero (instead of restarting indefinitely; this is
 only for normal mode)".)* She enters it with the nerves day 14 left her. A lost section costs one
-(`GameState.spend_a_nerve_in_the_escape()`, from `main._on_finale_section_lost()`), and the last one
-is the bad ending, on the `GAME OVER` screen, rather than the section again. No section gives one
+(`RunCalendar.finish_day()`, with the section's `DaySpec`), and the last one is the bad ending, on
+the `GAME OVER` screen after the section's outcome screen, rather than the section again. No section gives one
 back, so a hard run can be lost in the escape
 *([mossy-kestrel](playtests/2026-10-11-mossy-kestrel.md), #718, the player: "No regain in escape
 either. Also, nerves behave the same in escape for hard mode so the game can actually be lost")*.
 Walking out of the city ends the run. Hard mode is the player choosing to
 have the wrong turn in the last minutes count.
 
-**Every section opens on its brief**, a first walk through it and a retry alike — the same screen
-between days that a resumed run opens on (`DaySummary.show_finale_brief()`), titled *"Escape the
-building"* or *"Escape the city"* where a day's number stands, and carrying the Nerve count as the
-run holds it — unchanged in a normal run, whose escape spends none, and in a hard run whatever its
-lost sections spent. Continuing from it is the moment the
-section actually begins: the clock starts there and nowhere else, and the section's one hint line
-is said by the HUD as she starts walking. A retry is not told that line a second time, the way
-day 1 teaches tapping and then never again.
+**Every section opens on its brief** — the same day brief a resumed run opens on
+(`SummaryModel.brief_for()`), titled *"Escape the building"* or *"Escape the city"* where a day's
+number stands (`DaySpec.title`), and carrying the Nerve count as the run holds it — unchanged in a
+normal run, whose escape spends none, and in a hard run whatever its lost sections spent. A retry
+opens on it too, after the lost section's outcome screen: the outcome screen says why the section
+was lost (minty-lemur #785), and its continue brings up the section's brief before she walks it
+again, for the building and the city alike and whether or not a nerve went (PLAYTEST-94 10).
+Continuing from the brief is the moment she starts walking, and the section's own words are said
+by the HUD every time she does — a first walk, a retry and a resumed one alike.
 
 **And the brief is the checkpoint a closed game comes back to.** A save is written as each brief
-comes up, carrying which section it is (`GameState.escape_section`, written beside the day-under-
+comes up, carrying which section it is (`run.facts.escape_section`, written beside the day-under-
 way flag rather than inside the run snapshot, so a save from before the escape existed still
 loads), and opening the game again puts that section's brief back up with a whole clock behind it
 — the same way closing a game mid-day comes back to that day's brief. Nothing about the escape is
 ever a day under way, so no nerve is charged for leaving one, in either mode; a hard run's spent
-nerve is already on disk, written by the brief its lost section comes back to.
+nerve is already on disk, written as its lost section's outcome screen comes up.
 
 **Everything around a day exists around a section too, built the same way.** `Esc`, the pause
 button and losing the window's focus open the same pause screen a day opens, with the same continue,
 the same held restart and the same quit; the held restart ends the escape in a fresh run,
-`GameState.escape_section` cleared, the same way it ends any other run. The touch controls, the
-orientation handling, the developer readout and the debug-mode note are all the one instance each
-boot already builds before it knows which of the two it is.
+`run.facts.escape_section` cleared, the same way it ends any other run. There is one boot: the
+HUD, the touch controls, the summary, the pause and the title screens, the orientation handling,
+the developer readout and the debug-mode note are built the same way for whichever day it opens on,
+and only the world the first day is walked in differs.
 
 **The building shows what the city shows.** *(PLAYTEST-115: "The escape shouldn't behave any
 different than the rest of the game.")* The screen-edge badge, the excitement halo and the debug
 view's layers are built with whichever world a boot builds first and pointed at the next one when
-she walks out of the service door. What they read is an **event source** — anything answering
-`instances()`, which `InteriorEvents` does under the same name `EventManager` does — and a crowd
-only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
+she walks out of the service door. What they read is the world's **events** — the day's own
+`EventManager` in both, the building's handed the building's map and its own placements
+(`BuildingPlan`) — and a crowd only where there is one, so indoors the masked man coming up a stairwell raises the same badge a
 fire engine coming down a street does, and the fire she is standing beside wears the same rim a
 dog on a sidewalk does. The debug view's fields, shadows and bounding boxes (`1`–`3`) trace the
-building's events, walls and her; the readout (`4`) names the section and its clock where a day
-names its phase; and the frame graph (`6`) is fed the same way. The route lines (`5`) have nothing
+building's events, walls and her; the readout (`4`) names the section's day and its words beside
+the seed, and its ground and events where a day names its tile, calm and crowd; and the frame graph
+(`6`) is fed the same way. The route lines (`5`) have nothing
 to draw in either section, since neither has a day's route tree. **The run log watches a section as
 it watches a day** — see `docs/TELEMETRY.md`, "The escape's log".
 
@@ -1570,9 +1674,9 @@ since a dev-flagged boot writes nothing a symbol could ever announce.
 floor's hallway between her own door and the right stair door, both rows of it
 (`InteriorMap.TOP_FLOOR_RUBBLE`), so the right stairwell cannot be entered on that floor at all and
 the only flight down is the left one — which is the shaft the fire is in
-(`InteriorEvents._BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
+(`BuildingPlan.BURNING_SIDE`, fixed rather than rolled, since a fire on the shut side would
 leave her nothing). **The fire always stands on the second floor's level approach, never rolled**
-(`InteriorScene.waypoint()` of the left shaft's second-floor landing, one cell in), so it closes
+(`InteriorMapPlan.waypoint()` of the left shaft's second-floor landing, one cell in), so it closes
 the flight from the second floor down and the first half of the walk is the same every attempt:
 left from the third floor to the second, then across that hallway to the other stairwell and down
 to the first. The last leg is not forced: from the first floor the right shaft reaches the lobby
@@ -1583,7 +1687,7 @@ hallway, which is why the two stair doors are at opposite ends; the right shaft 
 where the masked man is.
 
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
-of it, another comes up from the foot `Tuning.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
+of it, another comes up from the foot `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
 nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
 *(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
@@ -1591,10 +1695,11 @@ nearest corridor door and let him pass. **He starts his run the moment she is wi
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
-plain left from that landing tile gets through, and the margins are thin (on the tightest runner's
-line, walking until he runs, then running, and turning plain left at row 11's centre, he is drawn
-about 25px from her centre (24.6px), inside his 28px catch, and she clears it on the tick at 28.6px,
-by 0.6px; she is caught if she starts running 0.3s late). In the stairwell his warning is off screen,
+plain left from that landing tile gets through, and the margins are thin against his 23.5px catch
+*(inbox #865 in minty-dolphin)* (on the tightest runner's line, walking until he runs, then running, and turning plain
+left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
+down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
+late). In the stairwell his warning is off screen,
 and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
@@ -1604,15 +1709,15 @@ she presses** *(inbox #782 in minty-lemur)*. On a flight tile any press with a l
 the left, down if the flight descends to the left and up if it climbs, and a rightward one
 likewise; a pure up or down press on a flight moves nowhere, as there is no floor beside the tread
 to step onto. On a landing, as in a hallway, a press is not turned, so stepping off a landing onto
-a flight is a level step until she is on its first tread (`InteriorScene.slope_dir_at()`, read by
-`Stroller._redirect_along_a_flight()`).
+a flight is a level step until she is on its first tread (`WorldMap.slope_dir_at()`, the
+building's map answering it, read by `Stroller._redirect_along_a_flight()`).
 
 **And her body goes where she is steered, because a flight's edges are straight.** The solid
 cells either side of a flight meet it at square corners only 22.6px apart across the slope, against
 her 28px body, so with whole-cell walls she could pass each pair of corners only nearly flat or
 nearly straight down, and a held press would walk a zigzag. Each of those cells has the part inside the
-flight's band cut off along the slope (`InteriorScene._blocker_outline()`), leaving straight edges
-51px apart across it (`InteriorScene.FLIGHT_HALF_WIDTH`). From the landing tile level with a
+flight's band cut off along the slope (`InteriorMapPlan.blocker_outline()`), leaving straight edges
+51px apart across it (`InteriorMapPlan.FLIGHT_HALF_WIDTH`). From the landing tile level with a
 flight's first or last tread she walks the whole flight within two degrees of 45 and touches neither
 edge; from the landing tile one row below that, she slides along the stair side for about a tile
 before she is on the line. `tests/test_interior.gd` pins the steering of every tile of both
@@ -1629,8 +1734,8 @@ black. The city she walks out into is the same night, with every window and traf
 from its first frame (docs/CITY.md, "The power station").
 
 **The night outside is light and noise, and they are separate things.** Every
-`Tuning.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
-hallway window in it goes white for `Tuning.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
+`EventCatalogue.FINALE_EXPLOSION_INTERVAL` a bomb goes off close enough to shake the building: every
+hallway window in it goes white for `InteriorScene.FINALE_WINDOW_FLASH_SECONDS` and the hallway she is in
 is lit with it, and the meter takes the hit, wherever she is standing. Between those, far more often, a distant flash lights the same
 windows the same way and does nothing else at all — no event, no field, nothing on the meter. A
 shelled city is what she can see out of the window; what she is charged for is only what is close
@@ -1639,7 +1744,7 @@ enough to hear.
 **Every window flashes together, always** — near bang or far flash, one call and no way to light a
 subset, because a window lighting while the one beside it stays dark reads as a broken sprite
 rather than as a city under fire. The waits between distant flashes are a short-biased smooth
-draw on `[Tuning.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
+draw on `[InteriorScene.FINALE_DISTANT_FLASH_MIN_SECONDS, _MAX_SECONDS]` (0.1s to 5s) with its mean at
 `_MEAN_SECONDS` (1.3s), taken from the section's own seeded stream so a seed replays the same
 night: mostly quick double-taps, with the occasional long dark gap. Two flashes close enough to
 overlap run together as one longer one rather than blinking.
@@ -1648,16 +1753,16 @@ overlap run together as one longer one rather than blinking.
 bands and is one tile wide at three places on the way to the service exit
 (`InteriorMap.BASEMENT_NARROWS`), each of them a cell the walk cannot go round. A steam vent
 stands on each, in the same place every attempt, blowing on its own period out of
-`Tuning.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
+`BuildingPlan.FINALE_STEAM_PERIODS` — 4, 4.5 and 5.5 seconds, pairwise coprime in half-seconds, so the
 three of them never fall into a rhythm. A blow shuts its cell outright for
-`Tuning.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
+`EventCatalogue.FINALE_STEAM_BLOWS_FOR` after a notice, and the shortest period still leaves twice as long
 open as walking through the vent's reach costs. Waiting is the answer; there is no line past one.
 Standing at a blowing vent costs the meter hard *("steam should be 40 to 50")*: one blow takes 40 to
 50 points awake at the 30px a vent holds her out, so waiting right at the gate is paid for, and the
 pocket between two vents is still never shut at both ends for long enough to fill the meter.
 **And the meter does not fall in the basement** *("let's not replenish the meter in the basement it's a
 tense situation")*: walking there earns no decay, awake or asleep, because the building answers the
-ground's decay multiplier with `Tuning.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
+ground's decay multiplier with `InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER` (0) on the basement's
 tiles and 1.0 elsewhere. What a blow charges her with stays until she is out, so a mistimed vent
 is paid for at the next one; the rest of the escape recovers as it always did.
 
@@ -1668,12 +1773,12 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 **Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
 drawn from one marble bag for the whole escape: each street has one slot
-(`Tuning.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
+(`DaySpec.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
 then roadblocks, and fewest of all the empty marbles that leave a slot with nothing
-(`Tuning.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
+(`DaySpec.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
 none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
-barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk that is not a day". A roadblock
+barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
 is a barrier with a guard standing at it from
 the moment it is placed; when he notices her **he** comes for her, on foot, and the barrier he
 leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
@@ -1684,27 +1789,27 @@ barricade catches her. See `docs/EVENTS.md`, "The heat".
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
 charge. Walking in until he charges and running back until he gives up takes him off for good, and
 once he has left his post the guard at its far post walks off with him, as on every day
-(`EventInstance._send_the_far_guard_off()`), so it stands unmanned. The band itself costs nothing to walk
+(`RoadblockFarGuard`), so it stands unmanned. The band itself costs nothing to walk
 past at any time, manned or not, as every roadblock's band, a day's included
 (`EventCatalogue._roadblock()`): the guard is the danger, not the concrete. One roadblock a street means there is one guard to lure,
 not a second band's still posted beside the first, and no two bands stand where both guards can
 notice her, so she meets one guard at a time. His warning starts with him on the screen and drawn
-above everything round him. See `docs/EVENTS.md`, "The escape — the walk that is not a day".
+above everything round him. See `docs/EVENTS.md`, "The escape — the walk filled before she sets off".
 
 **Nothing on the walk closes a street.** *(Inbox #747: "one sidewalk must be open if they're
 en-route. the escape's street should not have fully blocking events like in the normal game.")*
 A roadblock's band leaves the far sidewalk open past it, a parked van shuts the sidewalk it stands
 on, and a burst's crater narrows the road's edge — and every street either chain walks keeps at
 least one of its two sidewalks walkable from junction to junction past all of them together,
-standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
+and past a parked van's reach as well as its body, standing as they stand for the whole walk: the hunting van stays parked, the band stays after its
 guard has gone, and the crater stays where the burst was. The seals off the chains count too: an
 unused alley's mouth wall stands in the alley's end tile, beside the chain street it opens onto, and
 can narrow that sidewalk's outer lane. **And nothing standing on the walk cuts it anywhere else**: where a chain leaves a street
 in the middle of a block, through an alley, a park or a courtyard, the ground around a placement
 still joins up everything it joined without it, so a van and a roadblock either side of an alley's
 mouth cannot shut it while the street's far sidewalk stays open. Each placement is checked before
-it is accepted (`EventScheduler._the_escape_accepts()`: the day's own sidewalk-band reading asked of
-both bands, and the day's junction rule asked of the ground around the placement), so a van and a
+it is accepted (`WalkGround.accepts()`: the day's own sidewalk-band reading asked of both bands, and
+the day's junction rule asked of the ground around the placement), so a van and a
 roadblock can stand on the same side of a street and never on opposite sides of it, and the walk
 from the service exit reaches both exits past everything that stands on it.
 
@@ -1714,14 +1819,14 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `Tuning.FINALE_EXIT_REACH` of the exit `CityEdge`
+**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
 draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
 she took, to the millisecond, which is the only number that screen carries.
 
 ## Nerves
 
 The run-level health bar. Starts at 5. Every lost day costs one, and in a normal run a day she
-**wins** gives one back, up to the same five (`GameState.regain_a_nerve_for_a_won_day()`) — so a bad
+**wins** gives one back, up to the same five (`RunCalendar.regain_a_nerve_for_a_won_day()`) — so a bad
 single day is recoverable rather than a tight spot carried all the way to day 14. **A hard run's won
 day gives nothing back**: it starts with five and only loses them. **What 0 does is the run's
 mode**, chosen on the title as a new game begins (see "Two modes" below): a normal run goes back to
@@ -1729,15 +1834,15 @@ its latest checkpoint with five, and a hard run ends with the bad ending.
 
 **A normal run's escape gives none back**, on either of its two sections or on walking out at the
 end, and so does a hard run's (see "The escape, which is the run's ending"): the run's last
-`finish_day()` call, from `main._on_finale_escaped()`, skips the gain in both because
-`GameState.escape_section` is still set to the section she just left. Day 14 itself still gives a
+`finish_day()` call, as she gets out of the city, skips the gain in both because the section's
+`DaySpec` says a win gives none back. Day 14 itself still gives a
 normal run one back — it is an ordinary day, so its own win reaches the gain directly from `main`'s
 hand-over to the escape rather than waiting for `finish_day()`, which by then is deciding the
 escape's ending instead of day 14's.
 
 **Drawn as stars everywhere they show, never as a digit or a word for the count** — the HUD's
-debug header, the day brief, the day summary, the finale brief and the pause screen all read the
-count through `NerveDisplay.stars()` (`src/ui/nerve_display.gd`), a star per nerve and `-` for
+debug header, the day brief, a section's brief, the day summary and the pause screen all read the
+count through `Texts.nerve_stars()` (`src/ui/texts.gd`), a star per nerve and `-` for
 none, so a sixth screen that shows nerves has one function to match rather than a number to
 invent.
 
@@ -1763,12 +1868,12 @@ Three consequences, all of them chosen:
   exact same state at the beginning of the day. nothing else"*. A retried day is the state the run
   was in that morning: where she settled, everything the resistance did, and everything the attempt
   did to the city — the one-shots it consumed, the scars it left and the block arcs it advanced.
-  Only a day she **wins** keeps any of it. See `GameState.finish_day()`.
+  Only a day she **wins** keeps any of it. See `RunCalendar.finish_day()`.
 
 **A lost day gives the resistance back.** *"a task is only complete if it is done on the day that
 won"*: a mark touched, the task it unlocked, a contact lost to its deadline, a package picked up
 and the day-14 sabotage are all undone when the day is lost — a task is one day, so both halves of
-it are the same attempt's to lose. `GameState.begin_day()` photographs the five fields that say
+it are the same attempt's to lose. `RunCalendar.begin_day()` photographs the five fields that say
 what the resistance has done — the completed steps, the failed ones, the progress count, the
 package and the sabotage — and the loss restores them before the retry, so the retry starts at the
 same mark again, in the same place, from the same seed. A won day commits the photograph.
@@ -1778,12 +1883,12 @@ restored the same way: `consumed_one_shots`, `scars` and the whole of `CityState
 after the fire burned owes a fire again — sited from whatever walk the retry takes, which is why a
 player who lost walking east and retries walking west meets it on another street — and leaves no
 shell standing in the meantime. The city photograph is taken **before** the dawn arc roll, since
-`GameState.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
+`RunCalendar.begin_day()` runs ahead of `CityState.begin_day()`, so the retry's own dawn makes that
 roll again from the same seed and the same day rather than inheriting it. **The once-only
 happenings of days 10 to 13 come back the same way**, since each is kept in one of those fields: the
 block day 11 boarded up and the park day 12 took are arc steps in `CityState`, the barricade day
 13's column left is a scar, and whether day 10's neighbor was taken is read off the completed steps
-(`GameState.neighbor_was_taken()`). A retry of any of those days meets its happening again.
+(`run.neighbor_was_taken()`). A retry of any of those days meets its happening again.
 - **The run cannot end by running out of days while nerves remain.** The run length is a promise
   rather than a budget. In a hard run the bad ending is the only way to lose; a normal run cannot
   lose at all, only go back to a checkpoint.
@@ -1799,7 +1904,7 @@ remembered between sittings. A touch or a click on its box or label, or anywhere
 5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen.hard_mode_target()`),
 or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
-first (`TitleScreen`). The mode is `GameState.hard_mode`, fixed for the run and carried in the save.
+first (`TitleScreen`). The mode is `RunCalendar.hard_mode`, fixed for the run and carried in the save.
 **Nothing during play shows it** and nothing about the city, the events or a day's difficulty reads
 it: *"hard mode doesn't affect gameplay -- only restart pacing"*. **Gameplay is anything that
 happens during a day** *(dotted-hawk, the player: "by gameplay I mean -- enemies are not harder. or
@@ -1817,14 +1922,16 @@ nerves, which decide only when a run ends, are restart pacing, and that is where
 
 **A checkpoint is the exact state of the run at that day's dawn.** *(gentle-osprey, the player:
 "store the exact state at the checkpoint -- continuing should not have anything that happened after
-the checkpoint".)* It is the whole run as the save carries it — the resistance's steps and progress,
+the checkpoint".)* It is the whole run as the save carries it, apart from the play time — the resistance's steps and progress,
 the scars and the spent one-shots, every block's arc, the posters, where she settled each day, the
-fenced park, the alleys a mark has used, and the run's clock — kept by `GameState.begin_day()` the
+fenced park and the alleys a mark has used — kept by `RunCalendar.begin_day()` the
 first time a checkpoint day is begun, before anything of that day can have happened, and given back
 whole when a normal run spends its last nerve, with five nerves instead of whatever that dawn had. A
 retry of a checkpoint day, or a run sent back to one, keeps the checkpoint it has; only the next
 checkpoint day replaces it. Day 1 is not stored: the run's own seed rebuilds that dawn exactly. **The
-run clock goes back with it**, so time spent after a checkpoint is not part of the run's length.
+run's play time is the one thing that does not go back**: going back to a checkpoint, day 1's
+included, keeps the time played, since the game sent her back and she did not start over; only a new
+game from the title starts it at zero (inbox #920 in plaid-penguin).
 
 **A checkpoint cannot strand the good ending any more than the run already had.** Tasks belong to
 their days and a checkpoint restores exactly what the run had done by that dawn, so a run that
@@ -1855,7 +1962,7 @@ flagless `tools/run.sh` session asks for the same thing with.
 
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
 handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,
-called right after `main._start_day()` builds the retry, before the title, or the title and then
+called right after `main._start_day()` (its `DayDirector`) builds the retry, before the title, or the title and then
 the day brief, is ever shown — **and written `day_under_way: true` the instant she actually starts
 playing a day**: continuing from the title on a fresh run, from the day brief a resumed one opens
 on, or from the previous day's own end-of-day message straight into the next day, which has no gate
@@ -1877,7 +1984,7 @@ closing the window and quitting all still do what they always have — the game 
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
 
-**A save holds the run, never the moment inside a day.** `GameState.save_snapshot()` — the seed,
+**A save holds the run, never the moment inside a day.** The run's registered parts (`run.run_parts`; `run.save_snapshot()` is the ones in the snapshot) — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
 history has moved, where she settled each day and the run's clock — plus the facts that ride beside
 it: whether a day was under way when the file was written, which section of the escape it is in, if
@@ -1912,14 +2019,15 @@ opening it again finds the same nerve count and shows the same screen, and press
 is what actually spends anything.
 
 **A save written inside the escape comes up the same way.** The escape's own boot always knows
-which section a save named — `GameState.escape_section`, restored before the section is built, is
+which section a save named — `run.facts.escape_section`, restored before the section is built, is
 what decides whether the building or the city is built at all, not only where she stands inside
 it — and a save closed mid-city-section reopens in the city rather than being rebuilt underneath
 her from the hallway. What is asked first is whether this boot is **reading that section off a
 file** rather than carrying it forward from a won day 14 handed over earlier in the same process:
 the two reach the same boot with the same non-empty `escape_section`, and the only thing that
-tells them apart is whether the value was already on the autoload before the save was read or
-only arrived from the file — see `main._escape_resumed_from_disk`. A genuine resume answers the
+tells them apart is whether the value was already on the run its sitting carried before the save
+was read or only arrived from the file — see `RunFlow.Opening.ESCAPE_RESUMED`, set in `main._ready()`. A genuine resume
+answers the
 title first, the same screen a resumed day answers first — paused rather than run behind, since
 the section it stands in front of has no city day's worth of scenery to keep moving for its own
 sake — and pressing start raises that section's own brief over the world already built behind it
@@ -1947,7 +2055,7 @@ it appears, and for as long as any change is still unanswered; it then fades ove
 hold after the answer** *(cozy-pelican: "we should show it until it is fully confirmed saved", and
 "okay always show it. but show it for at least a second")*. **Deleting the save file is a change
 too** *("show deleting the save file with a save symbol as well. every change in the save state
-needs to show the symbol")*: a run's end deletes it (`GameState._end_run()`: a day that ends a
+needs to show the symbol")*: a run's end deletes it (`RunCalendar._end_run()`: a day that ends a
 hard run, the charge a reopened hard run's save pays when it was the last nerve, a hard run's last
 nerve lost in the escape, and the escape walked out), and
 so does the held restart, and each shows the symbol with the same timings and the same strike. On
@@ -1955,7 +2063,7 @@ the web a deletion is kept only once IndexedDB has dropped the file, so `GameSav
 same copy a write does, with its retry and its timeout: the engine copies a removal on its own too,
 a frame later, but tells nobody how it went, and the symbol needs an answer to wait for. The held
 restart reloads the scene, and so does the hand-over from a won day 14 to the escape; before either
-reload the symbol, when it is up, is handed to the scene tree's root, so it stays up through the
+reload the symbol, when it is up, is handed to the sitting `main` keeps at the scene tree's root, so it stays up through the
 reload and settles on the freshly booted title or escape with its minimums running. A restart with no save left to
 delete — the run had already ended and deleted it — changes nothing, so it shows nothing. **`GameSave`
 announces every write and deletion itself, on `EventBus`, and the symbol is the one thing that

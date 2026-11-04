@@ -1,8 +1,8 @@
 class_name M137TrapArrival
 extends RefCounted
 ## Measurement probe for how often the trap's start falls back to the along-her-street
-## `beside_distance()` draw — a street that runs sideways, with no crossing street near enough for
-## a clear run above or below — rather than the preferred above-or-below draw
+## `SpawnSiting.beside_distance()` draw — a street that runs sideways, with no crossing street near
+## enough for a clear run above or below — rather than the preferred above-or-below draw
 ## (`ResistanceDirector._draw_arrival_position()`'s own doc and `docs/EVENTS.md`'s rows for
 ## `robber_giving_chase`/`van_guard_giving_chase`). Not a suite: it prints a rate rather than
 ## asserting one, so it lives under `tests/probes/`, where the runner never discovers it, and runs
@@ -13,7 +13,7 @@ extends RefCounted
 ## **The rig.** A real city and `ResistanceDirector` per seed (`CityGenerator.generate(seed)`),
 ## carried to exactly one handover per seed rather than to every look-alike she could have handed
 ## the note to: day 6's mark touched so the yeller perform is active (`_on_contact_completed(1)`,
-## the shape `tests/test_resistance.gd`'s `_director_on_the_yeller_perform()` builds), day 7's mark
+## the shape `tests/resistance_rig.gd`'s `_director_on_the_yeller_perform()` builds), day 7's mark
 ## touched so the van's perform is active (`_on_contact_completed(3)`,
 ## `_director_on_the_van_perform()`'s shape); `contact_position()` then reads back the one
 ## look-alike that step reached. From there `_draw_arrival_position()` — the same private call
@@ -46,7 +46,7 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 	var no_clear_run := 0
 	var no_legal_start := 0
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		var director := ResistanceDirector.new()
@@ -59,10 +59,10 @@ func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
 		director._on_contact_completed(mark_step_index)
 		var her := director.contact_position()
 		if her != Vector2.INF:
-			var result: Array = director._draw_arrival_position(director._rng, her, def)
-			var at: Vector2 = result[0]
-			var clear: bool = result[1]
-			var is_beside: bool = result[2]
+			var result := director._draw_arrival_position(director._rng, her, def)
+			var at := result.at
+			var clear := result.clear
+			var is_beside := result.beside
 			if at == Vector2.INF:
 				no_legal_start += 1
 			elif is_beside:

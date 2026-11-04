@@ -71,6 +71,7 @@ static func build() -> InteriorMapPlan:
 	_build_basement(f, _BASEMENT_ORIGIN)
 	f.start_tile = f.waypoints["hallway_third"]
 	_mark_diagonal_clearances(f)
+	f.finish()
 	return f
 
 ## A diagonal step pinches only when neither orthogonal neighbor is walkable, and **nothing in the
@@ -287,7 +288,7 @@ static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 ## Where the corridor is one tile wide on the way to the exit, local to the basement's own origin
 ## and **in the order she meets them walking up from the entry**: the jog between bands A and B,
 ## the narrowing laid across band B, and the jog between bands B and C. A steam vent stands on each
-## (`InteriorEvents._vent_sites()`).
+## (`InteriorMapPlan.vent_sites()`).
 ##
 ## **One cloud is the whole width here, which is what the vents are for.** *(2026-09-19: "there are
 ## only two steams and they are not blocking in any way they should go in the narrow hallways.")*

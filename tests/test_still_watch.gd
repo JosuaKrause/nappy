@@ -1,33 +1,52 @@
 extends RefCounted
-## `StillWatch._feed()`, the pure stillness heuristic behind `--quit-when-still`: positions,
-## deltas, an `active` flag and a `held` flag in, a trigger out. Armed only once she has moved,
-## frozen rather than reset while inactive (paused, or the day not running), and reset — not
-## frozen — every frame `held` is true (a detention, a checkpoint's hold, a wait at a red light).
-## No `City`, `Stroller` or running day anywhere here — a bare `StillWatch.new()` off the tree
-## drives it directly, the same way `tests/test_auto_screenshot.gd` calls
-## `AutoScreenshot._parse_script()` without ever adding that node to a tree either. The geometry and
-## signal half of `held` — `StillWatch.facing_a_red_light()` — is pure too, over a bare `CityMap`
-## and `TrafficSignals` with no `City` around either.
+## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
+## handed a city, her, and the day's clock through `setup()`, standing in a tree, and fed her
+## position tick by tick on real physics frames (the tick her position changes on). Armed only once
+## she has moved, frozen rather than reset while the day is not running, and reset — not frozen —
+## every tick she is held (a detention, a wait at a red light). What it does when it fires is
+## observed as the game sees it: a picture is asked for by adding an `AutoScreenshot` beneath it, and
+## the suite switches that child's frames off the moment it arrives, since a headless run can take no
+## picture and would quit the process.
 ##
-## Every step below uses a `0.25` delta rather than the more obvious `0.1`: ten additions of `0.1`
-## land on `0.9999999999999999` in double precision, one tick short of the `1.0` hold this suite
-## means to cross, and `0.25` is exactly representable so four ticks land on exactly `1.0` with no
-## such trap.
+## The geometry and signal half of `held` — `StillWatch.facing_a_red_light()` — is also driven alone
+## below, over a bare `CityMap` and `TrafficSignals`.
 ##
-## `StillWatch` is a `Node`, not `RefCounted`, so every instance is freed explicitly or the suite
-## reports it leaked at shutdown.
+## The watch sits in a `SubViewport` of the suite's own so the screen it reads is one the suite
+## sets (`canvas_transform`), and its hold is `Tuning`-independent: one second of ticks is
+## `Engine.physics_ticks_per_second` of them, whatever the frames' lengths. A check about when it
+## fires reads a window of ticks around the hold, not the tick to the unit.
+##
+## `StillWatch` is a `Node`, not `RefCounted`, so every node a test builds is freed explicitly or the
+## suite reports it leaked at shutdown.
 
-const _TICK := 0.25
+## The hold, in physics ticks. The watch is handed it in seconds: the ticks' count over their rate.
+const _HOLD_TICKS := 30
+## Ticks either side of the hold that a check reads.
+const _MARGIN := 8
+## The rate the suite's physics ticks pass at, ten times the game's, so a hold of ticks costs a tenth
+## of the real time: the watch counts ticks and their length, so the checks do not change with it.
+const _TICK_RATE := 600
+
+## A folder of the suite's own that every picture goes into, removed with the suite (a `DirAccess`
+## made by `create_temp()` removes its folder when it is released): nothing under `user://`.
+var _scratch: DirAccess
 
 func run(t) -> void:
-	_test_the_opening_stand_never_triggers(t)
-	_test_a_move_past_the_radius_arms_it_without_triggering(t)
-	_test_holding_still_after_the_move_triggers_at_the_hold(t)
-	_test_a_further_move_restarts_the_hold_from_the_new_spot(t)
-	_test_jitter_inside_the_radius_does_not_reset_the_hold(t)
-	_test_inactive_frames_freeze_the_hold_instead_of_resetting_it(t)
-	_test_held_frames_never_trigger_however_long_they_run(t)
-	_test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t)
+	var tick_rate := Engine.physics_ticks_per_second
+	Engine.physics_ticks_per_second = _TICK_RATE
+	_scratch = DirAccess.create_temp("still_watch")
+	assert(_scratch != null, "a scratch folder for the pictures")
+	await _test_the_opening_stand_never_triggers(t)
+	await _test_a_move_past_the_radius_arms_it_without_triggering(t)
+	await _test_holding_still_after_the_move_triggers_at_the_hold(t)
+	await _test_a_further_move_restarts_the_hold_from_the_new_spot(t)
+	await _test_jitter_inside_the_radius_does_not_reset_the_hold(t)
+	await _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t)
+	await _test_held_ticks_never_trigger_however_long_they_run(t)
+	await _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t)
+	await _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t)
+	Engine.physics_ticks_per_second = tick_rate
+	_scratch = null
 	_test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she_stands(t)
 	_test_facing_a_red_light_false_when_the_visible_junction_shows_green(t)
 	_test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longer_matters(t)
@@ -36,127 +55,206 @@ func run(t) -> void:
 	_test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t)
 	_test_the_nearest_of_two_disagreeing_visible_junctions_decides(t)
 
-func _watch(hold_seconds := 1.0) -> StillWatch:
-	var w := StillWatch.new()
-	w._seconds = hold_seconds
-	return w
+## A `StillWatch` built as `main` builds it, in a screen of its own: her, the day's clock, a city
+## and a viewport whose view the suite places.
+class Rig:
+	var viewport := SubViewport.new()
+	var city: City
+	var player := Stroller.new()
+	var day := DayController.new()
+	var watch := StillWatch.new()
+	var run := RunState.new()
+	var ticks := 0
+	## The tick the watch asked for its picture on, or -1 while it has not.
+	var triggered_at := -1
+
+	func _init(t, hold_seconds: float, map: CityMap, picture_dir: String) -> void:
+		viewport.size = Vector2i(64, 64)
+		t.add_child(viewport)
+		# A screen far from every junction, until a test places one on it.
+		viewport.canvas_transform = Transform2D(0.0, Vector2(-100000.0, -100000.0))
+		city = City.new()
+		city.map = map
+		city.signals = TrafficSignals.new(map)
+		# Her camera is switched off, so the screen stays where the suite puts it.
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		camera.enabled = false
+		player.add_child(camera)
+		viewport.add_child(player)
+		player.set_physics_process(false)
+		viewport.add_child(day)
+		day.set_process(false)
+		day.setup(map, player, run)
+		day.start(1000.0)
+		watch.setup(city, player, day, hold_seconds, picture_dir)
+		watch.child_entered_tree.connect(_the_picture_was_asked_for)
+		viewport.add_child(watch)
+
+	func _the_picture_was_asked_for(child: Node) -> void:
+		if child is AutoScreenshot:
+			# Its own `_ready()` switches its frames on after this signal; the end of this tick
+			# switches them off again, before any frame has run.
+			child.set_process.call_deferred(false)
+			triggered_at = ticks
+
+	func free_all() -> void:
+		viewport.free()
+		city.free()
+		run.free()
+
+## Lets `count` physics ticks pass with her standing at `at` for each. The coroutine resumes as a
+## tick begins and before the nodes' own physics step of it, so the position set here is the one the
+## watch reads on that tick.
+func _stand(t, rig: Rig, at: Vector2, count: int) -> void:
+	for i in count:
+		rig.player.global_position = at
+		await t.get_tree().physics_frame
+		rig.ticks += 1
+
+func _hold_seconds() -> float:
+	return float(_HOLD_TICKS) / Engine.physics_ticks_per_second
+
+## A rig whose first physics tick has begun, so `_stand()` is in step with the ticks.
+func _rig(t) -> Rig:
+	var rig := Rig.new(t, _hold_seconds(), _signalled_map(), _scratch.get_current_dir() + "/still")
+	await t.get_tree().physics_frame
+	return rig
 
 ## Standing exactly where she started — the doorstep, before she has ever moved — must never
 ## trigger, however long it is held: the flag is armed only once she has actually gone somewhere.
-func _test_the_opening_stand_never_triggers(t: Object) -> void:
-	var w := _watch()
-	var triggered := false
-	for i in 40:
-		triggered = w._feed(Vector2.ZERO, _TICK, true) or triggered
-	t.check(not triggered, "ten seconds at the start before any move never arms the flag")
-	w.free()
+func _test_the_opening_stand_never_triggers(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, _HOLD_TICKS * 3)
+	t.check(rig.triggered_at < 0, "three holds at the start before any move never arms the flag")
+	rig.free_all()
 
-## The frame she moves past the radius is recognised as a move, not read as an instant trigger.
-func _test_a_move_past_the_radius_arms_it_without_triggering(t: Object) -> void:
-	var w := _watch()
-	w._feed(Vector2.ZERO, _TICK, true)
+## The tick she moves past the radius is recognised as a move, not read as an instant trigger, and it
+## arms the watch: standing there afterwards is what fires it.
+func _test_a_move_past_the_radius_arms_it_without_triggering(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
 	var moved := Vector2(StillWatch.STILL_RADIUS + 1.0, 0.0)
-	var triggered := w._feed(moved, _TICK, true)
-	t.check(not triggered, "the frame she moves is not itself a trigger")
-	t.check(w._armed, "moving past the radius arms the detector")
-	w.free()
+	await _stand(t, rig, moved, 1)
+	t.check(rig.triggered_at < 0, "the tick she moves is not itself a trigger")
+	await _stand(t, rig, moved, _HOLD_TICKS + _MARGIN)
+	t.check(rig.triggered_at >= 0, "and standing there afterwards fires it, so moving armed it")
+	rig.free_all()
 
-## The hold counts from the move, and fires the instant it reaches the given number of seconds.
-func _test_holding_still_after_the_move_triggers_at_the_hold(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
-	var triggered := false
-	for i in 3:
-		triggered = w._feed(Vector2(10, 0), _TICK, true) or triggered
-	t.check(not triggered, "0.75s of holding still is short of a 1.0s hold")
-	triggered = w._feed(Vector2(10, 0), _TICK, true)
-	t.check(triggered, "the fourth tick reaches exactly 1.0s and fires")
-	w.free()
+## The hold counts from the move, and fires when it reaches the given number of seconds: not half
+## way, and not a margin past it.
+func _test_holding_still_after_the_move_triggers_at_the_hold(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(10, 0), 1)
+	var moved_at := rig.ticks
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS - _MARGIN)
+	t.check(rig.triggered_at < 0, "a margin short of a half-second hold does not fire")
+	await _stand(t, rig, Vector2(10, 0), 2 * _MARGIN)
+	t.check(rig.triggered_at >= 0, "and a margin past it has")
+	t.check(absi(rig.triggered_at - moved_at - _HOLD_TICKS) <= 2,
+			"at the hold, to within a tick or two (%d ticks after the move)"
+			% (rig.triggered_at - moved_at))
+	t.check(DirAccess.dir_exists_absolute(_scratch.get_current_dir() + "/still"),
+			"the picture's folder is made in the folder the watch was handed")
+	rig.free_all()
 
 ## A second move mid-hold restarts the countdown from the new spot rather than finishing at the
 ## hold's own total counted across two different places she stood.
-func _test_a_further_move_restarts_the_hold_from_the_new_spot(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
-	for i in 2:
-		w._feed(Vector2(10, 0), _TICK, true)
-	w._feed(Vector2(40, 0), _TICK, true)
-	var triggered := false
-	for i in 3:
-		triggered = w._feed(Vector2(40, 0), _TICK, true) or triggered
-	t.check(not triggered, "0.75s at the new spot is short of a fresh 1.0s hold")
-	triggered = w._feed(Vector2(40, 0), _TICK, true)
-	t.check(triggered, "1.0s at the new spot fires, counted from when she arrived there")
-	w.free()
+func _test_a_further_move_restarts_the_hold_from_the_new_spot(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS - _MARGIN)
+	await _stand(t, rig, Vector2(40, 0), _HOLD_TICKS - _MARGIN)
+	t.check(rig.triggered_at < 0,
+			"a margin short of a fresh hold at the new spot does not fire, though two such stands "
+			+ "together are past one")
+	await _stand(t, rig, Vector2(40, 0), 2 * _MARGIN)
+	t.check(rig.triggered_at >= 0, "a hold at the new spot fires, counted from when she arrived there")
+	rig.free_all()
 
 ## Sub-radius wobble — the slide's own settling against a wall, not a real move — never resets the
 ## hold that is already counting.
-func _test_jitter_inside_the_radius_does_not_reset_the_hold(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
+func _test_jitter_inside_the_radius_does_not_reset_the_hold(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(10, 0), 1)
 	var jitter := StillWatch.STILL_RADIUS * 0.5
-	var triggered := false
-	for i in 3:
-		var wobble := Vector2(10 + (jitter if i % 2 == 0 else -jitter), 0)
-		triggered = w._feed(wobble, _TICK, true) or triggered
-	t.check(not triggered, "three ticks of sub-radius wobble have not reached the hold yet")
-	triggered = w._feed(Vector2(10, 0), _TICK, true)
-	t.check(triggered, "the fourth tick fires — the wobble never reset the count")
-	w.free()
+	for i in _HOLD_TICKS - _MARGIN:
+		await _stand(t, rig, Vector2(10 + (jitter if i % 2 == 0 else -jitter), 0), 1)
+	t.check(rig.triggered_at < 0, "a margin short of the hold of sub-radius wobble has not fired")
+	await _stand(t, rig, Vector2(10, 0), 2 * _MARGIN)
+	t.check(rig.triggered_at >= 0, "and it fires a margin past it — the wobble never reset the count")
+	rig.free_all()
 
-## `active` false — the day not running, or the tree paused — freezes the hold rather than
+## A day that is not running — over, or the tree paused — freezes the hold rather than
 ## resetting it: resuming afterward picks the count back up from where it left off.
-func _test_inactive_frames_freeze_the_hold_instead_of_resetting_it(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
-	var triggered := false
-	for i in 20:
-		triggered = w._feed(Vector2(10, 0), _TICK, false) or triggered
-	t.check(not triggered, "inactive frames never advance the hold, however many of them there are")
-	for i in 3:
-		triggered = w._feed(Vector2(10, 0), _TICK, true) or triggered
-	t.check(not triggered, "0.75s active since the move is still short of the hold")
-	triggered = w._feed(Vector2(10, 0), _TICK, true)
-	t.check(triggered, "the hold resumes once active again, counted from before the pause")
-	w.free()
+func _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(10, 0), 1)
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS / 2)
+	rig.day.phase = GameEnums.DayPhase.OVER
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS * 5)
+	t.check(rig.triggered_at < 0, "ticks of a day not running never advance the hold, however many")
+	rig.day.start(1000.0)
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS / 2 - _MARGIN)
+	t.check(rig.triggered_at < 0, "a margin short of the rest of the hold once running again, no fire")
+	await _stand(t, rig, Vector2(10, 0), 2 * _MARGIN)
+	t.check(rig.triggered_at >= 0, "the hold resumes once running, counted from before the pause")
+	rig.free_all()
 
-## `held` true — a detention, a checkpoint's hold or a wait at a red light — never fires however
-## long it runs, unlike an inactive frame, which only pauses a count already under way.
-func _test_held_frames_never_trigger_however_long_they_run(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
-	var triggered := false
-	for i in 40:
-		triggered = w._feed(Vector2(10, 0), _TICK, true, true) or triggered
-	t.check(not triggered, "ten seconds held never fires, whatever was held")
-	w.free()
+## A detention — held — never fires however long it runs, unlike a day that is not running, which
+## only pauses a count already under way.
+func _test_held_ticks_never_trigger_however_long_they_run(t) -> void:
+	var rig := await _rig(t)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, Vector2(10, 0), 1)
+	rig.player.detain(1000000.0)
+	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS * 5)
+	t.check(rig.triggered_at < 0, "five holds of detention never fire")
+	rig.free_all()
 
 ## The distinction from a plain pause: a hold **restarts** the count on release rather than
 ## resuming it. Without this, whatever had accumulated *before* the hold began survives it and
 ## fires the instant she is free to move again — exactly the checkpoint bug this exists to fix.
-func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t: Object) -> void:
-	var w := _watch(1.0)
-	w._feed(Vector2.ZERO, _TICK, true)
-	w._feed(Vector2(10, 0), _TICK, true)
-	for i in 3:
-		w._feed(Vector2(10, 0), _TICK, true)
-	# 0.75s accumulated here — one more active tick would fire on its own.
-	for i in 5:
-		w._feed(Vector2(10, 0), _TICK, true, true)
-	var triggered := false
-	for i in 3:
-		triggered = w._feed(Vector2(10, 0), _TICK, true) or triggered
-	t.check(not triggered, "0.75s after release is short of a fresh 1.0s hold — the pre-hold " +
-			"0.75s did not survive it")
-	triggered = w._feed(Vector2(10, 0), _TICK, true)
-	t.check(triggered, "the fourth tick after release fires — a full fresh hold, not the leftover " +
-			"0.25s a resume would have needed")
-	w.free()
+func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t) -> void:
+	var rig := await _rig(t)
+	var here := Vector2(10, 0)
+	await _stand(t, rig, Vector2.ZERO, 2)
+	await _stand(t, rig, here, 1)
+	await _stand(t, rig, here, _HOLD_TICKS * 3 / 4)
+	rig.player.detain(1000000.0)
+	await _stand(t, rig, here, _HOLD_TICKS * 2)
+	rig.player.reset_at(here)
+	await _stand(t, rig, here, _HOLD_TICKS - _MARGIN)
+	t.check(rig.triggered_at < 0,
+			"a margin short of a fresh hold after the release does not fire — the three quarters "
+			+ "from before the detention did not survive it")
+	await _stand(t, rig, here, 2 * _MARGIN)
+	t.check(rig.triggered_at >= 0, "a full fresh hold after the release fires")
+	rig.free_all()
+
+## The whole of `held`'s third case on a built city and a real screen: with the main road's light red
+## for the pedestrian on a junction the screen shows, the watch never fires however long she stands;
+## once the light is green for her, the hold fires.
+func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t) -> void:
+	var rig := await _rig(t)
+	var box := _junction_box(rig.city.map, Vector2i.ZERO)
+	rig.viewport.canvas_transform = Transform2D(0.0, -box.position + Vector2(8, 8))
+	var here := box.get_center()
+	var green := Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
+	# She walks up to the junction with the light green for her, which arms the watch.
+	rig.city.signals.elapsed = green
+	await _stand(t, rig, here + Vector2(-20, 0), 2)
+	await _stand(t, rig, here, 1)
+	rig.city.signals.elapsed = 0.0
+	await _stand(t, rig, here, _HOLD_TICKS * 3)
+	t.check(rig.triggered_at < 0, "three holds in front of a red light never fire")
+	rig.city.signals.elapsed = green
+	await _stand(t, rig, here, _HOLD_TICKS + _MARGIN)
+	t.check(rig.triggered_at >= 0, "and once the light is green for her the hold fires")
+	rig.free_all()
 
 ## Junction (0, 0): the main road's own corridor and, once the map says so, the signalled one —
 ## `CityMap.junction_at()` and `TrafficSignals._offset()` both answer zero there, so `elapsed`

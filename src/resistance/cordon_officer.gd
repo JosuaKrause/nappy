@@ -7,7 +7,7 @@ extends Node2D
 ## the chase, and these men chase nobody.
 ##
 ## **A figure, not an event.** He is not in the catalogue, carries no field, no caret and no
-## badge, and is moved by `ParkCordon` rather than by anything of his own; `EventInstance.icon_for()`
+## badge, and is moved by `ParkCordon` rather than by anything of his own; `EventPictures.icon_for()`
 ## and the one-picture-per-row rule are about catalogue rows, which he is not.
 
 const WAITING_BY_VIEW := {
@@ -30,15 +30,22 @@ var _travelled := 0.0
 var _moving := false
 
 func _ready() -> void:
-	# Moved from `_process` by `ParkCordon`, never from a physics tick, so there is nothing to
-	# interpolate — the same opt-out as `EventInstance` and `CrowdAgent`.
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Moved on the physics tick by `ParkCordon` (the resistance's `tick()`), so he is drawn
+	# interpolated between two ticks as she is, and walks as smoothly as she does. Placed before he
+	# is added, so drawn from where he stands rather than gliding in from the origin.
+	reset_physics_interpolation()
+
+## The baked atlas pages he is drawn from (`AtlasLibrary`): the city's, handed by the cordon that
+## stands him up; an officer nobody handed one makes his own when he first enters the tree.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"events")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"events")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"events")
+	atlas.release(&"events")
 
 ## This frame's walk: the way he faces and how far he moved.
 func walk(heading: Vector2, moved: float) -> void:
@@ -54,10 +61,10 @@ func walk(heading: Vector2, moved: float) -> void:
 
 ## The picture he is drawn with now. Kept for the tests.
 func picture() -> String:
-	return WAITING_BY_VIEW[EventInstance.EIGHT_VIEW_BY_SECTOR[_sector]]
+	return WAITING_BY_VIEW[EventPictures.EIGHT_VIEW_BY_SECTOR[_sector]]
 
 func _draw() -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, SHADOW)
 	var lift := absf(sin(_travelled * BOB_PER_PX)) * BOB_HEIGHT if _moving else 0.0
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(picture())),
+	Sprites.draw_standing(self, atlas.region(StringName(picture())),
 			Vector2(0.0, -lift), Vector2.ZERO, EightDirection.is_mirrored(_sector))

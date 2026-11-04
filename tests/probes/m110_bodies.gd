@@ -12,7 +12,7 @@ extends RefCounted
 ## body in a car's lane turns it at the last junction, and a turn that never fits is a car that parks
 ## itself and takes the street behind it with it — that is the failure this number is watching for.
 ## `tests/test_crowd_bodies.gd` holds the occupancy as an assertion; this is where the numbers behind
-## `Tuning.WALKER_BODY_SIDESTEP_TILES` are taken again.
+## `WalkerStrategy.WALKER_BODY_SIDESTEP_TILES` are taken again.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
@@ -23,7 +23,7 @@ const SECONDS := 30.0
 func run(t) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		for day: int in DAYS:
@@ -40,7 +40,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var events := RandomNumberGenerator.new()
 	events.seed = hash("m110-events:%d:%d" % [city_seed, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events, consumed)
+	city.events.start_day(DaySpec.for_day(day), events, consumed)
 
 	var tiles := map.obstructed_tiles.size()
 	var kept := map.obstructed_tiles.duplicate()
@@ -81,7 +81,7 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				walker_frames += 1
 				inside_walkers += 1 if caught else 0
-				sidestepping += 1 if agent._body_detour_held else 0
+				sidestepping += 1 if agent.strategy._body_detour_held else 0
 			else:
 				car_frames += 1
 				inside_cars += 1 if caught else 0

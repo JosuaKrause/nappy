@@ -2474,7 +2474,11 @@ for write_guard_tool in bash cat tr grep env; do
     ln -sf "$(command -v "$write_guard_tool")" "$write_guard_nojq/$write_guard_tool"
 done
 write_guard_nojq_decision() {
-    local raw
+    # Without jq the guard searches the whole payload, the cwd included, for the words git and gh and
+    # denies on any hit. The usual cwd sits under a random mktemp name that now and then spells one
+    # of them, which denied "brew install jq" by accident. A fixed cwd that cannot match leaves the
+    # command as the only thing a case can be denied for.
+    local raw write_guard_repo=/nojq-case
     raw=$(printf '%s' "$1" | write_guard_payload | env -i PATH="$write_guard_nojq" HOME="$HOME" \
         "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi

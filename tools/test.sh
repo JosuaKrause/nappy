@@ -24,8 +24,9 @@
 # somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
 # because both read the same `tests/suite_costs.txt` through `_cost_of`.
 #
-# A shard that hangs is killed after TEST_SHARD_TIMEOUT_S (default 600) and reported by name
-# rather than left to block the run forever -- see `run_one_process`'s own docstring.
+# A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
+# below) and reported by name rather than left to block the run forever -- see
+# `run_one_process`'s own docstring.
 set -uo pipefail
 shopt -s nullglob
 
@@ -39,18 +40,24 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SHARDS="${TEST_SHARDS:-4}"
 
 # How long the local parallel run below waits on one shard before killing it and reporting it
-# hung. `tools/test.sh --plan`'s own bin-packing, read from tests/suite_costs.txt at the default
-# four shards, currently tops out at ~473s; this is comfortably above
-# that and still well inside a CI shard job's own 15-minute (`.github/workflows/ci.yml`) budget,
-# so a real hang is caught and named long before anything blunter would cut the job off with no
-# message at all. Only this one path uses it -- `--serial` and `--shard I/N` run more suites in
-# one process than any single shard carries and are never bounded by a limit sized for a shard's
-# share of the work.
-SHARD_TIMEOUT_S="${TEST_SHARD_TIMEOUT_S:-600}"
+# hung. **The limit follows the plan rather than a fixed number**: the bin-packing below already
+# knows each shard's planned seconds from tests/suite_costs.txt, and a shard is killed only after
+# SHARD_LIMIT_FACTOR_PCT percent of its own planned time plus SHARD_LIMIT_FLOOR_S. A fixed number
+# goes stale whenever the suites grow or the shard count changes, and then kills a healthy shard.
+# The factor (2.5x) is the room a loaded machine needs -- other agents' Godot processes share the
+# cores, and a shard that takes twice its planned time is slow, not hung. The floor covers the
+# engine's start-up and a shard whose planned time is small, where a factor alone is too tight.
+# A real hang is still named, at a limit a small multiple of what the shard should take.
+# TEST_SHARD_TIMEOUT_S, when set, replaces the limit of every shard with that many seconds.
+# Only this one path uses it -- `--serial` and `--shard I/N` run more suites in one process than
+# any single shard carries and are never bounded by a limit sized for a shard's share of the work.
+SHARD_TIMEOUT_OVERRIDE_S="${TEST_SHARD_TIMEOUT_S:-}"
+SHARD_LIMIT_FACTOR_PCT=250
+SHARD_LIMIT_FLOOR_S=120
 
 # Where the measured per-suite costs live and what an unmeasured suite is assumed to cost. See
 # tests/suite_costs.txt's own header for what the file is and how it is refreshed.
-COST_FILE="$PROJECT_DIR/tests/suite_costs.txt"
+COST_FILE="${TEST_SUITE_COSTS:-$PROJECT_DIR/tests/suite_costs.txt}"
 DEFAULT_COST_MS=5000
 
 usage() {
@@ -58,14 +65,18 @@ usage() {
 usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs|--shard I/N] [suite-name-substring...]
 
 Runs the headless test suite (tests/tests.tscn). With no arguments, runs everything, sharded
-across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt. A
+across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt (or the
+file TEST_SUITE_COSTS names). A shard is killed and reported hung after 2.5x its own planned
+time plus 120 s, so the limit follows the plan; TEST_SHARD_TIMEOUT_S=<whole seconds> replaces
+the limit of every shard. --serial and --shard I/N are never bounded by it. A
 suite-name-substring argument filters to the suites whose file name contains it and runs
 unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
 itself reads off OS.get_cmdline_user_args(), which is why this script does not
 reject an argument it does not itself recognise -- only --serial, --plan, --record-costs,
 --shard, --help and -h are its own.
   --serial          everything, in one process (what a shard failure is debugged in)
-  --plan            print the shard split (TEST_SHARDS processes) and run nothing
+  --plan            print the shard split (TEST_SHARDS processes) with each shard's planned
+                     time and kill limit, and run nothing
   --record-costs    run everything sharded, then rewrite tests/suite_costs.txt from this run's
                      own per-suite lines (tools/ci-costs.sh rewrites the same file from recent CI
                      runs' own lines instead, without a local run)
@@ -87,8 +98,8 @@ esac
 # Whole seconds only: the watchdog in `run_one_process` is a `read -t`, which takes nothing else
 # (bash 3.2 rejects `1.5`, and a rejected read would kill every shard at once). Checked after
 # `--help`, so the usage prints whatever the environment holds.
-if [[ ! "$SHARD_TIMEOUT_S" =~ ^[0-9]+$ ]]; then
-    echo "tools/test.sh: TEST_SHARD_TIMEOUT_S must be whole seconds, got '$SHARD_TIMEOUT_S'" >&2
+if [[ -n "$SHARD_TIMEOUT_OVERRIDE_S" && ! "$SHARD_TIMEOUT_OVERRIDE_S" =~ ^[0-9]+$ ]]; then
+    echo "tools/test.sh: TEST_SHARD_TIMEOUT_S must be whole seconds, got '$SHARD_TIMEOUT_OVERRIDE_S'" >&2
     exit 2
 fi
 
@@ -145,13 +156,25 @@ if [[ -n "$shard_arg" ]]; then
     shard_index=$(( shard_index - 1 ))
 fi
 
-# The atlas pages, before the import pass that has to see them; no work when they are current.
-"$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after runs like this one, by a
+# writer nobody has identified; every exit below reverts such a rewrite and keeps a deliberate edit
+# (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
 
-# The import pass, once and before anything runs in parallel. Several Godot processes importing
-# the same project at the same time race on `.godot/`, and the failure looks like a missing
-# `class_name` rather than like a race.
-"$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+# The atlas pages, before the import pass that has to see them; no work when they are current.
+# `--plan` runs nothing, so it needs neither the bake nor the import.
+if [[ $plan_only -eq 0 ]]; then
+    "$PROJECT_DIR/tools/bake-atlases.sh" || exit 1
+
+    # The import pass, once and before anything runs in parallel. Several Godot processes importing
+    # the same project at the same time race on `.godot/`, and the failure looks like a missing
+    # `class_name` rather than like a race.
+    import_restore_arm "$PROJECT_DIR"
+    trap import_restore_run EXIT
+    "$GODOT" --headless --import --path "$PROJECT_DIR" >/dev/null 2>&1
+    import_restore_run
+fi
 
 ## Runs one Godot test process and classifies it the way tools/check.sh already classifies a
 ## boot: Godot can print an engine `ERROR:`, a `push_error()` or a completed `SCRIPT ERROR` /
@@ -290,7 +313,7 @@ if [[ $# -gt 0 || $serial -eq 1 ]]; then
 			rm -f "$f" "$f.uid"
 		done
     }
-    trap cleanup_staged EXIT
+    trap 'cleanup_staged; import_restore_run' EXIT
     for arg in "$@"; do
         staged_path="$(stage_runner_fixture "$arg")" || exit 1
         if [[ -n "$staged_path" ]]; then
@@ -338,6 +361,16 @@ _cost_of() {
 
 shard_filters=()
 shard_cost=()
+shard_limit=()
+
+## The seconds shard $1 may run before it is killed: the override when set, else the plan's rule.
+_limit_of() {
+	if [[ -n "$SHARD_TIMEOUT_OVERRIDE_S" ]]; then
+		printf '%s\n' "$SHARD_TIMEOUT_OVERRIDE_S"
+	else
+		printf '%s\n' "$(( shard_cost[$1] * SHARD_LIMIT_FACTOR_PCT / 100 / 1000 + SHARD_LIMIT_FLOOR_S ))"
+	fi
+}
 
 ## Assigns every `tests/test_*.gd` on disk to the shard with the least work in it so far, heaviest
 ## suite first — which is the standard greedy bin-packing and is well inside "good enough" for a
@@ -395,7 +428,7 @@ _plan_the_shards
 # like a working run, and the only cheap way to see it is to look at the plan itself.
 if [[ $plan_only -eq 1 ]]; then
 	for ((i = 0; i < SHARDS; i++)); do
-		printf 'shard %d  ~%3ds %s\n' "$i" "$(( shard_cost[i] / 1000 ))" "${shard_filters[i]}"
+		printf 'shard %d  ~%3ds  limit %4ds %s\n' "$i" "$(( shard_cost[i] / 1000 ))" "$(_limit_of "$i")" "${shard_filters[i]}"
 	done
 	exit 0
 fi
@@ -420,7 +453,7 @@ if [[ -n "$shard_index" ]]; then
 fi
 
 work_dir="$(mktemp -d)"
-trap 'rm -rf "$work_dir"' EXIT
+trap 'rm -rf "$work_dir"; import_restore_run' EXIT
 
 pids=()
 for ((i = 0; i < SHARDS; i++)); do
@@ -432,7 +465,7 @@ for ((i = 0; i < SHARDS; i++)); do
 	# blocks the `wait` loop forever and that branch is dead code with a comment claiming
 	# otherwise.
 	# shellcheck disable=SC2086
-	RUN_TIMEOUT_S="$SHARD_TIMEOUT_S" run_one_process ${shard_filters[i]} \
+	RUN_TIMEOUT_S="$(_limit_of "$i")" run_one_process ${shard_filters[i]} \
 			> "$work_dir/shard-$i.log" 2>&1 &
 	pids+=("$i:$!")
 done
@@ -511,7 +544,7 @@ if [[ $record_costs -eq 1 ]]; then
 			printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
 			printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
 			printf '%s\n' "# the runner rather than from anybody's memory."
-			grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
+			grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
 				| sed -E 's/^-- +//; s/ +ms$//' \
 				| awk '{ printf "%s %s\n", $1, $2 }' \
 				| sort -u

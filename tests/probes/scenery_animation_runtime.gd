@@ -12,12 +12,14 @@ var _building: Building
 var _water: SceneryWater
 var _events: Array[EventInstance] = []
 var _output := OS.get_environment("SCENERY_CAPTURE_OUTPUT")
+## The library the fixture's events draw from, holding their page as a manager would.
+var _atlas := AtlasLibrary.new()
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	assert(not _output.is_empty() and "--no-save" in OS.get_cmdline_user_args())
 	assert(DirAccess.make_dir_recursive_absolute(_output) == OK)
-	AtlasLibrary.acquire(&"events")
+	_atlas.acquire(&"events")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)
 	_fixtures = Node2D.new()
@@ -63,20 +65,24 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	if _fixtures != null:
-		AtlasLibrary.release(&"events")
+		_atlas.release(&"events")
 
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
+	event.atlas = _atlas
 	event.setup(EventCatalogue.by_id(id), at)
 	event._spread_vertical = vertical
 	event.scale = Vector2.ONE * factor
 	_fixtures.add_child(event)
 	_events.append(event)
 	_watch(event, id + "_owner")
-	for layer in event._scenery.static_layers:
-		_watch(layer, id + "_static")
-	for layer in event._scenery.moving_layers:
-		_watch(layer, id + "_motion")
+	# The scene is drawn in slices beside the event, each with its part's scenery.
+	event.look.attach_nodes()
+	for scenery in (event.look as SpreadLook)._sceneries:
+		for layer in scenery.static_layers:
+			_watch(layer, id + "_static")
+		for layer in scenery.moving_layers:
+			_watch(layer, id + "_motion")
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0
@@ -103,7 +109,7 @@ func _process(_delta: float) -> void:
 
 func _capture() -> void:
 	_capturing = true
-	await AutoScreenshot.drawn_frame(get_tree())
+	await DrawnFrame.wait(get_tree())
 	var elapsed := float(Time.get_ticks_usec() - _started) / 1000000.0 - 2.0
 	var filename := "frame-%03d.png" % _frames.size()
 	assert(get_viewport().get_texture().get_image().save_png(_output.path_join(filename)) == OK)

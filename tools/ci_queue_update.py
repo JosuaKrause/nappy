@@ -13,7 +13,7 @@ verify the correctness of those changes anyway. the CI is only a help" (bouncy-h
   rename into a deletion and an addition.
 - **Nothing open disappears unaccounted for.** A deleted file under `docs/todo/<entry>/` needs one
   of: a record for its entry on the base already (`docs/decisions/<entry>.md` or
-  `<entry>-<n>.md`), a line in the pull request's description
+  `<entry>-<n>.md` or `<entry>-<adjective>-<animal>.md`), a line in the pull request's description
   `Dropped: <path> — "<the player's words>"` naming the file or its entry's folder, whose quoted
   words appear verbatim (`lib_ci.normalize`) in a file under `docs/playtests/`, or the same content
   added again elsewhere under `docs/todo/` (a move). A deleted review item needs a playtest file
@@ -93,7 +93,9 @@ def entry_of(path: str) -> str:
 
 
 def has_record(entry: str, records: set[str]) -> bool:
-    return f"{entry}.md" in records or any(re.fullmatch(re.escape(entry) + r"-\d+\.md", name) for name in records)
+    return f"{entry}.md" in records or any(
+        re.fullmatch(re.escape(entry) + r"(?:-\d+|-[a-z]+-[a-z]+)\.md", name) for name in records
+    )
 
 
 def check(

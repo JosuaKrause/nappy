@@ -3,12 +3,12 @@ extends RefCounted
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
 ## `DevFlags.parse_layers()`, the `--layers`/`?layers=` parsing.
 ##
-## The tree-presence and key-toggle tests build `main` the way `tests/test_main.gd` already does
-## for the readout — a script-only instance, `_ready()` never run, its handful of dependencies
-## wired up by hand — because `main._ready()` boots a whole city and none of these questions need
-## one.
+## The tree-presence and key-toggle tests build a `DebugReadout` the way `tests/test_main.gd` does
+## for the readout — on its own, handed a `RunConfig`, a label and the run's header — because
+## `main._ready()` boots a whole city and none of these questions need one. The layers are read by
+## the node the readout names and the keys are real events pushed through the viewport; whether a
+## layer asks to be redrawn is counted in the draws it gets over real frames.
 
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
@@ -24,13 +24,15 @@ func run(t) -> void:
 	_test_no_layer_node_exists_outside_a_debug_build(t)
 	_test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t)
 	_test_a_debug_build_builds_the_layers_off_by_default(t)
-	_test_the_layer_keys_resolve_to_their_own_index(t)
+	_test_the_layers_flag_starts_only_the_listed_layers_on(t)
+	_test_the_layer_keys_resolve_to_their_own_layer(t)
+	_test_a_release_or_an_echo_toggles_nothing(t)
 	_test_number_keys_toggle_their_own_layer(t)
 	_test_layer_keys_do_nothing_outside_a_debug_build(t)
 	_test_the_bounding_box_layer_draws_every_enabled_body(t)
-	_test_no_redraw_is_wanted_with_every_layer_off(t)
-	_test_a_switch_off_still_owes_one_redraw(t)
-	_test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t)
+	await _test_no_redraw_is_asked_with_every_layer_off(t)
+	await _test_a_switch_off_still_owes_one_redraw(t)
+	_test_collision_nodes_under_finds_the_shape_and_the_polygon_at_every_depth(t)
 
 # ------------------------------------------------------------------ shadow_outline ---
 
@@ -76,7 +78,7 @@ func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
 			"and squashed on Y by SHADOW_SQUASH, applied after the rotation", 0.5)
 
 # --------------------------------------------------------------------- field_outline ---
-# The fields layer's own geometry — the same `Tuning.falloff()` prices, so a screenshot of this
+# The fields layer's own geometry — the same `Field.falloff()` prices, so a screenshot of this
 # layer cannot disagree with the meter. See docs/TODO.md, M61, "the field, the shadow and the body".
 
 func _test_field_outline_of_a_stationary_point_is_a_circle(t) -> void:
@@ -103,20 +105,20 @@ func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
 
 ## M114, the moving field grows forward: the drawn boundary holds `level` exactly abeam (theta =
 ## pi/2, sample `_ELLIPSE_SAMPLES / 4` of `_eccentric_field_outline`'s own even spacing) and reaches
-## `level * Tuning.field_scale(e)` dead ahead (sample zero), further than `level` rather than equal
+## `level * Field.scale(e)` dead ahead (sample zero), further than `level` rather than equal
 ## to it — the picture `DebugLayers`' layer `1` draws has to agree with the same growth the meter
 ## prices.
 func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
 	var speed := 130.0
 	var velocity := Vector2(speed, 0.0)
 	var level := 100.0
-	var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
+	var scale := Field.scale(Field.eccentricity(speed))
 	var points := GroundShape.field_outline_at(Vector2.ZERO, velocity, level)
 	t.check(points.size() > 0, "the moving boundary actually samples some points")
 	# Sample zero is theta=0 in `_eccentric_field_outline` — dead ahead, along `velocity` — where
-	# the effective distance is `level * field_scale(e)`, further than a disc's plain `level`.
+	# the effective distance is `level * Field.scale(e)`, further than a disc's plain `level`.
 	t.close_to(points[0].distance_to(Vector2.ZERO), level * scale,
-			"the foremost sampled point sits at level * field_scale(e) (%.1f) from the emitter — "
+			"the foremost sampled point sits at level * Field.scale(e) (%.1f) from the emitter — "
 			% (level * scale) + "forward reach grew past the resting radius", 0.5)
 	t.check(points[0].x > 0.0, "and it lies ahead, in the direction of travel")
 	# A quarter of the way round the even spacing is theta = pi/2, abeam.
@@ -153,57 +155,84 @@ func _test_apply_initial_state_sets_only_the_listed_layers(t) -> void:
 			"and an empty list turns every geometry layer back off")
 	layers.free()
 
+
 # ------------------------------------------------------------------ tree presence ---
 
-func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers == null,
-			"a release build never builds the layer node at all, not merely leaves it invisible")
-	main._city.free()
-	main._player.free()
-	main.free()
+const UI := preload("res://tests/ui_screens.gd")
 
-## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone (`_readout_requested`,
+## A readout in a tree, set up the way `main` sets it up: handed its configuration, its label and
+## layer, the run's header and her, then the world. Everything a check reads is what the readout
+## builds (its node `DebugLayers`, its label, `readout_on()`, `graph_on()`) or what a pressed key
+## changes in them.
+class Rig:
+	var readout := DebugReadout.new()
+	var label := Label.new()
+	var layer := CanvasLayer.new()
+	var player := Stroller.new()
+	var city := City.new()
+	var run := RunState.new()
+
+	func _init(t, config: RunConfig) -> void:
+		t.add_child(layer)
+		layer.add_child(label)
+		readout.setup(config, label, layer, run.header, null, Callable())
+		readout.watch(player, null, null)
+		t.add_child(readout)
+		readout.show_the_world(city.events, city.crowd, city, city.map, city)
+
+	## The layer node the readout built, or null where it built none.
+	func layers() -> DebugLayers:
+		return readout.get_node_or_null("DebugLayers") as DebugLayers
+
+	func free_all() -> void:
+		readout.free()
+		layer.free()
+		player.free()
+		city.free()
+		run.free()
+
+func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
+	return RunConfig.parse(PackedStringArray(words), query, debug_build)
+
+func _all_off(layers: DebugLayers) -> bool:
+	return not layers.layer_on(1) and not layers.layer_on(2) and not layers.layer_on(3)
+
+func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
+	var rig := Rig.new(t, _config([], false))
+	t.check(rig.layers() == null,
+			"a release build never builds the layer node at all, not merely leaves it invisible")
+	rig.free_all()
+
+## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone (`readout_requested`,
 ## with no `?layers=` in the same query) builds the node the same way a debug build does, since a
 ## release page's own `?debug=1&layers=1,3` needs somewhere to draw into — but every geometry layer
-## still starts off, exactly as an unflagged debug run's own default, because `layers_override()`
-## itself answers nothing without `?layers=` named.
+## still starts off, exactly as an unflagged debug run's own default, because `layers_override`
+## itself is empty without `?layers=` named.
 func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._readout_requested = true
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers != null,
+	var rig := Rig.new(t, _config([], false, "?debug=1"))
+	t.check(rig.layers() != null,
 			"?debug=1 builds the layer node so a release page's own ?layers= has somewhere to draw")
-	t.check(not main._debug_layers.layer_on(1) and not main._debug_layers.layer_on(2)
-			and not main._debug_layers.layer_on(3),
+	t.check(rig.layers() != null and _all_off(rig.layers()),
 			"and every geometry layer starts off, since ?layers= itself named none")
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	rig.free_all()
 
 func _test_a_debug_build_builds_the_layers_off_by_default(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers != null and main._debug_layers.get_parent() == main,
-			"a debug build adds the one node, parented under main")
-	t.check(not main._debug_layers.layer_on(1) and not main._debug_layers.layer_on(2)
-			and not main._debug_layers.layer_on(3),
+	var rig := Rig.new(t, _config([], true))
+	var layers := rig.layers()
+	t.check(layers != null and layers.get_parent() == rig.readout,
+			"a debug build adds the one node, parented under the readout")
+	t.check(layers != null and _all_off(layers),
 			"and the three geometry layers start off, so an unflagged debug run looks like today's")
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	rig.free_all()
+
+## The flag the player types reaches the node: `--layers 1,3` on a debug build starts exactly those
+## on.
+func _test_the_layers_flag_starts_only_the_listed_layers_on(t) -> void:
+	var rig := Rig.new(t, _config(["--layers", "1,3"], true))
+	var layers := rig.layers()
+	t.check(layers != null and layers.layer_on(1) and not layers.layer_on(2) and layers.layer_on(3),
+			"--layers 1,3 starts fields and bounding boxes on and leaves shadows off")
+	rig.free_all()
 
 # ------------------------------------------------------------------ key toggles ---
 
@@ -214,76 +243,82 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 	event.echo = echo
 	return event
 
-## `_debug_layer_key()` resolved directly, the way `test_burst_capture.gd` already drives
-## `_debug_snapshot_action()` — both are pulled out to a pure function of the event for exactly
-## this reason, since `main._unhandled_input()` itself reaches `get_viewport()`, which is null on
-## the script-only instance this whole suite uses (see this file's own class doc).
-func _test_the_layer_keys_resolve_to_their_own_index(t) -> void:
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1)) == 1, "1 is fields")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_2)) == 2, "2 is shadows")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_3)) == 3, "3 is bounding boxes")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_4)) == 4, "4 is the readout")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_5)) == 5, "5 is the route lines")
-	# 6 (the frame graph, `tests/test_main.gd`'s own key) is the last one taken — M153, "the spike
-	# view is its own debug layer" — so a seventh key is the one that still answers nothing.
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_6)) == 6, "6 is the frame graph")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_7)) == 0, "a seventh key answers nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, false)) == 0, "a release, not a press, does nothing")
-	t.check(MAIN_SCRIPT._debug_layer_key(_key(KEY_1, true, true)) == 0,
+## Every key a player presses reaches its own layer through the viewport, the route a real key takes:
+## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the routes and `6` the frame
+## graph, and nothing else is a layer key. Each key is pressed alone from a state with everything
+## off, and what it turned on is the one thing that changed.
+func _test_the_layer_keys_resolve_to_their_own_layer(t) -> void:
+	var rig := Rig.new(t, _config([], true))
+	rig.readout.draw_routes(rig.city.map)
+	var routes := rig.readout.get_node("RouteLines") as RouteLines
+	var layers := rig.layers()
+	rig.readout.close_the_title()
+	for number in [1, 2, 3]:
+		UI.push(rig.readout, _key(KEY_1 + number - 1))
+		for other in [1, 2, 3]:
+			t.check(layers.layer_on(other) == (other == number),
+					"%d turns on layer %d and no other geometry layer" % [number, other])
+		UI.push(rig.readout, _key(KEY_1 + number - 1))
+	t.check(_all_off(layers), "a second press of each leaves every geometry layer off")
+	UI.push(rig.readout, _key(KEY_4))
+	t.check(not rig.readout.readout_on(), "4 is the readout")
+	UI.push(rig.readout, _key(KEY_5))
+	t.check(routes.visible and not rig.readout.graph_on(), "5 is the route lines")
+	UI.push(rig.readout, _key(KEY_6))
+	t.check(rig.readout.graph_on(), "6 is the frame graph")
+	var before := [layers.layer_on(1), layers.layer_on(2), layers.layer_on(3),
+			rig.readout.readout_on(), routes.visible, rig.readout.graph_on()]
+	UI.push(rig.readout, _key(KEY_7))
+	t.check([layers.layer_on(1), layers.layer_on(2), layers.layer_on(3),
+			rig.readout.readout_on(), routes.visible, rig.readout.graph_on()] == before,
+			"a seventh key answers nothing")
+	rig.free_all()
+
+func _test_a_release_or_an_echo_toggles_nothing(t) -> void:
+	var rig := Rig.new(t, _config([], true))
+	var layers := rig.layers()
+	UI.push(rig.readout, _key(KEY_1, false))
+	t.check(not layers.layer_on(1), "a release, not a press, does nothing")
+	UI.push(rig.readout, _key(KEY_1, true, true))
+	t.check(not layers.layer_on(1),
 			"an echo does nothing — a held key is one request, not a flood of them")
+	UI.push(rig.readout, _key(KEY_1))
+	t.check(layers.layer_on(1), "and the press itself still does")
+	rig.free_all()
 
 func _test_number_keys_toggle_their_own_layer(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = true
-	main._status = Label.new()
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
+	var rig := Rig.new(t, _config([], true))
+	var layers := rig.layers()
 
-	t.check(not main._debug_layers.layer_on(1), "fields starts off")
-	main._toggle_debug_layer(1)
-	t.check(main._debug_layers.layer_on(1), "1 turns fields on")
-	main._toggle_debug_layer(1)
-	t.check(not main._debug_layers.layer_on(1), "and back off again")
+	t.check(not layers.layer_on(1), "fields starts off")
+	UI.push(rig.readout, _key(KEY_1))
+	t.check(layers.layer_on(1), "1 turns fields on")
+	UI.push(rig.readout, _key(KEY_1))
+	t.check(not layers.layer_on(1), "and back off again")
 
-	main._toggle_debug_layer(2)
-	main._toggle_debug_layer(3)
-	t.check(main._debug_layers.layer_on(2) and main._debug_layers.layer_on(3),
+	UI.push(rig.readout, _key(KEY_2))
+	UI.push(rig.readout, _key(KEY_3))
+	t.check(layers.layer_on(2) and layers.layer_on(3),
 			"2 and 3 toggle shadows and bounding boxes independently of fields")
 
-	t.check(main._layer_readout_on and main._status.visible, "the readout starts on, as today")
-	main._toggle_debug_layer(4)
-	t.check(not main._layer_readout_on and not main._status.visible,
+	t.check(rig.readout.readout_on() and rig.label.visible, "the readout starts on, as today")
+	UI.push(rig.readout, _key(KEY_4))
+	t.check(not rig.readout.readout_on() and not rig.label.visible,
 			"4 turns the readout off and hides the label — not merely leaves it assembled and hidden")
-	main._toggle_debug_layer(4)
-	t.check(main._layer_readout_on and main._status.visible, "and 4 again turns it back on")
-
-	main._status.free()
-	main._debug_layers.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	UI.push(rig.readout, _key(KEY_4))
+	t.check(rig.readout.readout_on() and rig.label.visible, "and 4 again turns it back on")
+	rig.free_all()
 
 func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
-	var main: Node2D = MAIN_SCRIPT.new()
-	main._debug = false
-	main._status = Label.new()
-	main._city = City.new()
-	main._player = Stroller.new()
-	main._add_debug_layers()
-	t.check(main._debug_layers == null, "no layer node in a release build")
-
-	# `main._unhandled_input()` itself never reaches `_toggle_debug_layer()` at all here: the whole
-	# branch is behind `if _debug`, so a release build's `_debug_layers` stays null without this
-	# suite needing a live viewport to prove it — see `_test_the_layer_keys_resolve_to_their_own_index`
-	# for the part of the gate that *is* driven through a real event.
-	main._toggle_debug_layer(1)
-	t.check(main._debug_layers == null, "and calling the toggle by hand still builds nothing")
-
-	main._status.free()
-	main._city.free()
-	main._player.free()
-	main.free()
+	var rig := Rig.new(t, _config([], false))
+	t.check(rig.layers() == null, "no layer node in a release build")
+	var readout_before := rig.readout.readout_on()
+	for code in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6]:
+		UI.push(rig.readout, _key(code))
+	t.check(rig.layers() == null and rig.readout.readout_on() == readout_before
+			and not rig.readout.graph_on(),
+			"and pressing every layer key still builds or turns on nothing")
+	rig.free_all()
 
 # ------------------------------------------------------------- bounding boxes ---
 
@@ -291,12 +326,11 @@ func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
 ## completeness. Builds one real day on a real `City` (a checkpoint day, so a region wall or door
 ## is in play, not only the ordinary catalogue) plus a real `Stroller`, then counts every enabled
 ## `CollisionShape2D`/`CollisionPolygon2D` under a `StaticBody2D`/`CharacterBody2D` in both trees by
-## hand — independently of `DebugLayers.collision_nodes_under()`, so a bug in that seam cannot hide
-## from this test — and checks `body_outline_count()` agrees. The crowd is never started, so no car
-## ever reaches `Tuning.CAR_STRIKE_MIN_SPEED` and the strike box this layer also draws contributes
-## zero on both sides of the count, by construction rather than by luck.
+## hand — independently of `DebugLayers.collision_nodes_under()`, which `_draw_bodies()` draws
+## every outline from, so a bug in that walk cannot hide from this test — and checks it finds the
+## same bodies in the two trees.
 func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, 5551212)
 	t.add_child(city)
 	city.build(CityGenerator.generate(5551212))
 
@@ -311,25 +345,24 @@ func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
 	var consumed: Array[String] = []
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("m100-debug-layers:events:%d" % day)
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
 	t.add_child(stroller)
+	city.events.use_player(stroller)
 	stroller.set_physics_process(false)
 
-	var layers := DebugLayers.new()
-	layers.setup(city.events, city.crowd, city, stroller)
-
 	var expected := _count_enabled_bodies(city) + _count_enabled_bodies(stroller)
+	var drawn := DebugLayers.collision_nodes_under(city).size() \
+			+ DebugLayers.collision_nodes_under(stroller).size()
 	t.check(expected > 10,
 			"the generated day actually has bodies worth counting (%d found)" % expected)
-	t.check(layers.body_outline_count() == expected,
+	t.check(drawn == expected,
 			("the bounding-box layer draws exactly the enabled collision shapes physics reads "
-			+ "(%d expected from an independent tree walk, %d from the layer's own count)")
-			% [expected, layers.body_outline_count()])
+			+ "(%d expected from an independent tree walk, %d from the layer's own walk)")
+			% [expected, drawn])
 
-	layers.free()
 	stroller.free()
 	city.free()
 
@@ -354,36 +387,59 @@ func _count_enabled_bodies(root: Node) -> int:
 # every layer off, and `collision_nodes_under()` allocated a fresh `Array[Node]` at every level of
 # recursion rather than accumulating into one the caller already owns.
 
-func _test_no_redraw_is_wanted_with_every_layer_off(t) -> void:
-	var layers := DebugLayers.new()
-	t.check(not layers._wants_a_redraw(),
-			"fresh layers start with all three off, so _process() has nothing to ask a redraw for")
-	layers.fields_on = true
-	t.check(layers._wants_a_redraw(), "one layer on is already enough to want a redraw")
-	layers.fields_on = false
-	layers.bodies_on = true
-	t.check(layers._wants_a_redraw(), "any one of the three does, not only the first")
-	layers.bodies_on = false
-	t.check(not layers._wants_a_redraw(), "and back to nothing once every layer is off again")
+## The layer node with its picture counted: a retained `_draw()` runs only when a redraw was
+## queued, so how often it runs over real frames is how many redraws the layer asked for.
+class DrawCount extends DebugLayers:
+	var draws := 0
+
+	func _draw() -> void:
+		draws += 1
+
+func _test_no_redraw_is_asked_with_every_layer_off(t) -> void:
+	var layers := DrawCount.new()
+	t.add_child(layers)
+	await UI.frames(t, 3)
+	var settled := layers.draws
+	await UI.frames(t, 5)
+	t.check(layers.draws == settled,
+			"fresh layers start with all three off, so five frames ask for no redraw (%d, then %d)"
+			% [settled, layers.draws])
+	layers.set_layer(1, true)
+	await UI.frames(t, 5)
+	t.check(layers.draws >= settled + 5,
+			"one layer on redraws every frame (%d draws, %d before)" % [layers.draws, settled])
 	layers.free()
+
+	for number in [2, 3]:
+		var other := DrawCount.new()
+		t.add_child(other)
+		await UI.frames(t, 3)
+		var other_settled := other.draws
+		other.set_layer(number, true)
+		await UI.frames(t, 5)
+		t.check(other.draws >= other_settled + 5,
+				"layer %d alone redraws every frame as well, not only the first" % number)
+		other.free()
 
 ## M142: a retained `_draw()` keeps its last picture until something calls `queue_redraw()` again,
 ## so the toggle that turns the last layer off still owes exactly one redraw — the empty one that
-## erases what was on screen. `queue_redraw()` on a node outside the tree is harmless here (the
-## call is a no-op query until the node is inside one), so this test does not need `t.add_child`.
+## erases what was on screen.
 func _test_a_switch_off_still_owes_one_redraw(t) -> void:
-	var layers := DebugLayers.new()
+	var layers := DrawCount.new()
+	t.add_child(layers)
+	await UI.frames(t, 3)
 	layers.set_layer(2, true)
+	await UI.frames(t, 3)
 	layers.set_layer(2, false)
-	t.check(layers._wants_a_redraw(),
-			"switching the last layer off still owes one redraw, so the last picture does not " +
-			"stay on screen forever")
-	layers._process(0.0)
-	t.check(not layers._wants_a_redraw(),
-			"and _process() clears the owed flag once it has queued that redraw")
+	var at_switch_off := layers.draws
+	await UI.frames(t, 5)
+	t.check(layers.draws == at_switch_off + 1,
+			("switching the last layer off still owes one redraw, so the last picture does not "
+			+ "stay on screen forever, and only one (%d draws after, %d at the switch)")
+			% [layers.draws, at_switch_off])
 	layers.free()
 
-func _test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t) -> void:
+func _test_collision_nodes_under_finds_the_shape_and_the_polygon_at_every_depth(t) -> void:
 	var root := StaticBody2D.new()
 	t.add_child(root)
 	var shape := CollisionShape2D.new()
@@ -392,18 +448,23 @@ func _test_collect_collision_nodes_into_agrees_with_the_public_wrapper(t) -> voi
 	var polygon := CollisionPolygon2D.new()
 	polygon.polygon = PackedVector2Array([Vector2.ZERO, Vector2(1.0, 0.0), Vector2(0.0, 1.0)])
 	root.add_child(polygon)
+	var disabled := CollisionShape2D.new()
+	disabled.shape = RectangleShape2D.new()
+	disabled.disabled = true
+	root.add_child(disabled)
 
-	var via_wrapper := DebugLayers.collision_nodes_under(root)
-	t.check(via_wrapper.size() == 2,
-			"the public wrapper still finds both the enabled shape and the enabled polygon")
+	t.check(DebugLayers.collision_nodes_under(root).size() == 2,
+			"the walk finds both the enabled shape and the enabled polygon, and not the disabled one")
 
-	# The private helper accumulates into whatever the caller already put there, rather than only
-	# ever starting from empty -- the whole point of the fix being able to reuse one array instead
-	# of merging a fresh one back from every level of recursion.
-	var into: Array[Node] = [root]
-	DebugLayers._collect_collision_nodes_into(root, into)
-	t.check(into.size() == 3 and into[0] == root,
-			"_collect_collision_nodes_into() appends onto the caller's own array rather than " +
-			"returning a fresh one of its own")
+	var deeper := CharacterBody2D.new()
+	var deeper_shape := CollisionShape2D.new()
+	deeper_shape.shape = CircleShape2D.new()
+	deeper.add_child(deeper_shape)
+	var holder := Node2D.new()
+	holder.add_child(deeper)
+	root.add_child(holder)
+	var found := DebugLayers.collision_nodes_under(root)
+	t.check(found.size() == 3 and deeper_shape in found,
+			"and a body two levels down is found with them")
 
 	root.free()

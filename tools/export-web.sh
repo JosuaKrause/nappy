@@ -81,13 +81,13 @@ source "$PROJECT_DIR/tools/lib_disk_headroom.sh"
 headroom_preflight tools/export-web.sh "$OUT_DIR" "" web-export || exit 1
 
 # What the export says it is. `application/config/version` and `application/config/source_commit`
-# are project settings the game reads at runtime — `TitleScreen.version_text()` and
+# are project settings the game reads at runtime — `BuildInfo.version_text()` and
 # `commit_text()` — where an exported build has no repository to ask `git`, and Godot bakes the
 # project settings into the export, so the two are written into project.godot for the duration
 # of the export and the file is put back from a copy on every exit. The version is RELEASE_TAG
 # when the caller set one (deploy.yml passes the pushed tag; its checkout is shallow, so
 # `git describe` there would name no tag) and `git describe --tags --always` with a `-dirty` mark
-# otherwise, the shape `Telemetry.source_version()` gives a working tree; the commit is HEAD's
+# otherwise, the shape `BuildInfo.source_version()` gives a working tree; the commit is HEAD's
 # abbreviated hash either way, since on a release describe collapses to the tag and a tag can be
 # moved. Each anchor is asserted to occur exactly once before it is written, and the result is
 # read back, so a project.godot that has lost a line fails the export rather than shipping the
@@ -108,11 +108,17 @@ for key in config/version config/source_commit; do
         exit 1
     fi
 done
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
 PROJECT_FILE_BACKUP="$(mktemp)"
 cp "$PROJECT_FILE" "$PROJECT_FILE_BACKUP"
 restore_project_file() {
     cp "$PROJECT_FILE_BACKUP" "$PROJECT_FILE"
     rm -f "$PROJECT_FILE_BACKUP"
+    import_restore_run
 }
 trap restore_project_file EXIT
 sed -e "s|^config/version=.*|config/version=\"$SOURCE_VERSION\"|" \

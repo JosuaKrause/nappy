@@ -28,9 +28,15 @@ extends RefCounted
 ## a quiet square or a courtyard without this file having to know which. Distinctness is then
 ## automatic: two stops are different components or they are the same stop.
 ##
-## What this hands back is a `Plan`: the two chains, the union of their cells, and every
-## `EventScheduler.Planned` the escape puts in the city — `SealPlanner.plan_finale()`'s walls off
-## the chains and `EventScheduler.build_finale()`'s trucks, vans, masked men and bursts on them.
+## What this hands back is a `Plan`: the two chains and the union of their cells — the escape's
+## walk, which placement asks about as it asks a day's tree (`RouteSource`). **The route only**:
+## what stands on and off it is planned by the day's own code under the section's spec, as every
+## walk is (`DayPlanner.plan_the_escape_city()`, from `EventManager.start_day()`).
+
+## How many calm blocks each chain runs through between the service exit and its edge — *"a single
+## path through the city that crosses three parks"*. The chains are built one street-walk at a
+## time between consecutive stops, so this is also how many intermediate stops each chain has.
+const FINALE_PARKS_PER_CHAIN := 3
 
 ## One calm area on the way: a connected component of calm ground, its tiles and the grid nodes
 ## that cover them.
@@ -53,37 +59,90 @@ class Chain extends RefCounted:
 	## gets a plan rather than a crash if one ever is.
 	var complete := true
 
-class Plan extends RefCounted:
+## **The escape's walk**: the two chains as the questions placement asks of a walk (`RouteSource`).
+class Plan extends RouteSource:
 	var chains: Array[Chain] = []
-	## The union of both chains' cells: what stays open, and what `SealPlanner.plan_finale()` is
-	## asked to spare.
+	## The union of both chains' cells: what stays open, and what the seals are asked to spare.
 	var open_cells: Dictionary = {}
 	## Every street either chain runs through — where the finale's own events stand.
 	var open_streets: Array[StreetNetwork.Segment] = []
-	var placements: Array[EventScheduler.Planned] = []
+	## Where she comes out of the service exit, the street that is in, and the tunnel's and the
+	## bridge's tiles, in world space.
+	var _start := Vector2.INF
+	var _starts_in: StreetNetwork.Segment = null
+	var _ends: Array[Vector2] = []
+	## `open_streets`' keys, for the kerb tint's question about a tile.
+	var _open_keys := {}
+	## The escape city's street lattice (`CityMap.network`), which names the street a tile is on.
+	var _network: StreetNetwork
 
-	## One line for the run log: which way each chain goes and how much of the city is left open.
-	func summary() -> String:
+	func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
+		return open_streets
+
+	## Asked at the street's midpoint, or at `along`: a chain that only turns at a street's end
+	## does not walk it (`SealPlanner.runs_through()`).
+	func walks_the_street(segment: StreetNetwork.Segment, along := -1) -> bool:
+		return SealPlanner.runs_through(segment, open_cells, along)
+
+	## **A chain that is in an alley at all is through it**: an alley is two tiles wide and has no
+	## midpoint worth distinguishing. A cell is two tiles square and every cell is wholly street or
+	## wholly block (see `ReachabilityGrid`), so this is an exact question rather than an overlap
+	## test. An alley the chains do not take is a second way through, so it is not reached.
+	func reaches_the_alley(_map: CityMap, rect: Rect2i) -> bool:
+		for y in range(rect.position.y, rect.end.y):
+			for x in range(rect.position.x, rect.end.x):
+				if open_cells.has(Vector2i(x, y) / ReachabilityGrid.CELL):
+					return true
+		return false
+
+	func carries_a_route(tile: Vector2i) -> bool:
+		return open_cells.has(tile / ReachabilityGrid.CELL)
+
+	## **The same grain as a day's**: both kerb lines of every street either chain runs through,
+	## from intersection to intersection. A street a chain only turns at is sealed and carries no
+	## tint, and a junction resolves to no street, exactly as on a day.
+	func marks_the_kerb_at(tile: Vector2i) -> bool:
+		var segment := _network.segment_containing(tile)
+		return segment != null and _open_keys.has(segment.key())
+
+	func street_it_starts_in() -> StreetNetwork.Segment:
+		return _starts_in
+
+	func start() -> Vector2:
+		return _start
+
+	func ends() -> Array[Vector2]:
+		return _ends
+
+	## One line for the run log: which way each chain goes, how much of the city is left open and
+	## how many `placements` the walk was planned with.
+	func summary(placements: int) -> String:
 		var parts: Array[String] = []
 		for chain in chains:
 			parts.append("%s via %d calm, %d cells%s" % [
 				"tunnel" if chain.exit_kind == CityEdge.Kind.TUNNEL else "bridge",
 				chain.stops.size(), chain.cells.size(), "" if chain.complete else " (incomplete)"])
-		parts.append("%d open streets, %d placements" % [open_streets.size(), placements.size()])
+		parts.append("%d open streets, %d placements" % [open_streets.size(), placements])
 		return " | ".join(parts)
 
 # ------------------------------------------------------------------ the plan ---
 
-static func plan(map: CityMap, rng: RandomNumberGenerator, populate_events := true) -> Plan:
+## **The escape's walk**: the two chains from the service exit, their cells and streets, where she
+## starts and the two exits. Deterministic from the city, so a replan walks the same chains.
+##
+## **The chains start on the tile she is put down on** (`_grow()` enters the grid at her own cell),
+## and what is placed on the walk is handed the same start (`DayPlanner.plan_the_escape_city()`).
+static func route(map: CityMap) -> Plan:
 	var grid := ReachabilityGrid.build(map)
 	var start := service_exit_tile(map)
 	var areas := calm_areas(map, grid)
 	var result := Plan.new()
+	result._network = map.network
 	# Sorted north to south, so the tunnel chain takes the calm nearest the top of the map and the
 	# bridge chain the calm nearest the bottom. The home lot sits between the two ends of the
 	# spine, so neither exit is trivially nearer and neither chain is the short one.
 	areas.sort_custom(func(a: CalmArea, b: CalmArea) -> bool: return a.centre.y < b.centre.y)
-	var per_chain := mini(Tuning.FINALE_PARKS_PER_CHAIN, areas.size() / 2)
+	var per_chain := mini(FINALE_PARKS_PER_CHAIN, areas.size() / 2)
 	# **Each chain's own stops are ordered so the walk only ever goes one way.** The three northern
 	# areas are met southmost first, since she starts between the two exits and the tunnel is at
 	# the top; the three southern ones are already in the order she meets them on the way down. A
@@ -108,24 +167,12 @@ static func plan(map: CityMap, rng: RandomNumberGenerator, populate_events := tr
 		for cell: Vector2i in chain.cells:
 			result.open_cells[cell] = true
 	result.open_streets = _streets_covering(map, result.open_cells)
-	# **Every pass below is handed the tile she is put down on.** *(2026-09-19: "the spawning
-	# shouldn't be a check. the pathing should start from the position. then obstacles can never
-	# happen.")* The chains already start there — `_grow()` enters the grid at her own cell — so
-	# what was left was the two passes that place things: the sealing, which was sparing the street
-	# the front door opens onto rather than the one she is standing in, and the events, which were
-	# offered every tile of an open street including hers. Neither is a check on the spawn and
-	# neither moves anything afterwards: they are never offered the ground she is on.
-	var standing_at := map.tile_to_world(start)
-	var seals := SealPlanner.plan_finale(map, result.open_cells, rng, standing_at)
-	result.placements.append_array(seals)
-	# Recipes keep the real chains and seals, then validate their exact actors on these streets.
-	# The events are handed the seals and both exits, because what they may not close is the walk
-	# from where she stands to either exit with the seals already down.
-	if populate_events:
-		var ends: Array[Vector2] = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
-				map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
-		result.placements.append_array(EventScheduler.build_finale(map, rng,
-				result.open_streets, standing_at, seals, ends))
+	for segment in result.open_streets:
+		result._open_keys[segment.key()] = true
+	result._start = map.tile_to_world(start)
+	result._starts_in = map.network.segment_containing(start)
+	result._ends = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
+			map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
 	return result
 
 ## One chain: the door, each stop in turn, then the edge. Each leg is a shortest walk on the grid
@@ -303,12 +350,12 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 
 ## Every street either chain actually walks, which is where the finale's own events stand.
 ##
-## The same question `SealPlanner.plan_finale()` asks about which streets to spare, asked through
-## the same function — a street the chain merely turns at is sealed, so putting an army truck on it
-## would put one behind a wall.
+## The same question the seals ask about which streets to spare (`Plan.walks_the_street()`), asked
+## through the same function — a street the chain merely turns at is sealed, so putting an army
+## truck on it would put one behind a wall.
 static func _streets_covering(map: CityMap, open_cells: Dictionary) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if map.has_street(segment.key()) and SealPlanner.runs_through(segment, open_cells):
 			found.append(segment)
 	return found

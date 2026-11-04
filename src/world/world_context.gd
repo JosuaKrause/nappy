@@ -20,11 +20,14 @@ extends Node2D
 ## there — `total_excitement_at()` is kept only because a page of existing callers want a bare
 ## number and summing the pairs themselves would be the same loop repeated at every call site.
 ##
+## **How loud it is here is answered by what stands in the world, never summed by the world**: the
+## sets of things that charge her (`excitement_sources`, each an `ExcitementSources`), the events'
+## and the crowd's where there is one, each handed to the world by whoever builds it — the city
+## hands over both, the run flow hands the building its events. The city and the building answer the
+## baby the same way, through this one combination, and the halo reads the same sets.
+##
 ## `City` still has an `is_calm_zone` of its own, for the debug overlay and the telemetry, which
 ## genuinely do want the yes/no. It is not on this interface because `Baby` has no use for it.
-
-func _ready() -> void:
-	add_to_group("world")
 
 ## What this ground multiplies the sleepiness gain by while she walks. 1.0 is anywhere that is not
 ## calm; calm ground is worth many times that, and a small calm area more again.
@@ -42,13 +45,59 @@ func decay_multiplier(_world_position: Vector2) -> float:
 func is_alley(_world_position: Vector2) -> bool:
 	return false
 
-## Summed excitement per second from every active source at this point.
-func total_excitement_at(_world_position: Vector2) -> float:
-	return 0.0
+## **The sets of things that charge her here**, in the order their pairs are summed: the events
+## standing in this world first (`EventSources`), then the crowd on its streets where there is one
+## (`CrowdSources`). Empty where nothing stands, as while the building is walked empty or in the
+## debug world.
+var excitement_sources: Array[ExcitementSources] = []
 
-## Every active source contributing at this point, as `[source, contribution]` pairs — the same
-## bodies `total_excitement_at()` sums, broken out so `Baby` can trace each point that lands on
-## the meter back to whatever body actually put it there, for `ExcitementHalo`'s colour. Empty for
-## the debug world, which has no bodies to attribute to.
-func excitement_sources_at(_world_position: Vector2) -> Array:
-	return []
+## Summed excitement per second from every active source at this point.
+func total_excitement_at(world_position: Vector2) -> float:
+	var total := 0.0
+	for pair in excitement_sources_at(world_position):
+		total += pair[1]
+	return total
+
+## Every active source contributing at this point, as `[source, contribution]` pairs
+## (`ExcitementSource`) — the same sources `total_excitement_at()` sums, broken out so `Baby` can
+## trace each point that lands on the meter back to whatever put it there, for `ExcitementHalo`'s
+## colour. Events and the crowd are the same kind of quantity to the baby, so their pairs simply
+## concatenate, **unless she is inside a held door, where its toll is the whole answer**
+## (`ExcitementSources.all_at()`, which states that rule once). Empty for a world with no sets.
+func excitement_sources_at(world_position: Vector2) -> Array:
+	return ExcitementSources.all_at(excitement_sources, world_position)
+
+# ------------------------------------------------------------ the draw layers ---
+# Not a question the baby asks: the world's own service to whatever it is handed to — an event
+# manager and its events, the crowd, the resistance, `main` putting her down.
+
+## Adds `node` to this world, drawn on `layer` (`DrawLayer.Layer`; an `int` for the reason
+## `DrawLayer.z_of()` gives): `ENTITIES`, the y-sorted layer everything standing on the ground
+## sorts in at its feet, unless the caller asks for another.
+func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
+	layers().node(layer).add_child(node)
+
+## The nodes this world draws its layers in. The city and the building hand over the ones their
+## scenes hold when they are built; any other layer, and every layer of a test's stand-in world,
+## gets a node of its own the first time something is added to it.
+func layers() -> WorldLayers:
+	if _layers == null:
+		_layers = WorldLayers.new(self)
+	return _layers
+
+var _layers: WorldLayers
+
+# ------------------------------------------------------------- the player's walk ---
+
+## **Something going off outside this world's walls**, as a row from outside comes
+## (`EventDef.from_outside`, asked by `EventManager`): the world shows it the one way it can be seen
+## from inside. The building lights every window at once; a world with no walls between her and the
+## street shows nothing for it.
+func bang_outside() -> void:
+	pass
+
+## What this world's ground does to her each frame she walks it, asked through its map
+## (`WorldMap.process_player()`): the building's doors fade her through and its light follows the
+## part she is in. Nothing in a world whose ground does nothing to her walk.
+func process_player(_player: Node2D, _delta: float) -> void:
+	pass

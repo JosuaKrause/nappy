@@ -132,14 +132,17 @@ static func validate(data: Dictionary) -> Array[String]:
 				var limit := block_bounds if field == "zones" else bounds
 				if not rect.has_area() or not limit.encloses(rect):
 					errors.append("context.%s: rectangle outside its lattice" % field)
+	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
+	# every city's map holds (`CityMap.network`).
+	var lattice := StreetNetwork.new()
 	for field: String in SETS:
 		for value: Variant in data[field]:
-			if not SceneRecipe.tuple(value, 3, true) or not StreetNetwork.by_key(key_of(value)):
+			if not SceneRecipe.tuple(value, 3, true) or not lattice.by_key(key_of(value)):
 				errors.append("context.%s: invalid segment" % field)
 	for tree: Variant in data.trees:
 		if not SceneRecipe.tuple(tree, 2, true):
 			errors.append("context.trees: expected tile pairs")
-		elif not bounds.has_point(point(tree)) or not StreetNetwork.segment_containing(point(tree)):
+		elif not bounds.has_point(point(tree)) or not lattice.segment_containing(point(tree)):
 			errors.append("context.trees: tile outside a street")
 	for field: String in ["region_of_junction", "region_has_calm"]:
 		for value: Variant in data[field]:
@@ -158,7 +161,7 @@ static func validate(data: Dictionary) -> Array[String]:
 				continue
 			if field == "built_over" and not SceneRecipe.tuple(entry.get("rect"), 4, true):
 				errors.append("context.built_over: expected tile rectangle")
-			if not StreetNetwork.by_key(key_of(entry.segment)):
+			if not lattice.by_key(key_of(entry.segment)):
 				errors.append("context.%s: invalid segment" % field)
 			if field == "boundary_wall_at_a" and not entry.get("at_a") is bool:
 				errors.append("context.boundary_wall_at_a: expected boolean")

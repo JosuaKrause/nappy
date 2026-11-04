@@ -47,22 +47,43 @@ map, navigator, configuration, clock, event sink) through its setup or construct
 fetching it from an autoload, a scene-tree group or a static. Tests then hand it fakes instead of
 patching statics or reaching into private fields. Every item below applies it to what it extracts.
 
+**No legacy shape is kept** (minty-dolphin #852): the player, "Don't let legacy implementations
+prevent you from establishing a clean design". Read as: an old path, a forwarder kept for an old
+name so callers or tests need not change, or a rule that holds only "in practice" is replaced, not
+kept beside the new design.
+
+**The parts end up independent; sequential now is fine** (minty-dolphin #845): asked "why one PR at
+a time? no way to partition work?", the player, "okay, let's do the refactor in a way that things
+will ultimately be independent but it's okay if it needs to be sequential right now". Read as: the
+refactor leaves its parts independent of each other, so later work on them can be split across
+parallel agents; items that touch the same code now run one after another, and items already
+independent run in parallel.
+
 ## Order
 
-Each step leaves the game working and is its own PR, reviewed on its own:
+Each step leaves the game working and is its own PR, reviewed on its own. **A step is done at test
+parity**: every existing test passes, changed only as far as the code it reaches moved, or converted
+early to injected fakes and public APIs (`tests-public-seams.md`); nothing is remeasured per step. The player: "let's do remeasuring at the very end and not get blocked by it
+during the refactor", "for the refactor test parity is enough" (inbox #813 in curly-moose).
 
-1. `run-config.md`: cheap, and it unblocks testing the rest.
-2. `observers.md`, then `escape-as-day-spec.md`: the escape's loss reason and GoatCounter fixed by
-   the day's own finish path.
-3. `world-passability.md`, `draw-layers.md`, then `world-map.md`: the world layer, which the building
-   needs before it can run on the day's event manager.
-4. `escape-placement.md`: the escape folded into the day's code.
-5. `events-composed.md` and `shared-components.md`.
-6. `main-and-state.md`, `tuning.md` and `tests-public-seams.md`, alongside the extractions they serve.
-7. `comments.md` and `likely-bugs.md`: in whichever PR touches the code.
+1. `shared-components.md`.
+2. `comments.md`: in whichever PR touches the code.
+3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
+   `tests-isolated.md` and `hidden-statics.md` beside it, since the tests that patch a static and put it back are the ones
+   that move to an injected fake once its owner holds the state instead.
+   `run-state-handed-in.md` beside them too: each wave moves its suites onto a fresh run state
+   handed in, after the one PR that moves the run onto the `Sitting` (inbox #985 in round-egret).
+4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+   table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
+   one from before the refactor, and pictures of every behavior a step changed on purpose. Each
+   step's record lists what its change needs remeasured. That includes the crowd tick, measured
+   about 4.5% slower once the walker and the car share a mover base the crowd member extends
+   (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
+   later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
+   worth an entry of its own.
 
 The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
 escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
-the exception still stands" (minty-lemur #799). `escape-placement.md` replaces the code that fix
-put in `build_finale`, so nothing of the exception is left.
+the exception still stands" (minty-lemur #799). The escape city's placement runs on the day's
+scheduler and that fix's `build_finale` is gone (minty-quail-8), so the exception covers no code.

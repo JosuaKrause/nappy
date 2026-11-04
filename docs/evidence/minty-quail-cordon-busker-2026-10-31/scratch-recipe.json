@@ -1,0 +1,53 @@
+{
+ "version": 1,
+ "name": "scratch: day 12 swing, full city, a busker in the park's east edge row",
+ "seed": 11,
+ "extent": {
+  "scope": "full"
+ },
+ "city": {
+  "context_seed": 1917501
+ },
+ "anchors": {
+  "mark": {
+   "tile": [
+    51,
+    110
+   ]
+  },
+  "start": {
+   "tile": [
+    56,
+    112
+   ]
+  }
+ },
+ "setup": {
+  "tutorial_complete": true,
+  "day": 12,
+  "parent": "mother",
+  "player": {
+   "at": "start",
+   "facing": "west"
+  },
+  "task": {
+   "mark": "mark"
+  },
+  "events": [
+   {
+    "name": "busker_1",
+    "row": "busker",
+    "at": [
+     1328,
+     3904
+    ]
+   }
+  ]
+ },
+ "playback": {
+  "walk": "1.95w0.7n0.7s5.71w3.13s0.35e0.4p0.5S0.8E25p",
+  "duration": 30.0,
+  "capture_at": 20.0,
+  "observations": []
+ }
+}

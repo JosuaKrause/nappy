@@ -11,8 +11,8 @@ extends RefCounted
 ##
 ## Alleys are not atoms here — see `RegionPlanner._union_atoms`'s own doc for why unioning one's
 ## two bordering streets chained most of the lattice into a single atom on six measured seeds — so
-## this suite tests them as the second kind of crossing they are instead: `_alley_border_segments`,
-## `alley_mouth_ground_region` and the day's `alley_doors`/`alley_walls` split.
+## this suite tests them as the second kind of crossing they are instead: the streets an alley opens
+## onto (`_borders_of()`), `alley_mouth_ground_region` and the day's `alley_doors`/`alley_walls` split.
 
 const SEEDS := 6
 ## How many maps the sweeps that walk every day of a run (`_test_winnability_holds_with_the_
@@ -50,6 +50,24 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------------ setup ---
 
+## The two mouth bodies the day's plan stands at each walled alley, keyed by the alley's rect: the
+## start mouth first, then the end one. `RegionPlanner.plan_day()` appends them after the street
+## walls' bodies, two to a walled alley in `alley_walls` order, which is the order read back here.
+func _alley_wall_mouths(plan: RegionPlanner.RegionPlan) -> Dictionary:
+	var mouths := {}
+	var first := plan.wall_bodies.size() - plan.alley_walls.size() * 2
+	for i in plan.alley_walls.size():
+		mouths[plan.alley_walls[i]] = [plan.wall_bodies[first + i * 2],
+				plan.wall_bodies[first + i * 2 + 1]]
+	return mouths
+
+## Whether `body` stands in the mouth `SealPlanner.alley_mouth_rect()` gives an alley's end: the
+## check that `_alley_wall_mouths()` read the right plan entries back for that alley and end.
+func _stands_in_the_mouth(map: CityMap, body: EventScheduler.Planned, rect: Rect2i,
+		at_start: bool) -> bool:
+	var mouth := SealPlanner.alley_mouth_rect(rect, rect.size.x < rect.size.y, at_start)
+	return map.tile_rect_to_world(mouth).grow(1.0).has_point(body.position)
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -85,7 +103,7 @@ func _real_junctions(map: CityMap) -> Array[Vector2i]:
 	for y in count.y:
 		for x in count.x:
 			var junction := Vector2i(x, y)
-			for segment in StreetNetwork.at_junction(junction):
+			for segment in map.network.at_junction(junction):
 				if map.has_street(segment.key()):
 					found.append(junction)
 					break
@@ -111,6 +129,25 @@ func _boundary_keys(plan: RegionPlanner.RegionPlan) -> Dictionary:
 	for rect in plan.alley_doors:
 		keys[rect.position] = true
 	return keys
+
+## The two streets a through-alley's rect opens onto, as `[segment_a, segment_b, vertical]` (the
+## north or west one first), read off the street each end of the alley meets
+## (`StreetNetwork.segment_containing()`, the tile just past the mouth), or an empty array where the
+## alley is built over or either end meets no street of the lattice. Either street may be absent from
+## the city (`CityMap.has_street()`): a dead end builds over one.
+func _borders_of(map: CityMap, rect: Rect2i) -> Array:
+	if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+		return []
+	var vertical := rect.size.x < rect.size.y
+	var before := Vector2i(rect.position.x, rect.position.y - 1) if vertical \
+			else Vector2i(rect.position.x - 1, rect.position.y)
+	var after := Vector2i(rect.position.x, rect.end.y) if vertical \
+			else Vector2i(rect.end.x, rect.position.y)
+	var segment_a := map.network.segment_containing(before)
+	var segment_b := map.network.segment_containing(after)
+	if not segment_a or not segment_b:
+		return []
+	return [segment_a, segment_b, vertical]
 
 ## The tiles of one mouth of an alley rect — the same one-tile-deep band
 ## `SealPlanner.alley_mouth_rect` builds, called directly rather than duplicated here.
@@ -195,7 +232,7 @@ func _test_precinct_spans_are_never_boundary(t) -> void:
 			var range_end := span.w + 1
 			for along in range(span.z, range_end):
 				var key := Vector3i(corridor, along, 1) if span.x == 1 else Vector3i(along, corridor, 0)
-				var segment := StreetNetwork.by_key(key)
+				var segment := map.network.by_key(key)
 				if not segment or not map.has_street(segment.key()):
 					continue
 				checked += 1
@@ -234,7 +271,7 @@ func _test_flood_matches_the_partition(t) -> void:
 				blocked[tile] = true
 				wall_mouth_tiles[tile] = true
 		for rect in map.alley_rects:
-			var info := RegionPlanner._alley_border_segments(map, rect)
+			var info := _borders_of(map, rect)
 			if info.is_empty():
 				continue
 			var ground_a := RegionPlanner.alley_mouth_ground_region(map, info[0])
@@ -250,7 +287,7 @@ func _test_flood_matches_the_partition(t) -> void:
 		var doorstep := map.world_to_tile(map.doorstep_world_position())
 		var reached := grid.flood([doorstep], blocked)
 		var home := RegionPlanner.home_region(map)
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			var region := RegionPlanner.ground_region_of(map, segment)
@@ -382,7 +419,7 @@ func _test_crossing_alleys_are_consistent(t) -> void:
 	var total_alleys := 0
 	for map in _maps:
 		for rect in map.alley_rects:
-			var info := RegionPlanner._alley_border_segments(map, rect)
+			var info := _borders_of(map, rect)
 			if info.is_empty():
 				continue
 			var ground_a := RegionPlanner.alley_mouth_ground_region(map, info[0])
@@ -396,8 +433,22 @@ func _test_crossing_alleys_are_consistent(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, day, tree)
+			# Every alley that crosses is a door or a wall, and no other is on either list.
+			var classified := {}
 			for rect in plan.alley_doors + plan.alley_walls:
-				var info := RegionPlanner._alley_border_segments(map, rect)
+				classified[rect] = true
+			for rect in map.alley_rects:
+				var borders := _borders_of(map, rect)
+				if borders.is_empty():
+					continue
+				var ga := RegionPlanner.alley_mouth_ground_region(map, borders[0])
+				var gb := RegionPlanner.alley_mouth_ground_region(map, borders[1])
+				var crosses := ga >= 0 and gb >= 0 and ga != gb
+				t.check(classified.has(rect) == crosses,
+						"seed %d day %d: alley %s is on the day's lists exactly when it crosses (%s)"
+						% [map.seed_used, day, rect.position, crosses])
+			for rect in plan.alley_doors + plan.alley_walls:
+				var info := _borders_of(map, rect)
 				var ok := false
 				if not info.is_empty():
 					var ga := RegionPlanner.alley_mouth_ground_region(map, info[0])
@@ -448,17 +499,19 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, day, tree)
-			for segment in plan.walls:
-				var at_a := _wall_at_a(map, segment)
-				for body in SealPlanner.place_hard_on(map, segment, RegionPlanner._WALL_DEF_ID, at_a):
-					checked += 1
-					for tile: Vector2i in alley_mouth_tiles:
-						var distance := map.tile_to_world(tile).distance_to(body.position)
-						t.check(distance > body.def.obstructs_radius,
-								("seed %d day %d: a wall body at %s (radius %.0f) does not reach " +
-								"alley mouth tile %s (%.0fpx away)")
-								% [map.seed_used, day, body.position, body.def.obstructs_radius,
-								tile, distance])
+			# The plan's street-wall bodies: all but the two it stands at each walled alley's mouths,
+			# which come last (`_alley_wall_mouths()`).
+			var street_walls := plan.wall_bodies.slice(0,
+					plan.wall_bodies.size() - plan.alley_walls.size() * 2)
+			for body: EventScheduler.Planned in street_walls:
+				checked += 1
+				for tile: Vector2i in alley_mouth_tiles:
+					var distance := map.tile_to_world(tile).distance_to(body.position)
+					t.check(distance > body.def.obstructs_radius,
+							("seed %d day %d: a wall body at %s (radius %.0f) does not reach " +
+							"alley mouth tile %s (%.0fpx away)")
+							% [map.seed_used, day, body.position, body.def.obstructs_radius,
+							tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
 
 ## A wall crossing posts four guards, not six, and the catalogue `roadblock` row is untouched.
@@ -477,9 +530,18 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, day, tree)
-			for segment in plan.walls:
-				var at_a := _wall_at_a(map, segment)
-				var bodies := SealPlanner.place_hard_on(map, segment, RegionPlanner._WALL_DEF_ID, at_a)
+			# The street walls' bodies come first in the plan, `SealPlanner.place_hard_on()`'s run for
+			# each wall in `plan.walls` order, then the alley mouths' (`_alley_wall_mouths()`).
+			var street_walls: Array[EventScheduler.Planned] = []
+			street_walls.assign(plan.wall_bodies.slice(0,
+					plan.wall_bodies.size() - plan.alley_walls.size() * 2))
+			var per_wall := street_walls.size() / maxi(1, plan.walls.size())
+			t.check(street_walls.size() == per_wall * plan.walls.size(),
+					"seed %d day %d: every wall stands the same run of bodies (%d in all)"
+					% [map.seed_used, day, street_walls.size()])
+			for wall in plan.walls.size():
+				var bodies: Array[EventScheduler.Planned] = []
+				bodies.assign(street_walls.slice(wall * per_wall, (wall + 1) * per_wall))
 				checked += 1
 				t.check(bodies.size() == 3, "seed %d day %d: a wall crossing stands three bodies (%d)"
 						% [map.seed_used, day, bodies.size()])
@@ -504,8 +566,8 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 ## A crossing alley's own wall bodies post one guard each, standing outside the alley, never the
 ## one that would stand inside it. *(2026-09-25, the player, on a walled alley's own two guards
 ## per mouth: "one guard in alleys on each end.")* Checked geometrically rather than by trusting
-## the sign convention `RegionPlanner._alley_mouth_street_side()` reads out of `at_start`: the
-## guard's own feet (`EventInstance._guard_post_offset()`, at the mouth's own `_spread_is_vertical`
+## the sign convention `RegionPlanner` reads out of `at_start`: the
+## guard's own feet (`EventFootprints.guard_post_offset()`, at the mouth's own `runs_vertically()`
 ## reading) fall on the far side of the alley's own long-axis extent from its interior, at both
 ## mouths.
 func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
@@ -515,11 +577,12 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, day, tree)
+			var mouths := _alley_wall_mouths(plan)
+			t.check(mouths.size() == plan.alley_walls.size(),
+					"seed %d day %d: every walled alley has its mouth bodies in the plan (%d for %d)"
+					% [map.seed_used, day, mouths.size(), plan.alley_walls.size()])
 			for rect in plan.alley_walls:
-				var info := RegionPlanner._alley_border_segments(map, rect)
-				if info.is_empty():
-					continue
-				var vertical: bool = info[2]
+				var vertical := rect.size.x < rect.size.y
 				var world := map.tile_rect_to_world(rect)
 				# The alley's own **long** axis — the one its two mouths sit at opposite ends of —
 				# y for a vertical (north-south) alley, x for a horizontal (east-west) one; the
@@ -528,15 +591,21 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 				var high: float = world.end.y if vertical else world.end.x
 				for at_start in [true, false]:
 					checked += 1
-					var body := RegionPlanner._alley_mouth_wall_body(map, rect, vertical, at_start)
+					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
+					t.check(_stands_in_the_mouth(map, body, rect, at_start),
+							"seed %d day %d: the plan's mouth body for alley %s stands in its mouth"
+							% [map.seed_used, day, rect])
 					var sides := body.def.guard_sides
 					t.check(sides.size() == 1,
 							"seed %d day %d: an alley wall body posts one guard (%d)"
 							% [map.seed_used, day, sides.size()])
 					if sides.is_empty():
 						continue
-					var spread_vertical := EventInstance._spread_is_vertical(map, body.position)
-					var offset := EventInstance._guard_post_offset(spread_vertical, sides[0])
+					var standing := EventInstance.new()
+					standing.setup(body.def, body.position, PackedVector2Array(), Vector2.RIGHT, map)
+					var spread_vertical := standing.runs_vertically()
+					standing.free()
+					var offset := EventFootprints.guard_post_offset(spread_vertical, sides[0])
 					var guard_pos := body.position + offset
 					var guard_along: float = guard_pos.y if vertical else guard_pos.x
 					t.check(guard_along < low or guard_along > high,
@@ -552,7 +621,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 ## width (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE`).
 ## `RegionPlanner._alley_mouth_wall_body()` trims it to a point that draws and collides at exactly
 ## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
-## `EventInstance._draw_spread` actually paints) stays within the alley's own tile rect on the
+## `SpreadLook._draw_spread` actually paints) stays within the alley's own tile rect on the
 ## across-alley axis — no tolerance needed, since the fit is exact rather than merely close.
 func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
 	var checked := 0
@@ -561,17 +630,15 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, day, tree)
+			var mouths := _alley_wall_mouths(plan)
 			for rect in plan.alley_walls:
-				var info := RegionPlanner._alley_border_segments(map, rect)
-				if info.is_empty():
-					continue
-				var vertical: bool = info[2]
+				var vertical := rect.size.x < rect.size.y
 				var world := map.tile_rect_to_world(rect)
 				var low: float = world.position.x if vertical else world.position.y
 				var high: float = world.end.x if vertical else world.end.y
 				for at_start in [true, false]:
 					checked += 1
-					var body := RegionPlanner._alley_mouth_wall_body(map, rect, vertical, at_start)
+					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
 					var centre: float = body.position.x if vertical else body.position.y
 					var half := body.def.obstructs_radius
 					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,
@@ -619,7 +686,7 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 			var boundary := _boundary_keys(region_plan)
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 			var blocked := map.closed_tiles.duplicate()
 			for plan_item in seals:
@@ -678,9 +745,9 @@ func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
 
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 			for plan_item in seals:
-				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan_item.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan_item.position))
 				if segment:
 					t.check(not boundary.has(segment.key()),
 							"seed %d day %d: seal at %s does not land on a region boundary"

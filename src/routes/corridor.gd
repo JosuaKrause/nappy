@@ -64,6 +64,9 @@ extends RefCounted
 ## The grid the tree this corridor answers for was grown on. `null` for an empty tree, which
 ## answers `AWAY` everywhere without needing a special case anywhere below.
 var _grid: ReachabilityGrid
+## The lattice of the map the tree was grown on (`CityMap.network`), which names the street a tile
+## is on. Set with `_grid`, so an empty tree's corridor needs none.
+var _network: StreetNetwork
 ## Node id -> how many grid steps off the tree it is, `DEEP` where the grid never reached it from
 ## the tree at all. A `PackedByteArray` indexed by node id rather than a `Dictionary`: node ids are
 ## dense over `0 ..< grid.node_count()`, and `EventScheduler` asks `depth()` of every sidewalk in
@@ -90,6 +93,7 @@ static func of(tree: RouteTree) -> Corridor:
 	if not tree or not tree.grid:
 		return corridor
 	corridor._grid = tree.grid
+	corridor._network = tree.network()
 	corridor._node_depth = PackedByteArray()
 	corridor._node_depth.resize(tree.grid.node_count())
 	corridor._node_depth.fill(DEEP)
@@ -131,11 +135,11 @@ func sites() -> Array[Vector3i]:
 ## the third would be a gradient nobody can feel — so the range saturates and the constant says
 ## where.
 func depth(tile: Vector2i) -> int:
-	var segment := StreetNetwork.segment_containing(tile)
-	if segment:
-		return mini(int(_segment_depth.get(segment.key(), DEEP)), DEEP)
 	if not _grid:
 		return DEEP
+	var segment := _network.segment_containing(tile)
+	if segment:
+		return mini(int(_segment_depth.get(segment.key(), DEEP)), DEEP)
 	var node := _grid.node_at(tile)
 	if node < 0:
 		return DEEP
@@ -151,7 +155,7 @@ func depth(tile: Vector2i) -> int:
 ## street rather than down the middle of it. So the sidewalk across the street from a route is
 ## ground the route never touches, although the street it belongs to is the route's own — which is
 ## exactly where a wall belongs. The kerb tint does not follow this grain: it marks the whole
-## street, both kerb lines (`City._tint_the_route_kerbs`, which asks `depth()`), so that which of a
+## street, both kerb lines (`City.tint_the_route()`, which asks the tree's `RouteTree.marks_the_kerb_at()`, `depth()` at zero), so that which of a
 ## street's two sidewalks the route walks is not painted on the ground.
 ##
 ## It is the depth map read at the cell grain rather than a second structure: a node the tree
@@ -173,7 +177,7 @@ func carries_a_route(tile: Vector2i) -> bool:
 func is_in_a_gap(tile: Vector2i) -> bool:
 	if _gaps.is_empty():
 		return false
-	var segment := StreetNetwork.segment_containing(tile)
+	var segment := _network.segment_containing(tile)
 	return segment != null and _gaps.has(segment.key())
 
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.

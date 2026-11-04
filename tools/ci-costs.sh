@@ -6,7 +6,7 @@
 #   tools/ci-costs.sh --dry-run    # print the diff tools/ci-costs.sh would make; write nothing
 #
 # tools/test.sh --record-costs measures from a run on this one machine; this instead reads the
-# same "-- suite  N ms" lines (tests/run_tests.gd's own "-- %-26s %7d ms" line) out of the shard
+# same "-- suite  N ms" lines (tests/run_tests.gd's own "-- %-36s %7d ms" line) out of the shard
 # job logs of the last few green `ci` runs on main via `gh`, and averages each suite across
 # however many of those runs actually carry a measurement for it -- a shard that crashed or hung
 # on one run still leaves the others. `gh run view <run-id> --job <job-id> --log` prefixes every
@@ -138,7 +138,7 @@ while IFS= read -r run_id; do
         fi
         # The same line tests/run_tests.gd prints and tools/test.sh --record-costs reads, just
         # with "<job>\t<step>\t<timestamp> " ahead of it here -- matched from "-- test_" on.
-        grep -hoE -- '-- test_[a-zA-Z_]+\.gd +[0-9]+ ms' "$log_file" \
+        grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$log_file" \
             | sed -E 's/^-- +//; s/ +ms$//' \
             | awk '{ printf "%s %s\n", $1, $2 }' \
             >> "$all_lines"
@@ -233,8 +233,8 @@ fi
 
 cp "$rendered" "$COST_FILE"
 
-# And verify after, per CLAUDE.md's "an edit fails loudly": the file on disk now has exactly the
-# row count just rendered, and the refresh sentence names both tools.
+# And verify after, so a write that went wrong is not taken for a success: the file on disk now
+# has exactly the row count just rendered, and the refresh sentence names both tools.
 written_row_count="$(grep -cE '^test_.*\.gd [0-9]+$' "$COST_FILE")"
 if [[ "$written_row_count" -ne "$merged_count" ]]; then
     echo "tools/ci-costs.sh: wrote $COST_FILE but it has $written_row_count suite rows, expected $merged_count" >&2

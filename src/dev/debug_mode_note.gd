@@ -1,16 +1,17 @@
 class_name DebugModeNote
 extends CanvasLayer
 ## The fixed note that a page is running with `?debug=1` (or `--debug`) — see docs/DECISIONS.md,
-## M133, "the readout on the live page". `main.gd` builds exactly one of these, only when
+## M133, "the readout on the live page". `DebugReadout` builds exactly one of these, only when
 ## `DevFlags.readout_requested()` holds, and never frees it, hides it or answers to any input:
 ## no key, no press and no screen this game ever opens takes it back off. An ordinary debug build
 ## shows the developer readout without this note, since nobody already running a debug build needs
 ## telling it is one — this exists for the one build that could otherwise pass for the ordinary
 ## release page a visitor gets everywhere else.
 ##
-## A separate node from `_status` (the readout `main.gd` already draws) on purpose: `_status.visible`
-## is flipped off by the title screen and by the `4` key, and a note that could be turned off the
-## same way would not be the fixed note the milestone asks for. Plain text is layout, not a picture
+## A separate node from `_status` (the label in `main`'s scene that `DebugReadout` draws the
+## readout on) on purpose: `_status.visible` is flipped off by the title screen and by the `4` key,
+## and a note that could be turned off the same way would not be the fixed note the milestone asks
+## for. Plain text is layout, not a picture
 ## — see the **cues** skill, "A picture is an asset, never code", which names a debug overlay
 ## alongside a scrim as the two things that rule does not cover.
 
@@ -20,7 +21,7 @@ const _MARGIN := Vector2(14.0, 14.0)
 ## Terse on purpose — a claim to keep reading, not a phrase to parse. "Debug" names what the
 ## flag is; "on" says the state rather than repeating the readout's own word for it.
 ##
-## **The build stamp follows the words** — `TitleScreen.build_text()`, `git describe`'s form and
+## **The build stamp follows the words** — `BuildInfo.build_text()`, `git describe`'s form and
 ## the commit, `v0.10.3 (875609a5)` — *(2026-09-13, playtest 70: "Debug mode should contain the
 ## commit + describe.")*, because a screenshot of a debug page is evidence of some build, and
 ## nothing else on it says which: the title screen's version line is off screen the moment a run
@@ -36,7 +37,7 @@ func _init() -> void:
 func _ready() -> void:
 	var label := Label.new()
 	label.name = "Note"
-	label.text = "%s   %s" % [_TEXT, TitleScreen.build_text()]
+	label.text = "%s   %s" % [_TEXT, BuildInfo.build_text()]
 	label.position = _MARGIN
 	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.85))
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))

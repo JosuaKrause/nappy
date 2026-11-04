@@ -8,8 +8,8 @@ extends RefCounted
 ## more followed by a space and another word or a `%` (so `"Day %d of %d"`, `"press a button"`
 ## and `"The end."` are sentences, `"res://x"`, `"ui/pause"`, `"%d"` and `"A"` are not).
 ## Comments are not code, and neither is the argument of a log or error call (`print`,
-## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`), which may run over several
-## lines; both are skipped before a string is judged.
+## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`, a run trace's `note`), which
+## may run over several lines; both are skipped before a string is judged.
 ##
 ## A text added to a screen's own script therefore fails here, with the file, the line and the
 ## text: it belongs in `Texts`, and the caller reads `Texts.<NAME>`. A developer readout is
@@ -25,19 +25,23 @@ const _ALLOWED_FILES := {
 	"res://src/telemetry/": "the run log's own lines",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
-	"res://src/autoload/game_state.gd": "log notes about nerves and resistance work",
+	"res://src/run/run_calendar.gd": "log notes about nerves and resistance work",
 	"res://src/autoload/visit_counter.gd": "the page-count script's own source",
 	"res://src/city/building.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/city_generator.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/recipe_city_builder.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/city/recipe_city_context.gd": "map validation errors and recipe checks, reported to a developer",
 	"res://src/routes/road_closure.gd": "the closure kinds' log names",
-	"res://src/crowd/crowd_agent.gd": "placement checks reported to a developer",
+	"res://src/crowd/lane_mover.gd": "placement checks reported to a developer",
+	"res://src/crowd/car_strategy.gd": "placement checks reported to a developer",
 	"res://src/crowd/crowd.gd": "placement checks reported to a developer",
 	"res://src/visuals/atlas_library.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/visuals/ground_layers.gd": "atlas and ground-layer errors reported to a developer",
 	"res://src/events/event_scheduler.gd": "placement reasons written to the run log",
-	"res://src/events/event_manager.gd": "log notes about placement",
+	"res://src/events/events_ahead.gd": "log notes about what is placed while she walks",
+	"res://src/events/warning_board.gd": "log notes about a warning withdrawn",
+	"res://src/events/event_spawner.gd": "log notes about scars and summons",
+	"res://src/events/checkpoint_controller.gd": "log notes about the doors' crossings",
 	"res://src/resistance/resistance_director.gd": "the director's own log lines and setup errors",
 	"res://src/player/baby.gd": "the debug HUD's reason a baby is not settling",
 }
@@ -48,36 +52,9 @@ const _ALLOWED_LITERALS := {
 		"%s via %d calm, %d cells%s": "the planner's summary line, written to the run log",
 		"%d open streets, %d placements": "the planner's summary line, written to the run log",
 	},
-	"res://src/main.gd": {
-		"the authored escape attempt was lost": "a scene recipe's playback error, written to its manifest",
-		"build %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"seed  %d   day %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"skip  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"phase %s  %.0fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"tile  %d, %d  (%s)": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"calm  %s    alley  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"speed       %6.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"run excess  %6.2f": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"events      %6d live of %d": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"ahead owed  %6d": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"crowd       %6d": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"nearest     %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"incoming    %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"decay       %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"net         %6.2f /s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"arrows/WASD walk": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"shift       run": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"esc         pause  (r restart, q quit)": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"seed  %d   escape": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"section %s  %.1fs left": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"calm  %s": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"tile  %d, %d  (building)": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"events      %6d live": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"%s %s age=%.1f/%.1f %.0fpx i=%.1f": "the dev overlay's readout (debug builds and `?debug=1` only)",
-		"no baby yet": "the run log's capture context",
-		"exc %d, sleep %d": "the run log's capture context",
-		"asked for a picture at %s": "a run-log line",
-		"asked for an animation burst at %s": "a run-log line",
+	"res://src/run_config.gd": {
+		"RunConfig is resolved once at boot and never changes; a write was refused":
+				"the warning for a write to a resolved configuration, read by a developer",
 	},
 	"res://src/ui/hud.gd": {
 		"asleep - go home": "the debug HUD's state line",
@@ -158,7 +135,8 @@ static func _log_opener_at(line: String, at: int) -> String:
 				or before.is_valid_int():
 			return ""
 	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
-			"assert(", "Telemetry.note("]:
+			"assert(", "Telemetry.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
+			"event.trace.note(", "_note("]:
 		if line.substr(at, opener.length()) == opener:
 			return opener
 	return ""

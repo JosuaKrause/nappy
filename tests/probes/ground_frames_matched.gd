@@ -41,7 +41,7 @@ func _start_frame() -> void:
 	if _request.is_empty() or _executed:
 		return
 	_begin = Time.get_ticks_usec()
-	_city._ground._process(float(_request.delta))
+	_city.scenery_ground._process(float(_request.delta))
 	# Roof animation shares the modeled clock too; actual uncapped FPS must not change
 	# frame selection or redraw cadence between strategies. Keep its work inside the span.
 	for item in _city.scenery._items:
@@ -77,7 +77,7 @@ func _finish_frame() -> void:
 	if not _executed:
 		return
 	var ended := Time.get_ticks_usec()
-	var ground := _city._ground
+	var ground := _city.scenery_ground
 	var gaps := 0
 	if not _city.scenery.camera_view().is_equal_approx(_request.view):
 		_failures.append("camera geometry differs from coverage geometry")
@@ -126,28 +126,28 @@ func _sample(view: Rect2, delta: float, queue := true) -> Dictionary:
 func _snapshot() -> Dictionary:
 	var pending := {}
 	if _stepped:
-		var jobs: Dictionary = _city._ground.get("pending")
+		var jobs: Dictionary = _city.scenery_ground.get("pending")
 		for key: Vector2i in jobs:
 			pending[key] = jobs[key].step
 	var chunks := {}
-	for key: Vector2i in _city._ground.chunks:
-		chunks[key] = _city._ground.chunks[key].get_instance_id()
-	return {"pending": pending, "chunks": chunks, "prepared": _city._ground.prepared,
-		"guards": _city.scenery.ordinary_guard_preparations, "evicted": _city._ground.evicted}
+	for key: Vector2i in _city.scenery_ground.chunks:
+		chunks[key] = _city.scenery_ground.chunks[key].get_instance_id()
+	return {"pending": pending, "chunks": chunks, "prepared": _city.scenery_ground.prepared,
+		"guards": _city.scenery.ordinary_guard_preparations, "evicted": _city.scenery_ground.evicted}
 
 func _run() -> void:
 	var cases: Array[Dictionary] = []
 	for spec: Array in [["south60", 60, Vector2.DOWN], ["south15", 15, Vector2.DOWN],
 			["diagonal15", 15, Vector2.ONE.normalized()]]:
 		GameState.start_run(4242)
-		_city = CITY.instantiate()
+		_city = RunCity.of_the_run(CITY)
 		add_child(_city)
 		_city.build(CityGenerator.generate(4242))
 		_city.scenery.set_process(false)
-		_city._ground.set_process(false)
-		_city._ground.elapsed = 0
-		_city_mode = _city._ground.mode
-		_stepped = _city._ground.mode == SceneryGround.Mode.STEPPED
+		_city.scenery_ground.set_process(false)
+		_city.scenery_ground.elapsed = 0
+		_city_mode = _city.scenery_ground.mode
+		_stepped = _city.scenery_ground.mode == SceneryGround.Mode.STEPPED
 		_camera = Camera2D.new()
 		_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		_camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -176,8 +176,8 @@ func _run() -> void:
 		_write_rows(str(spec[0]), rows)
 		# All strategies settle the same shoreline view for water/quad overhead comparison.
 		at = Vector2(_city.map.world_size().x / 2, _city.map.world_size().y)
-		_city._ground.clear()
-		_city._ground.elapsed = 0
+		_city.scenery_ground.clear()
+		_city.scenery_ground.elapsed = 0
 		_camera.position = at
 		_camera.force_update_scroll()
 		var steady_view := Rect2(at - EXTENT / 2, EXTENT)
@@ -198,7 +198,7 @@ func _run() -> void:
 		result.steady_pixel_sha256 = context.finish().hex_encode()
 		rows.clear()
 		var allocated := OS.get_static_memory_usage()
-		_city._ground.clear()
+		_city.scenery_ground.clear()
 		await get_tree().process_frame
 		await get_tree().process_frame
 		result.ground_release_static_bytes = allocated - OS.get_static_memory_usage()
@@ -225,7 +225,7 @@ func _workload() -> Dictionary:
 	var records: Array[String] = []
 	var water_surfaces := 0
 	var water_cells := 0
-	for layer: TileMapLayer in _city._ground.chunks.values():
+	for layer: TileMapLayer in _city.scenery_ground.chunks.values():
 		for cell in layer.get_used_cells():
 			records.append("%s:%s:%s" % [cell, layer.get_cell_source_id(cell), layer.get_cell_atlas_coords(cell)])
 		for child in layer.get_children():
@@ -235,7 +235,7 @@ func _workload() -> Dictionary:
 					water_cells += 1
 					records.append("water:%s" % cell)
 	records.sort()
-	return {"regions": _city._ground.chunks.size(), "cells": records.size(),
+	return {"regions": _city.scenery_ground.chunks.size(), "cells": records.size(),
 		"water_cells": water_cells, "water_surfaces": water_surfaces,
 		"cell_sha256": "\n".join(records).sha256_text()}
 

@@ -39,10 +39,10 @@ func run(t) -> void:
 func _ground_rates(t) -> void:
 	print("\n== net excitement rate by ground, %.0fs walks, %d seeds ==" % [SECONDS, SEEDS.size()])
 	print("walking decay %.2f/s  ×  calm %.2f  precinct %.2f  street 1.00  main road %.2f"
-			% [Tuning.EXCITEMENT_DECAY_WALKING, Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
-			Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
-			Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
-	print("alley trickle %.2f/s" % Tuning.EXCITEMENT_FROM_ALLEY)
+			% [Tuning.EXCITEMENT_DECAY_WALKING, City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,
+			City.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER,
+			City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+	print("alley trickle %.2f/s" % Baby.EXCITEMENT_FROM_ALLEY)
 
 	for day in SAMPLE_DAYS:
 		var totals := {}
@@ -51,7 +51,7 @@ func _ground_rates(t) -> void:
 		print("  %-16s %8s %8s %8s %10s %8s  %s"
 				% ["ground", "crowd/s", "ground/s", "net/s", "clears in", "×", "seed"])
 		for city_seed in SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city: City = RunCity.of_the_run(CITY_SCENE)
 			t.add_child(city)
 			city.build(CityGenerator.generate(city_seed))
 			for row in _legs(city):
@@ -126,9 +126,9 @@ func _walk(city: City, from: Vector2, to: Vector2, day: int, city_seed: int) -> 
 		city.crowd.step(STEP)
 
 		var multiplier := city.decay_multiplier(at)
-		var incoming := city.crowd.total_excitement_at(at)
+		var incoming := city.crowd.sources.total_at(at)
 		if city.is_alley(at):
-			incoming += Tuning.EXCITEMENT_FROM_ALLEY
+			incoming += Baby.EXCITEMENT_FROM_ALLEY
 		crowd_total += incoming
 		ground_total += Tuning.EXCITEMENT_DECAY_WALKING * multiplier
 		var key := "%.2f" % multiplier
@@ -234,14 +234,14 @@ func _alley_leg(map: CityMap) -> Array:
 func _cost_table() -> void:
 	print("\n== docs/EVENTS.md, \"What an event actually costs\" ==")
 	print("walking decay %.2f/s, running decay %.2f/s, running penalty %.2f/s"
-			% [Tuning.EXCITEMENT_DECAY_WALKING, Tuning.EXCITEMENT_DECAY_RUNNING,
-			Tuning.EXCITEMENT_FROM_RUNNING])
+			% [Tuning.EXCITEMENT_DECAY_WALKING, Baby.EXCITEMENT_DECAY_RUNNING,
+			Baby.EXCITEMENT_FROM_RUNNING])
 	var rows: Array = []
 	for def in EventCatalogue.all():
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
 				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
-				"pursues": def.pursues, "emission": def.mean_emission_along_the_line(),
+				"pursues": def.pursuit != null, "emission": def.mean_emission_along_the_line(),
 				"intensity": def.intensity, "outer": def.outer_radius})
 	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
@@ -270,5 +270,5 @@ func _cost_table() -> void:
 ## `tests/test_events.gd._cost_to_run_through`, which is where the assertion lives.
 func _run_through_cost(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (def.mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_RUNNING
-			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+	return (def.mean_emission_along_the_line() - Baby.EXCITEMENT_DECAY_RUNNING
+			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds

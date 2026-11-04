@@ -24,7 +24,7 @@ var _stroller: Stroller
 var _baby: Baby
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
@@ -38,7 +38,7 @@ func run(t) -> void:
 
 func _start_day(day: int) -> void:
 	var consumed: Array[String] = []
-	_city.events.start_day(day, _rng(day, "events"), consumed)
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
 
 ## Puts the world around a point the way it would be for a player standing there.
 ##
@@ -93,7 +93,7 @@ func _walk_until_asleep(at: Vector2, seconds: float) -> float:
 		_city.crowd.step(STEP)
 		for instance in _city.events.instances():
 			if not instance.is_finished:
-				instance._process(STEP)
+				instance.step(STEP)
 		_baby._physics_process(STEP)
 		if _baby.state == GameEnums.BabyState.ASLEEP:
 			return i * STEP
@@ -181,7 +181,7 @@ func _quietest_park() -> Vector2:
 	for block in _city.map.calm_blocks:
 		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
 		_city.events.stream_around(centre)
-		var here := _city.events.total_excitement_at(centre)
+		var here := _city.events.sources.total_at(centre)
 		if here < quietest:
 			quietest = here
 			best = centre

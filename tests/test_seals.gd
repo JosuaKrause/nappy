@@ -48,6 +48,13 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------------ setup ---
 
+## Where a hard seal's bodies stand across `segment`: the spacing the planner gives any world rect
+## (`SealPlanner.positions_across`, which `place_hard_on`, the door structure and the mast sites
+## all call), over the street's whole tile rect.
+func _hard_positions(map: CityMap, segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
+	return SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
+			segment.horizontal, def.obstructs_radius)
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -84,7 +91,7 @@ func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
 	var key := "%d:%d" % [map.seed_used, day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
-		_seal_cache[key] = SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		_seal_cache[key] = SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	return _seal_cache[key]
 
 ## Every real, non-home, non-spine, off-tree street — what a day's seals are supposed to cover
@@ -92,13 +99,13 @@ func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
 func _candidate_segments(map: CityMap, tree: RouteTree,
 		home: StreetNetwork.Segment) -> Dictionary:
 	var found := {}
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		if home and key == home.key():
 			continue
-		if SealPlanner._is_the_main_road(map, segment):
+		if map.is_main_road(not segment.horizontal, segment.a.x):
 			continue
 		found[key] = true
 	return found
@@ -108,7 +115,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> Dictionary:
 	var found := {}
 	for plan in planned:
-		var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 		if segment:
 			found[segment.key()] = true
 	return found
@@ -116,13 +123,13 @@ func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> D
 # ---------------------------------------------------------------------- the core ---
 
 ## How far the share of streets sealed from the gatehouse day on may sit from
-## `Tuning.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days from it to the end of the run — about a
+## `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days from it to the end of the run — about a
 ## thousand rolls, so a share honoured by the roll lands well inside this and one not honoured at
 ## all (every street sealed, or none) lands well outside it.
 const _SEAL_SHARE_TOLERANCE := 0.1
 
 ## The whole point: a seal stands on every off-tree, real, non-home street, and nowhere else —
-## before the gatehouse day. From `Tuning.REGION_WALL_FIRST_DAY` on, `Tuning.GATEHOUSE_DAY_SEAL_SHARE`
+## before the gatehouse day. From `Tuning.REGION_WALL_FIRST_DAY` on, `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`
 ## of those streets carry one (azure-puffin, point 4: "fewer of all three"), so there the check is
 ## the share sealed over the seed's late days, and still never a seal off the candidates.
 func _test_off_tree_streets_are_sealed(t) -> void:
@@ -159,10 +166,10 @@ func _test_off_tree_streets_are_sealed(t) -> void:
 				"seed %d: the days from the gatehouse day had off-tree streets to seal (%d)"
 				% [map.seed_used, late_candidates])
 		var share := float(late_sealed) / maxf(1.0, float(late_candidates))
-		t.check(absf(share - Tuning.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
+		t.check(absf(share - SealPlanner.GATEHOUSE_DAY_SEAL_SHARE) <= _SEAL_SHARE_TOLERANCE,
 				"seed %d: from the gatehouse day %.2f of the off-tree streets are sealed (%d of %d), "
 				% [map.seed_used, share, late_sealed, late_candidates]
-				+ "the share asked for is %.2f" % Tuning.GATEHOUSE_DAY_SEAL_SHARE)
+				+ "the share asked for is %.2f" % SealPlanner.GATEHOUSE_DAY_SEAL_SHARE)
 
 func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 	for map in _maps:
@@ -171,7 +178,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
 			for plan in planned:
-				var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+				var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 				if not segment:
 					continue
 				t.check(not tree.is_on_the_tree(segment.key()),
@@ -181,7 +188,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 						"seed %d day %d: a seal stands on the doorstep's own street"
 						% [map.seed_used, day])
 
-## The main road is refused as a seal candidate outright — see `SealPlanner._is_the_main_road` and
+## The main road is refused as a seal candidate outright — see `CityMap.is_main_road` (which the planner asks) and
 ## its class doc, "The main road is exempt too". Checked over every real vertical segment at
 ## `map.main_road`'s own corridor index, not only the ones sampled for the other tests, since a
 ## seal here would wall the one street the design deliberately leaves open to cross.
@@ -192,8 +199,8 @@ func _test_the_main_road_is_never_sealed(t) -> void:
 		for day in [1, 7, 14]:
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
-			for segment in StreetNetwork.segments():
-				if not SealPlanner._is_the_main_road(map, segment):
+			for segment in map.network.segments():
+				if not map.is_main_road(not segment.horizontal, segment.a.x):
 					continue
 				t.check(not sealed.has(segment.key()),
 						"seed %d day %d: a seal stands on the main road at %s"
@@ -207,7 +214,7 @@ func _test_the_tree_itself_is_untouched(t) -> void:
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
 		var before := tree.cells()
-		SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var after := tree.cells()
 		t.check(before.size() == after.size(),
 				"seed %d: sealing does not add or remove tree cells (%d before, %d after)"
@@ -246,7 +253,7 @@ func _test_the_doorstep_reaches_the_corridor(t) -> void:
 				used_the_spine += 1
 			var joined := false
 			for junction in [home.a, home.b]:
-				for segment in StreetNetwork.at_junction(junction):
+				for segment in map.network.at_junction(junction):
 					if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 						joined = true
 			t.check(joined,
@@ -284,7 +291,7 @@ func _blocked_for_day(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 	var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree)
 	map.close_streets(closures)
-	var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 	var blocked := map.closed_tiles.duplicate()
 	for plan in seals:
 		_add_circle(map, blocked, plan.position, plan.def.obstructs_radius)
@@ -312,7 +319,7 @@ func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictio
 
 ## Restates playtest 22's finding 5 as a number rather than a word: not merely "reachable", but
 ## reachable **without setting foot on the main road at all** — the one street whose excitement
-## decay multiplier is `Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` (0.6, against an ordinary
+## decay multiplier is `City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` (0.6, against an ordinary
 ## street's 1.0 and calm's 2.2), and the ground the reported run was forced onto: "the only way out
 ## was alongside the main road which basically ends the day."
 ##
@@ -335,13 +342,13 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 			t.check(_some_calm_is_reached(map, grid, blocked),
 					("seed %d day %d: some calm area is reachable without the main road " +
 					"(decay ×%.1f, the ground playtest 22's run was forced onto)")
-					% [map.seed_used, day, Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
+					% [map.seed_used, day, City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 
 # ------------------------------------------------------------------------ alleys ---
 
 ## An alley that touches the tree at either end is **never** walled — that half of the rule is
 ## still absolute. One that touches it at neither end is only a *candidate*, sealed with chance
-## `Tuning.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
+## `SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
 ## probability of blocking off alleys should be way lower")* — so the second half is checked as a
 ## rate over many days and seeds rather than as a per-alley certainty. Re-derives the same rule
 ## `SealPlanner._seal_alley_mouths` uses, which is what catches the rule and the placement drifting
@@ -356,7 +363,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 			var off_street_tiles := {}
 			for plan in planned:
 				var tile := map.world_to_tile(plan.position)
-				if not StreetNetwork.segment_containing(tile):
+				if not map.network.segment_containing(tile):
 					off_street_tiles[tile] = true
 
 			for rect in map.alley_rects:
@@ -366,8 +373,8 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 				var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 				var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 				var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-				var segment_a := StreetNetwork.beside_block(block, side_a)
-				var segment_b := StreetNetwork.beside_block(block, side_b)
+				var segment_a := map.network.beside_block(block, side_a)
+				var segment_b := map.network.beside_block(block, side_b)
 				var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
 						or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
 				var sealed_here := false
@@ -387,9 +394,9 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 		# A wide band around the constant: this is a Bernoulli rate over a few hundred draws, not
 		# an exact fraction, and the point of the change is that it is well short of 1.0 rather than
 		# that it hits a precise number.
-		t.check(rate < Tuning.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
+		t.check(rate < SealPlanner.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
 				"disconnected alleys are sealed at about the configured rate (%.2f of %d, chance %.2f)"
-				% [rate, candidates, Tuning.ALLEY_MOUTH_SEAL_CHANCE])
+				% [rate, candidates, SealPlanner.ALLEY_MOUTH_SEAL_CHANCE])
 		t.check(rate < 0.5,
 				"disconnected alleys are the exception now, not the rule (%.2f of %d sealed)"
 				% [rate, candidates])
@@ -411,13 +418,22 @@ func _test_candidate_shapes(t) -> void:
 						% [candidate.id, id])
 
 ## The milestone's own requirement: the catalogue can seal a street from day 1, with nothing new
-## drawn. `SealPlanner._eligible` is the same check `_pick_candidate` uses at dawn, asked here
-## directly rather than re-derived, so this fails the day the candidate list stops honouring it.
+## drawn. Asked of the day the game plans (`plan_day` on day 1's spec), which is what the dawn
+## calls, rather than of the planner's private gate: some planned seal standing on a street (an
+## alley's mouth can be walled with a soft picture's row too) is one of a soft picture's rows.
 func _test_day_one_has_a_working_soft_pair(t) -> void:
-	var has_soft := false
+	var soft_ids := {}
 	for candidate in SealPlanner.candidates():
-		if candidate.strength == SealPlanner.Strength.SOFT and SealPlanner._eligible(candidate, 1):
-			has_soft = true
+		if candidate.strength == SealPlanner.Strength.SOFT:
+			for id in candidate.def_ids:
+				soft_ids[id] = true
+	var has_soft := false
+	for map in _maps:
+		for plan in _seals_for(map, 1):
+			# A pair stands on a street; an alley's mouth may be walled with a soft picture's row too.
+			var on_a_street := not map.alley_at(map.world_to_tile(plan.position)).has_area()
+			if plan.is_placed() and soft_ids.has(plan.def.id) and on_a_street:
+				has_soft = true
 	t.check(has_soft, "day 1 has at least one working soft seal pair")
 
 # ---------------------------------------------------------------------- thinning ---
@@ -469,10 +485,10 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 			continue
 		# Sealing (and its thinning pass) is run for its side effect on `map.closed_tiles`/RNG
 		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.
-		SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
 		for junction in [home.a, home.b]:
-			for segment in StreetNetwork.at_junction(junction):
+			for segment in map.network.at_junction(junction):
 				if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 					joined = true
 		t.check(joined,
@@ -484,12 +500,12 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
 ## The first real street the map offers, for the two checks below — the geometry they check does
 ## not depend on which street it is, only that it is one `map.has_street` actually carries.
 func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if map.has_street(segment.key()):
 			return segment
 	return null
 
-## `SealPlanner._hard_positions`'s own contract: a hard seal's bodies span the street's whole
+## `SealPlanner.positions_across`'s contract for a hard seal: a hard seal's bodies span the street's whole
 ## 192px width with no gap between them, whatever the row's own `obstructs_radius` is — see
 ## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
 ## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
@@ -510,7 +526,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 		if not def:
 			continue
 		checked += 1
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := _hard_positions(map, segment, def)
 		t.check(positions.size() > 0, "hard seal %s places at least one body" % candidate.id)
 		var along: Array[float] = []
 		for pos in positions:
@@ -529,7 +545,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 	t.check(checked >= 5, "and every hard candidate was checked, M64's four included (%d)" % checked)
 
 ## `fallen_tree`, `car_accident`, `burst_water_main` and `collapsed_frontage` are authored at
-## `obstructs_radius` 96 — exactly half the 192px street — so `_hard_positions` places exactly one
+## `obstructs_radius` 96 — exactly half the 192px street — so `positions_across` places exactly one
 ## body spanning it edge to edge, rather than repeating the scene several times across the street.
 ## See each row's own class doc in `event_catalogue.gd`.
 func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
@@ -542,7 +558,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 		t.check(def != null, "'%s' is a real catalogue row" % id)
 		if not def:
 			continue
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := _hard_positions(map, segment, def)
 		t.check(positions.size() == 1,
 				"'%s' is one continuous scene, so it places exactly one body (got %d)"
 				% [id, positions.size()])
@@ -578,7 +594,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 ## `Tuning.METER_MAX / 2` line `tests/test_crowd.gd` draws between *expensive* and *fatal*, taken
 ## deliberately on the fatal side.
 ##
-## **Walked, not asserted about the constant.** `Tuning.CAR_ACCIDENT_INTENSITY` is set from
+## **Walked, not asserted about the constant.** `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from
 ## `tests/probes/m118_crash_gap.gd`, which walks the same lines and prints them; this holds the
 ## thing that number was chosen for, so a change to the falloff shape, the radii or the parts fails
 ## here rather than passing a number back to itself. The **cheapest** open line is what it measures:
@@ -642,13 +658,13 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * step
 		travelled += Tuning.WALK_SPEED * step
-		paid += (instance.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
+		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * step
 	return paid
 
 # ------------------------------------------------------------------ street trees ---
 
 ## **A seal never stands in a street tree** — `docs/CITY.md`, "Street trees". A seal does not go
-## through `EventScheduler._open_ground_for`, because `plan_day` puts one on every off-tree street
+## through `EventScheduler.open_ground_for`, because `plan_day` puts one on every off-tree street
 ## whether or not the catalogue would have been offered that tile, so the refusal lives in
 ## `SealPlanner._seal_along_tile` instead and this is what holds it. Stated over a whole run of
 ## days rather than one, since which street gets which picture is a daily roll.
@@ -680,7 +696,7 @@ func _test_no_seal_reaches_over_a_building(t) -> void:
 	var checked := 0
 	var barricades := 0
 	for map in _maps:
-		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		var ground := WalkGround.new(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			for plan in _seals_for(map, day):
 				checked += 1
@@ -719,14 +735,14 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
-			var planned := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day))
+			var planned := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 			var felled := {}
 			for plan in planned:
 				if plan.def.id != "fallen_tree":
 					continue
 				found += 1
 				var tile := map.world_to_tile(plan.position)
-				var segment := StreetNetwork.segment_containing(tile)
+				var segment := map.network.segment_containing(tile)
 				t.check(segment != null and lined.has(segment.key()),
 						"seed %d day %d: a fallen tree seals %s, which has no trees on it"
 						% [map.seed_used, day, tile])
@@ -759,7 +775,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## rules": *"the seals `SealPlanner` places before the scheduler runs reach crossings the rules
 ## never see, the same question one step out"*) was invisible to the very rule written to keep a
 ## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
-## wall's own bodies into the three rules — not into `_room_around`'s spacing, which stays asked
+## wall's own bodies into the three rules — not into `room_around`'s spacing, which stays asked
 ## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
 ##
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`
@@ -815,7 +831,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 			var boundary := {}
 			for segment in region_plan.walls:
@@ -826,7 +842,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 				boundary[rect.position] = true
 			for rect in region_plan.alley_doors:
 				boundary[rect.position] = true
-			var seals := SealPlanner.plan_day(map, day, tree, _seal_rng(map, day), boundary,
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
 					map.held_segments)
 			var standing: Array[EventScheduler.Planned] = []
 			standing.append_array(seals)
@@ -838,7 +854,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var no_target: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
-			var rows := EventScheduler.build_day(day, events_rng, map, no_one_shots, no_scars,
+			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map, no_one_shots, no_scars,
 					no_calm, tree, 0, PackedVector2Array(), no_target, standing)
 
 			var corridor := Corridor.of(tree)
@@ -849,7 +865,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var everything: Array[EventScheduler.Planned] = rows.duplicate()
 			everything.append_array(standing)
 			for row: EventScheduler.Planned in rows:
-				if not row.is_placed() or not EventScheduler._counts_against_the_line(row):
+				if not row.is_placed() or not row.counts_against_the_line():
 					continue
 				checked += 1
 				t.check(EventScheduler._leaves_the_route_junctions_open(row, map, corridor, ground,

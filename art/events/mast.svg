@@ -1,6 +1,6 @@
 <!-- Loudspeaker mast: a pole and horns standing on a street. viewBox 0 0 20 58;
      ground anchor=(10,58); the horn housing's own centre is (10,14) — see
-     EventInstance._MAST_LAMP_AT/_MAST_PULSE_AT, which read the same point from the ground up. -->
+     EventPictures.MAST_LAMP_AT/MAST_PULSE_AT, which read the same point from the ground up. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="58" viewBox="0 0 20 58" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <ellipse cx="10" cy="56.5" rx="5" ry="1.6" fill="#221f28" stroke="none" opacity="0.35"/>
   <rect x="8.5" y="17" width="3" height="38" fill="#6a6a72"/>

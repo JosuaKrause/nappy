@@ -13,19 +13,14 @@ extends RefCounted
 ## of the OS directly at every call site would leave the web shape asserted by nothing at all.
 ## `hud._debug` follows the same pattern for its own release/debug gate.
 ##
-## **`--web` previews the web shape from a desktop debug build**, the role `TouchInput`'s own
-## `--touch` plays for its platform fact: without it, the hidden-`Q` hint this class exists to show
-## can only ever be looked at by exporting the game and opening it in a browser. Gated behind
-## `OS.is_debug_build()` because it only changes what a screen *shows*, never what quitting *does* —
-## a release build still tells the truth about whether `SceneTree.quit()` works, so there is nothing
-## for the override to reach that the platform is not already deciding honestly.
+## **`--web` previews the web shape from a desktop debug build** (`RunConfig.web_preview`), the role
+## `TouchInput`'s own `--touch` plays for its platform fact: without it, the hidden-`Q` hint this
+## class exists to show can only be looked at by exporting the game and opening it in a browser.
+## It only changes what a screen *shows*, never what quitting *does*. The run's configuration is
+## handed in, so nothing here reads the command line; with none handed in the answer is the
+## platform's alone.
 
-static func available() -> bool:
-	if _web_override(OS.is_debug_build(), OS.get_cmdline_user_args()):
+static func available(config: RunConfig = null) -> bool:
+	if config != null and config.web_preview:
 		return false
 	return not OS.has_feature("web")
-
-## The bare check `available()` runs through, pulled out so a test can drive it with a synthetic
-## command line and a chosen build kind rather than a real debug build carrying `--web` on its own.
-static func _web_override(debug_build: bool, args: PackedStringArray) -> bool:
-	return debug_build and "--web" in args

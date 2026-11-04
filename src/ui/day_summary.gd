@@ -1,11 +1,18 @@
 extends CanvasLayer
-## The screen between days, the one at the end of a run, and the two the escape uses — the brief
-## before a lost section starts again, and the last screen of the sequence.
+## The screen between days, the one at the end of a run, and the escape's last screen. The escape's
+## two sections are days, so their briefs and their outcome screens are a day's, with the section's
+## own words where "Day N of 14" stands.
+##
+## **It only renders.** What a screen says is a `SummaryModel` (`show_summary()`), built by `main`
+## from the run, the day's end and `Texts`; the screen breaks its prose between sentences to each
+## label's width (`SentenceLines`) and draws it. Which screen it is in the run is the mode
+## `RunFlow` raised it in, which the screen hands back with its one continue
+## (`continued(raised_in)`).
 ##
 ## **A normal run's last nerve comes here as a lost day, not as an ending**: the same screen any
 ## lost day reaches, saying the day she goes back to and drawing the nerves she has again, with the
-## ordinary continue that carries on into it (`show_day()`'s `back_to_checkpoint`). The ending with
-## no continue, `GAME OVER`, is hard mode's alone — see `_refresh_buttons()`.
+## ordinary continue that carries on into it (`SummaryModel.day_over()`, `DayEnd.goes_back`). The
+## ending with no continue, `GAME OVER`, is hard mode's alone — see `_refresh_buttons()`.
 ##
 ## Also the pause: the tree is paused while this is up, so the city keeps its state and the
 ## day can simply be restarted rather than rebuilt.
@@ -14,15 +21,17 @@ extends CanvasLayer
 ## `main._restart_run()` `PauseScreen.restart_requested` reaches — see that function's own doc for
 ## why the wiring is pulled into one place rather than left beside each screen's own instantiation.
 
-signal continued()
+## The screen's continue, carrying the `RunFlow.Mode` the screen was raised in, as an `int` since a
+## cross-script enum is not the same type as itself as a parameter (the **godot** skill).
+signal continued(raised_in: int)
 signal restart_requested()
 
 @onready var _root: Control = $Root
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
-## Empty and hidden except when `show_day_brief()` is given a lost-day note — the one line the day
-## brief shows that is not always the same words, see that function's own doc. Its own label, not
-## folded into `_body`, since the two hide independently of each other.
+## Empty and hidden except on a day brief given a lost-day note (`SummaryModel.note`) — the one line
+## the day brief shows that is not always the same words. Its own label, not folded into `_body`,
+## since the two hide independently of each other.
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The morning's own line — one or two plain sentences saying what is true of the city by that
@@ -54,6 +63,19 @@ signal restart_requested()
 ## `_handle_restart_touch()` below.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
+
+## Hands the screen's two buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -72,11 +94,14 @@ func _ready() -> void:
 	_restart_button.hold_completed.connect(func() -> void: restart_requested.emit())
 	_root.hide()
 
-## Whether the screen currently up is the ending — read by `_refresh_buttons()` to decide whether
-## `_continue_column` shows, and set before `_present()` runs rather than passed as an argument to
-## it, since `_present()` is also what `_restart_button.cancel_hold()` and `_continuing`'s own reset
-## share and neither of those needs to know which screen raised it.
-var _showing_ending := false
+## Whether the screen up shows the continue button (`SummaryModel.shows_continue`, false on an
+## ending) — read by `_refresh_buttons()`, and set by `show_summary()` before `_present()` runs
+## rather than passed to it, since `_present()` is also what `_restart_button.cancel_hold()` and
+## `_continuing`'s own reset share and neither of those needs to know which screen raised it.
+var _continue_shown := true
+
+## The `RunFlow.Mode` the screen up was raised in, as an `int`, sent back with its continue.
+var _raised_in := 0
 
 ## Shown on every device — see `PauseScreen._refresh_buttons()`, the same split on the same
 ## question, now answered the same way here: one control scheme means the same buttons everywhere.
@@ -93,223 +118,29 @@ var _showing_ending := false
 ## own answer to whether the hold still earns its keep with no day left to protect.
 func _refresh_buttons() -> void:
 	_buttons.visible = true
-	_continue_column.visible = not _showing_ending
+	_continue_column.visible = _continue_shown
 
-## What a saved game opens on instead of starting the day outright, once the title's own start
-## button has been pressed — `main._show_the_resume_gate()`'s own call, made after
-## `GameState.finish_day()` has already charged whatever the load itself costs, so `day` and
-## `nerves` are already the numbers the retry (or the day exactly as the save left it) actually
-## has. Three things, no more: the day, the nerves, and the morning's own line from `Texts.DAY_BRIEF`.
-## `lost_note` is `Texts.RESUMED_DAY_LOST` when the load itself spent a nerve, or `""` for a
-## save that cost nothing, in which case this is exactly what a fresh day 1 skips by going
-## straight from the title into `main._engage_the_day()` instead. Continuing from here reaches
-## that same function, through `main._on_summary_continued()`'s own `_resume_gate_open` branch —
-## the moment the day actually starts, and the moment the save says so.
-func show_day_brief(day: int, nerves: int, lost_note: String = "") -> void:
-	_heading.hide()
-	_showing_ending = false
-	_note.text = SentenceLines.break_for_label(lost_note, _note)
-	_note.visible = lost_note != ""
-	_title.text = Texts.SUMMARY_DAY % [day, Tuning.RUN_LENGTH_DAYS]
-	# Stars, through the same `NerveDisplay.stars()` the HUD, the day summary and the pause screen
-	# all read the count through — never a digit.
-	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
-	var brief_text: String = Texts.DAY_BRIEF.get(day, "")
-	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
-	_brief.visible = brief_text != ""
+## Puts `model` on screen, raised in `raised_in` (a `RunFlow.Mode`, as an `int`), and pauses the
+## tree behind it. Every label is set from the model, so nothing one screen showed leaks onto the
+## next: a hidden heading, note or morning line is one the model leaves empty. The title, the note,
+## the morning line and the body's opening prose are broken between sentences to their labels'
+## widths (`SentenceLines.break_for_label()`), the title only when it is prose (`title_is_prose`: the
+## clock line, a section's words, rather than "Day N of 14" or an ending's title). `_hint` is always
+## empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still carries on, but
+## the continue/restart pair already says what a tap does — see `PauseScreen._hint`'s own doc.
+func show_summary(model: SummaryModel, raised_in: int) -> void:
+	_raised_in = raised_in
+	_heading.text = model.heading
+	_heading.visible = model.heading != ""
+	_title.text = SentenceLines.break_for_label(model.title, _title) if model.title_is_prose \
+			else model.title
+	_note.text = SentenceLines.break_for_label(model.note, _note)
+	_note.visible = model.note != ""
+	_body.text = model.body(SentenceLines.break_for_label(model.body_prose, _body))
+	_brief.text = SentenceLines.break_for_label(model.brief, _brief)
+	_brief.visible = model.brief != ""
 	_hint.text = ""
-	_present()
-
-## `elapsed_seconds` is the day's own clock at the instant it ended — `main._on_day_finished()`
-## takes `DayController.time_total - DayController.time_remaining`, clamped to the day, before
-## anything about the next day can touch either field, and hands it here alongside the reason.
-## Defaults to `0.0` only so the handful of test call sites that do not care about the clock (the
-## pause and resume rig in `tests/test_pause.gd`) do not all need an argument they never read.
-##
-## **Everything but the one line about the day that ended is the coming day's.** The morning a
-## player reads this screen for is the one about to start, not the one just walked, so `_title`
-## carries only the one exception — the clock the day ended on, worded by `_elapsed_line()` below
-## — while `_body` and `_brief` both read `GameState.day` rather than a `finished_day` argument,
-## which this function no longer takes: a win has already moved `GameState.day` on by the time
-## this runs (`main._on_day_finished()` calls `GameState.finish_day()` before this), and a loss
-## leaves it exactly on the day being retried, so nothing this screen shows still needs the day
-## that ended passed in separately from `GameState.day` — `_elapsed_line()` below reads only
-## `result` and `reason`, neither of which is a day number.
-##
-## **`back_to_checkpoint` is a normal run's last nerve**: `GameState.finish_day()` has already put
-## the run back at its checkpoint's dawn with every nerve, so `GameState.day` is the day she goes
-## back to and `nerves` is five. The line that says she tries the day again says that instead —
-## *(gentle-osprey, the player's own example: "Back to day 8")* — and the continue under it carries
-## on into that day.
-func show_day(result: GameEnums.DayResult, reason: String, nerves: int,
-		elapsed_seconds: float = 0.0, back_to_checkpoint := false) -> void:
-	_heading.hide()
-	_showing_ending = false
-	# Never carried from a day brief this same day might have opened on — this is a real day's own
-	# result, not the load-time note a brief shows instead of one.
-	_note.visible = false
-	# The one line about the day that just ended — see this function's own doc for why it moved
-	# here rather than staying a line inside `_body`.
-	_title.text = SentenceLines.break_for_label(
-			_elapsed_line(result, reason, GameState.format_clock_seconds(elapsed_seconds)), _title)
-	var retrying := result != GameEnums.DayResult.WON and nerves > 0
-	var lines: Array[String] = [Texts.SUMMARY_DAY % [GameState.day, Tuning.RUN_LENGTH_DAYS]]
-	lines.append("")
-	# The state she carries into the coming day, shown on a win as much as a loss, and drawn as
-	# stars — never a digit — the way every other screen that shows the count now does.
-	lines.append(Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves))
-	# The calendar does not move on a loss, so the screen says so rather than leaving the player
-	# to notice tomorrow that it is still today — or, when the last nerve sent a normal run back,
-	# which day it went back to, and why every star is there again.
-	if back_to_checkpoint:
-		lines.append(back_to_line(GameState.day))
-	elif retrying:
-		lines.append(Texts.SUMMARY_TRY_AGAIN % GameState.day)
-	# The tally is the only place the subquest is ever spelled out. In the world it is chalk on
-	# a wall.
-	if GameState.has_joined_resistance():
-		lines.append("")
-		lines.append(_resistance_tally_line())
-	_body.text = "\n".join(lines)
-	var brief_text: String = Texts.DAY_BRIEF.get(GameState.day, "")
-	_brief.text = SentenceLines.break_for_label(brief_text, _brief)
-	_brief.visible = brief_text != ""
-	# Always empty. *(2026-09-06: "never should it be mentioned to the user".)* `space` still
-	# carries on, but the continue/restart pair below already says what a tap does, and nothing
-	# left to say here does not name a key — see `PauseScreen._hint`'s own doc for the same call
-	# made there.
-	_hint.text = ""
-	_present()
-
-## The line under the title that says when the day ended — the ask behind M154: *"can you show
-## the time of the day when dieing/completing a day ... fell asleep after xx:xx or something like
-## that"*. `clock` is `GameState.format_clock_seconds()`'s `m:ss`, never the ending screen's
-## millisecond form (`GameState.format_clock()`), because the player asked for the HUD clock's own
-## shape and named the millisecond one as what they did not want.
-##
-## Phrased per outcome rather than one suffix appended everywhere, because `reason` is not a single
-## shape: `LOST_CRYING`'s reason names the moment itself ("She started crying. ...") so the clock
-## reads into that first sentence rather than trailing the second one, and every other reason keeps
-## its own sentence whole with the clock as a sentence of its own after it. `LOST_TIMEOUT` shows no
-## clock at all — dusk *is* the whole day, so printing the day's own length back is the total the
-## TODO item says the player does not want here, only in a different place.
-func _elapsed_line(result: GameEnums.DayResult, reason: String, clock: String) -> String:
-	match result:
-		GameEnums.DayResult.WON:
-			return Texts.SUMMARY_FELL_ASLEEP % clock
-		GameEnums.DayResult.LOST_TIMEOUT:
-			return reason
-		GameEnums.DayResult.LOST_CRYING:
-			var cut := reason.find(". ")
-			if cut == -1:
-				return Texts.SUMMARY_REASON_AFTER % [reason, clock]
-			return Texts.SUMMARY_REASON_AFTER_REST % [reason.substr(0, cut), clock, reason.substr(cut + 1)]
-		_:
-			return Texts.SUMMARY_REASON_THEN_CLOCK % [reason, clock]
-
-## What the lost-day screen says when a normal run's last nerve sent it back to `day`, its
-## checkpoint.
-static func back_to_line(day: int) -> String:
-	return Texts.SUMMARY_BACK_TO_CHECKPOINT % day
-
-## The tally alone. The morning's own line is `_brief`'s job now — a static fact about the
-## calendar day, shown unconditionally in `show_day()` — so this stays about progress and losses
-## only, which is why it is still gated on `has_joined_resistance()` at the call site.
-func _resistance_tally_line() -> String:
-	if GameState.sabotage_available():
-		return Texts.SUMMARY_TALLY_DONE
-	var done := GameState.resistance_progress
-	var lost := GameState.failed_resistance_steps.size()
-	var line := Texts.SUMMARY_TALLY % [done, Tuning.RESISTANCE_GOAL]
-	if lost > 0:
-		line += Texts.SUMMARY_TALLY_LOST_ONE if lost == 1 else Texts.SUMMARY_TALLY_LOST % lost
-	return line
-
-## The last screen of a run. `space` — or a tap — goes back to the title, which is where the next
-## one begins.
-##
-## **Not `esc to quit`**, which is not true from here: `Esc` opens the pause, and the pause offers
-## `Esc` and `Q`, so a finished run becomes a cycle between two screens with closing the window as
-## the only way out. Space dismisses every other screen in the game, so it is the key this one owes
-## rather than a new one.
-##
-## `day` is the last day played, not the last day completed — a hard run that loses its last nerve
-## on day 1 names day 1, not 0. It is shown only on the `BAD` ending — a hard run's, and the only one
-## that can end mid-day: `NEUTRAL` and `GOOD` are reached by finishing day 14, and every caller already has the
-## number this needs, since `GameState.day` is never advanced past the day a run ends on
-## (`GameState.finish_day()` ends the run before it would move the calendar) or past the day a
-## load spent the last nerve on.
-func show_ending(ending: GameEnums.Ending, day: int) -> void:
-	_heading.text = Texts.ENDING_HEADING.get(ending, Texts.ENDING_HEADING_DEFAULT)
-	_heading.show()
-	_title.text = Texts.ENDING_TITLE.get(ending, Texts.ENDING_TITLE_DEFAULT)
-	# The one place `GameState.play_seconds` is ever shown — never during play, on every ending
-	# alike. `GameState.format_clock()` is the shared formatter so this line and the finale's own
-	# clock, once that is built, never carry two copies of the same format string.
-	var day_line := Texts.ENDING_DAY_REACHED % day if ending == GameEnums.Ending.BAD else ""
-	var ending_body := SentenceLines.break_for_label(Texts.ENDING_BODY.get(ending, ""), _body)
-	_body.text = Texts.ENDING_PLAYED \
-			% [ending_body, GameState.format_clock(GameState.play_seconds), day_line]
-	_hint.text = ""
-	# The ending is not a day summary and has no morning line of its own to show.
-	_brief.visible = false
-	# Never carried from the day brief a resumed run's own last nerve replaces with this screen —
-	# see `main._show_the_resume_gate()`.
-	_note.visible = false
-	_showing_ending = true
-	_present()
-
-## The escape's own last screen: the tunnel or the bridge behind her, and **nothing triumphant**
-## (`docs/NARRATIVE.md`, "No triumphalism"). Two lines, one for the way she took, and the clock she
-## took it on to the millisecond — the only number this screen carries, and the reason the finale's
-## clock reads that way at all.
-##
-## Not a fourth `GameEnums.Ending`: an ending is a *run's* outcome and `GameState.ending` picks one
-## of three from the nerves and the sabotage. This is the last screen of a sequence that the run
-## hands over to, so it is its own entry point on the same screen — the smallest thing that keeps
-## `show_ending()`'s own table saying exactly what it says now.
-##
-## `exit_kind` is a `CityEdge.Kind`, passed as an `int` because a cross-script enum is not the same
-## type as itself as a parameter — see the **godot** skill.
-func show_finale(exit_kind: int, seconds: float) -> void:
-	_heading.text = Texts.FINALE_HEADING
-	_heading.show()
-	_title.text = Texts.FINALE_TITLE
-	_showing_ending = false
-	var finale_body := SentenceLines.break_for_label(
-			Texts.FINALE_BODY.get(exit_kind, Texts.FINALE_BODY[CityEdge.Kind.BRIDGE]), _body)
-	_body.text = Texts.FINALE_OUT_IN % [finale_body, GameState.format_clock(seconds)]
-	_hint.text = ""
-	_brief.visible = false
-	_present()
-
-## The screen a section of the escape opens on — a first walk through it and a retry alike. *"Each
-## the apartment and escape city are treated as their own 'days' with brief and restart
-## checkpoint."*
-##
-## **The same screen a resumed day opens on** (`show_day_brief()`), with the two lines that are
-## about a day replaced by the two that are true here. The nerve count is whatever the run holds:
-## a normal run's section costs no Nerve however it goes, so the line is unchanged, and a hard run's
-## shows what its lost sections spent and its cleared building gave back; and the escape has no
-## day number, so what stands where "Day N of 14" stands is **the section's own line** — *"Escape
-## the building"* or *"Escape the city"*, the same words `HUD.say_once()` says once she is walking
-## it and the same words `main` passes in. No new fiction, and nothing triumphant or melodramatic
-## (`docs/NARRATIVE.md`, "No triumphalism"): a retry is not a moment, it is the thing she is doing
-## again.
-##
-## There is no reason line and no lost note. The screen before a section is about what she is about
-## to do, not about what just happened — `show_day()` is the screen that reports an outcome, and a
-## section has no outcome worth a sentence: the stars already say what a hard run's loss spent.
-func show_finale_brief(hint: String, nerves: int) -> void:
-	_heading.hide()
-	_showing_ending = false
-	_note.visible = false
-	_title.text = SentenceLines.break_for_label(hint, _title)
-	# Stars, through the same `NerveDisplay.stars()` every screen that shows a nerve count now
-	# reads through — never a digit.
-	_body.text = Texts.SUMMARY_NERVES % NerveDisplay.stars(nerves)
-	_brief.visible = false
-	_hint.text = ""
+	_continue_shown = model.shows_continue
 	_present()
 
 func _present() -> void:
@@ -324,9 +155,11 @@ func _present() -> void:
 	_continue_button.set_hovered(false)
 	_restart_button.set_hovered(false)
 	_continuing = false
+	_screen_changes += 1
 	get_tree().paused = true
 
 func dismiss() -> void:
+	_screen_changes += 1
 	_root.hide()
 	get_tree().paused = false
 	_restart_button.cancel_hold()
@@ -405,6 +238,10 @@ const _MOUSE_HOLD_INDEX := -2
 ## as a fresh press. Without this, a fumbled double-tap starts the day twice.
 var _continuing := false
 
+## How many times a screen has been raised or dismissed: what `_acknowledge_and_continue()` compares
+## across its two frames to tell whether the screen it acknowledged is still the one up.
+var _screen_changes := 0
+
 ## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
 ## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
 ## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
@@ -436,16 +273,26 @@ var _continuing := false
 ## flash, and `space` needs no frame held open for it — the keyboard branch below stays exactly as
 ## synchronous as it always was, since adding a wait with nothing new to show for it is latency
 ## this path does not need.
+##
+## **A tap continues the screen it was made on, or nothing.** A key inside the two frames
+## continues at once, and that continue dismisses this screen or raises the next one — the ending
+## after the run over, the retry's brief after a lost section — so a tap's continue emitted after
+## it would continue a screen nobody has read. So the emit is dropped once any screen has been
+## raised or dismissed since the tap, whatever did it, and a tap and a key reaching one screen are
+## one continue.
 func _acknowledge_and_continue() -> void:
 	if _continuing:
 		return
 	_continuing = true
+	var acknowledged := _screen_changes
 	_continue_button.force_pressed_look()
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if _screen_changes != acknowledged:
+		return
 	_continue_button.clear_forced_press()
 	_continuing = false
-	continued.emit()
+	continued.emit(_raised_in)
 
 ## Space, a tap, or a mouse click moves on. *(2026-09-06, on a laptop: "I still need to press space
 ## even in mouse mode".)* **This overturns an earlier reason**: the touch event used to be read
@@ -486,7 +333,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
-		continued.emit()
+		continued.emit(_raised_in)
 
 ## A laptop's own question — there is no hover on a phone. *(Playtest 34 finding 1: "buttons still
 ## don't light up when pressed or hovered.")* `ModeButton.set_hovered()` is the answer

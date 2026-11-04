@@ -6,11 +6,12 @@ func _ready() -> void:
 	var packed: PackedScene = load("res://scenes/main.tscn")
 	var main := packed.instantiate()
 	add_child(main)
-	var runtime: SceneRecipeRuntime = main.get("_recipe")
+	var runtime: SceneRecipeRuntime = main.get("_flow").scene
 	var city: City = main.get("_city")
 	if not runtime or not city or runtime.manifest.get("setup_failed", false):
 		return
-	var act := Tuning.act_for_day(GameState.day)
+	var run := run_of(main)
+	var act := Tuning.act_for_day(run.header.day)
 	var multiplier: float = runtime.data.setup.get("background", {}).get("walker_multiplier", 1)
 	var pins: Array = runtime.data.setup.get("actors", [])
 	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
@@ -29,12 +30,12 @@ func _ready() -> void:
 	expected += runtime.data.setup.get("seals", []).size() * 2
 	expected += runtime.data.setup.get("gates", []).size() * 3
 	expected += runtime.data.setup.get("barriers", []).size() * 3
-	if city.events._plans.size() != expected:
+	if city.events.streaming._plans.size() != expected:
 		fail("an unselected event, seal or region body is installed")
 		return
 	for entry: Dictionary in runtime.data.setup.get("events", []):
 		var matched := false
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.get_meta("recipe_name", "") == entry.name:
 				var errors: Array[String] = []
 				matched = plan.position.is_equal_approx(runtime.position_of(entry.at, errors))
@@ -50,12 +51,12 @@ func _ready() -> void:
 			fail("authored fixtures did not reach the real production building")
 			return
 	if runtime.data.setup.has("seals"):
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.def.id == "cafe_tables" and not is_equal_approx(plan.position.x, 2576):
 				fail("restaurant guests did not move exactly one block east")
 				return
 	if runtime.data.setup.has("barriers"):
-		for plan in city.events._plans:
+		for plan in city.events.streaming._plans:
 			if plan.def.id == "roadblock" and (not is_equal_approx(plan.position.x, 1552)
 					or plan.position.y < 2240 or plan.position.y > 2432):
 				fail("truck barrier is not a vertical band across the left street")
@@ -63,7 +64,7 @@ func _ready() -> void:
 	if runtime.data.setup.has("posters"):
 		for entry: Dictionary in runtime.data.setup.posters:
 			var tile := city.map.world_to_tile(Vector2(entry.at[0], entry.at[1]))
-			if not city.poster_walls().fronts().has(tile) or GameState.posters.cells[tile].kind \
+			if not city.poster_walls().fronts().has(tile) or run.posters.cells[tile].kind \
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return
@@ -72,11 +73,18 @@ func _ready() -> void:
 		for body in city.region_plan().door_bodies:
 			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
 					runtime.built.anchors.gate + Vector2(0, 64)):
-				found = not EventInstance.gate_runs_north_south(body.facing)
+				found = not EventPictures.gate_runs_north_south(body.facing)
 		if not found:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
 			return
 	print("RECIPE_ACTIVITY_OK")
+## The run the booted `main` plays, off its sitting: its own child on a first boot, parked at the
+## tree's root across a reload.
+func run_of(main: Node) -> RunState:
+	var sitting := main.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	if not sitting:
+		sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	return sitting.run
 func roof_matches(building: Building, fixtures: Array) -> bool:
 	if building.recipe_roof_furniture == null:
 		return false

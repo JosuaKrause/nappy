@@ -115,7 +115,7 @@ func _reproduce_zero_density_visits() -> void:
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-						day, rng2, map, [], [], [block], tree, 0)
+						DaySpec.for_day(day), rng2, map, [], [], [block], tree, 0)
 				var full_in_lot: Array[EventScheduler.Planned] = []
 				for plan: EventScheduler.Planned in full_planned:
 					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
@@ -136,7 +136,7 @@ func _reproduce_zero_density_visits() -> void:
 					for plan: EventScheduler.Planned in full_in_lot:
 						ids.append(plan.def.id)
 					low_examples.append("  seed=%d day=%d block=%s: %s in the park she used yesterday, %s — denied %.0f%% of open ground (roll alone: %d placed, denied %.0f%%)"
-							% [i, day, block, ", ".join(ids), TelemetryLog.tile(block), fd * 100.0, rc, rd * 100.0])
+							% [i, day, block, ", ".join(ids), RunTrace.tile(block), fd * 100.0, rc, rd * 100.0])
 
 	print("trials (seed x settle-day x calm block): %d" % trials)
 	print("structurally zero — block no longer calm the next day: %d (%.1f%%)"
@@ -149,8 +149,8 @@ func _reproduce_zero_density_visits() -> void:
 	print("valid visits (calm, open, and a pool to draw from): %d" % valid)
 
 	if valid > 0:
-		print("\n-- the roll alone (Tuning.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
-				% Tuning.SPOILERS_TO_DENY_A_PARK)
+		print("\n-- the roll alone (EventScheduler.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
+				% EventScheduler.SPOILERS_TO_DENY_A_PARK)
 		_print_int_distribution("placements", roll_counts)
 		_print_float_distribution("open ground denied", roll_denied)
 

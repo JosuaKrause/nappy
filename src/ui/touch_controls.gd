@@ -156,16 +156,62 @@ const _FOCUS_KNOB_OFFSET := 36.0
 ## it is asked, since a headless test process is never a touch device.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
+
+## The clock the double-tap window is measured on: a `Callable` returning seconds as a float, the
+## same shape `ModeButton.use_clock()` takes. Unset, a press is stamped with the engine's own
+## clock; a suite hands in one it moves by hand, so two presses land inside or outside
+## `DOUBLE_TAP_SECONDS` without waiting out the real time between them.
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+var _clock := Callable()
+
+## The moment a press arrived, in seconds, on the handed-in clock or the engine's own.
+func _now() -> float:
+	if _clock.is_valid():
+		return _clock.call()
+	return Time.get_ticks_msec() / 1000.0
+
 ## The player's own choice of aiming origin — see the class doc and `ControlsMode`. Defaults to
-## `TAP`, the same default `ControlsMode.resolve()` falls back to, so a test or a rig that never
+## `TAP`, the same default `ControlsMode.from_word()` falls back to, so a test or a rig that never
 ## calls `set_mode()` gets the mode every existing screenshot and `--walk` script was taken under.
 ## In the running game this default is never actually observed: `main._add_touch_controls()` calls
-## `set_mode()` with `ControlsMode.resolve()` immediately after building this node, and
+## `set_mode()` with the configured `--controls` word immediately after building this node, and
 ## `main._on_title_start()` calls it again the moment a player actually presses one of the title
 ## screen's buttons — see those functions' own docs for why this cannot be read once at
 ## `_ready()` the way `_touch` is: the title screen answers the question at runtime, well after
 ## this node already exists.
 var _mode := ControlsMode.Mode.TAP
+
+## What these controls cover of the screen, and whether the scheme that covers it is in force: the
+## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
+## to everything that asks what she can see (`VisibleView`).
+var covering := covered_screen(false)
+
+## The left covered corner includes the painted ring or Run disc, never its invisible catch.
+static func covered_left() -> Rect2:
+	var top := FOCUS_LEFT.y - RUN_RADIUS
+	var right := FOCUS_LEFT.x + RUN_RADIUS
+	return Rect2(0.0, top, right, ScreenOrientation.DESIGN_SIZE.y - top)
+
+## The right covered corner mirrors the same disc footprint.
+static func covered_right() -> Rect2:
+	var top := FOCUS_RIGHT.y - RUN_RADIUS
+	var left := FOCUS_RIGHT.x - RUN_RADIUS
+	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
+
+## The two covered corners as a `ScreenCover`, in force unless `in_force` says otherwise: each focus carries either a
+## steering ring or an equally sized Run disc, so the steering side the title chose does not change
+## the covered footprint.
+static func covered_screen(in_force := true) -> ScreenCover:
+	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, covered_left(), covered_right())
+	made.in_force = in_force
+	return made
 
 ## The focus `Mode.JOYSTICK` steers from, `FOCUS_LEFT` or `FOCUS_RIGHT`; Run is the other one. Set
 ## only by `set_mode()`, from the side the title chose, and never by a press.
@@ -185,6 +231,7 @@ func set_mode(mode: ControlsMode.Mode, side := ControlsMode.Side.LEFT) -> void:
 		_run_before_pause = false
 	_mode = mode
 	_steering_focus = focus
+	covering.in_force = mode == ControlsMode.Mode.JOYSTICK
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
 		_let_go_of_the_run_button()
@@ -247,12 +294,22 @@ var _drag_pointer_index := -1
 var _drag_run := false
 
 var _was_paused := false
+## The baked atlas pages the controls draw from (`AtlasLibrary`), handed by `main` before they
+## enter the tree; controls nobody handed one (a suite's) make their own when they first enter it.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
+
+## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.OTHER)
 
 func _ready() -> void:
 	add_to_group(HelpText.CONTROLS_GROUP)
@@ -382,7 +439,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 				Input.action_press(&"run")
 				queue_redraw()
 			return
-		_on_tap(position, Time.get_ticks_msec() / 1000.0)
+		_on_tap(position, _now())
 		# Tracked whether this press walked or stopped her — see `_on_tap()`'s own doc for where
 		# `_drag_run` was just set for this same press. *(Playtest 34 finding 8: "when I start
 		# dragging from the center of the joystick nothing happens it should behave the same as if
@@ -452,9 +509,9 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ##   other direction: design → presented (`ScreenOrientation.to_presented_space()`, the inverse of
 ##   `to_design_space()`) → world (`_focus_world()`, the same canvas-transform inverse used above).
 ##
-## `now` is a parameter rather than read from `Time` in here, so a test can hold the double-tap
-## window still instead of racing the engine clock -- `_input()` and `_on_pointer()` are the real
-## callers and supply it from `Time.get_ticks_msec()`.
+## `now` is a parameter rather than read from `Time` in here, so the double-tap window is measured
+## on the clock `use_clock()` hands in (the engine's own by default) -- `_on_pointer()` is the real
+## caller and supplies it from `_now()`.
 ##
 ## **Paused, a press does nothing at all**, the same as this file's controls drawing nothing on the
 ## title, the pause and the between-days summary. The event is left unhandled either way, so the
@@ -572,8 +629,8 @@ func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 		return
 	_direction = direction
 	_walking = true
-	_set_axis(&"move_left", &"move_right", direction.x)
-	_set_axis(&"move_up", &"move_down", direction.y)
+	set_axis(&"move_left", &"move_right", direction.x)
+	set_axis(&"move_up", &"move_down", direction.y)
 	_run_active = run
 	if run or _run_held:
 		Input.action_press(&"run")
@@ -624,7 +681,7 @@ func _let_go_of_the_run_button() -> void:
 ## The keyboard resets whatever heading a click, tap or drag last locked in. *(PLAYTEST-57: "arrow
 ## keys should reset any mouse click position. when pressing awsd or arrow keys right now the last
 ## pressed mouse position is still active resulting in incorrect / drifting movement.")* A pointer
-## press locks a heading in by pressing `move_*` actions synthetically (`_set_axis()`, called from
+## press locks a heading in by pressing `move_*` actions synthetically (`set_axis()`, called from
 ## `set_direction()`), and `Stroller._physics_process()` reads the same four actions through
 ## `Input.get_vector()`, which sums over *everybody* currently pressing them — so a real key adds
 ## to, rather than replaces, whatever a click left behind, and she drifts toward neither heading.
@@ -672,7 +729,7 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	queue_redraw()
 
 ## Exactly the `move_*` actions this node itself currently holds pressed, derived from `_direction`
-## rather than kept as a second copy of it — `_set_axis()` is what `set_direction()` presses these
+## rather than kept as a second copy of it — `set_axis()` is what `set_direction()` presses these
 ## through, and it presses at most one of each opposing pair, matching `_direction`'s own sign on
 ## each axis. Empty once `_direction` is `Vector2.ZERO`, which `_stop()` and `_release_all()` both
 ## already set.
@@ -741,7 +798,7 @@ static func is_double_tap(elapsed: float, distance: float) -> bool:
 ## `move_left`/`move_right` can be true on a keyboard, and the other is explicitly released rather
 ## than left to decay on its own. Static, since it is pure — a direction's own components are what
 ## every caller here presses through it.
-static func _set_axis(negative: StringName, positive: StringName, value: float) -> void:
+static func set_axis(negative: StringName, positive: StringName, value: float) -> void:
 	if value > 0.0:
 		Input.action_press(positive, value)
 		Input.action_release(negative)
@@ -811,8 +868,8 @@ func resume_after_pause() -> void:
 		return
 	_direction = _direction_before_pause
 	_walking = true
-	_set_axis(&"move_left", &"move_right", _direction.x)
-	_set_axis(&"move_up", &"move_down", _direction.y)
+	set_axis(&"move_left", &"move_right", _direction.x)
+	set_axis(&"move_up", &"move_down", _direction.y)
 	_run_active = _run_before_pause
 	if _run_active:
 		Input.action_press(&"run")
@@ -848,8 +905,6 @@ static func _send_pause_action() -> InputEventAction:
 ## the city is an undrawn direction any more: see `_draw_focus_circles()`'s own doc for why that
 ## mode needs something to read the locked-in state off, and why `Mode.TAP` does not.
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not visible:
 		return
 	_draw_pause_button()
@@ -878,7 +933,7 @@ func _draw_pause_button() -> void:
 	if held:
 		draw_circle(PAUSE_CENTRE, PAUSE_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * PAUSE_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(AtlasLibrary.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
+	draw_texture_rect(atlas.region(_PAUSE_ICON), Rect2(PAUSE_CENTRE - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if held else 0.7))
 
 ## Run's disc, on the focus the steering side leaves free, lit while any finger holds Run.
@@ -889,7 +944,7 @@ func _draw_run_button() -> void:
 	if _run_held:
 		draw_circle(center, RUN_RADIUS, Palette.BUTTON_PRESSED)
 	var size := Vector2.ONE * RUN_RADIUS * 2.0 * _ICON_HALF_SIZE / _ICON_PAINTED_RADIUS
-	draw_texture_rect(AtlasLibrary.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
+	draw_texture_rect(atlas.region(_RUN_ICON), Rect2(center - size * 0.5, size), false,
 			Color(1.0, 1.0, 1.0, 1.0 if _run_held else 0.7))
 
 ## The steering ring at `RING_RADIUS` and a knob (the dot) at the heading she is actually walking,
@@ -908,7 +963,7 @@ func _draw_focus_circles() -> void:
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)
 
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or
-## drag through `set_direction()` (`_set_axis()` presses these same four actions), or a real key
+## drag through `set_direction()` (`set_axis()` presses these same four actions), or a real key
 ## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
 ## `move_right`/`move_up`/`move_down` is the read `Stroller._physics_process()` makes to decide her
 ## own velocity, and the rig's `Stroller.input_she_moves_by()` is what this defers to when the rig has it, so this is not a second,

@@ -37,7 +37,7 @@ asserts nothing from a later act leaks into an earlier day).
 The colour cast is the quietest part of the telling: the same corner, four times, getting
 colder. Warm afternoon → drained → cold and overcast → smoke.
 
-The loudest part is that **the city remembers**. `scar_id` makes a one-off event permanent
+The loudest part is that **the city remembers**. `EventDef.aftermath`'s scar makes a one-off event permanent
 for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
 its windows black under soot, and every barricade an Act IV convoy drops stays dropped. The
 route you memorised on day 2 stops existing, one closure at a time.
@@ -155,7 +155,7 @@ that through the day before the last night:
 | 7 | The package | The delivery van's own drop, touched from any side of the van. Picking it up makes the pram heavier for the rest of the day. | red |
 | 8 | The burnt shell | The building this run's own day-3 fire burned, wherever in the city it stands, the arrow ending on its door, and the drawing left from the near half of the sidewalk in front of it. Only a run that recorded no day-3 scar at all has one burnt for the task, on a front the fire could have caught on near the mark, the moment her mark is read. | red |
 | 9 | The crossing | Crossing one of that day's own region doors to its other side, in either direction — let through after the inspection or walking through — the first day the wall stands at all. The arrow ends on one of the door's two gatehouses, drawn by the day; standing at it does nothing. | red |
-| 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
+| 10 | Warn the neighbor | The neighbor, out in the city and walking home, by the red arrow that follows them: about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk from her door when the mark is touched. Reached first, the neighbor runs; reaching the door first, they are taken, and from the next morning the wanted notice crosses their face out. | red, with a deadline |
 | 11 | Silence a mast | The foot of any live loudspeaker mast she can reach: the task is placed at one near the mark, drawn among those she can reach — when none is near, a new mast the day puts up near the mark, out of her view — and the mast rigged onto her route and every other live mast answer it too. Its field makes the approach cost while it broadcasts, so the skill is reaching it between broadcasts; reaching it puts that mast's lamp out, and it stays quiet for the rest of the run. | red, on the closest by walking distance |
 | 12 | The swing | The swing on the playground of one specific park: her body touching the ellipse at the frame's base, where the arrow ends. | red |
 | 13 | Into a roadblock's band | Any roadblock's own poured-concrete closure — not a region door's gatehouse — rather than round it. | red, on the closest by walking distance |
@@ -322,12 +322,12 @@ touch".)*
   last night's sabotage are all given back when the day is lost, and the retry starts at the mark
   again. So the errand is never spent on an attempt that failed, and a task cannot be lost to a
   day that did not happen; the price of a bad day is the nerve, not the subquest. See
-  `GameState.finish_day()`.
+  `RunCalendar.finish_day()`.
 
 ### The finale
 
 Reaching `RESISTANCE_GOAL` earns the *chance* at the good ending; the day-14 sabotage is
-the act. `GameState.earned_good_ending()` requires both, so a player who does all the
+the act. `RunCalendar.earned_good_ending()` requires both, so a player who does all the
 legwork and then walks straight home on the last night gets the neutral ending — and the same
 pair is what sends a won day 14 on to the escape rather than to an ending screen, so the good
 ending is the one ending nobody is simply told about.

@@ -10,8 +10,8 @@ extends RefCounted
 ## into `Input.get_vector()`, the acceleration ramp, the facing turn — one physics tick at a time,
 ## in the order a recipe's playback presses (the input pressed for tick `n` is read on tick
 ## `n + 1`). Her position is integrated by hand from the `velocity` each tick computes rather than
-## left to `move_and_slide()`, for the reason `tests/test_route_rig.gd`'s end-to-end leg gives:
-## a hand-stepped body in this suite has no synced collision shape for the slide to move.
+## left to `move_and_slide()`: a hand-stepped body in this suite has no synced collision shape for
+## the slide to move.
 ##
 ## **Equal means within `TOLERANCE`**, a hundredth of a pixel: the construction is exact on open
 ## ground, and what is left is the single-precision rounding of the pressed strengths and of
@@ -71,8 +71,8 @@ func _walk(t, script: String, smooth: bool) -> Dictionary:
 	return {"positions": positions, "velocities": velocities, "plan": plan}
 
 func _release() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	Input.action_release(&"run")
 
 ## The two walks of `script` agree wherever her velocity does — before a turn, and from the moment

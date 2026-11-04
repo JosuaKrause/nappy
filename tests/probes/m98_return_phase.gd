@@ -25,7 +25,7 @@ extends RefCounted
 ##   `EventDirector.due()`, walked continuously on a real street (`CrowdLanes.arterial_pavement`,
 ##   bounced at the map's own edges so a long leg never asks for ground off it) for the leg's
 ##   own duration. `due()` only needs continuous motion on walkable ground to fire — the pacing
-##   it is testing, `Tuning.AHEAD_INTERVAL` (11-26s) before the return is owed, is a property of
+##   it is testing, `EventDirector.AHEAD_INTERVAL` (11-26s) before the return is owed, is a property of
 ##   elapsed time, not of which street she is on, so this measures the queue's own throughput
 ##   against the leg's length without needing an exact world-position walk of the literal
 ##   corridor. The **same** director instance and its running timer carry from the outbound leg
@@ -87,7 +87,7 @@ func _measure_return_phase() -> void:
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m98:plan:%d:%d" % [map.seed_used, day])
 			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					day, plan_rng, map, [], [], [], tree, 0)
+					DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
 
 			var y_min := 0.0
 			var y_max: float = map.world_size().y

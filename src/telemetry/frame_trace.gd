@@ -7,37 +7,44 @@ extends Node
 
 const WARMUP_USEC := 5000000
 
-## The fields of `main.gd` that `_sample()` reads by name. `Object.get()` answers `null` for a name
-## that does not exist, which `_sample()`'s pause test reads as false — a renamed field would have
-## the trace sample the title screen as play and say nothing. `setup()` refuses one that is
-## missing, and `tests/test_frame_trace.gd` checks the list against `main.gd` itself.
-const MAIN_FIELDS: Array[String] = ["_in_the_title", "_layer_readout_on", "_layer_graph_on"]
-
 var buffer := FrameTraceBuffer.new()
-var _main: Node
+## What the screen is showing, asked of whoever runs it and handed in by `setup()`: whether the
+## title is up (sampled frames stop there, since nobody is playing), and whether the readout's and
+## the frame graph's layers are on (each sample records both, since either costs a frame).
+var _in_the_title: Callable
+var _readout_on: Callable
+var _graph_on: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
+## The run whose seed names the trace and whose calendar day each sample records, handed in by
+## `setup()`.
+var _run: RunState
 var _started_usec := -1
 var _metadata: Dictionary = {}
+## The developer flags the run was given, handed in by `main` from its `RunConfig`.
+var _user_flags: Array = []
 
-func setup(main: Node, city: City, player: Stroller, day: DayController) -> void:
-	for field in MAIN_FIELDS:
-		assert(field in main, "FrameTrace reads main.%s, which main.gd no longer has" % field)
-	_main = main
+func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, city: City,
+		player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+	_run = run
+	_in_the_title = in_the_title
+	_readout_on = readout_on
+	_graph_on = graph_on
 	_city = city
 	_player = player
 	_day = day
+	_user_flags = user_flags
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_metadata = environment()
-	_metadata["run_seed"] = GameState.run_seed
-	_metadata["build"] = TitleScreen.build_text()
+	_metadata["run_seed"] = _run.header.run_seed
+	_metadata["build"] = BuildInfo.build_text()
 	_metadata["warmup_usec"] = WARMUP_USEC
 	RenderingServer.frame_post_draw.connect(_sample)
 
 func _sample() -> void:
 	var now := Time.get_ticks_usec()
-	if get_tree().paused or _main.get("_in_the_title") or not _day.is_running():
+	if get_tree().paused or _in_the_title.call() or not _day.is_running():
 		buffer.break_interval()
 		if buffer.count == 0:
 			_started_usec = -1
@@ -60,8 +67,8 @@ func _sample() -> void:
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
-		roundi(here.x * 1000.0), roundi(here.y * 1000.0), GameState.day,
-		int(_main.get("_layer_readout_on")), int(_main.get("_layer_graph_on")),
+		roundi(here.x * 1000.0), roundi(here.y * 1000.0), _run.header.day,
+		int(_readout_on.call()), int(_graph_on.call()),
 		int(Telemetry.is_active())])
 	buffer.append(now, Engine.get_process_frames(), Engine.get_frames_drawn(), counters)
 
@@ -86,7 +93,7 @@ func environment() -> Dictionary:
 		"engine_flags": Array(OS.get_cmdline_args()),
 		"engine_flags_complete": false,
 		"engine_flags_note": "Godot omits consumed startup switches; retain the launch command too",
-		"user_flags": Array(OS.get_cmdline_user_args())}
+		"user_flags": _user_flags}
 
 func _exit_tree() -> void:
 	if RenderingServer.frame_post_draw.is_connected(_sample):
@@ -101,7 +108,7 @@ func _exit_tree() -> void:
 		return
 	var path := "%s/trace-%s-seed%d-%d.json" % [directory,
 		Time.get_datetime_string_from_system().replace(":", "-"),
-		GameState.run_seed, Time.get_ticks_usec()]
+		_run.header.run_seed, Time.get_ticks_usec()]
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
 		push_error("Cannot write frame trace: %s" % path)

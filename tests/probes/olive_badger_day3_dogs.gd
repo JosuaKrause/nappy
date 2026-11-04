@@ -1,7 +1,7 @@
 extends RefCounted
 ## Measurement probe for olive-badger: how many charging dogs she meets on day 3, now that the
 ## lesson is a rigged bag of one in front of the route's bag and the ordinary bag holds
-## `Tuning.ROUTE_BAG_MARBLES_OF` dogs (inbox #566 in feathery-stork). Not a suite: it prints rather than asserting, so
+## `EventDirector.ROUTE_BAG_MARBLES_OF` dogs (inbox #566 in feathery-stork). Not a suite: it prints rather than asserting, so
 ## it lives under `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/olive_badger_day3_dogs.gd
@@ -33,7 +33,7 @@ func run(t) -> void:
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
 		var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-				day, plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
+				DaySpec.for_day(day), plan_rng, map, [], [], [], RouteTree.for_day(map, day), 0)
 		var bought_a_dog := false
 		for plan in planned:
 			if plan.def.id == DOG:

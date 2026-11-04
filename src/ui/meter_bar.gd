@@ -61,9 +61,12 @@ static func displayed_fraction(value: float, max_value: float) -> float:
 		fraction = minf(fraction, _MAX_FILL_BEFORE_FULL)
 	return fraction
 
+## Counted by the frame record under `FrameTiming.Draw.OTHER`, which the recorder reads off this meta
+## since it may not name the view.
+func _init() -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.OTHER)
+
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	var width := size.x
 	var bar := Rect2(0.0, BAR_TOP, width, BAR_HEIGHT)
 	var fraction := displayed_fraction(value, Tuning.METER_MAX)

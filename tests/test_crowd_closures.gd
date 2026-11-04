@@ -14,21 +14,44 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## The rig of `test_crowd_bodies.gd`: agents placed on the street through `Crowd.add_recipe_actor()`.
+const RIG := preload("res://tests/test_crowd_bodies.gd")
 
 var _city: City
+var _rig = RIG.new()
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	# Each scenario stands in a city of its own, built over a run of its own, so none leans on the
+	# closures, seals and days an earlier one left behind.
+	var scenarios: Array[Callable] = [
+		_test_a_hard_seal_shuts_its_street_to_the_crowd,
+		_test_nobody_is_placed_in_a_sealed_junction,
+		_test_a_pocket_empties_once_it_is_out_of_view,
+		_test_a_walker_turns_into_a_street_sealed_further_along,
+		_test_a_turn_around_commits_to_its_new_heading,
+		_test_no_car_in_sight_ever_moves_further_than_it_drove,
+		_test_a_soft_seal_shuts_both_pavements_to_walkers_only,
+		_test_the_doorstep_street_is_not_shut_by_its_own_hold,
+		_test_only_cars_go_over_the_bridge,
+		_test_the_crowd_agrees_a_zone_absorbed_the_corridor,
+		_test_agents_do_not_overrun_an_ordinary_edge,
+		_test_out_of_bounds_is_blocked_except_a_car_on_the_spine,
+		_test_cars_come_out_of_the_tunnel_and_off_the_bridge,
+		_test_cars_do_not_drive_on_across_the_mountain,
+		_test_spine_cars_are_put_out_of_sight,
+		_test_nobody_enters_across_a_plain_edge,
+		_test_the_entry_roll_is_kept_inside_its_own_room,
+		_test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture,
+	]
+	for scenario in scenarios:
+		_city = RunCity.with_own_run(CITY_SCENE, SEED)
+		t.add_child(_city)
+		_city.build(CityGenerator.generate(SEED))
+		scenario.call(t)
+		_city.free()
 
-	_test_a_hard_seal_shuts_its_street_to_the_crowd(t)
-	_test_nobody_is_placed_in_a_sealed_junction(t)
-	_test_a_pocket_empties_once_it_is_out_of_view(t)
-	_test_a_walker_turns_into_a_street_sealed_further_along(t)
-	_test_a_turn_around_commits_to_its_new_heading(t)
-	_test_no_car_in_sight_ever_moves_further_than_it_drove(t)
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
+	_test_day_start_keeps_room_for_its_own_picture(t)
 	# One door day, shared: building a city and planning days until one carries a door is most of a
 	# minute, and every test below places its own bodies at the same hut anyway.
 	var door_day := _open_a_door_day(t)
@@ -38,21 +61,17 @@ func run(t) -> void:
 	if not door_day.is_empty():
 		var door_city: City = door_day["city"]
 		door_city.free()
-	_test_a_soft_seal_shuts_both_pavements_to_walkers_only(t)
-	_test_the_doorstep_street_is_not_shut_by_its_own_hold(t)
-	_test_only_cars_go_over_the_bridge(t)
-	_test_the_crowd_agrees_a_zone_absorbed_the_corridor(t)
-	_test_agents_do_not_overrun_an_ordinary_edge(t)
-	_test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t)
-	_test_cars_come_out_of_the_tunnel_and_off_the_bridge(t)
-	_test_cars_do_not_drive_on_across_the_mountain(t)
-	_test_spine_cars_are_put_out_of_sight(t)
-	_test_nobody_enters_across_a_plain_edge(t)
-	_test_the_entry_roll_is_kept_inside_its_own_room(t)
-	_test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t)
-	_test_day_start_keeps_room_for_its_own_picture(t)
 
-	_city.free()
+## Where a hard seal stands its bodies across `segment`: `SealPlanner.positions_across()` over the
+## segment's whole cross-section, at the seal's own body radius, as the planner places a seal.
+func _across(segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
+	return SealPlanner.positions_across(_city.map.tile_rect_to_world(segment.tile_rect()),
+			segment.horizontal, def.obstructs_radius)
+
+## One stride of `agent` in seconds at the fastest its kind goes: its strategy's stride length
+## over the top of its kind's speed range.
+func _stride_seconds(agent: CrowdAgent) -> float:
+	return agent.strategy.stride_length() / maxf(agent.strategy.speed_range().y, 1.0)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -68,7 +87,7 @@ func _advance(seconds: float) -> void:
 
 # --------------------------------------------------------------- M110: seals ---
 # "also I noticed that objects like fallen trees don't stop/redirect traffic or pedestrians"
-# (playtest 55, 2026-09-10). `CrowdAgent._cannot_go_on` used to know about a closure and about
+# (playtest 55, 2026-09-10). `CrowdAgent.strategy.cannot_go_on` used to know about a closure and about
 # nothing else that stands in a street, so a walker or a car passed straight through a hard seal,
 # a region wall, or a soft seal's own bodies. The three tests below are the shape
 # `_test_nothing_walks_into_a_hard_blocker` above already asks about the built-over kind, asked of
@@ -87,11 +106,11 @@ func _advance(seconds: float) -> void:
 ## walkers at all, since a sealed street with nobody on it was the complaint.
 ##
 ## The seal is stood here the way `SealPlanner` stands one — the same `sealed_variant` and the same
-## `_hard_positions` across the street — rather than by planning a day, so the segment under test is
+## `positions_across()` across the street — rather than by planning a day, so the segment under test is
 ## this one and not whatever the seed rolled.
 func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 	var segment: StreetNetwork.Segment = null
-	for candidate in StreetNetwork.segments():
+	for candidate in _city.map.network.segments():
 		if _city.map.has_street(candidate.key()):
 			segment = candidate
 			break
@@ -105,8 +124,8 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
 	var body_tiles := {}
 	var owner := 1
-	for at_body: Vector2 in SealPlanner._hard_positions(_city.map, segment, def):
-		var covered := EventManager.obstructed_footprint(_city.map, def, at_body, Vector2.RIGHT)
+	for at_body: Vector2 in _across(segment, def):
+		var covered := EventSpawner.obstructed_footprint(_city.map, def, at_body, Vector2.RIGHT)
 		_city.map.obstruct_tiles(owner, covered)
 		owner += 1
 		for tile: Vector2i in covered:
@@ -323,8 +342,8 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 	_city.map.hold_segment(arm.key())
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
 	var owner := 1
-	for at_body: Vector2 in SealPlanner._hard_positions(_city.map, arm, def):
-		_city.map.obstruct_tiles(owner, EventManager.obstructed_footprint(_city.map, def, at_body,
+	for at_body: Vector2 in _across(arm, def):
+		_city.map.obstruct_tiles(owner, EventSpawner.obstructed_footprint(_city.map, def, at_body,
 				Vector2.RIGHT))
 		owner += 1
 	_city.crowd.start_day(1, _rng(4), at)
@@ -363,9 +382,9 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 ## ahead **and** the way behind shut and reverses — which is the single-seal-on-open-ground case
 ## this milestone leaves standing, and the one the stride is measured against.
 ##
-## The floor is each agent's own `_stride_seconds()` rather than a number, so it survives any
-## rebalancing of walking speed or of the gait — what it pins is that a reversal is worth a stride,
-## not that a stride is 35px.
+## The floor is each agent's own stride (`stride_length()`) over the fastest its kind goes
+## (`speed_range()`) rather than a number, so it survives any rebalancing of walking speed or of the
+## gait — what it pins is that a reversal is worth a stride, not that a stride is 35px.
 func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
@@ -391,7 +410,7 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 		_city.crowd.step(STEP)
 		for agent: CrowdAgent in _city.crowd.agents():
 			var id := agent.get_instance_id()
-			var heading := Vector2(agent._direction, 1.0 if agent._vertical else 0.0)
+			var heading := agent.heading()
 			# `INF` until this agent has actually been seen to turn round once: the first about-face
 			# of the run says nothing, since whatever came before it happened before the measurement
 			# started.
@@ -417,14 +436,14 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 			# with nothing here to say about it. The clock is **not** restarted for one, because what
 			# is being measured is the gap between two about-faces and a turn in between is not a
 			# reason to allow the second one sooner.
-			if before.y != heading.y or before.x == heading.x:
+			if not before.is_equal_approx(-heading):
 				continue
 			reversals += 1
 			var waited: float = since[id]
 			since[id] = 0.0
 			# A whole frame of slack: the stride is run down by `delta` and the reversal is taken on
 			# the frame after it reaches zero.
-			if waited < agent._stride_seconds() - STEP:
+			if waited < _stride_seconds(agent) - STEP:
 				too_soon += 1
 				soonest = minf(soonest, waited)
 	t.check(reversals > 0, "the sealed junction turns somebody round to ask about (%d reversals)"
@@ -468,7 +487,7 @@ func _on_screen(at: Vector2, focus: Vector2) -> bool:
 ## **What this is for is the end of a turn.** A landing whose booked spot has been closed up on from
 ## behind used to be dropped a gap behind the *rearmost* car in the whole exit lane — the merge a
 ## recycled car makes at the entry band, where further back is more off-screen road, applied at a
-## junction where further back is most of a street. See `CrowdAgent._land_the_turn()`.
+## junction where further back is most of a street. See `CarStrategy._land_the_turn()`.
 ##
 ## **Every landing in the window is contended, and waiting for one is what does not work.** The
 ## follower that closes up on a booked landing is rare — it needs a brake that has undershot by a
@@ -595,7 +614,7 @@ func _advance_watching(seconds: float, at: Vector2) -> void:
 ## crossroads the finding is about. Empty, with a failed check, where this city has none.
 func _a_junction_to_seal(t) -> Dictionary:
 	var home := {}
-	for segment in StreetNetwork.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
+	for segment in _city.map.network.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
 		home[segment.key()] = true
 	var count := StreetNetwork.junction_count()
 	for y in range(1, count.y - 1):
@@ -603,7 +622,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 			var junction := Vector2i(x, y)
 			if junction.x == _city.map.main_road:
 				continue
-			var arms := StreetNetwork.at_junction(junction)
+			var arms := _city.map.network.at_junction(junction)
 			if arms.size() != 4:
 				continue
 			var ordinary := true
@@ -631,7 +650,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -647,7 +666,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-wall-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
-		city.events.start_day(day, events_rng, consumed)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 		var plan := city.region_plan()
 		if not plan.walls.is_empty() and not plan.doors.is_empty():
 			wall_segment = plan.walls[0]
@@ -698,35 +717,33 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 
 	# The door carve-out, checked directly against the predicate rather than by waiting for a
 	# random walker or car to wander onto the exact tile inside a short simulated window — the
-	# question is whether `_cannot_go_on` refuses the door, not whether the day's population
+	# question is whether `LaneStrategy.cannot_go_on()` refuses the door, not whether the day's population
 	# happens to visit it.
 	var door_tile := door_segment.tile_rect().get_center()
 	var vertical := not door_segment.horizontal
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._map = map
+	city.crowd.clear()
+	var walker: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER, _rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.HELD))
+	var car: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.CAR)
+	# One whose answer at a door is to turn back: the first roll of its seed gives it.
+	var turner: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER,
+			_rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.TURNS_BACK))
+	t.check(walker != null and car != null and turner != null,
+			"the crowd takes a walker, a car and a walker that turns back on some open street")
+	if walker == null or car == null or turner == null:
+		city.free()
+		return
 	walker.door_segments = {door_segment.key(): true}
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
-	car._map = map
 	car.door_segments = {door_segment.key(): true}
-	t.check(not walker._cannot_go_on(vertical, door_tile),
+	turner.door_segments = {door_segment.key(): true}
+	t.check(not walker.strategy.cannot_go_on(vertical, door_tile),
 			"a walker is not turned away from today's region door")
-	t.check(not car._cannot_go_on(vertical, door_tile),
+	t.check(not car.strategy.cannot_go_on(vertical, door_tile),
 			"and neither is a car — it brakes and queues for the gate instead of diverting")
 	# And the carve-out is the walker's own rather than the day's: one whose answer at a door is to
 	# turn back sees the same tile as wall, which is the whole of turning back — the machinery that
 	# turns it at the last junction is the one a wall already uses.
-	var turner := CrowdAgent.new()
-	turner.kind = CrowdAgent.Kind.WALKER
-	turner._map = map
-	turner.door_segments = {door_segment.key(): true}
-	turner._door_answer = CrowdAgent.DoorAnswer.TURNS_BACK
-	t.check(turner._cannot_go_on(vertical, door_tile),
+	t.check(turner.strategy.cannot_go_on(vertical, door_tile),
 			"a walker that turns back at doors reads today's door as wall")
-	turner.free()
-	walker.free()
-	car.free()
 	city.free()
 
 ## A city, a day whose region wall has an open door in it, and an **empty** crowd centred on that
@@ -738,7 +755,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 ## runs first, because that is what builds the day's huts out of the region plan.
 func _open_a_door_day(t) -> Dictionary:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 	var door: StreetNetwork.Segment = null
@@ -752,7 +769,7 @@ func _open_a_door_day(t) -> Dictionary:
 		var events_rng := RandomNumberGenerator.new()
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
-		city.events.start_day(day, events_rng, consumed)
+		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 		if not city.region_plan().doors.is_empty():
 			door = city.region_plan().doors[0]
 			used_day = day
@@ -770,53 +787,54 @@ func _open_a_door_day(t) -> Dictionary:
 	city.crowd.clear()
 
 	var vertical := not door.horizontal
+	var scene := {"city": city, "map": map, "day": used_day, "door": door, "at_a": at_a,
+			"vertical": vertical, "mouth": mouth}
+	# The huts are the day's detaining door bodies on the sidewalks (the plan's `door_bodies`), and
+	# each one's hold is what a walker walking at it is handed (`door_ahead`): a probe walker is set
+	# walking at each and the hold read off it after one frame.
 	var huts: Array[WalkerDoorHold] = []
-	for hold: WalkerDoorHold in city.crowd._door_holds:
-		if not mouth.has_point(hold.position):
+	for body in city.region_plan().door_bodies:
+		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
 			continue
-		var across: float = hold.position.x if vertical else hold.position.y
+		var across: float = body.position.x if vertical else body.position.y
 		if CityMap.is_road_offset(
 				CityMap.corridor_offset(floori(across / float(Tuning.TILE_SIZE)))):
 			continue    # the boom over the roadway, which is the cars' own
-		huts.append(hold)
+		var probe := _walker_approaching(scene, body.position, 160.0,
+				WalkerStrategy.DoorAnswer.PASSES)
+		city.crowd.step(STEP)
+		if probe.door_ahead != null:
+			huts.append(probe.door_ahead)
+		city.crowd.clear()
 	t.check(huts.size() == 2, "the door stands a hut on each of its two sidewalks (%d)"
 			% huts.size())
-	return {"city": city, "map": map, "day": used_day, "door": door, "at_a": at_a,
-			"vertical": vertical, "mouth": mouth, "huts": huts}
+	scene["huts"] = huts
+	return scene
 
-## Puts a walker on the sidewalk lane `hut` stands beside, `back` px short of it and walking at it,
+## Puts a walker on the sidewalk lane the hut at `hut_at` stands beside, `back` px short of it and walking at it,
 ## with the answer it is to have at the door. Added to the day's own (emptied) crowd, so
 ## `Crowd.step()` walks it exactly as it walks anybody.
-func _walker_approaching(scene: Dictionary, hut: WalkerDoorHold, back: float,
+func _walker_approaching(scene: Dictionary, hut_at: Vector2, back: float,
 		answer: int) -> CrowdAgent:
 	var city: City = scene["city"]
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
-	var hut_across: float = hut.position.x if vertical else hut.position.y
-	var hut_along: float = hut.position.y if vertical else hut.position.x
+	var hut_across: float = hut_at.x if vertical else hut_at.y
+	var hut_along: float = hut_at.y if vertical else hut_at.x
 	var corridor := CrowdLanes.corridor_at(hut_across)
 	var lane := CrowdLanes.nearest_sidewalk(corridor, hut_across)
 	# Toward the mouth from inside the door's own segment, whichever end the mouth is at.
 	var direction := -1.0 if scene["at_a"] else 1.0
-	var agent := CrowdAgent.new()
-	agent.door_segments = city.crowd._door_segments
-	agent.setup(CrowdAgent.Kind.WALKER, map, city.crowd.field(), 1, 0.0)
-	agent._door_answer = answer
-	agent._vertical = vertical
-	agent._corridor = corridor
-	agent._lane = lane
-	agent._direction = direction
-	agent._lane_centre = CrowdLanes.walker_lane_centre(corridor, lane,
-			CrowdLanes.SIDEWALK_OFFSETS)
-	agent._speed = 60.0
-	agent._cruise = 60.0
-	agent._set_along(hut_along - direction * back)
-	agent._set_cross(agent._lane_centre)
-	agent._junction = -1
-	agent._scan_at = Vector2i(-9999, -9999)
-	city.add_entity(agent)
-	city.crowd._agents.append(agent)
-	return agent
+	var centre := CrowdLanes.walker_lane_centre(corridor, lane, CrowdLanes.SIDEWALK_OFFSETS)
+	var along := hut_along - direction * back
+	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
+	# The entry a task scene's pinned actor takes (`Crowd.add_recipe_actor()`); the seed is one whose
+	# first roll gives the walker the answer it is to have at the door.
+	var placed := city.crowd.add_recipe_actor("walker-%d" % city.crowd.agent_count(),
+			CrowdAgent.Kind.WALKER, Vector2(centre, along) if vertical else Vector2(along, centre),
+			heading, 60.0, _rig.seed_for_door_answer(answer))
+	assert(placed["error"] == "", "the walker is placed: %s" % placed["error"])
+	return placed["actor"]
 
 ## How far past a hut a walker has got, along its own line of travel: negative while it is still
 ## coming, positive once it is through.
@@ -833,76 +851,89 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 	var city: City = scene["city"]
 	city.crowd.clear()
 	var hut: WalkerDoorHold = scene["huts"][0]
-	var walker := _walker_approaching(scene, hut, 160.0, CrowdAgent.DoorAnswer.HELD)
+	var walker := _walker_approaching(scene, hut.position, 160.0, WalkerStrategy.DoorAnswer.HELD)
 	# The way it points as it starts, kept for the whole crossing: "past the hut" is measured
 	# along that axis, because the walker's own heading flips the moment it turns round — and a
 	# walker that came out and then walked back would read as one that never came out at all.
 	# The line test below already guards its `crossed` against the same flip the same way.
 	var approach := walker.heading()
-	# Where the door let it go, measured on the frame the cooldown releases it — the release is
-	# by distance, so this is the walker clear of the hut under its own steam rather than the
-	# spot `_emerge_from_the_hut()` placed it on. Stays -INF if the release never comes inside
-	# the window, which the four-states sequence check reports first.
+	# Where the door let it go, measured on the first frame it is clear of the hut's cooldown area
+	# (`WalkerStrategy.WALKER_DOOR_COOLDOWN_RADIUS`) after being inside — the release is by
+	# distance, so this is the walker clear of the hut under its own steam rather than the spot it
+	# was put on coming out. Stays -INF if it never gets clear inside the window, which the
+	# sequence check reports first.
 	var came_out_at := -INF
 
-	var seen: Array[int] = [walker._door_state]
+	# The four states as the hut and the walker show them: walking (on its way, in the line or not),
+	# waiting (in the hut's line and standing), inspection (inside the hut, which is what the hut
+	# says it holds) and out (it has been inside, and is not now).
+	var seen: Array[int] = [_door_phase(walker, hut, false)]
+	var been_inside := false
 	var occupied_off_inspection := 0
 	var drawn_during_inspection := 0
 	var waited_at := INF
 	for frame in int(round(8.0 / STEP)):
 		city.crowd.step(STEP)
-		var inspecting := walker._door_state == CrowdAgent.DoorState.INSPECTION
-		if (hut.inside == walker) != inspecting:
+		var inspecting := hut.inside == walker
+		been_inside = been_inside or inspecting
+		var phase := _door_phase(walker, hut, been_inside)
+		# The hut holds somebody exactly while that walker is hidden in it.
+		if inspecting == walker.visible:
 			occupied_off_inspection += 1
 		if inspecting and walker.visible:
 			drawn_during_inspection += 1
-		if walker._door_state == CrowdAgent.DoorState.WAITING and walker.velocity().is_zero_approx():
+		if phase == DoorPhase.WAITING:
 			waited_at = minf(waited_at, -_past_the_hut(walker, hut))
-		if walker._door_state != seen[seen.size() - 1]:
-			if seen[seen.size() - 1] == CrowdAgent.DoorState.EMERGING:
-				came_out_at = (walker.global_position - hut.position).dot(approach)
-			seen.append(walker._door_state)
-	t.check(seen == [CrowdAgent.DoorState.WALKING, CrowdAgent.DoorState.WAITING,
-			CrowdAgent.DoorState.INSPECTION, CrowdAgent.DoorState.EMERGING,
-			CrowdAgent.DoorState.WALKING],
-			"a held walker goes walking, waiting, inspection, emerging, walking (got %s)" % [seen])
+		if been_inside and not inspecting and came_out_at == -INF \
+				and walker.global_position.distance_to(hut.position) \
+				> WalkerStrategy.WALKER_DOOR_COOLDOWN_RADIUS:
+			came_out_at = (walker.global_position - hut.position).dot(approach)
+		if phase != seen[seen.size() - 1]:
+			seen.append(phase)
+	t.check(seen == [DoorPhase.WALKING, DoorPhase.WAITING, DoorPhase.INSPECTION, DoorPhase.OUT],
+			"a held walker goes walking, waiting, inspection, out (got %s)" % [seen])
 	t.check(occupied_off_inspection == 0,
-			"the hut is occupied exactly while somebody is being inspected in it (%d frames it "
-			% occupied_off_inspection + "was not)")
+			"the hut is occupied exactly while somebody is hidden in it (%d frames it was not)"
+			% occupied_off_inspection)
 	t.check(drawn_during_inspection == 0,
 			"and nobody is drawn while they are inside it (%d frames somebody was)"
 			% drawn_during_inspection)
 	# Beside the hut rather than inside its footprint, and short of the body that would otherwise
 	# stop her — a frame of travel either side of the distance it aims at.
-	t.check(absf(waited_at - Tuning.WALKER_DOOR_STOP_DISTANCE) < 4.0,
+	t.check(absf(waited_at - WalkerStrategy.WALKER_DOOR_STOP_DISTANCE) < 4.0,
 			"it stops short of the hut's own body (%.1fpx against %.1f)"
-			% [waited_at, Tuning.WALKER_DOOR_STOP_DISTANCE])
+			% [waited_at, WalkerStrategy.WALKER_DOOR_STOP_DISTANCE])
 	t.check(came_out_at > 0.0,
 			"and it comes out on the far side of the door (%.1fpx)" % came_out_at)
 	t.check(hut.inside == null and hut.waiting() == 0,
 			"the hut is free again once it has let somebody through")
 
 	# The cooldown: the same hut may not take it again until it has actually left the hut's area,
-	# which is why the flag is cleared by distance rather than by a clock.
-	var held_again := _walker_approaching(scene, hut, 0.0, CrowdAgent.DoorAnswer.HELD)
-	held_again._door_state = CrowdAgent.DoorState.EMERGING
-	held_again._door_hold = hut
-	held_again._set_along(held_again._along() + Tuning.WALKER_DOOR_STOP_DISTANCE
+	# which is why the flag is cleared by distance rather than by a clock. **Left on the walker's
+	# private door state**: the emerging state and the hut it still holds are shown by nothing the
+	# game reads (the hut and the walker show only inside and not inside), so these two checks put
+	# a walker in that state and read it back.
+	var held_again := _walker_approaching(scene, hut.position, 0.0,
+			WalkerStrategy.DoorAnswer.HELD)
+	held_again.strategy._door_state = WalkerStrategy.DoorState.EMERGING
+	held_again.strategy._door_hold = hut
+	held_again._set_along(held_again._along() + WalkerStrategy.WALKER_DOOR_STOP_DISTANCE
 			* held_again._direction)
 	city.crowd.step(STEP)
-	t.check(held_again._door_state == CrowdAgent.DoorState.EMERGING and hut.inside == null,
+	t.check(held_again.strategy._door_state == WalkerStrategy.DoorState.EMERGING and hut.inside == null,
 			"a walker that has just come out is not taken again while it is still at the door")
 	for frame in int(round(4.0 / STEP)):
 		city.crowd.step(STEP)
-	t.check(held_again._door_hold == null,
+	t.check(held_again.strategy._door_hold == null,
 			"and it is only clear of that door once it has left the hut's area")
 
 	# And the answer the player asked to keep: a small fraction walk through as they always did.
-	var passing := _walker_approaching(scene, hut, 160.0, CrowdAgent.DoorAnswer.PASSES)
+	var passing := _walker_approaching(scene, hut.position, 160.0,
+			WalkerStrategy.DoorAnswer.PASSES)
 	var stopped := 0
 	for frame in int(round(5.0 / STEP)):
 		city.crowd.step(STEP)
-		if passing._door_state != CrowdAgent.DoorState.WALKING \
+		if hut.place_of(passing) >= 0 or hut.inside == passing \
 				or passing.velocity().is_zero_approx():
 			stopped += 1
 	t.check(stopped == 0,
@@ -910,8 +941,21 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> vo
 			% stopped)
 	t.check(_past_the_hut(passing, hut) > 0.0, "and it is through the door")
 
+## What a walker held at a door is doing, read off the hut and the walker: inside the hut, standing
+## in its line, out again after being inside, or on its way (in the line or not).
+enum DoorPhase { WALKING, WAITING, INSPECTION, OUT }
+
+func _door_phase(walker: CrowdAgent, hut: WalkerDoorHold, been_inside: bool) -> int:
+	if hut.inside == walker:
+		return DoorPhase.INSPECTION
+	if been_inside:
+		return DoorPhase.OUT
+	if hut.place_of(walker) >= 0 and walker.velocity().is_zero_approx():
+		return DoorPhase.WAITING
+	return DoorPhase.WALKING
+
 ## M110, the last item's own third clause: *"don't want a queue that is long"*. A door's line is
-## short **by construction** — one walker inside, `Tuning.WALKER_DOOR_QUEUE_MAX` standing behind it,
+## short **by construction** — one walker inside, `WalkerStrategy.WALKER_DOOR_QUEUE_MAX` standing behind it,
 ## and the next walker to see the door turns away at the door rather than joining. The line is
 ## asserted against the constant rather than against a count, so moving the cap moves the test with
 ## it; what would fail is a line that grows past whatever the cap says.
@@ -923,9 +967,9 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 	var hut: WalkerDoorHold = scene["huts"][0]
 	# One at the hut, `WALKER_DOOR_QUEUE_MAX` behind it, and one more than the door will take.
 	var line: Array[CrowdAgent] = []
-	for i in Tuning.WALKER_DOOR_QUEUE_MAX + 2:
-		line.append(_walker_approaching(scene, hut, 60.0 + 40.0 * float(i),
-				CrowdAgent.DoorAnswer.HELD))
+	for i in WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 2:
+		line.append(_walker_approaching(scene, hut.position, 60.0 + 40.0 * float(i),
+				WalkerStrategy.DoorAnswer.HELD))
 	var turned_away: CrowdAgent = line[line.size() - 1]
 	var away_at_the_start := turned_away.global_position.distance_to(hut.position)
 	# Measured against the way it was **originally** pointing, because turning away reverses its
@@ -935,7 +979,7 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 
 	var longest := 0
 	var ever_joined := false
-	var ever_refused := false
+	var ever_turned := false
 	var crossed := false
 	var spacing_seen := 0
 	for frame in int(round(6.0 / STEP)):
@@ -943,8 +987,8 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 		longest = maxi(longest, hut.committed())
 		if hut.place_of(turned_away) >= 0:
 			ever_joined = true
-		if turned_away._refused_hut == hut:
-			ever_refused = true
+		if turned_away.heading().dot(approach) < 0.5:
+			ever_turned = true
 		if (turned_away.global_position - hut.position).dot(approach) > 0.0:
 			crossed = true
 		# Two waiting behind somebody inside: the second of them stands one spacing further back
@@ -954,15 +998,15 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 			var second: CrowdAgent = hut.queue[1]
 			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
 				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
-				if absf(gap - Tuning.WALKER_DOOR_QUEUE_SPACING) < 6.0:
+				if absf(gap - WalkerStrategy.WALKER_DOOR_QUEUE_SPACING) < 6.0:
 					spacing_seen += 1
-	t.check(longest <= Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+	t.check(longest <= WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 1,
 			"a door never holds more than one walker inside and WALKER_DOOR_QUEUE_MAX behind it "
 			+ "(the most it held was %d)" % longest)
-	t.check(longest == Tuning.WALKER_DOOR_QUEUE_MAX + 1,
+	t.check(longest == WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 1,
 			"and it does fill up, so the cap above was actually asked about (%d)" % longest)
 	t.check(not ever_joined, "the walker the door has no room for never joins the line")
-	t.check(ever_refused, "it decides against that door rather than walking up to the queue")
+	t.check(ever_turned, "it decides against that door rather than walking up to the queue")
 	t.check(not crossed, "and it never reaches the door, let alone crosses it")
 	t.check(turned_away.global_position.distance_to(hut.position) > away_at_the_start,
 			"it is walking away from the door by the end")
@@ -972,7 +1016,7 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 
 ## The boom over the roadway is the cars' own and is untouched by any of the above: a car still
 ## comes to a full stop at a lowered gate and the gate still raises for it once it has been stopped
-## for `Tuning.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
+## for `Crowd.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
 ## before the gate opens and they can go ahead again.")*
 func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 	if scene.is_empty():
@@ -987,23 +1031,9 @@ func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 	var corridor := CrowdLanes.corridor_at(gate_across)
 	var direction := -1.0 if scene["at_a"] else 1.0
 	var lane := CrowdLanes.road_lane(vertical, direction)
-	var car := CrowdAgent.new()
-	car.door_segments = city.crowd._door_segments
-	car.traffic = city.crowd.traffic()
-	car.setup(CrowdAgent.Kind.CAR, map, city.crowd.field(), 7, 0.0)
-	car._vertical = vertical
-	car._corridor = corridor
-	car._lane = lane
-	car._direction = direction
-	car._lane_centre = CrowdLanes.lane_centre(corridor, lane)
-	car._speed = Tuning.CAR_SPEED.x
-	car._cruise = Tuning.CAR_SPEED.x
-	car._set_along(gate_along - direction * 180.0)
-	car._set_cross(car._lane_centre)
-	car._junction = -1
-	car._scan_at = Vector2i(-9999, -9999)
-	city.add_entity(car)
-	city.crowd._agents.append(car)
+	var car: CrowdAgent = _rig.agent_on(city, map, CrowdAgent.Kind.CAR, corridor, lane,
+			gate_along - direction * 180.0, direction, vertical, CrowdLanes.SIDEWALK_OFFSETS,
+			Tuning.CAR_SPEED.x, 7)
 
 	# Watched against the moment the boom first goes up rather than against its state at the end:
 	# it comes back down behind a car that has gone through (`Crowd._stop_for_gates()` keeps it up
@@ -1027,7 +1057,7 @@ func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 
 ## M110, item 3: a soft seal takes both pavements from the walkers and leaves the carriageway to
 ## the cars. `SealPlanner.plan_day` is driven directly here, off a real tree, since
-## `CityMap.soft_sealed_tiles` and `CrowdAgent._cannot_go_on` are what is being asked about rather
+## `CityMap.soft_sealed_tiles` and `CrowdAgent.strategy.cannot_go_on` are what is being asked about rather
 ## than the whole day's pipeline — checked against the predicate directly, for the same reason the
 ## door carve-out above is: whether a random walker wanders onto one particular tile inside a short
 ## window is a question about the day's population, not about this rule.
@@ -1036,7 +1066,7 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 	var tree := RouteTree.for_day(_city.map, day)
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
-	SealPlanner.plan_day(_city.map, day, tree, seal_rng)
+	SealPlanner.plan_day(_city.map, DaySpec.for_day(day), tree, seal_rng)
 	t.check(not _city.map.soft_sealed_tiles.is_empty(),
 			"today's tree leaves at least one street soft-sealed (%d tiles)"
 			% _city.map.soft_sealed_tiles.size())
@@ -1044,7 +1074,7 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 	var both_sealed: StreetNetwork.Segment = null
 	var thinned: StreetNetwork.Segment = null
 	var thinned_open: Array[Vector2i] = []
-	for segment in StreetNetwork.segments():
+	for segment in _city.map.network.segments():
 		if not _city.map.has_street(segment.key()):
 			continue
 		# Ordinary streets only: a precinct has no pavement/carriageway split for a soft seal to
@@ -1069,27 +1099,26 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 	if not both_sealed or not thinned:
 		return
 
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._map = _city.map
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
-	car._map = _city.map
+	_city.crowd.clear()
+	var walker: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.WALKER)
+	var car: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.CAR)
+	t.check(walker != null and car != null, "the crowd takes a walker and a car on some open street")
+	if walker == null or car == null:
+		return
 	var vertical := not both_sealed.horizontal
 
 	for tile in _sidewalk_side_tiles(both_sealed, true) + _sidewalk_side_tiles(both_sealed, false):
-		t.check(walker._cannot_go_on(vertical, tile),
+		t.check(walker.strategy.cannot_go_on(vertical, tile),
 				"a walker turns away from a fully soft-sealed pavement tile %s" % tile)
-		t.check(not car._cannot_go_on(vertical, tile),
+		t.check(not car.strategy.cannot_go_on(vertical, tile),
 				("and a car still drives straight through the same tile %s — the carriageway is " +
 				"never sealed") % tile)
 
 	for tile in thinned_open:
-		t.check(not walker._cannot_go_on(not thinned.horizontal, tile),
+		t.check(not walker.strategy.cannot_go_on(not thinned.horizontal, tile),
 				"the thinned pair's open pavement stays open to a walker at %s" % tile)
 
-	walker.free()
-	car.free()
+	_city.crowd.clear()
 	_city.map.clear_day_soft_seals()
 
 ## The street's own cross-section, one tile per lane, at the middle of the block — the same layout
@@ -1131,7 +1160,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 
@@ -1144,9 +1173,9 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var events_rng := RandomNumberGenerator.new()
 	events_rng.seed = hash("crowd-home-events:%d:%d" % [SEED, day])
 	var consumed: Array[String] = []
-	city.events.start_day(day, events_rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
-	var home_segments := StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
+	var home_segments := map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE))
 	t.check(not home_segments.is_empty(), "the home block has bordering streets")
 	var home_keys := {}
 	var held_home := false
@@ -1172,7 +1201,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 		city.crowd.set_focus(at)
 		city.crowd.step(STEP)
 		for agent in city.crowd.agents():
-			var segment := StreetNetwork.segment_containing(map.world_to_tile(agent.position))
+			var segment := map.network.segment_containing(map.world_to_tile(agent.position))
 			if segment == null or not home_keys.has(segment.key()):
 				continue
 			if agent.kind == CrowdAgent.Kind.WALKER:
@@ -1189,8 +1218,8 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 ## entry-side fallback (`CrowdAgent._keep_within_the_room_beyond_the_map`) used to hand every kind
 ## the same `ENTRY_SPREAD` reach past the true edge, so a walker whose six recycle rolls all missed
 ## could appear already standing on the bridge. The bridge is not made safe by this: a car on the
-## spine still overruns the map's south edge, by up to `CrowdAgent.BRIDGE_RUN` (the bridge deck's
-## length less a car) on its way out and at least `CrowdAgent.BRIDGE_ENTRY_MIN` (past the camera's
+## spine still overruns the map's south edge, by up to `CarStrategy.BRIDGE_RUN` (the bridge deck's
+## length less a car) on its way out and at least `CarStrategy.BRIDGE_ENTRY_MIN` (past the camera's
 ## reach beyond the edge) on its way in, which is the whole of how it looks like it drives across
 ## rather than stopping dead at the kerb.
 func _test_only_cars_go_over_the_bridge(t) -> void:
@@ -1220,15 +1249,15 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 			% worst_car)
 
 ## M53: **the crowd has to agree with the drawing.** A T-junction the paint knows about and
-## `CrowdAgent._divert` does not is the same bug in the other direction — so this checks the
-## crowd's own notion of a street (`CityMap.is_street`, which is what `_cannot_go_on` reads) against
+## `WalkerStrategy.divert()` does not is the same bug in the other direction — so this checks the
+## crowd's own notion of a street (`CityMap.is_street`, which is what `LaneStrategy.cannot_go_on()` reads) against
 ## a calm zone's absorbed corridor the same way `tests/test_generator.gd` checks the paint.
 ##
 ## A car never belongs on a zone's absorbed corridor — `is_street()` is false there, park or not,
-## which is the one check `_cannot_go_on` makes that does not care *why* a tile stopped being a
+## which is the one check `LaneStrategy.cannot_go_on()` makes that does not care *why* a tile stopped being a
 ## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
 ## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
-## real traffic around it rather than by re-deriving what `_cannot_go_on` already computes.
+## real traffic around it rather than by re-deriving what `LaneStrategy.cannot_go_on()` already computes.
 func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 	if _city.map.zone_rects.is_empty():
 		return
@@ -1279,7 +1308,7 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
 
 ## Playtest 37, finding 4: **out of bounds is blocked**, not merely limited to within a tile the
 ## way `_test_only_cars_go_over_the_bridge` and `_test_agents_do_not_overrun_an_ordinary_edge`
-## already check — `CrowdAgent._cannot_go_on` now refuses every out-of-bounds tile outright, with
+## already check — `CrowdAgent.strategy.cannot_go_on` now refuses every out-of-bounds tile outright, with
 ## one exception, so the new claim is that nobody else reaches one **at all**. Checked directly
 ## against `CityMap.in_bounds` rather than by a pixel tolerance: the spine's own band (north and
 ## south) may still carry a car past it, and nowhere else may carry anybody.
@@ -1320,10 +1349,29 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
 				"edge %d: no car off the spine ever stands out of bounds (%d frames it did)"
 				% [i, off_spine_cars_out])
 
+## Which of a crowd's bodies has been put down somewhere new since it was last asked about: one that
+## has moved further in a frame than any body drives or walks in one was recycled, which is the only
+## way the crowd moves a body that far (`LaneMover.step()` recycles one that has left the crowd's
+## field). Asked of each body once a frame, after the frame's step.
+class Landings extends RefCounted:
+	const JUMP := 100.0
+	var _was := {}
+
+	func _init(crowd: Crowd) -> void:
+		for agent in crowd.agents():
+			_was[agent.get_instance_id()] = agent.position
+
+	func landed(agent: CrowdAgent) -> bool:
+		var id := agent.get_instance_id()
+		var before: Vector2 = _was.get(id, agent.position)
+		_was[id] = agent.position
+		return before.distance_to(agent.position) > JUMP
+
 ## A spine car that is put into the world past the map's edge is put out of anybody's sight: coming
 ## out of the tunnel it is wholly inside the opaque dark and no deeper than the mountain roof, and
 ## coming onto the bridge it is beyond the camera's reach from the map's edge. Stood at each end,
-## every spine car is recycled over and over and the landings past the edge are read.
+## the crowd's own spine cars are recycled as they leave the field, and the landings past the edge
+## are read.
 func _test_spine_cars_are_put_out_of_sight(t) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
@@ -1337,26 +1385,29 @@ func _test_spine_cars_are_put_out_of_sight(t) -> void:
 		var at: Vector2 = ends[name]
 		_city.crowd.start_day(1, _rng(60 + i), at)
 		i += 1
+		var landings := Landings.new(_city.crowd)
 		var landed := 0
 		var in_view := 0
 		var too_deep := 0
-		for frame in int(round(40.0 / STEP)):
+		for frame in int(round(80.0 / STEP)):
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
-				if agent.kind != CrowdAgent.Kind.CAR or not _city.map.is_main_road(true, agent._corridor):
+				if agent.kind != CrowdAgent.Kind.CAR or not _city.map.is_main_road(
+						true, CrowdLanes.corridor_at(agent.position.x)):
 					continue
-				agent._recycle()
+				if not landings.landed(agent):
+					continue
 				var y: float = agent.position.y
 				if name == "tunnel" and y < 0.0:
 					landed += 1
-					if y > -CrowdAgent.TUNNEL_ROOM:
+					if y > -CarStrategy.TUNNEL_ROOM:
 						in_view += 1
-					if y < -CrowdAgent.TUNNEL_ENTRY_ROOM:
+					if y < -CarStrategy.TUNNEL_ENTRY_ROOM:
 						too_deep += 1
 				elif name == "bridge" and y > size.y:
 					landed += 1
-					if y < size.y + CrowdAgent.BRIDGE_ENTRY_MIN:
+					if y < size.y + CarStrategy.BRIDGE_ENTRY_MIN:
 						in_view += 1
 		t.check(landed > 0, "%s: spine cars were put past the edge, so the check is not vacuous" % name)
 		t.check(in_view == 0 and too_deep == 0,
@@ -1396,10 +1447,10 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 				furthest_south = maxf(furthest_south, agent.position.y - size.y)
 				if agent.position.y < 0.0 or agent.position.y > size.y:
 					seen_past_the_edge += 1
-		t.check(furthest_north <= CrowdAgent.TUNNEL_ENTRY_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
+		t.check(furthest_north <= CarStrategy.TUNNEL_ENTRY_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
 				"%s: arrivals stay beneath the tunnel roof (furthest %.0fpx)"
 				% [name, furthest_north])
-		t.check(departing_north <= CrowdAgent.TUNNEL_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
+		t.check(departing_north <= CarStrategy.TUNNEL_ROOM + Tuning.CAR_STRIKE_HALF_LENGTH,
 				"%s: departures vanish inside the dark before reaching the mountain (%.0fpx)"
 				% [name, departing_north])
 		t.check(furthest_south <= CityEdge.BRIDGE_DECK_PX,
@@ -1408,8 +1459,8 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 				% name)
 
 ## Playtest 47: **"no car ever comes *out* of the tunnel or from the bridge."** A car on the spine
-## overruns the edge by its exit's room on its way out (`CrowdAgent.TUNNEL_ROOM`,
-## `CrowdAgent.BRIDGE_RUN`), and the entry side has to grant the same room: `CrowdAgent._entry_band_fits` otherwise refuses every band lying past the edge, which
+## overruns the edge by its exit's room on its way out (`CarStrategy.TUNNEL_ROOM`,
+## `CarStrategy.BRIDGE_RUN`), and the entry side has to grant the same room: `CrowdAgent._entry_band_fits` otherwise refuses every band lying past the edge, which
 ## beside the tunnel is the only place a southbound spine car can start. So stand at each end of
 ## the spine and count spine cars seen out of bounds by which way they are pointing. Asserted as a
 ## ratio rather than a count, because the population and the re-roll odds both move: traffic
@@ -1450,14 +1501,14 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 				% [name, outbound])
 		# A car enters at most `ENTRY_SPREAD` out but leaves by the whole of the exit's room (the
 		# deck is longer than the entry band), so the fraction asked for is scaled by that.
-		var room := CrowdAgent.BRIDGE_RUN if name == "bridge" else CrowdAgent.TUNNEL_ENTRY_ROOM
+		var room := CarStrategy.BRIDGE_RUN if name == "bridge" else CarStrategy.TUNNEL_ENTRY_ROOM
 		var exposure := minf(CrowdAgent.ENTRY_SPREAD, room) / room
 		t.check(float(inbound) >= float(outbound) * exposure / 4.0,
 				"%s: cars come in by it too (%d frames heading in against %d heading out)"
 				% [name, inbound, outbound])
 
 ## M120: **entry is where exit is.** A recycled walker or off-spine car may not land past the true
-## edge at all — `CrowdAgent._entry_room()` grants it none, where `_room_beyond_the_map()` still
+## edge at all — `LaneStrategy.entry_room()` grants it none, where `LaneStrategy.has_left_the_map()` still
 ## grants a departing one a tile so it does not blip out exactly on the kerb. Stood at all four
 ## plain edges (north, south, east and west, each away from the spine so the tunnel and the bridge
 ## are not what is being asked about here — `_test_cars_come_out_of_the_tunnel_and_off_the_bridge`
@@ -1492,54 +1543,60 @@ func _test_nobody_enters_across_a_plain_edge(t) -> void:
 				% [name, out_of_bounds])
 
 ## M120: **the entry roll itself, not only its final position.** A full `Crowd` never shows the
-## difference above by itself — `_stands_on_a_street()` already pulled a stray recycle back onto
+## difference above by itself — `LaneMover._stands_on_a_street()` already pulled a stray recycle back onto
 ## the map's own last row before M120, so *"nobody is ever out of bounds"* was already true and the
 ## test above cannot tell this fix from its absence. What changed is *how* a fresh entry lands there
 ## when the field's own edge (`CrowdField.along_bounds`) is already flush with the true one —
 ## `bounds.x - ENTRY_SPREAD` is then nowhere near a real street, so the un-clipped roll used to fail
-## `_entry_band_fits()` on every attempt bar the rare one that also finds a legal spot the other way
-## round, and the state `_recycle()` was left holding when none did was whichever `_choose_lane()`
+## `LaneMover._entry_band_fits()` on every attempt bar the rare one that also finds a legal spot the other way
+## round, and the state a recycle was left holding when none did was whichever `_choose_lane()`
 ## last rolled — almost never this axis and direction at all, because the other one kept winning the
-## early exit. Driven by hand, seed by seed, straight at `_recycle()`, with the field's own edge
-## pinned 50px from the true one so an entry aimed this way has exactly that much real room and no
-## more.
+## early exit. Read off the recycles the crowd makes itself, as the bodies that leave a field narrowed
+## to 250px land again, with the field's own edge pinned 50px from the true one so an entry aimed
+## this way has exactly that much real room and no more.
 func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
-	var field := CrowdField.new(_city.map, Vector2(300.0, _city.map.world_size().y * 0.5))
-	field.radius = 250.0
+	# The crowd's own field is a box of `Tuning.CROWD_FIELD_RADIUS` round the focus, so a focus that
+	# far and 50px in from the west edge puts the box's west edge 50px from the true one: what leaves
+	# the box is recycled and lands again at its west edge heading east.
+	var at := Vector2(Tuning.CROWD_FIELD_RADIUS + 50.0, _city.map.world_size().y * 0.5)
+	_city.crowd.start_day(1, _rng(50), at)
+	var field := _city.crowd.field()
 	var bounds := field.along_bounds(false)
 	t.check(is_equal_approx(bounds.x, 50.0),
 			"the field's own edge sits 50px from the true one, or the rig below is not testing it")
 
-	var agent := CrowdAgent.new()
-	agent.kind = CrowdAgent.Kind.WALKER
-	agent._map = _city.map
-	agent.field = field
-
+	var landings := Landings.new(_city.crowd)
+	var landed_walkers := 0
 	var lo := INF
 	var hi := -INF
 	var samples := 0
-	for seed in 400:
-		agent._rng.seed = seed
-		agent._recycle()
-		if agent._vertical or agent._direction <= 0.0:
-			continue
-		samples += 1
-		lo = minf(lo, agent._along())
-		hi = maxf(hi, agent._along())
-	t.check(samples > 20,
-			"enough of 400 seeds land a fresh walker heading into this axis to say anything (%d)"
-			% samples)
+	for frame in int(round(60.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if not landings.landed(agent) or agent.kind != CrowdAgent.Kind.WALKER:
+				continue
+			landed_walkers += 1
+			if agent.travelling_vertically() or agent.heading().x <= 0.0:
+				continue
+			samples += 1
+			lo = minf(lo, agent.position.x)
+			hi = maxf(hi, agent.position.x)
+	# About a quarter of the walkers put down land heading east at the west edge; a fresh entry that
+	# is refused its room there settles on another axis instead, which thins this share out.
+	t.check(samples > 20 and samples * 8 > landed_walkers,
+			"a fair share of the walkers put down land heading into this axis (%d of %d)"
+			% [samples, landed_walkers])
 	t.check(lo >= 0.0, "never past the true edge (worst %.1fpx)" % lo)
 	t.check(hi - lo > 20.0,
 			"and spread across the 50px of real room rather than pinned to one point (spread %.1fpx)"
 			% (hi - lo))
-	agent.free()
 
 ## M100: **the picture, not only the centre.** PLAYTEST-69 re-reported "people still come out from
 ## outside the map" on top of M120's own fix, and this is the shape of it:
-## `_entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
+## `LaneStrategy.entry_room()` (M120) grants an ordinary walker or off-spine car nothing past the true edge, but
 ## nothing past the line still let the roll land exactly *on* it — a legal centre by
-## `_entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
+## `LaneMover._entry_band_fits()`'s old words — with the picture straddling the boundary regardless, since a
 ## walker's canvas rises `Sprites.draw_standing` bottom-anchored from its own position with nothing
 ## drawn south of it. Pinned flush with the true edge itself (`CrowdField.along_bounds`'s own clamp,
 ## not a field radius chosen to make it so), the same way `_test_nobody_enters_across_a_plain_edge`
@@ -1548,7 +1605,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 ## lands with its centre on the line and its whole picture past it.
 ##
 ## Pinned like M120's own `_test_the_entry_roll_is_kept_inside_its_own_room` — a real but partial
-## 45px of room, past `_entry_picture_clearance()`'s reach for a walker (38px) and for an off-spine
+## 45px of room, past the picture clearance (`AgentLook.entry_clearance()`)'s reach for a walker (38px) and for an off-spine
 ## car (26-28px), rather than flush with zero room. A flush field proves too much *and* too little
 ## at once here: with the fix, that axis and direction can never succeed at all — every attempt is
 ## refused and the loop always settles somewhere else — so a flush rig collects zero samples for the
@@ -1557,55 +1614,62 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 ## not prove the guarantee rather than assume it: **fails without the fix**, since before it every
 ## roll in `[0, 45)` was accepted rather than only `[38, 45)` (or `[26-ish, 45)` for a car).
 ##
-## A freshly generated map rather than the shared `_city.map`: by this point in the suite several
-## other tests have run days against it and left closures and soft seals behind, which can shut the
-## one corridor this test stands beside and starve it of samples for a reason that has nothing to
-## do with this guarantee.
+## Read off the recycles the crowd makes itself, as the bodies that leave a box with its north edge
+## 45px from the true one land again; a city of this test's own, so no other test's closures or seals
+## can shut the corridors it stands beside and starve it of samples.
 func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	var spine_lo := map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
-	var away_from_spine := spine_lo * 0.5
-	var field := CrowdField.new(map, Vector2(away_from_spine, 295.0))
-	field.radius = 250.0
+	# The box's north edge 45px from the true one, as the west edge is 50px in the test above; the
+	# focus is in from the west and east edges as well, so the box is not grown to make up for ground
+	# it hangs over.
+	var at := Vector2(_city.map.world_size().x * 0.5, Tuning.CROWD_FIELD_RADIUS + 45.0)
+	_city.crowd.start_day(1, _rng(51), at)
+	var field := _city.crowd.field()
 	var bounds := field.along_bounds(true)
 	t.check(is_equal_approx(bounds.x, 45.0),
 			"the field's own edge sits 45px from the true one, or the rig below is not testing it")
-	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
-		var agent := CrowdAgent.new()
-		agent.kind = kind
-		agent._map = map
-		agent.field = field
-		var worst := INF
-		var samples := 0
-		for seed in 400:
-			agent._rng.seed = seed
-			agent._recycle()
-			if not agent._vertical or agent._direction <= 0.0:
+	var landings := Landings.new(_city.crowd)
+	var worst := {CrowdAgent.Kind.WALKER: INF, CrowdAgent.Kind.CAR: INF}
+	var samples := {CrowdAgent.Kind.WALKER: 0, CrowdAgent.Kind.CAR: 0}
+	for frame in int(round(120.0 / STEP)):
+		_city.crowd.set_focus(at)
+		_city.crowd.step(STEP)
+		for agent in _city.crowd.agents():
+			if not landings.landed(agent) or not agent.travelling_vertically() \
+					or agent.heading().y <= 0.0:
 				continue
 			# The spine's own tunnel exception (M94), not the guarantee this test holds.
-			if kind == CrowdAgent.Kind.CAR and agent._corridor == map.main_road:
+			if agent.kind == CrowdAgent.Kind.CAR and _city.map.is_main_road(
+					true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
-			samples += 1
-			worst = minf(worst, agent._along() - agent._entry_picture_clearance())
-		agent.free()
+			samples[agent.kind] += 1
+			worst[agent.kind] = minf(worst[agent.kind],
+					agent.position.y - _entry_clearance(agent))
+	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var label := "car" if kind == CrowdAgent.Kind.CAR else "walker"
-		t.check(samples > 5,
-				"%s: enough seeds land a fresh entry into this axis to say anything (%d)"
-				% [label, samples])
-		t.check(worst >= 0.0,
+		t.check(samples[kind] > 5,
+				"%s: enough landings come into this axis to say anything (%d)"
+				% [label, samples[kind]])
+		t.check(worst[kind] >= 0.0,
 				"%s: the picture never reaches past the true edge (worst %.1fpx short of its own "
-				% [label, worst] + "clearance)")
+				% [label, worst[kind]] + "clearance)")
+
+## How far past an agent's coordinate along its axis its picture reaches: the figure its look gives
+## the agent (`AgentLook.entry_clearance()`, which `CrowdAgent` asks when it places a body).
+func _entry_clearance(agent: CrowdAgent) -> float:
+	var look: AgentLook = CarLook.new(agent) if agent.kind == CrowdAgent.Kind.CAR \
+			else WalkerLook.new(agent)
+	return look.entry_clearance(agent.travelling_vertically())
 
 ## M100: **the same question at the morning's own placement.** `Crowd.start_day()` places every
 ## agent through `CrowdAgent.setup()`, which rolls freely across `CrowdField.along_bounds()` with no
 ## room question asked at all — and that box is already clamped flush to the true edge near one, so
 ## a roll can land as close to it as the continuous draw happens to put it. Read directly off a real
 ## day rather than off a pinned rig, because `setup()`'s own retries depend on the corridors actually
-## in view rather than on a hand-placed field. A freshly built `City` for the same reason the test
-## above uses a fresh map: the shared `_city` carries closures and seals other tests left behind.
+## in view rather than on a hand-placed field. A city of its own for the same reason the test above
+## has one: nothing another test closed or sealed stands in it.
 func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
 	var map := CityGenerator.generate(SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
 	var size := map.world_size()
@@ -1613,9 +1677,9 @@ func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
 	city.crowd.start_day(1, _rng(40), at)
 	var worst := INF
 	for agent in city.crowd.agents():
-		var limit: float = size.y if agent._vertical else size.x
-		var clearance := agent._entry_picture_clearance()
-		var along := agent._along()
+		var limit: float = size.y if agent.travelling_vertically() else size.x
+		var clearance := _entry_clearance(agent)
+		var along := agent.position.y if agent.travelling_vertically() else agent.position.x
 		worst = minf(worst, minf(along - clearance, limit - clearance - along))
 	t.check(worst >= 0.0,
 			"every agent placed this morning keeps its own picture inside the map (worst %.1fpx "

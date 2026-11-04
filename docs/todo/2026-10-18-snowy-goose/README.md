@@ -23,8 +23,8 @@ order is the filer's proposal.
   goes off in view, no crater appears in front of her. **Read as:** craters of explosions earlier in
   the walk are placed before she can see them; whether some craters stand from the section's start is
   the builder's proposal.
-- **A bright flash** with each explosion, matching the building's flashes (`InteriorEvents`' distant
-  flashes, light with no noise behind it).
+- **A bright flash** with each explosion, matching the building's flashes (`InteriorScene`'s distant
+  flashes, `start_the_night()`, light with no noise behind it).
 - **Random distant flashes** for bombs further away, fainter.
 - **A small screen shake** for a nearby explosion: short, eased, never hiding a danger or moving the
   controls; if the game has a reduced-motion setting, the shake honours it (say whether it has one).

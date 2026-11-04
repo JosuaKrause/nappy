@@ -34,7 +34,9 @@ func _test_appeared_requires_sight(t) -> void:
 	var camera: Camera2D = ordinary.camera
 	var recipe := {"playback": {"duration": 1, "observations": [
 			{"tick": 20, "subject": "event", "condition": "appeared"}]}}
-	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}}, true)
+	runtime.configure({"data": recipe, "manifest": {}, "anchors": {}},
+			RunConfig.parse(PackedStringArray(["--recipe", "test.json", "--recipe-mode", "scripted"]),
+				"", true), GameState)
 	var event := Node2D.new()
 	runtime.add_child(event)
 	runtime.named["event"] = event
@@ -179,14 +181,14 @@ func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
 	]
 	var raw_ground := PackedInt32Array()
 	raw_ground.resize(map.tiles.size())
-	raw_ground.fill(ArrowField.UNREACHED)
-	var raw := ArrowField.start(map, targets, Vector2i.ZERO)
+	raw_ground.fill(WalkField.UNREACHED)
+	var raw := WalkField.start(map, targets, Vector2i.ZERO)
 	while not raw.done:
 		raw.advance(map, raw_ground, map.tiles.size())
 	var director := ResistanceDirector.new()
 	director._map = map
 	var ground := director._ground_for_the_arrow()
-	var authored := ArrowField.start(map, targets, Vector2i.ZERO)
+	var authored := WalkField.start(map, targets, Vector2i.ZERO)
 	while not authored.done:
 		authored.advance(map, ground, map.tiles.size())
 	var start := Vector2i(0, 0)
@@ -226,10 +228,11 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 		map.repaint(state)
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"authored ground survives dawn repaint")
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
-		city.start_finale(state, 7)
+		city.start_day(state, 7, RandomNumberGenerator.new(),
+				DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 		t.check(map.tile_at(tile) == GameEnums.TileType.SIDEWALK,
 				"the real finale/day preparation also keeps the manual ground")
 		city.free()
@@ -244,7 +247,8 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	var tree := data.duplicate(true)
 	var run: Array = tree.stretch.tiles.sidewalk[0]
 	var planted := Vector2i(int(run[1]), int(run[0]))
-	while not StreetNetwork.segment_containing(planted) and planted.x < int(run[2]):
+	var lattice := StreetNetwork.new()
+	while not lattice.segment_containing(planted) and planted.x < int(run[2]):
 		planted.x += 1
 	tree.stretch.trees = [[planted.x, planted.y]]
 	var treed := RecipeCityBuilder.build(tree)
@@ -272,7 +276,7 @@ func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(built.map)
 		var back: Building = null
@@ -309,7 +313,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
 	var built := RecipeCityBuilder.build(edited)
 	t.check(built.errors.is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
 	if built.errors.is_empty():
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(built.map)
 		var tint_source: Building = null
@@ -378,7 +382,7 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 ## drafting inputs make (`SceneRecipeDraft.base_of()`).
 func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
-	var segment := StreetNetwork.by_key(Vector3i(5, 5, 1))
+	var segment := witness.network.by_key(Vector3i(5, 5, 1))
 	var ground := {}
 	SceneRecipeDraft._add_the_ground_of(witness, segment.tile_rect().get_center(), ground)
 	var whole := true
@@ -414,7 +418,7 @@ func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 			"a crowd observation asks about the picture round her")
 
 func _test_the_city_draws_the_stretch_alone(t, map: CityMap) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 	t.check(city.buildings().size() == map.stretch_buildings.size(),

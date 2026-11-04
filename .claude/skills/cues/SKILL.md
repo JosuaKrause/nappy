@@ -28,7 +28,8 @@ coming* are claims about the thing's own course.
   course, her position held fixed, reaches its lethal reach; flashing while it has not started yet
 - a **badge at the screen edge** whenever something lethal or faster than a walk is out of sight
   (`VisibleView`) and closing **under its own steam**, carrying its own silhouette so it says *what*
-  is coming rather than that something is — **for the things that telegraph**: a thing telegraphs
+  is coming rather than that something is, and, once raised, staying until the thing is in sight or
+  gone — **for the things that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
   (`EventDef.telegraphs`) — the loose dog and the cat, the player's own — is outside the badge and
@@ -66,7 +67,7 @@ narrowness is what stops it from being the next ring somebody wants:**
   clipped at the silhouette's edge. **A radius that means anything about reach is the ring this
   exception does not authorise.**
 - **For the cost being charged right now, not for what exists.** Colour is `colour_for()`, linear
-  through `Palette.HALO_MID` over `ExcitementHalo.net_landed()`: the source's traced `landed()` less
+  through `Palette.HALO_MID` over `ExcitementSource.net_landed()`: the source's traced `landed()` less
   its share of the decay the bar took in the same window, floored at zero. A rim reads red only
   while the bar is climbing because of it (PLAYTEST-112 2). Transparency is `magnitude_for()` over
   the same net on a curve that saturates early *(asked on 2026-09-07 for brightness to show distance
@@ -87,7 +88,7 @@ that bite when you are writing the code.
 
 ### The entity carries most of it, so one picture per row
 
-**No two rows share a look, no two looks share a silhouette.** `EventInstance.icon_for()` is the
+**No two rows share a look, no two looks share a silhouette.** `EventPictures.icon_for()` is the
 single table, and it is also what the badge draws. `tests/test_events.gd` holds both halves.
 
 **A *category* in an enum is a list waiting to happen.** Rows collapse into it until several are
@@ -98,21 +99,23 @@ row as far as any feedback is concerned. The crowd is the deliberate opposite; s
 ### A cue that marks everything says nothing
 
 **And a cue that marks the wrong things says something false** (PLAYTEST-37 5). What decides the
-mark is what the thing is **projected** to net her, not a row's declared cost: `EventInstance` and
-`CrowdAgent` each answer `expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds
+mark is what the thing is **projected** to net her, not a row's declared cost: every source
+(`ExcitementSource`, which `EventInstance` and `CrowdAgent` each compose) answers
+`expected_impact_at()` and `will_be_lethal()`. `tests/test_danger.gd` holds
 the scenarios: a cat dashing at her is unmarked, a cyclist or a car whose line reaches her is red
 and one passing wide is not, and a crowd at ordinary arterial density around a standing player marks
 nobody.
 
-- **The projection lives on the entity, not on a second table.** Both answer over the same
-  `contribution_at()` and `is_lethal_at()` every other caller uses, so there is no second formula
-  for what a thing costs to disagree with the first.
+- **The projection lives on the entity's source, not on a second table.** It is written once
+  (`ExcitementSource`) over the same field the present rate is (`contribution_at()`) and, for an
+  event, the reach `is_lethal_at()` uses, so there is no second formula for what a thing costs to
+  disagree with the first.
 - **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and a telegraph
   lasts a few seconds, so an "amber means telegraphing" rule would only ever be seen on the rows
   sited in front of her and would read as *near*. **The flash carries the phase.**
 - **Cache the projection once a frame.** `wants_a_mark()`, `mark_colour()` and the drawing all ask
-  in the same frame; `EventInstance._caret_strength()` and `CrowdAgent._caret_strength()` compute
-  it once, keyed on the entity's own clock.
+  in the same frame; `ExcitementSource.caret_strength()` computes it once, keyed on the entity's
+  own clock, and for an event on where she is too.
 
 ### The mark breathes
 
@@ -237,14 +240,16 @@ cues' own drawing:
 **A caller that sets a canvas transform around a mirrored sprite publishes it.**
 `Sprites.draw_standing()` is the only mirrored draw path in the game, and it can only set an
 absolute matrix. So a caller pairs its own `draw_set_transform*` with
-`Sprites.set_base_transform()`, and clears it back to `Transform2D.IDENTITY` when the pass ends;
-`Sprites.mirrored_transform()` composes the mirror under it. `EntityHalo._on_draw()` and
-`EventInstance._draw()` are the two callers. A caller that forgets draws every mirrored halo offset
+`Sprites.set_base_transform(canvas, base)`, which tells the canvas item being drawn on (the
+transform is a property of that canvas's pass, held on it and read back by `draw_standing()`, not a
+global), and sets it back to `Transform2D.IDENTITY` when the pass ends;
+`Sprites.mirrored_transform(canvas, at)` composes the mirror under it. `EntityHalo._on_draw()`,
+`EventLook.draw()` and `CrowdAgent._draw()` are the three callers. A caller that forgets draws every mirrored halo offset
 on top of the body, with no rim.
 
-**A redraw gate is a promise about everything the drawing reads.** `EventInstance` and
-`CrowdAgent` skip the rebuild while their picture is unchanged, so the key each compares has to
-name every time-varying quantity its `_draw()` touches, **not the ones that look like the
+**A redraw gate is a promise about everything the drawing reads.** An event's look (`EventLook`)
+and `CrowdAgent` skip the rebuild while their picture is unchanged, so the key each compares has to
+name every time-varying quantity its drawing touches, **not the ones that look like the
 picture**. A term missing from the key is a frozen picture rather than a crash, and it shows only on
 the bodies that reach the missing term — a car's registration and shadow read its **continuous**
 heading while its view, mirror and gait are quantised. A traced rim makes such a freeze visible,
@@ -253,11 +258,13 @@ body does not. Sweep the continuous quantity in a test and assert the key moved 
 
 **A gate that skips off screen is a promise about everything the drawing covers, and it redraws on
 its first frame back.** `DrawnView` (`src/ui/drawn_view.gd`) is the one box, the view grown by two
-tiles, that `CrowdAgent` and `EventInstance` skip their redraw and caret projection outside of. The
-box a thing is tested against has to hold every pixel its `_draw()` can reach, not the picture at its
+tiles, that `CrowdAgent` and an event's look skip their redraw and caret projection outside of. The
+box a thing is tested against has to hold every pixel its drawing can reach, not the picture at its
 own point: a street fire's flames run the whole burning front, hundreds of pixels from where it
 stands, and a box of its point alone freezes them on screen. And it redraws on the first frame back
 whatever its key says, since nothing kept the picture current while it was away, so a caret owed on
 that frame is drawn on it.
 
-**Headless runs never call `_draw()`** — see the **verify** skill, "What each one cannot see".
+**A headless run draws but makes no pixels**: it calls `_draw()` and emits `draw` like any other,
+and its dummy renderer leaves no picture to judge — see the **verify** skill, "What each one cannot
+see".

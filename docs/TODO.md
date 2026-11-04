@@ -3,8 +3,8 @@
 **The queue. Open work only.** Each entry is a folder under [todo/](todo/), named
 `<date filed>-<adjective>-<animal>` and spoken by its two words ("busy-badger"); an entry filed
 before names keeps its milestone number (`2026-09-26-M210`). Its `README.md` holds the player's
-words, the playtest links and the context, and each item is a file of its own beside it, written
-in full prose. Finishing an item deletes its file; when the last one goes, the folder goes and the
+words, the playtest links and the context, and each item is a file of its own beside it, named by what it
+does and never numbered, written in full prose. Finishing an item deletes its file; when the last one goes, the folder goes and the
 entry's record is written to [decisions/](decisions/) under the same name, in the same commit.
 Search the records (`tools/decisions.sh <noun>`) before designing anything. No ticked boxes, no
 "Done:" paragraphs, no branch names or status words in headings, here or in an entry.

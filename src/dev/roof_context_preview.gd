@@ -27,12 +27,15 @@ const FEET: Array[Vector2] = [
 
 var _buildings := Node2D.new()
 var _entities := Node2D.new()
+## The baked atlas pages this rig and everything it stands up draw from: its own, since a review
+## rig is its own composition root.
+var _atlas := AtlasLibrary.new()
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ground")
+	_atlas.acquire(&"ground")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ground")
+	_atlas.release(&"ground")
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("7f8580"))
@@ -43,6 +46,7 @@ func _ready() -> void:
 	add_child(_entities)
 
 	var building := Building.new()
+	building.atlas = _atlas
 	building.name = "ReviewRoof"
 	building.position = Vector2(640, 576)
 	building.footprint = Vector2(1088, 384)
@@ -54,6 +58,7 @@ func _ready() -> void:
 
 	for index in EQUIPMENT.size():
 		var object := Building.RoofObject.new()
+		object.atlas = _atlas
 		object.name = "ReviewRoofObject%d" % index
 		object.texture_key = EQUIPMENT[index]
 		object.position = FEET[index]
@@ -62,7 +67,7 @@ func _ready() -> void:
 			object.add_rotor(false)
 
 	queue_redraw()
-	await AutoScreenshot.drawn_frame(get_tree())
+	await DrawnFrame.wait(get_tree())
 	var image := get_viewport().get_texture().get_image()
 	var error := image.save_png(OUTPUT)
 	if error != OK:
@@ -73,8 +78,8 @@ func _ready() -> void:
 	get_tree().quit()
 
 func _draw() -> void:
-	var sidewalk := AtlasLibrary.region(&"tiles/layers/sidewalk_base")
-	var road := AtlasLibrary.region(&"tiles/layers/asphalt_base")
+	var sidewalk := _atlas.region(&"tiles/layers/sidewalk_base")
+	var road := _atlas.region(&"tiles/layers/asphalt_base")
 	for x in range(0, 1280, 32):
 		for y in range(576, 640, 32):
 			draw_texture(sidewalk, Vector2(x, y))

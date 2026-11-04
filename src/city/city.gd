@@ -3,8 +3,8 @@ extends WorldContext
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the
 ## baby needs about the ground it is standing on.
 ##
-## The `Ground` child owns the freeable ground chunks and draws them behind the y-sorted `Entities`
-## child without needing a z_index fight.
+## The `Ground` child owns the freeable ground chunks; with the decals and the buildings' shadows it
+## draws on `DrawLayer.Layer.GROUND`, under every other layer the city hosts (`add_entity()`).
 ##
 ## **Buildings are a layer of their own, underneath the entities**, or the warning indicators
 ## render below roofs. A `Building`'s origin is the south edge of its
@@ -59,20 +59,11 @@ const MAX_HEIGHT_FRACTION := 0.55
 ## to `rows() - 1`, which this still goes through.
 const HOME_BUILDING_WALL_ROWS := 4
 ## Wall rows every other home-block building (the two lots flanking the door notch) gets, fixed
-## the same way. Each lot is only `Tuning.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
+## the same way. Each lot is only `CityGenerator.HOME_SIZE_TILES.y` (2) deep, so `Building.wall_tiles()`'s
 ## own cap (`rows() - 1`) always clamps this down to one row regardless of the value here — the
 ## constant only has to be something that cap can act on.
 const HOME_FLANKING_WALL_ROWS := 2
 const BOUNDARY_THICKNESS := 64.0
-## How deep the framed border band outside the finite map is, in tiles. The southern bridge's
-## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
-## asks for them, the player's camera included.
-const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
-
-## The layer for the one thing drawn *over* the entities: the dark inside the tunnel, which has to
-## land on a car as it drives in. `Entities` is 2 in `city.tscn`; nothing else in the city is
-## above it.
-const OVERHEAD_Z_INDEX := 3
 
 ## Trees per *block* of open ground, by what the block currently is. A forest is a park with
 ## more trees in it and no swings, which is most of what the difference between them is on the
@@ -88,15 +79,6 @@ const _TREES := {
 	GameEnums.BlockPurpose.COURTYARD: 3,
 }
 
-## Distance between adjacent bollards' centres across a precinct's mouth, in px. The row shuts the
-## carriageway band to her *(2026-10-10, the player, azure-puffin: "it will make the middle of the
-## road impassable when going from street to pedestrian road. that's okay. this is intended")*, so
-## every gap has to be narrower than her body alone: her circle is 28px across (14px radius) at
-## whatever facing, so a gap of 28px or more lets her through sideways-on, and the pram circle
-## only makes that harder. 14px less two posts' 4.8px radii leaves a 4.4px slit, and puts five
-## posts on the 64px band, 4px in from either edge. The pavements either side of the band stay
-## open. Open to overturn; `tests/test_bollards.gd` holds the walks.
-const BOLLARD_SPACING := 14.0
 
 ## The least two trees in one lot may stand apart, centre to centre — read off the picture rather
 ## than asked for. `Prop.TREES` (`tree_a.svg`, `tree_b.svg`) are both drawn 40px wide, and
@@ -105,18 +87,122 @@ const BOLLARD_SPACING := 14.0
 ## shape rather than as two trees, which is the clump this spacing exists to stop.
 const MIN_TREE_SPACING := 40.0 * 1.25
 
+const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
+
+## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
+## package is picked up (`run.resistance.carrying_package`) — the one cost in the subquest
+## that is deferred and total rather than local, so it changes the afternoon's routing rather than
+## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
+## it: this is a decision she made, not ground she has to cross.
+const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
+
+const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
+
+## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
+## main road.
+##
+## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
+## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
+## is still the best place in the city that is not a park to bring a meter down.
+##
+## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
+## rate above moves every one of these to keep its own ground where it was put:
+##
+##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
+##
+## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
+## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
+## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
+## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
+## park is a button she taps.
+##
+## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
+## in the city that gives back next to nothing, at any density, which is most of what "a main road
+## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
+## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
+## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
+## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
+## back.
+##
+## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
+## this corridor — the pedestrian field above only reaches `Tuning.PEDESTRIAN_OUTER_RADIUS` now, short
+## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
+## be loud on every street it also drives down rather than only this one. Crossing the road stays a
+## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
+## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
+## the ground its own recovery also lightens what a crossing itself loads.
+##
+## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
+## is what keeps `Baby.EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
+## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
+## recovery.
+const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
+
+const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
+
 @onready var _entities: Node2D = $Entities
 @onready var _buildings_layer: Node2D = $Buildings
-@onready var _ground: SceneryGround = $Ground
+## The ground layer the residency prepares and evicts region by region (`SceneryResidency.update()`
+## reads it to do so), and the clock the buildings' animation phase follows.
+@onready var scenery_ground: SceneryGround = $Ground
 @onready var _decals: CityDecals = $Decals
 @onready var _building_shadows: BuildingShadows = $BuildingShadows
 
 var map: CityMap
-var events: EventManager
-var crowd: Crowd
+## How everything that moves over `map` moves (`Navigator`), built once with the map and handed to
+## the event manager, the crowd and whatever else this city's world puts in motion — never fetched.
+var navigator: Navigator
+## Where something sent at her may start (`SpawnSiting`): built once with the map, against the
+## navigator, the events' view of her (`EventManager.visible_view()`) and the day's region
+## (`siting_region()`), and handed to the events and the resistance — never fetched.
+var spawn_siting: SpawnSiting
+## Where the city, its posters, its events and the day's closures write their own account for the
+## run log — set before `build()`, which hands it on; silent until then.
+var trace := RunTrace.new()
+
+# ------------------------------------------------- handed in before build() reads them ---
+## How this city draws and schedules itself, set by whoever builds it — `main`, from the run's
+## configuration — before `build()` hands each to the part it belongs to. The defaults are an
+## ordinary run's, which is what a test's own city gets.
+
+## How a needed nearby ground region is scheduled (`--ground-mode`). See `SceneryGround.Mode`.
+var ground_mode := SceneryGround.Mode.ONE
+## A scripted recipe's frame-locked playback. See `SceneryResidency.frame_locked`.
+var scenery_frame_locked := false
+## `--skip shadows`, `--skip events`, `--skip crowd` and `--skip motion`: what a frame reading
+## leaves out. See `DevFlags.skip_words()`.
+var skip_shadows := false
+var skip_event_drawing := false
+var skip_crowd_drawing := false
+var skip_crowd_motion := false
+## What the crowd is handed of the screen (`CrowdView`) and of the frame record (`CrowdTiming`),
+## set by whoever builds the city (`main._new_city()`) before `build()` and handed on to the crowd
+## it makes: this layer names neither the viewport nor the telemetry. None for the view means a crowd
+## with no screen (always drawn); the timing is the null sink unless handed another.
+var crowd_view: CrowdView = null
+var crowd_timing := CrowdTiming.new()
+## Where the scenery queue and the events charge their time to the frame record, handed in by
+## whoever builds the city (`main`) before `build()`; the null sink until then.
+var frame_timing := FrameTiming.new()
+## `--blackout`: the city counts as sabotaged. See `Blackout.forced`.
+var blackout_forced := false
+## Dark from its first frame, every power off — the escape's city, which is the same night as the
+## blackout (`DaySpec.dark_from_the_start`). Set before `build()`; see `Blackout`.
+var dark_from_the_start := false
+## `--pelican`: every cyclist is drawn as the pelican. See `EventSpawner.rolls_a_pelican()`.
+var all_cyclists_pelicans := false
+## `--force <id> [seconds]`: the one row the director hands out, and how often. See
+## `EventDirector.force()`.
+var forced_row := ""
+var forced_interval := 0.0
 ## The lights on the spine. Held here because both the traffic and the signal heads read it, and
 ## advanced by `Crowd`, which is the thing a rig steps — see `Crowd.step()`.
 var signals: TrafficSignals
+## The day's events on this city's streets (`EventManager`), built with the city: what the run flow,
+## the resistance and the observers ask about events here.
+var events: EventManager
+## The crowd on this city's streets (`Crowd`), built with the city.
+var crowd: Crowd
 ## The last night's blackout, which puts out every window, light and mast at once. See `Blackout`.
 var blackout: Blackout
 var _daylight: CanvasModulate
@@ -129,10 +215,9 @@ var _day := 1
 ## current TileSet would feed a prior day's composed grass atlas back into the compositor.
 var _authored_ground_tile_set: TileSet
 var scenery: SceneryResidency
-var _ground_corridor: Corridor
-## The escape's own route kerbs: the segment keys of every street its two chains run through, set
-## by `tint_the_escape_route()`. Empty on a day, whose kerbs `_ground_corridor` answers for.
-var _escape_route_streets := {}
+## The walk whose kerbs are tinted (`tint_the_route()`): the day's tree, or the escape's chains once
+## they are planned. Null until one is handed in, and again after every repaint of the ground.
+var _tinted_route: RouteSource = null
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
 ## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
@@ -143,6 +228,10 @@ var _tree: RouteTree = null
 ## Today's region wall and doors, grown from `_tree` — permanent partition, per-day split. See
 ## `RegionPlanner.plan_day` and `region_plan()`.
 var _region_plan: RegionPlanner.RegionPlan = null
+## The region a siting reads (`siting_region()`) and what it was built from, to hand it again while
+## the plan is unchanged.
+var _sited_region: SpawnSiting.Region = null
+var _sited_from: RegionPlanner.RegionPlan = null
 ## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
 var _closures: Array[RoadClosure] = []
 var _closure_nodes: Array[Node] = []
@@ -151,6 +240,25 @@ var _buildings: Array[Building] = []
 ## The posters on the fronts: which cells can carry one and what is pasted on them. Built once
 ## with the buildings, pasted each dawn. See `PosterWalls`.
 var _posters: PosterWalls
+## The run the city stands in, handed in rather than reached for through a global: what is
+## pasted on the walls (`posters`), the scars and block arcs a lost day gives back
+## (`attempt_spend`), whether the pram carries the package (`resistance`), and the seed and day
+## streams the walls are pasted from, which `PosterWalls` is handed in turn. Whoever builds the city
+## hands it over before `build()` (`main._new_city()`, or `RunCity` in a test); `build()` refuses a
+## city without it.
+var run: RunState = null
+## The ground's composition recipe, read from disk once per process: `main._new_city()` hands the
+## one the sitting holds, so every day's city composes from the same read. A city nobody handed one
+## (a suite's) reads the file itself, once.
+var ground_recipe := GroundRecipe.new()
+## The torn posters' textures, composed once: `main._new_city()` hands the one it holds, so
+## every day's city draws the same fifteen. A city nobody handed one (a suite's) composes its own.
+var poster_art := PosterArt.new()
+## The baked atlas pages this city and everything it builds draw from (`AtlasLibrary`):
+## `main._new_city()` hands the sitting's, and the city hands it on to its buildings, props,
+## exits, lights, markers, ground, decals, crowd and events. A city nobody handed one (a suite's)
+## makes its own in `build()`.
+var atlas: AtlasLibrary = null
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -160,21 +268,21 @@ var _street_trees: Array[Prop] = []
 ## the planners hand back, and a float position is not a key.
 var _street_tree_pits := {}
 
-## Region name of the door's own picture in the "decoration" `AtlasLibrary` group.
+## Region name of the door's own picture in the "decoration" atlas group.
 const DOOR_TEXTURE := &"props/door"
 ## Region name of her street door once day 10's raid has sealed it — `art/buildings/
 ## home_door_sealed.svg`, the same 26×34 canvas and feet anchor as `DOOR_TEXTURE` (`docs/
 ## GRAPHICS.md`), so swapping `_home_door`'s texture needs no change to its offset or position.
 const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
-## `GameState.scars` id for the sealed street door, recorded at the doorstep by
+## `run.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
 ## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
-## `_sync_home_door()` both run after `GameState.begin_day()`'s dawn photograph, so the scar's mere
-## presence already answers "sealed as of this dawn" for every day after the one it was added on,
-## and the moment it happens on its own day is `seal_home_door()`'s, called live.
+## `_sync_home_door()` both run after `RunCalendar.begin_day()`'s dawn photograph, so the
+## scar's mere presence already answers "sealed as of this dawn" for every day after the one it
+## was added on, and the moment it happens on its own day is `seal_home_door()`'s, called live.
 const SEALED_DOOR_SCAR := "sealed_door"
-## `GameState.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
-## `scar_id`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
+## `run.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
+## `aftermath.scar`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
 ## `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
 ## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
@@ -184,34 +292,58 @@ var _home_door: HomeDoor
 
 ## The sealed/unsealed fact survives unloading; only the Sprite's texture reference is resident.
 class HomeDoor extends Sprite2D:
+	## The city's library, handed before `picture` is first set.
+	var atlas: AtlasLibrary
 	var scenery_resident := true
 	var picture: StringName:
 		set(value):
 			picture = value
-			texture = AtlasLibrary.region(picture) if scenery_resident else null
+			texture = atlas.region(picture) if scenery_resident else null
 
 	func set_scenery_resident(resident: bool) -> void:
 		if scenery_resident == resident:
 			return
 		scenery_resident = resident
-		texture = AtlasLibrary.region(picture) if resident else null
+		texture = atlas.region(picture) if resident else null
 
 	func scenery_bounds() -> Rect2:
-		return Rect2(global_position + offset, Vector2(AtlasLibrary.native_size(picture)))
+		return Rect2(global_position + offset, Vector2(AtlasTable.baked().native_size(picture)))
+
+## Hands the scene's `Buildings` and `Entities` over as the city's nodes for those draw layers
+## (`add_entity()`), both y-sorted: everything on the ground sorts at its feet, and two lots sharing
+## a block edge stack the way the eye expects. A building never sorts against an entity, being a
+## layer of its own beneath them — see the note at the top of this file.
+func _ready() -> void:
+	layers().hold(DrawLayer.Layer.BUILDINGS, _buildings_layer, true)
+	layers().hold(DrawLayer.Layer.ENTITIES, _entities, true)
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
 ## that lives in `start_day()`.
 func build(city_map: CityMap) -> void:
+	if run == null:
+		push_error("City.build(): the run must be handed in first")
+		return
+	if atlas == null:
+		atlas = AtlasLibrary.new()
 	map = city_map
+	# The city draws this map: what is added to the world through it comes here.
+	map.world = self
+	navigator = map.navigator()
 	scenery = SceneryResidency.new()
 	scenery.city = self
+	scenery.timing = frame_timing
+	scenery.frame_locked = scenery_frame_locked
 	add_child(scenery)
+	scenery_ground.mode = ground_mode
+	scenery_ground.atlas = atlas
+	_decals.atlas = atlas
 	_decals.streamed = true
 	_building_shadows.streamed = true
+	_building_shadows.skip_draw = skip_shadows
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
 	# see `AtlasLibrary`.
-	AtlasLibrary.acquire(CityDecals.DECORATION_ATLAS)
+	atlas.acquire(CityDecals.DECORATION_ATLAS)
 	_paint_ground()
 	# Buildings first: the door sits in the wall of the building above the notch, at exactly
 	# the same y. A y-sort tie is broken by tree order, so the door has to be added second
@@ -220,8 +352,11 @@ func build(city_map: CityMap) -> void:
 	# Right after the buildings, whose blank ground-floor cells are what it reads. See `PosterWalls`.
 	_posters = PosterWalls.new()
 	_posters.name = "Posters"
+	_posters.trace = trace
+	_posters.art = poster_art
+	_posters.atlas = atlas
 	add_child(_posters)
-	_posters.setup(self, map)
+	_posters.setup(self, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
@@ -243,14 +378,31 @@ func build(city_map: CityMap) -> void:
 	_spawn_signal_heads()
 	events = EventManager.new()
 	events.name = "Events"
+	events.trace = trace
+	events.skip_drawing = skip_event_drawing
+	events.timing = frame_timing
+	events.atlas = atlas
+	if all_cyclists_pelicans:
+		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
-	events.setup(self, map)
+	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, siting_region)
+	events.setup(self, map, navigator, spawn_siting)
+	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
 	crowd.name = "Crowd"
+	crowd.skip_agent_drawing = skip_crowd_drawing
+	crowd.skip_motion = skip_crowd_motion
+	crowd.view = crowd_view
+	crowd.timing = crowd_timing
+	crowd.atlas = atlas
 	add_child(crowd)
-	crowd.setup(self, map)
+	crowd.setup(self, map, navigator)
+	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
+	excitement_sources = [events.sources, crowd.sources]
 	blackout = Blackout.new()
 	blackout.name = "Blackout"
+	blackout.forced = blackout_forced
+	blackout.dark_from_the_start = dark_from_the_start
 	add_child(blackout)
 	blackout.setup(self, _buildings)
 	_daylight = CanvasModulate.new()
@@ -265,7 +417,8 @@ func build(city_map: CityMap) -> void:
 ## resident, for a city that no longer exists. The event families are `EventManager`'s own and are
 ## released by its own `_exit_tree()`.
 func _exit_tree() -> void:
-	AtlasLibrary.release(CityDecals.DECORATION_ATLAS)
+	if atlas != null:
+		atlas.release(CityDecals.DECORATION_ATLAS)
 
 ## Which act's cast the city is under. See Palette.act_tint.
 func set_act(act: int) -> void:
@@ -332,11 +485,11 @@ func _sleepiness_on(tile: Vector2i) -> float:
 ## the road beside it, not the surface under her.
 func decay_multiplier(world_position: Vector2) -> float:
 	var ground := _ground_decay_multiplier(world_position)
-	if GameState.resistance_carrying_package:
+	if run.resistance.carrying_package:
 		# The one cost in the game that is not a field at a place: picking the package up makes
 		# every street after it dearer for the rest of the day, rather than the street it was
 		# picked up on.
-		ground *= Tuning.RESISTANCE_PACKAGE_DECAY_MULTIPLIER
+		ground *= RESISTANCE_PACKAGE_DECAY_MULTIPLIER
 	return ground
 
 func _ground_decay_multiplier(world_position: Vector2) -> float:
@@ -344,49 +497,23 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 		return 1.0
 	var type := map.tile_type_at_world(world_position)
 	if Tile.is_calm(type):
-		return Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+		return EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	# An alley is cut through a block rather than laid out as a corridor, so no street kind answers
 	# for it and it would otherwise read as an ordinary street. It is asked before the corridors
 	# for that reason and not by precedence: the two cannot overlap.
 	if Tile.is_alley(type):
-		return Tuning.EXCITEMENT_DECAY_ALLEY_MULTIPLIER
+		return EXCITEMENT_DECAY_ALLEY_MULTIPLIER
 	var tile := map.world_to_tile(world_position)
 	var across := map.street_kind_at(true, tile)
 	var along := map.street_kind_at(false, tile)
 	if across == GameEnums.StreetKind.PEDESTRIAN or along == GameEnums.StreetKind.PEDESTRIAN:
-		return Tuning.EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
+		return EXCITEMENT_DECAY_PRECINCT_MULTIPLIER
 	if across == GameEnums.StreetKind.MAIN or along == GameEnums.StreetKind.MAIN:
-		return Tuning.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
+		return EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	return 1.0
 
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
-
-## Events and the crowd are the same kind of quantity to the baby, so they simply concatenate —
-## `Baby._update_excitement()` traces each pair back to accumulate_landed() on the body that put
-## it there, which is what lets an event's and a crowd body's colour come from the same place.
-##
-## **Inside a region door the crowd is off too, and that is the same sentence as the events half.**
-## `EventManager.door_holding_her_at()` answers whether this point is inside a running hold; she is
-## in the hut for those two seconds, not on the pavement, so the queue outside it charges her no
-## more than the street does. Without this the toll would still be the toll plus however busy the
-## door happened to be. The events half already answers with the hold's own flat rate alone — see
-## `EventManager.excitement_sources_at()` — so all this adds is skipping the concatenation.
-func excitement_sources_at(world_position: Vector2) -> Array:
-	var sources: Array = []
-	if events:
-		sources.append_array(events.excitement_sources_at(world_position))
-		if events.door_holding_her_at(world_position):
-			return sources
-	if crowd:
-		sources.append_array(crowd.excitement_sources_at(world_position))
-	return sources
-
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
 
 # ------------------------------------------------------------------ spawning ---
 
@@ -395,9 +522,10 @@ func total_excitement_at(world_position: Vector2) -> float:
 func _spawn_home() -> void:
 	var stoop := map.tile_rect_to_world(map.home_rect)
 	_home_door = HomeDoor.new()
+	_home_door.atlas = atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
-	# the raid — `_door_texture_for_today()` reads `GameState.scars`, already loaded by the time
-	# `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
+	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend`), already loaded by the
+	# time `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
 	# moment the raid actually arrives.
 	_home_door.picture = _door_texture_for_today()
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
@@ -408,25 +536,25 @@ func _spawn_home() -> void:
 	_home_door.centered = false
 	# Both door pictures share one canvas (`SEALED_DOOR_TEXTURE`'s own doc), so this size and
 	# offset stay correct whichever one is showing, today or after a live swap.
-	var door_size := AtlasLibrary.native_size(DOOR_TEXTURE)
+	var door_size := AtlasTable.baked().native_size(DOOR_TEXTURE)
 	_home_door.offset = Vector2(-door_size.x * 0.5, -door_size.y)
 	# Same centre-x `_door_world_x_range()` hands the building behind it, so the sprite and the
 	# blanked window column can never disagree about where the door actually is.
 	var x_range := _door_world_x_range()
 	_home_door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
-	_entities.add_child(_home_door)
+	add_entity(_home_door)
 	scenery.register(_home_door)
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
-	for scar in GameState.scars:
+	for scar in run.attempt_spend.scars:
 		if String(scar["id"]) == SEALED_DOOR_SCAR:
 			return SEALED_DOOR_TEXTURE
 	return DOOR_TEXTURE
 
-## Puts the street door where `GameState.scars` says it belongs, for the dawn `start_day()`
+## Puts the street door where the run's scars say it belongs, for the dawn `start_day()`
 ## already runs every day: sealed from day 11 on and after a save/load, ordinary again the dawn a
-## lost day 10 gives its own scar back (`GameState._give_back_what_the_attempt_spent()`), since
+## lost day 10 gives its own scar back (`run.run_parts.give_back()`), since
 ## `_spawn_home()` itself only ever runs once, at boot, for the whole run.
 func _sync_home_door() -> void:
 	if _home_door:
@@ -440,19 +568,25 @@ func seal_home_door() -> void:
 	if _home_door:
 		_home_door.picture = SEALED_DOOR_TEXTURE
 
+## Whether her street door shows the sealed picture: the raid has come (or a boot's scars say it
+## has), and no lost day has given the scar back. Stays true while the door's texture is unloaded
+## with the scenery around it, since it is the picture that is kept, not the resident texture.
+func home_door_is_sealed() -> bool:
+	return _home_door != null and _home_door.picture == SEALED_DOOR_TEXTURE
+
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
 ## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
-## `AtlasLibrary` rather than on the door node, and handed to every home-block `Building` so it can
+## `AtlasTable` rather than on the door node, and handed to every home-block `Building` so it can
 ## blank the ground-floor column(s) standing behind the door instead of drawing a window there.
 func _door_world_x_range() -> Vector2:
 	var centre_x := map.tile_rect_to_world(map.home_rect).get_center().x
-	var half_width := AtlasLibrary.native_size(DOOR_TEXTURE).x * 0.5
+	var half_width := AtlasTable.baked().native_size(DOOR_TEXTURE).x * 0.5
 	return Vector2(centre_x - half_width, centre_x + half_width)
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
 ## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
-## door notch actually stands in front of (`_home_door_building()`). Her own floor, the top one at
+## door notch actually stands in front of (`home_door_building()`). Her own floor, the top one at
 ## this height, down the hall from her own door. It stands above the top of the screen at the
 ## normal camera on her doorstep, facing away down the street — turning to face the building
 ## brings it into frame (PLAYTEST-134, statement 4 revisited). Idempotent, so
@@ -460,7 +594,7 @@ func _door_world_x_range() -> Vector2:
 ## set. That building always has at least four wall rows (`HOME_BUILDING_WALL_ROWS`), fixed rather
 ## than rolled, so there is no shorter front here for a topmost row to stand in for it.
 func board_neighbor_window() -> void:
-	var building := _home_door_building()
+	var building := home_door_building()
 	if not building or building.neighbor_window_col >= 0:
 		return
 	var door_centre_x := (_door_world_x_range().x + _door_world_x_range().y) * 0.5
@@ -472,7 +606,7 @@ func board_neighbor_window() -> void:
 			best_distance = distance
 			best_col = col
 	building.neighbor_window_col = best_col
-	Telemetry.note("contact",
+	trace.note("contact",
 			"the neighbor's window is boarded at column %d, row %d (the third floor)"
 			% [best_col, building.neighbor_window_row()])
 
@@ -480,7 +614,7 @@ func board_neighbor_window() -> void:
 ## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
 ## out of every other one (`_spawn_buildings()`'s own doc), so only this lot's world footprint
 ## overlaps `_door_world_x_range()`.
-func _home_door_building() -> Building:
+func home_door_building() -> Building:
 	var x_range := _door_world_x_range()
 	for building in _buildings:
 		if not building.is_home_building:
@@ -510,10 +644,11 @@ func _spawn_street_trees() -> void:
 		if not _recipe_contains(planted_tree.position):
 			continue
 		var tree := Prop.new()
+		tree.atlas = atlas
 		tree.kind = Prop.Kind.STREET_TREE
 		tree.position = planted_tree.position
 		tree.variant = hash(planted_tree.position)
-		_entities.add_child(tree)
+		add_entity(tree)
 		scenery.register(tree)
 		_street_trees.append(tree)
 		_street_tree_pits[planted_tree.tile] = tree
@@ -585,15 +720,15 @@ func bridge_world_position() -> Vector2:
 ## ground and go under them. `CityEdge` says why the dark cannot be y-sorted too.
 func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 	var exit := CityEdge.new()
+	exit.atlas = atlas
 	exit.kind = kind
 	exit.position = at
 	if exit.overhangs():
-		exit.z_index = OVERHEAD_Z_INDEX
-		add_child(exit)
+		add_entity(exit, DrawLayer.Layer.OVERHEAD)
 	elif exit.occludes():
-		_entities.add_child(exit)
+		add_entity(exit)
 	else:
-		_buildings_layer.add_child(exit)
+		add_entity(exit, DrawLayer.Layer.BUILDINGS)
 	scenery.register(exit)
 
 ## A signal head on every arm of every junction the spine passes through.
@@ -634,11 +769,12 @@ func _spawn_signal_heads() -> void:
 				if not map.is_walkable(map.world_to_tile(at)):
 					continue
 				var light := TrafficLight.new()
+				light.atlas = atlas
 				light.junction = junction
 				light.faces(heading)
 				light.signals = signals
 				light.position = at
-				_entities.add_child(light)
+				add_entity(light)
 				scenery.register(light)
 
 func _spawn_buildings() -> void:
@@ -651,8 +787,9 @@ func _spawn_buildings() -> void:
 	for rect in map.building_rects:
 		var world := map.tile_rect_to_world(rect)
 		var building := Building.new()
+		building.atlas = atlas
 		building.scenery_resident = false
-		building.scenery_clock = _ground
+		building.scenery_clock = scenery_ground
 		# Origin is the south edge centre of the lot (see building.gd).
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
@@ -675,13 +812,13 @@ func _spawn_buildings() -> void:
 			# it to all of them costs nothing and needs no lookup for which one that is.
 			building.door_world_x_range = door_x_range
 		# Dressed here, before coverage and the roof extension below are computed, since
-		# `_assign_roof_extensions()` needs to know which buildings are the power station to keep an
+		# `assign_roof_extensions()` needs to know which buildings are the power station to keep an
 		# extension off its yard (no roof stands there to extend).
 		_dress_the_power_station(building, rect)
 		buildings.append(building)
 	# Coverage and the roof extension it needs both read every lot's own `wall_tiles()`, fixed by
 	# the generated or authored values above, so both run before any of them enters the tree — see
-	# `_covered_ground_cols()` and `_assign_roof_extensions()`. Never asked of her own building
+	# `_covered_ground_cols()` and `assign_roof_extensions()`. Never asked of her own building
 	# (`covered_ground_cols` stays empty) — her own building's front is the one the player knows
 	# as home and stays as it is, and the home block's own doorstep already exempts it from the
 	# route-redundancy guarantee the same way.
@@ -689,7 +826,7 @@ func _spawn_buildings() -> void:
 		if not buildings[i].is_home_building:
 			buildings[i].covered_ground_cols = _covered_ground_cols(map.building_rects[i])
 	var courtyard_of := _courtyard_lot_of(map.building_rects)
-	_assign_roof_extensions(buildings, courtyard_of)
+	assign_roof_extensions(buildings, courtyard_of)
 	_share_courtyard_tint(buildings, courtyard_of)
 	map.restore_edges(edges)
 	for building in buildings:
@@ -703,16 +840,17 @@ func _spawn_buildings() -> void:
 		# reach into the walkable row north of the lot, so it must sort against street actors just
 		# like the power station stacks do.
 		building.roof_object_parent = _entities
-		_buildings_layer.add_child(building)
+		add_entity(building, DrawLayer.Layer.BUILDINGS)
 		_buildings.append(building)
 		scenery.register(building)
 		# The one part of a building drawn among the entities — see the note at the top of this file.
 		var feet := building.stack_feet()
 		for i in feet.size():
 			var stack := Building.StationStack.new()
+			stack.atlas = atlas
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
-			_entities.add_child(stack)
+			add_entity(stack)
 			scenery.register(stack)
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
@@ -720,7 +858,7 @@ func _spawn_buildings() -> void:
 ## `GameEnums.TileType.BUILDING` rather than walkable ground. `map.is_walkable()` is the fixed
 ## lattice fact the **city** skill asks for — "no purpose change may move a walkable tile" — never
 ## `is_open()`'s per-day closures, so this is computed once here rather than in `start_day()`. This
-## is the candidate set only: `_assign_roof_extensions()` keeps a column covered only where a roof
+## is the candidate set only: `assign_roof_extensions()` keeps a column covered only where a roof
 ## actually reaches it, so a south tile past the map's own edge (`CityMap.tile_at()` reads it as
 ## `BUILDING`) or a power station's yard leaves its front's facade standing.
 func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
@@ -738,7 +876,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## is small and built once per run. The extension at that column is exactly the covered
 ## building's own `wall_tiles()`: precisely enough rows to reach the world row its roof already
 ## starts at, edge to edge. A power
-## station's yard columns (`_hall_cols()`, read after `_dress_the_power_station()` above has set
+## station's yard columns (`hall_cols()`, read after `_dress_the_power_station()` above has set
 ## `power_station`) are skipped since no roof stands there to extend — the yard is fenced ground,
 ## not a building mass.
 ##
@@ -760,7 +898,7 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
 ## `Building.roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at all
 ## is never seamless: nothing of its own carries on above the extension, so the extension caps.
-func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
+func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():
 		var rect: Rect2i = map.building_rects[i]
@@ -802,7 +940,7 @@ func _assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int
 			var front_rect: Rect2i = map.building_rects[front_index]
 			var local_col := south.x - front_rect.position.x
 			if front.power_station:
-				var hall := front._hall_cols()
+				var hall := front.hall_cols()
 				if local_col < hall.x or local_col >= hall.y:
 					continue
 			var front_extension: Array[int] = extensions[front_index]
@@ -909,7 +1047,7 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## `HOME_BUILDING_WALL_ROWS` for the one lot the door's own world-space span stands in front of,
 ## `HOME_FLANKING_WALL_ROWS` for the other home-block lots — fixed, never rolled, so
 ## `_height_for()`'s home branch moves no RNG stream at all. `is_door_building` repeats
-## `_home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
+## `home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
 ## sets every building's height before `_spawn_home()` builds the door sprite it would otherwise
 ## read (see `build()`'s own ordering note) — `_door_world_x_range()` itself only needs
 ## `map.home_rect`, already fixed by the generator by the time this runs. The lot depth this is
@@ -934,28 +1072,56 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## once and reused, and the between-days screen only had to restart the events. Rebuilding
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
-func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
+##
+## **The escape's city is the same call with its section's spec** (`DaySpec`), since what differs is
+## settings rather than steps: `spec.closes_streets` says whether the day grows its route tree and
+## closes streets off it (`_close_streets()`) or has its walk handed in once it is planned
+## (`tint_the_route()` — the escape's chains, planned after the city is dressed, are not a tree for
+## `ClosurePlanner` or `RegionPlanner` to be stated against, so `route_tree()` and `region_plan()`
+## answer `null` and `closures()` is empty, which is what their own contract says about a city whose
+## day has grown none); `spec.pastes_posters` says whether the crews paste at dawn
+## (`PosterWalls.start_day()`) or the walls only show what the run left (`PosterWalls.show_only()`).
+## The repaint, the door, the ground, the litter, the block dressing and the street trees happen
+## either way, because the parks she walks through have to be the parks the run's seed built. The run
+## flow hands `spec` in on every day and every section (`main`, the same object the day's event
+## manager is handed); left out, as a rig that builds a city with no run flow leaves it, it is a
+## day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the last day's —
+## and `rng` the closures' stream.
+func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
+		spec: DaySpec = null) -> void:
+	if spec == null:
+		spec = DaySpec.for_day(day)
+	_dress(state, day)
+	if spec.closes_streets:
+		# Last, and after the repaint: which blocks are calm is what the closure invariant is
+		# stated over, and a requisitioned park is not one of them.
+		_close_streets(day, rng)
+	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
+	# once more after the day's seals are planned — see `refresh_street_trees()`.
+	refresh_street_trees()
+	if spec.pastes_posters:
+		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
+		# off, and after `_dress_blocks()`, which is what says a front has burnt.
+		_posters.start_day(day, _tree)
+	else:
+		_posters.show_only()
+	scenery.update(_home_scenery_view(), true)
+
+## Everything a day does to the city before its streets are closed: the repaint, the door, the
+## ground, the litter and the block dressing.
+func _dress(state: CityState, day: int) -> void:
 	scenery.view = _home_scenery_view()
-	map.repaint(state)
+	map.repaint(state, trace)
 	# Before anything reads the ground again: a park that burnt down last night is not calm today.
 	_sleepiness_tile = Vector2i(-1, -1)
 	_day = day
-	# After `GameState.begin_day()`'s own dawn photograph (`main.gd` calls this after that), so a
-	# lost day 10's scar is already given back by the time this reads `GameState.scars`.
+	# After `RunCalendar.begin_day()`'s own dawn photograph (`main.gd` calls this after
+	# that), so a lost day 10's scar is already given back by the time this reads the run's
+	# scars.
 	_sync_home_door()
 	_paint_ground()
 	_decals.set_placed(_recipe_litter(day))
 	_dress_blocks(state)
-	# Last, and after the repaint: which blocks are calm is what the closure invariant is
-	# stated over, and a requisitioned park is not one of them.
-	_close_streets(day, rng)
-	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
-	# once more after the day's seals are planned — see `refresh_street_trees()`.
-	refresh_street_trees()
-	# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
-	# off, and after `_dress_blocks()`, which is what says a front has burnt.
-	_posters.start_day(day, _tree)
-	scenery.update(_home_scenery_view(), true)
 
 ## Recipe activity is installed by its runtime after this shared day presentation. The
 ## explicit construction witness supplies global route/region context without randomly
@@ -964,7 +1130,9 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator) -> void:
 ## **A stretch pastes no dawn**: its posters are the recipe's own (`setup.posters`), so the walls are
 ## marked pasted through today before the day starts and nothing the seed would paste appears.
 func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -> void:
-	start_finale(state, day)
+	_dress(state, day)
+	_posters.show_only()
+	scenery.update(_home_scenery_view(), true)
 	var edges := map.witness_only()
 	_tree = RouteTree.for_day(map, day)
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
@@ -974,37 +1142,8 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 	for closure in _closures:
 		_spawn_closure(closure)
 	if map.has_stretch():
-		GameState.posters.pasted_through = maxi(GameState.posters.pasted_through, day)
+		run.posters.pasted_through = maxi(run.posters.pasted_through, day)
 	_posters.start_day(day, _tree)
-
-## The same city, dressed for the escape: everything `start_day()` does except grow a day's
-## corridor and close streets off it.
-##
-## **The finale's route is not a tree**, so there is nothing here for `RouteTree` to grow and
-## nothing for `ClosurePlanner` or `RegionPlanner` to be stated against — one ordered chain to each
-## edge, with everything off it sealed, is `FinalePlanner`'s and `SealPlanner`'s work and arrives
-## through `EventManager.start_finale()` instead. `route_tree()` and `region_plan()` therefore
-## answer `null` for the whole sequence and `closures()` is empty, which is what their own
-## contract already says about a `City` whose `start_day` has not run: *only meaningful after
-## `start_day`*.
-##
-## The repaint, the ground, the litter and the block dressing all still happen, because the parks
-## she walks through have to be the parks the run's seed built.
-##
-## The route-kerb tint (M145) is not painted here, because what it marks is not known yet: the
-## escape's streets are `FinalePlanner`'s chains, planned after the city is dressed, and `Main`
-## hands them to `tint_the_escape_route()` once they are. `_paint_ground()` above paints every kerb
-## cell its plain source first, so a twin from yesterday's tree cannot survive into the escape.
-func start_finale(state: CityState, day: int) -> void:
-	scenery.view = _home_scenery_view()
-	map.repaint(state)
-	_sleepiness_tile = Vector2i(-1, -1)
-	_day = day
-	_paint_ground()
-	_decals.set_placed(_recipe_litter(day))
-	_dress_blocks(state)
-	_posters.show_only()
-	scenery.update(_home_scenery_view(), true)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -1013,87 +1152,66 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 		node.queue_free()
 	_closure_nodes.clear()
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
+	# Tinted before the region plan or the closures, so a tree a closure has not yet touched is what
+	# the tint answers for.
 	_tree = RouteTree.for_day(map, day)
-	_tint_the_route_kerbs()
+	tint_the_route(_tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
 	_region_plan = RegionPlanner.plan_day(map, day, _tree)
-	Telemetry.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
+	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [_region_plan.walls.size() + _region_plan.doors.size(), _region_plan.walls.size(),
 			_region_plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan)
+	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan, trace)
 	map.close_streets(_closures)
 	for closure in _closures:
 		_spawn_closure(closure)
 
-## The route's own curbstones, tinted — a trial (M145) of whether a faint hint on the ground can
-## stay under the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm".
+## The route's own curbstones, tinted — a trial of whether a faint hint on the ground can stay under
+## the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm". **One tint
+## for every walk**: the day's tree, handed in by `_close_streets()` as soon as it is grown, and the
+## escape's two chains, handed in by `Main` after every plan of the section, a restart's included.
+## *(Inbox #747: "yes, of course the yellow tint. we spent the whole game establishing that why would
+## it be different in the last section?")*
 ##
 ## No second layer: `GroundLayers.build_tile_set()` already gave every kerb source
 ## (`GroundTiles.ROUTE_KERB_SOURCES`) a tinted twin (`GroundTiles.route_twin_of`), composed with the
 ## `curbstone` component (or, where the bake carries whole authored tiles, the stone's own fill) blended toward
-## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
-## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `_ground`
+## `Palette.ROUTE_KERB_TINT` by `GroundLayers.ROUTE_KERB_TINT_ALPHA` — so the paving around the stone is
+## untouched. This only ever decides *which* cells qualify and re-sets each straight onto `scenery_ground`
 ## at its twin, same atlas coordinates: the two can never disagree about a cell's coordinates,
 ## because there is only the one layer. A twin that was never registered (an incomplete art drop)
 ## leaves the tile on its plain source, the same graceful fallback `GroundLayers` gives everywhere
 ## else. Alpha zero is the trial's off switch, with nothing else to change.
 ##
-## **A kerb tile qualifies when its street's `Corridor.depth()` is zero — the mark says *this
-## street*, not *this sidewalk*.** `depth()` answers at the grain of the whole street on purpose
-## (see `Corridor`'s own doc — that grain is what every placement rule is stated in), so both
-## pavements of every street the tree runs along are tinted, from intersection to intersection: a
-## street tile resolves to its segment's key regardless of which of the segment's own cells the
-## tree actually walked, so a tree that only uses part of a segment — leaving it through an alley
-## or a park, or ending at a calm area partway along — still tints the whole segment rather than a
-## stretch of it, with nothing here having to special-case a partial run.
+## **A kerb tile qualifies when the walk marks it** (`RouteSource.marks_the_kerb_at()`) **— the mark
+## says *this street*, not *this sidewalk*.** Both pavements of every street the walk runs along are
+## tinted, from intersection to intersection, whichever of the street's own cells the walk actually
+## used: a tree that only uses part of a segment — leaving it through an alley or a park, or ending at
+## a calm area partway along — still tints the whole segment, and a chain tints every street it walks
+## (`SealPlanner.runs_through()`), the same set the escape's events stand on and its seals spare.
 ##
-## **Never a street the tree only crosses at a junction, and never an unwalked stretch of the main
+## **Never a street the walk only crosses at a junction, and never an unwalked stretch of the main
 ## road.** A junction cell resolves to no segment at all (`StreetNetwork.segment_containing`), so
 ## crossing one — a route switching pavements, or cutting through from a park or an alley — marks
-## no street's `depth()` down to zero; `RouteTree.junctions()`'s own doc says the same thing from
-## the other side, that such a crossing "contributes a junction no on-tree street names". And the
-## main road's own cells, anywhere but at a junction, are off the growth graph entirely
-## (`RouteTree._is_off_the_growths_graph`), so they carry no colour and no segment of the spine
-## reaches zero unless the tree's trunk genuinely had to walk it — which is a street the tree does
-## run along, not one it merely passes near.
+## no street; `RouteTree.junctions()`'s own doc says the same thing from the other side, that such a
+## crossing "contributes a junction no on-tree street names", and a chain's street it only turns at
+## is sealed and carries no tint. And the main road's own cells, anywhere but at a junction, are off
+## the tree's growth graph entirely (`RouteTree._is_off_the_growths_graph`), so no segment of the
+## spine is marked on a day unless the tree's trunk genuinely had to walk it.
 ##
-## **The placement rules keep the narrower question.** `Corridor.carries_a_route(tile)` — whether
-## the tree runs along *this cell*, non-empty `RouteTree.branches_on(tile)` — is what a wall, a
-## piece of friction or a set piece still asks; only the paint here asks the wider one, so nothing
-## about where a body may stand moves with the mark.
-##
-## Called from `_close_streets`, right after `_tree` is grown and before the region plan or the
-## closures, so a tree a closure has not yet touched is what the tint answers for.
-func _tint_the_route_kerbs() -> void:
-	_ground_corridor = Corridor.of(_tree)
-	_ground.repaint()
+## **The placement rules keep the narrower question.** `RouteSource.carries_a_route(tile)` — whether
+## the walk runs along *this cell* — is what a wall, a piece of friction or a set piece still asks;
+## only the paint here asks the wider one, so nothing about where a body may stand moves with the
+## mark. `_paint_ground()` paints every kerb cell its plain source first, so a twin from yesterday's
+## walk cannot survive into today's.
+func tint_the_route(route: RouteSource) -> void:
+	_tinted_route = route
+	scenery_ground.repaint()
 
-## The same tint on the escape's streets: both kerb lines of every street either chain runs
-## through, from intersection to intersection. *(Inbox #747: "yes, of course the yellow tint. we
-## spent the whole game establishing that why would it be different in the last section?")*
-##
-## **The same grain as a day's, read from the escape's own plan.** A day tints every street whose
-## `Corridor.depth()` is zero, a whole segment at a time; the escape has no tree to build a
-## `Corridor` from, so the streets are `FinalePlanner.Plan.open_streets` — the ones
-## `SealPlanner.runs_through()` says a chain walks, which is the same set the escape's events
-## stand on and its seals spare. A street a chain only turns at is sealed and carries no tint, and
-## a junction resolves to no street, exactly as on a day. Called by `Main` after every plan of the
-## section, a restart's included; the plan is deterministic, so a replan paints the same kerbs.
-func tint_the_escape_route(streets: Array[StreetNetwork.Segment]) -> void:
-	_escape_route_streets.clear()
-	for segment in streets:
-		_escape_route_streets[segment.key()] = true
-	_ground.repaint()
-
-## Whether a kerb tile is on today's route — the day's tree, or the escape's chains.
+## Whether a kerb tile is on today's tinted walk.
 func _is_on_the_tinted_route(tile: Vector2i) -> bool:
-	if _ground_corridor:
-		return _ground_corridor.depth(tile) == 0
-	if _escape_route_streets.is_empty():
-		return false
-	var segment := StreetNetwork.segment_containing(tile)
-	return segment != null and _escape_route_streets.has(segment.key())
+	return _tinted_route != null and _tinted_route.marks_the_kerb_at(tile)
 
 func closures() -> Array[RoadClosure]:
 	return _closures
@@ -1125,11 +1243,88 @@ func route_tree() -> RouteTree:
 func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
 
+## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
+## and each body of the wall and of the district doors as a disc, its centre and its
+## `obstructs_radius`; null before `start_day` has grown a region plan.
+##
+## **Built once for the plan and handed again until the plan is another plan**: the resistance asks
+## for it for every candidate tile of a relocation (`ResistanceDirector.nearest_alley_within()`,
+## "cheap enough for every frame"), and a hundred-odd discs rebuilt on each ask were most of that
+## cost. A plan is never edited once the city holds it; whoever changes a day's wall, doors or
+## alleys builds another plan and hands it over (`set_region_plan()`).
+func siting_region() -> SpawnSiting.Region:
+	if not _region_plan:
+		_sited_region = null
+		_sited_from = null
+		return null
+	if _sited_region != null and _sited_from == _region_plan:
+		return _sited_region
+	var region := SpawnSiting.Region.new()
+	region.walled_alleys = _region_plan.alley_walls
+	for body: EventScheduler.Planned in _region_plan.wall_bodies + _region_plan.door_bodies:
+		region.centres.append(body.position)
+		region.radii.append(body.def.obstructs_radius)
+	_sited_region = region
+	_sited_from = _region_plan
+	return region
+
+## Replaces today's region plan with another one (a rig that authors the day's wall and doors). The
+## plan handed over is the city's from then on and is not edited: the siting's region is built from
+## it once (`siting_region()`).
+func set_region_plan(plan: RegionPlanner.RegionPlan) -> void:
+	_region_plan = plan
+
+# ------------------------------------------------------- the day's shape in words ---
+# For whoever reports it: the run log's `plan` lines and the console's day line read the same
+# three. Here, on the city they describe, because both the run flow and the run log call them
+# and neither may reach into the other.
+
+## What calm ground today has, by kind. Cheap, and the thing most worth knowing about a day now
+## that a day can only be won on calm ground.
+func calm_summary() -> String:
+	var counts := {}
+	for block in map.calm_blocks:
+		var name: String = GameEnums.BlockPurpose.keys()[
+			run.attempt_spend.city_state.purpose_of(map.block_plans, block)].to_lower()
+		counts[name] = counts.get(name, 0) + 1
+	var parts: Array[String] = []
+	for name: String in counts:
+		parts.append("%d %s" % [counts[name], name])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Which streets are shut today and what shut them. Worth printing rather than counting, because
+## "the route was awful today" and "the closure landed on the one street that mattered" look
+## identical from a count.
+func closure_summary() -> String:
+	var parts: Array[String] = []
+	for closure in closures():
+		parts.append("%s %s%s" % [
+			RoadClosure.display_name(closure.kind).to_lower(),
+			"h" if closure.segment.horizontal else "v",
+			RunTrace.tile(closure.segment.a)])
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
+## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
+## are out is what makes a day, and where each instance stands is only interesting for the ones
+## she actually walked into — which the `near` lines cover, at the moment it matters. The *plan*,
+## not what is live: what is live is a fact about where she is standing this frame.
+func event_summary() -> String:
+	var counts := {}
+	for plan in events.plans():
+		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 func _spawn_closure(closure: RoadClosure) -> void:
 	# Supports precede the rails mounted on them. The sign's panel draws its composite
 	# after the rail, at the run midpoint rather than at a panel endpoint.
 	for feet in closure.posts(map):
 		var post := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
+		post.atlas = atlas
 		post.piece = ClosureMarker.Piece.POST
 		post.kind = closure.kind
 		post.position = feet
@@ -1138,6 +1333,7 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_spawn_barrier(closure, mouth)
 	if ClosureMarker.CAUSES.has(closure.kind):
 		var cause := ClosureMarker.new()
+		cause.atlas = atlas
 		cause.piece = ClosureMarker.Piece.CAUSE
 		cause.kind = closure.kind
 		cause.across = closure.barrier_runs_across()
@@ -1145,19 +1341,24 @@ func _spawn_closure(closure: RoadClosure) -> void:
 		_add_closure_node(cause, true)
 
 ## A line of barrier panels across the mouth, with the sign on the middle one, and one static
-## body behind the whole line. The panels are separate nodes so that a barrier running away
-## from the camera y-sorts panel by panel against the player; the collision is one box,
-## because collision does not care what order things are drawn in.
+## body behind the whole line. The panels are the line's slices (`DrawLayer.add_slices()`), each
+## standing at its own feet, so a barrier running away from the camera y-sorts panel by panel
+## against the player; the collision is one box, because collision does not care what order things
+## are drawn in.
 ##
 ## **The line's width is the closure's own** (`barrier_width()`), a street's width for an ordinary
 ## closure and one calm area's own edge for a `ParkClosure` — so a run longer or shorter than a
 ## street's mouth still tiles panels edge to edge across its own real length rather than a fixed
-## one, with no overlap and no gap to overshoot a corner with.
+## one, with no overlap and no gap to overshoot a corner with. The panels run the barrier's own
+## footprint end to end (`barrier_footprint()`, `DrawLayer.run_of()`), and a park's fence post to
+## post (`ParkClosure.rail_ends()`).
 func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var across := closure.barrier_runs_across()
 	var width := closure.barrier_width()
+	var footprint := barrier_footprint(closure)
 	var picture_width := width
 	var picture_at := at
+	var run := DrawLayer.run_of(footprint, at)
 	if closure is ParkClosure:
 		var fence := closure as ParkClosure
 		# An open end's post is inset on its own ground. Rails end on that post, while
@@ -1166,7 +1367,8 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var end_inset := 0.0 if fence.joined_end else ParkClosure.POST_HALF
 		picture_width -= start_inset + end_inset
 		picture_at += (Vector2.RIGHT if across else Vector2.DOWN) * (start_inset - end_inset) * 0.5
-	var pitch := float(AtlasLibrary.native_size(ClosureMarker.FENCE_ACROSS).x)
+		run = fence.rail_ends()
+	var pitch := float(AtlasTable.baked().native_size(ClosureMarker.FENCE_ACROSS).x)
 	if closure is ParkClosure and not across:
 		pitch = 44.0
 	var panels := maxi(1, roundi(picture_width / pitch))
@@ -1178,8 +1380,11 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		var sign_from_start := at.y - (picture_at.y - picture_width * 0.5)
 		sign_panel = mini(panels - 1,
 				ceili((sign_from_start + ParkFenceMarker.UPPER_RISE) / span) - 1)
+	var feet := DrawLayer.slice_feet(run[0], run[1], panels)
+	var slices: Array[Node2D] = []
 	for i in panels:
 		var panel := ParkFenceMarker.new() if closure is ParkClosure else ClosureMarker.new()
+		panel.atlas = atlas
 		panel.piece = ClosureMarker.Piece.SIGN if i == sign_panel else ClosureMarker.Piece.FENCE
 		panel.kind = closure.kind
 		panel.across = across
@@ -1188,37 +1393,37 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 		if panel is ParkFenceMarker:
 			(panel as ParkFenceMarker).draw_support = i < panels - 1
 			(panel as ParkFenceMarker).rail_offset = -(closure as ParkClosure).outward.x * 4.0
-		# Broadside a panel's feet are the middle of its share; end-on they are the near end of
-		# it, since an end-on panel is drawn up the screen from its feet — feet at the middle
-		# would stand the whole column half a panel up the screen from the ground it covers.
-		var offset := -picture_width * 0.5 + span * (i + (0.5 if across else 1.0))
-		panel.position = picture_at + (Vector2(offset, 0.0) if across else Vector2(0.0, offset))
-		if closure is ParkClosure and not across and i == panels - 1:
-			var fence := closure as ParkClosure
-			# Use the post's exact anchor: two arithmetically equivalent float paths can
-			# differ by a fraction of a pixel and make y-sort put the post over the sign.
-			panel.position = fence._point(fence.to_along if fence.joined_end
-					else fence.to_along - ParkClosure.POST_HALF)
-		if panel is ParkFenceMarker:
-			(panel as ParkFenceMarker).sign_offset = at - panel.position
-		_add_closure_node(panel, true)
+			(panel as ParkFenceMarker).sign_offset = at - feet[i]
+		slices.append(panel)
+	DrawLayer.add_slices(self, slices, feet)
+	for panel in slices:
+		_track_closure_node(panel)
 
-	var body := StaticBody2D.new()
-	var shape := CollisionShape2D.new()
-	var box := RectangleShape2D.new()
-	box.size = Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if across \
-			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
-	shape.shape = box
+	var body := footprint.body()
 	body.position = at
-	body.add_child(shape)
 	_add_closure_node(body, false)
 
+## **A closure's barrier line as a solid**: one box `barrier_width()` long and
+## `Tuning.CLOSURE_BARRIER_DEPTH` deep, laid across the street or along the park's edge, its origin
+## at the line's middle. Its body stops her (`_spawn_barrier()`); its tiles are closed ground, since
+## the line stands on a mouth the closure takes (`CityMap.close_streets()`), so every other mover is
+## stopped by the same line.
+static func barrier_footprint(closure: RoadClosure) -> Footprint:
+	var width := closure.barrier_width()
+	var size := Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if closure.barrier_runs_across() \
+			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
+	return Footprint.of(GroundShape.rect(size * 0.5))
+
 func _add_closure_node(node: Node, y_sorted: bool) -> void:
-	_closure_nodes.append(node)
 	if y_sorted:
-		_entities.add_child(node)
+		add_entity(node)
 	else:
 		add_child(node)
+	_track_closure_node(node)
+
+## Keeps a closure's node for the day, to be taken down with it, and hands a picture to the scenery.
+func _track_closure_node(node: Node) -> void:
+	_closure_nodes.append(node)
 	if node is ScenerySprite:
 		scenery.register(node)
 
@@ -1246,6 +1451,7 @@ func _dress_blocks(state: CityState) -> void:
 func _dress_the_stretch() -> void:
 	for listed in map.stretch_props:
 		var prop := Prop.new()
+		prop.atlas = atlas
 		prop.kind = int(listed.kind) as Prop.Kind
 		prop.position = listed.at
 		prop.variant = int(listed.variant)
@@ -1260,8 +1466,8 @@ func _dress_the_stretch() -> void:
 ## broken under soot, the door boarded, the parapet charred) for the scheduled `BURNT_OUT` block
 ## purpose above too — the same look for a different, per-building reason.
 ##
-## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
-## about the run (`GameState.scars`) answers which `Building` it is, once, rather than a field
+## **The lookup is the shape of `board_neighbor_window()`/`home_door_building()`**: a fixed fact
+## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall this file actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
 ## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
@@ -1279,7 +1485,7 @@ func _dress_the_stretch() -> void:
 ## have caught on and asks for the building behind it to be burnt there and then, so *"Take what's
 ## in the stroller to the burnt building"* leads to a burnt building rather than bare sidewalk.
 func mark_the_burnt_frontage() -> void:
-	for scar in GameState.scars:
+	for scar in run.attempt_spend.scars:
 		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
 			continue
 		var wall_tile := map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
@@ -1333,8 +1539,8 @@ func close_ground(tiles: Array[Vector2i]) -> void:
 	for tile: Vector2i in redraw:
 		var source := scenery_ground_source(tile)
 		if source >= 0:
-			_ground.set_cell(tile, source,
-					GroundLayers.atlas_coords_for(source, map.seed_used, tile, _ground.tile_set))
+			scenery_ground.set_cell(tile, source,
+					GroundLayers.atlas_coords_for(source, map.seed_used, tile, scenery_ground.tile_set))
 	_sleepiness_tile = Vector2i(-1, -1)
 	for prop in _props.duplicate():
 		var frame := prop as Prop
@@ -1350,6 +1556,7 @@ func close_ground(tiles: Array[Vector2i]) -> void:
 func _place_garbage_sacks() -> void:
 	for entry in GarbageSacks.placed(map, _day):
 		var sack := Prop.new()
+		sack.atlas = atlas
 		sack.kind = Prop.Kind.SACK_PILE if entry.pile else Prop.Kind.SACK
 		sack.position = entry.position
 		_add_prop(sack)
@@ -1374,6 +1581,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
 		var playground := map.tile_rect_to_world(layout.playground)
 		var frame := Prop.new()
+		frame.atlas = atlas
 		frame.kind = Prop.Kind.PLAYGROUND_FRAME
 		frame.position = Vector2(playground.get_center().x, playground.end.y - 8.0)
 		frame.variant = block.x * 31 + block.y
@@ -1419,6 +1627,7 @@ func _dress_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 		if _too_close_to_a_planted_tree(at, planted):
 			continue
 		var tree := Prop.new()
+		tree.atlas = atlas
 		tree.kind = Prop.Kind.TREE
 		tree.position = at
 		tree.variant = rng.randi()
@@ -1437,52 +1646,22 @@ static func _too_close_to_a_planted_tree(at: Vector2, planted: Array[Vector2]) -
 
 ## A line of posts across the carriageway at each mouth of every precinct, so a street that
 ## meets one reads as closed on purpose rather than as the road running out. Placed from the map
-## alone, with no rng: a closed mouth is geometry, not a roll, so `bollard_positions` needs no
-## seed and a test can call it without building a scene.
+## alone, with no rng: a closed mouth is geometry, not a roll, so `CityMap.post_positions()` needs
+## no seed and a test can call it without building a scene.
 func _dress_precincts() -> void:
-	for at in bollard_positions(map):
+	for at in map.post_positions():
 		var bollard := Prop.new()
+		bollard.atlas = atlas
 		bollard.kind = Prop.Kind.BOLLARD
 		bollard.position = at
 		_add_prop(bollard)
-
-## Where the posts across a precinct's mouth stand, in world space. One row on the first tile of
-## paving at each end of every span (`CityMap.precinct_spans`), spread across the carriageway
-## band only — the middle two tiles of the corridor's `Tuning.STREET_WIDTH` — so the pavements on
-## either side stay open for a pram while the road itself reads as stopped.
-##
-## Static, and stated entirely over `map`: a bollard's position is a fact about the lattice, not
-## about the day, so nothing here reaches for a seed the way `_dress_block`'s trees do.
-static func bollard_positions(map: CityMap) -> Array[Vector2]:
-	var positions: Array[Vector2] = []
-	var tile := float(Tuning.TILE_SIZE)
-	var band_tiles := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
-	var band_px := band_tiles * tile
-	var count := maxi(2, floori(band_px / BOLLARD_SPACING) + 1)
-	var margin := (band_px - float(count - 1) * BOLLARD_SPACING) * 0.5
-	for span in map.precinct_spans:
-		var vertical := span.x == 1
-		var corridor: int = span.y
-		# The paving now reaches the crossroads' own road edge at each end — the same widened
-		# range `CityMap.street_kind()` reads paving from, so a post never stands short of or
-		# past where the ground itself changes.
-		var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
-		var hi := (span.w + 1) * CityMap.period() + Tuning.SIDEWALK_WIDTH
-		var band_start := (corridor * CityMap.period() + Tuning.SIDEWALK_WIDTH) * tile
-		for along_tile: int in [lo, hi - 1]:
-			var along_px := (along_tile + 0.5) * tile
-			for i in count:
-				var across_px := band_start + margin + i * BOLLARD_SPACING
-				positions.append(Vector2(across_px, along_px) if vertical
-						else Vector2(along_px, across_px))
-	return positions
 
 func _add_prop(prop: Node2D) -> void:
 	if not _recipe_contains(prop.position):
 		prop.free()
 		return
 	_props.append(prop)
-	_entities.add_child(prop)
+	add_entity(prop)
 	if prop is ScenerySprite:
 		scenery.register(prop)
 
@@ -1495,7 +1674,7 @@ func _add_prop(prop: Node2D) -> void:
 func camera_bounds() -> Rect2:
 	if map.recipe_exterior or map.has_stretch():
 		return Rect2(-100000000, -100000000, 200000000, 200000000)
-	var depth := OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
+	var depth := CityMap.OUTSIDE_DEPTH_TILES * float(Tuning.TILE_SIZE)
 	return Rect2(Vector2.ZERO, map.world_size()).grow(depth - Stroller.CAMERA_LOOK_AHEAD)
 
 ## Walls just outside the map, so the player cannot walk off the edge of the world.
@@ -1520,11 +1699,6 @@ func _spawn_boundary() -> void:
 		body.add_child(shape)
 		add_child(body)
 
-## Adds a node to the y-sorted layer, where it sorts against the props, the power station's stacks
-## and every other entity — never against a building, which is a layer of its own beneath them.
-func add_entity(node: Node) -> void:
-	_entities.add_child(node)
-
 # ------------------------------------------------------------------ ground ---
 
 ## Configures the ground from `assets/ground_tileset.tres` and prepares its initial nearby chunks.
@@ -1534,12 +1708,11 @@ func add_entity(node: Node) -> void:
 ## can be edited in a drawing program instead of by changing arithmetic, and it is one
 ## place rather than four.
 func _paint_ground() -> void:
-	_ground_corridor = null
-	_escape_route_streets.clear()
-	_ground.configure(self, _composed_ground_tile_set())
+	_tinted_route = null
+	scenery_ground.configure(self, _composed_ground_tile_set())
 	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
-	for key in _ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
-		_ground.prepare(key)
+	for key in scenery_ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
+		scenery_ground.prepare(key)
 
 func _home_scenery_view() -> Rect2:
 	return Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
@@ -1557,7 +1730,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 	var source := GroundTiles.source_for(map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
 		var twin := GroundTiles.route_twin_of(source)
-		if twin >= 0 and _ground.tile_set.has_source(twin):
+		if twin >= 0 and scenery_ground.tile_set.has_source(twin):
 			return twin
 	return source
 
@@ -1650,8 +1823,8 @@ func _recipe_litter(day: int) -> Array[Litter.Placed]:
 ## baked region and holds no picture, so composing it twice can never accumulate layers.
 func _composed_ground_tile_set() -> TileSet:
 	if _authored_ground_tile_set == null:
-		_authored_ground_tile_set = _ground.tile_set
-	return GroundLayers.build_tile_set(_authored_ground_tile_set)
+		_authored_ground_tile_set = scenery_ground.tile_set
+	return GroundLayers.build_tile_set(_authored_ground_tile_set, ground_recipe, atlas)
 
 ## What the city stops at, on each of its four sides.
 ##

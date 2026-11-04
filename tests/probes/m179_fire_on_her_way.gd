@@ -44,7 +44,7 @@ func run(t) -> void:
 	var worst_frame := 0.0
 	var attempt_frames: Array[float] = []
 	for seed_value: int in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -78,11 +78,11 @@ func run(t) -> void:
 
 func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var scars := GameState.scars.duplicate()
+	var scars := GameState.attempt_spend.scars.duplicate()
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
-	city.events.start_day(day, rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), rng, consumed)
 	var plan: EventScheduler.Planned = null
 	for candidate in city.events.plans():
 		if candidate.def.id == "burning_building":
@@ -97,13 +97,14 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 		return {}
 
 	var rig := _walker(t, route[0])
+	city.events.use_player(rig)
 	var state := {
 		"clock": 0.0, "sited_at": -1.0, "lead": 0.0, "seen_at": -1.0,
 		"refusals": {}, "worst_frame": 0.0, "attempt_frames": [] as Array[float],
 	}
 	_follow(city, rig, route, plan, state)
 
-	var siting := city.events.walk_siting()
+	var siting := city.events.ahead.walk_siting()
 	var widened := siting.widened if siting else 0
 	state["refusals"] = siting.waits.duplicate() if siting else {}
 	var met: bool = float(state["seen_at"]) >= 0.0
@@ -126,10 +127,10 @@ func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
 		lit = city.events.light_what_she_never_met(rig.global_position)
 		if lit:
 			print("      lit at dusk at %s, %.0fpx from where she finished"
-					% [TelemetryLog.tile(city.map.world_to_tile(plan.position)),
+					% [RunTrace.tile(city.map.world_to_tile(plan.position)),
 					plan.position.distance_to(rig.global_position)])
 	rig.free()
-	GameState.scars = scars
+	GameState.attempt_spend.scars = scars
 	var out := state.duplicate()
 	out["met"] = met
 	out["never_real"] = never_real
@@ -188,15 +189,11 @@ const SETTLE_SECONDS := 14.0
 func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planned) -> void:
 	rig.velocity = Vector2.ZERO
 	for i in int(round(SETTLE_SECONDS / STEP)):
+		# The manager's tick steps every instance, so the engine leaves the top of its street and
+		# the fire finishes its telegraph.
 		city.events._physics_process(STEP)
-		# **The instances have to be ticked by hand.** `EventInstance` moves in `_process`, which this
-		# probe does not wait for — so an engine left to the tree never leaves the top of its
-		# street and a fire never finishes its telegraph.
-		for instance in city.events.instances().duplicate():
-			if is_instance_valid(instance):
-				instance._process(STEP)
-	var engine_at := EventManager.where_the_summoned_row_stops(city.map, plan.position)
-	var engine := EventCatalogue.by_id(plan.def.spawns_on_sight)
+	var engine_at := EventSpawner.where_the_summoned_row_stops(city.map, plan.position)
+	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
 	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))
 	if inward != Vector2i.ZERO:
@@ -207,7 +204,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 	var steps := int(from.distance_to(to) / (Tuning.WALK_SPEED * STEP))
 	for i in steps:
 		var at: Vector2 = from.lerp(to, float(i) / float(maxi(steps - 1, 1)))
-		cost += city.events.total_excitement_at(at) * STEP
+		cost += city.events.sources.total_at(at) * STEP
 	var parked := 0
 	for instance in city.events.instances():
 		parked += 1 if instance.def.id == "fire_truck" and instance.is_parked else 0

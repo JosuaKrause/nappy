@@ -1,0 +1,3 @@
+day  1 agents~234: median agents/frame 2524us tick 297us | mean agents 2552 tick 299
+day  9 agents~50: median agents/frame 550us tick 217us | mean agents 556 tick 218
+day 14 agents~86: median agents/frame 957us tick 348us | mean agents 967 tick 350

@@ -101,7 +101,7 @@ func _included_rows() -> Array[EventDef]:
 		out.append(def)
 	return out
 
-## Rows whose notice/chase state (`is_waiting()`, `_chase()`) is driven by `EventInstance.
+## Rows whose notice/chase state (`is_waiting()`, `EventPursuit`) is driven by `EventInstance.
 ## player_at`, which `M174Pass`'s rig never sets — its own `_pass_net()` walks a fixed straight
 ## line and never tells the instance where "she" is except through the field it samples. Run
 ## through the rig anyway, a pursuer would just read as permanently `is_waiting()` (full
@@ -109,7 +109,7 @@ func _included_rows() -> Array[EventDef]:
 ## exactly like a measured one. Dashed instead, the way `docs/EVENTS.md`'s own run-through column
 ## is already empty for every pursuer: "they follow, so there is no crossing to price."
 func _pass_excluded(def: EventDef) -> bool:
-	return def.pursues or def.pursues_within > 0.0
+	return def.pursuit != null or def.notice != null
 
 # ------------------------------------------------------------------------ asserts ---
 
@@ -168,8 +168,8 @@ func _geometry_row(def: EventDef) -> Dictionary:
 	# A pursuer's relevant speed is how fast it closes once it notices, not its cold `speed`
 	# (almost always 0 for one, since most pursuers wait rather than patrol); everything else
 	# that moves reads its own `speed`.
-	if def.pursues:
-		row["speed"] = "%.1f" % def.pursue_speed
+	if def.pursuit != null:
+		row["speed"] = "%.1f" % def.chase_speed()
 	elif def.mobile and def.speed > 0.0:
 		row["speed"] = "%.1f" % def.speed
 	else:
@@ -257,11 +257,11 @@ func _build_tables(rows: Array[EventDef]) -> Array[TableModel]:
 		distance_awake.order.append(def.id)
 		distance_awake.rows[def.id] = _distance_row(def, 1.0)
 		distance_asleep.order.append(def.id)
-		distance_asleep.rows[def.id] = _distance_row(def, Tuning.SLEEPING_SENSITIVITY)
+		distance_asleep.rows[def.id] = _distance_row(def, Baby.SLEEPING_SENSITIVITY)
 		pass_awake.order.append(def.id)
 		pass_awake.rows[def.id] = _pass_row(def, 1.0)
 		pass_asleep.order.append(def.id)
-		pass_asleep.rows[def.id] = _pass_row(def, Tuning.SLEEPING_SENSITIVITY)
+		pass_asleep.rows[def.id] = _pass_row(def, Baby.SLEEPING_SENSITIVITY)
 
 	return [geometry, distance_awake, distance_asleep, pass_awake, pass_asleep]
 
@@ -321,16 +321,16 @@ func _header_text() -> String:
 			"a change to any of them shows here as this line moving:")
 	lines.append("")
 	lines.append("- `Tuning.EXCITEMENT_DECAY_WALKING` = %.1f points/s" % Tuning.EXCITEMENT_DECAY_WALKING)
-	lines.append("- `Tuning.SLEEPING_SENSITIVITY` = %.2f" % Tuning.SLEEPING_SENSITIVITY)
+	lines.append("- `Baby.SLEEPING_SENSITIVITY` = %.2f" % Baby.SLEEPING_SENSITIVITY)
 	lines.append("- `Tuning.WALK_SPEED` = %.1f px/s" % Tuning.WALK_SPEED)
-	lines.append("- `Tuning.WALL_WORTH_OF_COST` = %.1f points" % Tuning.WALL_WORTH_OF_COST)
+	lines.append("- `EventScheduler.WALL_WORTH_OF_COST` = %.1f points" % EventScheduler.WALL_WORTH_OF_COST)
 	lines.append("")
 	lines.append("**`" + TITLE_GEOMETRY + "`** is what a row's own data says, unconditionally: " +
 			"`role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any " +
 			"resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; " +
 			"`pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope " +
 			"`current_intensity()` uses, and a dash where a row does not pulse; `speed` is a " +
-			"pursuer's `pursue_speed` (almost always faster than its own cold `speed`, which is " +
+			"pursuer's `PursuitSpec.speed` (almost always faster than its own cold `speed`, which is " +
 			"usually 0), a mobile row's own `speed`, and a dash for anything that does not move; " +
 			"`walk_through_cost()` is the field integrated along a straight line through the " +
 			"centre, less the walking decay over the same crossing.")
@@ -353,14 +353,15 @@ func _header_text() -> String:
 			"paragraphs below say otherwise. `M174Pass." +
 			"pass_net_averaged()` (`tests/probes/m174_pass.gd`) is the simulation, shared rather " +
 			"than duplicated — `tests/test_events.gd`'s own relationship test runs the identical " +
-			"code. Dashed for a pursuer (`pursues` or `pursues_within` set: alley_mouse, " +
+			"code. Dashed for a row that pursues or waits (`EventDef.pursuit` or " +
+			"`EventDef.notice` set: alley_mouse, " +
 			"pigeon_flock, charging_dog, door_guard, alley_robbery, robber_giving_chase, " +
 			"van_guard_giving_chase, policeman_giving_chase, guardsman_giving_chase, " +
 			"masked_pursuer) — its notice " +
 			"and chase " +
 			"state is driven by where the player is, which the rig never tells it, so there is no " +
 			"pass to measure, the same reason `docs/EVENTS.md`'s own run-through column is empty " +
-			"for a pursuer. The 0px column is dashed for a row with a solid, still body " +
+			"for such a row. The 0px column is dashed for a row with a solid, still body " +
 			"(`obstructs_radius > 0.0`) — she cannot walk the same line as a thing she cannot walk " +
 			"through.")
 	lines.append("")
@@ -368,13 +369,13 @@ func _header_text() -> String:
 			"already spent.** A `TOWARD_PLAYER` row (`loose_dog`, `cyclist`) is not on a tile: it is " +
 			"created just off screen down her own line, after its screen-edge warning when it " +
 			"telegraphs (the cyclist, `EventManager.spawn_warned()`) and at once when it does not " +
-			"(the loose dog, `EventManager._send_down_her_line()`), coming at her at its own intensity. So its pass is " +
+			"(the loose dog, `EventsAhead._send_down_her_line()`), coming at her at its own intensity. So its pass is " +
 			"simulated from that creation, at the closest it can be made on any heading " +
-			"(`PendingWarning.least_distance()`, the view's half height, so the figure " +
+			"(`SpawnSiting.least_distance()`, the view's half height, so the figure " +
 			"does not depend on which way a walk was going), moving as it moves. Such a row is " +
 			"measured once rather than averaged over 8 pulse phases: it is created at the age that " +
 			"has it reach her, walking into it from where it is created closest, at the loud of " +
-			"its beat (`EventManager.age_when_warned()`), so how far through the beat it is when it " +
+			"its beat (`EventSpawner.age_when_warned()`), so how far through the beat it is when it " +
 			"reaches her is fixed, not a phase she happens to arrive on.")
 	lines.append("")
 	lines.append("**Every other row is walked up to, and its telegraph is long over by then** — a " +

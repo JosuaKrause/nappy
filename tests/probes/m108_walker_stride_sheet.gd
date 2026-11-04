@@ -1,7 +1,7 @@
 extends RefCounted
 ## Evidence rig for M108's "walkers first" stride item: renders each of the walker's five
 ## authored views with gait frame a beside gait frame b, body tinted and trim above — the same
-## composition `CrowdAgent._draw_body()`'s walker branch draws, reproduced here from the SVG
+## composition `AgentLook.draw_body()`'s walker branch draws, reproduced here from the SVG
 ## source text rather than a live scene so the sheet can be judged without booting a day. Not a
 ## suite: it saves PNGs and prints a manifest rather than asserting, so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
@@ -25,8 +25,8 @@ func run(t) -> void:
 	var rows := []
 	for view in VIEWS:
 		rows.append(_row(view, [
-			_entry(CrowdAgent.WALKER_BODY_BY_VIEW[view], CrowdAgent.WALKER_TRIM_BY_VIEW[view]),
-			_entry(CrowdAgent.WALKER_BODY_BY_VIEW_B[view], CrowdAgent.WALKER_TRIM_BY_VIEW_B[view]),
+			_entry(WalkerLook.BODY_BY_VIEW[view], WalkerLook.TRIM_BY_VIEW[view]),
+			_entry(WalkerLook.BODY_BY_VIEW_B[view], WalkerLook.TRIM_BY_VIEW_B[view]),
 		]))
 	_render_sheet("walker-stride-native.png", "walker-stride-3x.png", rows)
 	for row in rows:

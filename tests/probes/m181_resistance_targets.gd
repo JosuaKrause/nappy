@@ -26,8 +26,8 @@ const BASE_SEED := 181_000
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
-	var saved_progress := GameState.resistance_progress
-	GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+	var saved_progress := GameState.resistance.progress
+	GameState.resistance.progress = Tuning.RESISTANCE_GOAL
 	print("\n== M181: the day's resistance target, reachable from home ==")
 	print("%-12s %4s %-8s %6s %6s %6s  %s" % ["seed", "day", "target", "legal", "open", "reach",
 			"placed at (reachable?)"])
@@ -37,14 +37,14 @@ func run(t) -> void:
 	for i in EXTRA_SEEDS:
 		seeds.append(BASE_SEED + i * 7919)
 	for seed_value in seeds:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day: int in [9, 12, 14]:
 			var state := CityState.new()
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(day, _rng(seed_value, day, "events"), [],
+			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
@@ -82,7 +82,7 @@ func run(t) -> void:
 				if grid.reaches(tile, blocked, reached):
 					reach += 1
 			var director_rng := _rng(seed_value, day, "resistance")
-			var at := director._place(step, director_rng)
+			var at := director.place_contact(step, director_rng)
 			var placed := "nowhere"
 			if at != Vector2.INF:
 				var tile := city.map.world_to_tile(at)
@@ -98,7 +98,7 @@ func run(t) -> void:
 			director.free()
 		city.free()
 	print("%d of %d placements unreachable or nowhere" % [failures, cases])
-	GameState.resistance_progress = saved_progress
+	GameState.resistance.progress = saved_progress
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

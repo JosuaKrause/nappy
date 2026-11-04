@@ -24,22 +24,22 @@ extends Node2D
 ##
 ## **One node, three booleans, not three nodes.** Godot skips `_draw()` on an invisible `CanvasItem`
 ## entirely, so a plain `visible` flag per section already buys "no work happens while a layer is
-## off" without a second node per layer to manage — `main.gd` owns the fourth layer (the developer
-## readout) on its own pre-existing `CanvasLayer`, which is not a `CanvasItem` this class could
-## parent anyway.
+## off" without a second node per layer to manage — `DebugReadout` owns the fourth layer (the
+## developer readout) on `main`'s own pre-existing `CanvasLayer`, which is not a `CanvasItem` this
+## class could parent anyway.
 ##
 ## **Every field is the real level set**, not a circle standing in for it —
 ## `GroundShape.field_outline()` and `field_outline_at()`, the same effective-distance arithmetic
-## `Tuning.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
+## `Field.falloff()` prices, so this layer cannot disagree with what the meter does: a capsule
 ## about a stationary body's own spine, an ellipse (the emitter at one focus) about a moving one.
 ## **And cut where a wall stops it**: an outline is drawn only where the emitter's own walls
-## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`) let its field reach, so behind a
+## (`ExcitementSource.wall_grid()`) let its field reach, so behind a
 ## building, where the meter receives nothing, there is no line either, to within one `CUT_PIECE`. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
 ## **The building shows what the city shows.** Nothing here needs a day: the events are an event
-## source (anything answering `instances() -> Array[EventInstance]`, which `InteriorEvents` does as
-## well as `EventManager`), the crowd may be null, and the world is any `Node2D` whose subtree holds
+## source (anything answering `instances() -> Array[EventInstance]`, which the city's
+## `EventManager` and the building's answer alike), the crowd may be null, and the world is any `Node2D` whose subtree holds
 ## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
@@ -94,8 +94,8 @@ func _agents() -> Array[CrowdAgent]:
 	return _crowd.agents()
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
-## `DevFlags.layers_override()`. Pulled out from `main._add_debug_layers()` so a test can drive it
-## directly without a real command line to read: see `DevFlags.parse_layers()` for the same split.
+## `RunConfig.layers_override`. Pulled out from `DebugReadout.show_the_world()` so a test can drive it
+## with the indices it wants: see `DevFlags.parse_layers()` for the same split.
 func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
 	shadows_on = 2 in indices
@@ -150,7 +150,7 @@ func _draw() -> void:
 # ------------------------------------------------------------------ fields ---
 
 ## Every emitter's actual falloff boundary — `GroundShape.field_outline()`, the same effective-
-## distance arithmetic `Tuning.falloff()` prices, so this layer cannot disagree with what the
+## distance arithmetic `Field.falloff()` prices, so this layer cannot disagree with what the
 ## meter does: a capsule about a stationary body's own spine, an ellipse (focus at the emitter)
 ## about a moving one, and a plain circle at zero speed, exactly as it always drew — a mast's field
 ## included, now that it stands somewhere. A flock draws one pair per bird, at its own position and
@@ -174,7 +174,7 @@ func field_runs(view: Rect2) -> Array:
 			continue
 		var colour := FIELD_LETHAL if instance.def.hard_fail else FIELD_COSTLY
 		var source := instance.global_position
-		var grid := instance.wall_grid()
+		var grid := instance.excitement.wall_grid()
 		var id := instance.get_instance_id()
 		var offsets := instance.flock_offsets()
 		if offsets.is_empty():
@@ -206,16 +206,16 @@ func field_runs(view: Rect2) -> Array:
 		var outer := Tuning.CAR_OUTER_RADIUS if is_car else Tuning.PEDESTRIAN_OUTER_RADIUS
 		# Noise, never lethal — a car's strike box is drawn in the bounding-box layer instead, in
 		# the same lethal colour, because being hit is a body question and this is a field one. A
-		# crowd body is always a point in field terms (see `CrowdAgent.contribution_at()`'s own
+		# crowd body is always a point in field terms (see `CrowdExcitement`'s own
 		# doc), so it is outlined as a point whatever the agent's own shadow shape says.
 		var velocity := agent.velocity()
 		var levels: Array[float] = [inner, outer]
-		if agent.is_startled():
-			var jolt := agent.jolt_radii()
+		if agent.excitement.is_startled():
+			var jolt := agent.excitement.jolt_radii()
 			levels.append(jolt.x)
 			levels.append(jolt.y)
 		var source := agent.global_position
-		var grid := agent.wall_grid()
+		var grid := agent.excitement.wall_grid()
 		var id := agent.get_instance_id()
 		for level in levels:
 			if not _may_be_seen(view, source, level):
@@ -244,7 +244,7 @@ func _view_rect() -> Rect2:
 
 ## Whether a field level about `at` can reach into `view`, asked before its outline is built: no
 ## outline reaches further from its emitter than `level / (1 - Tuning.FIELD_ECCENTRICITY_MAX)`,
-## the bound `CrowdAgent.contribution_at()` culls by, past the end of a body's own `spine`.
+## the bound `CrowdExcitement` culls by, past the end of a body's own `spine`.
 static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -> bool:
 	return view.grow(level / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX) + spine).has_point(at)
 
@@ -252,7 +252,7 @@ static func _may_be_seen(view: Rect2, at: Vector2, level: float, spine := 0.0) -
 ## plain-point form `field_outline_at()` (a crowd agent or one bird of a flock, neither of which
 ## owns a body in field terms) — added to `drawn` as the runs `open_runs()` leaves, and not at all
 ## off screen. See `_cuts` for `key` and `cuts`.
-func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: CityMap, colour: Color,
+func _field_boundary(outline: PackedVector2Array, source: Vector2, grid: WorldMap, colour: Color,
 		key: Array, view: Rect2, cuts: Dictionary, drawn: Array) -> void:
 	if outline.is_empty() or not view.intersects(_bounds_of(outline)):
 		return
@@ -285,16 +285,18 @@ const _CUT_STEPS := 4
 ## A closed outline as the open polylines left once every stretch of it a wall keeps the field from
 ## is cut away: walled where `grid.wall_between()` blocks the line from `source`, the emitter's own
 ## node, to the point — the line `contribution_at()` asks, of the grid the emitter asks it of
-## (`EventInstance.wall_grid()`, `CrowdAgent.wall_grid()`). With nothing walled it is the whole
+## (`ExcitementSource.wall_grid()`). With nothing walled it is the whole
 ## loop, closed; with everything walled it is nothing; with no grid nothing is walled. The outline
 ## is asked piece by piece (`CUT_PIECE`), and **where a piece runs from open to walled, the cut is
 ## where the answer turns along it**, found by halving it, so the line ends at the wall's depth
 ## rather than at whichever point of the outline happened to fall short of it.
 ##
-## **Most outlines ask no line at all**: `_deep_ground_meets()` answers first whether anything
+## **Most outlines ask no line at all**: a source on open ground — a row from outside the walls
+## (`ExcitementSource.wall_grid()`) — has its whole outline at once, and otherwise
+## `_deep_ground_meets()` answers first whether anything
 ## within the outline's bounds could be deep enough in a building to wall one, and a walker on a
 ## sidewalk beside a facade almost never reaches that far in.
-static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
+static func open_runs(points: PackedVector2Array, source: Vector2, grid: WorldMap
 		) -> Array[PackedVector2Array]:
 	var runs: Array[PackedVector2Array] = []
 	if points.size() < 2:
@@ -302,7 +304,8 @@ static func open_runs(points: PackedVector2Array, source: Vector2, grid: CityMap
 	var shut: Array[bool] = []
 	var first_shut := -1
 	var pieces := PackedVector2Array()
-	if grid != null and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
+	if grid != null and grid.has_ground() \
+			and _deep_ground_meets(grid, _bounds_of(points).expand(source)):
 		pieces = _in_pieces(points)
 		for i in pieces.size():
 			var is_shut := grid.wall_between(source, pieces[i])
@@ -348,7 +351,7 @@ static func _in_pieces(points: PackedVector2Array) -> PackedVector2Array:
 
 ## The last point from `open` towards `shut`, one piece apart, whose line from `source` the grid
 ## leaves open.
-static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: CityMap
+static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2, grid: WorldMap
 		) -> Vector2:
 	for _i in _CUT_STEPS:
 		var middle := (open + shut) * 0.5
@@ -363,7 +366,7 @@ static func _where_the_wall_starts(open: Vector2, shut: Vector2, source: Vector2
 ## to block at, since no tile asks less than that depth and the corner discs it also leaves out only
 ## take more away. A line from the source to the outline lies inside the outline's bounds with the
 ## source added, so where this is false no line on it can be walled and none need be asked.
-static func _deep_ground_meets(grid: CityMap, rect: Rect2) -> bool:
+static func _deep_ground_meets(grid: WorldMap, rect: Rect2) -> bool:
 	var size := float(Tuning.TILE_SIZE)
 	var depth := minf(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.WALL_SHIELD_DEPTH)
 	var first := grid.world_to_tile(rect.position)
@@ -401,7 +404,7 @@ func _draw_shadows() -> void:
 			continue
 		_draw_shadow_outline(instance.def.shape, instance.global_position, instance.solid_axis())
 	for agent in _agents():
-		var axis := agent.travel_axis() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
+		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape, agent.global_position, axis)
 	var props: Array = (_world as City).props() if _world is City else []
 	for prop in props:
@@ -428,7 +431,7 @@ func _pram_position() -> Vector2:
 ## hers, the pram's, every building, a road closure's and the map
 ## boundary's own barrier bodies, and every solid event's obstruction — plus a moving car's strike
 ## box, drawn in the field layer's own lethal colour because it is not a body
-## (`CrowdAgent._car_shadow_shape()`'s own doc: "no body for a car") but is exactly what
+## (`CarStrategy.shadow_shape()`'s own doc: "no body for a car") but is exactly what
 ## `will_be_lethal()` tests against. **Walkers and cars have no body; nothing is invented for
 ## them.**
 func _draw_bodies() -> void:
@@ -515,7 +518,7 @@ func _polygon_world_points(node: CollisionPolygon2D) -> PackedVector2Array:
 
 # ------------------------------------------------------------------ geometry ---
 # Unsquashed — a bounding body and a field are both stated in the plain 2D plane the physics and
-# `Tuning.falloff()` already use; only a shadow (`GroundShape.shadow_outline()`) carries the
+# `Field.falloff()` already use; only a shadow (`GroundShape.shadow_outline()`) carries the
 # oblique view's own foreshortening.
 
 func _rect_corners(at: Vector2, axis: Vector2, half_extents: Vector2) -> PackedVector2Array:

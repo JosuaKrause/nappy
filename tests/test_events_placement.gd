@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_nothing_takes_the_routes_own_sidewalk(t)
 	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
+	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
 
 
 ## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
@@ -74,19 +75,19 @@ func run(t) -> void:
 ## **A floor is kept at the highest of the share's own ceiling (0.35 whole, 0.40 narrow) or a lower
 ## number the measurement clears by at least 1.5 points**, so a small future regression fails loudly
 ## rather than drifting under a floor nobody re-measured. Measured over the days sampled here, with
-## `Tuning.WALL_WORTH_OF_COST` at 48 and the last day carrying its spur to the power station's door
+## `EventScheduler.WALL_WORTH_OF_COST` at 48 and the last day carrying its spur to the power station's door
 ## (`RouteTree.for_day`) and a roadblock's band costing nothing: the whole share stands at 36.92%
 ## (127 of 344 rows), more than 1.5 points above its own 0.35 ceiling, so the floor is the ceiling —
 ## 0.35. The narrow share stands at 38.20% (34 of 89 rows), under its own 0.40 ceiling, so its floor
 ## is the lower number it clears by 1.5 points, rounded down — 0.36. **`roadblock` is in the narrow
-## class**: with its `intensity` 0, `EventScheduler._line_reach_of()` falls to its 60px body, under
+## class**: with its `intensity` 0, `EventDef.line_reach()` falls to its 60px body, under
 ## the half junction box, so its 18 rows (5 on the corridor) joined the class; the other narrow rows
 ## stand where they did, 29 of 71. Both still sit above the third of the ground that is corridor,
 ## which is what an unweighted day would give. **The sample is one city, so any change to the
 ## corridor reshuffles it**: the roll draws over per-tile copies, so moving the weight of even two
 ## junction-box cells changes every
 ## later draw of the day. Re-measure rather than trust either number if the catalogue's
-## `pavement_side`/`obstructs_radius` pairing, `Tuning.WALL_WORTH_OF_COST`, which walls get
+## `pavement_side`/`obstructs_radius` pairing, `EventScheduler.WALL_WORTH_OF_COST`, which walls get
 ## `EVENT_WALL_RIM_WEIGHT`, or the corridor any sampled day grows, moves again.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
@@ -119,7 +120,8 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	# handed to her walk (`EventScheduler._hand_to_her_walk`). What this asks is how the roll
 	# places, so the crews are read where the roll put them.
 	var crew := EventCatalogue.by_id("poster_crew")
-	crew.sited_on_her_way = false
+	var crew_way := crew.on_her_way
+	crew.on_her_way = null
 	var walls := 0
 	var walls_across_the_street := 0
 	var friction_on_the_route := 0
@@ -141,27 +143,27 @@ func _test_the_day_is_placed_by_role(t) -> void:
 		for key in tree.gaps():
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
 			var away := corridor.depth(tile)
 			if plan.role == GameEnums.BlockerRole.WALL and corridor.is_in_a_gap(tile):
-				var segment := StreetNetwork.segment_containing(tile)
+				var segment := map.network.segment_containing(tile)
 				if segment:
 					gaps_walled["%d:%s" % [day, segment.key()]] = true
 			if plan.role == GameEnums.BlockerRole.WALL:
 				walls += 1
 				t.check(plan.def.hard_fail
-						or plan.def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST
-						or EventScheduler._takes_a_whole_sidewalk(plan.def)
-						or EventScheduler._a_pacing_beat_walls_a_sidewalk(plan, map),
+						or plan.def.walk_through_cost() >= EventScheduler.WALL_WORTH_OF_COST
+						or _takes_a_whole_sidewalk(plan.def)
+						or _paces_a_beat_with_no_way_out(plan, map),
 						"day %d: '%s' is a wall because it is lethal, very costly, leaves no line"
 						% [day, plan.def.id] + " past it on a sidewalk, or paces one with no"
 						+ " crossing in its beat")
 				t.check(not corridor.carries_a_route(tile),
 						"day %d: the wall '%s' at %s stands on no ground a route runs along"
-						% [day, plan.def.id, TelemetryLog.tile(tile)])
+						% [day, plan.def.id, RunTrace.tile(tile)])
 				if away == 0:
 					walls_across_the_street += 1
 				placed[plan.def.hard_fail] += 1
@@ -174,7 +176,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 				# The rows small enough to stand beside a crossing without taking it: the junction
 				# rule cannot refuse one of these its corridor ground, so their share is the
 				# weight's own answer with nothing subtracted from it. See the docstring.
-				if EventScheduler._line_reach_of(plan.def) <= _A_JUNCTION_BOXES_HALF_WIDTH:
+				if plan.def.line_reach() <= _A_JUNCTION_BOXES_HALF_WIDTH:
 					narrow += 1
 					if away == 0:
 						narrow_on_the_route += 1
@@ -196,13 +198,13 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(narrow_share > 0.36,
 			"and the corridor weight still shows through the three rules that can refuse a narrow "
 			+ "row (%d of %d narrow rows on the corridor)" % [narrow_on_the_route, narrow])
-	crew.sited_on_her_way = true
+	crew.on_her_way = crew_way
 
 	# **The range, as a relationship rather than as two numbers.** *"It ranges from very costly to
 	# deadly"* is a claim about which of the two is further from the routes, so that is what is
 	# asserted: a day where both bands happened to be equally deep would satisfy any pair of
 	# thresholds and would not be a gradient. `dog_walker` staying friction is the other half and is
-	# checked where the constant is set — see `Tuning.WALL_WORTH_OF_COST`.
+	# checked where the constant is set — see `EventScheduler.WALL_WORTH_OF_COST`.
 	t.check(placed[true] > 10 and placed[false] > 10,
 			"the sample has both kinds of wall in it (%d lethal, %d very costly)"
 			% [placed[true], placed[false]])
@@ -238,7 +240,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## **Anything the day still aims at the route can be walked past on the route's own sidewalk.**
 ## *(PLAYTEST-77: "on the side of the street where the path was chosen only obstacles that can be
 ## bypassed should be possible.")* Friction is the role weighted *onto* the corridor
-## (`Tuning.EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll), so what stays
+## (`EventScheduler.EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll), so what stays
 ## friction is what the guidance walks her into — and a sidewalk is two lanes of tile, so a row
 ## reaching across both of them from either has taken the last line along it.
 ##
@@ -248,8 +250,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## go red if the clause were weakened or if a new catalogue row were given a wider field than its
 ## role can carry.
 ##
-## Asked on two days because a role can move with the day: `charging_dog` is director-sited on
-## `Tuning.RUN_TAUGHT_DAY` and map-placed after it.
+## **The role is read off a placement the scheduler makes** (`_role_it_places_as()`), not off the
+## function that derives it, so a row the day cannot place is not asked: the days are 8 and 14,
+## when the catalogue's costly sidewalk rows are on offer. A role can move with the day
+## (`charging_dog` is director-sited on `Tuning.RUN_TAUGHT_DAY` and map-placed after it).
 ##
 ## **A pacing row is not one of the rows this is about**, and the exclusion is the design rather
 ## than a hole: a beat takes its ground in time, so what a walk needs past one is a phase rather
@@ -266,65 +270,134 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## physical clause at all; `delivery_van` stays a wall by the same reading
 ## (`_closes_the_band_by_its_own_placement`'s own doc has its arithmetic).
 ##
-## **The second loop is independent of `_role_for` on purpose**, re-deriving the edge-to-edge gap
-## by hand rather than calling the function under test, so a future row narrow enough to slip both
+## **The second loop is independent of the scheduler's role on purpose**, re-deriving the edge-to-edge gap
+## by hand rather than asking the scheduler for it, so a future row narrow enough to slip both
 ## readings is caught by its own numbers rather than assumed impossible. `burning_building`
 ## (`ONE_SHOT`) is excluded from it since a set piece is never asked the friction-or-wall question.
 func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 	var checked := 0
-	for day in [1, 8]:
+	for day in [8, 14]:
+		var map := _repainted_city(day)
+		var corridor := Corridor.of(RouteTree.for_day(map, day))
 		for def in EventCatalogue.all():
 			if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces:
 				continue
-			if EventScheduler._role_for(def, day) != GameEnums.BlockerRole.FRICTION:
+			if _role_it_places_as(def, day, map, corridor) != GameEnums.BlockerRole.FRICTION:
 				continue
-			if not EventScheduler._a_line_has_to_avoid(def):
+			if not def.has_a_line_to_avoid():
 				continue
 			checked += 1
-			t.check(EventScheduler._line_reach_of(def) < EventScheduler._THE_FAR_LANE,
+			t.check(not def.reaches_the_far_lane(),
 					"day %d: '%s' is friction on a sidewalk and denies %.1fpx of it, so the far"
-					% [day, def.id, EventScheduler._line_reach_of(def)]
-					+ " lane (%.0fpx out) is still a line" % EventScheduler._THE_FAR_LANE)
+					% [day, def.id, def.line_reach()]
+					+ " lane (%.0fpx out) is still a line" % float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE))
 	t.check(checked >= 2,
 			"and the catalogue has rows on a sidewalk to ask it of (%d)" % checked)
 
 	var solid_on_a_sidewalk := 0
-	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	var narrow_and_placed := 0
+	var her_clearance := 2.0 * Tuning.PLAYER_BODY_RADIUS
+	var cities := {}
+	for day in [8, 10, 14]:
+		cities[day] = _repainted_city(day)
 	for def in EventCatalogue.all():
 		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces or def.mobile:
 			continue
 		if def.obstructs_radius <= 0.0:
 			continue
 		# A `ONE_SHOT` is a set piece, not asked the friction-or-wall question at all
-		# (`EventScheduler._role_for` answers it before the cost or physical clause ever runs), so a
+		# (the scheduler answers it before the cost or physical clause ever runs), so a
 		# solid one on a sidewalk is exempt here. `burning_building` carries no body (the fire truck
 		# it calls in is the danger, not the fire), so the check above already passes it over.
 		if def.kind == GameEnums.EventKind.ONE_SHOT:
 			continue
 		solid_on_a_sidewalk += 1
-		var pos: float
-		match def.pavement_side:
-			EventDef.Pavement.AT_THE_KERB:
-				pos = Tuning.TILE_SIZE * 0.5
-			EventDef.Pavement.AGAINST_THE_BUILDING:
-				pos = band - Tuning.TILE_SIZE * 0.5
-			_:
-				pos = band * 0.5
-		var gap := maxf(pos - def.obstructs_radius, band - (pos + def.obstructs_radius))
-		var her_clearance := 2.0 * Tuning.PLAYER_BODY_RADIUS
-		if gap < her_clearance:
-			t.check(EventScheduler._role_for(def, 8) == GameEnums.BlockerRole.WALL,
-					"'%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
-					% [def.id, gap, her_clearance, def.obstructs_radius,
+		var gap := _gap_past_the_body(def)
+		if gap >= her_clearance:
+			continue
+		# Read off the placement the scheduler makes on each of the days that can place the row
+		# (the placement a recipe asks for, `EventScheduler.recipe_placement()`); `night_raid`
+		# is on offer on day 10 alone.
+		var placed_on := 0
+		for day: int in cities:
+			var map: CityMap = cities[day]
+			var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
+			if role == -1:
+				continue
+			placed_on += 1
+			t.check(role == GameEnums.BlockerRole.WALL,
+					"day %d: '%s' leaves %.1fpx where she needs %.0f (obstructs %.1fpx, %s), so it has to"
+					% [day, def.id, gap, her_clearance, def.obstructs_radius,
 					EventDef.Pavement.keys()[def.pavement_side]]
-					+ " be a wall rather than friction")
+					+ " be placed as a wall rather than friction")
+		narrow_and_placed += 1 if placed_on > 0 else 0
+		t.check(placed_on > 0, "'%s' is placed on one of the days asked (%d)" % [def.id, placed_on])
 	t.check(solid_on_a_sidewalk >= 4,
 			"and the catalogue has solid, non-pacing sidewalk rows to ask this of (%d)"
 			% solid_on_a_sidewalk)
+	t.check(narrow_and_placed >= 1,
+			"and some of them leave her too narrow a gap to pass, placed as a wall (%d)"
+			% narrow_and_placed)
+
+## A city of seed 4242 painted for `day` and nothing else done to it.
+func _repainted_city(day: int) -> CityMap:
+	var map := CityGenerator.generate(4242)
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	return map
+
+## The role the scheduler gives `def` on `day`, read off the placement it makes on the first tile
+## of the ground it offers that takes one (`EventScheduler.recipe_placement()`, which the scene
+## recipes call and which judges the candidate as the day's fill does): the role a plan carries.
+## `-1` when no tile of the ground takes the row, or the day does not place it.
+func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
+	var no_doors := PackedVector2Array()
+	var nothing_down: Array[EventScheduler.Planned] = []
+	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
+		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
+				nothing_down, corridor, no_doors)
+		if plan:
+			return plan.role
+	return -1
+
+## The edge-to-edge gap left across a sidewalk band past the row's body stood where its
+## `pavement_side` puts it, by hand from the body's radius and the band: the physical reading of a
+## row that leaves her no way past it.
+func _gap_past_the_body(def: EventDef) -> float:
+	var band := float(Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
+	var pos: float
+	match def.pavement_side:
+		EventDef.Pavement.AT_THE_KERB:
+			pos = Tuning.TILE_SIZE * 0.5
+		EventDef.Pavement.AGAINST_THE_BUILDING:
+			pos = band - Tuning.TILE_SIZE * 0.5
+		_:
+			pos = band * 0.5
+	return maxf(pos - def.obstructs_radius, band - (pos + def.obstructs_radius))
+
+## Whether a row's own numbers leave no line along a sidewalk it may stand on, stated from the
+## def's public readings: its reach spans the far lane, or its body leaves a gap under what she
+## needs. A pacing row is asked of its beat instead (`_paces_a_beat_with_no_way_out`).
+func _takes_a_whole_sidewalk(def: EventDef) -> bool:
+	return not def.paces and _leaves_no_line_along_a_sidewalk(def)
+
+func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
+	if not def.placement.has(GameEnums.TileType.SIDEWALK) or not def.has_a_line_to_avoid():
+		return false
+	return def.reaches_the_far_lane() \
+			or (def.obstructs_radius > 0.0 and _gap_past_the_body(def) < 2.0 * Tuning.PLAYER_BODY_RADIUS)
+
+## Whether a pacing placement leaves no line along a sidewalk and its beat passes neither a
+## junction nor a side route: the beat's geometry is written out below.
+func _paces_a_beat_with_no_way_out(plan: EventScheduler.Planned, map: CityMap) -> bool:
+	return plan.def.paces and _leaves_no_line_along_a_sidewalk(plan.def) \
+			and not _a_beat_touches_a_junction(map, plan) \
+			and not _a_beat_passes_a_side_route(map, plan)
 
 ## **A row pinned to one side of a pavement may not be offered ground that has no sides.**
 ## *(2026-09-19: "we need a separate square poster crew entity for this", PLAYTEST-107.)* A square
-## answers no `CityMap.pavement_inward`, so `EventScheduler._wants_this_side` refuses every square
+## answers no `CityMap.pavement_inward`, so the ground the scheduler offers (`EventScheduler.open_ground_for()`) refuses every square
 ## tile to a row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — and a `placement` entry whose
 ## every tile is refused is not a placement, it is a kind of ground the row silently stopped
 ## appearing on. That is exactly what happened to the poster crew when it moved against the
@@ -340,11 +413,12 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 	for def in EventCatalogue.all():
 		if def.pavement_side == EventDef.Pavement.ANY or def.placement.is_empty():
 			continue
+		var offered := {}
+		for tile in EventScheduler.open_ground_for(def, map, ground):
+			var offered_type := map.tile_at(tile)
+			offered[offered_type] = int(offered.get(offered_type, 0)) + 1
 		for type in def.placement:
-			var wanted := 0
-			for tile in map.tiles_of_type(type as GameEnums.TileType):
-				if EventScheduler._wants_this_side(def, map, tile):
-					wanted += 1
+			var wanted: int = offered.get(type, 0)
 			asked += 1
 			t.check(wanted > 0,
 					"'%s' is pinned %s, and the %s ground it lists has %d tiles that side exists on"
@@ -353,7 +427,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
 	# is a sidewalk row now, and the square crew is the row that stands on squares.
-	t.check(not EventScheduler._open_ground_for(EventCatalogue.by_id("poster_crew"), map,
+	t.check(not EventScheduler.open_ground_for(EventCatalogue.by_id("poster_crew"), map,
 			ground).is_empty(), "and the sidewalk crew still has ground of its own to stand on")
 
 ## **The square's poster crew stands on squares and on nothing else.** *(2026-09-19: "we need a
@@ -365,15 +439,19 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## hundredth of the sidewalk crew's — the square's share of the old row's own placements, measured
 ## — so it arrives well under once a day, and a sweep that planned whole days would be asking
 ## nothing at all on most of them and would go red on a reseed rather than on a defect.
-## `EventScheduler._place_one` is the one function that chooses a tile for a row, so the sweep
-## asks it directly, over seeds and over days spanning the acts, and reads back the ground it
-## picked. The count at the end is what stops it passing having placed nothing.
+## `EventScheduler.recipe_placement()` is the public entry that judges a row on one chosen tile as
+## the fill does (the scene recipes call it), so the sweep asks it directly, over seeds and over
+## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
+## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
+## strewn over the map is refused it. The count at the end is what stops it passing having placed
+## nothing.
 func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 	var def := EventCatalogue.by_id("poster_crew_square")
 	t.check(def != null and def.first_day <= 14, "the square poster crew is in the catalogue")
 	if not def:
 		return
 	var placed := 0
+	var refused := 0
 	for i in 3:
 		var map := CityGenerator.generate(4242 + i * 97)
 		for day in [4, 9, 14]:
@@ -382,11 +460,23 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
-			var ground := {}
+			var offered := EventScheduler.open_ground_for(def, map, {})
+			var off_the_squares := 0
+			for tile in offered:
+				if map.tile_at(tile) != GameEnums.TileType.SQUARE:
+					off_the_squares += 1
+			t.check(not offered.is_empty() and off_the_squares == 0,
+					"day %d: the ground offered the square crew is squares alone (%d of %d are not)"
+					% [day, off_the_squares, offered.size()])
 			var already: Array[EventScheduler.Planned] = []
+			var no_doors := PackedVector2Array()
+			var rng := _rng(day)
 			for copy in 3:
-				var plan := EventScheduler._place_one(def, day, _rng(day + copy * 31), map,
-						already, ground, [], corridor)
+				if offered.is_empty():
+					break
+				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
+				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
+						day + copy * 31, already, corridor, no_doors)
 				if not plan:
 					continue
 				already.append(plan)
@@ -395,7 +485,16 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 				t.check(type == GameEnums.TileType.SQUARE,
 						"day %d: the square crew stands on %s"
 						% [day, GameEnums.TileType.keys()[type]])
+			var sidewalk := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
+			for k in 24:
+				var tile: Vector2i = sidewalk[(k * 7919) % sidewalk.size()]
+				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
+						day, already, corridor, no_doors)
+				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
+						% [day, RunTrace.tile(tile)])
+				refused += 1
 	t.check(placed >= 1, "and the sweep actually placed one (%d)" % placed)
+	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
 
 ## **A man pacing the route's own sidewalk can always be left at a crossing, and one who cannot be
 ## left is never on it.** *(PLAYTEST-77, 2026-09-19: "if the yeller paces across a crosswalk then
@@ -412,7 +511,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ##
 ## The beat's own geometry is written out here rather than borrowed from the scheduler, for the
 ## reason the junction check gives: only the reading of which rows the question is about
-## (`_counts_against_the_line`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
+## (`Planned.counts_against_the_line()`) and what the corridor walks (`Corridor.carries_a_route`) is shared.
 ##
 ## **Its non-vacuity is three counts**, because each could pass having seen nothing: a sample with no
 ## pacing row on a route sidewalk, one where no beat was ever walled, and one where the side-route
@@ -435,17 +534,17 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for day in [1, 5, 8, 11, 14]:
+	for day in [1, 3, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
-			if not plan.def.paces or not EventScheduler._counts_against_the_line(plan):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+			if not plan.def.paces or not plan.counts_against_the_line():
 				continue
-			if EventScheduler._line_reach_of(plan.def) < EventScheduler._THE_FAR_LANE:
+			if not plan.def.reaches_the_far_lane():
 				continue
 			var crossed := _a_beat_touches_a_junction(map, plan)
 			var sideways := _a_beat_passes_a_side_route(map, plan)
@@ -463,7 +562,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			unavoidable_on_the_route += 1
 			if first == "":
 				first = "day %d, '%s' at %s" \
-						% [day, plan.def.id, TelemetryLog.tile(map.world_to_tile(plan.position))]
+						% [day, plan.def.id, RunTrace.tile(map.world_to_tile(plan.position))]
 	t.check(on_the_route > 5,
 			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
 	t.check(walled >= 1,
@@ -535,7 +634,7 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## fill is written out below, so a change to the scheduler's private helper cannot quietly change
 ## what this file claims. Only the primitives are shared — which junctions the routes cross
 ## (`RouteTree.junctions()`), which streets are on the corridor (`Corridor.depth`), and what a row
-## denies (`EventScheduler._counts_against_the_line` and `_line_reach_of`, the reading PLAYTEST-71
+## denies (`Planned.counts_against_the_line()` and `EventDef.line_reach()`, the reading PLAYTEST-71
 ## settled and the one place it is written down).
 ##
 ## **And it cannot pass vacuously**: a day where no counted row ever stood within reach of a route
@@ -554,8 +653,8 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
-			if EventScheduler._counts_against_the_line(plan):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
 			junctions += 1
@@ -563,7 +662,7 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 			var world := map.tile_rect_to_world(box)
 			var here: Array[EventScheduler.Planned] = []
 			for plan in counted:
-				var reach := EventScheduler._line_reach_of(plan.def)
+				var reach := plan.def.line_reach()
 				if plan.distance_from(world.get_center()) <= reach + world.size.length() * 0.5:
 					here.append(plan)
 			in_reach += here.size()
@@ -600,8 +699,8 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 				continue
 			var taken := false
 			for plan in rows:
-				if EventScheduler._denies(plan, map.tile_to_world(tile),
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.denies(map.tile_to_world(tile),
+						plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -609,7 +708,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	if free.is_empty():
 		return false
 	var arms: Array = []
-	for segment in StreetNetwork.at_junction(junction):
+	for segment in map.network.at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []
@@ -692,12 +791,12 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
-			if EventScheduler._counts_against_the_line(plan) and not plan.def.paces:
+			if plan.counts_against_the_line() and not plan.def.paces:
 				counted.append(plan)
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			var rect := segment.tile_rect()
 			if corridor.depth(rect.position) != 0:
 				continue
@@ -708,8 +807,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 				var world := map.tile_rect_to_world(band)
 				var standing: Array[EventScheduler.Planned] = []
 				for plan in counted:
-					if EventScheduler._reach_touches(plan, world,
-							EventScheduler._line_reach_of(plan.def)):
+					if plan.reach_touches(world,
+							plan.def.line_reach()):
 						standing.append(plan)
 				if standing.is_empty():
 					continue
@@ -776,14 +875,14 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
-			if EventScheduler._counts_against_the_line(plan):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
 		for plan in counted:
 			if not plan.def.paces:
 				continue
-			var segment := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+			var segment := map.network.segment_containing(map.world_to_tile(plan.position))
 			if segment and corridor.depth(segment.tile_rect().position) == 0:
 				streets[segment.key()] = segment
 		for key: Vector3i in streets:
@@ -792,8 +891,8 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 			var rect := map.tile_rect_to_world(segment.tile_rect())
 			var standing: Array[EventScheduler.Planned] = []
 			for plan in counted:
-				if EventScheduler._reach_touches(plan, rect,
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.reach_touches(rect,
+						plan.def.line_reach()):
 					standing.append(plan)
 			if _a_walk_along_the_street(map, segment, standing):
 				continue
@@ -833,8 +932,8 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 				continue
 			var taken := false
 			for plan in rows:
-				if EventScheduler._denies(plan, map.tile_to_world(tile),
-						EventScheduler._line_reach_of(plan.def)):
+				if plan.denies(map.tile_to_world(tile),
+						plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -863,9 +962,9 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
-## 42-over-168px field crosses `Tuning.WALL_WORTH_OF_COST`, so without `EventDef.scenery`
+## 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
 ## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
-## corridor the way any other expensive row is. `scenery` is checked first and answers `NONE`.
+## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##
 ## Two claims. The role is a fact about the def, checked directly on every placement the day
 ## makes. Whether one actually **lands** on the corridor is a fact about the roll rather than
@@ -875,7 +974,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## would hold whether the exemption worked or not.
 func _test_a_flock_is_scenery(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.scenery, "the flock def is marked scenery")
+	t.check(def.role == EventDef.Role.SCENERY, "the flock def is marked scenery")
 
 	var on_corridor := 0
 	var off_corridor := 0
@@ -886,7 +985,7 @@ func _test_a_flock_is_scenery(t) -> void:
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree):
 			if plan.def.id != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role == GameEnums.BlockerRole.NONE,
@@ -899,3 +998,15 @@ func _test_a_flock_is_scenery(t) -> void:
 	t.check(on_corridor > 0,
 			"a flock lands on the day's own corridor at least once (%d on, %d off)"
 			% [on_corridor, off_corridor])
+
+## What a row denies along a line (`EventDef.line_reach()`): a lethal row keeps its whole
+## `outer_radius`, since nothing about being quiet at the rim makes walking into it survivable, and
+## no row reaches less than its own body.
+func _test_a_lethal_rows_line_reach_is_its_whole_field(t) -> void:
+	var lorry := EventCatalogue.by_id("reversing_lorry")
+	t.check(lorry.hard_fail, "the reversing lorry is a lethal row")
+	t.check(is_equal_approx(lorry.line_reach(), maxf(lorry.outer_radius, lorry.obstructs_radius)),
+			"and its line reach is its whole field (%.0fpx)" % lorry.line_reach())
+	for def in EventCatalogue.all():
+		t.check(def.line_reach() >= def.obstructs_radius,
+				"%s: no row reaches less than its own body" % def.id)

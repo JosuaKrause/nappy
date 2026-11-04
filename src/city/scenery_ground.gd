@@ -14,14 +14,17 @@ const STEP_TILES := 4
 ## following frames; STEPPED spreads one region over frames, a renderer quadrant a frame. The
 ## values are the `--ground-mode` numbers (docs/playtests/2026-10-03-tawny-stork.md).
 enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }
-## Read once, when the city's ground is created; a test sets it on an empty ground.
-var mode: Mode = DevFlags.ground_mode() as Mode
+## Handed in by the city before it builds (`--ground-mode`); a test sets it on an empty ground.
+var mode: Mode = Mode.ONE
 @export var tile_set: TileSet
 var chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.
 ## Only chunks owns complete regions. Each pending key owns exactly one unfinished layer.
 var pending: Dictionary = {}
 var _city: City
+## The city's library (`AtlasLibrary`), handed by the city before it configures the ground, and
+## handed on to every water surface a chunk stands up.
+var atlas: AtlasLibrary
 var prepared := 0
 var evicted := 0
 ## Whole-region prepare() time: every preparation in ALL and ONE, the guard's alone in STEPPED,
@@ -97,6 +100,7 @@ func _prepare_whole(key: Vector2i) -> void:
 						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
+		water.atlas = atlas
 		water.elapsed = elapsed
 		layer.add_child(water)
 		water.configure(water_cells)
@@ -134,6 +138,7 @@ func prepare_step(key: Vector2i) -> bool:
 						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
+		water.atlas = atlas
 		water.elapsed = elapsed
 		layer.add_child(water)
 		water.configure(water_cells)

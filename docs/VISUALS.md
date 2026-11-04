@@ -85,7 +85,7 @@ raster everywhere else, and direct PNG members in both modes. `tools/bake-atlase
 selects authored rasters for paired assets while retaining direct PNGs, which have no vector fallback.
 That is a custom local build, and `tools/export-web.sh` refuses to export one. A run cannot ask
 for the other mode, because the pixels on the page are the ones the build chose;
-`AtlasLibrary.bake_mode()` is how the ground compositor finds out which it got.
+`AtlasTable.bake_mode()` is how the ground compositor finds out which it got.
 
 **And a page holds what its own mode draws.** A group in `membership.json` lists the pictures
 both bakes carry under `members` and the ones only one of them draws under `members_png` and
@@ -108,8 +108,9 @@ draw the previous import of.
 
 `AtlasLibrary` reads the result: `acquire(group)` loads that group's page, `release(group)`
 drops it on the last reference, `region(name)` hands out an `AtlasTexture` over the page, and
-`native_size(name)` answers a picture's own size from the region table with nothing loaded at
-all. **Every family but the ground and the events draws from it directly.** `Stroller` acquires
+the region table (`AtlasTable`, read once per process) answers a picture's own size with nothing
+loaded at all. One library is held by the `Sitting` and handed down from `main`; a node handed none
+makes its own. **Every family but the ground and the events draws from it directly.** `Stroller` acquires
 the run's own parent (`mother` or `father`), `stroller` — the pram, which either parent pushes —
 and `ui`, where the marks over her head sit beside the screen furniture. `Crowd` acquires
 `crowd` on its first day and every `CrowdAgent` reads its region off the page the owner is
@@ -131,13 +132,15 @@ frame it is first drawn in is a stutter the player sees. `AtlasLibrary` is told 
 open — `startup`, `day brief`, or `escape` for the `--start-escape` boot, which is that mode's
 own startup — and an `acquire()` that still has to read from disk with no window open loads it
 anyway, writes `OUTSIDE` in the run log and raises an engine error, which makes the test gate
-red. A process where no boot has claimed the moments at all is `unmanaged` and loads freely:
-that is a suite building a `City` or a `Stroller` by hand, where no frame is being watched.
+red. A library no boot has claimed the moments on is `unmanaged` and loads freely: that is the one
+a suite builds, or the one a `City` or `Stroller` it builds by hand makes for itself, where no frame
+is being watched.
 
-**The ground's composition recipe follows the same rule.** `GroundLayers` reads
-`assets/ground_layers.json` once, in the city's first build, and holds it for the life of the
-process, so a day's repaint composes from the held page and the held recipe and reads nothing
-from disk.
+**The ground's composition recipe follows the same rule.** `GroundRecipe` reads
+`assets/ground_layers.json` once, on the first ask, which is the city's first build; the `Sitting`
+holds it for the life of the process and `main._new_city()` hands it to each city
+(`City.ground_recipe`), which passes it to `GroundLayers.build_tile_set()`. So a day's repaint
+composes from the held page and the held recipe and reads nothing from disk.
 
 **`main`'s boot holds every group a day can draw for the life of the process** —
 `main.RESIDENT_GROUPS`, plus the run's own parent — so nothing is ever unloaded between one day
@@ -250,8 +253,8 @@ the complete runtime paving family against the registered materials and this fin
 
 Review the detail at gameplay size, consistency across animation frames, transparent gaps,
 ground contact and unchanged placement. Pixel registration alone does not establish acceptance.
-The remaining catalogue work is M109, convert the SVG catalogue to PNG, whose entry is
-[todo/2026-09-10-M109/](todo/2026-09-10-M109/). [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
+Nothing is converted to PNG for now; a conversion waits until the player finds a
+use for one. [PLAYTEST-51](playtests/PLAYTEST-51.md) records the
 approval and source-first requirement. Workflow approval does not replace each asset's review.
 
 Use the [illustrated PNG skill](../.claude/skills/illustrated-png/SKILL.md) for integration.

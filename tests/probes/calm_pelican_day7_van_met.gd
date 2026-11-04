@@ -8,14 +8,14 @@ extends RefCounted
 ## **The walk** is the one `--route mark,calm,home` plays (`RouteRig`), without its hazard pricing:
 ## from the doorstep to the mark along the shortest walkable path, reading it there, then to the
 ## nearest calm tile on foot, a settle of `SETTLE_SECONDS` standing still, then home. Every step runs
-## what the manager's own tick runs for her walk (`_site_what_is_on_her_way()`,
-## `_place_what_is_owed_ahead()`, `stream_around()`), at `Tuning.WALK_SPEED`.
+## what the manager's own tick runs for her walk (`EventsAhead.site_what_is_on_her_way()`,
+## `EventsAhead.place_what_is_owed_ahead()`, `EventStreaming.stream_around()`), at `Tuning.WALK_SPEED`.
 ##
 ## **What is counted**, per seed: whether the van's marble was drawn; where the van was put — how far
 ## ahead of her, and how near her own later walk ever came to it; whether it was ever inside her view
 ## (`Tuning.VIEW_HALF_EXTENT` round her, the player's unrotated screen); and, where it was not, why:
 ## never sited, sited past where she stopped walking, or sited off the way she then walked. Of each
-## van put on her route, too: whether any of what it draws (`EventInstance.footprint_of()`) was in
+## van put on her route, too: whether any of what it draws (`EventFootprints.footprint_of()`) was in
 ## the camera's view, led `Stroller.CAMERA_LOOK_AHEAD` along her heading, the moment it was put
 ## there; whether its tile carries one of the day's routes (`Corridor.carries_a_route()`); and
 ## whether her later walk passed within its body and hers (`obstructs_radius` plus
@@ -31,39 +31,39 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024, 555, 8080, 99, 
 		314159]
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	for case: Array in CASES:
 		var tally := {}
 		for seed_value in SEEDS:
 			var outcome := _walk_a_day(t, seed_value, case[0], case[1])
 			tally[outcome] = int(tally.get(outcome, 0)) + 1
 		print("DAY7_VAN day %d %s, %d walks: %s" % [case[0], case[1], SEEDS.size(), tally])
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(day, _rng(seed_value, day, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
 	# A read mark's alley is remembered and never chosen again; each walk starts from none.
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -77,7 +77,7 @@ func _walk_a_day(t, seed_value: int, day: int, row: String) -> String:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events._find_player()
+	city.events.use_player(player)
 	var walk := Walk.new()
 	walk.city = city
 	walk.row = row
@@ -152,11 +152,11 @@ class Walk extends RefCounted:
 
 	func _tick(player: Stroller) -> void:
 		var events := city.events
-		events._site_what_is_on_her_way(STEP)
-		events._place_what_is_owed_ahead(STEP)
+		events.ahead.site_what_is_on_her_way(STEP)
+		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
-			for plan: EventScheduler.Planned in events._director._placed_from_the_route:
+			for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
 				if plan.def.id == row:
 					van = plan
 					drawn_at = walked
@@ -168,7 +168,7 @@ class Walk extends RefCounted:
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()
 				ahead_at_siting = van.position.distance_to(player.global_position)
-				var box := EventInstance.footprint_of(van.def)
+				var box := EventFootprints.footprint_of(van.def)
 				var lead := Vector2(heading_at_siting.x, heading_at_siting.y * Stroller.OBLIQUE_Y) \
 						* Stroller.CAMERA_LOOK_AHEAD
 				var view := Rect2(player.global_position + lead - Tuning.VIEW_HALF_EXTENT,
@@ -201,7 +201,7 @@ class Walk extends RefCounted:
 					van.position] + "sited %.0fs into her walk, %.0fpx from her (straight); nearest she came %.0fpx after %.0fpx more walking; streamed in %s; drawn in the led view when put there %s; on a route %s; on her line %s" \
 					% [sited_at, ahead_at_siting, nearest_after, walked_after_siting, was_live,
 					drawn_in_view_at_siting, on_a_route, on_her_line]
-		var waits: Dictionary = city.events._siting.waits if city.events._siting else {}
+		var waits: Dictionary = city.events.ahead._siting.waits if city.events.ahead._siting else {}
 		return "walked %.0fs, drawn at %.0fs (%s), sited %s | %s | waits %s | seen at %s" % [walked,
 				drawn_at, drawn_phase, sited_phase, where, waits,
 				"%.0fs" % seen_at if seen_at >= 0.0 else "never"]

@@ -1,36 +1,37 @@
-extends RefCounted
+extends "res://tests/test_day13_guard.gd"
 ## Measurement probe for velvet-stork, "day 13's guard reaches her from across the city": what the
-## guard's walk round buildings (`EventInstance._paths_to_her`) costs a frame of his chase, and
+## guard's walk round buildings (`EventInstance._chase_way`) costs a frame of his chase, and
 ## whether he reaches her. Not a suite: it prints times rather than asserting them, so it lives under
 ## `tests/probes/`, where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/velvet_stork_guard_path_cost.gd       (prints VELVET_STORK lines)
 ##     PROBE_SEEDS=4242,90210 tools/test.sh probes/velvet_stork_guard_path_cost.gd
 ##
-## **The rig** is `tests/test_day13_guard.gd`'s parked guard: a real city through the real day order
-## on day 13, the mark read, the guard held at the task's own roadblock by her view on him while she
-## walks to another live roadblock and touches it, which sets him on her
-## (`ResistanceDirector._set_the_task_guard_on_her()`). Each seed runs twice from the same start:
+## **The rig** is `tests/test_day13_guard.gd`'s parked guard, whose helpers this file extends: a real
+## city in a run of its own through the real day order on day 13, the mark read, the guard held at
+## the task's own roadblock by her view on him while she walks to another live roadblock and touches
+## it, which sets him on her (`ResistanceDirector._set_the_task_guard_on_her()`). Each seed runs
+## twice from the same start:
 ##
 ## - **standing**: she stays where she touched the roadblock;
 ## - **walking away**: she walks at `Tuning.WALK_SPEED` along the shortest walk to the walkable
 ##   tile farthest on foot from where she touched it, and stands once she is there.
 ##
-## Each runs at 60 frames a second of game time until he is within his stand-off of her, catches
+## Each runs at 60 steps a second of game time until he is within his stand-off of her, catches
 ## her, or `CHASE_SECONDS` have passed (his notice plus the 30s `Tuning.PURSUIT_TIME` cap).
 ##
 ## **What is timed**, in milliseconds of wall clock in the debug build the test runner uses: each
-## frame's `EventInstance._process()` — his whole frame, the chase and the sweep's slice with it.
+## step's `EventInstance.step()` — his whole tick, the chase and the sweep's slice with it.
 ## Printed: the mean, the 99th percentile and the worst frame; the share of frames on which a sweep
-## was under way (`_her_way_next`); how many sweeps were begun; and the outcome — the nearest he
+## was under way (`ChaseWay.sweep_under_way()`); how many sweeps were begun; and the outcome — the nearest he
 ## came and when he reached her stand-off, if he did.
 
-const SUITE := preload("res://tests/test_day13_guard.gd")
 const DEFAULT_SEEDS: Array[int] = [4242, 90210, 555]
 const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
@@ -41,43 +42,32 @@ func run(t) -> void:
 			_measure(t, seed_value, walks)
 
 func _measure(t, seed_value: int, walks: bool) -> void:
-	var suite = SUITE.new()
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
-	var city: City = SUITE.CITY_SCENE.instantiate()
-	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
-	GameState.scars = []
-	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
-	var player: Stroller = suite._rig_player(t, director.contact_position())
+	var city := _build_city(t, seed_value)
+	var director := _start_the_day(t, city, seed_value)
+	var player := _rig_player(t, director, director.contact_position())
 	var label := "VELVET_STORK seed %d %s:" % [seed_value, "walking away" if walks else "standing"]
 	var mark := director.current_step()
 	if mark:
-		director._on_contact_completed(mark.index)
+		director.contact().complete_now()
 	var step := director.current_step()
-	var guard: EventInstance = director._task_guard
+	var guard := _task_guard()
 	var touched: EventInstance = null
 	if step and guard:
-		director._settle_the_arrow()
 		var held := guard.global_position
-		suite._view = Rect2(held - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
-		touched = suite._her_way_to_another_roadblock(director, player, step)
+		_view = Rect2(held - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
+		_settle_the_arrow(director)
+		touched = _her_way_to_another_roadblock(director, player, director.rider())
 	if touched == null:
 		print("%s no other live roadblock to touch" % label)
-		_finish(suite, player, director, city, saved_completed, saved_failed, saved_progress,
-				saved_scars, saved_state, saved_alleys)
+		_finish(player, director, city)
 		return
-	director._move_the_task_guard_to_her_target()
+	_choose_again(director)
 	var map := city.map
-	var at: Vector2 = SUITE._beside(map, touched.body_position(), ContactPoint.body_reach(touched))
+	var at := _beside(map, touched.body_position(), ContactPoint.body_reach(touched))
 	player.global_position = at
-	director._on_contact_completed(step.index)
-	var route := _walk_away_from(map, at) if walks else PackedVector2Array()
-	var standoff := Tuning.pursuit_standoff(guard.def.pursue_speed, guard.def.standoff_reach())
+	director.contact().complete_now()
+	var route := walk_away_from(map, at) if walks else PackedVector2Array()
+	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var start := guard.global_position.distance_to(at)
 	var times := PackedFloat64Array()
 	var sweeping := 0
@@ -94,11 +84,11 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 			if her.distance_to(route[next]) < 0.01:
 				next += 1
 		guard.player_at = her
-		var before: ArrowField = guard._her_way_next
+		var before: WalkField = guard._chase_way.sweep_under_way() if guard._chase_way else null
 		var t0 := Time.get_ticks_usec()
-		guard._process(FRAME)
+		guard.step(FRAME)
 		times.append((Time.get_ticks_usec() - t0) / 1000.0)
-		var after: ArrowField = guard._her_way_next
+		var after: WalkField = guard._chase_way.sweep_under_way() if guard._chase_way else null
 		if before != null or after != null:
 			sweeping += 1
 		if after != null and after != before:
@@ -123,11 +113,10 @@ func _measure(t, seed_value: int, walks: bool) -> void:
 			100.0 * sweeping / maxi(times.size(), 1), begun, nearest, standoff,
 			("reached her stand-off at %.1fs" % reached_at) if reached_at >= 0.0
 			else "not reached in %.1fs" % clock])
-	_finish(suite, player, director, city, saved_completed, saved_failed, saved_progress,
-			saved_scars, saved_state, saved_alleys)
+	_finish(player, director, city)
 
 ## The shortest walk from `from` to the walkable tile farthest from it on foot, as tile centres.
-static func _walk_away_from(map: CityMap, from: Vector2) -> PackedVector2Array:
+static func walk_away_from(map: CityMap, from: Vector2) -> PackedVector2Array:
 	var origin := map.world_to_tile(from)
 	var out := map.walk_field(origin)
 	var far := origin
@@ -151,8 +140,6 @@ static func _walk_away_from(map: CityMap, from: Vector2) -> PackedVector2Array:
 		route.append(map.tile_to_world(tile))
 	return route
 
-func _finish(suite, player: Stroller, director: ResistanceDirector, city: City, completed: Array,
-		failed: Array, progress: int, scars: Array, state: CityState, alleys: Array) -> void:
-	suite._tear_down(player, director, city)
-	suite._restore(completed, failed, progress, scars, state)
-	GameState.completed_resistance_alley_tiles.assign(alleys)
+func _finish(player: Stroller, director: ResistanceDirector, city: City) -> void:
+	_tear_down(player, director, city)
+	_view = Rect2()

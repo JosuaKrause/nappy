@@ -88,6 +88,13 @@ touches (the path table in `CLAUDE.md`). Look for:
   player's); and, from that section's proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;
+- an answer to the architecture questions (`references/architecture-questions.md`, under the
+  description's `## Architecture questions`) that does not match the change: the reviewer checks
+  each answer against the diff and `tools/check_layers.py --list` on the head, and an answer either
+  contradicts, or that leaves out a piece or a dependency the diff adds, is a finding (plush-egret
+  #892). So is a break added to `tools/layer_map.py`'s list, or a file moved to another layer
+  there, that no answer justifies. CI sees only that the answers are there and that the code keeps
+  to the map as it stands;
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 
@@ -135,7 +142,9 @@ tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer` (
 says whether the role is usable; the `gh` command that posts the review then runs through `uv run
 python tools/agent-identity.py run claude-reviewer -- <command>` (or `codex-reviewer`) instead of
 running it directly, so the comments and the review event show as `claude-reviewer[bot]` or
-`codex-reviewer[bot]`. **When the role is not usable (not created yet, not installed, or a cloud
+`codex-reviewer[bot]`. **A review's text is written to a file first and passed to the API with
+capital `-F`** (`-F body=@file`, as **using-tools** says): lowercase `-f` (`--raw-field`) sends the
+literal text `@file` as the body, and the review then has to be edited. **When the role is not usable (not created yet, not installed, or a cloud
 session), the review stops there and is reported to the player instead — it is never posted as the
 player** (tall-egret). That holds where the write guard can ask (**committing**, "Who a commit and a
 pull request are from"): a review's findings are never sent as a `gh pr comment` or any other write
@@ -154,6 +163,11 @@ When a pull request's reviews have come back *not ready* three times (woolly-pen
 approach is rethought, including whether the chosen solution is the right way at all. The count is
 per pull request.
 
+**Who writes it is decided case by case** (inbox #842 in minty-dolphin). The orchestrating session asks the
+builder for the rethink when it judges the builder has the context and the capability for it, and
+otherwise writes it itself or starts a fresh planning agent for it; a builder on a small model
+(Haiku) is the player's example of one that may not.
+
 *Proposed, not asked for, open to the player's correction:*
 
 - **What counts:** every *not ready* verdict, full reviews and reviews of a delta alike, a queue
@@ -163,10 +177,13 @@ per pull request.
   to the player. It decides *how* the open findings get fixed, never whether: the pull request still
   does not merge with a found defect open ("Is every defect already found in this change fixed
   inside it?", above).
-- **Who and where:** the orchestrating session, or in a session with none (a Codex session working
-  alone) the session that owns the pull request, writes the rethink and what it decided in the pull
-  request's conversation before any further commit; a change of approach that touches what the
-  player asked for goes to them as a question first.
+- **With no orchestrator** (a Codex session working alone), the session that owns the pull request
+  writes the rethink.
+- **A builder's rethink is checked:** the orchestrating session checks it against the player's
+  words and the queue before it stands.
+- **Where:** the rethink and what it decided go in the pull request's conversation before any
+  further commit; a change of approach that touches what the player asked for goes to the player as
+  a question first.
 
 ## Briefing a review agent
 

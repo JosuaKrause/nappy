@@ -22,12 +22,13 @@ const STEP := 0.1
 const SETTLE_SECONDS := 12.0
 
 func run(t) -> void:
+	t.gives_back_observers()
 	# Whether the rigged man is sited in view depends on the run's seed; this was checked on seed 2.
 	GameState.start_run(2)
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_alleys := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var met := 0
 	var outcomes: Array[String] = []
 	for seed_value in SEEDS:
@@ -37,29 +38,29 @@ func run(t) -> void:
 			met += 1
 	t.check(met >= AT_LEAST, "the rigged man shouting is in her view on most walks of day %d (%d of %d: %s)"
 			% [DAY, met, SEEDS.size(), outcomes])
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
+	GameState.resistance.completed_steps.assign(saved_completed)
+	GameState.resistance.failed_steps.assign(saved_failed)
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles.assign(saved_alleys)
 
 ## "seen", "sited, never in view", "never sited", or "no mark".
 func _walk(t, seed_value: int) -> String:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
 	var consumed: Array[String] = []
-	city.events.start_day(DAY, _rng(seed_value, "events"), consumed)
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
-	GameState.completed_resistance_alley_tiles.assign([])
+	GameState.resistance.completed_steps.assign(done)
+	GameState.resistance.failed_steps.assign([])
+	GameState.resistance.progress = 0
+	GameState.facts.completed_resistance_alley_tiles.assign([])
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
@@ -73,20 +74,20 @@ func _walk(t, seed_value: int) -> String:
 	t.add_child(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
-	city.events._find_player()
+	city.events.use_player(player)
 	var map := city.map
 	var outcome := "no mark"
 	var mark := resistance.current_step()
 	if mark and mark.is_pickup:
-		var seen := {"man": null, "in_view": false}
+		var seen := {"man": null, "in_view": false, "standing": [], "read": false}
 		var tick := func() -> void:
 			var events := city.events
-			events._site_what_is_on_her_way(STEP)
-			events._place_what_is_owed_ahead(STEP)
+			events.ahead.site_what_is_on_her_way(STEP)
+			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
-			if seen["man"] == null:
-				for plan: EventScheduler.Planned in events._director._placed_from_the_route:
-					if plan.def.id == ROW:
+			if seen["man"] == null and seen["read"]:
+				for plan: EventScheduler.Planned in events.plans():
+					if plan.def.id == ROW and not seen["standing"].has(plan):
 						seen["man"] = plan
 			var man: EventScheduler.Planned = seen["man"]
 			if man and man.is_placed():
@@ -95,8 +96,11 @@ func _walk(t, seed_value: int) -> String:
 					seen["in_view"] = true
 		_along(player, _path(map, player.global_position, [map.world_to_tile(
 				resistance.contact_position())]), tick)
-		resistance._on_contact_completed(mark.index)
-		var task_man: EventInstance = resistance._rider
+		resistance.contact().complete_now()
+		# The dawn's rows and the task's own man; a man not among them was put on her route.
+		seen["standing"] = city.events.plans().duplicate()
+		seen["read"] = true
+		var task_man: EventInstance = resistance.rider()
 		if task_man:
 			_along(player, _path(map, player.global_position, _beside(map,
 					task_man.global_position)), tick)

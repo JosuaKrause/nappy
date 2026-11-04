@@ -126,8 +126,9 @@ fi
 #
 # **The repair is tools/check.sh rather than a bake on its own**, because a freshly baked page
 # is a file the engine has not imported yet, and a windowed run does no import pass of its own —
-# check.sh bakes, imports, and puts back the project.godot and docs/ARCHITECTURE.md rewrites the
-# import pass causes, which a bare `--import` here would leave in the working tree.
+# check.sh bakes, imports, and reverts a rewrite of project.godot or docs/ARCHITECTURE.md found
+# afterwards (tools/lib_import_restore.sh), which a bare `--import` here would leave in the
+# working tree.
 if [[ -n "$atlases_stale" ]]; then
     # `--check` exits non-zero by design; this reprint is the reason, not a failure.
     "$PROJECT_DIR/tools/bake-atlases.sh" --check >&2 || true
@@ -151,12 +152,12 @@ fi
 # -- to about once a second on this Mac, which is what let `--after` run for minutes without
 # firing; disabling vsync keeps the loop running at its own pace regardless of focus or occlusion.
 # Running is not drawing: a covered window is still not drawn, so the capture draws its own frame
-# on demand (`AutoScreenshot.drawn_frame()`, src/dev/auto_screenshot.gd).
+# on demand (`DrawnFrame.wait()`, src/drawn_frame.gd).
 # See docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
 # closes" for the reproduction this fixes.
 #
 # The external kill below is the outer half of the "always closes" guarantee -- the game's own
-# wall-clock timer (`DevFlags.rig_quit_seconds()`, `main._process()`) is the inner half, and this
+# wall-clock timer (`RunConfig.rig_quit_seconds()`, `RigLock._process()`) is the inner half, and this
 # is what fires if that one somehow does not.
 KILL_AFTER="$(rig_kill_after_seconds --after "$SECONDS_TO_WAIT" "$@")"
 rm -f "$OUT"
@@ -166,20 +167,27 @@ rm -f "$OUT"
 # a watcher can hand focus straight back the moment it happens; a no-op everywhere this cannot run
 # cleanly (see rig_focus_guard_available).
 FOCUS_NOTED="$(rig_focus_note)"
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
+# The watcher dies with the rig on every exit path below, including a signal from outside: it is
+# stopped explicitly the moment Godot is done with, and this trap catches every other way this
+# script itself stops running first. Set right after arming, with no watcher yet, so no failure
+# between the launch and the watcher's start leaves the restore unrun.
+FOCUS_WATCHER_PID=""
+trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"; import_restore_run' EXIT
 "$GODOT" --path "$PROJECT_DIR" --resolution "$RESOLUTION" --disable-vsync \
 	-- --screenshot "$OUT" --after "$SECONDS_TO_WAIT" "$@" &
 GODOT_PID=$!
 FOCUS_WATCHER_PID="$(rig_focus_watch_start "$GODOT_PID" "$FOCUS_NOTED")"
-# The watcher dies with the rig on every exit path below, including a signal from outside: it is
-# stopped explicitly the moment Godot is done with, and this trap catches every other way this
-# script itself stops running first.
-trap 'rig_focus_watch_stop "$FOCUS_WATCHER_PID"' EXIT
 if ! wait_or_kill "$GODOT_PID" "$KILL_AFTER"; then
     echo "shot.sh: killed Godot after ${KILL_AFTER}s -- it did not quit on its own" >&2
     exit 1
 fi
 rig_focus_watch_stop "$FOCUS_WATCHER_PID"
-# An edit -- and a capture is one -- fails loudly: Godot exiting 0 is not by itself proof the
+# A capture is checked, not assumed: Godot exiting 0 is not by itself proof the
 # picture exists (`--route` racing its own quit against `--after` is one way it would not, before
 # `reject_route_with_screenshot` above closed that specific combination off; a display fallen back
 # to headless mid-run, per `AutoScreenshot.can_photograph()`, is another). Checked here rather than

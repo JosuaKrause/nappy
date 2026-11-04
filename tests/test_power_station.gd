@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
+	_test_the_yard_layer_is_counted_when_the_station_comes_into_view(t)
 	_test_the_stacks_stand_in_the_entities_depth_order(t)
 
 # ------------------------------------------------------------------ generation ---
@@ -45,9 +46,9 @@ func _test_every_city_has_exactly_one(t) -> void:
 				matching += 1
 		t.check(matching == 1,
 				"seed %d: exactly one big building is the power station (%d)" % [map.seed_used, matching])
-		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
+		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d: the station is counted among at most %d big buildings (%d)"
-				% [map.seed_used, Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+				% [map.seed_used, CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
 
 ## The door's own street ground belongs to another region than the home street's, which with the
 ## wall standing means reaching it takes a door crossing — the day-14 half of this suite walks it.
@@ -69,9 +70,9 @@ func _test_its_door_is_a_reasonable_walk_from_home(t) -> void:
 		var key := map.power_station_door_key
 		var away := CityGenerator.blocks_from_home(Vector2i(key.x, key.y - 1))
 		spread[away] = spread.get(away, 0) + 1
-		t.check(away >= Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME,
+		t.check(away >= CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME,
 				"seed %d: the door is %d blocks from the home, at least %d"
-				% [map.seed_used, away, Tuning.POWER_STATION_MIN_BLOCKS_FROM_HOME])
+				% [map.seed_used, away, CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME])
 	print("[test_power_station] door distance from the home block, blocks: count — %s" % spread)
 
 ## The door is pavement, directly south of the mass, inside its width, on the street
@@ -128,6 +129,14 @@ func _test_industrial_ground_is_preferred(t) -> void:
 
 # ------------------------------------------------------------------ the day ---
 
+## Cities of their own for a test that plans days on them: repainting and closing streets change a
+## map, so a test that does it is handed maps no other test reads, from the same seeds as `_maps`.
+func _maps_to_plan_days_on() -> Array[CityMap]:
+	var fresh: Array[CityMap] = []
+	for i in DAY_SEEDS:
+		fresh.append(CityGenerator.generate(BASE_SEED + i * 211))
+	return fresh
+
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
@@ -158,7 +167,7 @@ func _reaches_any(grid: ReachabilityGrid, reached: Dictionary, blocked: Dictiona
 ## a region door, which is what the story asks of it.
 func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 	var day := Tuning.POWER_STATION_DAY
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
 		var door_street := map.power_station_door_street()
@@ -182,7 +191,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
 		seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-		var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary)
+		var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary)
 
 		var blocked := map.closed_tiles.duplicate()
 		for item in seals:
@@ -216,22 +225,23 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 ## The day before, the corridor is what it would be with no station at all — the spur is the one
 ## thing the station's day adds, and nothing else in the tree moves for it on that day either.
 func _test_no_other_day_is_bent_toward_it(t) -> void:
-	for map: CityMap in _maps.slice(0, DAY_SEEDS):
+	for map: CityMap in _maps_to_plan_days_on():
 		var day := Tuning.POWER_STATION_DAY
 		_repaint_for(map, day)
 		var with_spur := RouteTree.for_day(map, day)
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
 				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
 				_routes_rng(map, day))
-		# Asked of the trees' own node ids, which agree because both grids are built from the same
-		# map the same way — a cell can hold two nodes, so a cell-to-tile round trip cannot ask it.
+		# Asked of the cells the trees cover (`RouteTree.cells()`, what the dusk map draws), one entry
+		# per node, so a cell two nodes share is counted twice and the question stays the nodes'.
 		var kept := 0
-		for node: int in without._colours:
-			if with_spur._colours.has(node):
-				kept += 1
-		t.check(kept == without._colours.size(),
+		var held := _nodes_by_cell(with_spur)
+		var wanted := _nodes_by_cell(without)
+		for cell: Vector2i in wanted:
+			kept += mini(wanted[cell], held.get(cell, 0))
+		t.check(kept == without.cells().size(),
 				"seed %d: the station's day keeps every cell of the corridor it would have had (%d of %d)"
-				% [map.seed_used, kept, without._colours.size()])
+				% [map.seed_used, kept, without.cells().size()])
 		t.check(with_spur.cells().size() >= without.cells().size(),
 				"seed %d: and only adds to it" % map.seed_used)
 
@@ -242,6 +252,13 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 				_routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])
+
+## How many of the tree's nodes stand in each cell it covers.
+func _nodes_by_cell(tree: RouteTree) -> Dictionary:
+	var counts := {}
+	for cell in tree.cells():
+		counts[cell] = counts.get(cell, 0) + 1
+	return counts
 
 func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -287,7 +304,7 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
 ## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
 ## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s.
 func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
@@ -316,7 +333,7 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 			in_buildings += 1
 	t.check(in_buildings == 0, "no stack is left in the building layer (%d)" % in_buildings)
 	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
-	var height := float(AtlasLibrary.native_size(Building.POWER_STATION_STACK).y)
+	var height := float(AtlasTable.baked().native_size(Building.POWER_STATION_STACK).y)
 	for i in mini(stacks.size(), feet.size()):
 		var stack := stacks[i]
 		var foot := station.position + feet[i]
@@ -335,3 +352,44 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 		t.check(behind > 0, "stack %d's picture reaches walkable ground behind it (%d tiles)"
 				% [i, behind])
 	city.free()
+
+## The yard layer is built when residency brings the station into view, in a tree whose frame record
+## is listening: the recorder classifies a node as it is added, so the layer carries its kind
+## before it enters the tree, and its draws land in the scenery count.
+func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void:
+	var record := FrameRecord.new()
+	var ledger := FrameLedger.new(2)
+	record.start(ledger)
+	var sitting := Sitting.new()
+	sitting.frame_timing = record
+	var recorder := FrameRecorder.new()
+	recorder.save_on_exit = false
+	t.add_child(recorder)
+	recorder.setup(func() -> bool: return false, null, null, null, null, sitting)
+	var station := Building.new()
+	station.district = GameEnums.BlockPurpose.INDUSTRIAL
+	station.footprint = Vector2(96.0, 256.0)
+	station.height = 64.0
+	station.power_station = true
+	station.scenery_resident = false
+	t.add_child(station)
+	station.set_scenery_resident(true)
+	ledger.process_start(Time.get_ticks_usec())
+	var layers := 0
+	for child in station.get_children():
+		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
+			layers += 1
+			for connection in (child as Node2D).draw.get_connections():
+				if connection["callable"].get_object() == recorder:
+					connection["callable"].call()
+	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
+	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
+	ledger.keep = true
+	ledger.process_end(Time.get_ticks_usec())
+	ledger.process_start(Time.get_ticks_usec())
+	var rows := ledger.rows()
+	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 1,
+			"a yard layer built into a listening tree is counted as scenery")
+	station.free()
+	recorder.free()
+	sitting.free()

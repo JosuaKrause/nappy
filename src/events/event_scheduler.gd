@@ -5,6 +5,176 @@ extends RefCounted
 ## Deterministic: the same seed and day always produce the same plan, which is what lets a
 ## player learn a run. Nothing here touches the global RNG.
 
+## The rate a source has to beat before it is counted as denying the calm ground near it —
+## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
+## that stands in a park.
+##
+## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
+## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
+## the pram settling faster is a statement about the pram, and *which events may stand next to a
+## park* is a statement about the parks. Tying the two put the second decision inside the first,
+## where nobody making it would see it.
+const CALM_ZONE_DENIAL_RATE := 7.7
+## The day the masts carry the curfew announcement instead of their ordinary broadcast — the day
+## `_curfew_announce()` used to be `scripted_day` for, kept as a named day rather than re-read off
+## the def so the two rows do not have to agree about which field means "when" any more.
+const CURFEW_ANNOUNCE_DAY := 6
+## How many times over a tile on the day's routes is offered to a **friction** placement.
+##
+## *"Benign blockers go on the route… to make it more challenging / force the player to think their
+## route through better."* About a quarter of the lattice is on the tree, so at 4 rather better
+## than half of the costly rows land on the corridor and the rest of the city keeps a scatter — a
+## city where every street off the route is empty would read as a set rather than as a place, and
+## nothing in the design asks for that.
+const EVENT_CORRIDOR_WEIGHT := 4
+## Candidate tiles tried per placement before taking the roomiest one that was offered. A
+## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
+## answer is the best spot left, not no event.
+const EVENT_PLACEMENT_TRIES := 24
+## How many times over a precinct tile is offered to the event scheduler against an ordinary
+## pavement tile. Weighting the candidates rather than adding a rule: a precinct is where the cafés
+## and the market stalls and the buskers are, and the way to say that is to make the ground more
+## likely rather than to give the catalogue a new field.
+const EVENT_PRECINCT_WEIGHT := 4
+## And nothing of any kind lands inside this of anything else, which is about two tiles: close
+## enough that a café and a shouting man can share a corner, far enough that neither is drawn
+## inside the other.
+const EVENT_SPACING_ANY := 64.0
+## Two events of the same kind never land closer than this. A block is 256px across, so this
+## is "not on the same stretch of pavement" — the objection was never to seeing a second dog
+## walker, it is to seeing it thirty pixels from the first, which reads as a duplicate rather
+## than as a second incident.
+const EVENT_SPACING_SAME := 256.0
+## How many times over the street **between two adjacent strands of the day's corridor** is offered
+## to a wall, against the rest of the band it is in.
+##
+## Two strands running down neighbouring streets with a free step between them are one wide region
+## rather than two routes. `RouteTree.gaps()` is what a gap is; the placement is
+## `EventScheduler._copies_of`, where this multiplies the band weight rather than replacing it.
+##
+## **Set to leave about half of them open, which is the instruction rather than a compromise.** What
+## is asked for is *variety in what a gap is worth*, so a number that closed every gap would be as
+## wrong as one that closed none: it would turn the corridor into a set of separate corridors, which
+## is the star shape `RouteTree` deliberately does not grow.
+##
+## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
+## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
+## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
+## afford*.
+const EVENT_WALL_GAP_WEIGHT := 6
+## How many times over the **rim** is offered to a **wall** placement, against ground further out.
+##
+## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
+## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
+## beside it — the same reasoning as `ClosurePlanner.CLOSURE_WALL_BIAS`, which is this number's twin one system
+## over and deliberately the same value.
+##
+## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street
+## out, seen from the junction where the wrong choice is made. The **far side of a route's own
+## street** is the second, and it is the nearer of the two — she reads it without leaving her line,
+## and a café or a stall standing there is what a street with a route down one side looks like.
+## *(2026-09-19: asked whether a wall across the street should be rare or common, "often".)*
+##
+## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
+## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
+## it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
+const EVENT_WALL_RIM_WEIGHT := 4
+## The share of the **wall**-role rows the day's fill placed that stay standing, rolled once per
+## placement (`EventScheduler._thin_the_walls`). A wall is only ever placed off the tree, so this is
+## the share of the catalogue's own blockers off it that the day keeps.
+const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
+## The widest body an event may have and still be allowed to stand on calm ground.
+##
+## A spoiler has to make the park loud rather than take the ground away. **Refusing *anything* with
+## a body is the reading to avoid**: once every stationary row is solid, a person is 18px across and
+## that rule empties the pool, so nothing can be put in a park at all.
+##
+## So it is stated as what it means. A body you can walk around does not close a 704px lot; one you
+## have to route around does. Sized to sit above a person and well under `construction`, which is
+## exactly the thing it is there to keep out.
+const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
+## The most things the day will put in the park she used yesterday.
+##
+## **One spoiler is three percent of a four-block calm zone** — see `EventScheduler._denial_radius`
+## for the arithmetic — so a single event does not spoil a park, it stands in one. A cap rather than
+## a target: the grid asks for as many as it takes to cover the ground and this is where it stops
+## asking, because the events come from the day's own pool and a park with a dozen things in it is
+## not a spoiled park, it is a different kind of city.
+##
+## Nine is a 3x3 grid, and it is measured: over twenty lots and five seeds it denies **99%** of a
+## four-block calm zone and 91% of a one-block courtyard, against 8-12% for the same lot on an
+## ordinary day. A 3x2 grid leaves 15% of the biggest zones standing, which is a hundred tiles of
+## usable park — enough to settle in, so the spoiling would not have happened.
+##
+## A small lot never asks for nine: the grid is sized from what one of them actually denies, so a
+## 46-tile courtyard takes one or two and this cap is never reached. What it costs is a day with
+## nine more events in it, all of them inside the one lot she is being asked not to use.
+const SPOILERS_TO_DENY_A_PARK := 9
+## How many times over ground two or more turnings off the corridor is offered to a **lethal** wall,
+## against the rim.
+##
+## The ground off the paths *"ranges from very costly to deadly"*, and the range is over distance
+## from the routes — so its two ends pull in opposite directions and this is the far one.
+## Deliberately the same strength as the rim weight it mirrors: the design is a gradient
+## rather than a preference for one band, and giving deadly a stronger pull than very costly would
+## make the rim the quiet part of the off-corridor city, which inverts the sentence.
+const WALL_DEEP_WEIGHT := 4
+## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
+## to walk through the middle of a row.
+##
+## Below it a row is friction and is weighted **onto** the routes; at or above it the row is what
+## closes the ground **off** them. Stated over `EventDef.walk_through_cost()` — the same integral
+## the caret is ordered by — rather than over a field somebody sets per row, because a second answer
+## to *how expensive is this* is how two tables of the same fact drift apart.
+##
+## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
+## good argument.** The caret's own threshold, `Tuning.EXPECTED_IMPACT_POINTS`, is a near neighbour of
+## this one and is not the same question: the caret is read off a **projected position** and this
+## is read off a row's own **static integral**, so the two move independently and have. It is where
+## the game raises a caret — *this is worth going round* — so sharing the
+## question, not merely the value, would make the cue and the placement say one sentence. What
+## sharing the question did instead was empty the routes: at 25 points, the caret's line before
+## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
+## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
+## nobody asked for the paths to be cleared.
+##
+## The line is set by two rows instead, and by the right two. **`dog_walker` costs 42.7 and has to
+## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
+## game is made of, and a dog walker that is never on her route is that decision deleted. **And
+## `leaf_blower` at 52.9 has to stay a wall**, because without it the non-lethal half of the range
+## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
+## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them,
+## same as it always has — what moved is where the two rows themselves sit.
+##
+## **It is in points of the meter, so it moves when the meter's own arithmetic does, and it moved
+## again for a different reason than the walking decay this time.** *(2026-09-20: "restore fully
+## now, raising leaf_blower by what the decay took from it and moving the line to sit between the
+## two again".)* `homeless_yeller` and `dog_walker` both lost the net gain a real pass past them
+## used to land once M117 raised the walking decay from 3.5 to 6.0/s, and restoring either of them
+## fully pushes its own `walk_through_cost()` past where the line used to sit — the intensity a
+## full restoration needs costs more than a dog walker used to, on its own numbers, before this
+## row is even touched. Raising the two rows without moving the line would have made one of them a
+## wall; raising the line without also raising `leaf_blower` would have let the non-lethal half of
+## the range go empty again. Both moved together, `leaf_blower`'s own core answering the same
+## walking-decay loss the other two rows answer, at `Tuning.EXCITEMENT_DECAY_WALKING`'s current
+## rate — this reading is not itself a re-derivation for the decay's own sake, only for the two
+## rows either side of it.
+##
+## **Raising the walking decay still lowers every row's cost unevenly**, the netting-off-over-time
+## effect this line's own history already carries: that is why `protest` (269px of 15/s) fell from
+## 42.3 to 27.6 and crossed under `dog_walker`'s **old** number (105px of 26/s), which no threshold
+## can undo — a protest now genuinely costs less to walk through than a dog walker's old field did,
+## so it is on the routes with the rest of the ordinary expensive city regardless of where this
+## line sits.
+##
+## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
+## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
+## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
+## and every lethal row — the same two lists as before this line moved, checked catalogue-wide
+## rather than assumed: nothing else crosses it either way. Re-measure with
+## `tests/probes/m117_decay.gd` if the cost table moves; do not re-derive it.
+const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
+
 ## What the manager needs to spawn one instance.
 ##
 ## An `AHEAD_OF_PLAYER` plan has **no position**: the day decides that one more cat is owed and
@@ -26,20 +196,47 @@ class Planned extends RefCounted:
 	var gate_state: RegionPlanner.GateState = null
 
 	## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
-	## `Tuning.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
+	## `CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
 	## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
 	## touching a plan.
 	var mast_id := ""
 	## Set by `EventManager.silence_mast()`/`silence_all_masts()` for the rest of the day. Carried
 	## on the plan, not only the live instance, so a mast silenced while out of reach is still
-	## silenced the next time she comes near it — see `EventManager._stream_in()`.
+	## silenced the next time she comes near it — see `EventStreaming.stream_in()`.
 	var silenced := false
+
+	## **A plan that comes again** (`repeats()`): seconds from one of its instances coming to the
+	## next, kept on its own clock, and seconds from one being done to the next coming
+	## (`EventDef.repeat_every`, `repeat_after`, the row's unless a placement gives this plan its own,
+	## as each of the building's vents has its own period). `EventManager` keeps the clock.
+	var repeat_every := 0.0
+	var repeat_after := 0.0
+	## Seconds until this plan's instance next comes; nothing streams it in before then. 0 for a plan
+	## whose instance may be in the world now, which is every plan that does not repeat.
+	var comes_in := 0.0
+	## Whether this plan's instance is put where she stands each time it comes, rather than at
+	## `position` — the explosion outside, whose charge stands where she is wherever in the building
+	## she has got to. Its `position` is where it last came.
+	var at_her := false
+	## The age each of its instances arrives at: 0 for one that comes and gives its notice, the
+	## row's `telegraph_time` for one whose notice is already over when it comes (the explosion
+	## outside: what the windows say is that it has already happened).
+	var arrives_aged := 0.0
+	## Set the frame a wait on its last instance begins, so that frame is not counted off the wait.
+	var wait_began := false
 
 	func _init(definition: EventDef, at: Vector2,
 			route := PackedVector2Array()) -> void:
 		def = definition
 		position = at
 		path = route
+		if definition:
+			repeat_every = definition.repeat_every
+			repeat_after = definition.repeat_after
+
+	## Whether this plan's instance comes again once it is done (`repeat_every`, `repeat_after`).
+	func repeats() -> bool:
+		return repeat_every > 0.0 or repeat_after > 0.0
 
 	## The live instance, while this plan is streamed in. Owned by `EventManager`: a plan is the
 	## day's intention and the instance is the few seconds it exists for, and those are not the
@@ -64,7 +261,7 @@ class Planned extends RefCounted:
 	var role := GameEnums.BlockerRole.NONE
 	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
 	## simply itself. A set piece is planned at **every** site of a covering set and the first one
-	## she reaches is the one that happens; `EventManager._stream_in` spends the rest of the group
+	## she reaches is the one that happens; `EventStreaming.stream_in` spends the rest of the group
 	## at that moment. See `EventScheduler._place_a_set_piece`.
 	var set_piece_group := ""
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
@@ -72,19 +269,19 @@ class Planned extends RefCounted:
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
 	var was_live := false
 	## How far the instance had got when it was last streamed out, so streaming it back in
-	## **resumes** it rather than rewinding it. See `EventManager._stream_in`.
+	## **resumes** it rather than rewinding it. See `EventStreaming.stream_in`.
 	var age := 0.0
 	var travelled := 0.0
-	## The `_noticed_at` a `pursues_within` instance held when it was last streamed out, or `INF` if
-	## it had not yet noticed her — the third thing a stream-out has to carry beside `age` and
-	## `travelled`, or a row streamed out mid-chase comes back `is_waiting()`, having forgotten it.
-	## See `EventManager._stream_out()` and `_stream_in()`, and `EventInstance.resume()`.
+	## Where on its clock an instance with an `EventDef.notice` had noticed her when it was last
+	## streamed out (`EventInstance.noticed_at()`), or `INF` if it had not yet noticed her — the
+	## third thing a stream-out has to carry beside `age` and `travelled`, or a row streamed out
+	## mid-chase comes back `is_waiting()`, having forgotten it. See
+	## `EventStreaming.stream_out()` and `stream_in()`, and `EventInstance.resume()`.
 	var noticed_at := INF
-	## Whether the guard who set off from this roadblock's barrier was spent (or leaving) when it was
-	## last streamed out, and which side's post he left empty: what `EventInstance.
-	## come_back_as_the_barrier()` restores, so a re-streamed barrier is only the barrier.
-	var guard_spent := false
-	var chaser_side := 0
+	## Each behaviour's own state when it was last streamed out (`EventInstance.save_behaviours()`),
+	## empty before then and once a repeating plan starts over: a roadblock's spent guard and the post
+	## he left among it (`EventBarrierPost.save()`), so a re-streamed barrier is only the barrier.
+	var behaviours := {}
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
@@ -108,6 +305,145 @@ class Planned extends RefCounted:
 			best = minf(best, at.distance_to(
 					Geometry2D.get_closest_point_to_segment(at, path[i - 1], path[i])))
 		return best
+
+	## The closest endpoint-to-route distance between two events.
+	##
+	## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
+	## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
+	func gap_to(other: Planned) -> float:
+		# A point's distance to the whole other route already includes its endpoints, so the symmetric
+		# endpoint pass cannot make the answer smaller when either side is stationary.
+		if path.size() < 2:
+			return other.distance_from(position)
+		if other.path.size() < 2:
+			return distance_from(other.position)
+		var gap := INF
+		for point in ends():
+			gap = minf(gap, other.distance_from(point))
+		for point in other.ends():
+			gap = minf(gap, distance_from(point))
+		return gap
+
+	## Whether a row is one the **zero-cost line** has to get past — the reading PLAYTEST-71 settled,
+	## stated once here and read by every rule in this section.
+	##
+	## A line along a route is a walk from the doorstep to the calm that never enters a placed row's
+	## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
+	## convenience:
+	##
+	## - **a mast** (a `loudspeaker` plan, whether `MastSites` planted it or it is queued or routed) is
+	##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
+	##   the corridor-aware placement every other row here goes through, and stand at the same sites all
+	##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
+	##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
+	##   reaches the junction box at the end of whatever street it stands on, so held to the line it
+	##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
+	##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
+	##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites.is_eligible()`: off the home
+	##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
+	## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
+	##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
+	## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
+	##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
+	##   reaches here as a plan with no position at all.
+	## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
+	##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
+	## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
+	##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
+	##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
+	##
+	## **A wall is not outside it**, and that is the player's own decision on the one thing the four
+	## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
+	## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
+	## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
+	## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
+	## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
+	## same three questions every other row's is, and the condition the player set on that is exactly
+	## `EventDef.line_reach()`: what a wall may still put over a junction is the part of its field under the
+	## walking decay, which is a crossing the walk takes without planning around it.
+	##
+	## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
+	## untouched — `Planned.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
+	## about whether a line exists past one.
+	func counts_against_the_line() -> bool:
+		return is_placed() and mast_id == "" and def.role != EventDef.Role.MAST \
+				and def.has_a_line_to_avoid()
+
+	## Whether a row denies a point, under the beat-opening reading.
+	##
+	## **A pacing row denies only the ground its beat never leaves free** — *"time pass, don't route
+	## around them"* — so a point it is ever more than its reach away from can be walked past by
+	## waiting. The intersection over a whole beat is the intersection over its **corners**, and that
+	## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
+	## straight run is within `reach` of every point of it.
+	func denies(at: Vector2, reach: float) -> bool:
+		if def.paces and path.size() >= 2:
+			for point in path:
+				if at.distance_to(point) > reach:
+					return false
+			return true
+		return at.distance_to(position) <= reach
+
+	## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
+	## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
+	## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
+	## inside each of those discs.
+	func reach_touches(rect: Rect2, reach: float) -> bool:
+		var grown := rect.grow(reach)
+		if grown.has_point(position):
+			return true
+		for point in path:
+			if grown.has_point(point):
+				return true
+		return false
+
+	## Whether the clearance rule is about this placement: a lethal event with nothing else inside
+	## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
+	## reaches `half_length` further along its own spine than a disc's would.
+	##
+	## **The rule is now stated over the ground she is being guided along, and off it there is an
+	## exemption**, which was the player's own call when the two collided.
+	##
+	## Read the rule's own reason and the exemption falls out of it. The rule exists because *the
+	## contract is stated per event and the player experiences the sum* — walking out of one field can
+	## mean walking into another, and where that second field ends the day it is a death arriving out of
+	## something she was already reading. That is an argument about **a route she is meant to take**.
+	## Off the corridor there is no route she is meant to take; the whole point of the ground is that
+	## she should not be on it, and a lethal field overlapping another one is the city saying so rather
+	## than a fairness failure. With the rule applied out there, *deadly all over* is not merely hard to
+	## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
+	## 145 to 380px, cannot tile anything.
+	##
+	## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
+	## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
+	## carrying this role is off the routes or it does not exist — including the far sidewalk of a
+	## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
+	## set piece, which is sited where every route passes, and anything the day placed for a reason that
+	## is not about the corridor at all.
+	##
+	## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
+	## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
+	## nothing here changes what any event owes the player who sees it coming.
+	##
+	## **A pursuer is the third exemption, and the reason is the same one the `WALL` case is stated
+	## over: the rule is about a *place* being kept clear, and a pursuer has no place.** It goes
+	## wherever she goes, so placement can never keep anything clear of it — the argument the `WALL`
+	## case makes about the corridor does not even apply, because there is no ground to be off of in
+	## the first place.
+	##
+	## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
+	## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
+	## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
+	## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
+	## from there, placed and `hard_fail` the same way) are both exempt without this line doing
+	## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
+	## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
+	## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
+	## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
+	## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
+	## say, which `_role_for` would classify ahead of the `hard_fail` check.
+	func keeps_its_field_clear() -> bool:
+		return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
 
 ## Budget grows with the day, so late days are denser as well as nastier. The target is **one event
 ## per block**, and the escalation is linear in the day: day 14 carries about half again as many
@@ -147,19 +483,32 @@ static func budget_for(day: int) -> int:
 const BUDGET_PER_BLOCK := 76.0 / 49.0
 const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 
-## Plans a day. `consumed_one_shots` is read and appended to, so a one-shot fires once
-## per run.
+## A line of the day's planning for the run log, written when the caller handed a trace in: the
+## manager hands its own, and a test or a probe that plans a day by hand may hand none.
+static func _note(trace: RunTrace, kind: String, text: String) -> void:
+	if trace:
+		trace.note(kind, text)
+
+## **Plans what stands on the walk `spec` describes**: which rows, how they are drawn, and which
+## placement rules apply are all the spec's (`DaySpec`, "how its events are placed"), so a day and
+## the escape's city are one entry point and one judge (`_best_of()`). A day draws the catalogue
+## (`DaySpec.Draw.CATALOGUE`, below); the escape's city fills each street of its walk from its marble
+## bag (`DaySpec.Draw.BAG_PER_STREET`, `_fill_the_walk_from_the_bag()`). Nothing here asks which day
+## it is beyond `spec.number`, the day the catalogue's rows are read for.
+##
+## `consumed_one_shots` is read and appended to, so a one-shot fires once per run.
 ##
 ## `used_calm` is every calm area she has settled in so far this act, most recent first. See
-## `_spoil_the_park_she_used`, and `GameState.settled_this_act` for why it is an act rather than a
+## `_spoil_the_park_she_used`, and `RunCalendar.settled_this_act` for why it is an act rather than a
 ## night.
-## `tree` is the day's corridor and it is what every placement below is stated against. The caller
-## passes the one the closures were placed off; a rig with none to hand grows the same tree, since
-## `RouteTree.for_day` is a pure function of the city's seed and the day number and touches no
-## gameplay stream.
+## `route` is the walk every placement below is stated against (`RouteSource`): a day's tree, whose
+## corridor (`RouteSource.corridor()`) prices and places the catalogue's rows, or the escape's chains,
+## whose streets the bag fills. The caller passes the tree the closures were placed off; a rig with
+## none to hand on a day grows the same tree, since `RouteTree.for_day` is a pure function of the
+## city's seed and the day number and touches no gameplay stream.
 ##
-## `heat` is `GameState.resistance_progress`, and it is threaded through rather than read off the
-## autoload so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
+## `heat` is `RunState.resistance.progress`, and it is threaded through rather than read off the
+## run so that a day is a pure function of its arguments: a rig that plans day 9 twice gets the
 ## same day twice whatever a run happens to have done. Every def below arrives already in the shape
 ## that heat puts it in — see `EventCatalogue.heated()` — so nothing in this file tests for it.
 ## `doors` is where today's region-door bodies stand — `RegionPlanner.RegionPlan.door_bodies`'
@@ -172,27 +521,40 @@ const BUDGET_PER_BLOCK_PER_DAY := 6.2 / 49.0
 ## the region wall's own bodies, both planned before this runs. Both empty on every other day, and
 ## then the day is planned exactly as it would be without them. See
 ## `_ensure_the_city_is_still_walkable()`.
-static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed_one_shots: Array[String], scars: Array[Dictionary] = [],
-		used_calm: Array[Vector2i] = [], tree: RouteTree = null,
+##
+## `trace` is where the planning writes its own account for the run log — a one-shot's roll, a
+## lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
+##
+## `kept_ground` is the ground the escape's bag draw reads again on a replan of the same city
+## (`KeptGround`); a day's draw does not read it.
+static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
+		consumed_one_shots: Array[String] = [], scars: Array[Dictionary] = [],
+		used_calm: Array[Vector2i] = [], route: RouteSource = null,
 		heat: int = 0, doors := PackedVector2Array(), target: Array[Vector2i] = [],
-		standing: Array[Planned] = []) -> Array[Planned]:
+		standing: Array[Planned] = [], trace: RunTrace = null,
+		kept_ground: KeptGround = null) -> Array[Planned]:
+	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
+		return _fill_the_walk_from_the_bag(spec, rng, map, route,
+				street_bag(spec.bag, street_bag_seed(rng)), used_calm, doors, standing,
+				kept_ground)
+	var day := spec.number
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
 	var filled_from := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, used_calm,
-			tree, heat, doors, standing, planned)
+			route, heat, doors, standing, planned, trace, spec)
 	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
-	_ensure_the_run_is_taught(day, planned, heat)
+	_ensure_the_run_is_taught(day, planned, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
 	# park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second open
 	# park she can reach from the swing"). Both passes below are asked about the calm *other* than
 	# the target's: one of those areas is left clean, and a route to it is kept.
 	var target_calm := _calm_block_holding(map, target)
-	_ensure_one_usable_park(map, planned, used_calm, target_calm)
-	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm)
+	if spec.keeps_unused_calm_clear:
+		_ensure_one_usable_park(map, planned, used_calm, target_calm)
+	_ensure_the_city_is_still_walkable(map, planned, target, standing, target_calm, trace)
 	_hand_to_her_walk(planned)
 	return planned
 
@@ -201,35 +563,43 @@ static func build_day(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## fill, each phase on its own stream off `base` (`_stream`). Answers the index the fill's own
 ## placements start at, which is what `_thin_the_walls` asks about. A function of its own so a test
 ## can hold the day before the thinning beside the day after it (`tests/test_events_scheduler.gd`).
+## `spec` is the day's placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
 static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], used_calm: Array[Vector2i],
-		tree: RouteTree, heat: int, doors: PackedVector2Array, standing: Array[Planned],
-		planned: Array[Planned]) -> int:
+		route: RouteSource, heat: int, doors: PackedVector2Array, standing: Array[Planned],
+		planned: Array[Planned], trace: RunTrace = null, spec: DaySpec = null) -> int:
+	if spec == null:
+		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
 	# `_ground_for`; it is threaded through rather than kept on the map because its lifetime is
 	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
 	var ground := {}
 	# Where the day's routes run, as a question about a tile. This is what turns *wall* and
 	# *friction* from words into placements — see `_role_for` and `_ground_for`.
-	var corridor := Corridor.of(tree if tree else RouteTree.for_day(map, day))
+	var corridor := route.corridor() if route else Corridor.of(RouteTree.for_day(map, day))
 
-	# The calm she has not used yet, which nothing today may be placed near. See `_calm_to_leave_alone`.
-	var leave_alone := _calm_to_leave_alone(map, used_calm)
+	# The calm she has not used yet, which nothing today may be placed near, where the spec keeps
+	# the calm rule. See `_calm_to_leave_alone`.
+	var leave_alone: Array[Rect2] = []
+	if spec.keeps_unused_calm_clear:
+		leave_alone = _calm_to_leave_alone(map, used_calm)
+	var rules := Rules.of(spec, map, route, standing)
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
-	planned.append_array(_place_masts(day, map, heat, doors, scars))
+	planned.append_array(place_masts(day, map, heat, doors, scars))
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors,
-			standing)
+			standing, rules)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
-			leave_alone, corridor, heat, doors, standing)
-	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat)
+			leave_alone, corridor, heat, doors, standing, trace, rules)
+	_spoil_the_parks_she_used(day, _stream(base, 3), map, planned, used_calm, heat, trace)
 	var filled_from := planned.size()
-	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing)
+	_fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, heat, doors, standing,
+			spec.caps_per_day, rules)
 	return filled_from
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
-## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
+## `GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
 ## `filled_from` on. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
 ## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
 ## all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
@@ -259,7 +629,7 @@ static func _thin_the_walls(day: int, rng: RandomNumberGenerator, planned: Array
 		var plan := planned[i]
 		if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed():
 			continue
-		if rng.randf() >= Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE:
+		if rng.randf() >= GATEHOUSE_DAY_WALL_ROW_SHARE:
 			planned.remove_at(i)
 
 ## The phase salt `_thin_the_walls` draws its stream from — after `build_day`'s own three phases and
@@ -280,7 +650,7 @@ static func _calm_block_holding(map: CityMap, target: Array[Vector2i]) -> Vector
 const NO_CALM := Vector2i(-1, -1)
 
 ## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
-## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.sited_on_her_way`). The
+## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`). The
 ## dawn placement is what spends the day's own stream exactly as it was spent before the crew was
 ## sited from her walk, so every row the roll places after it stands where it always stood; this
 ## then drops the position, and `EventDirector.site_what_is_on_her_way()` sites it ahead of her.
@@ -292,241 +662,153 @@ const NO_CALM := Vector2i(-1, -1)
 static func _hand_to_her_walk(planned: Array[Planned]) -> void:
 	for i in planned.size():
 		var plan := planned[i]
-		if not plan.def.sited_on_her_way or plan.def.kind != GameEnums.EventKind.RECURRING \
+		if plan.def.on_her_way == null or plan.def.kind != GameEnums.EventKind.RECURRING \
 				or not plan.is_placed():
 			continue
 		var owed := Planned.new(plan.def, Vector2.INF)
 		owed.role = plan.role
 		planned[i] = owed
 
-# --------------------------------------------------------------- the finale ---
+# ------------------------------------------------------ the walk's streets from a bag ---
 
-## The escape's own event set: what stands on the streets the two chains run through.
+## **The rules a plan's spec turns on that read what is already down**, handed to every placement
+## of one plan: whether the home's streets are the day's (`DaySpec.holds_the_home_streets`), whether
+## one waiting guard notices her at a time (`DaySpec.one_notice_at_a_time`), and the walk kept open
+## past everything standing on it (`DaySpec.keeps_the_walk_open`, `WalkGround`). A placement handed
+## none keeps a day's: the home's streets held, and neither of the other two.
+class Rules extends RefCounted:
+	var holds_the_home_streets := true
+	var one_notice_at_a_time := false
+	## The walk's ground with everything already standing on it, or null where the spec does not
+	## keep the walk open.
+	var walk: WalkGround = null
+
+	## `spec`'s rules for one plan on `map`, its walk `route` with `standing` — the seals, planned
+	## before the plan's own events — already down.
+	static func of(spec: DaySpec, map: CityMap, route: RouteSource,
+			standing: Array[EventScheduler.Planned]) -> Rules:
+		var rules := Rules.new()
+		rules.holds_the_home_streets = spec.holds_the_home_streets
+		rules.one_notice_at_a_time = spec.one_notice_at_a_time
+		if spec.keeps_the_walk_open:
+			rules.walk = WalkGround.new(map, standing, route)
+		return rules
+
+## **Every street of the walk has slots, and what fills each slot is drawn from one marble bag** —
+## `DaySpec.Draw.BAG_PER_STREET`, the escape city's draw. The walk knows exactly which streets she
+## can take — everything else is sealed — so it fills them before she sets off rather than siting
+## things round her as a day does; and which row a slot gets, or whether it gets one at all, is a
+## draw. *(Inbox #785 in minty-lemur: "nobody ever asked for all four events on *every* street.
+## that doesn't make any sense and cannot feasibly work at all. that is why the density is so high
+## that it's impossible to get anywhere. yes, a marble bag is absolutely needed with empty events
+## (nothing happening) as well. we need a fair mix".)*
 ##
-## **Each open street has slots, and what fills each slot is drawn from one marble bag.** The
-## finale knows exactly which streets she can take — everything else is sealed — so it fills them
-## before she sets off rather than siting things round her as a day does; and which danger a slot
-## gets, or whether it gets one at all, is a draw. *(Inbox #785 in minty-lemur: "so you prefill the
-## events for escape but that doesn't justify not using a marble bag. those concepts are
-## orthogonal"; "nobody ever asked for all four events on *every* street. that doesn't make any
-## sense and cannot feasibly work at all. that is why the density is so high that it's impossible
-## to get anywhere. yes, a marble bag is absolutely needed with empty events (nothing happening) as
-## well. we need a fair mix"; "frequency order is trucks > explosions > vans > barriers >
-## empty".)* Every open street gets `Tuning.FINALE_SLOTS_PER_STREET` slots, and each slot draws one
-## marble from **one bag for the whole escape** (`escape_bag()`), holding army trucks, explosions,
-## vans and roadblocks — the barriers — and empty marbles, in that order of how many
-## (`Tuning.FINALE_BAG_TRUCKS` and the four after it). A row's marble puts one of that row on the
-## street through `_fill_a_finale_street()` and every rule it keeps; an empty marble leaves the
-## slot with nothing; **a row's marble that finds no ground the rules accept is spent unmet**, so
-## a refused placement never moves its danger onto the next street. The bag is drawn street by
-## street in `streets`' own order on its own stream (`escape_bag_seed()`, off `rng`'s seed), so a
-## restart of the city section, which replans from the same seed, draws the same city again.
+## Each street of the walk (`RouteSource.streets_on_the_walk()`, in its own order) draws
+## `DaySpec.slots_per_street` marbles from `bag`, one bag for the whole walk. A marble with a row
+## (`DaySpec.bag_rows`) puts one of that row on the street, through the same judge every placement of
+## a day goes through (`_best_of()`); a marble with none leaves the slot with nothing; **a row's
+## marble that finds no ground the rules accept is spent unmet**, so a refused placement never moves
+## its danger onto the next street. A row past its `max_per_day` is spent unmet the same way when the
+## spec keeps the caps.
 ##
-## **This is the escape's own placement only until the refactor**: the marble bag is the shape the
-## day's scheduler takes it in when the escape is planned by `build_day` (minty-quail,
-## escape-placement), so `escape_bag()` and its counts move there as they are. A cheap fix inside
-## the escape's own placement is the one exception to code designed by layer *(inbox #798 in
-## minty-lemur: "that's the whole point -- otherwise it wouldn't be cheap")*, and only until then
-## *(inbox #799 in minty-lemur: "the exception only holds until the refactor -- I don't want a month
-## from now hear that the exception still stands")*.
+## **The ground is the day's own for the row** (`street_ground()`), on the street's own rect, and
+## every placement rule a day keeps is kept: `_build_placement` sites each one, `room_around`
+## refuses anything drawn inside something else, and the telegraph contract is the def's own and was
+## checked at boot. What the spec turns on is asked on top (`Rules`): one waiting guard's notice at a
+## time, and the walk kept open past every body standing on it — the seals (`standing`, planned
+## before any of this and never this pass's to move) and everything already accepted. The calm rule
+## is the day's (`_calm_to_leave_alone()`) where the spec keeps it.
 ##
-## **Four rows, three of which already exist.** `military_convoy` is the truck, with the barricade
-## it ordinarily leaves stripped — on an ordinary day that aftermath is the point of the row, and
-## here a convoy is traffic rather than the thing that closed a street. `abduction` is the masked
-## men in a van. `roadblock` at full heat is the masked men on foot: at `Tuning.RESISTANCE_GOAL` its
-## guards leave the post, so it stands as a band across the road until she comes within his radius
-## (`EventDef.pursues_within`, 180px from the band) and then the guard on her side warns and, if she
-## is still inside it once his warning has run, comes at her on foot as `guard_standing.svg` and
-## `guard_lunging.svg` —
-## see `EventInstance._draw_roadblock()`. Once that guard has left his post for good, the far guard
-## walks off too and the band, which costs nothing, stands unmanned, as on every day, so luring him
-## off is the way past (`EventCatalogue.escape_roadblock()`),
-## and one roadblock a street leaves one guard to lure: a street of one slot stands one row at
-## most, and no two bands stand where both guards can notice her (below). Only the explosion is new.
-##
-## **Every density rule a day keeps is kept here.** `_build_placement` sites each one, `_room_around`
-## refuses anything drawn inside something else, and the telegraph contract is the def's own and
-## was checked at boot. The off-corridor exemption is untouched: these are on the corridor, and
-## nothing here bypasses `_keeps_its_field_clear` — the two lethal rows in the list are a pursuer
-## and a `WALL`, which is how they were already exempt on an ordinary day.
-##
-## **And nothing that stands on the walk closes it**, the guarantee a day keeps through its
-## placement rules that this pass has to keep for itself, since the escape's bodies stand on the
-## one route rather than off it. *(Inbox #747: "roadblocks currently are impossible to get past.
-## one sidewalk must be open if they're en-route. the escape's street should not have fully
-## blocking events like in the normal game.")* Each candidate is asked two questions before it is
-## accepted, of an `EscapeGround` that holds `seals` (`SealPlanner.plan_finale()`'s walls, planned
-## before any of this and never this pass's to move) and everything already accepted, each as it
-## stands for the whole walk: whether every street it reaches keeps a sidewalk open, and whether
-## the ground around it still joins up the way it did without it — see
-## `_the_escape_accepts()`. `ends` is where the walk has to get to, the two exits beside
-## `standing_at`.
-##
-## **And she meets one roadblock's guard at a time**: no two stand where both can notice her
-## (`_keeps_its_notice_to_itself()`).
-##
-## **Three of a day's placement rules are not the escape's, each by the player's word** *(inbox
-## #785 in minty-lemur, asked which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules"
-## for the home's streets and the caps)*. Nothing here asks `_calm_to_leave_alone()`: the escape is
-## the climax and its chains pass a calm area at every stop, so a field kept off every calm area
-## she has not used would clear the streets round every stop of most of what this stands. Nothing
-## here holds the streets round the home block or keeps off the front door's street
-## (`_open_ground_for()`'s `from_the_door`, false here): she sets off from the service exit, which
-## opens onto one of those streets, so holding them would empty the street she starts on. And no
-## budget or `max_per_day` cap applies: what stands is the slots and the bag's draws, above.
-##
-## `bag` and `slots` are the bag and the slots a street the plan draws from, handed in by a caller
-## that measures another mix (`tests/probes/escape_winnable.gd`); left out, they are
-## `escape_bag()` off `Tuning`'s counts on `escape_bag_seed(rng)` and
-## `Tuning.FINALE_SLOTS_PER_STREET`.
-static func build_finale(map: CityMap, rng: RandomNumberGenerator,
-		streets: Array[StreetNetwork.Segment], standing_at: Vector2,
-		seals: Array[Planned] = [], ends: Array[Vector2] = [], bag: MarbleBag = null,
-		slots := -1) -> Array[Planned]:
+## `bag` is drawn on its own stream (`street_bag_seed()`, off `rng`'s seed), so drawing it takes
+## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
+## restart after a loss — draws the same walk again. Handed in rather than made here so a caller that
+## draws another bag (`tests/test_finale.gd`'s bags of one marble) hands its own.
+static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
+		route: RouteSource, bag: MarbleBag, used_calm: Array[Vector2i] = [],
+		doors := PackedVector2Array(), standing: Array[Planned] = [],
+		kept_ground: KeptGround = null) -> Array[Planned]:
 	var planned: Array[Planned] = []
-	if bag == null:
-		bag = escape_bag(escape_bag_counts(), escape_bag_seed(rng))
-	if slots < 0:
-		slots = Tuning.FINALE_SLOTS_PER_STREET
-	var rows := {
-		"military_convoy": _without_its_aftermath(EventCatalogue.by_id("military_convoy")),
-		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
-		"abduction": EventCatalogue.by_id("abduction"),
-		"roadblock": EventCatalogue.escape_roadblock(),
-	}
-	# **A tree and an event never share ground**, the finale's streets included — `docs/CITY.md`,
-	# "Street trees". Scanned once for the whole plan rather than once per street per row: a city
-	# plants its trees in `City.build()` and nothing in a walk moves them. Kept where the day keeps
-	# its own copy, in the ground a restart reads again (`_finale_ground_cache()`), so
-	# `_open_ground_for()` reads this one.
-	var open := _finale_ground_cache(map)
-	var trees: Dictionary = open[_TREE_TILES_KEY]
-	var terminals: Array[Vector2] = [standing_at]
-	terminals.append_array(ends)
-	var ground := EscapeGround.new(map, seals, terminals)
-	for segment in streets:
-		for _slot in slots:
-			var marble: String = bag.draw()
-			if marble == ESCAPE_EMPTY_MARBLE:
+	if not route:
+		return planned
+	# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees". Scanned once for
+	# the whole plan, and kept with the ground a replan reads again (`KeptGround`).
+	var ground := (kept_ground if kept_ground else KeptGround.new()).of(map)
+	var trees: Dictionary = ground[TREE_TILES_KEY]
+	var rules := Rules.of(spec, map, route, standing)
+	var leave_alone: Array[Rect2] = []
+	if spec.keeps_unused_calm_clear:
+		leave_alone = _calm_to_leave_alone(map, used_calm)
+	var corridor := route.corridor()
+	var placed := {}
+	for segment in route.streets_on_the_walk():
+		for _slot in spec.slots_per_street:
+			var def: EventDef = spec.bag_rows.get(bag.draw())
+			if def == null:
 				continue
-			_fill_a_finale_street(map, rng, segment, rows[marble], 1, trees, standing_at, planned,
-					streets, ground, open)
+			if spec.caps_per_day and int(placed.get(def.id, 0)) >= def.max_per_day:
+				continue
+			var candidates := street_ground(map, segment, def, trees, route.start(), ground,
+					rules.holds_the_home_streets)
+			if candidates.is_empty():
+				continue
+			var placement := _best_of(def, rng, map, candidates, _role_for(def, spec.number),
+					planned, ground, leave_alone, corridor, doors, standing, null, rules)
+			if placement:
+				planned.append(placement)
+				placed[def.id] = int(placed.get(def.id, 0)) + 1
 	return planned
 
-## The marble an empty slot draws: nothing stands there.
-const ESCAPE_EMPTY_MARBLE := ""
-
-## **The escape's marble bag**: `counts` marbles of each key, a row id (`military_convoy`,
-## `finale_explosion`, `abduction`, `roadblock`) or `ESCAPE_EMPTY_MARBLE`, on its own stream off
-## `seed_value`, filled again whenever it runs empty — one bag for the whole escape, so the mix is
-## exact over each fill of it rather than over each street. See `build_finale()`.
-static func escape_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
+## **A marble bag of `counts`**: `counts` marbles of each key, a row's marble or
+## `DaySpec.EMPTY_MARBLE`, on its own stream off `seed_value`, filled again whenever it runs empty —
+## one bag for the whole walk, so the mix is exact over each fill of it rather than over each street.
+## See `_fill_the_walk_from_the_bag()`.
+static func street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
 	var marbles: Array = []
 	for marble: String in counts:
 		for _i in int(counts[marble]):
 			marbles.append(marble)
 	return MarbleBag.new([], marbles, seed_value)
 
-## `Tuning`'s counts for `escape_bag()`, in the player's order *(inbox #785 in minty-lemur:
-## "frequency order is trucks > explosions > vans > barriers > empty")*.
-static func escape_bag_counts() -> Dictionary:
-	return {
-		"military_convoy": Tuning.FINALE_BAG_TRUCKS,
-		"finale_explosion": Tuning.FINALE_BAG_EXPLOSIONS,
-		"abduction": Tuning.FINALE_BAG_VANS,
-		"roadblock": Tuning.FINALE_BAG_ROADBLOCKS,
-		ESCAPE_EMPTY_MARBLE: Tuning.FINALE_BAG_EMPTY,
-	}
-
-## The escape bag's own stream, off the seed the plan's `rng` was made with rather than off a draw
+## The street bag's own stream, off the seed the plan's `rng` was made with rather than off a draw
 ## from it, so drawing the bag takes nothing from the stream the placements roll on — the shape
 ## `EventDirector` seeds its route bag in.
-static func escape_bag_seed(rng: RandomNumberGenerator) -> int:
+static func street_bag_seed(rng: RandomNumberGenerator) -> int:
 	return hash("%d:escape-bag" % rng.seed)
 
-## **The day's ground for the escape's rows, kept across restarts of the city section.** A loss in
-## the city replans it on the same city (`main._plan_the_finale_city()`), and every answer
-## `_open_ground_for()` keeps here is a function of that city alone: its tiles, its closed tiles,
+## **The ground for a bag's rows, kept across replans of the same city.** The escape replans its
+## city on every restart after a loss (`main._plan_the_finale_city()`), and every answer
+## `open_ground_for()` keeps here is a function of that city alone: its tiles, its closed tiles,
 ## its held streets and its street trees, none of which a walk changes, while the escape holds and
-## closes nothing of its own. So a restart reads the answers the first plan worked out rather than
+## closes nothing of its own. So a replan reads the answers the first plan worked out rather than
 ## scanning the whole city again for every row. Kept for one map at a time, held weakly so it never
 ## keeps a city alive, and thrown away the moment any of the four differs from what it was read off.
-static func _finale_ground_cache(map: CityMap) -> Dictionary:
-	var trees := StreetTrees.footprint_tiles(map)
-	var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
-			trees.hash()]
-	if _finale_ground_of == null or _finale_ground_of.get_ref() != map \
-			or _finale_ground_stamp != stamp:
-		_finale_ground_of = weakref(map)
-		_finale_ground_stamp = stamp
-		_finale_ground_kept = {_TREE_TILES_KEY: trees}
-	return _finale_ground_kept
-
-static var _finale_ground_of: WeakRef = null
-static var _finale_ground_stamp: Array = []
-static var _finale_ground_kept := {}
-
-## `count` copies of one row on one street, sited the same way `_place_one` sites a day's: roll a
-## tile of the right kind, build the placement, take the first that satisfies every rule and
-## otherwise the roomiest one the tries found. A street with no ground of the right kind simply
-## gets none of that row, which is the same failure direction a day's own placement has — and so
-## does a street where every try would close the walk: a refused candidate is never the fallback,
-## so the copy is simply not placed.
 ##
-## **The escape's two questions are asked of the candidate that would be taken, not of every
-## try**, because they are the expensive part of the loop and the answer is the same either way.
-## A try with all the room it wants is asked at once and taken if it passes, as before; a cramped
-## one is kept aside, and when no try had room the kept ones are asked roomiest first until one
-## passes. The pick is the roomiest try that passes, which is what asking every try first and then
-## picking would have chosen.
-static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
-		segment: StreetNetwork.Segment, def: EventDef, count: int, trees: Dictionary,
-		standing_at: Vector2, planned: Array[Planned],
-		streets: Array[StreetNetwork.Segment], ground: EscapeGround, open := {}) -> void:
-	var candidates := _finale_ground(map, segment, def, trees, standing_at, open)
-	if candidates.is_empty():
-		return
-	for _copy in count:
-		var best: Planned = null
-		var cramped: Array = []
-		for try in Tuning.EVENT_PLACEMENT_TRIES:
-			var tile: Vector2i = candidates[rng.randi_range(0, candidates.size() - 1)]
-			var candidate := _build_placement(def, map, tile, rng)
-			if not candidate:
-				continue
-			candidate.role = _role_for(def)
-			# A waiting guard's own refusal, which never bends: one guard's notice at a time.
-			if not _keeps_its_notice_to_itself(map, candidate, planned):
-				continue
-			var room := _room_around(candidate, planned)
-			# `-INF` is the spacing rules' own refusal, never a pick at any room.
-			if room == -INF:
-				continue
-			if room != INF:
-				cramped.append([room, try, candidate])
-			elif _the_escape_accepts(candidate, ground, streets):
-				best = candidate
-				break
-		if not best:
-			# Roomiest first, and the earlier try first on equal room, the tie `room > best_room`
-			# always broke that way.
-			cramped.sort_custom(func(a: Array, b: Array) -> bool:
-				return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
-			for entry: Array in cramped:
-				if _the_escape_accepts(entry[2], ground, streets):
-					best = entry[2]
-					break
-		if best:
-			planned.append(best)
-			ground.stand(best)
+## **Held by whoever replans** (`DayPlanner.kept_ground`, which lives as long as the city's events
+## do) and handed to `build_day()`; a caller that hands none plans on ground read afresh.
+class KeptGround extends RefCounted:
+	var _of: WeakRef = null
+	var _stamp: Array = []
+	var _answers := {}
 
-## **One waiting guard at a time.** A candidate that waits to notice her (`EventDef.pursues_within`:
-## the escape's roadblock, whose guard notices her within 180px of his band) is refused when the
-## ground it notices her from meets the ground another placed one notices her from: the two notice
-## discs, each centred where its band stands, may not overlap, so two of the escape's roadblocks stand
-## at least twice that, 360px, apart, on one street or on two.
-## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
-## invisible (hidden) until it already charges".)*
+	## The answers for `map`: the ones kept if they were read off this map as it is now, else a
+	## fresh set that holds its street trees.
+	func of(map: CityMap) -> Dictionary:
+		var trees := StreetTrees.footprint_tiles(map)
+		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
+				trees.hash()]
+		if _of == null or _of.get_ref() != map or _stamp != stamp:
+			_of = weakref(map)
+			_stamp = stamp
+			_answers = {TREE_TILES_KEY: trees}
+		return _answers
+
+## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
+## notice her (`EventDef.notice`: the escape's roadblock, whose guard notices her within
+## 180px of his band) is refused when the ground it notices her from meets the ground another placed
+## one notices her from: the two notice discs, each centred where its band stands, may not overlap,
+## so two of the escape's roadblocks stand at least twice that, 360px, apart, on one street or on
+## two. *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the
+## second guard is invisible (hidden) until it already charges".)*
 ##
 ## **Why the notice is the distance that matters.** Dealing with one roadblock happens inside its
 ## guard's notice: he warns while she is inside it, charges only if she stays inside it his warning's
@@ -547,14 +829,14 @@ static func _fill_a_finale_street(map: CityMap, rng: RandomNumberGenerator,
 ## side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
 		planned: Array[Planned]) -> bool:
-	var reach := candidate.def.pursues_within
+	var reach := candidate.def.notice_within()
 	if reach <= 0.0:
 		return true
 	var at := _stands_at(map, candidate)
 	for plan in planned:
-		if plan.def.pursues_within <= 0.0 or not plan.is_placed():
+		if plan.def.notice_within() <= 0.0 or not plan.is_placed():
 			continue
-		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.pursues_within:
+		if at.distance_to(_stands_at(map, plan)) < reach + plan.def.notice_within():
 			return false
 	return true
 
@@ -569,447 +851,34 @@ static func _stands_at(map: CityMap, plan: Planned) -> Vector2:
 		at = EventInstance._centred_on_the_pavement_band(map, at)
 	return at
 
-## **Every street of the escape's walk keeps one sidewalk open past everything standing on it, and
-## nothing standing on it cuts the walk anywhere else either**, asked of each candidate before it
-## is accepted and never repaired afterwards (`docs/CITY.md`, "Check before accepting").
-## *(Inbox #747: "one sidewalk must be open if they're en-route. the escape's street should not have
-## fully blocking events like in the normal game.")*
-##
-## The two halves are the two things a day keeps a route by. **The sidewalk** is the day's width
-## rule (`_leaves_the_routes_sidewalk_open`), asked of both of a street's sidewalks rather than the
-## one a day's route is walked along — `EscapeGround.leaves_a_sidewalk_open()`. **The rest of the
-## walk** is the day's junction rule (`_leaves_the_route_junctions_open`), asked of the ground
-## around the candidate rather than of a junction box — `EscapeGround.keeps_the_walk_joined()`.
-## The day's rules themselves cannot be called here: both are stated over a day's `Corridor`, and
-## the escape's route is not a tree. And the junction rule alone would not be enough if it could:
-## a chain also joins a street in the middle of a block, out of an alley, a park or a courtyard,
-## and a van and a roadblock either side of that mouth shut it while the street's far sidewalk
-## stays open from junction to junction.
-static func _the_escape_accepts(candidate: Planned, ground: EscapeGround,
-		streets: Array[StreetNetwork.Segment]) -> bool:
-	var own := ground.solids_of(candidate)
-	if own.is_empty():
-		return true
-	return ground.leaves_a_sidewalk_open(own, streets) and ground.keeps_the_walk_joined(own)
-
-## One solid piece of something the escape stands for the whole walk, where it actually stands:
-## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` for a body that
-## does not exist yet, off the same statics the instance reads when it is built.
-class EscapeSolid extends RefCounted:
-	## How far apart a capsule's covering discs may be — see `discs()`. At 8px a 24px-round band's
-	## discs are a third of a pixel wider than the band.
-	const DISC_PITCH := 8.0
-
-	var centre := Vector2.ZERO
-	var shape: GroundShape
-	var axis := Vector2.RIGHT
-	## The furthest her centre can be held off from `centre`, squared: the quick refusal
-	## `stops_her_at()` asks before measuring against the spine.
-	var _held_within_squared := 0.0
-	var _rounding := 0.0
-
-	func _init(at: Vector2, piece_shape: GroundShape, along: Vector2) -> void:
-		centre = at
-		shape = piece_shape
-		axis = along.normalized()
-		_rounding = shape.radius if shape.kind != GroundShape.Kind.RECT else 0.0
-		var held := shape.reach() + Tuning.PLAYER_BODY_RADIUS
-		_held_within_squared = held * held
-
-	## Whether her centre at `at` is held off by this piece: inside its body grown by her own
-	## `Tuning.PLAYER_BODY_RADIUS`, measured against the spine in the piece's own frame.
-	func stops_her_at(at: Vector2) -> bool:
-		var offset := at - centre
-		if offset.length_squared() >= _held_within_squared:
-			return false
-		var local := Vector2(offset.dot(axis), offset.dot(Vector2(-axis.y, axis.x)))
-		return shape.distance_to_spine(local) < _rounding + Tuning.PLAYER_BODY_RADIUS
-
-	## Whether any of the piece's body comes within `margin` of `rect`.
-	func reaches(rect: Rect2, margin: float) -> bool:
-		return rect.grow(shape.reach() + margin).has_point(centre)
-
-	## The piece as discs, `Vector3(x, y, radius)`, for `closes_a_walked_sidewalk_band()`, which
-	## asks about discs. **A cover, never an approximation from inside**: a capsule is laid as
-	## discs at most `DISC_PITCH` apart along its spine, each grown to the half-pitch's diagonal so
-	## the gaps between them are covered too, and a rectangle as the one disc of its own reach.
-	func discs() -> Array[Vector3]:
-		match shape.kind:
-			GroundShape.Kind.POINT:
-				return [Vector3(centre.x, centre.y, shape.radius)]
-			GroundShape.Kind.SEGMENT:
-				var along := axis * shape.half_length
-				var count := ceili(shape.half_length * 2.0 / DISC_PITCH) + 1
-				var pitch := shape.half_length * 2.0 / float(count - 1)
-				var grown := Vector2(shape.radius, pitch * 0.5).length()
-				var found: Array[Vector3] = []
-				for i in count:
-					var at := centre - along + along * (2.0 * float(i) / float(count - 1))
-					found.append(Vector3(at.x, at.y, grown))
-				return found
-			_:
-				return [Vector3(centre.x, centre.y, shape.reach())]
-
-## The ground of the escape's walk, with everything that stands on it for the whole walk: the seals
-## first, then each placement as `build_finale` accepts it. What the two questions
-## `_the_escape_accepts()` asks are asked of.
-##
-## **Everything is counted as it stands for the whole walk, at the body it actually has.** A van
-## that hunts stays parked and solid until long after it has noticed her, a roadblock's band stands
-## after its guard has left (`EventInstance._stand_as_the_barrier()`), and a burst leaves its
-## crater where it went off for the rest of the sequence — so a row that spawns a solid successor
-## is counted at the successor's body too (`solids_of()`). Mobile rows are traffic and close no
-## ground. Each body is where `EventInstance.setup()` will put it — recentred on the pavement band,
-## laid along the street's own spread axis, in its own pieces — rather than a disc at the tile it
-## was rolled on, because the half tile between the two is what decides whether a lane survives.
-##
-## **The seals are counted like everything else.** They stand on the streets and alleys the chains
-## do not use, but an alley's mouth wall (`SealPlanner.alley_mouth_wall()`) lies along the street
-## the alley opens onto, and with her body on top it reaches the outer lane of that street's
-## sidewalk for about six tiles — so a chain street with an unused alley beside it has that much
-## less sidewalk before anything of the escape's own is put down.
-class EscapeGround extends RefCounted:
-	## The pitch of the lattice her centre is asked about on, a quarter of a tile: fine enough that
-	## a gap her 28px body fits through has a point in it, and the same lattice
-	## `tests/test_finale.gd` floods the finished plan over.
-	const STEP := 8.0
-	## The side of the square buckets standing pieces are filed in, so a question about one
-	## candidate's ground reads the handful of bodies near it rather than all of them.
-	const _CHUNK := 128.0
-	## `_fits` values: not asked yet, her body fits on the ground there, it does not.
-	const _UNASKED := 0
-	const _FITS := 1
-	const _DOES_NOT_FIT := 2
-
-	var _map: CityMap
-	var _chunks := {}
-	## One byte per lattice point of the whole map, filled in as `_she_fits()` is asked.
-	var _fits := PackedByteArray()
-	## One byte per tile of the map, the same three values, filled in as `_tile_open()` is asked.
-	var _tiles := PackedByteArray()
-	var _columns := 0
-	var _rows := 0
-	var _ends: Array[Vector2i] = []
-
-	func _init(map: CityMap, standing: Array[Planned], ends: Array[Vector2]) -> void:
-		_map = map
-		_columns = ceili(float(map.size.x * Tuning.TILE_SIZE) / STEP) + 1
-		_rows = ceili(float(map.size.y * Tuning.TILE_SIZE) / STEP) + 1
-		_fits.resize(_columns * _rows)
-		_tiles.resize(map.size.x * map.size.y)
-		for plan in standing:
-			stand(plan)
-		for at in ends:
-			_ends.append(Vector2i(roundi(at.x / STEP), roundi(at.y / STEP)))
-
-	## Puts a placement's pieces down for every later question.
-	func stand(plan: Planned) -> void:
-		for solid in solids_of(plan):
-			var reach := solid.shape.reach()
-			var low := _chunk_of(solid.centre - Vector2.ONE * reach)
-			var high := _chunk_of(solid.centre + Vector2.ONE * reach)
-			for cy in range(low.y, high.y + 1):
-				for cx in range(low.x, high.x + 1):
-					var key := Vector2i(cx, cy)
-					if not _chunks.has(key):
-						_chunks[key] = []
-					_chunks[key].append(solid)
-
-	## A placement's pieces as they stand for the whole walk — its own body, and its successor's
-	## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
-	## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
-	## it has one, recentred on the pavement band unless `pavement_side` pins it, its pieces laid
-	## by `EventInstance._spread_is_vertical()` and its spine along `EventManager._body_axis()`.
-	func solids_of(plan: Planned) -> Array[EscapeSolid]:
-		var found: Array[EscapeSolid] = []
-		var defs: Array[EventDef] = [plan.def]
-		if plan.def.spawns_on_finish != "":
-			var successor := EventCatalogue.by_id(plan.def.spawns_on_finish)
-			if successor:
-				defs.append(successor)
-		for def in defs:
-			if def.mobile or def.obstructs_radius <= 0.0 or def.shape == null:
-				continue
-			var at: Vector2 = plan.path[0] if def == plan.def and plan.path.size() > 0 \
-					else plan.position
-			if def.pavement_side == EventDef.Pavement.ANY:
-				at = EventInstance._centred_on_the_pavement_band(_map, at)
-			var axis := EventManager._body_axis(_map, def, at, plan.facing)
-			var vertical := EventInstance._spread_is_vertical(_map, at)
-			for piece in def.parts():
-				var offset := piece.offset_for(vertical)
-				found.append(EscapeSolid.new(
-						at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)),
-						piece.shape, axis))
-		return found
-
-	## **One sidewalk of every street the candidate reaches stays walkable from junction to
-	## junction**, with everything already standing whose body reaches that street. The day's own
-	## physical reading, `closes_a_walked_sidewalk_band()` — whether a set of bodies leaves no
-	## four-connected run of free sidewalk tiles from one end of a band to the other — which a day
-	## asks of the one band its route is walked along. Here it is asked of **both** bands, and the
-	## candidate is refused only when neither stays open, because the player's sentence is *one
-	## sidewalk* and nothing on an escape street is a route drawn along one side of it.
-	##
-	## **Over every street the candidate reaches rather than only its own**, because a body on a
-	## street's last tile reaches the end of the cross street's sidewalk at the same corner.
-	func leaves_a_sidewalk_open(own: Array[EscapeSolid],
-			streets: Array[StreetNetwork.Segment]) -> bool:
-		for segment in streets:
-			var rect := segment.tile_rect()
-			var world := _map.tile_rect_to_world(rect)
-			var touched := false
-			for solid in own:
-				if solid.reaches(world, Tuning.PLAYER_BODY_RADIUS):
-					touched = true
-					break
-			if not touched:
-				continue
-			var near := own.duplicate()
-			near.append_array(_standing_near(world.grow(Tuning.PLAYER_BODY_RADIUS)))
-			var open := false
-			for band in EventScheduler._sidewalk_bands(rect, segment.horizontal):
-				# Only the discs that reach this band are handed in: the band's own question is
-				# every tile against every disc, and most of a street's bodies stand on the other
-				# side of it.
-				var reach := _map.tile_rect_to_world(band).grow(Tuning.PLAYER_BODY_RADIUS)
-				var bodies: Array = []
-				for solid: EscapeSolid in near:
-					if not solid.reaches(reach, 0.0):
-						continue
-					for disc in solid.discs():
-						if reach.grow(disc.z).has_point(Vector2(disc.x, disc.y)):
-							bodies.append(disc)
-				if not EventScheduler.closes_a_walked_sidewalk_band(_map, band, segment.horizontal,
-						bodies, _map.closed_tiles):
-					open = true
-					break
-			if not open:
-				return false
-		return true
-
-	## **The ground around the candidate still joins up everything it joined without it.** The
-	## day's junction rule asks whether a junction box still carries a walk between every route
-	## street that meets it; this asks the same of a box drawn round the candidate's own reach, with
-	## the whole of the box's rim as its arms: every two points on the rim that a walk inside the
-	## box joined before the candidate must still be joined with it standing, and so must the
-	## service exit and either exit if the box holds them.
-	##
-	## **That is the whole walk's question, answered locally.** A walk from the door to an exit that
-	## passes through the box enters and leaves it through the rim, and the candidate changes
-	## nothing outside the box, so if every pair of rim points the box joined is still joined, every
-	## walk that existed still does — and the seals alone leave both exits reachable
-	## (`tests/test_finale.gd`), so by induction over the placements the finished plan does too.
-	## It refuses more than it has to — two rim points the box joined may also be joined round the
-	## outside — and that is the safe direction: the copy is rolled again, or not placed.
-	##
-	## Asked of her centre on the `STEP` lattice: a point is open when the ground under her body is
-	## walkable (`_she_fits()`) and no piece standing holds her off it.
-	func keeps_the_walk_joined(own: Array[EscapeSolid]) -> bool:
-		var low := Vector2(INF, INF)
-		var high := Vector2(-INF, -INF)
-		for solid in own:
-			var reach := solid.shape.reach() + Tuning.PLAYER_BODY_RADIUS
-			low = low.min(solid.centre - Vector2.ONE * reach)
-			high = high.max(solid.centre + Vector2.ONE * reach)
-		# A lattice step clear of anything the candidate can hold her off, so the rim is ground the
-		# candidate never changes.
-		var first := Vector2i(floori(low.x / STEP) - 1, floori(low.y / STEP) - 1)
-		var last := Vector2i(ceili(high.x / STEP) + 1, ceili(high.y / STEP) + 1)
-		var width := last.x - first.x + 1
-		var height := last.y - first.y + 1
-		var box := Rect2(Vector2(first) * STEP, Vector2(last - first) * STEP)
-		# Each body is laid over the points its own box covers rather than every point asking every
-		# body, which is what keeps this to a few hundred points' work per candidate.
-		var held := PackedByteArray()
-		held.resize(width * height)
-		for solid in _standing_near(box.grow(Tuning.PLAYER_BODY_RADIUS)):
-			_lay(solid, first, width, height, held, 1)
-		for solid in own:
-			_lay(solid, first, width, height, held, 2)
-		var before := PackedByteArray()
-		before.resize(width * height)
-		var after := PackedByteArray()
-		after.resize(width * height)
-		var changed := false
-		for row in height:
-			var y := first.y + row
-			for column in width:
-				var i := row * width + column
-				if held[i] & 1:
-					continue
-				# `_she_fits()`'s own cache read inline, since this is the loop it is asked from.
-				var x := first.x + column
-				if x < 0 or y < 0 or x >= _columns or y >= _rows:
-					continue
-				var known := _fits[y * _columns + x]
-				if known == _DOES_NOT_FIT or (known == _UNASKED and not _she_fits(Vector2i(x, y))):
-					continue
-				before[i] = 1
-				if held[i] & 2:
-					changed = true
-				else:
-					after[i] = 1
-		if not changed:
-			return true
-		var keys := PackedInt32Array()
-		for column in width:
-			keys.append(column)
-			keys.append((height - 1) * width + column)
-		for row in range(1, height - 1):
-			keys.append(row * width)
-			keys.append(row * width + width - 1)
-		for end in _ends:
-			var inside := end - first
-			if inside.x >= 0 and inside.y >= 0 and inside.x < width and inside.y < height:
-				keys.append(inside.y * width + inside.x)
-		var was := _components(before, width, height)
-		var now := _components(after, width, height)
-		var joined := {}
-		for i in keys:
-			if before[i] == 0:
-				continue
-			if after[i] == 0:
-				return false
-			if joined.has(was[i]) and joined[was[i]] != now[i]:
-				return false
-			joined[was[i]] = now[i]
-		return true
-
-	## Her centre may stand on this lattice point as far as the ground goes: the tile under it and
-	## the four her body reaches are in the map, walkable and not closed.
-	func _she_fits(point: Vector2i) -> bool:
-		if point.x < 0 or point.y < 0 or point.x >= _columns or point.y >= _rows:
-			return false
-		var index := point.y * _columns + point.x
-		var known := _fits[index]
-		if known != _UNASKED:
-			return known == _FITS
-		var at := Vector2(point) * STEP
-		var reach := Tuning.PLAYER_BODY_RADIUS - 1.0
-		var fits := _tile_open(at) and _tile_open(at + Vector2(reach, 0.0)) \
-				and _tile_open(at - Vector2(reach, 0.0)) and _tile_open(at + Vector2(0.0, reach)) \
-				and _tile_open(at - Vector2(0.0, reach))
-		_fits[index] = _FITS if fits else _DOES_NOT_FIT
-		return fits
-
-	## Whether the tile under `at` is in the map, walkable and not closed, asked of the map once per
-	## tile.
-	func _tile_open(at: Vector2) -> bool:
-		var x := floori(at.x / Tuning.TILE_SIZE)
-		var y := floori(at.y / Tuning.TILE_SIZE)
-		if x < 0 or y < 0 or x >= _map.size.x or y >= _map.size.y:
-			return false
-		var index := y * _map.size.x + x
-		var known := _tiles[index]
-		if known == _UNASKED:
-			var tile := Vector2i(x, y)
-			known = _FITS if _map.is_walkable(tile) and not _map.is_closed(tile) \
-					else _DOES_NOT_FIT
-			_tiles[index] = known
-		return known == _FITS
-
-	## Marks `bit` on every point of a `width` by `height` window from `first` that `solid` holds
-	## her centre off.
-	static func _lay(solid: EscapeSolid, first: Vector2i, width: int, height: int,
-			held: PackedByteArray, bit: int) -> void:
-		var reach := solid.shape.reach() + Tuning.PLAYER_BODY_RADIUS
-		var low := Vector2i(maxi(floori((solid.centre.x - reach) / STEP) - first.x, 0),
-				maxi(floori((solid.centre.y - reach) / STEP) - first.y, 0))
-		var high := Vector2i(mini(ceili((solid.centre.x + reach) / STEP) - first.x, width - 1),
-				mini(ceili((solid.centre.y + reach) / STEP) - first.y, height - 1))
-		for row in range(low.y, high.y + 1):
-			for column in range(low.x, high.x + 1):
-				var i := row * width + column
-				if held[i] & bit:
-					continue
-				if solid.stops_her_at(Vector2(first.x + column, first.y + row) * STEP):
-					held[i] |= bit
-
-	## Each open cell's four-connected component within a `width` by `height` grid of bytes, as a
-	## small integer, and -1 where the cell is shut.
-	static func _components(open: PackedByteArray, width: int, height: int) -> PackedInt32Array:
-		var group_of := PackedInt32Array()
-		group_of.resize(open.size())
-		group_of.fill(-1)
-		var queue := PackedInt32Array()
-		queue.resize(open.size())
-		var group := 0
-		for start in open.size():
-			if open[start] == 0 or group_of[start] >= 0:
-				continue
-			group_of[start] = group
-			queue[0] = start
-			var head := 0
-			var tail := 1
-			while head < tail:
-				var at := queue[head]
-				head += 1
-				var column := at % width
-				if column + 1 < width and open[at + 1] != 0 and group_of[at + 1] < 0:
-					group_of[at + 1] = group
-					queue[tail] = at + 1
-					tail += 1
-				if column > 0 and open[at - 1] != 0 and group_of[at - 1] < 0:
-					group_of[at - 1] = group
-					queue[tail] = at - 1
-					tail += 1
-				if at + width < open.size() and open[at + width] != 0 \
-						and group_of[at + width] < 0:
-					group_of[at + width] = group
-					queue[tail] = at + width
-					tail += 1
-				if at >= width and open[at - width] != 0 and group_of[at - width] < 0:
-					group_of[at - width] = group
-					queue[tail] = at - width
-					tail += 1
-			group += 1
-		return group_of
-
-	## Every standing piece whose body reaches `rect`, each once.
-	func _standing_near(rect: Rect2) -> Array[EscapeSolid]:
-		var found: Array[EscapeSolid] = []
-		var seen := {}
-		var low := _chunk_of(rect.position)
-		var high := _chunk_of(rect.end)
-		for cy in range(low.y, high.y + 1):
-			for cx in range(low.x, high.x + 1):
-				for solid: EscapeSolid in _chunks.get(Vector2i(cx, cy), []):
-					if seen.has(solid) or not solid.reaches(rect, 0.0):
-						continue
-					seen[solid] = true
-					found.append(solid)
-		return found
-
-	static func _chunk_of(at: Vector2) -> Vector2i:
-		return Vector2i(floori(at.x / _CHUNK), floori(at.y / _CHUNK))
-
-## The tiles of one street a given row may stand on: **the day's own ground for the row**
-## (`_open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
+## The tiles of one street of the walk a given row may stand on: **the day's own ground for the row**
+## (`open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
 ## home block, a standing street tree's footprint, the side of the sidewalk the row wants, a corner
 ## for a row with a spread, the power station's front — and its precinct weight), on the street's
-## own rect. All but the front door's street: she never sets off from that door in the escape. *(Inbox #785 in minty-lemur, 2026-10-18:
-## "does the escape use the same placement rules as the regular game? it doesn't seem like it does.
-## it should, though.")* The finale knows which streets exist for it, so the rect takes the place
-## of a day's corridor weighting, and it plans no closures.
+## own rect. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules
+## as the regular game? it doesn't seem like it does. it should, though.")* The walk names the
+## streets that exist for it, so the rect takes the place of a day's corridor weighting.
+## `from_the_door` is the spec's home-street rule (`DaySpec.holds_the_home_streets`): the escape
+## keeps it off, since she never sets off from that door there.
 ##
 ## `trees` is `StreetTrees.footprint_tiles()`, the trees the day's ground refuses, *(2026-09-12, the
 ## player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles
-## harder")*. `open` is the cache `_open_ground_for()` keeps its answers in for the whole plan, as a
+## harder")*. `open` is the cache `open_ground_for()` keeps its answers in for the whole plan, as a
 ## day's `ground` is kept for the whole day; a caller with none gets the trees put in a new one.
 ##
-## `standing_at` is where she comes out of the building, and ground within a body's reach of it is
-## refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a check. the pathing
-## should start from the position. then obstacles can never happen".)* **Refused here rather than
-## cleared up afterwards**, which is the whole difference the player is drawing: a pass that placed
-## a van on her and a later one that moved it would leave the guarantee resting on the repair, and
-## a check that moved *her* instead is the option they named and rejected. Ground she is standing
-## on is not ground this is ever offered.
-static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
-		trees: Dictionary, standing_at: Vector2, open := {}) -> Array[Vector2i]:
-	if not open.has(_TREE_TILES_KEY):
-		open[_TREE_TILES_KEY] = trees
-	var copies := _open_ground_counts(def, map, open)
+## `standing_at` is where she starts the walk (`RouteSource.start()`), and ground within a body's
+## reach of it is refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a
+## check. the pathing should start from the position. then obstacles can never happen".)* **Refused
+## here rather than cleared up afterwards**, which is the whole difference the player is drawing: a
+## pass that placed a van on her and a later one that moved it would leave the guarantee resting on
+## the repair, and a check that moved *her* instead is the option they named and rejected. Ground she
+## is standing on is not ground this is ever offered.
+static func street_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
+		trees: Dictionary, standing_at: Vector2, open: Dictionary,
+		from_the_door: bool) -> Array[Vector2i]:
+	if not open.has(TREE_TILES_KEY):
+		open[TREE_TILES_KEY] = trees
+	var copies := _open_ground_counts(def, map, open, from_the_door)
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
 	var clear_of_her := _clearance_around_her(def)
@@ -1024,14 +893,15 @@ static func _finale_ground(map: CityMap, segment: StreetNetwork.Segment, def: Ev
 				found.append(tile)
 	return found
 
-## `_open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
+## `open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
 ## so a street's tiles are looked up rather than the whole city's list walked once per street.
-static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary) -> Dictionary:
-	var key := "finale counts|%s|%d|%s|%s" % [def.placement, def.pavement_side,
-			_burns_its_front(def), def.has_a_spread]
+static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary,
+		from_the_door: bool) -> Dictionary:
+	var key := "street counts|%s|%d|%s|%s|%s" % [def.placement, def.pavement_side,
+			_burns_its_front(def), def.has_a_spread, from_the_door]
 	if not open.has(key):
 		var counts := {}
-		for tile in _open_ground_for(def, map, open, -1, false):
+		for tile in open_ground_for(def, map, open, -1, from_the_door):
 			counts[tile] = int(counts.get(tile, 0)) + 1
 		open[key] = counts
 	return open[key]
@@ -1048,7 +918,7 @@ static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary) -
 ##
 ## **A lethal field is its whole `outer_radius`**, which is a different and much wider question.
 ## *(2026-09-19: "I still spawn with flashing !!! in the city.")* The doubled exclamation mark over
-## her head means *this will end your day*, and `EventManager._warn_about_the_ground_she_is_on()`
+## her head means *this will end your day*, and `WarningBoard.warn_about_the_ground_she_is_on()`
 ## raises it for any `hard_fail` row still telegraphing — or still waiting to notice her — whose
 ## **outer** radius covers her, because that radius is exactly what the fairness contract promises
 ## her time to walk out of. A row placed inside it has therefore already spent her notice before
@@ -1056,7 +926,7 @@ static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary) -
 ## the seed the player walked, an `abduction` van stood 143px away with a 250px field.
 ##
 ## So the ground she is put down on is not ground a lethal row is ever offered either. Refused here
-## rather than cleared up afterwards, for the reason `_finale_ground()` gives: a pass that placed a
+## rather than cleared up afterwards, for the reason `street_ground()` gives: a pass that placed a
 ## van on her and a later one that moved it would leave the guarantee resting on the repair. The
 ## half tile is carried for a lethal row too, since the same recentring moves it.
 ##
@@ -1072,42 +942,6 @@ static func _clearance_around_her(def: EventDef) -> float:
 		return 0.0
 	return reach + Tuning.TILE_SIZE * 0.5
 
-## A row with whatever it ordinarily leaves behind taken off it — the scar it records against the
-## run and the successor it spawns when it finishes. The convoy is the only caller: what it leaves
-## on an ordinary day is a barricade that closes that street for the rest of the run, which is a
-## statement about a city that has thirteen more mornings in it.
-##
-## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives: the catalogue's
-## rows are shared by every day of the run and validated once at boot. `shape` is carried across by
-## hand because it is a plain `RefCounted` field with no storage usage, so `Resource.duplicate()`
-## does not copy it; sharing the reference is safe, since a shape is never mutated in place.
-static func _without_its_aftermath(def: EventDef) -> EventDef:
-	var variant: EventDef = def.duplicate()
-	variant.shape = def.shape
-	variant.scar_id = ""
-	variant.spawns_on_finish = ""
-	return variant
-
-## A `MAP` placement's own answer to `EventDef.pursues_within_on(day)` — a derived copy for the same
-## reason `at_heat()`'s is one: the catalogue's rows are shared by every day of the run and validated
-## once at boot, so a placement past `spawn_mode_switches_after_day` cannot set `pursues_within` on
-## the shared resource itself without changing what every other day's placement of the row sees.
-##
-## Almost every row's `pursues_within_on(day)` agrees with its own `pursues_within` — the check
-## below is `def` unchanged for all of them — because almost nothing sets
-## `spawn_mode_switches_after_day` at all. `charging_dog` past `Tuning.RUN_TAUGHT_DAY` is the row
-## that does not: `EventInstance.is_waiting()` and `_chase()` read `pursues_within` off whichever
-## `EventDef` an instance was actually handed, so the day answer has to arrive as a different def
-## rather than as a fact this function keeps to itself.
-static func _for_day(def: EventDef, day: int) -> EventDef:
-	var within := def.pursues_within_on(day)
-	if is_equal_approx(within, def.pursues_within):
-		return def
-	var variant: EventDef = def.duplicate()
-	variant.shape = def.shape
-	variant.solid_parts = def.solid_parts
-	variant.pursues_within = within
-	return variant
 
 ## What the day is placing a row **for**, which is the only thing that makes *wall* and *friction*
 ## mean anything. See `docs/CITY.md`, "The words for it".
@@ -1124,11 +958,11 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## through the legend. `TOWARD_PLAYER` is sited by the same director for the same reason and gets
 ## the same answer. `spawn_mode_on(day)` is what this asks rather than `spawn_mode` alone, since a
 ## row like `charging_dog` answers `NONE` on `Tuning.RUN_TAUGHT_DAY` — a director moment, exactly
-## like the cat — and `WALL` every day after, once it is `spawn_mode_after_first_day`'s `MAP`
+## like the cat — and `WALL` every day after, once it is `EventDef.from_day_after`'s `MAP`
 ## placement and the scheduler has chosen it a tile like any other lethal row.
 ##
 ## **A wall is not only the lethal rows.** The ground off the routes *ranges from very costly to
-## deadly*, so an expensive row is a wall too and `Tuning.WALL_WORTH_OF_COST` is where the line
+## deadly*, so an expensive row is a wall too and `WALL_WORTH_OF_COST` is where the line
 ## falls. Cheap rows stay friction and stay on the corridor, which is what keeps the routes worth
 ## walking rather than merely survivable.
 ##
@@ -1145,7 +979,7 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 ## the route, and a row aimed at the route she is meant to walk has to be one she can get past
 ## there.
 ##
-## **`EventDef.scenery` is checked before the cost is, and it answers `NONE` rather than a fifth
+## **`EventDef.Role.SCENERY` is checked before the cost is, and it answers `NONE` rather than a fifth
 ## role.** *"Flocks are basically free already — don't count it as block, just count is
 ## scenery."* `pigeon_flock`'s 42-over-168px field crosses `WALL_WORTH_OF_COST` on the plain
 ## reading, so without the exemption it would be a wall pulled off every route the way any other
@@ -1155,11 +989,11 @@ static func _for_day(def: EventDef, day: int) -> EventDef:
 static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP or def.kind == GameEnums.EventKind.AMBIENT:
 		return GameEnums.BlockerRole.NONE
-	if def.scenery:
+	if def.role == EventDef.Role.SCENERY:
 		return GameEnums.BlockerRole.NONE
 	if def.kind == GameEnums.EventKind.ONE_SHOT:
 		return GameEnums.BlockerRole.SET_PIECE
-	if def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
+	if def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or _takes_a_whole_sidewalk(def):
 		return GameEnums.BlockerRole.WALL
 	return GameEnums.BlockerRole.FRICTION
@@ -1167,16 +1001,16 @@ static func _role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 ## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
 ## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
 ## *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward junctions
-## once it became a wall: "A. No (my recommendation). -- do that")* `Tuning.EVENT_WALL_RIM_WEIGHT`
+## once it became a wall: "A. No (my recommendation). -- do that")* `EVENT_WALL_RIM_WEIGHT`
 ## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
 ## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
 ## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
-## cost clause (`_line_reach_of >= _THE_FAR_LANE`) never sees. A row that is a wall by fit alone is
+## cost clause (`EventDef.reaches_the_far_lane()`) never sees. A row that is a wall by fit alone is
 ## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
 ## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
-	return def.hard_fail or def.walk_through_cost() >= Tuning.WALL_WORTH_OF_COST \
-			or _line_reach_of(def) >= _THE_FAR_LANE
+	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
+			or def.reaches_the_far_lane()
 
 ## A private RNG for one phase of the day, derived from the day's seed and a salt.
 ##
@@ -1189,7 +1023,7 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ##   different city's worth of events: measured on the day the fire engine runs, `homeless_yeller`
 ##   goes from two to eight and `cyclist` from none to three between two attempts at the same day.
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
-##   `_room_around` to reject a placement against — and a rejection is a re-roll.
+##   `room_around` to reject a placement against — and a rejection is a re-roll.
 ##
 ## Separate streams close the first completely and most of the second (see `_fill_with_recurring`).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
@@ -1210,17 +1044,18 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 ## It is added **outside** the budget rather than competing for it, and that is the exception being
 ## made honestly: everywhere else in this file the density is the budget, and a lesson that only
 ## happens when the dice agree is not a lesson. One event on one day of fourteen.
-static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: int = 0) -> void:
+static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: int = 0,
+		trace: RunTrace = null) -> void:
 	if day != Tuning.RUN_TAUGHT_DAY:
 		return
 	for plan in planned:
-		if plan.def.pursues:
+		if plan.def.pursuit != null:
 			return
 	for def in EventCatalogue.available_on(day, heat):
-		if not def.pursues or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
+		if def.pursuit == null or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		planned.append(Planned.new(def, Vector2.INF))
-		Telemetry.note("plan", "day %d bought no pursuit, so the run lesson is added: %s"
+		_note(trace, "plan", "day %d bought no pursuit, so the run lesson is added: %s"
 				% [day, def.id])
 		return
 
@@ -1261,7 +1096,7 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## **It has to cover the ground, not stand in it**, and one event does not.
 ##
 ## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
-## `Tuning.CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
+## `CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
 ## 157px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
 ## day that rolls one spoiler for the block she used is still a day she settles in that same block.
 ## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
@@ -1272,7 +1107,7 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
 ## def rather than repeating one — the fiction is that a park which is busy today is busy with
 ## several different things, and nine copies of one sprite in a field read as a duplicate, which is
-## exactly what the spacing rule at `_room_around` prevents everywhere else.
+## exactly what the spacing rule at `room_around` prevents everywhere else.
 ##
 ## **Every area she has used this act, not just last night.** One night's memory makes day 2 a fresh
 ## decision and day 3 the same decision as day 1; an act's memory is what turns *find a different
@@ -1288,17 +1123,18 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
 ## is exactly what stands in it.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], used: Array[Vector2i], heat: int = 0) -> void:
+		planned: Array[Planned], used: Array[Vector2i], heat: int = 0,
+		trace: RunTrace = null) -> void:
 	var spoilable := map.calm_blocks.size() - 1
 	for block in used:
 		if spoilable <= 0:
 			return
 		if block.x >= 0 and block in map.calm_blocks:
 			spoilable -= 1
-			_spoil_one_park(day, rng, map, planned, block, heat)
+			_spoil_one_park(day, rng, map, planned, block, heat, trace)
 
 static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
-		planned: Array[Planned], block: Vector2i, heat: int = 0) -> void:
+		planned: Array[Planned], block: Vector2i, heat: int = 0, trace: RunTrace = null) -> void:
 
 	var lot := _calm_rect(map, block)
 	var open: Array[Vector2i] = []
@@ -1323,8 +1159,8 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		placed.append(def.id)
 	if placed.is_empty():
 		return
-	Telemetry.note("roll", "%s in the park she used yesterday, %s"
-			% [", ".join(placed), TelemetryLog.tile(block)])
+	_note(trace, "roll", "%s in the park she used yesterday, %s"
+			% [", ".join(placed), RunTrace.tile(block)])
 
 ## Rolls one of the pool, weighted by how much ground it can actually take.
 ##
@@ -1365,7 +1201,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 	# many can manage rather than densely in one corner.
 	var columns := maxi(1, ceili(ground.size.x / (reach * 2.0)))
 	var rows := maxi(1, ceili(ground.size.y / (reach * 2.0)))
-	while columns * rows > Tuning.SPOILERS_TO_DENY_A_PARK:
+	while columns * rows > SPOILERS_TO_DENY_A_PARK:
 		if columns >= rows:
 			columns -= 1
 		else:
@@ -1382,7 +1218,7 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## How far from a source calm ground stops being usable.
 ##
 ## **Not the outer radius**, which is where it stops reaching at all. Anywhere a source emits less
-## than `Tuning.CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
+## than `CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
 ## act I row that is most of its own field. Getting this wrong is how one busker was ever thought
 ## to spoil a park.
 ##
@@ -1391,12 +1227,12 @@ static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector
 ## Read off the decay, every rise in the walking rate would admit louder rows here as a side
 ## effect of a change nobody made about parks.
 ##
-## **The zero case is not the line rules' zero case.** `_reach_above` answers nothing at all for a
+## **The zero case is not the line rules' zero case.** `EventDef.reach_above()` answers nothing at all for a
 ## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
 ## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
 ## whatever its rate does further out, so the floor is its own `inner_radius`.
 static func _denial_radius(def: EventDef) -> float:
-	return maxf(def.inner_radius, _reach_above(def, Tuning.CALM_ZONE_DENIAL_RATE))
+	return maxf(def.inner_radius, def.reach_above(CALM_ZONE_DENIAL_RATE))
 
 static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 	var best := tiles[0]
@@ -1425,7 +1261,7 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
-	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
@@ -1462,7 +1298,7 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## exclusion cannot see (an alley door among them) rather than the rule's main work — see
 ## `_clear_of_the_doors()`, the same guarantee `tests/test_checkpoints.gd` holds for every row.
 ##
-## On `Tuning.CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
+## On `CURFEW_ANNOUNCE_DAY` every standing site also gets a `curfew_announce` plan
 ## alongside its ordinary `loudspeaker` one — see that row's own doc for why a second, invisible
 ## plan is what "the masts carry the announcement" means rather than a second mast.
 ##
@@ -1476,14 +1312,14 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## under `added_mast_id()`, on every later day whose holds, closures and doors leave the tile alone
 ## — the same refusals a site is planned under. One that was never silenced left no scar and is not
 ## planned again (*"Only if silenced"*).
-static func _place_masts(day: int, map: CityMap, heat: int = 0,
+static func place_masts(day: int, map: CityMap, heat: int = 0,
 		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
-	var loudspeaker := EventCatalogue.heated(EventCatalogue.by_id("loudspeaker"), heat)
+	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
-			if day == Tuning.CURFEW_ANNOUNCE_DAY else null
+			if day == CURFEW_ANNOUNCE_DAY else null
 	var sites := MastSites.compute(map)
 	for scar in scars:
 		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
@@ -1528,7 +1364,7 @@ static func added_mast_id(foot: Vector2) -> String:
 	return "added-%d-%d" % [roundi(foot.x), roundi(foot.y)]
 
 ## The scar id a mast she silenced leaves at its foot. No catalogue row answers it, so
-## `_place_scars` places nothing for it; `_place_masts` is its only reader.
+## `_place_scars` places nothing for it; `place_masts` is its only reader.
 const SILENCED_MAST := "silenced_mast"
 
 ## Whether a `SILENCED_MAST` scar from an earlier day stands at `foot` — within a tile, since the
@@ -1569,17 +1405,18 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
-		standing: Array[Planned] = []) -> void:
+		standing: Array[Planned] = [], rules: Rules = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
 		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
-				NO_SITE, doors, standing)
+				NO_SITE, doors, standing, rules)
 		if placement:
 			planned.append(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], planned: Array[Planned], ground := {},
 		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
-		doors := PackedVector2Array(), standing: Array[Planned] = []) -> void:
+		doors := PackedVector2Array(), standing: Array[Planned] = [],
+		trace: RunTrace = null, rules: Rules = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -1590,21 +1427,21 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
 		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
 		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
-		if def.sited_on_her_way:
+		if def.on_her_way != null:
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = _role_for(def, day)
 			# Tagged like any other set piece even though there is only ever one of it: a plan outside
-			# the group system is one `EventManager._stream_in` can never spend, silently exempt from
+			# the group system is one `EventStreaming.stream_in` can never spend, silently exempt from
 			# the machinery the row is written against. See `_place_a_set_piece`'s own note.
 			owed.set_piece_group = "%s@%d" % [def.id, day]
 			planned.append(owed)
 			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
 			# it, because planning it *is* siting it; this one has no position yet, so planning it
 			# promises nothing. It is spent where it becomes real instead —
-			# `EventManager._stream_in()`. What that buys is the retry: *"what the run has spent stays
-			# spent ... a fire that burnt a block down did happen"* (`GameState.finish_day`), and a
-			# fire that was never lit did not, so a lost day 3 is offered it again.
-			Telemetry.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
+			# `EventStreaming.stream_in()`. What that buys is the retry: *"what the run has spent stays
+			# spent ... a fire that burnt a block down did happen"* (`RunCalendar.finish_day`),
+			# and a fire that was never lit did not, so a lost day 3 is offered it again.
+			_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
 					% def.id)
 			continue
 		# Spread a one-shot over the days it is eligible for rather than always firing it
@@ -1616,24 +1453,24 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		var roll := rng.randf()
 		var threshold := 1.0 / float(remaining)
 		if roll > threshold:
-			Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today"
+			_note(trace, "roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
 		var sited := _place_a_set_piece(day, def, rng, map, planned, ground, leave_alone, corridor,
-				doors, standing)
+				doors, standing, rules)
 		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
 			# the outside this looks identical to a roll that failed.
-			Telemetry.note("roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
+			_note(trace, "roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
 					% [def.id, roll, threshold])
 			continue
 		planned.append_array(sited)
 		consumed.append(def.id)
 		var where: Array[String] = []
 		for placement in sited:
-			where.append(TelemetryLog.tile(map.world_to_tile(placement.position)))
-		Telemetry.note("roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
+			where.append(RunTrace.tile(map.world_to_tile(placement.position)))
+		_note(trace, "roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
 				% [def.id, roll, threshold, ", ".join(where)])
 
 ## A set piece, planned at **every** site of a covering set.
@@ -1650,7 +1487,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 ## warning.
 ##
 ## The placements are mutually exclusive rather than several fire engines: they share a
-## `set_piece_group`, and `EventManager._stream_in` spends the rest of the group the moment one of
+## `set_piece_group`, and `EventStreaming.stream_in` spends the rest of the group the moment one of
 ## them enters the world. That is also where a scar is recorded, so a run gets exactly one fire
 ## however many streets were offered.
 ##
@@ -1662,7 +1499,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors := PackedVector2Array(),
-		standing: Array[Planned] = []) -> Array[Planned]:
+		standing: Array[Planned] = [], rules: Rules = null) -> Array[Planned]:
 	var made: Array[Planned] = []
 	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
 	for site in sites:
@@ -1671,16 +1508,16 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
 		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
-				doors, standing)
+				doors, standing, rules)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
 		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
-				NO_SITE, doors, standing)
+				NO_SITE, doors, standing, rules)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
-			# one-shot placement is tagged, and `EventManager._stream_in` spends the rest of a
+			# one-shot placement is tagged, and `EventStreaming.stream_in` spends the rest of a
 			# group the moment one of it fires — so an untagged placement is a one-shot that can
 			# never be spent that way, silently exempt from the machinery the row is written
 			# against. A group of one spends nothing and costs nothing; being outside the group
@@ -1699,7 +1536,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## *day* and decided in `build_day` — and that is untouched here: the row is budgeted at dawn, its
 ## role is decided at dawn, and what it may stand on was decided at dawn. Only *which* of those
 ## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
-## nothing at dawn knows which way that is. See `EventDef.sited_on_her_way`.
+## nothing at dawn knows which way that is. See `EventDef.on_her_way`.
 ##
 ## **What a late placement may not do is repair.** It cannot drop something the day already placed
 ## to make room, and `_ensure_the_city_is_still_walkable` has already run and cannot run again — so
@@ -1735,16 +1572,22 @@ class WalkSiting extends RefCounted:
 	## How many sitings had to widen past the band to the end of her branch, for the same probe.
 	var widened := 0
 	## The sidewalk tiles in front of a blank ground-floor cell, as a set — `PosterWalls.fronts()`,
-	## handed over by `EventManager` from the city it belongs to. What a row that `pastes_a_front`
+	## handed over by `EventManager` from the city it belongs to. What a row whose `OnHerWay.at_a_front` is set
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
+	## **Whether the home's streets are the walk's** (`DaySpec.holds_the_home_streets`): nothing
+	## sited after dawn stands on the street her front door opens onto, as nothing at dawn does
+	## (`EventScheduler.open_ground_for()`'s `from_the_door`). Handed over by `EventsAhead` from the
+	## spec the walk was started with; a day's rule until then.
+	var holds_the_home_streets := true
 
-	## `tree` is the day's corridor tree and `used_calm` is `GameState.settled_this_act()` — the two
-	## arguments `build_day` states its own placements against, taken here rather than the finished
-	## `Corridor` and rect list so the caller passes what it already has and this stays the one place
-	## that turns them into the other. **The tree itself is kept as well as the corridor it makes**:
-	## the corridor answers *how far off the routes is this tile*, and what a siting on her own branch
-	## needs is the ordered chain of cells a route actually runs along.
+	## `tree` is the day's corridor tree and `used_calm` is
+	## `RunState.calendar.settled_this_act()` — the two arguments `build_day` states its own
+	## placements against, taken here rather than the finished `Corridor` and rect list so the
+	## caller passes what it already has and this stays the one place that turns them into the
+	## other. **The tree itself is kept as well as the corridor it makes**: the corridor answers
+	## *how far off the routes is this tile*, and what a siting on her own branch needs is the
+	## ordered chain of cells a route actually runs along.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
 			doors: PackedVector2Array) -> void:
 		_day = for_day
@@ -1817,7 +1660,7 @@ class WalkSiting extends RefCounted:
 			return _waited("the site would close her way out")
 		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
-		if def.pastes_a_front:
+		if def.on_her_way != null and def.on_her_way.at_a_front:
 			candidate.facing = Vector2.UP
 		return candidate
 
@@ -1864,8 +1707,9 @@ class WalkSiting extends RefCounted:
 	## from one place, and the last question asked is kept and given back.
 	func _offer_ahead(def: EventDef, at: Vector2, heading: Vector2, near: float,
 			far: float) -> Array:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
-		var question := [def.placement, side, def.id == MAST_ROW, at, heading, near, far]
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
+		var question := [def.placement, side, def.role == EventDef.Role.MAST, at, heading, near, far]
 		if question == _last_offer_question:
 			return _last_offer
 		offers_worked_out += 1
@@ -1936,7 +1780,7 @@ class WalkSiting extends RefCounted:
 						or absf(offset.cross(heading)) > _STREET_HALF_WIDTH:
 					continue
 				# Out of her view, the whole of what it draws: a thing created at once is placed past
-				# the view's own edge (`Tuning.offscreen_boundary()`'s rule).
+				# the view's own edge (`Offscreen.boundary()`'s rule).
 				if could_be_in_her_view(def, _map.tile_to_world(tile), at):
 					continue
 				var band := int(along / Tuning.TILE_SIZE)
@@ -1964,13 +1808,13 @@ class WalkSiting extends RefCounted:
 		return _waited("every site ahead of her on her street broke a placement rule")
 
 	## Whether any of what `def` draws, standing at `feet`, could be in the camera's view while she
-	## stands at `her`: its footprint where it is drawn (`EventInstance.footprint_of()`, a van's
+	## stands at `her`: its footprint where it is drawn (`EventFootprints.footprint_of()`, a van's
 	## reaching 56.5px up from its feet and 28.5px down) against the 640x360 view round her
 	## (`Tuning.VIEW_HALF_EXTENT`), grown on every side by the camera's lead
 	## (`Stroller.CAMERA_LOOK_AHEAD` along her facing, `Stroller.OBLIQUE_Y` of it up or down), since
 	## the lead eases toward a new facing over a turn, and by a tile to spare.
 	static func could_be_in_her_view(def: EventDef, feet: Vector2, her: Vector2) -> bool:
-		var box := EventInstance.footprint_of(def)
+		var box := EventFootprints.footprint_of(def)
 		var drawn := Rect2(feet + box.position, box.size) if box.has_area() \
 				else Rect2(feet, Vector2.ZERO)
 		var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,
@@ -2016,7 +1860,7 @@ class WalkSiting extends RefCounted:
 
 	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
 	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
-	## ground `_open_ground_for()` keeps it to, and for a `WALL` none a route runs along
+	## ground `open_ground_for()` keeps it to, and for a `WALL` none a route runs along
 	## (`_copies_of()`) — then `_best_of()` against `already` with the day's own ground, corridor,
 	## protected calm and doors, as `among()` does, and then, since it is put down after dawn, only a
 	## site that still leaves her a way home and to a calm area from `at`
@@ -2070,7 +1914,8 @@ class WalkSiting extends RefCounted:
 		var role := EventScheduler._role_for(def, _day)
 		var clear_of_the_routes: Array[Vector2i] = []
 		var merely_away: Array[Vector2i] = []
-		for tile in EventScheduler._open_ground_for(def, _map, _ground):
+		for tile in EventScheduler.open_ground_for(def, _map, _ground, -1,
+				holds_the_home_streets):
 			if _map.tile_to_world(tile).distance_to(away_from) < DUSK_CLEAR_OF_HER:
 				continue
 			merely_away.append(tile)
@@ -2207,7 +2052,7 @@ class WalkSiting extends RefCounted:
 	func _its_ground_on(def: EventDef, ahead: Dictionary, at: Vector2, near: float,
 			far: float) -> Array[Vector2i]:
 		var pool := _ground_as_a_set(def)
-		var a_mast := def.id == MAST_ROW
+		var a_mast := def.role == EventDef.Role.MAST
 		var offered: Array[Vector2i] = []
 		for cell: Vector2i in ahead:
 			if float(ahead[cell]) > far:
@@ -2230,10 +2075,7 @@ class WalkSiting extends RefCounted:
 					offered.append(tile)
 		return offered
 
-	## The row a mast is, for `_its_ground_on()`.
-	const MAST_ROW := "loudspeaker"
-
-	## **A mast is offered only ground a mast site would be** (`MastSites._is_eligible()`: off the
+	## **A mast is offered only ground a mast site would be** (`MastSites.is_eligible()`: off the
 	## home street, its field off a calm interior and off every place a region door could stand),
 	## the same refusal day 11's mast near the mark is under — a mast is never on the home street
 	## (M180, the masts), whichever way it is put down. Asked only of the tiles `_its_ground_on()`
@@ -2245,7 +2087,7 @@ class WalkSiting extends RefCounted:
 			if _door_points.is_empty():
 				_door_points = MastSites.possible_door_points(_map)
 			mast_checks += 1
-			_mast_may_stand[tile] = MastSites._is_eligible(_map.tile_to_world(tile), _map,
+			_mast_may_stand[tile] = MastSites.is_eligible(_map.tile_to_world(tile), _map,
 					_door_points)
 		return _mast_may_stand[tile]
 
@@ -2257,7 +2099,7 @@ class WalkSiting extends RefCounted:
 	## cost of siting a mast on her route to the tiles it was offered.
 	var mast_checks := 0
 
-	## `_open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
+	## `open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
 	##
 	## **The precinct weighting is dropped here and that is correct rather than a shortcut.** The
 	## weighting offers a retail tile several times so the day's own roll lands there more often;
@@ -2265,16 +2107,18 @@ class WalkSiting extends RefCounted:
 	## she is walking has already decided everything the weight was for.
 	##
 	## **A row that pastes a front is offered the fronts, not its own side.** Its ground is the
-	## `AT_THE_FRONT` lane with every rule `_open_ground_for` asks of any other row, narrowed to the
+	## `AT_THE_FRONT` lane with every rule `open_ground_for` asks of any other row, narrowed to the
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		var side := EventDef.Pavement.AT_THE_FRONT if def.pastes_a_front else def.pavement_side
+		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
+		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
 		var key := "set|%s|%d" % [def.placement, side]
 		if not _ground.has(key):
 			var found := {}
-			for tile in EventScheduler._open_ground_for(def, _map, _ground, side):
-				if not def.pastes_a_front or fronts.has(tile):
+			for tile in EventScheduler.open_ground_for(def, _map, _ground, side,
+					holds_the_home_streets):
+				if not at_a_front or fronts.has(tile):
 					found[tile] = true
 			_ground[key] = found
 		return _ground[key]
@@ -2309,7 +2153,7 @@ class WalkSiting extends RefCounted:
 	## **A field is closed ground here, and that is the strong reading on purpose.** `outer_radius`
 	## rather than `field_reach()`: the engine is parked, so nothing about it is stretched forward by
 	## its own speed, and the question is what ground she will not walk through rather than what the
-	## row would charge a passer-by. `EventManager.where_the_summoned_row_stops()` says where the
+	## row would charge a passer-by. `EventSpawner.where_the_summoned_row_stops()` says where the
 	## engine will be, so the check and the summons cannot disagree about it.
 	##
 	## **Checked before accepting, never repaired.** `EventScheduler._ensure_the_city_is_still_
@@ -2330,9 +2174,9 @@ class WalkSiting extends RefCounted:
 		var her := _map.world_to_tile(at)
 		var blocked := EventScheduler.blocked_by(_map, blockers)
 		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
-		var parked := EventManager.where_the_summoned_row_stops(_map, candidate.position)
-		var summoned := EventCatalogue.by_id(candidate.def.spawns_on_sight) \
-				if candidate.def.spawns_on_sight != "" else null
+		var parked := EventSpawner.where_the_summoned_row_stops(_map, candidate.position)
+		var summoned := EventCatalogue.by_id(candidate.def.aftermath.on_sight) \
+				if candidate.def.aftermath.on_sight != "" else null
 		if summoned and parked != Vector2.INF:
 			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
 		if _she_can_still_get_away(her, blocked):
@@ -2406,7 +2250,7 @@ class WalkSiting extends RefCounted:
 static func _fill_with_recurring(day: int, base: int, map: CityMap,
 		planned: Array[Planned], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
-		standing: Array[Planned] = []) -> void:
+		standing: Array[Planned] = [], caps := true, rules: Rules = null) -> void:
 	var eligible := EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat)
 	if eligible.is_empty():
 		return
@@ -2420,14 +2264,14 @@ static func _fill_with_recurring(day: int, base: int, map: CityMap,
 			break
 		var affordable: Array[EventDef] = []
 		for def in eligible:
-			if def.cost <= budget and int(counts.get(def.id, 0)) < def.max_per_day:
+			if def.cost <= budget and (not caps or int(counts.get(def.id, 0)) < def.max_per_day):
 				affordable.append(def)
 		if affordable.is_empty():
 			break
 		var rng := _stream(base, FILL_SALT + attempt)
 		var def := _pick_weighted(affordable, rng)
 		var placement := _place_one(def, day, rng, map, planned, ground, leave_alone, corridor,
-				NO_SITE, doors, standing)
+				NO_SITE, doors, standing, rules)
 		if not placement:
 			continue
 		planned.append(placement)
@@ -2462,7 +2306,8 @@ static func _pick_weighted(defs: Array[EventDef], rng: RandomNumberGenerator) ->
 static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE,
-		doors := PackedVector2Array(), standing: Array[Planned] = []) -> Planned:
+		doors := PackedVector2Array(), standing: Array[Planned] = [],
+		rules: Rules = null) -> Planned:
 	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
 	# while the player walks. Costing it here rather than giving the director its own allowance is
@@ -2473,9 +2318,10 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	# for.
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
-	def = _for_day(def, day)
+	def = def.for_day(day)
 
-	var open_candidates := _ground_for(def, map, ground, corridor, role, site)
+	var open_candidates := _ground_for(def, map, ground, corridor, role, site,
+			rules.holds_the_home_streets if rules else true)
 	if open_candidates.is_empty():
 		return null
 	# A local reweight rather than a change to `_ground_for`'s own cache: `alley_robbery` shares
@@ -2484,7 +2330,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	if def.id == _MOUSE_ID:
 		open_candidates = _prefer_beside_a_sack_pile(open_candidates, map, day, ground)
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
-			doors, standing)
+			doors, standing, null, rules)
 
 ## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
 ## its route roll, so unrelated background actors cannot move a required path.
@@ -2493,7 +2339,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return null
-	def = _for_day(def, day)
+	def = def.for_day(day)
 	var ground := {}
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -2508,7 +2354,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 	return _best_of(def, rng, map, candidates, role, already, ground,
 			_calm_to_leave_alone(map, used), corridor, doors, standing)
 
-## The acceptance half of a placement: roll `Tuning.EVENT_PLACEMENT_TRIES` candidates out of
+## The acceptance half of a placement: roll `EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
 ## perfect one or the roomiest of the rest.
 ##
@@ -2529,18 +2375,30 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## step out"*). This does not change what a seal or the wall stands as — neither is in
 ## `standing` for any reason but these three checks — so a street already sealed by design is
 ## unmoved; what changes is that the catalogue now declines to stack a second body onto ground a
-## seal or the wall has already spent. `_room_around`'s own spacing stays asked of `already`
+## seal or the wall has already spent. `room_around`'s own spacing stays asked of `already`
 ## alone: density is a question about today's catalogue rows, not about the day's fixed
 ## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
 ## them the whole of `_plans`, seals and the wall included, as their own `already`
 ## (`EventManager.start_day`), so they already ask every question `standing` exists to add here.
+##
+## **`rules` is what the plan's spec turns on** (`Rules`). One waiting guard's notice at a time is
+## asked by `_judge()` with the rest. **The walk kept open (`WalkGround`) is asked of the candidate
+## that would be taken, not of every try**, because it is the expensive question and the answer is
+## the same either way: a try with all the room it wants is asked at once and taken if it passes; a
+## cramped one is kept aside, and when no try had room the kept ones are asked roomiest first, the
+## earlier try first on equal room, until one passes. The pick is the roomiest try that passes, which
+## is what asking every try first and then picking would have chosen.
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[Planned] = [], kept: Variant = null) -> Planned:
+		standing: Array[Planned] = [], kept: Variant = null, rules: Rules = null) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
+	var walk: WalkGround = rules.walk if rules else null
+	var cramped: Array = []
+	if walk:
+		walk.catch_up(already)
 	# Built once per call rather than per try: neither `already` nor `standing` changes across the
 	# tries below, only which tile and which candidate is asked about.
 	var reach_context: Array[Planned] = already
@@ -2558,7 +2416,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# `WalkSiting`'s for one look, shared by every copy the look asks about. It is that caller's to
 	# drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Dictionary = kept if kept != null else {}
-	for _try in Tuning.EVENT_PLACEMENT_TRIES:
+	for attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
@@ -2569,16 +2427,29 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		var verdict: Array = verdicts.get(key, [])
 		if verdict.is_empty():
 			var room := _judge(candidate, role, map, tile, already, reach_context, ground,
-					leave_alone, corridor, doors)
+					leave_alone, corridor, doors, rules)
 			verdict = [candidate.role, room]
 			verdicts[key] = verdict
 		candidate.role = verdict[0]
 		var judged: float = verdict[1]
 		if judged == INF:
-			return candidate
+			if not walk or walk.accepts(candidate):
+				return candidate
+			continue
+		if walk:
+			if judged != -INF:
+				cramped.append([judged, attempt, candidate])
+			continue
 		if judged > best_room:
 			best_room = judged
 			best = candidate
+	if walk:
+		cramped.sort_custom(func(a: Array, b: Array) -> bool:
+			return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
+		for entry: Array in cramped:
+			if walk.accepts(entry[2]):
+				return entry[2]
+		return null
 	# Nothing comes back when every candidate broke a rule that does not bend — a lethal event
 	# with no clear ground, or a full pavement. The caller re-rolls; a scripted event that
 	# cannot be placed simply does not happen, which is the right failure direction.
@@ -2589,11 +2460,12 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 static var judgements := 0
 
 ## The rule chain `_best_of()` asks of one candidate: sets its role and answers its room, the
-## `_room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
+## `room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
 ## beats — so a refused candidate is never the roomiest, as it never was when it was skipped.
 static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap, tile: Vector2i,
 		already: Array[Planned], reach_context: Array[Planned], ground: Dictionary,
-		leave_alone: Array[Rect2], corridor: Corridor, doors: PackedVector2Array) -> float:
+		leave_alone: Array[Rect2], corridor: Corridor, doors: PackedVector2Array,
+		rules: Rules = null) -> float:
 	judgements += 1
 	candidate.role = role
 	# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
@@ -2635,7 +2507,12 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 	# the one end the yeller is away from. See `_leaves_a_pacing_beats_opening`.
 	if not _leaves_a_pacing_beats_opening(candidate, map, corridor, reach_context):
 		return -INF
-	return _room_around(candidate, already)
+	# A waiting guard's own refusal, where the spec asks for it, which never bends either: one
+	# guard's notice at a time. See `_keeps_its_notice_to_itself`.
+	if rules and rules.one_notice_at_a_time \
+			and not _keeps_its_notice_to_itself(map, candidate, already):
+		return -INF
+	return room_around(candidate, already)
 
 ## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
 ## the day's planning.
@@ -2662,13 +2539,13 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 ## accepted, so it is a second pass over a list that is already in memory.
 static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE,
-		site := NO_SITE) -> Array[Vector2i]:
-	var base := _open_ground_for(def, map, ground)
+		site := NO_SITE, from_the_door := true) -> Array[Vector2i]:
+	var base := open_ground_for(def, map, ground, -1, from_the_door)
 	if not corridor or role == GameEnums.BlockerRole.NONE:
 		return base
 	# The key is the *question*, and `hard_fail` is part of it since the wall band gained a
 	# gradient: two lethal rows share an answer and a lethal row and a costly one no longer do.
-	# `has_a_spread` joined it for the same reason M64 added it to `_open_ground_for`'s own key: a
+	# `has_a_spread` joined it for the same reason M64 added it to `open_ground_for`'s own key: a
 	# corner is off the question for two rows sharing every other answer only when one of them
 	# actually has an orientation to be wrong about on it. Without this a plain silhouette processed
 	# first quietly hands its unfiltered `base` to a spread row asking the identical other four
@@ -2677,8 +2554,8 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# cached list keyed without it would hand a fit-only wall's ground to a cost wall sharing its
 	# placement, pavement side and spread shape, or the reverse.
 	var by_cost := _is_a_wall_by_cost(def)
-	var key := "%s|%d|%d|%s|%s|%s|%s" % [def.placement, def.pavement_side, role, site,
-			def.hard_fail, def.has_a_spread, by_cost]
+	var key := "%s|%d|%d|%s|%s|%s|%s%s" % [def.placement, def.pavement_side, role, site,
+			def.hard_fail, def.has_a_spread, by_cost, "" if from_the_door else "|no door"]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
@@ -2686,7 +2563,7 @@ static func _ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# weight. The rect is the street itself and not a radius round it: a street is the unit every
 	# other placement decision in this milestone is stated in, and a set piece has to be something
 	# she walks past on the way through rather than something near where she walked.
-	var named := StreetNetwork.by_key(site) if site != NO_SITE else null
+	var named := map.network.by_key(site) if site != NO_SITE else null
 	var only := named.tile_rect() if named else Rect2i()
 	var refuses_required_alleys := _refuses_required_alleys(def)
 	for tile in base:
@@ -2756,12 +2633,12 @@ const _SACK_PILES_KEY := "alley sack piles"
 ## other answer in this file is cached in and under a key no `"%s|%d"` placement question can
 ## collide with. One scan of the city's pits per day rather than one per candidate row: the trees
 ## are fixed for the run, so nothing inside one `build_day` can move them.
-const _TREE_TILES_KEY := "street tree footprints"
+const TREE_TILES_KEY := "street tree footprints"
 
 static func _street_tree_tiles(map: CityMap, ground: Dictionary) -> Dictionary:
-	if not ground.has(_TREE_TILES_KEY):
-		ground[_TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
-	return ground[_TREE_TILES_KEY]
+	if not ground.has(TREE_TILES_KEY):
+		ground[TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
+	return ground[TREE_TILES_KEY]
 
 ## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
 ## street — the one running east out of the north-west corner.
@@ -2780,7 +2657,7 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
 ## pavement does: it is where the cafés and the market stalls and the buskers are.
 ##
-## **Anything `EventInstance.has_a_spread()` is refused a corner outright**, cached under its own
+## **Anything `EventDef.has_a_spread` is refused a corner outright**, cached under its own
 ## key so the un-narrowed list stays shared with everything that has no orientation to get wrong on
 ## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
 ## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier
@@ -2792,11 +2669,12 @@ static func _is_a_corner(tile: Vector2i) -> bool:
 ## building. Cached under its own key, so a poster crew asking for the same `AT_THE_FRONT` lane
 ## keeps the station's front.
 ##
-## `from_the_door` is whether she sets off from the home's front door, whose street nothing stands
-## on (`_the_street_she_starts_on()`): every day does; the escape comes out of the service exit on
-## the side of the block and never uses that door, the reason `SealPlanner.plan_finale()` seals the
-## home street like any other (`docs/CITY.md`, "The escape").
-static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
+## `from_the_door` is the spec's home-street rule (`DaySpec.holds_the_home_streets`): whether she
+## sets off from the home's front door, whose street nothing stands on
+## (`_the_street_she_starts_on()`). Every day does; the escape comes out of the service exit on the
+## side of the block and never uses that door, the reason its seals spare the street she stands in
+## rather than the home street (`RouteSource.street_it_starts_in()`, `docs/CITY.md`, "The escape").
+static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		side: int = -1, from_the_door := true) -> Array[Vector2i]:
 	var wanted_side := def.pavement_side if side < 0 else side
 	var burns := _burns_its_front(def)
@@ -2838,7 +2716,7 @@ static func _open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 				open.append(candidate)
 				if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
 						or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
-					for _extra in Tuning.EVENT_PRECINCT_WEIGHT - 1:
+					for _extra in EVENT_PRECINCT_WEIGHT - 1:
 						open.append(candidate)
 		ground[key] = open
 	if not def.has_a_spread:
@@ -2922,15 +2800,15 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 			if corridor.carries_a_route(tile):
 				return 0
 			if not by_cost:
-				return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
+				return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 			if lethal:
-				return Tuning.WALL_DEEP_WEIGHT if away >= 2 else 1
+				return WALL_DEEP_WEIGHT if away >= 2 else 1
 			if away > 1:
 				return 1
-			return Tuning.EVENT_WALL_RIM_WEIGHT \
-					* (Tuning.EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
+			return EVENT_WALL_RIM_WEIGHT \
+					* (EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
 		GameEnums.BlockerRole.FRICTION:
-			return Tuning.EVENT_CORRIDOR_WEIGHT if away == 0 else 1
+			return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
 		_:
 			return 1
 
@@ -2955,7 +2833,7 @@ static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 ## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
 ## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
 static func _burns_its_front(def: EventDef) -> bool:
-	return def.scar_id == City.BURNT_FRONTAGE_SCAR
+	return def.aftermath.scar == City.BURNT_FRONTAGE_SCAR
 
 ## Whether a tile is the lane of the pavement this event wants.
 ##
@@ -2972,7 +2850,7 @@ static func _burns_its_front(def: EventDef) -> bool:
 ##
 ## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
 ## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
-## `WalkSiting` asks, through `side`, for a row that `pastes_a_front`. **The tile behind has to be
+## `WalkSiting` asks, through `side`, for a row whose `OnHerWay.at_a_front` is set. **The tile behind has to be
 ## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
 ## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
 ## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
@@ -3009,7 +2887,8 @@ static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 		return placed
 	match def.path_mode:
 		EventDef.PathMode.CROSS_STREET:
-			return Planned.new(def, at, _cross_street_path(map, tile))
+			var crossing := _cross_street_path(map, tile)
+			return null if crossing.is_empty() else Planned.new(def, at, crossing)
 		EventDef.PathMode.ALONG_STREET:
 			var route := _along_street_path(map, tile, def, rng)
 			# Nowhere to go from here; a "mobile" event that stands still is worse than
@@ -3039,12 +2918,12 @@ static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 ## - `EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
 ##   duplicated sprite rather than a second incident. This one bends, because on a full map the
 ##   honest answer is the roomiest spot left rather than no event.
-static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
+static func room_around(candidate: Planned, already: Array[Planned]) -> float:
 	var room_same := INF
 	for plan in already:
 		if not plan.is_placed():
 			continue
-		var gap := _gap_between(candidate, plan)
+		var gap := candidate.gap_to(plan)
 		# **An offer is not in the world yet, so it takes up no room.** A set piece is planned at
 		# every site of a covering set and exactly one of them ever happens, so spacing the whole day
 		# around all of them reserves ground for events that will not exist — and it breaks *a
@@ -3061,170 +2940,43 @@ static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 		var elsewhere := plan.set_piece_group != "" \
 				and plan.set_piece_group != candidate.set_piece_group
 		if not elsewhere:
-			if gap < Tuning.EVENT_SPACING_ANY:
+			if gap < EVENT_SPACING_ANY:
 				return -INF
-			if _keeps_its_field_clear(plan) and gap < plan.def.field_reach():
+			if plan.keeps_its_field_clear() and gap < plan.def.field_reach():
 				return -INF
 			if plan.def.id == candidate.def.id:
 				room_same = minf(room_same, gap)
-		if _keeps_its_field_clear(candidate) and gap < candidate.def.field_reach():
+		if candidate.keeps_its_field_clear() and gap < candidate.def.field_reach():
 			return -INF
-	return INF if room_same >= Tuning.EVENT_SPACING_SAME else room_same
+	return INF if room_same >= EVENT_SPACING_SAME else room_same
 
-## Whether the clearance rule is about this placement: a lethal event with nothing else inside
-## its whole field — `EventDef.field_reach()`, not `outer_radius` alone, since a segment's field
-## reaches `half_length` further along its own spine than a disc's would.
-##
-## **The rule is now stated over the ground she is being guided along, and off it there is an
-## exemption**, which was the player's own call when the two collided.
-##
-## Read the rule's own reason and the exemption falls out of it. The rule exists because *the
-## contract is stated per event and the player experiences the sum* — walking out of one field can
-## mean walking into another, and where that second field ends the day it is a death arriving out of
-## something she was already reading. That is an argument about **a route she is meant to take**.
-## Off the corridor there is no route she is meant to take; the whole point of the ground is that
-## she should not be on it, and a lethal field overlapping another one is the city saying so rather
-## than a fairness failure. With the rule applied out there, *deadly all over* is not merely hard to
-## achieve — it is arithmetically impossible: six lethal rows capped in single figures, at radii of
-## 145 to 380px, cannot tile anything.
-##
-## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
-## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
-## carrying this role is off the routes or it does not exist — including the far sidewalk of a
-## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
-## set piece, which is sited where every route passes, and anything the day placed for a reason that
-## is not about the corridor at all.
-##
-## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
-## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
-## nothing here changes what any event owes the player who sees it coming.
-##
-## **A pursuer is the third exemption, and the reason is the same one the `WALL` case is stated
-## over: the rule is about a *place* being kept clear, and a pursuer has no place.** It goes
-## wherever she goes, so placement can never keep anything clear of it — the argument the `WALL`
-## case makes about the corridor does not even apply, because there is no ground to be off of in
-## the first place.
-##
-## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
-## name: `_role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
-## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
-## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
-## from there, placed and `hard_fail` the same way) are both exempt without this line doing
-## anything. On `RUN_TAUGHT_DAY` itself `charging_dog` is never placed at all — it is
-## `AHEAD_OF_PLAYER`, sited by the director with no tile the scheduler ever reasons about — which is
-## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursues` rather than
-## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
-## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
-## say, which `_role_for` would classify ahead of the `hard_fail` check.
-static func _keeps_its_field_clear(plan: Planned) -> bool:
-	return plan.def.hard_fail and plan.role != GameEnums.BlockerRole.WALL and not plan.def.pursues
+## The placement a recipe or a planner puts at one site, or null: the candidate `_build_placement()`
+## sites on `tile` that `room_around()` leaves room for among `already`. The one entry point a
+## planner and `SceneRecipeRuntime` share: an authored scene's row keeps the day's spacing. The
+## scheduler's own loop (`_best_of()`) does not call it: a day asks `_judge()`, which asks
+## `room_around()` among many more rules and keeps its verdicts and the candidate's role, so
+## routing the loop through this would change what the day places.
+static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNumberGenerator,
+		already: Array[Planned]) -> Planned:
+	var candidate := _build_placement(def, map, tile, rng)
+	if not candidate or room_around(candidate, already) == -INF:
+		return null
+	return candidate
 
-## The closest endpoint-to-route distance between two events.
-##
-## Two routes are measured from both sides so either route's closest endpoint can decide the gap.
-## Crossing interiors are not detected; the answer is the nearest waypoint-to-route distance.
-static func _gap_between(a: Planned, b: Planned) -> float:
-	# A point's distance to the whole other route already includes its endpoints, so the symmetric
-	# endpoint pass cannot make the answer smaller when either side is stationary.
-	if a.path.size() < 2:
-		return b.distance_from(a.position)
-	if b.path.size() < 2:
-		return a.distance_from(b.position)
-	var gap := INF
-	for point in a.ends():
-		gap = minf(gap, b.distance_from(point))
-	for point in b.ends():
-		gap = minf(gap, a.distance_from(point))
-	return gap
 
 # ------------------------------------------------- a path never has to cost (M129) ---
 
-## Whether a row is one the **zero-cost line** has to get past — the reading PLAYTEST-71 settled,
-## stated once here and read by every rule in this section.
-##
-## A line along a route is a walk from the doorstep to the calm that never enters a placed row's
-## reach. Five kinds of row are outside it, and each is outside for its own reason rather than for
-## convenience:
-##
-## - **a mast** (a `loudspeaker` plan, whether `MastSites` planted it or it is queued or routed) is
-##   a fixture of the street it stands on: the six fixed ones are planted once by `MastSites`, off
-##   the corridor-aware placement every other row here goes through, and stand at the same sites all
-##   fourteen days. The two day 11 adds, the one queued near the mark and the one a rigged bag puts
-##   on her route, are exempt too (inbox #684 in coral-lark, "Exempt like fixed masts"), because a mast's field
-##   reaches the junction box at the end of whatever street it stands on, so held to the line it
-##   would have almost no place on a route tree. A mast is asked none of the three rules that keep
-##   a line along her routes (`_leaves_the_route_junctions_open`, `_leaves_the_routes_sidewalk_open`
-##   and `_leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites._is_eligible()`: off the home
-##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
-## - **`scenery`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
-##   count it as block, just count is scenery"* — which is the same exemption `_role_for` makes.
-## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
-##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
-##   reaches here as a plan with no position at all.
-## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
-##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
-## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
-##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
-##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
-##
-## **A wall is not outside it**, and that is the player's own decision on the one thing the four
-## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
-## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
-## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
-## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
-## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
-## same three questions every other row's is, and the condition the player set on that is exactly
-## `_line_reach_of()`: what a wall may still put over a junction is the part of its field under the
-## walking decay, which is a crossing the walk takes without planning around it.
-##
-## The lethal-clearance rule's wall exemption is a different rule about a different thing and is
-## untouched — `_keeps_its_field_clear` is about keeping other events out of a lethal field, not
-## about whether a line exists past one.
-static func _counts_against_the_line(plan: Planned) -> bool:
-	return plan.is_placed() and plan.mast_id == "" and plan.def.id != WalkSiting.MAST_ROW \
-			and _a_line_has_to_avoid(plan.def)
 
-## The same exemptions asked of the **def** alone, for the one caller that has no placement to
-## ask about: `_role_for` decides a role before any tile is chosen. Everything a placement adds —
-## *is it actually standing anywhere* — is the caller's own question above.
-##
-## **A row the day sites from her own walk is the sixth, and it is the only one that is exempt
-## because closing the way is the point.** *(PLAYTEST-119: "you're not supposed to go past it";
-## "when you see the fire the reaction should be to take a different route".)* Day 3's fire is put
-## on the branch she is walking so that the street she is on stops being a way through, and the
-## engine parks across from it for the rest of the day — so asking whether a line survives along
-## that sidewalk would refuse every site the design exists to make. What replaces the guarantee is
-## strictly stronger and is stated over the day rather than over the street:
-## `WalkSiting._still_leaves_a_park_reachable()` refuses any site that leaves her unable to reach
-## the home, or a calm area she has not used, **outside both fields**. A one-shot carrying this
-## flag is never placed at dawn (`_place_one_shots` plans it with no position), so nothing else in
-## the day is judged differently because of it. **A recurring row carrying it is not exempt**: a
-## poster crew closes nothing, and it is placed at dawn and judged exactly as it always was before
-## its position is handed to her walk (`_hand_to_her_walk`).
-static func _a_line_has_to_avoid(def: EventDef) -> bool:
-	if def.scenery or def.pursues or def.id.begins_with(_DOOR_ID_PREFIX):
-		return false
-	if def.sited_on_her_way and def.kind == GameEnums.EventKind.ONE_SHOT:
-		return false
-	if def.mobile and not def.paces:
-		return false
-	return _line_reach_of(def) > 0.0
 
-## The line a stroller needs across a sidewalk, measured between the two lanes of one:
-## `SIDEWALK_WIDTH` (2) tiles of sidewalk means the far lane's centre is one tile (32px) from the
-## near one, and a free tile is a line because a tile is wider than the 28px stroller
-## (`2 * PLAYER_BODY_RADIUS`). It is the same tile-grained reading every other rule in this section
-## measures a line in.
-const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 
 ## **Whether a row's own numbers leave no way past it along a sidewalk it may stand on** — the
 ## passability reading of a wall, beside the cost one. *(PLAYTEST-77: "how is market stall a
 ## friction? you can't walk through it"; "a wall is also when you physically cannot walk through".)*
 ##
 ## A sidewalk is two lanes of tile, and a row stands in one of them, so the only line past it is the
-## other lane — one tile across, which `_denies` reads as free while the row's reach is under it.
+## other lane — one tile across, which `Planned.denies()` reads as free while the row's reach is under it.
 ## What the reach is, is the whole point: **the body plus the ground it charges for**
-## (`_line_reach_of`), not the body alone. A café whose tables are 24px across but which bills
+## (`EventDef.line_reach()`), not the body alone. A café whose tables are 24px across but which bills
 ## anybody within 56px of them is a café nobody walks past on that sidewalk for free, and *free* is
 ## what the guarantee is about.
 ##
@@ -3235,37 +2987,37 @@ const _THE_FAR_LANE := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 ## there: the role only ever decides which ground it is offered.
 ##
 ## The five rows outside the line reading entirely — a pursuer, a door, a city-wide row, scenery, a
-## mobile row that does not pace — are outside this too, by asking `_a_line_has_to_avoid` rather
+## mobile row that does not pace — are outside this too, by asking `EventDef.has_a_line_to_avoid()` rather
 ## than repeating the list.
 static func _leaves_no_line_along_a_sidewalk(def: EventDef) -> bool:
 	if not def.placement.has(GameEnums.TileType.SIDEWALK):
 		return false
-	if not _a_line_has_to_avoid(def):
+	if not def.has_a_line_to_avoid():
 		return false
-	if _line_reach_of(def) >= _THE_FAR_LANE:
+	if def.reaches_the_far_lane():
 		return true
 	return _closes_the_band_by_its_own_placement(def)
 
 ## The line a stroller needs, stated as a width rather than a reach: an edge-to-edge gap has to be
 ## at least this wide for her whole body to fit inside it, once a row's own edge and the sidewalk's
 ## true boundary — the kerb, or the frontage wall — are both hard edges neither of them may cross.
-## The same number as `_THE_FAR_LANE`'s tile grain (2 * `PLAYER_BODY_RADIUS`, 28px), read as a
+## The same number as the far-lane distance `EventDef` compares a reach to (`EventDef._THE_FAR_LANE`, one tile of 32px; `EventDef.reaches_the_far_lane()` asks it), read as a
 ## width because this clause measures one directly rather than comparing a reach to a fixed tile.
 const _HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 
 ## **Whether the row's own body, stood exactly where `pavement_side` puts it, leaves no edge-to-edge
 ## gap of `_HER_LANE_CLEARANCE` anywhere across the sidewalk band** — a second, physical reading of
-## "leaves no way past it" beside `_line_reach_of`'s cost-based one above. *(PLAYTEST-94, 2026-09-19:
+## "leaves no way past it" beside `EventDef.line_reach()`'s cost-based one above. *(PLAYTEST-94, 2026-09-19:
 ## "I still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
 ## to do correctly?")* The cost clause asks what a row bills a passer-by for being near it; this asks
 ## whether a passer-by has anywhere left to stand at all, and the two can disagree: `delivery_van`
-## is silent and its 22px `obstructs_radius` stays under `_THE_FAR_LANE` (32px), so the cost clause
+## is silent and its 22px `obstructs_radius` stays under the far-lane distance (`EventDef._THE_FAR_LANE`, one tile, 32px), so the cost clause
 ## reads it as friction — but pinned `AT_THE_KERB`, 16px in from the kerb edge, it leaves only
 ## `(SIDEWALK_WIDTH * TILE_SIZE - TILE_SIZE * 0.5) - 22 = 26px` to the frontage, narrower than the
 ## 28px she needs, which `tests/test_events.gd`'s `_test_a_kerbed_body_still_pins_the_frontage`
 ## already measures by hand for this one row. Read off `obstructs_radius` and `pavement_side` rather
 ## than off an id, so the next row this narrow is caught the same way without anybody adding it to a
-## list — and a row that already clears `_THE_FAR_LANE` never reaches this, so nothing already a wall
+## list — and a row whose reach already clears the far-lane distance (`EventDef.reaches_the_far_lane()`) never reaches this, so nothing already a wall
 ## is asked twice.
 static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
 	var reach := def.obstructs_radius
@@ -3380,77 +3132,10 @@ static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
 static func _is_ground_off_the_street(map: CityMap, tile: Vector2i) -> bool:
 	return map.is_open(tile) and not map.is_street(tile)
 
-## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
-## id the way `tests/probes/m129_zero_cost_line.gd` matches them, since what makes a door a door is
-## `RegionPlanner` choosing it rather than any field on the def.
-const _DOOR_ID_PREFIX := "checkpoint"
 
-## How far a row denies ground: **the disc it charges for**, `obstructs_radius` wherever it has a
-## body, the larger of the two where both apply. A row that neither charges nor obstructs — the
-## `playground` ambient, at intensity 0 — is not something a line has to avoid.
-##
-## **Charging for is not the same as being heard on**, and the difference is the player's own
-## condition on any of this being checked at all: *"option 2 is valid only if the influence at a
-## junction is low enough that it can be taken without having to worry or plan around it."* A walk
-## through ground where a row emits less than `Tuning.EXCITEMENT_DECAY_WALKING` nets the meter
-## *down*, so it is ground a route does not have to be planned around and the rules in this section
-## have no business refusing a placement over it. The disc is therefore where the emission crosses
-## that rate, not `outer_radius`, which is where it stops reaching at all — the same distinction
-## `_denial_radius()` makes about calm ground, at a different rate and with a different zero: a row
-## quieter than the rate everywhere denies **nothing** here, where it still denies its own inner
-## disc to a pram trying to settle.
-##
-## **A lethal row keeps its whole `outer_radius`.** Its price is not a rate and nothing about being
-## quiet at the rim makes walking into it survivable, so the arithmetic below says nothing about it.
-##
-## The plain disc rather than `field_reach()`'s forward-stretched ellipse, because the milestone's
-## own wording is a radius and the two differ only for a mobile row and only ahead of it. A flock
-## would need its own answer — its intensity is shared between bodies, so the closed form below
-## reads it far too wide — and does not have one: `pigeon_flock` is `scenery` and
-## `_counts_against_the_line` is done with it before this is ever asked.
-static func _line_reach_of(def: EventDef) -> float:
-	if def.hard_fail:
-		return maxf(def.outer_radius, def.obstructs_radius)
-	return maxf(_reach_above(def, Tuning.EXCITEMENT_DECAY_WALKING), def.obstructs_radius)
 
-## How far from the centre a row still emits more than `rate`, over both parts of its field: the
-## field itself, and the core where it has one (a cored row's loud part can outlive its quiet one,
-## which is the whole point of having it).
-static func _reach_above(def: EventDef, rate: float) -> float:
-	return maxf(_band_crossing(def.intensity, def.inner_radius, def.outer_radius, rate,
-			def.falloff_power),
-			_band_crossing(def.core_intensity, def.inner_radius, def.core_radius, rate,
-			def.falloff_power))
 
-## Where one falloff band crosses `rate`, or zero if it is never above it — `Tuning.falloff`'s
-## `1 − t^power` inverted for the `t` at which it equals `rate`. The row's own `falloff_power`
-## rather than a squared constant, so a row that ever shapes its own drop-off is denied the ground
-## it actually charges for rather than the ground a quadratic row of the same numbers would.
-static func _band_crossing(intensity: float, inner: float, outer: float, rate: float,
-		power: float) -> float:
-	if intensity <= rate or outer <= inner:
-		return 0.0
-	var left := 1.0 - rate / intensity
-	# `sqrt` at the default rather than `pow(x, 0.5)`, for the reason `Tuning.falloff` writes its
-	# own default out: the two may differ in the last bit, and every radius the catalogue was
-	# measured at came from this one.
-	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
-	return inner + t * (outer - inner)
 
-## Whether a row denies a point, under the beat-opening reading.
-##
-## **A pacing row denies only the ground its beat never leaves free** — *"time pass, don't route
-## around them"* — so a point it is ever more than its reach away from can be walked past by
-## waiting. The intersection over a whole beat is the intersection over its **corners**, and that
-## is exact rather than a sample: a disc is convex, so a point within `reach` of both ends of a
-## straight run is within `reach` of every point of it.
-static func _denies(plan: Planned, at: Vector2, reach: float) -> bool:
-	if plan.def.paces and plan.path.size() >= 2:
-		for point in plan.path:
-			if at.distance_to(point) > reach:
-				return false
-		return true
-	return at.distance_to(plan.position) <= reach
 
 ## The day's route junctions with the geometry the rule asks about, worked out once per day and
 ## kept in the same `ground` dictionary every other day-lifetime answer in this file lives in.
@@ -3483,9 +3168,9 @@ static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corrido
 ## joining still has a line through every crossing, so a closed one never exists even briefly.
 static func _leaves_the_route_junctions_open(candidate: Planned, map: CityMap,
 		corridor: Corridor, ground: Dictionary, already: Array[Planned]) -> bool:
-	if not corridor or not _counts_against_the_line(candidate):
+	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := _line_reach_of(candidate.def)
+	var reach := candidate.def.line_reach()
 	for entry: Array in _route_junctions(map, ground, corridor):
 		var centre: Vector2 = entry[1]
 		var box_reach: float = entry[2]
@@ -3510,9 +3195,9 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 	var box_reach: float = entry[2]
 	var standing: Array[Planned] = [candidate]
 	for plan in already:
-		if plan == candidate or not _counts_against_the_line(plan):
+		if plan == candidate or not plan.counts_against_the_line():
 			continue
-		if plan.distance_from(centre) <= _line_reach_of(plan.def) + box_reach:
+		if plan.distance_from(centre) <= plan.def.line_reach() + box_reach:
 			standing.append(plan)
 
 	var origin := junction * CityMap.period()
@@ -3525,7 +3210,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in standing:
-				if _denies(plan, at, _line_reach_of(plan.def)):
+				if plan.denies(at, plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -3534,7 +3219,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 		return false
 
 	var arms: Array = []
-	for segment in StreetNetwork.at_junction(junction):
+	for segment in map.network.at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []
@@ -3598,7 +3283,7 @@ const _ROUTE_SIDEWALKS_KEY := "route sidewalks"
 static func _route_sidewalks(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
 	if not ground.has(_ROUTE_SIDEWALKS_KEY):
 		var found: Array = []
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			var rect := segment.tile_rect()
 			if corridor.depth(rect.position) != 0:
 				continue
@@ -3674,7 +3359,7 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## by waiting.
 ##
 ## **Two readings, either enough to refuse the candidate.** `_closes_the_run` is the cost one, over
-## `_cumulative_lane_reach_of` rather than `_line_reach_of` alone —
+## `_cumulative_lane_reach_of` rather than `EventDef.line_reach()` alone —
 ## `_closes_the_band_by_its_own_placement`'s own role clause is asked of a row's own numbers before
 ## a tile is chosen, but `_copies_of` still offers a `WALL` a cell of the *same* lane that does not
 ## itself `carries_a_route` (a route need not use every cell of the block it is walked along), so a
@@ -3683,18 +3368,18 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
 		ground: Dictionary, already: Array[Planned]) -> bool:
-	if not corridor or candidate.def.paces or not _counts_against_the_line(candidate):
+	if not corridor or candidate.def.paces or not candidate.counts_against_the_line():
 		return true
 	var reach := _cumulative_lane_reach_of(candidate.def)
 	for entry: Array in _route_sidewalks(map, ground, corridor):
 		var world: Rect2 = entry[2]
-		if not _reach_touches(candidate, world, reach):
+		if not candidate.reach_touches(world, reach):
 			continue
 		var standing: Array[Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or plan.def.paces or not _counts_against_the_line(plan):
+			if plan == candidate or plan.def.paces or not plan.counts_against_the_line():
 				continue
-			if _reach_touches(plan, world, _cumulative_lane_reach_of(plan.def)):
+			if plan.reach_touches(world, _cumulative_lane_reach_of(plan.def)):
 				standing.append(plan)
 		var segment: StreetNetwork.Segment = entry[0]
 		if _closes_the_run(map, entry[1], segment.horizontal, standing):
@@ -3705,15 +3390,15 @@ static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, c
 	return true
 
 ## The reach `_leaves_the_routes_sidewalk_open` filters candidates by: the greater of
-## `_line_reach_of`'s cost-based reach and the physical standoff a solid body needs
+## `EventDef.line_reach()`'s cost-based reach and the physical standoff a solid body needs
 ## (`obstructs_radius + PLAYER_BODY_RADIUS`). A silent, cheap body — `delivery_van`'s own numbers —
 ## can close a lane by presence alone while charging nothing to walk past, so the filter that
 ## decides which rows are even worth asking `closes_a_walked_sidewalk_band` about has to see the
-## wider of the two rather than only the one `_line_reach_of` already answers.
+## wider of the two rather than only the one `EventDef.line_reach()` already answers.
 static func _cumulative_lane_reach_of(def: EventDef) -> float:
 	if def.obstructs_radius <= 0.0:
-		return _line_reach_of(def)
-	return maxf(_line_reach_of(def), def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS)
+		return def.line_reach()
+	return maxf(def.line_reach(), def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS)
 
 ## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
 ## `closes_a_walked_sidewalk_band` asks for — a row with no body contributes nothing to a physical
@@ -3752,7 +3437,7 @@ static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in rows:
-				if _denies(plan, at, _line_reach_of(plan.def)):
+				if plan.denies(at, plan.def.line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -3790,7 +3475,7 @@ static func _closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 ## hand this that all three already share.
 ##
 ## Tile-grained like `_closes_the_run`, substituting a body's own physical
-## `radius + PLAYER_BODY_RADIUS` for that rule's cost-based `_line_reach_of()` — see
+## `radius + PLAYER_BODY_RADIUS` for that rule's cost-based `EventDef.line_reach()` — see
 ## `_closes_the_band_by_its_own_placement`'s doc for why a reach and a gap are the same question
 ## read two ways.
 ##
@@ -3870,20 +3555,20 @@ static func closes_a_walked_sidewalk_band(map: CityMap, band: Rect2i, horizontal
 ## a different shape with a different answer, and the milestone does not write a rule for it.
 static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, corridor: Corridor,
 		already: Array[Planned]) -> bool:
-	if not corridor or not _counts_against_the_line(candidate):
+	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := _line_reach_of(candidate.def)
+	var reach := candidate.def.line_reach()
 	var streets := {}
-	var here := StreetNetwork.segment_containing(map.world_to_tile(candidate.position))
+	var here := map.network.segment_containing(map.world_to_tile(candidate.position))
 	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
 		streets[here.key()] = here
 	for plan in already:
-		if plan == candidate or not plan.def.paces or not _counts_against_the_line(plan):
+		if plan == candidate or not plan.def.paces or not plan.counts_against_the_line():
 			continue
-		var theirs := StreetNetwork.segment_containing(map.world_to_tile(plan.position))
+		var theirs := map.network.segment_containing(map.world_to_tile(plan.position))
 		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
 			continue
-		if _reach_touches(candidate, map.tile_rect_to_world(theirs.tile_rect()), reach):
+		if candidate.reach_touches(map.tile_rect_to_world(theirs.tile_rect()), reach):
 			streets[theirs.key()] = theirs
 
 	for key: Vector3i in streets:
@@ -3891,26 +3576,14 @@ static func _leaves_a_pacing_beats_opening(candidate: Planned, map: CityMap, cor
 		var rect := map.tile_rect_to_world(segment.tile_rect())
 		var standing: Array[Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or not _counts_against_the_line(plan):
+			if plan == candidate or not plan.counts_against_the_line():
 				continue
-			if _reach_touches(plan, rect, _line_reach_of(plan.def)):
+			if plan.reach_touches(rect, plan.def.line_reach()):
 				standing.append(plan)
 		if _closes_the_street(map, segment, standing):
 			return false
 	return true
 
-## Whether a row's own reach gets anywhere near a rect at all — the cheap filter before the tile
-## work. Grown by the line reading's plain disc rather than `field_reach()`, and asked of every
-## corner of a beat as well as of where the row stands, since a pacing row's denied ground is
-## inside each of those discs.
-static func _reach_touches(plan: Planned, rect: Rect2, reach: float) -> bool:
-	var grown := rect.grow(reach)
-	if grown.has_point(plan.position):
-		return true
-	for point in plan.path:
-		if grown.has_point(point):
-			return true
-	return false
 
 ## Whether a tile between two junctions is carriageway a line may not cross there.
 ##
@@ -3969,14 +3642,16 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 		room = backward_room
 
 	var length := mini(def.path_length_tiles, room)
-	# Stop short of a closed street rather than driving through the barrier at the end of it — and
-	# short of a calm zone's absorbed corridor as well. A corridor that ends in a park is
-	# not a corridor a delivery van can drive down, and unlike a closure there is nothing there
-	# to hit: the route would simply cross the grass.
+	# Stop short of anything that stops the row (`CityMap.passable()`, as it moves: a closure's
+	# barrier, a seal, a body standing today) rather than walking or driving through it — and short
+	# of a calm zone's absorbed corridor as well. A corridor that ends in a park is not a corridor a
+	# delivery van can drive down, and unlike a closure there is nothing there to hit: the route
+	# would simply cross the grass.
 	var from_a_street := map.is_street(tile)
+	var mover := EventInstance.mover_for(def)
 	for step in range(1, length + 1):
 		var next := tile + along * step
-		if map.is_closed(next) or (from_a_street and not map.is_street(next)):
+		if not map.passable(next, mover) or (from_a_street and not map.is_street(next)):
 			length = step - 1
 			break
 	if length <= 0:
@@ -3998,14 +3673,26 @@ static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
 	return PackedVector2Array([map.tile_to_world(tile), map.tile_to_world(finish)])
 
 ## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
-## path is perpendicular to the road it starts from.
+## path is perpendicular to the road it starts from: out from the tile each way, at most a street's
+## width, as far as a figure on foot may stand (`CityMap.passable()`), so it comes out of one kerb
+## and goes into the other and never starts or ends inside a lot. Empty, so the candidate is
+## refused, where the tile is not one a figure on foot may stand on or nothing either side of it is.
 static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Array:
 	var vertical_road := CityMap.corridor_offset(tile.x) >= 0
 	var across := Vector2i.RIGHT if vertical_road else Vector2i.DOWN
 	var reach := Tuning.STREET_WIDTH
-	var from := map.tile_to_world(tile - across * reach)
-	var to := map.tile_to_world(tile + across * reach)
-	return PackedVector2Array([from, to])
+	var mover := Mover.on_foot()
+	var ends: Array[Vector2i] = []
+	for way: Vector2i in [-across, across]:
+		var end := tile
+		for step in range(1, reach + 1):
+			if not map.passable(tile + way * step, mover):
+				break
+			end = tile + way * step
+		ends.append(end)
+	if ends[0] == ends[1] or not map.passable(tile, mover):
+		return PackedVector2Array()
+	return PackedVector2Array([map.tile_to_world(ends[0]), map.tile_to_world(ends[1])])
 
 # ---------------------------------------------------------------- park rules ---
 
@@ -4215,7 +3902,7 @@ static func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
 ## the swing is kept reachable from home by the target half, and walking is the same both ways.
 static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Planned],
 		target: Array[Vector2i] = [], standing: Array[Planned] = [],
-		besides := NO_CALM) -> void:
+		besides := NO_CALM, trace: RunTrace = null) -> void:
 	var blockers: Array[Planned] = []
 	for plan in planned:
 		if not plan.is_placed():
@@ -4237,7 +3924,7 @@ static func _ensure_the_city_is_still_walkable(map: CityMap, planned: Array[Plan
 			fixed.append(plan)
 	var kept_target: Array[Vector2i] = target
 	if not target.is_empty() and not _target_is_reachable(map, grid, target, fixed):
-		Telemetry.note("plan", "the day's own seals and wall cut the resistance's target off")
+		_note(trace, "plan", "the day's own seals and wall cut the resistance's target off")
 		kept_target = []
 	var calm := _calm_to_keep_reachable(map, planned, besides, grid)
 	while not blockers.is_empty() and not (_park_is_reachable(map, grid, blockers, calm)
@@ -4265,7 +3952,7 @@ static func _calm_to_keep_reachable(map: CityMap, planned: Array[Planned], besid
 				tiles.append(tile)
 				reachable = reachable or grid.reaches(tile, map.closed_tiles, reached)
 		other.append_array(tiles)
-		if reachable and not _is_spoiled(map, planned, rect):
+		if reachable and not is_spoiled(map, planned, rect):
 			clean.append_array(tiles)
 	return clean if not clean.is_empty() else other
 
@@ -4273,7 +3960,7 @@ static func _calm_to_keep_reachable(map: CityMap, planned: Array[Planned], besid
 ## reading of a spoiled area: a playground and a scar do not count, and neither do the seals and the
 ## region wall, which are planned before the catalogue and handed to it as `standing` rather than
 ## being in `planned`.
-static func _is_spoiled(map: CityMap, planned: Array[Planned], rect: Rect2i) -> bool:
+static func is_spoiled(map: CityMap, planned: Array[Planned], rect: Rect2i) -> bool:
 	var lot := map.tile_rect_to_world(rect)
 	for plan in planned:
 		if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed() or plan.permanent:

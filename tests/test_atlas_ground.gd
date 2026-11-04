@@ -3,7 +3,7 @@ extends RefCounted
 ## `GroundLayers` builds every ground tile out of the baked `ground` page.
 ##
 ## **The reference is rebuilt from the page and the manifest, never from the compositor.** Every
-## expected picture here is fetched by region name out of `AtlasLibrary.page_image(&"ground")` and
+## expected picture here is fetched by region name out of `atlas.page_image(&"ground")` and
 ## composed with `Image`'s own `blend_rect`/`rotate_90`, so a compositor that read the wrong
 ## region, rotated a component the wrong way, or wrote a margin that lands a coordinate on its
 ## neighbour's pixels fails by name. Calling `GroundLayers`' own helpers to build the reference
@@ -42,14 +42,15 @@ const LAYER_REGION_ROOT := "tiles/layers/"
 ## Below this the sweep has stopped asking about the ground at all rather than found it correct.
 const FEWEST_CREDIBLE_SOURCES := 50
 
+## The library every build here reads its page through, fresh for this suite.
+var atlas := AtlasLibrary.new()
+
 func run(t) -> void:
-	AtlasLibrary.reset_for_tests()
 	_test_the_authored_tile_set_names_regions_instead_of_pictures(t)
 	_test_the_page_holds_what_this_bake_draws(t)
 	_test_the_ground_is_one_composed_sheet(t)
 	_test_every_tile_is_the_page_the_manifest_asked_for(t)
 	_test_a_repaint_composes_the_same_pixels_again(t)
-	AtlasLibrary.reset_for_tests()
 
 # ------------------------------------------------------------- the authored file ---
 
@@ -90,12 +91,12 @@ func _test_the_authored_tile_set_names_regions_instead_of_pictures(t) -> void:
 		if composed_ids.has(id):
 			# Composed out of layers here, so its whole picture is a member of an `--svg` bake
 			# alone and drawing it would be drawing an SVG the player asked to be rid of.
-			if AtlasLibrary.has_region(name):
+			if AtlasTable.baked().has_region(name):
 				uncomposed_but_baked.append("%d -> %s" % [id, name])
-		elif not AtlasLibrary.has_region(name):
+		elif not AtlasTable.baked().has_region(name):
 			missing.append("%d -> %s" % [id, name])
-		elif AtlasLibrary.group_of(name) != GroundLayers.ATLAS_GROUP:
-			misfiled.append("%d -> %s (on '%s')" % [id, name, AtlasLibrary.group_of(name)])
+		elif AtlasTable.baked().group_of(name) != GroundLayers.ATLAS_GROUP:
+			misfiled.append("%d -> %s (on '%s')" % [id, name, AtlasTable.baked().group_of(name)])
 	t.check(textured.is_empty(), "no authored ground source still holds a texture (%s)"
 			% ", ".join(textured.slice(0, 5)))
 	t.check(unnamed.is_empty(), "every authored ground source names its region (%s unnamed)"
@@ -142,8 +143,8 @@ func _test_the_page_holds_what_this_bake_draws(t) -> void:
 		expected[source.resource_name] = true
 		whole += 1
 	var actual: Dictionary = {}
-	for name: StringName in AtlasLibrary.region_names():
-		if AtlasLibrary.group_of(name) == GroundLayers.ATLAS_GROUP:
+	for name: StringName in AtlasTable.baked().region_names():
+		if AtlasTable.baked().group_of(name) == GroundLayers.ATLAS_GROUP:
 			actual[String(name)] = true
 	var extra: Array[String] = []
 	for name: String in actual.keys():
@@ -156,15 +157,15 @@ func _test_the_page_holds_what_this_bake_draws(t) -> void:
 	extra.sort()
 	absent.sort()
 	t.check(extra.is_empty(), "the '%s' page carries nothing this %s bake does not draw (%d: %s)"
-			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), extra.size(),
+			% [GroundLayers.ATLAS_GROUP, AtlasTable.baked().bake_mode(), extra.size(),
 			", ".join(extra.slice(0, 5))])
 	t.check(absent.is_empty(),
 			"the '%s' page carries everything this %s bake draws (%d missing: %s)"
-			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), absent.size(),
+			% [GroundLayers.ATLAS_GROUP, AtlasTable.baked().bake_mode(), absent.size(),
 			", ".join(absent.slice(0, 5))])
 	t.check(actual.size() == expected.size(),
 			"the '%s' page holds exactly the %s bake's members (%d regions, %d wanted)"
-			% [GroundLayers.ATLAS_GROUP, AtlasLibrary.bake_mode(), actual.size(), expected.size()])
+			% [GroundLayers.ATLAS_GROUP, AtlasTable.baked().bake_mode(), actual.size(), expected.size()])
 	# The counts themselves, so a recipe or a TileSet that quietly shrank cannot make the two sets
 	# agree on nothing. An `--svg` bake composes nothing, so every source is a whole tile there.
 	var layers := 0
@@ -208,7 +209,7 @@ func _layer_region_name(filename: String) -> StringName:
 ## `resource_path` — the check that distinguishes "composed from the page" from "a picture that
 ## was loaded".
 func _test_the_ground_is_one_composed_sheet(t) -> void:
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), atlas)
 	t.check(composed != null, "the ground TileSet composes at all")
 	if composed == null:
 		return
@@ -270,7 +271,7 @@ func _test_the_ground_is_one_composed_sheet(t) -> void:
 	t.check(twins == GroundTiles.ROUTE_KERB_SOURCES.size(),
 			"every route-kerb source has its tinted twin registered (%d of %d)"
 			% [twins, GroundTiles.ROUTE_KERB_SOURCES.size()])
-	t.check(not composed.has_source(GroundTiles.WATER) and AtlasLibrary.has_region(&"tiles/water"),
+	t.check(not composed.has_source(GroundTiles.WATER) and AtlasTable.baked().has_region(&"tiles/water"),
 			"water stays available in its atlas without a static composed source")
 	t.check(composed.get_source_count() == AUTHORED_GROUND.get_source_count() - 1 + twins,
 			"the composed TileSet excludes water and adds route twins (%d against %d - 1 + %d)"
@@ -285,12 +286,12 @@ func _test_the_ground_is_one_composed_sheet(t) -> void:
 ## The route-kerb twins are left to `tests/test_ground_layers.gd`, which owns the tint's own
 ## contract; the cells checked here are the untinted ones.
 func _test_every_tile_is_the_page_the_manifest_asked_for(t) -> void:
-	var page := AtlasLibrary.page_image(GroundLayers.ATLAS_GROUP)
+	var page := atlas.page_image(GroundLayers.ATLAS_GROUP)
 	t.check(page != null, "the baked ground page reads back as an image")
 	if page == null:
 		return
 	var manifest := _composition_recipe()
-	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), atlas)
 	if composed == null:
 		return
 	var twin_ids: Dictionary = {}
@@ -331,8 +332,8 @@ func _test_every_tile_is_the_page_the_manifest_asked_for(t) -> void:
 ## Two builds of the same authored TileSet are the same pixels: the day repaint starts from the
 ## authored file every time, so layers can never accumulate across days.
 func _test_a_repaint_composes_the_same_pixels_again(t) -> void:
-	var first := GroundLayers.build_tile_set(AUTHORED_GROUND)
-	var second := GroundLayers.build_tile_set(AUTHORED_GROUND)
+	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), atlas)
+	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), atlas)
 	if first == null or second == null:
 		t.check(false, "both repaints compose a TileSet")
 		return
@@ -399,7 +400,7 @@ func _expected_cells(page: Image, manifest: Dictionary, source_id: int, name: St
 ## bake, whose page already carries whole authored tiles. Mirrors `GroundLayers._layer_recipe()`'s
 ## own branch rather than the run's `--svg` flag, which no longer decides anything here.
 func _composition_recipe() -> Dictionary:
-	if AtlasLibrary.bake_mode() == "svg":
+	if AtlasTable.baked().bake_mode() == "svg":
 		return {}
 	if not FileAccess.file_exists(MANIFEST_PATH):
 		return {}
@@ -424,9 +425,9 @@ func _component(page: Image, manifest: Dictionary, name: String) -> Image:
 	return _layer(page, manifest, str(components.get(name, "")))
 
 func _region(page: Image, name: StringName) -> Image:
-	if name.is_empty() or not AtlasLibrary.has_region(name):
+	if name.is_empty() or not AtlasTable.baked().has_region(name):
 		return null
-	var rect := AtlasLibrary.region_rect(name)
+	var rect := AtlasTable.baked().region_rect(name)
 	if not rect.has_area() or not Rect2i(Vector2i.ZERO, page.get_size()).encloses(rect):
 		return null
 	return page.get_region(rect)

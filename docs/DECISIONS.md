@@ -3,7 +3,9 @@
 **Every decision is a file of its own, under [decisions/](decisions/).** A file is named
 `<date>-<words>.md`, so sorting the folder puts the newest last, and two pull requests never edit
 the same record. A decision that closes a queue entry takes the entry's name
-(`<date>-<adjective>-<animal>.md`, or `<date>-M210.md` for an entry filed before names). A record
+(`<date>-<adjective>-<animal>.md`, or `<date>-M210.md` for an entry filed before names); a further
+record of the same entry is named `<entry name>-<adjective>-<animal>.md`, never numbered (inbox #937
+in plaid-penguin, inbox #941 in breezy-alpaca), and the records already numbered keep their numbers. A record
 written before the queue was files is named by its date and its heading
 (`2026-09-25-M201-a-ci-job-does-not-download-the-evidence.md`), and one milestone number can have
 many of those.

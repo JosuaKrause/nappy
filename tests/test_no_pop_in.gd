@@ -8,9 +8,9 @@ extends RefCounted
 ## camera's whole view.
 ##
 ## **What is checked is what the instance draws, not what it was placed by.** Each place makes a real
-## instance the way the game creates it there (`EventManager.spawn_warned()`, `_send_down_her_line()`,
+## instance the way the game creates it there (`EventManager.spawn_warned()`, `EventsAhead._send_down_her_line()`,
 ## the trap's), told where she is, and asks it what it draws on that frame
-## (`EventInstance.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
+## (`EventLook.drawn_rect_now()`: its pictures, its shadow, and its danger caret from the
 ## caret's own drawing numbers and its own projection of her). A footprint (`footprint_of()`) that
 ## leaves anything out fails here. Asked over every bearing, cameras led every way her look-ahead can
 ## lead them, both input schemes (a corner the joystick's controls cover is not off screen for this),
@@ -30,7 +30,7 @@ func run(t) -> void:
 ## The rows placed by a bearing from her.
 static func _rows() -> Array[EventDef]:
 	var rows: Array[EventDef] = [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
-			EventManager.as_warned(EventCatalogue.by_id("charging_dog")),
+			EventSpawner.as_warned(EventCatalogue.by_id("charging_dog")),
 			EventCatalogue.by_id("robber_giving_chase"), EventCatalogue.by_id("van_guard_giving_chase"),
 			EventCatalogue.by_id("policeman_giving_chase"),
 			EventCatalogue.by_id("guardsman_giving_chase")]
@@ -47,7 +47,7 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 		leads.append(Vector2(way.x, way.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD)
 	for lead in leads:
 		for joystick: bool in [false, true]:
-			views.append(VisibleView.around(her + lead, joystick))
+			views.append(VisibleView.around(her + lead, TouchControls.covered_screen() if joystick else null))
 	return views
 
 ## A real instance of `row` created at `at` the way the game creates one arriving from off screen,
@@ -56,12 +56,12 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
-	if path.is_empty() and row.mobile and not row.pursues:
+	if path.is_empty() and row.mobile and row.pursuit == null:
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path)
 	instance.came_under_a_warning = true
-	if not row.pursues or row.arrives_chasing:
-		instance.resume(EventManager.age_when_warned(row), 0.0)
+	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
+		instance.resume(EventSpawner.age_when_warned(row), 0.0)
 	instance.player_at = her
 	instance.player_running = false
 	return instance
@@ -69,7 +69,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 ## Whether anything `instance` draws on this frame overlaps the camera's whole `view` (corners
 ## included).
 static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
-	var rect := instance.drawn_rect_now()
+	var rect := instance.look.drawn_rect_now()
 	return Rect2(instance.global_position + rect.position, rect.size).intersects(view.view)
 
 func _test_open_ground_over_every_bearing_and_camera(t) -> void:
@@ -81,16 +81,17 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 		for view in _views(her):
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
-				var places: Array[Vector2] = [PendingWarning.just_out_of_sight(
-						PendingWarning.seen_from(view, her), row, her, way)]
+				var places: Array[Vector2] = [SpawnSiting.just_out_of_sight(
+						SpawnSiting.seen_from(view, her), EventFootprints.footprint_of(row), her,
+						way)]
 				if row.comes_down_her_line():
 					places.append(PendingWarning.down_her_line(null, row, her, way, view))
-				if row.pursues:
+				if row.pursuit != null:
 					places.append(PendingWarning.along_her_heading(null, row, her, way, view))
 				for at in places:
 					var instance := _arrival(row, at, her)
 					placed += 1
-					if instance.wants_a_mark():
+					if instance.look.wants_a_mark():
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id, way,
@@ -135,7 +136,7 @@ func _test_her_own_sidewalk_on_real_cities(t) -> void:
 ## in its lane, through every camera.
 func _test_the_road_and_the_lane(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
-	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var kerb := Vector2(2000.0, 4000.0)
 	var placed := 0
 	var popped: Array[String] = []
@@ -167,7 +168,7 @@ func _test_the_road_and_the_lane(t) -> void:
 ## come from there, so `in_its_lane()` has no place (the warning is withdrawn) rather than a place in
 ## view. With her a view's height or less from either end, every answer is off screen or none.
 func _test_the_lane_at_the_ends_of_the_road(t) -> void:
-	var column := EventManager.as_warned(EventCatalogue.by_id("military_convoy"))
+	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var top := 16.0
 	var bottom := 4000.0
 	var none := 0
@@ -211,10 +212,10 @@ func _test_a_turned_window_shows_nothing_either(t) -> void:
 					* Transform2D(0.0, -view.view.get_center())
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
-				var at := PendingWarning.just_out_of_sight(PendingWarning.seen_from(view, her), row,
-						her, way)
+				var at := SpawnSiting.just_out_of_sight(SpawnSiting.seen_from(view, her),
+						EventFootprints.footprint_of(row), her, way)
 				var instance := _arrival(row, at, her)
-				var rect := instance.drawn_rect_now()
+				var rect := instance.look.drawn_rect_now()
 				instance.free()
 				var drawn := Rect2(at + rect.position, rect.size)
 				var corners: Array[Vector2] = []

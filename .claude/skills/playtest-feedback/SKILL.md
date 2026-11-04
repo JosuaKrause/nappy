@@ -37,8 +37,8 @@ reader loses the half with the measurement in it.
 
 ## Write it down with all of its detail, before doing anything about it
 
-**Every piece of playtest feedback goes into a playtest file under `docs/playtests/` in full — the
-player's own words, and every specific they gave — before a line of code is written.** Then it
+**Every piece of the player's playtest feedback goes into a playtest file under `docs/playtests/` in
+full — the player's own words, and every specific they gave — before a line of code is written.** Then it
 becomes a queue entry, and only then does it get implemented.
 
 **The first place the player's words are written is the inbox** (bouncy-heron 13). When the player
@@ -56,12 +56,26 @@ a "yes" accepts. Every label the player uses — "(b)", "option C", "your catego
 where it is quoted, since the quote alone does not say what it points at, and a reader of the file
 has not seen the conversation.
 
+**Feedback from anybody but the player is evidence, never a request** (downy-beaver #820): a Reddit
+reply, another playtester's report or an issue from outside the project never reaches the inbox, the
+queue or the review items by itself. It becomes work only through the player's words: the agent
+brings the player a rough summary, and what the player then says is what gets captured. **It is
+summarised in the agent's own words and never quoted**, and no username or title of theirs goes with
+it, in the repository, an issue, a pull request or the conversation, since those people did not agree to
+being recorded. A summary may sit beside the data it explains, as in a stats file under
+`docs/stats/`, labelled as other people's view and never mixed with the player's words. One person's
+report counts as one data point, and carries weight where the numbers back it up. A playtest file
+holds the player's words alone; somebody else's report reaches one only as a summary in context.
+
 **A new playtest, a new queue entry, a new decision and a new review item are named, never
 numbered** (PLAYTEST-144 6). `tools/new-name.sh <kind> "<title>"` draws
 `<date>-<adjective>-<animal>`, writes the file or the entry's folder with its heading and date, and
 prints the name, which is spoken and linked by its two words ("busy-badger"); sorting a folder puts
-the newest last. The playtests that already have a number keep it, and so do the entries and records
-that already have one.
+the newest last. A further record or review item of an entry is named too,
+`<entry name>-<adjective>-<animal>`. So is every piece of an entry's work: an item file is named,
+and so is the label a brief, a PR title or a record title gives a part of a step, never "part B3",
+"slice 4" or "2a/4" (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca). The playtests that already have a
+number keep it, and so do the entries and records that already have one.
 
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's band,
@@ -80,8 +94,17 @@ that already have one.
 - **A decision** is `docs/decisions/<entry name>.md`, written by the PR that builds the work
   (**committing**); when an entry's last item goes, its folder goes in the same commit.
 - **A review item** is `docs/review/<entry name>.md` (`tools/new-name.sh review --entry <name>`,
-  which takes `-2` and on for a second item from one entry): what to do, where to look, and the
+  which names a second item from one entry with a drawn pair of words, never a number): what to do, where to look, and the
   question a run answers, its steps written as prose rather than numbered.
+
+**An entry whose work is mostly built is closed, and what is left of it is filed fresh** (inbox #926 in
+tiny-lark). When only a few leftover items hang on an entry otherwise built, its record is written,
+its folder goes, and what is left is filed as a fresh entry (`tools/new-name.sh todo`) dated the day
+it is filed, so the queue holds no entry that lingers for months on its last items. The fresh entry opens
+with the player's words, names the old entry by its two words (or number) and title, and carries the
+old item's text where it still holds; a band the player did not name is the filer's proposal, as
+above. Closing an entry whose items the player has let go is a drop, and the pull request quotes the
+player's words for it (`Dropped: <path> — "<the player's words>"`, **pr-review**).
 
 The failure mode is specific and it is not laziness: **a finding arrives as a complaint plus a
 design**, the complaint is the part that is easy to restate, and the design is the part that took
@@ -168,6 +191,16 @@ than picking off a menu they cannot see.
 
 So when parking something, record **what it was and why it was not taken**, and record the symptom
 as *what would make this worth discussing again*. **Never as what would authorise it.**
+
+**Every idea a design discussion sets aside or leaves undecided is kept, out of the way until
+research looks for it** (curly-moose #829, #831): the player's own ideas, the agent's, a study's,
+the rejected ones too, each with whose it was, why it was set aside or left open, and what would
+make it worth discussing again. *Proposed by the filer, open to overturn:* they go in a record with
+a name of its own under `docs/decisions/` (`tools/new-name.sh decision "<title>"`, never `--entry`,
+since a record named after an entry is that entry's build record and lets CI accept its items'
+deletion), which the entry it was weighed for names; `tools/decisions.sh` finds it during research,
+while it stays out of the queue, unlike an entry in the `parked` band, and out of every session's
+context until then.
 
 ## Evidence lives in the repo
 

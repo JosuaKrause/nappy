@@ -253,9 +253,9 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 		# than from the doorstep, so a private version of this sum reads one tile short and fails
 		# on about one seed in twenty-four while the guarantee itself holds.
 		var distance := map.home_to_nearest_calm()
-		t.check(distance >= Tuning.MIN_HOME_TO_PARK_TILES,
+		t.check(distance >= CityGenerator.MIN_HOME_TO_PARK_TILES,
 				"seed %d: and calm ground is still %d tiles away, against the %d asked for"
-				% [_seed(i), distance, Tuning.MIN_HOME_TO_PARK_TILES])
+				% [_seed(i), distance, CityGenerator.MIN_HOME_TO_PARK_TILES])
 
 ## M21. A multi-block calm zone is several blocks of *one* thing — one lot, one arc, one entry in
 ## everything that counts calm areas — and the ground under it is unbroken.
@@ -321,9 +321,9 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 						"seed %d: zone %s is calm ground and nothing else (found %s)"
 						% [_seed(i), anchor, GameEnums.TileType.keys()[kind]])
 
-		t.check(open_zones >= Tuning.MIN_CALM_ZONES and open_zones <= Tuning.MAX_CALM_ZONES,
+		t.check(open_zones >= CityGenerator.MIN_CALM_ZONES and open_zones <= Tuning.MAX_CALM_ZONES,
 				"seed %d has %d open calm zones, wanted %d..%d" % [_seed(i), open_zones,
-				Tuning.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
+				CityGenerator.MIN_CALM_ZONES, Tuning.MAX_CALM_ZONES])
 		t.check(squares >= 1, "seed %d has a %d-block-square calm zone"
 				% [_seed(i), Tuning.CALM_ZONE_BLOCKS])
 		t.check(complexes <= Tuning.MAX_APARTMENT_COMPLEXES,
@@ -361,9 +361,9 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 ## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
 func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
 	var layout: BlockLayout = map.block_layouts[anchor]
-	t.check(layout.open_rect.size.x == Tuning.APARTMENT_COURT_TILES,
+	t.check(layout.open_rect.size.x == CityGenerator.APARTMENT_COURT_TILES,
 			"seed %d: complex %s has a court %d tiles across, not %d"
-			% [seed_value, anchor, layout.open_rect.size.x, Tuning.APARTMENT_COURT_TILES])
+			% [seed_value, anchor, layout.open_rect.size.x, CityGenerator.APARTMENT_COURT_TILES])
 	t.check(BlockLayout.has(layout.passage),
 			"seed %d: complex %s has an archway into it" % [seed_value, anchor])
 
@@ -384,13 +384,13 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 	var built := 0
 	for key: Vector3i in map.absent_segments:
-		if not CityMap.blocks_tile_rect(footprint).encloses(StreetNetwork.by_key(key).tile_rect()):
+		if not CityMap.blocks_tile_rect(footprint).encloses(map.network.by_key(key).tile_rect()):
 			continue
 		built += 1
 		t.check(map.is_hard_blocker(key),
 				"seed %d: the street %s the complex %s took is built over"
 				% [seed_value, key, anchor])
-		for tile in map.rect_tiles(StreetNetwork.by_key(key).tile_rect()):
+		for tile in map.rect_tiles(map.network.by_key(key).tile_rect()):
 			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
 					or layout.passage.has_point(tile),
 					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
@@ -538,7 +538,7 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 		total += map.dead_ends.size()
 
 		for key: Vector3i in map.dead_ends:
-			var segment := StreetNetwork.by_key(key)
+			var segment := map.network.by_key(key)
 			t.check(map.absent_segments.has(key),
 					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
 			t.check(key != home.key(),
@@ -559,12 +559,12 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 						walkable += 1
 				if walkable == 0:
 					blocked_rows += 1
-					t.check(step < Tuning.CUL_DE_SAC_WALL_TILES
-							or step >= along - Tuning.CUL_DE_SAC_WALL_TILES,
+					t.check(step < CityGenerator.CUL_DE_SAC_WALL_TILES
+							or step >= along - CityGenerator.CUL_DE_SAC_WALL_TILES,
 							"seed %d: the wall in %s is at one end of it" % [_seed(i), key])
-			t.check(blocked_rows == Tuning.CUL_DE_SAC_WALL_TILES,
+			t.check(blocked_rows == CityGenerator.CUL_DE_SAC_WALL_TILES,
 					"seed %d: dead end %s is walled %d tiles deep (found %d)"
-					% [_seed(i), key, Tuning.CUL_DE_SAC_WALL_TILES, blocked_rows])
+					% [_seed(i), key, CityGenerator.CUL_DE_SAC_WALL_TILES, blocked_rows])
 			t.check(blocked_rows < along,
 					"seed %d: and is still a street you can walk into" % _seed(i))
 
@@ -583,9 +583,9 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 	# Measured at 5.9 a city against a rolled 4-8. A floor rather than the number, because the
 	# gate may legitimately refuse one; a city averaging below the minimum means the placement has
 	# stopped working rather than that a seed was unlucky.
-	t.check(float(total) / seeds >= float(Tuning.MIN_CUL_DE_SACS),
+	t.check(float(total) / seeds >= float(CityGenerator.MIN_CUL_DE_SACS),
 			"a city gets %.1f dead ends, wanting at least %d"
-			% [float(total) / seeds, Tuning.MIN_CUL_DE_SACS])
+			% [float(total) / seeds, CityGenerator.MIN_CUL_DE_SACS])
 
 ## The other hard blocker: two blocks joined into one mass, with the street between them built
 ## over. *(M50, corrected 2026-08-31: "a big building just connects two blocks… I want one that
@@ -608,9 +608,9 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 	for i in seeds:
 		var map := _map(i)
 		t.check(not map.big_buildings.is_empty(), "seed %d has a landmark in it" % _seed(i))
-		t.check(map.big_buildings.size() <= Tuning.MAX_BIG_BUILDINGS,
+		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d has at most %d (%d)"
-				% [_seed(i), Tuning.MAX_BIG_BUILDINGS, map.big_buildings.size()])
+				% [_seed(i), CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
 		total += map.big_buildings.size()
 
 		for pair: Rect2i in map.big_buildings:
@@ -631,10 +631,10 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 			# One street gone, and it is the one between them — derived here as the street both
 			# blocks' own rings have in common, rather than restated from the generator's rule.
 			var ring := {}
-			for segment in StreetNetwork.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
 				ring[segment.key()] = true
 			var between := Vector3i.ZERO
-			for segment in StreetNetwork.around_blocks(Rect2i(pair.end - Vector2i.ONE,
+			for segment in map.network.around_blocks(Rect2i(pair.end - Vector2i.ONE,
 					Vector2i.ONE)):
 				if ring.has(segment.key()):
 					between = segment.key()
@@ -648,7 +648,7 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 
 			# And nothing else round the pair was taken *by the landmark*. A dead end may still sit
 			# on one of them, which is legitimate city and is why the exception is named.
-			for segment in StreetNetwork.around_blocks(pair):
+			for segment in map.network.around_blocks(pair):
 				t.check(map.has_street(segment.key()) or map.dead_ends.has(segment.key()),
 						"seed %d: %s round the landmark %s is still a street"
 						% [_seed(i), segment.key(), pair])
@@ -659,9 +659,9 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 				var junction: Vector2i = corner * CityMap.period()
 				t.check(map.is_street(junction + Vector2i.ONE * (Tuning.STREET_WIDTH / 2)),
 						"seed %d: the junction at %s is still a junction" % [_seed(i), corner])
-	t.check(float(total) / seeds >= float(Tuning.MIN_BIG_BUILDINGS),
+	t.check(float(total) / seeds >= float(CityGenerator.MIN_BIG_BUILDINGS),
 			"a city gets %.1f big buildings, wanting at least %d"
-			% [float(total) / seeds, Tuning.MIN_BIG_BUILDINGS])
+			% [float(total) / seeds, CityGenerator.MIN_BIG_BUILDINGS])
 
 ## M53: **the lattice draws a full crossroads wherever two corridors cross, whether or not the
 ## arms of it are streets.** Stated once over "ground that stopped being a street" — a zone's
@@ -772,12 +772,12 @@ func _along_across_rect(vertical: bool, along_lo: int, along_size: int,
 			else Rect2i(Vector2i(along_lo, across_lo), Vector2i(along_size, across_size))
 
 ## Every precinct span gets a line of posts at each end, standing exactly where the paving
-## begins: `City.bollard_positions` is geometry alone, so this holds it without a scene.
+## begins: `CityMap.post_positions()` is geometry alone, so this holds it without a scene.
 func _test_bollards_stand_where_the_paving_begins(t) -> void:
 	var seeds := 25
 	for i in seeds:
 		var map := _map(i)
-		var positions := City.bollard_positions(map)
+		var positions := map.post_positions()
 		for span in map.precinct_spans:
 			var vertical := span.x == 1
 			var corridor: int = span.y

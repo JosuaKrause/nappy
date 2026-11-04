@@ -10,14 +10,14 @@ extends RefCounted
 ## doorstep (`EventManager.start_day()`), the crowd from a fixed RNG seed with the day's gates — and
 ## walks a player rig with a real `Baby` down from the doorstep and then along one of two walks
 ## (`WALKS`): back and forth along the street, or from tick `CHASE_FROM` from event to event.
-## One simulated thirtieth of a second is one physics tick (the crowd's, the events', the baby's,
-## in that order) followed by one drawn frame (every agent's and every live event's `_process()`).
+## One simulated thirtieth of a second is one physics tick: the crowd's with every agent's step
+## inside it, the events' with every live event's step inside it, and the baby's, in that order.
 ## The first `WARMUP` ticks are not timed; the next `WINDOW` are.
 ##
 ## **Two modes over the same simulation.** `whole` times the real `EventManager._physics_process()`
 ## and `Baby._physics_process()` as one span each. `split` makes the events' step's own calls in its
 ## own order (`_tick_the_events()`), timing each apart, and times the sweep's three queries
-## (`EventManager.excitement_sources_at()`, `door_holding_her_at()`, `Crowd.excitement_sources_at()`)
+## (`EventSources.sources_at()`, `door_holding_her_at()`, `CrowdSources.sources_at()`)
 ## on their own before the baby's whole step — so the split's `baby` column is the step with the
 ## queries' caches already warm, and is not comparable with `whole`'s. Both modes chain a SHA-256
 ## over every event's and every agent's state, her alert and the baby's meters after every tick,
@@ -46,7 +46,7 @@ const WARMUP := 150
 const WINDOW := 600
 ## The events' step's calls, in `EventManager._tick_the_events()`'s order.
 const EVENT_PARTS: Array[String] = ["retire", "camera", "site", "stream", "owed", "sighted",
-		"pelicans", "encounters", "warnings", "tell", "officers", "ground", "door_lines",
+		"pelicans", "encounters", "warnings", "tell", "step", "officers", "ground", "door_lines",
 		"detentions", "hard_fails"]
 ## The sweep's queries, then the baby's whole step.
 const SWEEP_PARTS: Array[String] = ["event_sources", "door", "crowd_sources", "baby"]
@@ -61,7 +61,7 @@ func run(t) -> void:
 	rig.set_physics_process(false)
 	rig.set_process(false)
 	for city_seed in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		for day in DAYS:
@@ -95,13 +95,13 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	var start := city.map.doorstep_world_position()
 	var consumed: Array[String] = []
 	var events := city.events
-	events.start_day(day, _rng("events", city_seed, day), consumed, start)
+	events.start_day(DaySpec.for_day(day), _rng("events", city_seed, day), consumed, start)
 	events.stream_around(start)
 	var crowd := city.crowd
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
 	crowd.set_gates(city.region_plan().gates)
 	crowd._player = rig
-	events._player = rig
+	events.use_player(rig)
 	rig.global_position = start
 	rig.velocity = Vector2.ZERO
 	rig._alert = Stroller.Alert.NONE
@@ -140,11 +140,6 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		else:
 			row = _split_events(events, STEP)
 			row.append_array(_split_sweep(city, baby, rig.global_position))
-		for agent in crowd.agents():
-			agent._process(STEP)
-		for instance in events.instances():
-			if not instance.is_finished:
-				instance._process(STEP)
 		# Wherever the step left her: a door's release sets her down somewhere else.
 		here = rig.global_position
 		chain = _chain(chain, city, rig, baby)
@@ -183,48 +178,50 @@ func _rng(stream: String, city_seed: int, day: int) -> RandomNumberGenerator:
 ## microseconds in `EVENT_PARTS` order; a call the step skips this tick reads 0.
 func _split_events(events: EventManager, delta: float) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	events._broadcast_clock += delta
-	events._retire_finished()
+	events.streaming.broadcast_clock += delta
+	events.streaming.retire_finished()
 	stamps.append(Time.get_ticks_usec())
-	var found := events._find_player()
+	var found := events.world.has_player()
 	if found:
 		events._look_through_the_camera()
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events._site_what_is_on_her_way(delta)
+		events.ahead.site_what_is_on_her_way(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events.stream_around(events._player.global_position)
+		events.stream_around(events.world.player.global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found and not events._recipe_plan:
-		events._place_what_is_owed_ahead(delta)
+		events.ahead.place_what_is_owed_ahead(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._summon_what_has_been_sighted()
+		events.spawner.summon_what_has_been_sighted(events.plans())
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._report_the_pelicans_in_view()
+		events.spawner.report_the_pelicans_in_view()
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._watch_the_encounters(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._run_the_warnings(delta, events._player.global_position)
+		events.warnings.run(delta, events.world.player.global_position)
 	stamps.append(Time.get_ticks_usec())
 	if found:
 		events._tell_them_where_she_is()
 	stamps.append(Time.get_ticks_usec())
-	if found:
-		events._let_the_officers_out()
+	events._step_them(delta)
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._warn_about_the_ground_she_is_on()
+		events.ahead.let_the_officers_out()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._watch_the_door_lines()
+		events.warnings.warn_about_the_ground_she_is_on()
 	stamps.append(Time.get_ticks_usec())
 	if found:
-		events._check_detentions()
+		events.checkpoints.watch_the_door_lines()
+	stamps.append(Time.get_ticks_usec())
+	if found:
+		events.checkpoints.check_detentions()
 	stamps.append(Time.get_ticks_usec())
 	events._check_hard_fails()
 	stamps.append(Time.get_ticks_usec())
@@ -237,11 +234,11 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 ## microseconds in `SWEEP_PARTS` order.
 func _split_sweep(city: City, baby: Baby, her: Vector2) -> Array[int]:
 	var stamps: Array[int] = [Time.get_ticks_usec()]
-	city.events.excitement_sources_at(her)
+	city.events.sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	city.events.door_holding_her_at(her)
 	stamps.append(Time.get_ticks_usec())
-	city.crowd.excitement_sources_at(her)
+	city.crowd.sources.sources_at(her)
 	stamps.append(Time.get_ticks_usec())
 	baby._physics_process(STEP)
 	stamps.append(Time.get_ticks_usec())
@@ -292,14 +289,14 @@ func _chain(previous: PackedByteArray, city: City, rig: Stroller, baby: Baby) ->
 		state.append(float(instance.is_finished))
 		state.append(float(instance.is_leaving))
 		state.append(float(instance.is_telegraphing()))
-		state.append(instance.landed())
+		state.append(instance.excitement.landed())
 	state.append(float(city.events.pending_warnings().size()))
 	state.append(float(city.events.active_count()))
 	for agent in city.crowd.agents():
 		state.append(agent.global_position.x)
 		state.append(agent.global_position.y)
 		state.append(agent.speed())
-		state.append(agent.landed())
+		state.append(agent.excitement.landed())
 	state.append(rig.global_position.x)
 	state.append(rig.global_position.y)
 	state.append(float(rig._alert))

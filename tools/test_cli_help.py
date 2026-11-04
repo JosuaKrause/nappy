@@ -48,6 +48,7 @@ ENTRY_POINTS = (
     "convert-queue-edits.py",
     "release-notes.py",
     "inbox.py",
+    "agent-stats.py",
     "reddit.py",
     "check_citations.py",
     "ci_classify.py",
@@ -56,6 +57,8 @@ ENTRY_POINTS = (
     "ci_queue_update.py",
     "ci_transcription.py",
     "ci_code_pr_queue.py",
+    "ci_pr_questions.py",
+    "check_layers.py",
 )
 
 SOUND_FILES = (
@@ -76,7 +79,14 @@ class CliHelpTests(unittest.TestCase):
         (root / "src" / "dev").mkdir(parents=True)
         (root / "src" / "autoload").mkdir(parents=True)
         (root / "scene-recipes").mkdir()
-        for name in ("trailer.sh", "record.sh", "lib_dev_flags.sh", "lib_movie_evidence.sh", "lib_disk_headroom.sh"):
+        for name in (
+            "trailer.sh",
+            "record.sh",
+            "lib_dev_flags.sh",
+            "lib_movie_evidence.sh",
+            "lib_disk_headroom.sh",
+            "lib_import_restore.sh",
+        ):
             shutil.copy2(TOOLS / name, root / "tools" / name)
         shutil.copy2(TOOLS / "trailer" / "shots.json", root / "tools" / "trailer" / "shots.json")
         shutil.copy2(TOOLS / "trailer" / "scores.json", root / "tools" / "trailer" / "scores.json")

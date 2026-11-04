@@ -23,7 +23,7 @@ func run(t) -> void:
 	var network_closed := _closed_count(network_tiles)
 	var offered := network_tiles.duplicate()
 	offered.merge(home_tiles)
-	var row := {"seed": _city.map.seed_used, "day": GameState.day,
+	var row := {"seed": _city.map.seed_used, "day": GameState.header.day,
 		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),

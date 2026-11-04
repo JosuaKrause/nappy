@@ -1,5 +1,5 @@
 <!-- One stretch of the red-and-white roadworks barrier seen end-on, for an east-west street
-     (`EventInstance._roadwork_segment_texture`). The barrier runs away from the camera, so its
+     (`EventPictures.roadwork_segment_texture`). The barrier runs away from the camera, so its
      striped board projects to a narrow upright band, and the one thing seen broadside is each
      trestle's pair of legs splayed out to either side. `_draw_spread` stacks these down the
      screen with no gap and stretches each to its share of the obstruction, so the band runs the

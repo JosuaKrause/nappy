@@ -29,7 +29,7 @@ func run(t) -> void:
 
 func _role_for_the_named_rows() -> void:
 	print("\n== _role_for and walk_through_cost() for the named rows (static, no city needed) ==")
-	print("WALL_WORTH_OF_COST = %.2f" % Tuning.WALL_WORTH_OF_COST)
+	print("WALL_WORTH_OF_COST = %.2f" % EventScheduler.WALL_WORTH_OF_COST)
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]
 	for id in ids:
@@ -46,7 +46,7 @@ func _role_for_the_named_rows() -> void:
 
 func _role_and_depth_sweep() -> void:
 	print("\n== role x Corridor.depth() over %d seeds x days %s (EVENT_CORRIDOR_WEIGHT=%d) =="
-			% [SEEDS, SAMPLE_DAYS, Tuning.EVENT_CORRIDOR_WEIGHT])
+			% [SEEDS, SAMPLE_DAYS, EventScheduler.EVENT_CORRIDOR_WEIGHT])
 	# depth bucket 0 = on the corridor, 1 = rim, 2 = "deep" (2 or more, saturating at Corridor.DEEP)
 	var by_role_depth := {}   # "%s:%d" % [role_name, depth] -> count
 	var by_id_depth := {}     # "%s:%d" % [id, depth] -> count
@@ -82,7 +82,7 @@ func _role_and_depth_sweep() -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("zz_m64:%d:%d" % [map.seed_used, day])
 			var consumed: Array[String] = []
-			var planned := EventScheduler.build_day(day, rng, map, consumed, [], [], tree)
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree)
 			day_count += 1
 			sum_corridor_streets += tree.streets().size()
 			var crossing_streets := {}
@@ -103,7 +103,7 @@ func _role_and_depth_sweep() -> void:
 				if depth == 0 and plan.role == GameEnums.BlockerRole.FRICTION \
 						and not plan.def.mobile and plan.def.obstructs_radius > 0.0:
 					sum_solid_friction_on_corridor += 1
-					var segment := StreetNetwork.segment_containing(tile)
+					var segment := map.network.segment_containing(tile)
 					if segment:
 						crossing_streets[segment.key()] = true
 			sum_streets_with_a_crossing += crossing_streets.size()
@@ -158,7 +158,7 @@ func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Arra
 
 func _closure_access_vs_rim_sweep() -> void:
 	print("\n== closures, the access-street refusal, and the rim, over %d seeds x 14 days ==" % SEEDS)
-	var total_streets := StreetNetwork.segments().size()
+	var total_streets := StreetNetwork.new().segments().size()
 	var sum_access := 0
 	var sum_rim := 0
 	var sum_access_and_rim := 0
@@ -179,7 +179,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			map.repaint(state)
 			var home := ClosurePlanner.home_street(map)
 			var areas := ClosurePlanner.calm_areas(map)
-			if not home or areas.size() < Tuning.MIN_CALM_AREAS_REACHABLE:
+			if not home or areas.size() < ClosurePlanner.MIN_CALM_AREAS_REACHABLE:
 				continue
 			var tree := RouteTree.for_day(map, day)
 			day_count += 1
@@ -260,13 +260,13 @@ func _candidates_without_access_filter(map: CityMap, home: StreetNetwork.Segment
 		gaps[key] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 			continue
 		pool.append(segment)
-		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
-		weights.append(weight * Tuning.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
+		var weight := ClosurePlanner.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
+		weights.append(weight * ClosurePlanner.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():

@@ -1,4 +1,5 @@
-priority: later
+priority: now
+after: 2026-10-18-minty-quail
 
 # amber-puffin — The south water is a blue base with drifting Voronoi lines · filed 2026-10-11
 
@@ -31,3 +32,5 @@ the effect's cost per frame; if it costs too much, it is prerendered into tiles,
 offered.
 
 The work is [a-standalone-experiment.md](a-standalone-experiment.md), then bringing it into the game.
+
+**Band `now`, after the refactor.** [tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #930: "actually I'm interested in trying that on the side after the refactor; let's move to now".

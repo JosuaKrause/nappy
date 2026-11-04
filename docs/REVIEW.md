@@ -7,7 +7,7 @@ can capture multiple items at once.")* The work goes on while this list waits, a
 answers as many of these as it passes through.
 
 **How it is kept.** Each item is a file under [review/](review/), named after the queue entry whose
-work it asks about (`<entry name>.md`, and `<entry name>-2.md` for a second item from the same
+work it asks about (`<entry name>.md`, and `<entry name>-<adjective>-<animal>.md` for a second item from the same
 entry); an item from before names is named by the date it was written and its first words
 (`2026-09-13-touch-the-day-4-chalk-mark.md`). It enters when work lands that only a person can
 judge, in the same PR as the work, and names what to do, where to look, and the question a run
@@ -15,7 +15,8 @@ answers — not what was built, which is the record's under [decisions/](decisio
 closes the items it covered: the finding goes in the playtest's file, the item's file is deleted in
 the same commit, and what the player asked for goes to the queue. Nothing here is a task; a task is
 an item under [todo/](todo/). What a rig has measured and no person has felt yet is an item like
-any other.
+any other. The orchestrating session shows each item on the Nappy board's Review tab and keeps the
+tab in step with this folder (**board**); the file stays the item.
 
 ## Next run, in one sitting
 

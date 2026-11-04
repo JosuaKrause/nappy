@@ -94,7 +94,7 @@ investigating patrol car, the hunting roadblock and the hunting vans, which no a
 otherwise reaches. The ordinary scheduler's ground, route, spacing, protected-door and corridor
 checks accept its site, checked against that shape. An authored path must equal that production route. A `loudspeaker` row is a mast, a
 scripted row no roll places, so it is accepted instead by the checks the day's masts pass
-(`EventScheduler._place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
+(`EventScheduler.place_masts()`): day 5 or later; a sidewalk or square tile a mast site would be
 offered (off the home street, its field off a calm interior and off every place a region door
 could stand); not closed, not on a held street, not on the home block; its field clear of the day's
 own doors; and clear of what is placed before it. The calm she has not used, which a mast queued for
@@ -111,7 +111,7 @@ pursue, drives, lets men out, parks, hands on, or a guard leaves his barrier) th
 naming the event, the row and its own reason, and the scene fails if a held event is later sent along a set
 path. The game's despawn rules are unchanged; a held event is simply
 never removed, and `trailer-dog.json` holds its dog. `charging: true` starts a pursuer that waits for her already set on her, its notice spent, the way the guard a task sends is: it charges from the first frame instead of warning until she
-walks into its radius, and still gives up when she has run from it for `Tuning.PURSUIT_SHAKEN_OFF`. Of the catalogue only the hunting roadblock guard of the escape and the alley robber wait for her (the charging dog has no radius and charges from its first frame, so it needs no option); any row that does not wait, or sets off beside her, fails the recipe with its reason. `relentless: true` keeps a pursuer from giving up because she ran: the runtime clears the pursuer's running clock every tick (`EventInstance._outrun_for`), so a charging guard keeps coming however long she runs, for a shot that holds the chase for longer than the 0.35s a run takes to shake him off; the game's rule is unchanged. A row that does not pursue her fails the recipe with its reason. Director pursuers use the real
+walks into its radius, and still gives up when she has run from it for `Tuning.PURSUIT_SHAKEN_OFF`. Of the catalogue only the hunting roadblock guard of the escape and the alley robber wait for her (the charging dog has no radius and charges from its first frame, so it needs no option); any row that does not wait, or sets off beside her, fails the recipe with its reason. `relentless: true` keeps a pursuer from giving up because she ran: the runtime clears the pursuer's running clock every tick (`EventPursuit.outrun_for`), so a charging guard keeps coming however long she runs, for a shot that holds the chase for longer than the 0.35s a run takes to shake him off; the game's rule is unchanged. A row that does not pursue her fails the recipe with its reason. Director pursuers use the real
 ahead-of-player siting. `age` may advance through the initial warning only; active movement is
 simulated. Actors give `name`, `kind` (`walker` or `car`), `at`, cardinal `direction` and optional
 `speed`; production lane, ground, speed and car-gap checks apply.
@@ -127,7 +127,7 @@ included, is refused, never
 moved. Days 6 to 13 take `mark`; day 14's task, the power station's front door, has no mark and
 takes `task: {}`, and the scene starts with the resistance goal met, since the last night is
 offered only then. `neighbor` pins day 10's neighbor's start to a sidewalk tile the day's own draw
-could choose (about `Tuning.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home, and
+could choose (about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk from home, and
 `ResistanceDirector.NEIGHBOR_CLEAR_OF_HER`, 400px, or more from her where she reads the mark, which
 the draw runs when she does); it is the one target drawn
 from the whole city rather than placed near the mark or standing in a fixed place. Everything the
@@ -154,12 +154,16 @@ Only the real happening installs the trucks. Their count stays outside the catal
 as it does in ordinary play.
 
 `seals: [{"segment":[5,4,0],"candidate":"cafe_pair"}]` selects an existing production
-seal picture and its exact street. Ordinary day eligibility, off-route street, home and spine
-exclusions and tree placement apply. The existing placement supplies both sides of a soft pair.
-There is no automatic seal fill or thinning of these explicitly selected pairs.
-`gates: [{"segment":[5,5,0]}]` selects an existing checkpoint from the context's eligible
-region doors, including its two gatehouses and shared traffic-operated boom. A horizontal street
-uses the standard vertical gate. `barriers: [{"segment":[3,5,0],"end":"b"}]` places the
+seal picture and its exact street. The street and the picture are held to the questions the
+day's own seal pass asks (`SealPlanner.may_seal()`: off the walk, not the home street, not the
+main road; `SealPlanner.offers()`: the picture's day, and a fallen tree only on a street with
+trees), and the seal is sited through the pass's own entry (`SealPlanner.seal_street()`), so it
+stands where a played day would stand the same picture, both sides of a soft pair included, with
+both its sidewalks shut to walkers. There is no automatic seal fill or thinning of these
+explicitly selected pairs. `gates: [{"segment":[5,5,0]}]` selects an existing checkpoint from the
+context's eligible region doors and stands it through the day's own entry
+(`RegionPlanner.stand_door()`): its two gatehouses and shared traffic-operated boom where the
+day's door stands them. A horizontal street uses the standard vertical gate. `barriers: [{"segment":[3,5,0],"end":"b"}]` places the
 existing roadblock band at that mouth of an off-route street, on an eligible later day.
 These fields place production components; they introduce no new scenery or event types.
 
@@ -356,7 +360,7 @@ street, as above.
 east of the fire, so that its lot, its rise and its smoke are out of her view, in either
 presentation, at the first frame *(the player, inbox #557: "the
 fire truck scene starts too close to the start -- the building is already on screen")*: once she has seen
-the fire, its own `spawns_on_sight` calls the `fire_truck` in from off screen exactly as a played
+the fire, its own `aftermath.on_sight` calls the `fire_truck` in from off screen exactly as a played
 day does, and the engine parks at the kerb in front of the fire for the rest of the day.
 The scripted walk turns north after seeing the fire, then returns partway south to watch the
 parked engine from farther away. It shows the moving engine during that retreat and manages
@@ -430,7 +434,8 @@ the extent are omitted. This exterior is neither a generated street nor evidence
 route guarantee. The data retains its context for dependent validation, while gameplay queries
 outside the authored bounds see only the fallback surface.
 
-The runtime sets `map.recipe_frame_locked` before building scripted scenes. Scenery preparation
+A scripted scene's city is built frame-locked (`City.scenery_frame_locked`, from the run's
+configuration, `RunConfig.recipe_scripted`). Scenery preparation
 then completes the camera's whole loading area synchronously and ignores the ordinary CPU
 preparation budget, including during a zoom. Free play leaves ordinary streaming enabled.
 This removes wall-clock load from scenery readiness; it does not promise frame equality

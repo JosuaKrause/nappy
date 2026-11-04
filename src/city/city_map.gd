@@ -1,5 +1,5 @@
 class_name CityMap
-extends RefCounted
+extends WorldMap
 ## The generated city as data: a tile grid plus the derived features the renderer, the
 ## event scheduler and the tests all need. No nodes, no drawing — so it can be generated
 ## and validated headlessly across hundreds of seeds.
@@ -10,16 +10,31 @@ extends RefCounted
 ##      0         5   6          13   14      19   20         27
 ##
 ## so a coordinate's position within its period tells you which it is.
+##
+## **The city's `WorldMap`**: the line walk, the wall's depth, the blocked record (`blocked`, the
+## base's) and the tile conversions are the interface's; this map answers for its own ground
+## (`_ground_lets()`, `_open()`) and for the streets (`pavement_inward()`, `corridor_offsets()`, ...).
 
-var size: Vector2i
+## How deep the framed border band outside the finite map is, in tiles. The southern bridge's
+## road and the unwalkable landscape beneath and beyond that band are drawn wherever the view
+## asks for them, the player's camera included.
+const OUTSIDE_DEPTH_TILES := Tuning.BLOCK_SIZE
+
+## Distance between adjacent bollards' centres across a precinct's mouth, in px. The row shuts the
+## carriageway band to her *(2026-10-10, the player, azure-puffin: "it will make the middle of the
+## road impassable when going from street to pedestrian road. that's okay. this is intended")*, so
+## every gap has to be narrower than her body alone: her circle is 28px across (14px radius) at
+## whatever facing, so a gap of 28px or more lets her through sideways-on, and the pram circle
+## only makes that harder. 14px less two posts' 4.8px radii leaves a 4.4px slit, and puts five
+## posts on the 64px band, 4px in from either edge. The pavements either side of the band stay
+## open. Open to overturn; `tests/test_bollards.gd` holds the walks.
+const BOLLARD_SPACING := 14.0
+
 var tiles: PackedByteArray
 ## A recipe keeps its construction witness for global placement checks. Only this declared
 ## rectangle is presented; the exterior is experimental ground, never a generated street.
 var recipe_bounds := Rect2i()
 var recipe_exterior := false
-## Runtime enables this for scripted playback before building the City. Free play keeps
-## ordinary streaming; movie frames prepare their whole load view synchronously.
-var recipe_frame_locked := false
 var recipe_diagnostics: Array[String] = []
 var recipe_closures: Array[RoadClosure] = []
 var recipe_tree_moves := {}
@@ -98,6 +113,10 @@ var zone_rects := {}
 ## Every block of a multi-block lot -> that lot's anchor, the anchor included. The inverse of
 ## `zone_rects`, kept rather than searched because `block_at()` asks it per event.
 var zone_anchor := {}
+## The street lattice as a graph, this city's own: every planner, placement and mover handed the
+## map reads its streets here. Built with the map and never replaced; the same streets on every
+## city, since the lattice is a function of `Tuning.CITY_BLOCKS` alone (`StreetNetwork`).
+var network := StreetNetwork.new()
 ## Segment keys this city does not have at all: the streets a four-block calm zone was painted
 ## straight over. Fixed for the run, unlike `closed_tiles`, and a fact about the **lattice**
 ## rather than about a day — the tiles are park, and the player walks on them quite happily.
@@ -158,7 +177,7 @@ func has_power_station() -> bool:
 func power_station_door_street() -> StreetNetwork.Segment:
 	if not has_power_station():
 		return null
-	return StreetNetwork.by_key(power_station_door_key)
+	return network.by_key(power_station_door_key)
 
 ## The world point in front of the power station's front door: the middle of the pavement tiles
 ## `power_station_door` names, which is where she stands to reach it and what an arrow aims at.
@@ -231,7 +250,13 @@ var seed_used := 0
 ## siting, the catalogue's placement, the day's own reachability sums — gets the same answer about
 ## it a closed street already gets. **A merely-`shut_calm` area is not**: its ground stays exactly
 ## as open as any other calm ground, because nothing there blocks her — see `shut_calm`.
-var closed_tiles := {}
+##
+## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
+var closed_tiles: Dictionary:
+	get:
+		return blocked.closed
+	set(value):
+		blocked.closed = value
 
 ## The calm areas taken off today's route tree, as the blocks that anchor them — the ones she has
 ## already used this act (`set_spent_calm()`) that `ClosurePlanner.calm_to_shut()` found could be
@@ -255,29 +280,29 @@ var _fenced_tiles := {}
 ## What `set_spent_calm()` handed over, waiting for the next `repaint()` to read it.
 var _spent_for_the_next_repaint: Array[Vector2i] = []
 
-## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `GameState.fenced_park`
+## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `run.facts.fenced_park`
 ## as `set_fenced_park_state()` handed it over, carried unchanged for the rest of the act it was
 ## chosen in, or the first area today's `shut_calm` accepts if none has been chosen yet and today
 ## is act III or later. See docs/CITY.md, "Shutting a spent park".
 var fenced_park := Vector2i(-1, -1)
 ## The act today's active `fenced_park` was chosen in, or 0 when none stands today.
-## `GameState` remembers the first choice even after these daily fields return to none.
+## The run (`RunFacts`) remembers the first choice even after these daily fields return to none.
 var fenced_park_act := 0
-## What `set_fenced_park_state()` handed over: what `GameState` already remembers, and today's own
+## What `set_fenced_park_state()` handed over: what the run already remembers, and today's own
 ## act, both waiting for the next `repaint()` to read them.
 var _fenced_park_state := Vector2i(-1, -1)
 var _fenced_park_state_act := 0
 var _act_for_the_next_repaint := 0
 
-## The calm areas she has used this act (`GameState.settled_this_act()`), for the **next**
+## The calm areas she has used this act (`RunCalendar.settled_this_act()`), for the **next**
 ## `repaint()` to shut where it can. `Main._start_day()` hands them over just before
 ## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
-## escape's own repaint (`City.start_finale()`) comes with no handover and shuts nothing, and a
+## escape's own repaint (`City.start_day()` under the city section's spec) comes with no handover and shuts nothing, and a
 ## rig that never calls this plans the day exactly as a city with no used parks. See `shut_calm`.
 func set_spent_calm(blocks: Array[Vector2i]) -> void:
 	_spent_for_the_next_repaint = blocks.duplicate()
 
-## What `GameState` remembers about the one park barriers ever stand around this run — the block
+## What the run remembers about the one park barriers ever stand around this run — the block
 ## (`Vector2i(-1, -1)` for none yet) and the act it was fenced in — plus today's own act, all for
 ## the next `repaint()` to read. `Main._start_day()` hands this over the same way it hands over
 ## `set_spent_calm()`, and remembers the first `fenced_park`/`fenced_park_act` choice after repaint.
@@ -303,23 +328,19 @@ func is_shut(tile: Vector2i) -> bool:
 ## the home block. See `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing
 ## on the home block".
 ##
-## **Two readers, and the docstring is for both.** `EventScheduler._open_ground_for` refuses any
-## candidate tile on a held segment, the fix this exists for. `CrowdAgent._cannot_go_on()` (M110,
+## **Two readers, and the docstring is for both.** `EventScheduler.open_ground_for` refuses any
+## candidate tile on a held segment, the fix this exists for. `CarStrategy.cannot_go_on()` (M110,
 ## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
 ## queue across a seal it cannot see through — read it with `is_held`/`is_held_at` rather than
 ## reaching into this dictionary directly.
 var held_segments := {}
 
-## Bumped by every write to the three per-day records above and below — the holds, the soft seals
-## and the closures. It is a *version*, never a count of anything: the only thing a reader may do
-## with it is notice that it differs from the one its own derived answer was built from.
-##
-## **One reader, and it exists because the record can move under something that has already read
-## it.** `CrowdPockets` floods the day's open lanes once and hands the same answer to every agent
-## for the rest of the day, and a seal planned — or a test standing one — after that flood would
-## otherwise be invisible to the crowd until tomorrow. A dirty mark costs an integer compare a
-## frame; the alternatives are a rebuild nobody triggers or a flood fill per placement.
-var day_record_version := 0
+## Every write to the three per-day records above and below — the holds, the soft seals and the
+## closures — bumps `day_record_version` (the base's). **One reader, and it exists because the
+## record can move under something that has already read it.** `CrowdPockets` floods the day's open
+## lanes once and hands the same answer to every agent for the rest of the day, and a seal planned
+## — or a test standing one — after that flood would otherwise be invisible to the crowd until
+## tomorrow.
 
 ## Clears today's held segments. Called once per day, before anything is added — see
 ## `held_segments`.
@@ -340,7 +361,7 @@ func is_held(segment: StreetNetwork.Segment) -> bool:
 ## Whether the street segment a tile stands on is held today. False for a tile inside a junction
 ## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
 func is_held_at(tile: Vector2i) -> bool:
-	return is_held(StreetNetwork.segment_containing(tile))
+	return is_held(network.segment_containing(tile))
 
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
@@ -380,7 +401,11 @@ func is_in_walled_alley(tile: Vector2i, walled_alleys: Array[Rect2i]) -> bool:
 ## never the whole street, and the thinning pass may drop one body of a pair and leave that
 ## pavement's tiles out of this set entirely. Filled by `SealPlanner.plan_day`, which clears and
 ## refills it fresh on every call, the same as `held_segments` is cleared and refilled once a day.
-var soft_sealed_tiles := {}
+var soft_sealed_tiles: Dictionary:
+	get:
+		return blocked.soft_sealed
+	set(value):
+		blocked.soft_sealed = value
 
 ## Clears today's soft seals. See `soft_sealed_tiles`.
 func clear_day_soft_seals() -> void:
@@ -397,91 +422,12 @@ func seal_soft_tile(tile: Vector2i) -> void:
 func is_soft_sealed(tile: Vector2i) -> bool:
 	return soft_sealed_tiles.has(tile)
 
-## Tiles a **stationary solid body** stands on today — a café's tables, a construction band, a
-## kerbed van, a stall, a skip, a burnt-out car — as tile -> how many bodies are standing there.
-## *("yes every solid body should do that -- not necessarily force a turn around but at least avoid
-## the solid".)* Filled by `EventManager.start_day` from the day's whole plan and by
-## `EventManager._create` for anything placed later, and read by `CrowdAgent` so the crowd goes
-## round a body instead of through it.
-##
-## **Two kinds of body are deliberately not in here**, each because something else already answers
-## for it and two answers to one question is one too many. A **mobile** row is exempt by the
-## catalogue's own *solid things are solid* rule and moves out of the way by walking. And a
-## **door** body — a hut or an alley guard (`detain_seconds > 0`) or the boom
-## (`EventDef.lifts_for_traffic`) — is a crossing the day means to keep open, held by
-## `WalkerDoorHold` for a walker and by `Crowd._stop_for_gates()` for a car.
-##
-## **A hard seal's own body and a region wall's are in here like anything else**, and the hold on
-## their segment is not a second answer to the same question: the hold is what turns a *car* at the
-## last junction, because a car cannot turn round against a barrier and has to decide before it can
-## see one, while a walker walks up to the body and turns where it stands. So the hold says *this
-## street is shut to the traffic* and this record says *where the thing standing in it is*, and
-## only the second of those can tell a walker that a crash leaves its pavements open.
-##
-## **Counted rather than flagged**, because two bodies can overlap a tile — a café beside a stall
-## on the same pavement — and the first of them to finish must not open ground the second is still
-## standing on. See `release_obstruction()`.
-##
-## Keyed on the tile the way `soft_sealed_tiles` is and for the same reason: a body takes one lane
-## of a pavement or one lane of a carriageway, never a whole segment, and which lane is the whole
-## of what the crowd does about it.
-##
-## **A body stands on a tile when it covers the middle of it** — `GroundShape.tiles_under()` is the
-## rule and says why it is the middle: every lane here is travelled down its own centre line, so a
-## tile whose centre is clear still has a line down it and a tile whose centre is covered has none.
-## A van parked at the kerb therefore takes its own lane of pavement and no carriageway, where
-## counting every tile its body overhangs took a lane of road for six pixels of overhang.
-var obstructed_tiles := {}
-## Which tiles each body put there, by the owner id it was recorded under. Kept so a body can give
-## its own tiles back without a sweep of the whole record.
-var _obstruction_owners := {}
-## Bumped whenever a tile enters or leaves `obstructed_tiles` — a version, like
-## `day_record_version`, that a reader only compares with the one its own answer was built from.
-## Not bumped when a second body is counted onto a tile already standing (a planned body's live
-## instance recording the same footprint as it streams in), since the set of standing tiles is
-## unchanged. Kept apart from `day_record_version` so a body coming or going does not re-flood
-## `CrowdPockets`, which never reads this record. Read by `ResistanceDirector`'s red arrow, whose
-## walking distances go round every body standing (`ArrowField`).
-var obstruction_version := 0
-
-## Clears today's solid bodies. Called once a day, beside `clear_day_holds()` — see
-## `obstructed_tiles`.
-func clear_day_obstructions() -> void:
-	obstructed_tiles.clear()
-	_obstruction_owners.clear()
-	obstruction_version += 1
-
-## Records one body's footprint under `owner`, an `Object.get_instance_id()` the caller can hand
-## back later. Re-recording the same owner replaces its old footprint, so a body that moved or a
-## plan re-recorded on a second day cannot leave tiles behind.
-func obstruct_tiles(owner: int, tiles_covered: Array[Vector2i]) -> void:
-	release_obstruction(owner)
-	if tiles_covered.is_empty():
-		return
-	for tile in tiles_covered:
-		if not obstructed_tiles.has(tile):
-			obstruction_version += 1
-		obstructed_tiles[tile] = int(obstructed_tiles.get(tile, 0)) + 1
-	_obstruction_owners[owner] = tiles_covered
-
-## Gives one body's footprint back — its instance finishing, or the day ending. Unknown owners are
-## a no-op, so every way a body can stop existing may call this without checking first.
-func release_obstruction(owner: int) -> void:
-	if not _obstruction_owners.has(owner):
-		return
-	var tiles_covered: Array[Vector2i] = _obstruction_owners[owner]
-	for tile in tiles_covered:
-		var left := int(obstructed_tiles.get(tile, 0)) - 1
-		if left > 0:
-			obstructed_tiles[tile] = left
-		else:
-			obstructed_tiles.erase(tile)
-			obstruction_version += 1
-	_obstruction_owners.erase(owner)
-
-## Whether a stationary solid body is standing on a tile today.
-func is_obstructed(tile: Vector2i) -> bool:
-	return obstructed_tiles.has(tile)
+# The day's stationary solid bodies are the base's record (`WorldMap.obstructed_tiles`,
+# `obstruct_tiles()`), filled by `EventManager.start_day` from the day's whole plan and by
+# `EventSpawner.create` for anything placed later, and read by `CrowdAgent` so the crowd goes round
+# a body instead of through it. A hard seal's own body and a region wall's are in it like any other:
+# the hold on their segment is what turns a *car* at the last junction, since a car cannot turn round
+# against a barrier, while a walker walks up to the body and turns where it stands.
 
 ## The street-tree pits today's fallen trees stand in, so the tree that fell is the one that is
 ## missing. `StreetTrees.planted()` is never touched: where a city's trees stand is a fact about
@@ -635,9 +581,6 @@ func _init(map_size: Vector2i = map_tiles()) -> void:
 	tiles = PackedByteArray()
 	tiles.resize(size.x * size.y)
 
-func in_bounds(tile: Vector2i) -> bool:
-	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
-
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
 	if stretch_active and not in_stretch(tile):
 		return GameEnums.TileType.BUILDING
@@ -656,10 +599,12 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 		for x in range(rect.position.x, rect.end.x):
 			set_tile(Vector2i(x, y), type)
 
+## Whether the city as built lets anybody stand on `tile`: walkable ground with no post on it.
+## `passable()` for `Mover.lattice()`, spelt out because it is the hottest question the map answers.
 func is_walkable(tile: Vector2i) -> bool:
-	return Tile.is_walkable(tile_at(tile)) and not is_post(tile)
+	return Tile.is_walkable(tile_at(tile)) and not blocked.posts.has(tile)
 
-## The tiles a precinct's posts stand on (`City.bollard_positions()`), the carriageway band at each
+## The tiles a precinct's posts stand on (`post_positions()`), the carriageway band at each
 ## mouth's two tiles at the row. The row shuts that band to her body *(2026-10-10, the player:
 ## "it will make the middle of the road impassable when going from street to pedestrian road")*,
 ## so every reader that asks where she or a pursuer can stand or step, and every flood that
@@ -671,200 +616,81 @@ func is_walkable(tile: Vector2i) -> bool:
 ## recipe's saved context) calls once the spans are final; `is_walkable()` is the hottest question
 ## the map answers, so the set is a record and not worked out per call.
 func post_tiles() -> Dictionary:
-	return _post_tiles
-
-var _post_tiles := {}
+	return blocked.posts
 
 ## Records the post tiles from `precinct_spans`. Call it again whenever the spans change.
 func index_posts() -> void:
-	_post_tiles = {}
-	for at in City.bollard_positions(self):
-		_post_tiles[world_to_tile(at)] = true
+	blocked.posts = {}
+	for at in post_positions():
+		blocked.posts[world_to_tile(at)] = true
+
+## Where each of a precinct's posts stands, in world space: a row of them across the carriageway
+## band at each end of every precinct span, `BOLLARD_SPACING` apart and centred in the band. What
+## `index_posts()` records and what the city draws its posts at, so the tiles that stop her and the
+## posts she sees are one list.
+func post_positions() -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	var tile := float(Tuning.TILE_SIZE)
+	var band_tiles := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
+	var band_px := band_tiles * tile
+	var count := maxi(2, floori(band_px / BOLLARD_SPACING) + 1)
+	var margin := (band_px - float(count - 1) * BOLLARD_SPACING) * 0.5
+	for span in precinct_spans:
+		var vertical := span.x == 1
+		var corridor: int = span.y
+		# The paving reaches the crossroads' own road edge at each end — the same widened range
+		# `street_kind()` reads paving from, so a post never stands short of or past where the
+		# ground itself changes.
+		var lo := span.z * period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
+		var hi := (span.w + 1) * period() + Tuning.SIDEWALK_WIDTH
+		var band_start := (corridor * period() + Tuning.SIDEWALK_WIDTH) * tile
+		for along_tile: int in [lo, hi - 1]:
+			var along_px := (along_tile + 0.5) * tile
+			for i in count:
+				var across_px := band_start + margin + i * BOLLARD_SPACING
+				positions.append(Vector2(across_px, along_px) if vertical
+						else Vector2(along_px, across_px))
+	return positions
 
 ## Whether a precinct's post stands on `tile`.
 func is_post(tile: Vector2i) -> bool:
-	return _post_tiles.has(tile)
+	return blocked.posts.has(tile)
 
-## Whether the straight line from `from` to `to` crosses only walkable ground (`is_walkable()`):
-## every tile the segment enters is asked, found by stepping from one tile boundary to the next
-## along it rather than by sampling, so a line that clips a building's corner by a pixel is blocked
-## however short it is, and a line through a corner point exactly asks both tiles beside it. **The
-## line a pursuer notices her along, lunges along and catches her along**
-## (`EventInstance._clear_line_to()`), and the line day 13's waiting guard is placed to have to the
-## roadblock he guards (`ResistanceDirector._roadblock_guard_spot()`) — one walk, so a spot chosen
-## for its line is one his notice sees from. *(leafy-puffin, inbox #648: "yes noticing needs a clear
-## line".)* Stricter than `wall_between()`, which asks how deep into a building a line runs.
-func clear_line(from: Vector2, to: Vector2) -> bool:
-	var tile := world_to_tile(from)
-	if not is_walkable(tile):
-		return false
-	var delta := to - from
-	var size := float(Tuning.TILE_SIZE)
-	var step := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
-	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
-	# boundary, and how much of the segment one whole tile takes on each axis.
-	var next_x := INF
-	var each_x := INF
-	if step.x != 0:
-		next_x = (float(tile.x + maxi(step.x, 0)) * size - from.x) / delta.x
-		each_x = size / absf(delta.x)
-	var next_y := INF
-	var each_y := INF
-	if step.y != 0:
-		next_y = (float(tile.y + maxi(step.y, 0)) * size - from.y) / delta.y
-		each_y = size / absf(delta.y)
-	while minf(next_x, next_y) <= 1.0:
-		if is_equal_approx(next_x, next_y):
-			if not is_walkable(tile + Vector2i(step.x, 0)) \
-					or not is_walkable(tile + Vector2i(0, step.y)):
-				return false
-			tile += step
-			next_x += each_x
-			next_y += each_y
-		elif next_x < next_y:
-			tile.x += step.x
-			next_x += each_x
-		else:
-			tile.y += step.y
-			next_y += each_y
-		if not is_walkable(tile):
-			return false
+## Whether the city as built lets a mover stopped by `layers` onto `tile`: the ground's own type,
+## a post, and street ground, as `layers` asks.
+func has_ground() -> bool:
 	return true
 
-## Whether a building stands between two points deeply enough to keep a source's excitement at
-## one from reaching the other: true when the straight segment between them passes the middle of a
-## wall one tile thick, or one tile deep into any thicker building, measured from the nearest open
-## ground (`is_walkable()`). *(plaid-wombat, inbox #554: "If the player is partially in a wall they
-## should not be protected so the blocking should happen in the middle of the wall (or one tile
-## deep)"; and, on what that meant, inbox #568: "half a tile was only supposed to be done if the
-## wall is only one tile wide otherwise it should be one tile".)* `EventInstance.contribution_at()`
-## and `CrowdAgent.contribution_at()` ask it of every source whose field reaches her, so the meter,
-## the halo and the carets all read the same blocked contribution.
-##
-## **Stated over distance from open ground, not over tiles touched**, which is what makes the edge
-## cases the player named come out right: a pram whose body overlaps a wall's edge is shielded by
-## nothing short of the middle of the wall, and a line that clips a building's corner or runs along
-## its face never gets that deep. **Thick or thin is a property of each building tile**: a tile is
-## part of something thicker than one tile when one of its corners is a point where four building
-## tiles meet — exactly the tiles that hold a point a whole tile from open ground — and those ask
-## `depth` (`Tuning.WALL_SHIELD_DEPTH`, a tile). Every other building tile is part of a wall one tile
-## thick, whose deepest points are its middle, and asks `thin_depth`
-## (`Tuning.THIN_WALL_SHIELD_DEPTH`, half a tile): a line across such a wall, straight or
-## slanted, is blocked at its middle, except within half a tile of an open end of the wall, where
-## no point is that deep. This is the deeper test beside
-## `EventInstance._clear_line_to()`, the pursuer's catch, which refuses a line that touches a
-## building at all.
-##
-## **Exact, never sampled.** It steps the tiles the segment crosses, the same tile-boundary walk
-## the catch's line takes, and in each building tile asks whether the segment meets the part of it
-## that tile's depth or more from open ground: the tile shrunk by that depth on every side that faces
-## an open tile, less a disc of that radius round each corner an open tile meets only diagonally.
-## Only a tile's eight neighbours can be nearer than a whole tile, which is why neither depth may
-## exceed `Tuning.TILE_SIZE`. A segment exactly the depth from open ground at its deepest is blocked.
-## **A building two tiles thick blocks only along its middle**, the one line of points a whole tile
-## in, and not within a tile of an open end of it: a line straight through such a building 31px from
-## its end passes, and a building two tiles square blocks only a line through its very centre: the
-## ends as the player described them *(bouncy-kestrel, inbox #568: "Near the end of the building the
-## same spacing is used so a 2x8 building has a 6 unit long line through its middle")*. **Indoors
-## too**: the escape's building hands its own walls to its sources as a grid of this class
-## (`InteriorScene.wall_grid()`), so this one function answers for every wall in the game.
-func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
-		thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
-	var tile_size := float(Tuning.TILE_SIZE)
-	var x := floori(from.x / tile_size)
-	var y := floori(from.y / tile_size)
-	var delta := to - from
-	var step_x := int(signf(delta.x))
-	var step_y := int(signf(delta.y))
-	# The fraction of the segment at which it next crosses a vertical (x) or horizontal (y) tile
-	# boundary, and how much of the segment one whole tile takes on each axis.
-	var next_x := INF
-	var each_x := INF
-	if step_x != 0:
-		next_x = (float(x + maxi(step_x, 0)) * tile_size - from.x) / delta.x
-		each_x = tile_size / absf(delta.x)
-	var next_y := INF
-	var each_y := INF
-	if step_y != 0:
-		next_y = (float(y + maxi(step_y, 0)) * tile_size - from.y) / delta.y
-		each_y = tile_size / absf(delta.y)
-	while true:
-		if not _open(x, y) \
-				and _reaches_the_middle_of(Vector2i(x, y), from, delta, depth, thin_depth):
-			return true
-		if minf(next_x, next_y) > 1.0:
-			return false
-		# Through a vertex exactly, the two tiles beside it share only that one point with the
-		# segment, and the diagonal tile asked next holds that point too.
-		if next_x < next_y:
-			x += step_x
-			next_x += each_x
-		elif next_y < next_x:
-			y += step_y
-			next_y += each_y
-		else:
-			x += step_x
-			y += step_y
-			next_x += each_x
-			next_y += each_y
-	return false
+func walk_tiles() -> PackedByteArray:
+	return tiles
 
-## Whether the segment `from + t * delta`, `t` in [0, 1], meets the part of building tile `tile`
-## that is at least this tile's depth from every open tile — `depth` where one of its corners is
-## shared by four building tiles, `thin_depth` where none is; see `wall_between()`. The shrunk
-## rectangle is clipped first (an open side's band is shallower than the depth all along it), then
-## what is left of the segment has to escape the open corner discs: it is shallow only if every
-## point of it lies strictly inside one of them.
-func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth: float,
-		thin_depth: float) -> bool:
-	var tile_size := float(Tuning.TILE_SIZE)
-	var low := Vector2(tile) * tile_size
-	var high := low + Vector2(tile_size, tile_size)
-	var open_west := _open(tile.x - 1, tile.y)
-	var open_east := _open(tile.x + 1, tile.y)
-	var open_north := _open(tile.x, tile.y - 1)
-	var open_south := _open(tile.x, tile.y + 1)
-	var open_north_west := _open(tile.x - 1, tile.y - 1)
-	var open_north_east := _open(tile.x + 1, tile.y - 1)
-	var open_south_west := _open(tile.x - 1, tile.y + 1)
-	var open_south_east := _open(tile.x + 1, tile.y + 1)
-	# A corner with building on all four tiles round it is a whole tile from every open tile, so
-	# this tile belongs to something thicker than one tile; with no such corner it is part of a
-	# wall one tile thick, whose deepest points are its middle.
-	var thick := (not open_west and not open_north and not open_north_west) \
-			or (not open_east and not open_north and not open_north_east) \
-			or (not open_west and not open_south and not open_south_west) \
-			or (not open_east and not open_south and not open_south_east)
-	if not thick:
-		depth = thin_depth
-	var span := _clip_to(from.x, delta.x, low.x + (depth if open_west else 0.0),
-			high.x - (depth if open_east else 0.0), Vector2(0.0, 1.0))
-	span = _clip_to(from.y, delta.y, low.y + (depth if open_north else 0.0),
-			high.y - (depth if open_south else 0.0), span)
-	if span.x > span.y:
+func walkable_lut() -> PackedByteArray:
+	return _WALKABLE
+
+func _ground_lets(tile: Vector2i, layers: int) -> bool:
+	if layers & Mover.GROUND != 0 and not Tile.is_walkable(tile_at(tile)):
 		return false
-	# A corner whose two sides are both built on but whose diagonal neighbour is open: the open
-	# tile is nearest at that corner point, so the shallow ground there is a disc round it.
-	var shallow: Array[Vector2] = []
-	if not open_west and not open_north and open_north_west:
-		shallow.append(_inside_disc(from, delta, low, depth))
-	if not open_east and not open_north and open_north_east:
-		shallow.append(_inside_disc(from, delta, Vector2(high.x, low.y), depth))
-	if not open_west and not open_south and open_south_west:
-		shallow.append(_inside_disc(from, delta, Vector2(low.x, high.y), depth))
-	if not open_east and not open_south and open_south_east:
-		shallow.append(_inside_disc(from, delta, high, depth))
-	# Walk forward from the start of the span through every disc that strictly contains the point
-	# reached so far; the segment reaches the middle unless that walk passes the span's end.
-	var reached := span.x
-	var moved := true
-	while moved:
-		moved = false
-		for interval in shallow:
-			if interval.x < reached and reached < interval.y:
-				reached = interval.y
-				moved = true
-	return reached <= span.y
+	if layers & Mover.POSTS != 0 and blocked.posts.has(tile):
+		return false
+	return layers & Mover.STREETS == 0 or is_street(tile)
+
+## The ground a sweep over the whole map runs on for `mover`: each tile `UNREACHED`, or `BLOCKED`
+## where a layer `mover` names stands today, and outside an authored scene's stretch. The ground's
+## own tile types are not laid out: a sweep reads them off `tiles` itself (`walkable_by_type()`),
+## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
+## guard's walk to her run on (`WalkField`), laid out once for each state of the record
+## (`day_record_version`, `obstruction_version`).
+func ground_for(mover: Mover) -> PackedInt32Array:
+	var ground := super(mover)
+	# The authored scene's void is BUILDING to every single-tile question, while a sweep reads the
+	# saved context's raw tile array, so the boundary goes into the ground.
+	if stretch_active and mover.is_blocked_by(Mover.GROUND):
+		var width := size.x
+		for y in size.y:
+			for x in size.x:
+				if not in_stretch(Vector2i(x, y)):
+					ground[y * width + x] = BLOCKED
+	return ground
 
 ## `is_walkable()` less the posts for the tile at (`x`, `y`), read straight off the grid: `wall_between()`'s
 ## line walk above asks
@@ -875,43 +701,12 @@ func _reaches_the_middle_of(tile: Vector2i, from: Vector2, delta: Vector2, depth
 ## **It deliberately ignores the precinct posts** (`post_tiles()`): `wall_between()` asks whether a
 ## segment is *seen* across, and a bollard blocks a body but not that sight, so a post tile is open
 ## here though no step or flood may enter it. `clear_line()`, the pursuers' notice and lunge line,
-## asks `is_walkable()` instead and is blocked by a post.
+## asks `passable()` instead and is blocked by a post.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
 	return x >= 0 and y >= 0 and x < size.x and y < size.y \
 			and _WALKABLE[tiles[y * size.x + x]] == 1
-
-## `span` narrowed to where `start + t * along` lies in [`low`, `high`] on one axis — empty (start
-## past end) when it never does, and when the band itself is empty (`low` past `high`, a tile shrunk
-## from both sides by more than half of it).
-static func _clip_to(start: float, along: float, low: float, high: float, span: Vector2) -> Vector2:
-	if low > high:
-		return Vector2(1.0, 0.0)
-	if along == 0.0:
-		return span if start >= low and start <= high else Vector2(1.0, 0.0)
-	var a := (low - start) / along
-	var b := (high - start) / along
-	if a > b:
-		var swap := a
-		a = b
-		b = swap
-	return Vector2(maxf(span.x, a), minf(span.y, b))
-
-## The open interval of `t` for which `from + t * delta` is strictly within `radius` of `centre`,
-## or an empty one (start past end) when it never is.
-static func _inside_disc(from: Vector2, delta: Vector2, centre: Vector2, radius: float) -> Vector2:
-	var offset := from - centre
-	var a := delta.dot(delta)
-	var c := offset.dot(offset) - radius * radius
-	if a == 0.0:
-		return Vector2(-INF, INF) if c < 0.0 else Vector2(1.0, 0.0)
-	var b := 2.0 * offset.dot(delta)
-	var discriminant := b * b - 4.0 * a * c
-	if discriminant <= 0.0:
-		return Vector2(1.0, 0.0)
-	var root := sqrt(discriminant)
-	return Vector2((-b - root) / (2.0 * a), (-b + root) / (2.0 * a))
 
 ## Street ground: pavement, carriageway or crossing. Anything that travels the lattice asks
 ## this, because a corridor may simply not be there — a four-block calm zone is painted over the
@@ -923,6 +718,38 @@ func is_street(tile: Vector2i) -> bool:
 	var type := tile_at(tile)
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
 			or type == GameEnums.TileType.CROSSING
+
+func has_street_lattice() -> bool:
+	return true
+
+## A road or a crossing tile: where a car that drives at her strikes her.
+func is_carriageway(tile: Vector2i) -> bool:
+	return Tile.is_road(tile_at(tile))
+
+func is_crossing(tile: Vector2i) -> bool:
+	return tile_at(tile) == GameEnums.TileType.CROSSING
+
+## `corridor_offset()` of each coordinate: the lattice's own answer, whatever the tile's type, so a
+## `ROAD` tile is asked exactly as a `SIDEWALK` one is.
+func corridor_offsets(tile: Vector2i) -> Vector2i:
+	return Vector2i(corridor_offset(tile.x), corridor_offset(tile.y))
+
+func junction_box_at(tile: Vector2i) -> Vector2i:
+	return junction_at(tile)
+
+## The `alley_rects` entry holding `tile`, or an empty rect.
+func alley_at(tile: Vector2i) -> Rect2i:
+	for rect in alley_rects:
+		if rect.has_point(tile):
+			return rect
+	return Rect2i()
+
+## The `building_rects` entry holding `tile`, or an empty rect.
+func lot_at(tile: Vector2i) -> Rect2i:
+	for rect in building_rects:
+		if rect.has_point(tile):
+			return rect
+	return Rect2i()
 
 func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
@@ -1056,18 +883,6 @@ func close_streets(closures: Array[RoadClosure]) -> void:
 
 # --------------------------------------------------------------- conversion ---
 
-func world_to_tile(world_position: Vector2) -> Vector2i:
-	return Vector2i(floori(world_position.x / Tuning.TILE_SIZE),
-			floori(world_position.y / Tuning.TILE_SIZE))
-
-## Centre of a tile in world space.
-func tile_to_world(tile: Vector2i) -> Vector2:
-	return (Vector2(tile) + Vector2(0.5, 0.5)) * Tuning.TILE_SIZE
-
-func tile_rect_to_world(rect: Rect2i) -> Rect2:
-	return Rect2(Vector2(rect.position) * Tuning.TILE_SIZE,
-			Vector2(rect.size) * Tuning.TILE_SIZE)
-
 ## The swing frame's own point inside `playground` — the playground's world-rect centre, 8px
 ## above its bottom edge — so a caller can point at the swing itself rather than the whole
 ## playground box. Kept in step with where `City._dress_block()` actually draws the frame: both
@@ -1130,7 +945,7 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## against the ground just painted, so the route tree, the region plan and the closures that follow
 ## all plan around it. A shut area's ground is left exactly as its purpose paints it — it stays
 ## calm, walkable ground; only `fenced_park`, if one is chosen today, is actually closed.
-func repaint(state: CityState) -> void:
+func repaint(state: CityState, trace: RunTrace = null) -> void:
 	if not recipe_dawn_tiles.is_empty():
 		tiles = recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
@@ -1141,7 +956,7 @@ func repaint(state: CityState) -> void:
 		fenced_park = Vector2i(-1, -1)
 		fenced_park_act = 0
 		_recompute_calm(state)
-		_shut_the_spent_calm(state)
+		_shut_the_spent_calm(state, trace)
 		return
 	# Two passes, and the split is what makes a four-block calm zone possible: one lot's ground
 	# now covers blocks that are not its own, so a single pass that cleared each lot immediately
@@ -1165,21 +980,21 @@ func repaint(state: CityState) -> void:
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
 	_recompute_calm(state)
-	_shut_the_spent_calm(state)
+	_shut_the_spent_calm(state, trace)
 
 ## Decides today's `shut_calm` — and, at most once a run, `fenced_park` — from what
 ## `set_spent_calm()` and `set_fenced_park_state()` handed over, and forgets both handovers. The
 ## park day 12 sends her to is never shut or fenced on its day (`CityState.is_forced_open()`): the
 ## day's own task is in it.
 ##
-## **An existing fence outlives the day that chose it.** If `GameState.fenced_park` already names a
+## **An existing fence outlives the day that chose it.** If `run.facts.fenced_park` already names a
 ## block fenced this act, it is protected from `calm_to_shut()`'s own candidate pass — asking the
 ## guarantees about ground already fenced would be asking twice — and carried into `shut_calm` and
 ## `_fenced_tiles` unconditionally, so the barriers stand every day of the act regardless of whether
 ## it is still in `spent`. **A new fence needs act III or later and nothing chosen yet**: the first
 ## area `calm_to_shut()` accepts is the one the run ever fences, and every other used area — today's
 ## and every later day's — is left to `EventScheduler._spoil_the_parks_she_used` instead.
-func _shut_the_spent_calm(state: CityState) -> void:
+func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 	var spent := _spent_for_the_next_repaint
 	_spent_for_the_next_repaint = []
 	var has_fenced_this_run := _fenced_park_state.x >= 0
@@ -1196,7 +1011,7 @@ func _shut_the_spent_calm(state: CityState) -> void:
 			protected.append(block)
 	if already_fenced:
 		protected.append(fenced_park)
-	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected)
+	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected, trace)
 	if already_fenced:
 		shut_calm.append(fenced_park)
 	elif not has_fenced_this_run and _act_for_the_next_repaint >= 3 and not shut_calm.is_empty():
@@ -1275,19 +1090,13 @@ func _recompute_calm(state: CityState) -> void:
 
 # --------------------------------------------------------------- traversal ---
 
-## A tile the sweep never got to, and one it was told to treat as a wall. Both read as
-## unreachable to `reaches()`; they are two values only so that `blocked` can be painted into
-## the grid before the sweep starts instead of being asked about per neighbour.
-const UNREACHED := -1
-const BLOCKED := -2
-
 ## `TileType -> 1` where the ground can be walked on, so the sweep below can ask by index
 ## rather than by call. `Tile.is_walkable` stays the one place that decides it.
 static var _WALKABLE: PackedByteArray = _lut(Tile.is_walkable)
 static var _CALM: PackedByteArray = _lut(Tile.is_calm)
 
 ## `Tile.is_walkable` as a table indexed by tile type, for a sweep over `tiles` outside this file
-## (`ArrowField`, the red arrow's walking distances) that wants the same answer
+## (`WalkField`, the red arrow's walking distances) that wants the same answer
 ## `walk_field_from()` reads without a function call per neighbour.
 static func walkable_by_type() -> PackedByteArray:
 	return _WALKABLE
@@ -1403,7 +1212,7 @@ func count_walkable() -> int:
 ## on (`post_tiles()`): what a sweep from the home (`walk_field()`) can reach at most.
 func count_standable() -> int:
 	var total := count_walkable()
-	for tile: Vector2i in _post_tiles:
+	for tile: Vector2i in blocked.posts:
 		if in_bounds(tile):
 			total -= _WALKABLE[tiles[tile.y * size.x + tile.x]]
 	return total

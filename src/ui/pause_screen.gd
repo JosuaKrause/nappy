@@ -12,7 +12,7 @@ extends CanvasLayer
 ## pauses with the game cannot unpause it.
 ##
 ## Quitting keeps its key, one step further in. A run that is abandoned is still a run worth
-## reading, so `Telemetry.end_run()` happens on the way out exactly as it did before.
+## reading, so the run session closes its log on the way out (`main._quit()`).
 
 signal resumed()
 signal restart_requested()
@@ -45,6 +45,13 @@ var _can_quit := QuitOption.available()
 ## `_handle_restart_touch()`) even though it no longer chooses between two bodies or two hints.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answers to the touch and quit questions (`TouchInput.available(config)`,
+## `QuitOption.available(config)`), which `--touch` and `--web` can force. Called by `main` before
+## the screen enters the tree; a screen built anywhere else keeps the platform's own answers.
+func use_platform(touch: bool, can_quit: bool) -> void:
+	_touch = touch
+	_can_quit = can_quit
+
 ## Set once by `main._ready()`, the same way `_connect_summary_and_pause_signals()` wires the
 ## signals this screen fires — null in a test that builds a bare `PauseScreen`, which is why every
 ## use below is guarded. *"Pause can keep the last direction just don't overwrite it from the
@@ -55,6 +62,23 @@ var _touch_controls: TouchControls
 
 func set_touch_controls(controls: TouchControls) -> void:
 	_touch_controls = controls
+
+## The run whose day and nerves the standing line reads, handed in by `use_run()` before the screen
+## is first opened.
+var _run: RunState
+
+## Hands the screen the run it stands over. Called by `main` before the screen enters the tree, and
+## by a test that opens one.
+func use_run(run: RunState) -> void:
+	_run = run
+
+## Hands the screen's body and its two buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Center/Lines/Body") as HelpText).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
 
 ## The body as the scheme in force words it.
 static func body_for(joystick: bool) -> String:
@@ -115,12 +139,11 @@ var _was_paused := false
 ## Read at `open()` rather than kept in step with `EventBus`, because a screen that is only ever
 ## looked at while the game is stopped cannot go stale, and a listener that has to be kept correct
 ## across fourteen days is a listener that will not be.
+##
+## Worded by `SummaryModel.standing_line()`, the one place the day of fourteen and the nerves (as
+## stars, never a digit) are worded for the day summary and the day brief too.
 func _show_where_the_run_stands() -> void:
-	var nerves := GameState.nerves
-	# Stars, drawn through `NerveDisplay.stars()` — the same text the HUD, the day brief and the
-	# day summary all read the count through, never a digit.
-	_standing.text = Texts.PAUSE_STANDING % [GameState.day,
-			Tuning.RUN_LENGTH_DAYS, NerveDisplay.stars(nerves)]
+	_standing.text = SummaryModel.standing_line(_run)
 
 func open() -> void:
 	visible = true

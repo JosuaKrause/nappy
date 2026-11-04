@@ -1,6 +1,6 @@
 extends RefCounted
 ## What walking past a car crash costs, measured rather than derived — the number
-## `Tuning.CAR_ACCIDENT_INTENSITY` is set from.
+## `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from.
 ##
 ## The crash is solid only where its two cars are, so its picture's own gaps are ground she can
 ## walk. This walks every one of those gaps at `Tuning.WALK_SPEED`, straight across the sealed
@@ -51,7 +51,7 @@ func run(t) -> void:
 			instance.free()
 	print("CHEAPEST pass %.1f, dearest %.1f, of a %d meter (half is %.0f); intensity %.1f"
 			% [worst_pass, best_pass, int(Tuning.METER_MAX), Tuning.METER_MAX / 2.0,
-			Tuning.CAR_ACCIDENT_INTENSITY])
+			EventCatalogue.CAR_ACCIDENT_INTENSITY])
 	# The two figures `docs/EVENTS.md`'s cost table carries for this row, computed the way every
 	# other row in it is: the field integrated along a straight line through the centre, at each
 	# pace, less that pace's own decay. The crash is the one row where running is the cheaper of
@@ -60,7 +60,7 @@ func run(t) -> void:
 	var mean := crash.mean_emission_along_the_line()
 	print("COST TABLE car_accident: walk %+.1f, run %+.1f"
 			% [crash.walk_through_cost(),
-			(mean - Tuning.EXCITEMENT_DECAY_RUNNING + Tuning.EXCITEMENT_FROM_RUNNING)
+			(mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING)
 			* (crash.outer_radius * 2.0 / Tuning.RUN_SPEED)])
 	t.check(lanes_found > 0, "there were gaps to walk (%d)" % lanes_found)
 
@@ -69,7 +69,7 @@ func run(t) -> void:
 ## A tile on a real street of the asked-for axis, as a world point. `Vector2.INF` when this city
 ## has none, which no generated city actually is.
 func _a_street_of(map: CityMap, vertical: bool) -> Vector2:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		if segment.horizontal != vertical:
@@ -122,7 +122,7 @@ func _pass_cost(instance: EventInstance, offset: float) -> float:
 	while travelled < reach * 2.0:
 		walker += across * Tuning.WALK_SPEED * STEP
 		travelled += Tuning.WALK_SPEED * STEP
-		paid += (instance.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
+		paid += (instance.excitement.contribution_at(walker) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
 	return paid
 
 ## The open lanes as readable spans, so a run says where the gaps are rather than how many samples

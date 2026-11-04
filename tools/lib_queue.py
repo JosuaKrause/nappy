@@ -10,7 +10,7 @@ the answer lives here once.
 a report; nothing here touches the disk or git except `git_line_dates()`, which a caller passes in
 as the `dates` lookup. Every structural assumption is asserted and raises `QueueFormatError`
 rather than being guessed past: a migration that quietly misfiled a record would be a lie in the
-commit, which is what `CLAUDE.md`'s "An edit fails loudly" forbids.
+commit.
 """
 
 from __future__ import annotations
@@ -154,7 +154,7 @@ can capture multiple items at once.")* The work goes on while this list waits, a
 answers as many of these as it passes through.
 
 **How it is kept.** Each item is a file under [review/](review/), named after the queue entry whose
-work it asks about (`<entry name>.md`, and `<entry name>-2.md` for a second item from the same
+work it asks about (`<entry name>.md`, and `<entry name>-<adjective>-<animal>.md` for a second item from the same
 entry); an item from before names is named by the date it was written and its first words
 (`2026-09-13-touch-the-day-4-chalk-mark.md`). It enters when work lands that only a person can
 judge, in the same PR as the work, and names what to do, where to look, and the question a run

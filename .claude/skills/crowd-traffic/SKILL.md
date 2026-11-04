@@ -14,6 +14,14 @@ them can open one that does not**, so two bodies that start inside each other st
 `Crowd.space_out_the_traffic()` resolves a lane of cars from the front backwards. **If a new pair of
 things must not be inside each other, move them apart; do not ask them to want to be apart.**
 
+**Between the crowd and an event figure only the crowd moves** (plaid-raven #884): each
+crowd body's proposed step is cleared of, or held short of, the event figures, event cars and
+cordon officers at its own step, before its check (`LaneStrategy.give_way_on_the_step()`, through
+the map's `SeparationPass`), and nothing an event does reads the crowd. **A move's `radius` is the
+circle round the whole body**, which for a vehicle is its length: a car's lane test counts at most
+`CarStrategy.FIGURE_WIDEST` of it across the lane, or an event car in the next lane stops the
+traffic in this one.
+
 ## A placement is not a separation
 
 **And the separation must not be doing the placement's job.** Front-to-back resolution
@@ -21,14 +29,14 @@ things must not be inside each other, move them apart; do not ask them to want t
 it, so a bunched queue shunts the rearmost car several lengths backwards in one frame. A car
 choosing an arm of a junction has to look before it commits:
 
-- **`TrafficIndex` is the look, and it is a frame stale on purpose.** A car covers three pixels in a
-  frame and the question is about a car's length.
+- **`TrafficIndex` is the look, and it is a tick stale on purpose.** A car covers a few pixels in a
+  tick and the question is about a car's length.
 - **Two placements in the same frame cannot see each other**, and that is not a rare case —
   recycling is what happens to every car that leaves the box, and they all aim at the same entry
   band. `TrafficIndex.claim()` is the smallest thing that closes it.
 - **A retry is not a guarantee.** Re-rolls into a busy lane still all miss now and then.
-  `_join_the_back_of_the_queue()` is the fallback, because behind the last car is the one place in a
-  lane that is free by construction.
+  `CarStrategy.join_the_back_of_the_queue()` is the fallback, because behind the last car is the one
+  place in a lane that is free by construction.
 
 **The morning's resolve runs before the first frame is drawn.** `Crowd.start_day()` ends with the
 same front-to-back resolve the first physics frame would run, because a day starts from an idle
@@ -129,8 +137,9 @@ slot handed back in only the expected case is a leak with a picture on it.
 
 **A brake and a sidestep both aim at a point and get there a frame after they should.** So *"nothing
 ever stands inside a solid body"* cannot be bought by tuning either of them —
-`CrowdAgent._keep_out_of_a_body()` holds the step inside the tile the agent started the frame on,
-which is the same shape `nudge_back()` already has for the backward direction.
+`LaneMover._keep_out_of_a_body()` holds the proposed step inside the tile the agent started the step
+on, before the step is committed (`MoveProposal`), which is the same shape `nudge_back()` already
+has for the backward direction.
 
 **The sideways half is given up before the forward half, and the ordering is the whole of it.**
 Refusing both at once wedges a walker crossing a sidewalk beside a body for good, because its
@@ -168,14 +177,14 @@ landing is taken with no room left to cross is an arm the walker does not turn i
 answer to a wall is an arc that needs a junction box to fit in, and there is no reverse gear — so it
 has to decide while the last junction is still in front of it, which is what `LOOKAHEAD_TILES` is
 measured to reach. A walker's answer costs a stride and can be taken anywhere, so it acts only when
-the barrier is the **next tile** (`CrowdAgent._acts_on_a_barrier_within()`).
+the barrier is the **next tile** (`LaneStrategy.acts_within`).
 
 **Deciding early is not free: a street a walker gives up from a junction away is a street with
 nobody on it for its whole length.** A walker gives up only where it touches an impassable wall and
 goes on into the section until it cannot continue (PLAYTEST-78). So a walker picking an arm asks
-only whether the arm is street **at all** (`_no_street_ahead()`), never what is standing down it;
-the record a walker is stopped by is the bodies themselves, while the segment-wide hold is a car's
-warning and nobody else's.
+only whether the arm is street **at all** (`WalkerStrategy._no_street_ahead()`), never what is
+standing down it; the record a walker is stopped by is the bodies themselves, while the
+segment-wide hold is a car's warning and nobody else's.
 
 **If you find yourself unifying the two, this is the entry.** The symmetric version is the one that
 reads as correct and is the defect.
@@ -256,13 +265,13 @@ local one if something upstream has already chosen the bracket.
 ## The traffic fairness contract
 
 A car is lethal and is **not** an event, so `validate_event()` never sees it.
-`Tuning.validate_traffic()` is its equivalent and runs on boot. Two things stand in for the
+`tests/test_tuning_fairness.gd`'s traffic check is its equivalent and fails the suite. Two things stand in for the
 telegraph: the **painted carriageway**, which is permanent and learnable and which she chooses to
 step onto, and the **horn**, which must be long enough to walk the whole width of it with the
 doubled hard-fail margin.
 
 **The rear half of a crowd car is safe on purpose.** `Crowd._strike()` and
-`CrowdAgent.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
+`CrowdExcitement.will_be_lethal()` test only the box from the car's centre forward (26px long, 14px
 either side), never its whole 52×28px body: a car is lethal only in front of it while it drives
 (minty-hedgehog #433), and one that starts moving while she walks behind it is driving away from
 her. Keep the horn, the caret and the strike on the same box, and do not widen it back to the body.
@@ -273,7 +282,7 @@ cars within `CAR_ZEBRA_SIGHT` (200px) of her — both are about a car that has a
 her, and neither needs more — but the horn's own contract needs more warning than 200px of travel
 gives a fast car, so it is checked against a second, wider watch instead: `CAR_HORN_SIGHT`
 (296px), at least `CAR_SPEED.y × CAR_HORN_TIME` (the fastest car's own warning distance) so the
-watch is never what clips a car's horn short of `CAR_HORN_TIME`. `Tuning.validate_traffic()`
+watch is never what clips a car's horn short of `CAR_HORN_TIME`. `tests/test_tuning_fairness.gd`'s traffic check
 checks `CAR_HORN_SIGHT` against the fastest car the same way it checks `CAR_HORN_TIME` against
 `required_horn_time()`, so **a change to the horn, to `CAR_SPEED`, or to either watch fails at
 boot rather than only on the street** if the two stop agreeing.
@@ -281,9 +290,9 @@ boot rather than only on the street** if the two stop agreeing.
 **If anything else ever becomes lethal without being in the catalogue, it needs its own stated
 contract in the same place.** A hard fail with no written contract is a bug waiting to be called a
 difficulty setting. **The patrol car and the fire engine are in the catalogue and keep this
-contract instead of a telegraph** (`EventDef.drives`): each strikes only on the carriageway, only
+contract instead of a telegraph** (`EventDef.vehicle`, `EventCarDriving`): each strikes only on the carriageway, only
 ahead of its nose, and warns anybody standing in its lane `CAR_HORN_TIME` of its own travel before
-the strike, wherever it is created, so `validate_traffic()`'s check is its check too. Each also
+the strike, wherever it is created, so the fairness suite's traffic check is its check too. Each also
 gives way where the crowd's cars do — short
 of a zebra she is waiting at off the main road, and at a red light — and never inside a junction
 box: for a zebra beyond the box it holds at the box's entry line, since the crossing traffic cannot
@@ -294,7 +303,7 @@ itself committed, and stands there.
 
 **The main road replaces the courtesy with a clock, so the clock is the contract.** Traffic on the
 spine does not give way at a zebra — what stops it is the light — so the thing standing between her
-and a hard fail is the length of the **side street's** green, and `Tuning.validate_signals()` states
+and a hard fail is the length of the **side street's** green, and `tests/test_tuning_fairness.gd`'s signals check states
 it in the same shape: long enough to walk the carriageway with the doubled margin.
 
 Two things are easy to get backwards. The green that matters is the **other** arm's, because she
@@ -311,21 +320,22 @@ the street's kind rather than its light, so the clock is gone and nothing replac
 **what keeps a crossing of the dark spine fair is the painted carriageway and the horn**, and the
 horn has to be long enough, at the spine's speed, to walk the spine's whole carriageway with the
 doubled margin. The spine's carriageway is `carriageway_width()` like every street's and the horn is
-seconds of the car's own travel, so `validate_traffic()` is the check, and `validate_signals()` says
+seconds of the car's own travel, so the fairness suite's traffic check is the check, and the fairness suite's signals check says
 so beside the green it checks. **Anything that asks whether a spine junction has lights standing on
 it — where to put a head — asks `has_lights()`, never `is_signalled()`**, or a city built dark
 draws no heads at all.
 
 ## A rig that steps the parts is not running the whole
 
-Several suites walk the crowd by hand — `for agent in crowd.agents(): agent._process(step)` — so
-that a minute of traffic does not take a minute. That skips the frame *around* the agents:
-`Crowd._physics_process`, which resolves the queue and rebuilds `TrafficIndex`. `claim()` is written
+Several suites walk the crowd by hand — `for agent in crowd.agents(): agent.step(step)` — so that a
+minute of traffic does not take a minute. That skips the rest of the tick *around* the agents'
+steps: `Crowd._physics_process`, which resolves the queue and rebuilds `TrafficIndex`. `claim()` is written
 to outlive one frame and nothing bounds it, so with nothing rebuilding, every recycle stays.
 
 **When a rig drives a subsystem by hand, ask what the engine was doing around it** — and if the
 answer is "keeping something bounded", the rig is not slow, it is wrong. `Crowd.step()` is the whole
-frame and is what a rig calls.
+tick but the player half and is what a rig calls; it and the live tick run the same order, the
+traffic and the doors first and the agents' steps last.
 
 ## The crowd is one picture on purpose
 

@@ -16,7 +16,7 @@ extends RefCounted
 ## docs/DECISIONS.md, "Eight-direction style transfer".
 ##
 ## Kept stateless and static rather than an instance a caller holds: the sector actually shown is
-## the caller's own state (`Stroller._view_direction`, `CrowdAgent._walker_view`), and each caller
+## the caller's own state (`Stroller._view_direction`, `WalkerLook.view`), and each caller
 ## already has its own place to keep one int — a wrapper object here would only be a second name
 ## for the same field.
 

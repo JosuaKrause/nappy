@@ -8,12 +8,18 @@ extends Node2D
 const RIPPLE_SHADER: Shader = preload("res://assets/shaders/scenery_water.gdshader")
 
 var cells: Array[Vector2i] = []
+## The baked atlas pages the water's region comes from (`AtlasLibrary`), handed by the ground
+## before the surface is added; a surface nobody handed one (a suite's) makes its own when it first
+## enters the tree.
+var atlas: AtlasLibrary = null
 var elapsed := 0.0
 var _texture: AtlasTexture
 var _ripples: ShaderMaterial
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ground")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ground")
 	if not cells.is_empty():
 		configure(cells)
 
@@ -22,12 +28,12 @@ func _exit_tree() -> void:
 	_texture = null
 	material = null
 	_ripples = null
-	AtlasLibrary.release(&"ground")
+	atlas.release(&"ground")
 
 func configure(water_cells: Array[Vector2i]) -> void:
 	if cells != water_cells:
 		cells.assign(water_cells)
-	_texture = AtlasLibrary.region(&"tiles/water") as AtlasTexture
+	_texture = atlas.region(&"tiles/water") as AtlasTexture
 	_ripples = material_for(_texture, elapsed)
 	material = _ripples
 	queue_redraw()
@@ -51,8 +57,6 @@ func _process(delta: float) -> void:
 		_ripples.set_shader_parameter("elapsed", elapsed)
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	var extent := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
 	for tile in cells:
 		draw_texture_rect(_texture, Rect2(Vector2(tile) * extent, extent), false)

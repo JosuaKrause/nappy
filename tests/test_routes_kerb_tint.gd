@@ -1,6 +1,7 @@
 extends RefCounted
-## The route's own curbstones, tinted whole: `City._tint_the_route_kerbs()` re-sets cells on
-## `_ground` itself when `Corridor.depth(tile) == 0`, the same street-grained membership
+## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
+## itself where the walk marks the kerb (`RouteSource.marks_the_kerb_at()`, a day's tree at
+## `Corridor.depth(tile) == 0`), the same street-grained membership
 ## `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for` already answer
 ## independently.
 ##
@@ -15,16 +16,16 @@ func run(t) -> void:
 	_test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t)
 
 
-## The route's own curbstones, tinted whole: `City._tint_the_route_kerbs()` re-sets cells on
-## `_ground` itself when `Corridor.depth(tile) == 0`, the same street-grained membership
-## `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for` already answer
-## independently, so this test recomputes the expected set from those rather than trusting the
+## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
+## itself where the day's tree marks the kerb, at `Corridor.depth(tile) == 0`, the same
+## street-grained membership `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for`
+## already answer independently, so this test recomputes the expected set from those rather than trusting the
 ## paint to have used its own inputs correctly, and checks `_ground`'s cells directly since there
 ## is no second layer to read back.
 func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(90210))
 
@@ -48,7 +49,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 			var source := GroundTiles.source_for(city.map, tile, day)
 			if not (source in kerb_sources):
 				continue
-			var segment := StreetNetwork.segment_containing(tile)
+			var segment := city.map.network.segment_containing(tile)
 			if not segment:
 				continue
 			var entry: Dictionary = tiles_by_segment.get(segment.key(), {"tiles": {}, "sources": {}})
@@ -77,15 +78,15 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	for tile in expected:
 		var plain_source := GroundTiles.source_for(city.map, tile, day)
 		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
-				city._ground.tile_set)
+				city.scenery_ground.tile_set)
 		t.check(observed.sources.get(tile, -1) == GroundTiles.route_twin_of(plain_source),
 				"Ground's cell at %s carries its kerb source's route twin" % tile)
 		t.check(observed.atlas.get(tile, Vector2i(-1, -1)) == expected_atlas,
 				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
 				% tile)
-	var evicted_before := city._ground.evicted
+	var evicted_before := city.scenery_ground.evicted
 	var revisited := _visit_every_neighborhood(t, city, true)
-	t.check(city._ground.evicted > evicted_before,
+	t.check(city.scenery_ground.evicted > evicted_before,
 			"revisiting the city crosses retention boundaries and frees ground chunks")
 	t.check(observed.sources == revisited.sources and observed.atlas == revisited.atlas,
 			"every revisited cell reconstructs the same route tint and seeded atlas variant")
@@ -175,21 +176,22 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	t.check(main_road_off_tree > 0,
 			"the sweep found main-road streets off the tree to check (%d)" % main_road_off_tree)
 
-	city.start_finale(state, day + 1)
+	city.start_day(state, day + 1, RandomNumberGenerator.new(),
+			DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
 	var twinned_after_finale := 0
 	var finale := _visit_every_neighborhood(t, city)
 	for source: int in finale.sources.values():
 		if twin_source_ids.has(source):
 			twinned_after_finale += 1
 	t.check(twinned_after_finale == 0,
-			"start_finale paints no route-kerb twin, since the finale grows no tree")
+			"the escape's dressing paints no route-kerb twin before its walk is handed in")
 
 	city.free()
 
 ## Samples every map cell from its real resident TileMapLayer. Small destination views keep
 ## other neighborhoods free to unload; the reverse pass proves reconstruction after eviction.
 func _visit_every_neighborhood(t, city: City, reverse := false) -> Dictionary:
-	var keys := city._ground.keys_in(city.map.tile_rect_to_world(
+	var keys := city.scenery_ground.keys_in(city.map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, city.map.size)))
 	if reverse:
 		keys.reverse()
@@ -197,14 +199,14 @@ func _visit_every_neighborhood(t, city: City, reverse := false) -> Dictionary:
 	var atlas := {}
 	for key: Vector2i in keys:
 		city.scenery.update(SceneryGround.bounds(key), true)
-		t.check(city._ground.chunks.has(key), "visited neighborhood %s has a ground owner" % key)
+		t.check(city.scenery_ground.chunks.has(key), "visited neighborhood %s has a ground owner" % key)
 		for y in SceneryGround.CHUNK_TILES:
 			for x in SceneryGround.CHUNK_TILES:
 				var tile := key * SceneryGround.CHUNK_TILES + Vector2i(x, y)
 				if not Rect2i(Vector2i.ZERO, city.map.size).has_point(tile):
 					continue
-				var source := city._ground.get_cell_source_id(tile)
+				var source := city.scenery_ground.get_cell_source_id(tile)
 				if source >= 0:
 					sources[tile] = source
-					atlas[tile] = city._ground.get_cell_atlas_coords(tile)
+					atlas[tile] = city.scenery_ground.get_cell_atlas_coords(tile)
 	return {"sources": sources, "atlas": atlas}

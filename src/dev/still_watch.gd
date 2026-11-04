@@ -14,7 +14,7 @@ extends Node
 ## is, and `Stroller.is_idle()` — built for the baby's own sleepiness read — cannot tell the two
 ## apart; reading `global_position` instead is what makes the flag answer "did she actually get
 ## anywhere" rather than "is a key down", and it is what lets a human's hands (`tools/run.sh`) and
-## `RouteRig`'s scripted input (`--route`, which presses the same `TouchControls._set_axis()` a
+## `RouteRig`'s scripted input (`--route`, which presses the same `TouchControls.set_axis()` a
 ## human's held key does) trigger it on exactly the same terms.
 ##
 ## **Watched only while the day is running, not paused, and not on a brief, summary or death
@@ -37,15 +37,17 @@ extends Node
 ## - **`Stroller.is_detained()`** — the one gate every `EventDef.detain_seconds` row goes through,
 ##   so this alone covers `chatting_mother` ("Another mother" and her pram, 5s) and both checkpoint
 ##   rows that inspect her (`checkpoint_hut`, `checkpoint_post`; the boom never does) for the whole
-##   of the controls-locked part of their hold. It is the single call site (`EventManager._check_detentions()`
-##   → `body.detain()`) every input-taking mechanic in the catalogue runs through, so nothing else in
-##   the game needs a query of its own.
-## - **`EventManager.door_holding_her_at()`** — only a `redetains` row (the two checkpoint ones)
-##   ever needs this on top of `is_detained()`, because a checkpoint's own hold is a clock on the
-##   instance (`EventInstance.is_chatting()`, ticked in a drawn `_process()`) and the input lock is a
-##   separate clock on `Stroller` (ticked in `_physics_process()`); see that function's own note on
-##   why a hold can still be running a frame after the input lock has already cleared. Read at her
-##   own position, which is what the function already answers for the excitement meter.
+##   of the controls-locked part of their hold. It is the single call site
+##   (`CheckpointController.check_detentions()` → `body.detain()`) every input-taking mechanic
+##   in the catalogue runs through, so nothing else in the game needs a query of its own.
+## - **`CheckpointController.door_holding_her_at()`** — only a `redetains` row (the two
+##   checkpoint ones) ever needs this on top of `is_detained()`, because a checkpoint's own hold
+##   is a clock on the instance (`EventInstance.is_chatting()`, stepped on the events' physics
+##   tick) and the input lock is a separate clock on `Stroller` (ticked in its own
+##   `_physics_process()`); see
+##   that function's own note on why a hold can still be running a frame after the input lock
+##   has already cleared. Read at her own position, which is what the function already answers
+##   for the excitement meter.
 ## - **`facing_a_red_light()`** — the signalled junction nearest her among those visible on screen
 ##   shows her red on the main road's own light, wherever on screen she herself is standing. See
 ##   that function for why the nearest one decides and why her own tile no longer matters.
@@ -56,14 +58,18 @@ extends Node
 ## rather than being caught the instant she can move — see `_feed()`'s own note.
 ##
 ## **Reuses `AutoScreenshot`'s own `_capture()`** — the headless guard, the wait for a drawn
-## frame (`AutoScreenshot.drawn_frame()`), the save, the stdout line and the quit — through
+## frame (`DrawnFrame.wait()`), the save, the stdout line and the quit — through
 ## `AutoScreenshot.immediate()`, rather than a second writer of the same picture. This file owns
 ## only the stillness heuristic and where the picture goes.
 ##
 ## Not put through `main._pauses_with_the_game()`: unlike a node that *is* the game and must stop
-## outright when the tree pauses, this one wants to keep receiving `_process()` calls through a
-## pause so it can read `get_tree().paused` itself and freeze the hold rather than losing track of
+## outright when the tree pauses, this one wants to keep receiving `_physics_process()` calls through
+## a pause so it can read `get_tree().paused` itself and freeze the hold rather than losing track of
 ## it — the same reasoning `TelemetryObserver._process()` follows for `DayController.is_running()`.
+##
+## **The hold is counted in physics ticks** (`_physics_process()`), the tick her position changes
+## on, so a second of standing still is the same number of ticks on every machine and a lag spike
+## cannot make one frame's length count as a long stillness.
 
 ## How far she may drift from wherever she last effectively stopped and still count as standing
 ## there. Smaller than the route rig's own `_STUCK_DISTANCE` (8px, `src/dev/route_rig.gd`), whose
@@ -71,15 +77,19 @@ extends Node
 ## drift here, since this accumulates every frame rather than sampling one snapshot at a time.
 const STILL_RADIUS := 4.0
 
-## "About a second" — the player's own phrase for the hold; see `DevFlags.quit_when_still_seconds()`,
-## which this constant duplicates for the sole caller (`tests/test_still_watch.gd`) that wants the
-## default without going through the command line at all.
+## "About a second" — the player's own phrase for the hold; `DevFlags.quit_when_still_seconds()`
+## answers the same default, and this is what the hold is before `setup()` hands it one.
 const DEFAULT_SECONDS := 1.0
 
 var _city: City
 var _player: Stroller
 var _day: DayController
 var _seconds := DEFAULT_SECONDS
+## Whether Godot's movie writer is recording the run, handed on to the capture.
+var _recording := false
+## The folder the picture goes into, handed in by whoever builds the watch: `main` hands it the run's
+## own (`telemetry_picture_dir()`), a suite a scratch folder of its own.
+var _picture_dir := ""
 
 ## Whether she has moved past `STILL_RADIUS` from wherever `_anchor` currently sits — before this
 ## is true, standing at the doorstep for the opening seconds of a day must never trigger anything.
@@ -92,13 +102,16 @@ var _elapsed := 0.0
 ## a frame or two to land) never asks twice.
 var _done := false
 
-func setup(city: City, player: Stroller, day: DayController, hold_seconds: float) -> void:
+func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
+		picture_dir: String, recording := false) -> void:
 	_city = city
 	_player = player
 	_day = day
 	_seconds = hold_seconds
+	_picture_dir = picture_dir
+	_recording = recording
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _done:
 		return
 	if _feed(_player.global_position, delta, _watching(), _held()):
@@ -246,25 +259,28 @@ static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSi
 ## Notes the moment, then hands off to `AutoScreenshot` for the picture and the quit.
 func _trigger() -> void:
 	_done = true
-	set_process(false)
+	set_physics_process(false)
 	Telemetry.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
-		_seconds, TelemetryLog.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
-	add_child(AutoScreenshot.immediate(_picture_path()))
+		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
+	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
-## Where the picture goes: a `still/` folder beside the run's other picture kinds (`auto/`,
-## `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
+## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
+## (`auto/`, `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
 ## `Telemetry.current_log().path` — the one public handle onto where a run writes anything, rather
-## than a second copy of `Telemetry`'s own folder-naming. A fixed filename is enough: the flag
-## quits the game the instant it fires, so a run can never write this file twice. Falls back to
-## `Telemetry.DIRECTORY` itself when telemetry is off (`--no-telemetry` alongside this flag) — an
-## edge case the flag was not asked to solve, but one a picture dropped into the working directory
-## would answer worse than a shared, findable folder.
-func _picture_path() -> String:
+## than a second copy of `Telemetry`'s own folder-naming. Falls back to `Telemetry.DIRECTORY`
+## itself when telemetry is off (`--no-telemetry` alongside this flag) — an edge case the flag was
+## not asked to solve, but one a picture dropped into the working directory would answer worse than
+## a shared, findable folder. Only names the folder; `_picture_path()` makes it.
+static func telemetry_picture_dir() -> String:
 	var log := Telemetry.current_log()
-	var dir: String = (log.path.get_base_dir() + "/still") if log and log.path != "" \
+	return (log.path.get_base_dir() + "/still") if log and log.path != "" \
 			else (Telemetry.DIRECTORY + "/still")
-	DirAccess.make_dir_recursive_absolute(dir)
-	return dir + "/quit-when-still.png"
+
+## The picture's file, in the folder the watch was handed (made here). A fixed filename is enough:
+## the flag quits the game the instant it fires, so a run can never write this file twice.
+func _picture_path() -> String:
+	DirAccess.make_dir_recursive_absolute(_picture_dir)
+	return _picture_dir + "/quit-when-still.png"
 
 ## The closest live event or vehicle — the same "how far, never 'in reach'" shape
 ## `TelemetryObserver._nearest()` reports a chase against — cheap to ask once, at the moment the

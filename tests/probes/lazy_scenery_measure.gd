@@ -7,6 +7,9 @@ const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
 const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
 
+## The library every city measured here is handed, holding the shared pages for the whole probe.
+var _atlas := AtlasLibrary.new()
+
 func run(t) -> void:
 	print("LAZY_META " + JSON.stringify({"engine": Engine.get_version_info(),
 		"os": OS.get_name(), "processor": OS.get_processor_name(),
@@ -14,15 +17,15 @@ func run(t) -> void:
 	# Warm shared pages once, matching process residency rather than timing cold disk loads.
 	var groups: Array[StringName] = [ &"buildings", &"street_kit", &"ground", &"decoration", &"events", &"crowd" ]
 	for group in groups:
-		AtlasLibrary.acquire(group)
-		var size := AtlasLibrary.page_size(group)
+		_atlas.acquire(group)
+		var size := AtlasTable.baked().page_size(group)
 		print("LAZY_ATLAS " + JSON.stringify({"group": group, "size": str(size),
 			"rgba8_base_bytes": size.x * size.y * 4}))
 	for trial in 3:
 		for seed_value: int in SEEDS:
 			_measure(t, seed_value, trial)
 	for group in groups:
-		AtlasLibrary.release(group)
+		_atlas.release(group)
 	_actual_boot(t)
 
 func _measure(t, seed_value: int, trial: int) -> void:
@@ -30,8 +33,9 @@ func _measure(t, seed_value: int, trial: int) -> void:
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	city.set_script(TIMED_CITY)
+	city.atlas = _atlas
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
@@ -47,11 +51,11 @@ func _measure(t, seed_value: int, trial: int) -> void:
 		_counterfactual(city, t)
 	var state := CityState.new()
 	for day: int in [1, 8, 14]:
-		GameState.day = day
+		GameState.header.day = day
 		state.begin_day(map.block_plans, day)
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
-		city.start_day(state, day, GameState.day_rng())
+		city.start_day(state, day, GameState.calendar.day_rng())
 		row = city.get("spans").duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,
 			"total_ms": (Time.get_ticks_usec() - started) / 1000.0,
@@ -92,7 +96,7 @@ func _coverage(city: City) -> void:
 		building_nodes += _nodes(building)
 		for col in building.columns():
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				building._extension_rows(col) * 32.0)
+				building.extension_rows(col) * 32.0)
 		for layer: SceneryLayer in building._roof_layers:
 			roof_layers += 1
 			for rect: Rect2 in layer._rects:
@@ -169,8 +173,8 @@ func _counterfactual(city: City, t) -> void:
 		var layer := TileMapLayer.new()
 		layer.tile_set = source.tile_set
 		# Deliberately outside the tree: no renderer/physics/quadrant processing in this experiment.
-		var lo := Vector2i(-City.OUTSIDE_DEPTH_TILES, -City.OUTSIDE_DEPTH_TILES)
-		var hi := city.map.size + Vector2i.ONE * City.OUTSIDE_DEPTH_TILES
+		var lo := Vector2i(-CityMap.OUTSIDE_DEPTH_TILES, -CityMap.OUTSIDE_DEPTH_TILES)
+		var hi := city.map.size + Vector2i.ONE * CityMap.OUTSIDE_DEPTH_TILES
 		if mode == "nearby":
 			lo = Vector2i((nearby.position / 32).floor())
 			hi = Vector2i((nearby.end / 32).ceil())

@@ -12,7 +12,7 @@ extends Node2D
 ## current vertical bob, so a walking or pacing entity's rim rides the same lift the body itself
 ## does rather than sliding off it. **The ring lifts the whole traced drawing by it, the same way
 ## the owner's own `_draw()` does**, so a part that stays on the ground while the body rises — a
-## vehicle's wheels, which `CrowdAgent._draw_body()` and `EventInstance._draw_eight_view()` draw
+## vehicle's wheels, which `CarLook.draw_body()` and `EventLook._draw_eight_view()` draw
 ## back down by the bob — stays on the ground in the rim too, and the rim is the outline of what is
 ## actually drawn. `set_glow()` is the only thing an owner calls afterwards, once
 ## a frame, with the *target* alpha and colour `ExcitementHalo` computed for it — this node eases
@@ -90,7 +90,7 @@ const FADE_IN_SECONDS := 0.3
 
 ## How long a rim takes to drain to a lower target, longer than `FADE_IN_SECONDS` so a burst that
 ## expires all at once dims rather than switching off — a source dropped from the picked set, or
-## whose points have just left `ExcitementHalo.WINDOW`, is told a target of zero and fades out
+## whose points have just left `ExcitementSource.WINDOW`, is told a target of zero and fades out
 ## rather than vanishing on the spot.
 const FADE_OUT_SECONDS := 0.8
 
@@ -122,6 +122,7 @@ const COMPATIBILITY_RIM_BLOCKS := 256 / 16
 const RIM_BUDGET := COMPATIBILITY_RIM_BLOCKS - 1
 
 func _init(draw_body: Callable, bob: Callable) -> void:
+	set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.HALOS)
 	_draw_body = draw_body
 	_bob = bob
 	name = "Halo"
@@ -145,7 +146,7 @@ static func shared_material() -> ShaderMaterial:
 ## Frees `rim` on the spot — out of its owner, then the object itself — so its block in the
 ## renderer's instance buffer is released before anything later this frame builds a rim and asks
 ## for one. See the class doc for why `queue_free()` is not enough. The one way an owner gives a
-## rim back: `EventInstance.release_halo()` and `CrowdAgent.release_halo()`.
+## rim back: `SourceRim`, from its `release()` and from `set_strength()` once a fade is over.
 static func release(rim: EntityHalo) -> void:
 	var owner_node := rim.get_parent()
 	if owner_node:
@@ -221,7 +222,7 @@ func _process(delta: float) -> void:
 
 ## The ring this rim is traced at: `HALO_OFFSETS` translations `HALO_MARGIN` out, all riding
 ## whatever lift the owner's body currently has. A pure function of the bob, so a test can hold the
-## ring without a draw pass — headless never calls `_draw()`.
+## ring without a draw pass.
 static func trace_offsets(bob: float) -> Array[Vector2]:
 	var ring: Array[Vector2] = []
 	for i in HALO_OFFSETS:
@@ -237,18 +238,16 @@ static func trace_offsets(bob: float) -> Array[Vector2]:
 ## mirrored view have a rim at all.** `draw_set_transform` replaces rather than composes and nothing
 ## can read back what it replaced, so `Sprites.draw_standing()`'s own mirror — the only flipped draw
 ## path in the game, and the one every west-facing sector of every eight-view family goes through —
-## has to be handed the offset rather than left to discover it. See `Sprites._base_transform` for
+## has to be handed the offset rather than left to discover it. See `Sprites.BASE_TRANSFORM_META` for
 ## what it looked like when it was not: twelve copies stacked on the body and no ring.
 func _on_draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_HALOS)
 	if not is_showing():
 		return
 	var bob: float = _bob.call()
 	for offset in trace_offsets(bob):
 		var base := Transform2D(0.0, offset)
-		Sprites.set_base_transform(base)
+		Sprites.set_base_transform(self, base)
 		draw_set_transform_matrix(base)
 		_draw_body.call(self)
-	Sprites.set_base_transform(Transform2D.IDENTITY)
+	Sprites.set_base_transform(self, Transform2D.IDENTITY)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

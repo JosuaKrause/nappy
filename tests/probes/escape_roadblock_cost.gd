@@ -8,8 +8,8 @@ extends RefCounted
 ##
 ## The rig is `tests/escape_roadblock_rig.gd`; `tests/test_finale.gd` pins what this prints.
 ## Every crossing is walked in both directions, twice: from 0 asleep, which is what every attempt
-## at the city section starts on (`main._on_finale_section_started()`: `Baby.reset()` then
-## `force_sleep()`), and from `Tuning.EXCITEMENT_WAKE_THRESHOLD` awake, the baby a bang earlier on
+## at the city section starts on (`main._start_section()`: `Baby.reset()` then `force_sleep()`),
+## and from `Tuning.EXCITEMENT_WAKE_THRESHOLD` awake, the baby a bang earlier on
 ## the walk has just woken. Three walks each:
 ##
 ## - **posted**: straight past at a walk, the guards at their posts. Ends at a catch.
@@ -35,7 +35,8 @@ func _measure(t, awake: bool) -> void:
 		var built := Rig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		for street: Array in Rig.roadblock_streets(map, plan):
+		var placements: Array[EventScheduler.Planned] = built["placements"]
+		for street: Array in Rig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
 			var group: Array[EventScheduler.Planned] = []
 			group.assign(street[1])

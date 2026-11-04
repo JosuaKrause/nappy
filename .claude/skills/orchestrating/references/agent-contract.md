@@ -18,6 +18,15 @@ Code follows **orchestrating**'s "Code is designed by layer": the five principle
 dependency injection, and a mode as configuration. Report any place the work had to depend the wrong
 way, as a fork; and, as that section proposes (plush-kestrel), which layer the work belongs to.
 
+**A pull request that changes code answers the architecture questions**
+(`../../pr-review/references/architecture-questions.md`): in the report and in the PR description
+under `## Architecture questions`, one numbered answer per question, or the one line that file gives
+for a change that adds no piece and no dependency. CI fails a description without them
+(`tools/ci_pr_questions.py`); run it on a draft with `--description-file` before opening the PR.
+Run `uv run python tools/check_layers.py` before pushing a change under `src/`: CI fails a new
+break of the layer map, and a listed break your change fixed until its line is deleted from
+`tools/layer_map.py`.
+
 ## Git
 
 You work in the worktree the brief names, already on your branch from `origin/main` with no
@@ -49,6 +58,11 @@ the worktree, use `.venv/bin/python tools/agent-identity.py run <role> -- <comma
 python tools/agent-identity.py status <role>` first; if the role is not usable, stop and report —
 never fall back to a direct call. Open a ready PR, not a draft.
 
+**Text you post or commit is written to a directory of your own, made with `mktemp -d`**: a PR
+body, a commit message, a review, a comment. Never a fixed name such as `/tmp/pr_body.md`: `/tmp`
+outlives a session, so a fixed name can already hold another run's text, and a write of your own
+that did not land publishes theirs. Read the file back before passing it on.
+
 ## Scope
 
 **Never edit** `docs/TODO.md`, anything under `docs/todo/`, `docs/review/`, `docs/decisions/` or
@@ -67,7 +81,18 @@ own, otherwise report the sentence and its replacement.
 Verification is **verify**'s: `./tools/check.sh`, `./tools/lint.sh` if you touched a governed doc,
 `./tools/pycheck.sh` if you touched Python, and the suites your change touches by name. The full
 suite is CI's, on the merge result, and `PARTIAL RUN` is expected — unless the brief says this is
-one of verify's local-full-run cases. If CI goes red on your PR, fix it.
+one of verify's local-full-run cases. Otherwise, once the touched suites say the change is done,
+push and open the PR, and CI's run is the full run (inbox #870 in minty-dolphin). If CI goes red on your PR,
+reproduce the failing suites locally and fix them.
+
+**A long wait gives one notification.** A run that outlasts a foreground call goes to the
+background as one command, and you wait for its exit notification: the run itself, or, for
+something that is not your own command (a tool that detaches its child, a CI check), one
+`until <condition>; do sleep N; done` loop run in the background. What a wait must never do is
+end a turn on every tick, as a loop of turns, a scheduled wakeup or a monitor that prints each
+tick does: each turn you end while waiting notifies the orchestrating session and puts a line on
+the player's screen, so a wait that wakes every minute floods both with nothing to say. Batch
+what you can into one command, so one wait gives one notification.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
 player's save. At most one or two `tools/shot.sh` captures at the end for evidence; the brief says
@@ -121,5 +146,6 @@ nothing that overturns it, report the clash quoting both.
 ## Final report
 
 Also the PR description: per item, what was built and how it was verified; every choice made
-where the design was silent; every fork left open; the PR URL. An outcome it does not mention is
+where the design was silent; every fork left open; the answers to the architecture questions, for a
+PR that changes code; the PR URL. An outcome it does not mention is
 an outcome that did not happen.

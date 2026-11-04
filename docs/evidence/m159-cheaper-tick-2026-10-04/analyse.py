@@ -12,6 +12,11 @@ eleven numbers a tick. `report` refuses to print timings unless every run of the
 repetition and mode carries the same position chain on both revisions, which is the claim that
 the change moved no agent; then it prints the tables. Percentiles are nearest-rank, in
 microseconds per simulated tick.
+
+Both probe schemas are read, each run by its own `schema_version` (one without the key is schema
+2). Schema 2 times the agents' frame apart from the tick: `whole` rows are `[agents, tick]` and the
+split's `agents` column is outside the tick. Schema 3 (the crowd steps its agents inside its tick)
+has `whole` rows of `[tick]` only, and the split's `agents` column is part of the tick.
 """
 
 from __future__ import annotations
@@ -73,6 +78,21 @@ def nearest_rank(values: list[int], percent: float) -> int:
     return ordered[max(0, math.ceil(percent / 100.0 * len(ordered)) - 1)]
 
 
+def schema(run: dict) -> int:
+    return int(run.get("schema_version", 2))
+
+
+def tick_of(run: dict, row: list[int]) -> int:
+    """A `whole` run's tick, in the column its own schema names it in."""
+    return row[run["columns"].index("tick")]
+
+
+def tick_from_means(run: dict, means: list[float]) -> float:
+    """A split run's tick from its columns' means: all of them in schema 3, where the agents'
+    step is inside the tick, and all but the agents' own frame before it."""
+    return sum(means) if schema(run) >= 3 else sum(means[1:])
+
+
 def parity(runs: list[dict]) -> None:
     chains: dict[tuple, set[str]] = {}
     for run in runs:
@@ -115,7 +135,7 @@ def tick_table(runs: list[dict]) -> None:
                 and run["revision"] == revision
                 and (run["seed"], run["day"]) == (seed, day)
             ]
-            ticks = [row[1] for run in chosen for row in run["rows"]]
+            ticks = [tick_of(run, row) for run in chosen for row in run["rows"]]
             medians[revision] = statistics.median(ticks)
             print(
                 f"| {seed} | {day} | {chosen[0]['agents']} | {revision} | {len(ticks)} | "
@@ -143,7 +163,7 @@ def tick_table(runs: list[dict]) -> None:
             )
             cells = ", ".join(
                 f"{run['round']}.{run['repetition']}: "
-                f"{statistics.median(row[1] for row in run['rows']):.0f}"
+                f"{statistics.median(tick_of(run, row) for row in run['rows']):.0f}"
                 for run in chosen
             )
             print(f"| {seed} | {day} | {revision} | {cells} |")
@@ -153,7 +173,10 @@ def tick_table(runs: list[dict]) -> None:
 def split_table(runs: list[dict]) -> None:
     print("## By call (`split` mode), mean µs per tick, the mean of every run's own mean\n")
     columns: list[str] = next(run["columns"] for run in runs if run["mode"] == "split")
-    print("| seed | day | revision | " + " | ".join(columns) + " | tick (sum but agents) |")
+    schemas = {schema(run) for run in runs if run["mode"] == "split"}
+    if len(schemas) != 1:
+        print(f"(split runs of schemas {sorted(schemas)}: each revision's tick is summed by its own)\n")
+    print("| seed | day | revision | " + " | ".join(columns) + " | tick (the schema's own sum) |")
     print("|---:|---:|---|" + "---:|" * (len(columns) + 1))
     for seed, day in sorted({(run["seed"], run["day"]) for run in runs}):
         for revision in REVISIONS:
@@ -168,7 +191,7 @@ def split_table(runs: list[dict]) -> None:
                 statistics.fmean(run["summary"][column]["mean"] for run in chosen)
                 for column in columns
             ]
-            tick = sum(means[1:])
+            tick = tick_from_means(chosen[0], means)
             cells = " | ".join(f"{mean:.1f}" for mean in means)
             print(f"| {seed} | {day} | {revision} | {cells} | {tick:.1f} |")
     print()

@@ -11,10 +11,33 @@ extends RefCounted
 ## the mark is touched rather than waiting for the next day's dawn. Only the perform half
 ## grants progress toward `Tuning.RESISTANCE_GOAL`; picking up a note is not the errand.
 
+## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
+## the next this many events, and the mast is put on her route once her walk finds it a site, beside
+## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
+## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
+const MAST_WITHIN_THE_NEXT := 2
+## How many of the events handed out on her route after day 6's mark a man shouting's marble is one
+## of: the route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one
+## `homeless_yeller` and the rest drawn from the bag she was drawing from, and he is put on her route
+## once her walk finds him a site (`EventDirector._place_on_her_route()`). *(olive-koala, statement 2: "after touching
+## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
+## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
+## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
+## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
+## `EventDirector.AHEAD_INTERVAL`, within a minute of walking.
+const TASK_CONTACT_WITHIN_THE_NEXT := 2
+## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
+## next this many events, and the van is put on her route once her walk finds it a site, besides the
+## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
+## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
+## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
+## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
+const VAN_WITHIN_THE_NEXT := 2
+
 ## How a perform step's contact is placed once its mark is touched.
 ## - `EVENT` rides a freshly spawned `EventInstance` of `task_event_id`, at a tile from
 ##   `placement` — the man shouting, the van, the roadblock.
-## - `SCAR` rides the run's own recorded scar for `task_event_id` (`GameState.scars`), or falls
+## - `SCAR` rides the run's own recorded scar for `task_event_id` (`RunState.attempt_spend.scars`), or falls
 ##   back to `EVENT`'s own placement when the run has no such scar.
 ## - `DOOR` sits at one of today's region-wall doors, a bare point rather than a rider.
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.
@@ -85,6 +108,27 @@ class Step extends RefCounted:
 	## touches the inner circle it counts as delivered." False for every other step, whose
 	## contact's own `reach` decides regardless of the rider's geometry.
 	var completes_at_inner_radius := false
+	## **A roadblock's task** (day 13): its row is placed near the mark the moment she reads it,
+	## under the day's own rules, and its own guard waits in a band round it rather than being sent
+	## after her (`ResistanceDirector.keeps_a_waiting_guard()`).
+	var is_a_guarded_band := false
+	## The row a done task sends after her from off screen (`ResistanceDirector.sets_a_trap_on_her()`):
+	## the robber, or the van's own guard for the van, whose package is what he comes for.
+	var trap_row := "robber_giving_chase"
+	## Who `trap_row` is, as the run log names him when he is sent (`ResistanceDirector.
+	## _note_the_trap()`): a robber, or a guard for the van's guard.
+	var trap_noun := "a robber"
+	## Whether the task's target is a door on a building's front, where she stands on the sidewalk
+	## below the facade (`ResistanceDirector.is_at_a_front_door()`): the burnt building's, and the
+	## power station's, which its `TargetKind.STATION_DOOR` already says.
+	var at_a_front_door := false
+	## Whether its rider stays and keeps shouting for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS`
+	## once she has handed it over (day 6's man shouting).
+	var lingers_after_handover := false
+	## How many of her route's next marbles the task's row is rigged within once she has read its
+	## mark (`ResistanceDirector._rig_her_route_for()`), or 0 for a task that rigs nothing. The row
+	## is `task_event_id`, or the mast's for a `TargetKind.MAST` task.
+	var rigs_within := 0
 
 static var _all: Array[Step] = []
 
@@ -95,10 +139,12 @@ static func all() -> Array[Step]:
 
 ## Only ever returns a pickup or the finale — a perform step is never offered at dawn, it is
 ## activated the instant its own mark is touched (`ResistanceDirector._on_contact_completed()`),
-## so `for_day()` has nothing to say about one.
+## so `for_day()` has nothing to say about one. Asked of `steps`, or of the run's own calendar
+## (`all()`) when none is handed: a director handed another calendar (`ResistanceDirector.
+## use_steps()`) asks of that one.
 static func for_day(day: int, completed: Array[int], failed: Array[int],
-		goal_met: bool) -> Step:
-	for step in all():
+		goal_met: bool, steps: Array[Step] = []) -> Step:
+	for step in (steps if not steps.is_empty() else all()):
 		if step.day != day:
 			continue
 		if not step.is_pickup and not step.needs_goal:
@@ -110,7 +156,7 @@ static func for_day(day: int, completed: Array[int], failed: Array[int],
 		return step
 	return null
 
-## The step whose task is warning the neighbor — the one `GameState.neighbor_was_taken()` asks
+## The step whose task is warning the neighbor — the one `RunState.neighbor_was_taken()` asks
 ## about. Null on a calendar without one.
 static func warning_step() -> Step:
 	for step in all():
@@ -157,8 +203,10 @@ static func sits_on_a_bare_point(step: Step) -> bool:
 static func stands_on_held_ground(step: Step) -> bool:
 	return step != null and step.target_kind in [TargetKind.DOOR, TargetKind.STATION_DOOR]
 
-static func by_index(index: int) -> Step:
-	for step in all():
+## The step numbered `index` in `steps`, or in the run's own calendar (`all()`) when none is
+## handed, or null.
+static func by_index(index: int, steps: Array[Step] = []) -> Step:
+	for step in (steps if not steps.is_empty() else all()):
 		if step.index == index:
 			return step
 	return null
@@ -186,7 +234,7 @@ static func narrow_target_on(day: int) -> Step:
 	return null
 
 ## Every tile `step`'s contact may stand on, before any of today's refusals — the pool
-## `ResistanceDirector._place()` draws from, and the pool the day's planning keeps one reachable
+## `ResistanceDirector.place_contact()` draws from, and the pool the day's planning keeps one reachable
 ## tile of. One function for both, so the tiles the planning protects are the tiles the director
 ## picks among. `region_plan` is today's (`City.region_plan()`); only a `DOOR` reads it.
 ##
@@ -216,7 +264,7 @@ static func target_candidates(step: Step, map: CityMap,
 		if not region_plan:
 			return found
 		var home_border := {}
-		for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+		for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 			home_border[segment.key()] = true
 		for segment in region_plan.doors:
 			if home_border.has(segment.key()):
@@ -281,6 +329,23 @@ static func _build() -> Array[Step]:
 			[GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE], false,
 			TargetKind.EVENT, false, Texts.NOTE_HEADER)
 	note_for_a_stranger.completes_at_inner_radius = true
+	note_for_a_stranger.lingers_after_handover = true
+	note_for_a_stranger.rigs_within = TASK_CONTACT_WITHIN_THE_NEXT
+	var the_package := _perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van",
+			[GameEnums.TileType.SIDEWALK], true, TargetKind.EVENT, true, Texts.PACKAGE_HEADER)
+	the_package.trap_row = "van_guard_giving_chase"
+	the_package.trap_noun = "a guard"
+	the_package.rigs_within = VAN_WITHIN_THE_NEXT
+	var the_burnt_shell := _perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell",
+			[GameEnums.TileType.SIDEWALK], true, TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER)
+	the_burnt_shell.at_a_front_door = true
+	var the_mast := _perform(12, Texts.MAST_TITLE, 11, "", [], true, TargetKind.MAST, false,
+			Texts.MAST_HEADER)
+	the_mast.rigs_within = MAST_WITHIN_THE_NEXT
+	var the_roadblock := _perform(16, Texts.ROADBLOCK_TITLE, 13, "roadblock",
+			[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
+			false, Texts.ROADBLOCK_HEADER)
+	the_roadblock.is_a_guarded_band = true
 
 	return [
 		_mark(1, Texts.MARK_TITLE, 6, Texts.NOTE_BRIEF),
@@ -290,20 +355,18 @@ static func _build() -> Array[Step]:
 		# to the neighbor down the hall; carrying it makes the pram heavier for the rest of the
 		# day.
 		_mark(3, Texts.MARK_TITLE_MORE, 7, Texts.PACKAGE_BRIEF),
-		_perform(4, Texts.PACKAGE_TITLE, 7, "delivery_van", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.EVENT, true, Texts.PACKAGE_HEADER),
+		the_package,
 
 		# Day 8 · leave something at the burnt shell from day 3 — one place, red arrow. What she
 		# carries is the neighbor's drawing, left in the stroller overnight, so the words say where
 		# it is, the stroller, rather than naming an "it" nothing showed, in one short sentence. The
-		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.scar_id` on
+		# contact rides the run's own recorded `burnt_shell` scar (`EventDef.aftermath.scar` on
 		# `burning_building`) and stands on the door of the building behind it; a run with no such
 		# scar stands the row on a reachable front the fire could have caught on, records the scar
 		# there and burns the building behind it, so the words still lead to a burnt building — see
 		# `ResistanceDirector._begin_step()`.
 		_mark(5, Texts.MARK_TITLE_MORE, 8, Texts.BURNT_SHELL_BRIEF),
-		_perform(6, Texts.BURNT_SHELL_TITLE, 8, "burnt_shell", [GameEnums.TileType.SIDEWALK], true,
-				TargetKind.SCAR, false, Texts.BURNT_SHELL_HEADER),
+		the_burnt_shell,
 
 		# Day 9 · cross a named region door — one place, red arrow. The districts close that
 		# morning (`Tuning.REGION_WALL_FIRST_DAY`) and this is the day she finds out whether a
@@ -325,8 +388,7 @@ static func _build() -> Array[Step]:
 		# skill. The rehearsal: a mast's feed can be cut by hand, nobody comes, and the masts have no
 		# power of their own.
 		_mark(11, Texts.MARK_TITLE_MORE, 11, Texts.MAST_BRIEF),
-		_perform(12, Texts.MAST_TITLE, 11, "", [], true, TargetKind.MAST, false,
-				Texts.MAST_HEADER),
+		the_mast,
 
 		# Day 12 · the swing on the playground of one specific park — one place, red arrow. The
 		# park is the one the city chose for it (`CityGenerator._plan_the_swing_park()`), forced
@@ -339,9 +401,7 @@ static func _build() -> Array[Step]:
 		# nobody looks twice at a parent walking a baby who won't settle. A roadblock is solid, so
 		# the words ask how close she gets rather than for a way through it.
 		_mark(15, Texts.MARK_TITLE_MORE, 13, Texts.ROADBLOCK_BRIEF),
-		_perform(16, Texts.ROADBLOCK_TITLE, 13, "roadblock",
-				[GameEnums.TileType.ROAD, GameEnums.TileType.CROSSING], false, TargetKind.EVENT,
-				false, Texts.ROADBLOCK_HEADER),
+		the_roadblock,
 
 		# The finale, offered only to a player who already did the work: the power station's
 		# front door, one place, by the red arrow. She hands the key over there and walks away.

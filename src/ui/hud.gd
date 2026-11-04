@@ -28,17 +28,51 @@ extends CanvasLayer
 @onready var _task_arrow: HomeArrow = $Root/TaskArrow
 @onready var _teach: HelpText = $Root/Teach
 
-## Read once per instance rather than at each use site, so a test can flip it and drive both HUD
-## shapes without needing an actual debug build — the test process itself always is one, so asking
-## `OS.is_debug_build()` from inside `_refresh_header()` et al. would leave the release shape
-## covered by nothing.
-var _debug := DevFlags.enabled()
+## Whether the debug header and the developer's furniture show — the build's own answer until
+## `configure()` hands the run's. A member rather than a read at each use site, so a test can
+## configure either HUD shape without needing an actual debug build.
+var _debug := OS.is_debug_build()
+## `--invincible`, named in the debug header so no capture from such a run reads as a real one.
+var _invincible := false
+
+## What the run's configuration decides about this HUD: the debug shape (`false` for a release
+## build and for `--player-view`), whether the run is invincible, and whether the ordinary control
+## lessons have already been learned (an authored mid-game scene's `tutorial_complete`, which
+## `RunFlow.lessons_learned()` answers), so the HUD says none of them: no walking lesson, no pause
+## lesson and no run lesson. Danger warnings and the rest of the HUD stay. Called before `_ready()`.
+func configure(debug: bool, invincible: bool, lessons_learned: bool) -> void:
+	_debug = debug
+	_invincible = invincible
+	_lessons_learned = lessons_learned
+	_taught_pause = lessons_learned
+	_taught_run = lessons_learned
+
+## The run whose day, act, nerves and resistance the header and the resistance line read, handed in
+## by `use_run()`.
+var _run: RunState
+
+## Hands the HUD the run it reads. Called by `main` before the HUD enters the tree, since `_ready()`
+## draws both lines at once, and by a test that builds one.
+func use_run(run: RunState) -> void:
+	_run = run
+
+## Hands the HUD's teaching line the baked atlas pages its symbols are drawn from (`AtlasLibrary`).
+## Called by `main` before the HUD enters the tree, so the line acquires on it; a HUD built
+## anywhere else leaves the line to make its own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Teach") as HelpText).atlas = atlas
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,
 ## running and pause lessons — those now name the tap on every device, since nothing on screen
 ## names a key any more — but still drives `_reposition_meters_for_touch()` below.
 var _touch := TouchInput.available()
+
+## Hands the screen the run's answer to the touch question (`TouchInput.available(config)`), which
+## `--touch` can force. Called by `main` before the screen enters the tree; a screen built anywhere
+## else keeps the hardware's own answer.
+func use_touch(touch: bool) -> void:
+	_touch = touch
 
 var _baby: Baby
 var _contact_step := 0
@@ -154,6 +188,8 @@ var _rig: Stroller
 ## stopped, it is a person who has not started, so it does not count.
 var _walked_today := false
 var _stood_for := 0.0
+## Whether the ordinary control lessons were learned before this run began — see `configure()`.
+var _lessons_learned := false
 ## Once per **run**, not once per day. See `_teach_the_pause()`.
 var _taught_pause := false
 ## Once per **run**, and only on `Tuning.RUN_TAUGHT_DAY`. See `_on_event_telegraphed()`.
@@ -177,7 +213,7 @@ func _teach_the_day(day: int) -> void:
 	# remembers a lesson the player never actually reached. `_taught_pause` keeps the once-per-run
 	# shape the comment above it argues for — it is not tied to a day, so whether a rewind should
 	# clear it too is a different question and not this one's to answer.
-	if day == Tuning.RUN_TAUGHT_DAY:
+	if day == Tuning.RUN_TAUGHT_DAY and not _lessons_learned:
 		_taught_run = false
 
 
@@ -245,23 +281,25 @@ func _teach_the_pause(delta: float) -> void:
 ## run button (`_run_phrase()`): `Shift` still holds `run` on a keyboard, but nothing on screen
 ## names it — see `Texts.WALKING_LESSON_PAUSE`'s own doc.
 func _on_event_telegraphed(instance: EventInstance) -> void:
-	if _taught_run or not instance.def.pursues or GameState.day != Tuning.RUN_TAUGHT_DAY:
+	if _taught_run or instance.def.pursuit == null or _run.header.day != Tuning.RUN_TAUGHT_DAY:
 		return
 	_taught_run = true
 	var phrase := _run_phrase(HelpText.joystick_in_force(get_tree()))
 	_say(phrase[0].to_upper() + phrase.substr(1), instance.def.telegraph_time + TEACH_RUN_SECONDS)
 
 func _say_the_walking_lesson(joystick: bool) -> void:
+	if _lessons_learned:
+		return
 	_say(Texts.WALKING_LESSON % _run_phrase(joystick), TEACH_SECONDS)
 
 ## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
 ## scheme was in force before the player chose one, and counted down hidden behind the title. Said
 ## again when the choice is made, in the chosen scheme, for its full length. Uses the signal's own
-## `mode`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the tree
-## still answers with the old one at this moment.
-func _on_controls_chosen(mode: int, _by_key: bool) -> void:
-	if GameState.day == 1:
-		_say_the_walking_lesson(mode == ControlsMode.Mode.JOYSTICK)
+## `joystick`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the
+## tree still answers with the old one at this moment.
+func _on_controls_chosen(joystick: bool, _by_key: bool) -> void:
+	if _run.header.day == 1:
+		_say_the_walking_lesson(joystick)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
 ## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws a run
@@ -276,22 +314,24 @@ func _say(line: String, seconds: float) -> void:
 	_teach.show_line(line)
 	_teach_left = seconds
 
-## The escape's two hint lines — *"escape the apartment"* and *"exit the city"* — said by `main` at
-## the start of each section. Public because neither hangs off a day or a telegraph, so there is no
-## signal the HUD could have listened for; it is the same one-line lesson `_teach_the_day()` gives
-## on day 1, for the same length of time, and it is said once per section rather than on a retry.
+## The escape's two hint lines — *"Escape the building"* and *"Escape the city"*, each section's own
+## words (`DaySpec.title`) — said by `main` every time a section is engaged, a first entry, a retry
+## and a resumed one alike. Public because neither hangs off a telegraph; it is the same one-line
+## lesson `_teach_the_day()` gives on day 1, for the same length of time.
 func say_once(line: String) -> void:
 	_say(line, TEACH_SECONDS)
 
-## Whether the clock is the escape's rather than a day's. The only thing it changes is the format —
-## *"in addition to minutes and seconds the timer also shows milliseconds. this makes the timer
-## appear faster than just the seconds alone which adds additional tension"*, tried as hundredths
-## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather than a second
-## clock or a second label.
-var _finale := false
+## Whether the clock reads to the hundredth, as the day being walked says
+## (`DaySpec.clock_hundredths`, the escape's). The only thing it changes is the format — *"in
+## addition to minutes and seconds the timer also shows milliseconds. this makes the timer appear
+## faster than just the seconds alone which adds additional tension"*, tried as hundredths
+## (inbox #746 in woolly-penguin) — so it is a flag on the one function that draws the clock rather
+## than a second clock or a second label, read off the spec of each day or section as it begins.
+var _hundredths := false
 
-func set_finale(on: bool) -> void:
-	_finale = on
+## The day or section about to be walked (`RunFlow.day_started`, which `main` connects).
+func use_the_day(spec: DaySpec) -> void:
+	_hundredths = spec.clock_hundredths
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)
@@ -320,14 +360,12 @@ func _on_baby_state_changed(_state: GameEnums.BabyState) -> void:
 ## already visible on the pram itself.
 ##
 ## **Re-asks the group every call until it gets an answer**, rather than trusting the one lookup
-## `_ready()` made. In the escape `main._ready_escape()` builds this HUD before the building or
-## the city — and so before the `Baby` it goes looking for even exists — so `_ready()`'s own
-## `get_first_node_in_group("baby")` came back empty and this stayed unset for the section's whole
-## life: the label was left showing `hud.tscn`'s own placeholder text, "awake", forever, while the
-## pram's own picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever
-## she actually was. Found investigating *"the readout said 'awake' while the baby was drawn
-## asleep"* under `--start-escape stairwell:right --invincible`; the two were never two sources,
-## only one of them was looking at nothing.
+## `_ready()` made. In the escape `main` builds this HUD before the building or the city — and so
+## before the `Baby` it goes looking for even exists — so `_ready()`'s own
+## `get_first_node_in_group("baby")` comes back empty, and a label that stopped asking would show
+## `hud.tscn`'s own placeholder text, "awake", for the section's whole life while the pram's own
+## picture (`Stroller._draw_baby_cue()`, reading the same `Baby.state`) drew whatever she actually
+## was.
 func _refresh_state() -> void:
 	if not _baby:
 		_baby = get_tree().get_first_node_in_group("baby") as Baby
@@ -346,12 +384,12 @@ func _refresh_state() -> void:
 	_state_label.text = text
 
 func _on_day_time_changed(remaining: float, total: float) -> void:
-	# A day reads to the second (`GameState.format_clock_seconds()`, shared with the day summary's
-	# elapsed-time line) and the escape reads to the hundredth (`GameState.format_clock_hundredths()`),
-	# which its `DayController` feeds on every frame (`emit_every_frame`). The ending screens'
-	# run length keeps the millisecond (`GameState.format_clock()`): it is a still number.
-	_clock.text = GameState.format_clock_hundredths(remaining) if _finale \
-			else GameState.format_clock_seconds(remaining)
+	# A day reads to the second (`RunState.format_clock_seconds()`, shared with the day summary's
+	# elapsed-time line) and the escape reads to the hundredth (`RunState.format_clock_hundredths()`),
+	# which its `DayController` feeds on every frame (`DaySpec.clock_hundredths`). The ending
+	# screens' run length keeps the millisecond (`RunState.format_clock()`): it is a still number.
+	_clock.text = RunState.format_clock_hundredths(remaining) if _hundredths \
+			else RunState.format_clock_seconds(remaining)
 	# The last minute is the one worth panicking about.
 	var urgent := remaining < 60.0 and total > 0.0
 	_clock.modulate = Color("e5765f") if urgent else Color(1, 1, 1)
@@ -397,7 +435,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ##
 ## **The goal itself is silent until the first mark has been touched** (`CLAUDE.md`, "no quest
 ## log or marker for the resistance": *the first encounter comes with no hint at all*). A pickup
-## grants no progress, so `GameState.completed_resistance_steps` rather than
+## grants no progress, so the run's `resistance.completed_steps` rather than
 ## `has_joined_resistance()` is the test — it is non-empty the instant step 1 is touched, which
 ## is the pick-up itself rather than the perform half a day later.
 ##
@@ -410,7 +448,7 @@ func _on_resistance_step_completed(step_index: int) -> void:
 ## nothing to leak yet, since a pickup's whole content is the finding of it.
 func _refresh_resistance() -> void:
 	var step: ResistanceSteps.Step = null
-	if _contact_step > 0 and not GameState.completed_resistance_steps.is_empty():
+	if _contact_step > 0 and not _run.resistance.completed_steps.is_empty():
 		step = ResistanceSteps.by_index(_contact_step)
 	var named := ""
 	if step:
@@ -420,12 +458,12 @@ func _refresh_resistance() -> void:
 		_resistance_label.text = _task_text(named) if step else ""
 		return
 
-	if not GameState.has_joined_resistance() and _contact_step == 0:
+	if not _run.has_joined_resistance() and _contact_step == 0:
 		_resistance_label.text = ""
 		return
 
-	var marks := "*".repeat(GameState.resistance_progress) \
-			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - GameState.resistance_progress))
+	var marks := "*".repeat(_run.resistance.progress) \
+			+ ".".repeat(maxi(0, Tuning.RESISTANCE_GOAL - _run.resistance.progress))
 	var line := "resistance %s" % marks
 	if step:
 		line += "   " + _task_text(named)
@@ -478,14 +516,14 @@ func _refresh_header() -> void:
 		_header.text = ""
 		return
 	var text := "day %d / %d      act %d      nerves %s" % [
-		GameState.day, Tuning.RUN_LENGTH_DAYS, GameState.current_act(),
-		# `NerveDisplay.stars()` — see its own class doc for why every screen that shows a nerve
-		# count reads through it rather than repeating this line.
-		NerveDisplay.stars(GameState.nerves),
+		_run.header.day, Tuning.RUN_LENGTH_DAYS, _run.calendar.current_act(),
+		# `Texts.nerve_stars()` — every screen that shows a nerve count reads through it rather
+		# than repeating this line.
+		Texts.nerve_stars(_run.header.nerves),
 	]
 	# So no capture from an --invincible run reads as a real one — appended to the same debug
 	# label rather than a mark of its own, since the cues vocabulary is for the world she is
 	# walking through, not for developer furniture.
-	if DevFlags.invincible():
+	if _invincible:
 		text += "      INVINCIBLE"
 	_header.text = text

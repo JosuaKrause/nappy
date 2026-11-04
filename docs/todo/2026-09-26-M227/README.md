@@ -1,4 +1,4 @@
-priority: now
+priority: parked
 
 ## M227 — Codex works as a sub-agent of a Claude Code session, in a worktree · asked for 2026-09-26
 
@@ -10,3 +10,6 @@ priority: now
 here (`codex`, the CLI) and runs non-interactively as `codex exec`; `CLAUDE.md` and the skills are
 already shared, and its hooks run through `tools/codex-hooks.py` once the player has approved them
 in Codex's `/hooks`, per checkout path.
+
+**Parked while Codex support is frozen** ([amber-penguin](../../decisions/2026-10-31-amber-penguin.md)).
+[tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #924: "yes, park those items. we're not going to pick them up while codex is on freeze", and #927: "park it". It comes back when Codex works here again.

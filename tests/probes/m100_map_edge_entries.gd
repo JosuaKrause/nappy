@@ -1,12 +1,12 @@
 extends RefCounted
 ## Diagnoses PLAYTEST-69's re-report of "people still come out from outside the map" — a re-report
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an
-## off-spine car no room past the true edge at all (`CrowdAgent._entry_room()` returns 0.0 for
+## off-spine car no room past the true edge at all (`LaneStrategy.entry_room()` returns 0.0 for
 ## them). `TODO.md`'s M100 entry, "People still come out from outside the map", names three
-## candidates to tell apart: a `_recycle()` landing that puts the agent's own **centre** legally on
-## the boundary line while its **picture** — the actual texture `_draw_body()` puts on screen —
+## candidates to tell apart: a `LaneMover._recycle()` landing that puts the agent's own **centre** legally on
+## the boundary line while its **picture** — the actual texture `AgentLook.draw_body()` puts on screen —
 ## reaches past it; a day-start placement (`Crowd.start_day()`, which places through `setup()`
-## rather than through `_recycle()`'s own room check) doing the same; or an agent genuinely left
+## rather than through `LaneMover._recycle()`'s own room check) doing the same; or an agent genuinely left
 ## standing past the true edge by some other path. Not a suite — it prints counts and asserts only
 ## that it ran — so it lives under `tests/probes/`, discovered by nobody, and run by name:
 ##
@@ -15,7 +15,7 @@ extends RefCounted
 ## "Unsafe" below means the agent's own centre is legal by every existing bounds check
 ## (`CityMap.in_bounds`, the invariant `tests/test_crowd.gd`'s `_test_nobody_enters_across_a_
 ## plain_edge` already holds) while its picture — read off the same texture sizes and anchor
-## arithmetic `CrowdAgent._draw_body()` draws from, in `_picture_clearance()` below — still
+## arithmetic `AgentLook.draw_body()` draws from, in `_picture_clearance()` below — still
 ## reaches past the true edge, which is exactly what none of those checks can see because they all
 ## ask about the centre.
 
@@ -68,10 +68,10 @@ func _diagnose_recycle(map: CityMap) -> void:
 					if agent._vertical != vertical or agent._direction != entering_direction:
 						continue
 					# A spine car exists past the true edge by design (M94, M120): on its way out
-					# by `CrowdAgent.TUNNEL_ROOM` (into the tunnel's dark) or `CrowdAgent.BRIDGE_RUN`
+					# by `CarStrategy.TUNNEL_ROOM` (into the tunnel's dark) or `CarStrategy.BRIDGE_RUN`
 					# (along the bridge deck), and on its way in by up to
-					# `CrowdAgent.TUNNEL_ENTRY_ROOM` (under the tunnel's roof) or at least
-					# `CrowdAgent.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
+					# `CarStrategy.TUNNEL_ENTRY_ROOM` (under the tunnel's roof) or at least
+					# `CarStrategy.BRIDGE_ENTRY_MIN` (beyond the camera's reach on the deck). That is
 					# the tunnel and the bridge, not this defect, so it is left out of the tally
 					# rather than counted as "unsafe".
 					if kind == CrowdAgent.Kind.CAR and vertical and agent._corridor == map.main_road:
@@ -111,7 +111,7 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 	}
 	for name in edges:
 		var at: Vector2 = edges[name]
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(map)
 		var rng := RandomNumberGenerator.new()
@@ -136,25 +136,25 @@ func _diagnose_day_start(t, map: CityMap) -> void:
 
 ## How far this kind's own drawn picture reaches, along the given axis, past whichever coordinate
 ## `_along()` reports — read off the real texture sizes and the same anchor arithmetic
-## `CrowdAgent._draw_body()`/`_car_body_anchor()` use, not a guessed number, because "the picture"
+## `AgentLook.draw_body()`/`CarLook.body_anchor()` use, not a guessed number, because "the picture"
 ## means exactly what gets put on screen. A walker draws bottom-anchored at its own position
 ## (`Sprites.draw_standing` called with `Vector2.ZERO`), so its whole canvas height rises to the
 ## north of it and nothing at all to the south; its width is split evenly either side. A car's
-## canvas is anchored south of its own position by `_car_body_anchor()`'s own reach, so both the
+## canvas is anchored south of its own position by `CarLook.body_anchor()`'s own reach, so both the
 ## north and south overhang are real and unequal; the larger one is kept so one number covers
 ## either edge of the axis without asking which edge this call is about. Only the cardinal (`front`,
 ## `side`) views are asked, since a fresh entry never lands mid-turn.
 func _picture_clearance(kind: int, vertical: bool) -> float:
 	if kind == CrowdAgent.Kind.CAR:
 		if vertical:
-			var body := AtlasLibrary.native_size(
-					StringName(CrowdAgent.CAR_BODY_BY_VIEW["front"]))
+			var body := AtlasTable.baked().native_size(
+					StringName(CarLook.BODY_BY_VIEW["front"]))
 			var south_reach := Tuning.CAR_STRIKE_HALF_LENGTH \
-					+ float(CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN["front"])
+					+ float(CarLook.CANVAS_BOTTOM_MARGIN["front"])
 			return maxf(south_reach, float(body.y) - south_reach)
-		var side := AtlasLibrary.native_size(
-				StringName(CrowdAgent.CAR_BODY_BY_VIEW["side"]))
+		var side := AtlasTable.baked().native_size(
+				StringName(CarLook.BODY_BY_VIEW["side"]))
 		return float(side.x) * 0.5
-	var walker := AtlasLibrary.native_size(
-			StringName(CrowdAgent.WALKER_BODY_BY_VIEW["front"]))
+	var walker := AtlasTable.baked().native_size(
+			StringName(WalkerLook.BODY_BY_VIEW["front"]))
 	return float(walker.y) if vertical else float(walker.x) * 0.5

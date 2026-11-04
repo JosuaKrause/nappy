@@ -78,12 +78,12 @@ const SPOILED_GROUND := Color("6b6357")
 ## the amber is only ever seen on the rows sited in front of the player and reads as "near"; and two
 ## reds is a distinction a player is asked to make on a 15px caret. Phase is carried by the
 ## **flash**, which is what a flash is for, and the colour carries the only thing a colour is good
-## at: how bad. See `EventInstance.mark_colour()`.
+## at: how bad. See `EventLook.mark_colour()`.
 const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
 ## The halo's own colour ramp — pale for a source that has cost her almost nothing over its own
-## `ExcitementHalo.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
+## `ExcitementSource.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
 ##
 ## **Not `MARK_COSTLY`/`MARK_LETHAL`.** A mark colour is drawn small and opaque over a caret; a
 ## glow that dark under an entity reads as a shadow on the ground rather than as a glow around it,
@@ -118,10 +118,10 @@ const SIGNAL_GREEN := Color("5fc46a")
 
 ## The route's kerb tint (M145, a trial — see `docs/CITY.md`, "Guiding her to the calm").
 ## **A cast, not a mark**: `GroundLayers` blends the curbstone's own pixels toward this colour by
-## `Tuning.ROUTE_KERB_TINT_ALPHA` rather than drawing a warning on top of anything, so it is stated
+## `GroundLayers.ROUTE_KERB_TINT_ALPHA` rather than drawing a warning on top of anything, so it is stated
 ## a full step away from `MARK_COSTLY`'s amber rather than a paler version of it — a straw yellow
 ## the caret's own family cannot be mistaken for even where the two stand on the same curbstone.
-## RGB only: the blend amount is `Tuning.ROUTE_KERB_TINT_ALPHA`, so this colour's own alpha (opaque,
+## RGB only: the blend amount is `GroundLayers.ROUTE_KERB_TINT_ALPHA`, so this colour's own alpha (opaque,
 ## unread by the blend) would be a second place the dial could be set and is not one.
 const ROUTE_KERB_TINT := Color("f2e07a")
 

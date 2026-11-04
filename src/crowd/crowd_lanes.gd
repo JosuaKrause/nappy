@@ -41,6 +41,12 @@ const SIDEWALK_LANE_SPREAD := 8.0
 ## was ever placed, because those two offsets are the carriageway on every other street.
 const PRECINCT_OFFSETS: Array[int] = [0, 1, 2, 3, 4, 5]
 
+## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
+## trade the main road is at: nothing on it can kill you, and there is a great deal more of it in
+## your way. A retail street — *"a lot of foot traffic and restaurants"* — so this is the crowd
+## half of that and `EventScheduler.EVENT_PRECINCT_WEIGHT` is the other.
+const PRECINCT_BUSYNESS := 3.6
+
 ## The lanes a walker may use in a corridor: the whole width of a precinct, the two footways of
 ## anything else.
 static func walkable_offsets(map: CityMap, vertical: bool, index: int,
@@ -78,7 +84,7 @@ static func corridor_count(axis_blocks: int) -> int:
 ##
 ## The tile centre, which is where a **car** drives and where a footway's own edges are measured
 ## from. A walker stands `SIDEWALK_LANE_SPREAD` off it — see `walker_lane_centre`, and note that
-## `CrowdAgent._pavement_band` deliberately keeps using this one, because the band is the extent
+## `WalkerStrategy._pavement_band` deliberately keeps using this one, because the band is the extent
 ## of the pavement rather than the extent of the lanes on it.
 static func lane_centre(index: int, offset: int) -> float:
 	return (index * CityMap.period() + offset + 0.5) * Tuning.TILE_SIZE
@@ -184,7 +190,7 @@ static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -
 		# the busiest pavement in the city, and because the crowd is a box around the player,
 		# "busiest corridor" delivers its people to wherever on it she is standing.
 		if not cars:
-			return Tuning.PRECINCT_BUSYNESS
+			return PRECINCT_BUSYNESS
 	return busyness(map, vertical, index)
 
 ## A corridor chosen in proportion to how busy it is, restricted to an inclusive range of

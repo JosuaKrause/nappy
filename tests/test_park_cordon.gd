@@ -16,16 +16,17 @@ const PATIENCE := 40.0
 ## officers and decide, on top of the walk itself.
 const REACTION := 2.0
 
+## The city the running test stands in, made fresh by `_at_the_swing()` and freed by `_end()`.
 var _city: City
+## The run that city stands in, made fresh with it and handed to the city (`City.run`).
+var _run: RunState
 ## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
-	_city = CITY_SCENE.instantiate()
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
+	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)
 	_test_the_open_edge_shrinks_to_one_gap_nearest_her(t)
 	_test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t)
 	_test_walking_out_from_the_swing_gets_her_out_in_time(t)
@@ -36,39 +37,36 @@ func run(t) -> void:
 	_test_someone_already_leaving_is_walked_out_through_the_gap(t)
 	_test_an_escort_sent_back_alone_holds_the_gap(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
-	_city.free()
 
 # ------------------------------------------------------------------ fixture ---
 
 ## Day 12 on the suite's city with the mark read and the swing's task offered; `before_the_touch`
 ## runs before she reaches the swing. Answers the director, its happenings, the park, the swing and
-## the city state, with the run's state put back by `_end()`.
+## the city state; `_end()` frees the director, the city and the run.
 func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
-	var saved := {
-		"state": GameState.city_state, "day": GameState.day,
-		"completed": GameState.completed_resistance_steps.duplicate(),
-		"failed": GameState.failed_resistance_steps.duplicate(),
-		"progress": GameState.resistance_progress,
-		"package": GameState.resistance_carrying_package,
-	}
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
-	GameState.resistance_carrying_package = false
+	_run = RunState.new()
+	_run.start_run(SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
+	t.add_child(_city)
+	_city.build(CityGenerator.generate(SEED))
+	_run.resistance.completed_steps = []
+	_run.resistance.failed_steps = []
+	_run.resistance.progress = 0
+	_run.resistance.carrying_package = false
 	var day := ResistanceSteps.swing_day()
-	GameState.day = day
+	_run.header.day = day
 	var state := CityState.new()
-	GameState.city_state = state
+	_run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	director.setup(_city, _city.map)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
-	director._on_contact_completed(mark.index if mark else -1)
+	director.contact().complete_now()
 	var task := director.current_step()
 	t.check(task != null and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING,
 			"day 12 sends her to the swing")
@@ -76,20 +74,14 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 	_swing_now = swing
 	if before_the_touch.is_valid():
 		before_the_touch.call()
-	director._on_contact_completed(task.index if task else -1)
+	director.contact().complete_now()
 	return {"director": director, "happenings": director._happenings, "state": state,
-			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day,
-			"saved": saved}
+			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day}
 
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
-	var saved: Dictionary = fixture.saved
-	GameState.city_state = saved.state
-	GameState.day = saved.day
-	GameState.completed_resistance_steps = saved.completed
-	GameState.failed_resistance_steps = saved.failed
-	GameState.resistance_progress = saved.progress
-	GameState.resistance_carrying_package = saved.package
+	_city.free()
+	_run.free()
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -97,15 +89,28 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	return rng
 
 ## What the camera sees with her at `her[0]`: the game's own view box round her, against the whole
-## of what `row` draws standing at `feet` — `ResistanceDirector._drawing_shows()`'s question.
+## of what `row` draws standing at `feet` — `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`'s question.
 func _camera_on(her: Array) -> Callable:
 	return func(row: EventDef, feet: Vector2) -> bool:
 		var centre: Vector2 = her[0]
 		var view := Rect2(centre - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
-		var box := EventInstance.footprint_of(row)
+		var box := EventFootprints.footprint_of(row)
 		if not box.has_area():
 			return view.has_point(feet)
 		return view.intersects(Rect2(feet + box.position, box.size))
+
+## The camera on `at` as the game's view is, or on nothing, then one tick of the happenings: what the
+## cordon's officers are placed out of sight of is the city's own view (`SpawnSiting`'s).
+func _tick(happenings: ResistanceHappenings, at: Vector2, camera := true) -> void:
+	_look(_city, at if camera else null)
+	happenings.tick(STEP, at, Vector2.ZERO)
+
+static func _look(city: City, at) -> void:
+	var view := city.events.visible_view()
+	if at == null:
+		view.look(Rect2(), null)
+	else:
+		view.look(Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
 ## Ticks the day's happenings with her at `her[0]`, `step_her` moving her first each frame, until
 ## the cordon closes or `PATIENCE` runs out.
@@ -115,7 +120,7 @@ func _run_until_closed(happenings: ResistanceHappenings, her: Array, shows: Call
 	while happenings.is_closing() and waited < PATIENCE:
 		if step_her.is_valid():
 			step_her.call(STEP)
-		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		_tick(happenings, her[0], shows.is_valid())
 		if each_frame.is_valid():
 			each_frame.call()
 		waited += STEP
@@ -131,6 +136,47 @@ func _stop_listening(listener: Array) -> void:
 	EventBus.hard_fail_triggered.disconnect(listener[1])
 
 # ------------------------------------------------------------------- checks ---
+
+## **The officers are placed by the siting the cordon is handed**, not by a view or a ground test of
+## its own: the same park and the same her, once under a siting whose camera is the game's view about
+## her and once under one whose camera is wide, set out on the first tick. Under each, every
+## officer's drawing is wholly off its camera (`DRAWING_OFF_THE_VIEW`) and his feet are on ground
+## open to him (`OPEN_TO_IT`) — asked of the siting, the public seam — and the wide camera puts them
+## further out, which a cordon keeping a view of its own could not.
+func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
+	var fixture := _at_the_swing(t)
+	var happenings: ResistanceHappenings = fixture.happenings
+	var swing: Vector2 = fixture.swing
+	var director: ResistanceDirector = fixture.director
+	happenings.cordon.clear()
+	var box := EventFootprints.footprint_of(EventCatalogue.by_id(ParkCordon.OFFICER_ROW))
+	var distances: Array[float] = []
+	for scale in [1.0, 3.0]:
+		var view := VisibleView.new()
+		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
+				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
+		var siting := SpawnSiting.new(_city.map, _city.navigator,
+				func() -> VisibleView: return view)
+		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
+				director._reach_blocked)
+		cordon.tick(STEP, swing)
+		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
+		var drawn := siting.ask_of_drawing(box)
+		var nearest := INF
+		var placed := 0
+		for officer in cordon.officers:
+			placed += 1
+			nearest = minf(nearest, officer.at.distance_to(swing))
+			t.check(siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, drawn, officer.at),
+					"at %.0fx the view, an officer is placed with none of him on it" % scale)
+			t.check(siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, officer.at),
+					"at %.0fx the view, on ground open to him" % scale)
+		t.check(placed == 2, "at %.0fx the view, both officers are placed (%d)" % [scale, placed])
+		distances.append(nearest)
+		cordon.clear()
+	t.check(distances[1] > distances[0] + Tuning.TILE_SIZE,
+			"and a wider camera puts them further out (%.0f, %.0f)" % [distances[0], distances[1]])
+	_end(fixture)
 
 ## Reaching the swing takes the park, as before — requisitioned and no longer calm — and starts the
 ## cordon rather than mud: no tile of its ground changes, during the closing or after it.
@@ -167,7 +213,7 @@ func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t) -> void:
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
-	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	_tick(happenings, her[0], shows.is_valid())
 	var cordon := happenings.cordon
 	var tapers := 0
 	var unseen := 0
@@ -201,7 +247,7 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 	# She is outside the park, on the side of it the swing is nearest, so she is not shut in and the
 	# gap is still decided by where she stood at the touch.
 	var her := [swing]
-	happenings.tick(STEP, her[0], Vector2.ZERO, Callable())
+	_tick(happenings, her[0], false)
 	var cordon := happenings.cordon
 	var gap := cordon.last_gap
 	her[0] = gap + (gap - cordon.area.get_center()).normalized() * Tuning.TILE_SIZE * 3.0
@@ -244,7 +290,7 @@ func _gaps_in(cordon: ParkCordon) -> int:
 	return runs
 
 ## Standing at the swing: the last gap is taped with her inside — on this seed's small park, where
-## an officer is in her view almost at once, `Tuning.PARK_CLOSING_SECONDS` after the touch — and
+## an officer is in her view almost at once, `ParkCordon.PARK_CLOSING_SECONDS` after the touch — and
 ## that ends the day with the cordon's own reason, which has a sentence.
 func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	var listener := _listen_for_hard_fails()
@@ -254,10 +300,10 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	_run_until_closed(happenings, her, _camera_on(her))
 	var cordon := happenings.cordon
 	t.check(cordon.is_closed() and cordon.trapped, "standing at the swing, she is shut in")
-	t.check(cordon.closed_at >= Tuning.PARK_CLOSING_SECONDS - 0.05
-			and cordon.closed_at <= Tuning.PARK_CLOSING_SECONDS + 0.5,
+	t.check(cordon.closed_at >= ParkCordon.PARK_CLOSING_SECONDS - 0.05
+			and cordon.closed_at <= ParkCordon.PARK_CLOSING_SECONDS + 0.5,
 			"the last gap is taped about %.0fs after the touch (%.1fs)"
-			% [Tuning.PARK_CLOSING_SECONDS, cordon.closed_at])
+			% [ParkCordon.PARK_CLOSING_SECONDS, cordon.closed_at])
 	var fails: Array[String] = listener[0]
 	t.check(fails.size() == 1 and fails[0] == ParkCordon.TRAPPED,
 			"and it ends the day as the cordon's own hard fail (%s)" % [fails])
@@ -274,7 +320,7 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 	var happenings: ResistanceHappenings = fixture.happenings
 	var swing: Vector2 = fixture.swing
 	var her := [swing]
-	happenings.tick(STEP, her[0], Vector2.ZERO, _camera_on(her))
+	_tick(happenings, her[0], true)
 	var cordon := happenings.cordon
 	var exit := cordon.last_gap
 	var out := exit + (exit - swing).normalized() * (Tuning.CLOSURE_BARRIER_DEPTH + Tuning.TILE_SIZE)
@@ -290,7 +336,7 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 		if was_inside and not cordon.line.has_point(next) and crossed[0] < 0.0:
 			crossed[0] = clock[0]
 			for stretch in cordon.stretches:
-				if stretch.taped and ParkCordon._body_on(stretch, next):
+				if stretch.taped and _body_on(stretch, next):
 					crossed[1] = true
 	_run_until_closed(happenings, her, _camera_on(her), step_her)
 	t.check(cordon.is_closed() and not cordon.trapped,
@@ -311,12 +357,12 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [fixture.swing]
-	happenings.tick(STEP, her[0], Vector2.ZERO, Callable())
+	_tick(happenings, her[0], false)
 	var cordon := happenings.cordon
 	her[0] = cordon.last_gap
 	var waited := 0.0
 	while waited < PATIENCE:
-		happenings.tick(STEP, her[0], Vector2.ZERO, Callable())
+		_tick(happenings, her[0], false)
 		waited += STEP
 	t.check(happenings.is_closing(), "while she stands in the last gap, it stays open (%.0fs)"
 			% PATIENCE)
@@ -371,7 +417,7 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var director: ResistanceDirector = fixture.director
-	happenings.tick(STEP, fixture.swing, Vector2.ZERO, Callable())
+	_tick(happenings, fixture.swing, false)
 	var first := happenings.cordon
 	var stretch: ParkCordon.Stretch = first.gap[0]
 	var middle := (stretch.a + stretch.b) * 0.5
@@ -385,10 +431,12 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city, fixture.park, director._reach_blocked)
+			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
+					_city.spawn_siting, director._reach_blocked)
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
-				cordon.tick(STEP, her, Callable())
+				_look(_city, null)
+				cordon.tick(STEP, her)
 				waited += STEP
 			cases += 1
 			for each in cordon.stretches:
@@ -403,6 +451,13 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 	t.check(held == cases, "the gap she stands at stays open while she is there (%d of %d)"
 			% [held, cases])
 	_end(fixture)
+
+## Whether a body centred at `at`, reaching `ParkCordon.HER_REACH` from its centre, overlaps where
+## `stretch`'s tape stands — asked of the tape's two ends, which the stretch holds, and not of the
+## cordon's own test.
+static func _body_on(stretch: ParkCordon.Stretch, at: Vector2) -> bool:
+	var on := Geometry2D.get_closest_point_to_segment(at, stretch.a, stretch.b)
+	return on.distance_to(at) < ParkCordon.HER_REACH
 
 ## Whether a tape body's rect overlaps her body's circle or the pram's, with her facing `facing`.
 func _overlaps_her(box: Rect2, her: Vector2, facing: Vector2) -> bool:
@@ -434,7 +489,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	# She stays at the swing, where the way out was planned from.
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
-	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	_tick(happenings, her[0], shows.is_valid())
 	var cordon := happenings.cordon
 	var escort: ParkCordon.Officer = null
 	for officer in cordon.officers:
@@ -454,9 +509,9 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	while waited < PATIENCE and escort.phase != ParkCordon.Officer.Phase.GONE:
 		if is_instance_valid(busker) and not busker.is_finished:
 			busker.player_at = her[0]
-			busker._process(STEP)
+			busker.step(STEP)
 		var was_closed := cordon.is_closed()
-		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
 		var walkers := {"escort": escort.at}
 		if is_instance_valid(busker) and not busker.is_finished:
@@ -518,7 +573,7 @@ func _busker_in_the_park() -> EventInstance:
 ## seen to go on past her, and is gone only where the camera on her cannot see him. **And he walks
 ## on at his pace while she can see him**, never standing at a wall or the city's edge: once the
 ## way is walked he is in her view no longer than walking out of the view box square to its sides
-## takes at `Tuning.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
+## takes at `ParkCordon.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
 ## across tape that is up.
 func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 	for set_off: float in [4.0, 8.0]:
@@ -528,7 +583,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var busker: EventInstance = person[0]
 		var her := [fixture.swing]
 		var shows := _camera_on(her)
-		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		_tick(happenings, her[0], shows.is_valid())
 		var way := PackedVector2Array(happenings.cordon._exit)
 		var clock := STEP
 		var last := busker.global_position
@@ -537,14 +592,15 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var in_view_after := 0.0
 		var slow_in_view := 0.0
 		var through_tape := 0
+		var was_leaving := false
 		while clock < PATIENCE * 2.0 and not busker.is_finished:
 			if clock >= set_off and not way.is_empty():
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
 			busker.player_at = her[0]
-			busker._process(STEP)
-			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+			busker.step(STEP)
+			_tick(happenings, her[0], shows.is_valid())
 			clock += STEP
 			for stretch in happenings.cordon.stretches:
 				if stretch.taped and Geometry2D.segment_intersects_segment(last,
@@ -555,17 +611,18 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 			elif walked and shows.call(busker.def, busker.global_position):
 				in_view_after += STEP
 				if last.distance_to(busker.global_position) \
-						< Tuning.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
+						< ParkCordon.PARK_CLOSING_LEAVE_SPEED * STEP * 0.5:
 					slow_in_view += STEP
 			walked = walked or (busker.is_leaving and busker.way_left().is_empty())
+			was_leaving = was_leaving or busker.is_leaving
 			last = busker.global_position
-		t.check(busker.is_leaving and busker.is_finished,
+		t.check(was_leaving and busker.is_finished,
 				"setting off %.0fs after the touch down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
 		var out_of_view := (Tuning.VIEW_HALF_EXTENT.x + Tuning.VIEW_HALF_EXTENT.y) \
-				/ Tuning.PARK_CLOSING_LEAVE_SPEED
+				/ ParkCordon.PARK_CLOSING_LEAVE_SPEED
 		t.check(in_view_after <= out_of_view,
 				"once the way is walked he is in her view %.1fs, " % in_view_after
 				+ "no longer than walking out of it takes (%.1fs)" % out_of_view)
@@ -599,8 +656,8 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
 				_set_off_on_their_own(busker, her[0])
 			busker.player_at = her[0]
-			busker._process(STEP)
-			happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+			busker.step(STEP)
+			_tick(happenings, her[0], shows.is_valid())
 			cordon = happenings.cordon
 			clock += STEP
 			var now := busker.global_position
@@ -626,7 +683,7 @@ func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
 	var walking: EventDef = person.def.duplicate()
 	walking.shape = person.def.shape
 	walking.solid_parts = person.def.solid_parts
-	walking.departs_at = Tuning.PARK_CLOSING_LEAVE_SPEED
+	walking.departs_at = ParkCordon.PARK_CLOSING_LEAVE_SPEED
 	person.def = walking
 	person.player_at = her
 	person.leave_for_a_completed_task()
@@ -641,7 +698,7 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 	var busker: EventInstance = person[0]
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
-	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	_tick(happenings, her[0], shows.is_valid())
 	var cordon := happenings.cordon
 	var escort: ParkCordon.Officer = null
 	for officer in cordon.officers:
@@ -650,12 +707,12 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 	var waited := 0.0
 	while waited < PATIENCE and escort and not (escort.phase == ParkCordon.Officer.Phase.APPROACH
 			and cordon.line.grow(-Tuning.TILE_SIZE).has_point(escort.at)):
-		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
 	t.check(escort != null and cordon.line.has_point(escort.at),
 			"an escort is inside the park on his way to the busker (%.1fs)" % waited)
 	_city.events.retire(busker)
-	happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+	_tick(happenings, her[0], shows.is_valid())
 	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and cordon._still_to_come_out(),
 			"with the busker gone, he turns back, and the gap waits for him")
 	var last := escort.at
@@ -663,7 +720,7 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 	var inside_at_the_close := false
 	while waited < PATIENCE * 2.0 and not cordon.is_closed():
 		var was_closed := cordon.is_closed()
-		happenings.tick(STEP, her[0], Vector2.ZERO, shows)
+		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
 		for stretch in cordon.stretches:
 			if stretch.taped and Geometry2D.segment_intersects_segment(last, escort.at, stretch.a,

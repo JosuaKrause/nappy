@@ -12,22 +12,20 @@ extends Control
 ## exists to answer exactly that, so it needs the frame's own length, not a number that already
 ## discarded 239 of the last 240 readings before this class ever saw them.
 ##
-## **Built where the readout is, shown on its own switch.** `main._add_frame_graph()` builds this
-## only while `_debug or _readout_requested` holds — the same gate the readout's own text answers
-## to — but `visible` is `main._layer_graph_on and not main._in_the_title` from there on: off by
-## default, `true` at boot when `--spikes` was asked for or `--layers` names `6`, and flipped by the
-## `6` key (`main._toggle_debug_layer()`) whatever `4` does to the readout beside it. *(2026-09-15,
+## **Built where the readout is, shown on its own switch.** `DebugReadout` builds this only while
+## `_debug or _readout_requested` holds — the same gate the readout's own text answers to — but
+## `visible` is its `_layer_graph_on and not _in_the_title` from there on: off by default, `true` at
+## boot when `--spikes` was asked for or `--layers` names `6`, and flipped by the `6` key
+## (`DebugReadout._toggle_debug_layer()`) whatever `4` does to the readout beside it. *(2026-09-15,
 ## the player: "spike view should be independent of debug layer 4 it should be its own debug layer
 ## and turned off by default unless --spikes is set".)* The title screen is a different question
 ## from `4` — it hides every statement about a player who is not there, this graph included — so
-## `main._open_the_title()` and `main._on_title_start()` set `visible` directly too, without
-## clearing the ring the way a `6` toggle-off does. `push()` also checks `visible` itself, the same
-## belt-and-suspenders `main.gd`'s own comments describe for the readout's text: a caller that
-## somehow pushed while hidden must still cost nothing rather than quietly warming a ring nobody
-## can see.
+## the title's opening and the walk's start set `visible` directly too, without clearing the ring
+## the way a `6` toggle-off does. `push()` also checks `visible` itself: a caller that somehow
+## pushed while hidden must still cost nothing rather than quietly warming a ring nobody can see.
 ##
 ## **Turning the layer off empties the ring**, through `clear()`, called from
-## `main._toggle_debug_layer()` — *(2026-09-15, the player: "spike recording should only be on
+## `DebugReadout._toggle_debug_layer()` — *(2026-09-15, the player: "spike recording should only be on
 ## while the layer is on. that means toggling the layer twice will lead to a blank frame
 ## array".)* so `6` twice leaves a blank graph that fills again only from that moment, rather than
 ## a window that silently skipped whatever time the layer spent off.
@@ -62,7 +60,7 @@ const _LETHAL_MS := 33.3
 enum FrameClass { NORMAL, COSTLY, LETHAL }
 
 ## The readout's own text colour, `Color(1, 1, 1, 0.7)` on `_status` today — read off `_status`
-## itself by `main._add_frame_graph()` rather than duplicated here as a second literal, so the
+## itself by `DebugReadout._add_frame_graph()` rather than duplicated here as a second literal, so the
 ## ordinary bars and the reference lines can never drift from what the label beside them reads in.
 var text_colour := Color(1.0, 1.0, 1.0, 0.7)
 
@@ -99,7 +97,7 @@ func push(delta: float) -> void:
 		_classes.pop_front()
 	queue_redraw()
 
-## Empties the ring and its classes. Called from `main._toggle_debug_layer()` when the `6` key
+## Empties the ring and its classes. Called from `DebugReadout._toggle_debug_layer()` when the `6` key
 ## turns the layer off, so a graph switched off and back on again starts from blank rather than
 ## from whatever the window held before it stopped being fed — nothing was pushed while it was
 ## hidden, but what it held *before* going hidden would otherwise still be there to draw once it

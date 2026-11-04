@@ -19,8 +19,40 @@ hierarchy and keeps its own tiering for art (woolly-finch 27). In Codex, pick th
 the task's remaining difficulty: see `references/codex-models.md`. **Generating a raster is Codex's
 alone**: Claude Code has no image generator (**illustrated-png**, "Asset contract"), so a brief
 whose work includes generating an illustrated PNG, a comic transfer included, goes to a Codex agent
-(which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets.
+(which writes as `codex-coder`); the drawing rule above covers SVG and the review sheets. While
+Codex support is frozen (inbox #901 in freckled-moose), such a brief waits for Codex to come back, and the player is
+told.
 Installing, registering, rebaking and checking PNGs that already exist stays open to either host.
+**The orchestrator grades every finished agent with `tools/agent-stats.py add`** (kind, model, PR,
+rounds, grade; `--redone` when it redid the agent's own conclusion), and the SubagentStop hook
+(`.claude/hooks/agent-stats.py`) records the tokens and tool calls beside it; `summary` shows what each
+kind and model cost and how it went. The data lives outside the repository, in
+`~/.claude/nappy-agent-stats/` (inbox #900 in freckled-moose): a shared log in git would conflict between parallel pull
+requests and need a PR per entry, so the code is checked in and the data is not.
+
+*Proposed, not asked for, open to the player's correction, to be revised once the counter holds
+enough entries (inbox #900 in freckled-moose):*
+
+| Task kind | Model |
+|---|---|
+| Build at test parity | Sonnet |
+| Build that changes play or designs a seam | Opus |
+| Investigate an unexplained result | Opus |
+| Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
+| Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
+| Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
+| Review fixes | the builder, while warm and not near the limit |
+| Review of a play-changing or design PR | Opus |
+| Review of queue, docs, skill wording or a small delta | Sonnet |
+| Waiting, merging, polling | no agent (a background shell) |
+
+The measuring rows follow one comparison (inbox #900 in freckled-moose): Haiku and Sonnet ran C2b's measurements,
+pictures and conclusion on one brief. Their numbers matched exactly; Sonnet called a borderline rise
+unresolved where Haiku called it flat, and saw the change in three picture pairs where Haiku saw one,
+at about 10% more tokens. No further side-by-side runs are made for now: the counter's statistics
+decide, and a row still ambiguous after a week of them, from 2026-11-01, may be tested by running one
+task on both models again (inbox #900 in freckled-moose).
+
 The contract is the same on either host: fresh context, a bounded scope and an isolated checkout for
 implementation. Create the worktree explicitly if the tool does not create one. Read-only review can
 share a checkout. If delegation is unavailable, do the bounded work locally and retain the same
@@ -86,9 +118,29 @@ before the refactor, which names itself as the exception in its entry, and **it 
 refactor**: the refactor replaces the code the fix touched, and the PR that closes the refactor entry
 removes the exception from this section, so it never outlives that PR (minty-lemur #799).
 
+**Every pull request that changes code answers the architecture questions** in
+**pr-review**'s `references/architecture-questions.md`, so the layering does not drift once the
+refactor is done (plush-egret #892): its layer, its dependencies, what it is handed and what it
+fetches, what it reuses, where a fix lands, how a test builds it, and the docs that say where it
+lives. A brief asks for them; the builder answers them in its report and under the description's
+`## Architecture questions`; CI checks they are there and the reviewer that they are true.
+**Which folder and file is in which layer is `tools/layer_map.py`**, which `tools/check_layers.py`
+holds the code to in CI; the list of breaks standing there only shrinks. *Proposed by its builder,
+open to overturn:* the composition root (`main.gd` and the developer's rigs) above everything, and
+each thing's own drawing on the layer of the thing it draws. *Two departures from minty-quail's
+filed layering, decided by the player* (inbox #904 in freckled-moose): the view (the HUD, the screens, the badges, the controls) and the observers are **siblings at one level**,
+neither above the other and neither naming the other, where minty-quail's README puts the UI inside
+the observers; and the map lookup (`WorldMap` and its records) stays **with the city maps in the
+domain model**, a correction to minty-quail's item 3, which puts one map interface in the world. A
+record the map holds is placed on the map's layer as it appears.
+
 ## The task description is the contract
 
 A vague prompt returns work that cannot be merged.
+
+**A brief, a PR title and a record title name every part of a step, and never number or letter
+it** (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca): "the route rig walking the building", not "part
+B3", "slice 4" or "2a/4". A number is a lookup the reader performs.
 
 **Before spawning, the orchestrator writes the brief verbatim to `.claude/briefs/<branch with
 "/" replaced by "-">.md`.** `tools/agent-setup.sh <name> <branch>` makes the worktree and writes
@@ -107,7 +159,9 @@ Then a blank line, then the brief. **The shared half of a brief is a file, not a
 PR kind and its fallback, the scope fence over the queue and the archive, verify's gate, headless
 first, `--no-save` and the dev flags, the visual-attempts rule, disk, forks, no merge and the
 report. A brief carries its task, its task-specific read-first items, the layer its work belongs to
-(proposed in "Code is designed by layer"), **the GitHub role the agent
+(proposed in "Code is designed by layer"), for a pull request that changes code the ask for the
+architecture questions' answers (**pr-review**'s `references/architecture-questions.md`) in the
+report and the description, **the GitHub role the agent
 acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
 invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
@@ -159,7 +213,10 @@ role named has nothing to check `status` against:
   `./tools/lint.sh` where they apply, and the suites the change touches; the full suite is CI's,
   on the merge result, and a `PARTIAL RUN` marker is expected. **Say in the brief whether this is
   one of verify's two local-full-run cases** — an agent left to judge it will run the whole thing
-  to be safe. A red PR goes back to the agent with the failing output.
+  to be safe. Only those two count: a change that is large or touches many files is not one by its
+  size, since CI runs the same suite on a better tree, and a local full run is a wait long enough
+  to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
+  line, not inherited. A red PR goes back to the agent with the failing output.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
   `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
@@ -202,7 +259,8 @@ role named has nothing to check `status` against:
   record under `docs/decisions/` or a doc's stated rule rules out, the agent builds nothing that overturns
   it and reports the clash, quoting both.
 - **What the final report must contain**: per item, what was built and how it was verified; every
-  choice made where the design was silent; every fork left open. The report is the merge review's
+  choice made where the design was silent; every fork left open; and, for a pull request that
+  changes code, the answers to the architecture questions. The report is the merge review's
   input — an outcome it does not mention is an outcome that did not happen.
 - **Do not merge, do not delete the branch.** After the report, the orchestrator commits the
   queue's move on the PR branch — the finished items' files deleted, the entry's folder too when
@@ -264,7 +322,7 @@ worktrees — merging is what collides — so parallelism is planned at the file
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
 - **Merging follows committing** (explicit permission in this session). As each agent lands,
-  push and open its PR. Once merging is authorized, merge one at a time; a second PR merges as it
+  push and open its PR. Once merging is authorized, issue the merges in turn, without waiting for `main`'s CI between them; a second PR merges as it
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
   its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
   it lands — the ruleset's checks are not strict, so a PR merely
@@ -324,6 +382,41 @@ worktrees — merging is what collides — so parallelism is planned at the file
   disjoint file sets are what makes parallel safe in a single repo.
 - **The player's questions.** An agent's fork, silent choice, or measurement lands back with the
   player through the orchestrator, in the entry where the next reader will look for it.
+- **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
+  whole context on every turn, so the cost of a long-lived one grows with every step it is kept
+  for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
+- **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
+  carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
+  watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
+  work; the orchestrator sizes every task before spawning it so that it finishes well under the
+  limit.
+- **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
+  costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
+  change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
+  saves the rebriefing. What the orchestrator is told for free, such as the token count in an agent's
+  finishing notification, is used: it says whether the agent is far enough under the limit to
+  reuse, and how the next brief should be sized.
+- Where the limit and the sizing fall is *proposed, not asked for, open to the player's correction*:
+  - The limit is about 150 turns or 300k tokens of context. Re-reading grows with the square of the
+    turns, so two agents of 150 turns cost well under one of 300.
+  - One kind of work per agent: building, measuring (long probe runs, many-seed statistics) and
+    capturing pictures are separate agents on the one pull request, each briefed from the brief
+    file, the review threads and what the one before it left. A measurement
+    or a capture is what makes an agent huge, since every run's output stays in its context.
+  - One mechanism per build: a change that reaches several mechanisms, or whose reading list runs
+    past a handful of files, is split into pull requests, or into agents on one pull request.
+  - The brief names every probe, suite and evidence rig the work needs, with its command, so no
+    turns go on finding them.
+  - A cold or near-limit agent's follow-up goes to a fresh agent briefed from the brief file, the
+    review threads and what the one before it left.
+  - A builder stays with its pull request through merges of `main` while it is warm (the
+    cold-resume rule below), since that work reuses the context it built.
+  - A plan split across several pull requests is built by a fresh agent per pull request, each
+    briefed with its part, not by the agent that wrote the plan.
+  - A brief names the files and the records to read rather than asking for the whole history,
+    so a fresh agent's start stays small.
+  - A reviewer is fresh per pull request and is resumed, while warm, for that pull request's
+    delta reviews; a review aims at about 30–60 turns.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
   it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:

@@ -15,7 +15,7 @@ extends RefCounted
 ## about.
 ##
 ## **Not "two distinct routes to two distinct calm areas".** Edge-disjointness stands in for
-## winnability rather than being it — see `Tuning.MIN_CALM_AREAS_REACHABLE` — and a wall is placed
+## winnability rather than being it — see `MIN_CALM_AREAS_REACHABLE` — and a wall is placed
 ## off the day's tree anyway, so what keeps the calm reachable is where a closure goes rather than
 ## how many ways round it there are.
 ##
@@ -27,6 +27,48 @@ extends RefCounted
 ## winnability rather than the thing that keeps it.
 ##
 ## Everything here is deterministic from the day's RNG. A run is learnable or it is nothing.
+
+## How much likelier a closure is to land in a gap between two adjacent strands than on the rest of
+## the rim it is already biased toward.
+##
+## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
+## switching strands expensive and a closure makes it impossible, which is why having both is
+## variety rather than two names for the same thing. A day closes a handful of streets at most
+## (`ClosurePlanner.closures_wanted()`: `Tuning.CLOSURES_PER_ACT`, and from `Tuning.REGION_WALL_FIRST_DAY` on
+## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
+## is the limit.
+const CLOSURE_GAP_BIAS := 4.0
+## How much likelier a closure is to land on a turning off the day's corridor than on a street
+## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
+## `ClosurePlanner._shuffled_candidates` rather than a weight, because a wall across the route is
+## not a worse wall, it is the opposite of one.
+##
+## **The same number pointing the other way is a different design**, and it is the easy mistake:
+## aiming closures **at** the streets the player would have used treats a closure as an obstacle,
+## and an obstacle nobody meets is scenery. A wall's job is to prune the ways that lead nowhere she
+## should go. What survives from the obstacle reading is the reason for the rim: a wall nobody can
+## see from the route prunes nothing, so the far corner of the map is what this weight exists to
+## avoid.
+const CLOSURE_WALL_BIAS := 5.0
+## The share of `closures_for_day()` that `ClosurePlanner` still closes, rounded to the nearest
+## street, a half up (`ClosurePlanner.closures_wanted`).
+const GATEHOUSE_DAY_CLOSURE_SHARE := 0.5
+## The day-level invariant, and the whole reason the planner is allowed to close anything:
+## **at least this many calm areas are still reachable.** Two areas, because a choice of
+## destination is what makes a choice of route mean anything — and because one of them may be the
+## one she used yesterday, which the day has deliberately spoiled.
+##
+## **It does not demand two *distinct routes* to each of them.** Edge-disjointness is a **stand-in**
+## for winnability, by Menger: two routes means no single street is a cut. That protection comes
+## instead from where a wall is *placed* — off the day's tree, so it cannot cut the tree — and the
+## second route is a niceness the day offers when the map allows one, measured by `RouteTree` (241
+## areas of 241 that the map allowed one to) and gating nothing. Sealing off a section of the map is
+## allowed, and it is the point.
+##
+## What is deliberately **not** weakened is the count. Dropping to one reachable area lets a day
+## arrive where the only calm left is the one it spoiled this morning, which is the unwinnable day
+## this constant exists to prevent.
+const MIN_CALM_AREAS_REACHABLE := 2
 
 ## Somewhere today can be won: its own ground, and the streets it is entered from.
 ##
@@ -41,6 +83,12 @@ class CalmArea extends RefCounted:
 	var block: Vector2i
 	var rect: Rect2i
 	var access: Array[StreetNetwork.Segment] = []
+
+## A line of the day's closure planning for the run log, written when the caller handed a trace
+## in: the city hands its own, and a test that plans by hand may hand none.
+static func _note(trace: RunTrace, kind: String, text: String) -> void:
+	if trace:
+		trace.note(kind, text)
 
 ## Plans a day's closures. `map` must already be repainted for the day, because which blocks
 ## are calm is the thing the invariant is stated over and a requisitioned park is not one.
@@ -61,15 +109,17 @@ class CalmArea extends RefCounted:
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, day, rng, tree, region_plan)
+		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
+		trace: RunTrace = null) -> Array[RoadClosure]:
+	var chosen := _close_streets(map, day, rng, tree, region_plan, trace)
 	if map.fenced_park.x >= 0:
 		for fence in ParkClosure.fence(map, map.fenced_park):
 			chosen.append(fence)
 	return chosen
 
 static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan) -> Array[RoadClosure]:
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
@@ -82,7 +132,7 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 	var home := home_street(map)
 	var areas := calm_areas(map)
 	# Nothing to protect, or nowhere to protect it from: close nothing rather than guess.
-	if not home or areas.size() < Tuning.MIN_CALM_AREAS_REACHABLE:
+	if not home or areas.size() < MIN_CALM_AREAS_REACHABLE:
 		return chosen
 
 	var kinds := RoadClosure.kinds_on(day)
@@ -121,13 +171,13 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 			# `tests/test_routes.gd` asserts it never happens over a run's worth of days; the note
 			# is what would say so in a real run.
 			today_closed.erase(segment.key())
-			Telemetry.note("plan", "day %d: closing %s off the corridor would have cut the calm"
-					% [day, TelemetryLog.tile(segment.a)])
+			_note(trace, "plan", "day %d: closing %s off the corridor would have cut the calm"
+					% [day, RunTrace.tile(segment.a)])
 	map.set_closure_tree_pits(emptied)
 	return chosen
 
 ## How many streets the day closes: `Tuning.closures_for_day()`, and from
-## `Tuning.REGION_WALL_FIRST_DAY` on only `Tuning.GATEHOUSE_DAY_CLOSURE_SHARE` of that, rounded to
+## `Tuning.REGION_WALL_FIRST_DAY` on only `GATEHOUSE_DAY_CLOSURE_SHARE` of that, rounded to
 ## the nearest street. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
 ## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
 ## all three".)* A closure is one of the three hard blockers off the tree, with the seals and the
@@ -140,14 +190,14 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 static func closures_wanted(day: int) -> int:
 	var wanted := Tuning.closures_for_day(day)
 	if day >= Tuning.REGION_WALL_FIRST_DAY:
-		wanted = roundi(wanted * Tuning.GATEHOUSE_DAY_CLOSURE_SHARE)
+		wanted = roundi(wanted * GATEHOUSE_DAY_CLOSURE_SHARE)
 	return wanted
 
 ## The street the front door opens onto. Never closable — the home is a notch in a block with
 ## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where
 ## it is enforced.
 static func home_street(map: CityMap) -> StreetNetwork.Segment:
-	return StreetNetwork.segment_containing(
+	return map.network.segment_containing(
 			map.world_to_tile(map.doorstep_world_position()))
 
 ## Today's calm ground, as areas with their own ground and ways in.
@@ -194,7 +244,7 @@ static func _access_segments(map: CityMap, rect: Rect2i) -> Array[StreetNetwork.
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		# A **real** street is where this direction's search stops: what lies beyond it is not
 		# "entered from" this area, it is somewhere the street itself leads on to. `segment_
 		# containing` answers from tile geometry alone, so it still names a segment where a
@@ -236,7 +286,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## exclude everything and then reinclude until the day is legal. An area is refused for the day, and
 ## stays fully on the tree's table, when excluding it would:
 ##
-## - **leave fewer than `Tuning.MIN_CALM_AREAS_REACHABLE` calm areas open** — the count every
+## - **leave fewer than `MIN_CALM_AREAS_REACHABLE` calm areas open** — the count every
 ##   closure is held to, and what leaves `EventScheduler._ensure_one_usable_park` a park to keep
 ##   clean;
 ## - **cut anything off** — any tile the doorstep reaches with nothing excluded that it no longer
@@ -252,7 +302,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## — which every accepted area not chosen as `CityMap.fenced_park` also gets, since exclusion from
 ## the tree is the only thing accepting an area here actually does.
 static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
-		protected: Array[Vector2i] = []) -> Array[Vector2i]:
+		protected: Array[Vector2i] = [], trace: RunTrace = null) -> Array[Vector2i]:
 	var shut: Array[Vector2i] = []
 	var candidates: Array[Vector2i] = []
 	for block in spent:
@@ -264,10 +314,10 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 	var before := map.walk_field(home)
 	var blocked := {}
 	for block in candidates:
-		if map.calm_blocks.size() - shut.size() - 1 < Tuning.MIN_CALM_AREAS_REACHABLE:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
-					% TelemetryLog.tile(block) + "leave fewer than %d open"
-					% Tuning.MIN_CALM_AREAS_REACHABLE)
+		if map.calm_blocks.size() - shut.size() - 1 < MIN_CALM_AREAS_REACHABLE:
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would "
+					% RunTrace.tile(block) + "leave fewer than %d open"
+					% MIN_CALM_AREAS_REACHABLE)
 			continue
 		var trial := blocked.duplicate()
 		for tile in map.rect_tiles(calm_area_rect(map, block)):
@@ -276,18 +326,18 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 		var after := map.walk_field(home, trial)
 		var cut := _tiles_cut_off(map, before, after, trial)
 		if cut > 0:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would cut "
-					% TelemetryLog.tile(block) + "%d tiles off from the doorstep" % cut)
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would cut "
+					% RunTrace.tile(block) + "%d tiles off from the doorstep" % cut)
 			continue
-		if _open_calm_reached(map, after, shut, block) < Tuning.MIN_CALM_AREAS_REACHABLE:
-			Telemetry.note("plan", "the calm area she used at %s stays open: shutting it would "
-					% TelemetryLog.tile(block) + "leave fewer than %d reachable"
-					% Tuning.MIN_CALM_AREAS_REACHABLE)
+		if _open_calm_reached(map, after, shut, block) < MIN_CALM_AREAS_REACHABLE:
+			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would "
+					% RunTrace.tile(block) + "leave fewer than %d reachable"
+					% MIN_CALM_AREAS_REACHABLE)
 			continue
 		shut.append(block)
 		blocked = trial
-		Telemetry.note("plan", "the calm area she used at %s is shut today"
-				% TelemetryLog.tile(block))
+		_note(trace, "plan", "the calm area she used at %s is shut today"
+				% RunTrace.tile(block))
 	return shut
 
 ## How many tiles `before` reached that `after` does not, leaving out the shut ground itself
@@ -331,7 +381,7 @@ static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Arra
 ##
 ## **It asked for two distinct routes to each of them until 2026-08-31**, and the player's own
 ## clarification is why it does not: *"the two routes guarantee is not a hard rule."* See
-## `Tuning.MIN_CALM_AREAS_REACHABLE` for what that leaves standing and what it deliberately does
+## `MIN_CALM_AREAS_REACHABLE` for what that leaves standing and what it deliberately does
 ## not weaken.
 ##
 ## **It also asks for each of the day's own destinations** (`places`, from
@@ -363,7 +413,7 @@ static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[
 	for area in areas:
 		if _area_is_reached(map, grid, reached, blocked, area):
 			reachable += 1
-			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
+			if reachable >= MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
 
@@ -405,7 +455,7 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 	for key: Vector3i in closed:
 		if map.absent_segments.has(key):
 			continue   # ground a calm zone painted over, not a street with a barrier on it
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if not segment:
 			continue
 		for at_a in [true, false]:
@@ -491,14 +541,14 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 		boundary[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
 				or access.has(key) or boundary.has(key):
 			continue
 		pool.append(segment)
-		var weight := Tuning.CLOSURE_WALL_BIAS if rim.has(key) else 1.0
-		weights.append(weight * Tuning.CLOSURE_GAP_BIAS if gaps.has(key) else weight)
+		var weight := CLOSURE_WALL_BIAS if rim.has(key) else 1.0
+		weights.append(weight * CLOSURE_GAP_BIAS if gaps.has(key) else weight)
 
 	var order: Array[StreetNetwork.Segment] = []
 	while not pool.is_empty():

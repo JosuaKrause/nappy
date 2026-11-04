@@ -48,17 +48,20 @@ func run(t) -> void:
 	_test_a_clear_line_at_a_corner_an_edge_and_its_own_start(t)
 
 
+## A bare instance of `def` at `at`, in the tree, its frames stepped by the test (`_advance()`), on
+## `map` with a navigator of its own when one is given, as `EventInstance.setup()` is handed them,
+## and on open ground otherwise.
 func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+		path := PackedVector2Array(), map: CityMap = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, Vector2.RIGHT, map, Navigator.new(map) if map else null)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## A failed placement is retried without starving the director's independent clock.
 class _RetryDirector extends EventDirector:
@@ -68,23 +71,27 @@ class _RetryDirector extends EventDirector:
 		elapsed += delta
 		return []
 
-class _BlockedLesson extends EventManager:
+class _BlockedLesson extends EventsAhead:
 	var attempts := 0
 	func _warn_down_her_heading(def: EventDef, _her: Vector2, _sited: Vector2) -> void:
 		attempts += 1
 		_owe_pursuer_again(def)
 
 func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
-	var manager := _BlockedLesson.new()
-	var director := _RetryDirector.new(null)
+	var manager := EventManager.new()
+	var lesson := _BlockedLesson.new(manager.world, manager.streaming, manager.spawner,
+			manager.warnings)
+	manager.ahead = lesson
+	# An empty city map: the director owes its retry the same way with nothing on the ground.
+	var director := _RetryDirector.new(CityMap.new())
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
-	manager._player = body
-	manager._director = director
-	manager._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
+	manager.use_player(body)
+	lesson._director = director
+	lesson._owe_pursuer_again(EventCatalogue.by_id("charging_dog"))
 	for frame in 150:
-		manager._place_what_is_owed_ahead(STEP)
-	t.check(manager.attempts == 2 and manager._pursuer_owed != null,
+		lesson.place_what_is_owed_ahead(STEP)
+	t.check(lesson.attempts == 2 and lesson._pursuer_owed != null,
 			"a blocked lesson remains owed and retries twice in 2.5s, rather than every frame")
 	t.close_to(director.elapsed, 2.5, "other director events receive every elapsed frame", 0.001)
 	manager.free()
@@ -100,18 +107,18 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t) -> void:
 		pursuer.player_running = true
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer.player_at = Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0)
-			pursuer._process(STEP)
+			pursuer.step(STEP)
 		t.check(not pursuer.gave_up, "%s needs the full sustained run" % id)
 		pursuer.player_running = false
-		pursuer._process(STEP)
+		pursuer.step(STEP)
 		pursuer.player_running = true
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
-			pursuer._process(STEP)
+			pursuer.step(STEP)
 		t.check(not pursuer.gave_up, "%s restarts the shake-off timer after a walk" % id)
 		for frame in 3:
 			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
-			pursuer._process(STEP)
+			pursuer.step(STEP)
 		t.check(pursuer.gave_up, "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
 
@@ -152,7 +159,7 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 		her.x += speed * STEP
 		instance.player_at = her
 		instance.player_running = speed > Tuning.WALK_SPEED
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
 			since_the_lunge += STEP
@@ -169,13 +176,13 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 ## A pursuer sent at her — the day-3 dog, the resistance's own two — is warned of first and created
 ## just out of sight (`PendingWarning`), which depends on the way it comes and on what she can see,
 ## so this asks for the worst case over every heading and either control scheme rather than one of
-## them — `PendingWarning.least_distance()`, the view's half height, which is the least ground the
+## them — `SpawnSiting.least_distance()`, the view's half height, which is the least ground the
 ## contract can ever rely on. A rig checked against a more generous heading would pass on an
 ## encounter the game can still produce on a worse one.
 func _sited_at(def: EventDef) -> float:
-	if def.pursues_within > 0.0:
-		return def.pursues_within - 10.0
-	return PendingWarning.least_distance()
+	if def.notice_within() > 0.0:
+		return def.notice_within() - 10.0
+	return SpawnSiting.least_distance()
 
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
@@ -194,7 +201,7 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is
 		# not running the rule. See `Tuning.PURSUIT_SHAKEN_OFF`.
 		instance.player_running = player_speed > Tuning.WALK_SPEED
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if was_telegraphing and not instance.is_telegraphing() and not instance.is_waiting():
 			result["at_the_lunge"] = instance.global_position.distance_to(her)
@@ -224,8 +231,9 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 	return {}
 
 ## The alley robber's catch is smaller than his lunge's reach (tall-osprey, 2026-10-04): he catches
-## at 26px and lunges from 116px (`lunge_reach` 38), so the room between lunge and catch is 90px, and
-## no pursuer but the robber and the ones read off him moves its lunge off its own catch.
+## at 26px and lunges from 116px (`PursuitSpec.lunge_reach` 38), so the room between lunge and
+## catch is 90px, and no pursuer but the robber and the ones read off him moves its lunge off
+## its own catch.
 func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 	# The robber, and the pursuer on foot a torn poster sends, who is the task robber's chase in a
 	# uniform (`EventCatalogue._policeman_giving_chase()`).
@@ -234,23 +242,25 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 	for id: String in robbers:
 		var def := EventCatalogue.by_id(id)
 		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
-		t.close_to(Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach()), 116.0,
+		t.close_to(PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()), 116.0,
 				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
 		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
-		if def.pursues and not robbers.has(def.id):
+		if def.pursuit != null and not robbers.has(def.id):
 			t.check(is_equal_approx(def.standoff_reach(), def.lethal_reach()),
 					"'%s' lunges from its own catch" % def.id)
-	# A `lunge_reach` inside the catch would stand the pursuer off closer than `PURSUIT_REACTION` of
-	# its own approach from taking her: 10px on a 26px catch is an 88px stand-off, 62px of room, 0.48s
-	# at 130px/s. `validate()` refuses it on load (asked here through the predicate, since the refusal
-	# is a `push_error`, which fails the whole run); a lunge exactly at the catch is allowed.
+	# A `PursuitSpec.lunge_reach` inside the catch would stand the pursuer off closer than
+	# `PURSUIT_REACTION` of its own approach from taking her: 10px on a 26px catch is an 88px
+	# stand-off, 62px of room, 0.48s at 130px/s. `validate()` refuses it on load (asked here
+	# through the predicate, since the refusal is a `push_error`, which fails the whole run); a
+	# lunge exactly at the catch is allowed.
 	var too_short := EventCatalogue.by_id("alley_robbery").duplicate() as EventDef
-	too_short.lunge_reach = 10.0
+	too_short.pursuit = too_short.pursuit.duplicate() as PursuitSpec
+	too_short.pursuit.lunge_reach = 10.0
 	t.check(too_short.lunge_is_inside_the_catch(), "a 10px lunge on a 26px catch is inside it")
-	too_short.lunge_reach = too_short.lethal_reach()
+	too_short.pursuit.lunge_reach = too_short.lethal_reach()
 	t.check(not too_short.lunge_is_inside_the_catch(), "a lunge exactly at the catch is not")
-	too_short.lunge_reach = 0.0
+	too_short.pursuit.lunge_reach = 0.0
 	t.check(not too_short.lunge_is_inside_the_catch(), "and 0 means the catch")
 
 ## **The one encounter in the game with a right answer, walked three ways.** *(M35, playtest 08
@@ -274,16 +284,16 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		# director, so this rig's geometry is not its own; `tests/test_checkpoints.gd` walks
 		# `door_guard` at a door instead.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
+		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		pursuers += 1
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 		t.check(standoff > def.inner_radius,
 				"'%s' holds off outside the radius that ends the day" % def.id)
 		# One that waits for her charges on its warning's clock, not at its stand-off; it is walked
 		# in `_test_every_waiting_charger_warns_by_radius`.
-		if def.pursues_within > 0.0:
+		if def.notice_within() > 0.0:
 			continue
 
 		# Into it. The geometry the day-3 lesson actually produces, and the one that killed a run
@@ -313,7 +323,7 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 		t.check(ran["ended_at"] < def.telegraph_time + def.duration,
 				"which ends '%s' early: %.1fs against a %.1fs chase"
 				% [def.id, ran["ended_at"], def.telegraph_time + def.duration])
-		var cost: float = ran["ended_at"] * Tuning.EXCITEMENT_FROM_RUNNING
+		var cost: float = ran["ended_at"] * Baby.EXCITEMENT_FROM_RUNNING
 		t.check(cost < Tuning.METER_MAX * 0.6,
 				"and running from '%s' costs %.0f of a %.0f meter rather than the day"
 				% [def.id, cost, Tuning.METER_MAX])
@@ -335,21 +345,22 @@ func _test_a_pursuer_leaves_room_to_answer(t) -> void:
 ##
 ## **The measured number this reports rather than asserts is the window at the lunge**, and it is
 ## the open half of finding 13. She is walking *into* the thing at that instant — it is sited in
-## front of her and holds its distance by backing off — so the gap closes at `pursue_speed +
-## WALK_SPEED` and the stand-off is worth about a third of the `PURSUIT_REACTION` it was bought
-## with. A player answers during the **telegraph**, where the dog is visible and closing for two and
-## a half seconds, and that answer is cheap; the lunge is the worst case rather than the expected
-## one. Widening it means a wider stand-off, and a wider stand-off is a dog that visibly reverses.
+## front of her and holds its distance by backing off — so the gap closes at its chase speed
+## plus `WALK_SPEED` and the stand-off is worth about a third of the `PURSUIT_REACTION` it was
+## bought with. A player answers during the **telegraph**, where the dog is visible and closing
+## for two and a half seconds, and that answer is cheap; the lunge is the worst case rather than
+## the expected one. Widening it means a wider stand-off, and a wider stand-off is a dog that
+## visibly reverses.
 func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her rather than by the director — see `_test_a_pursuer_leaves_room_to_answer`.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
+		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
 		# One that waits for her charges on its warning's clock and is walked in
 		# `_test_every_waiting_charger_warns_by_radius`.
-		if def.pursues_within > 0.0:
+		if def.notice_within() > 0.0:
 			continue
 		var at_once := _answer_rig(def, 0.0)
 		t.check(not at_once["caught"],
@@ -364,16 +375,16 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 		t.check(at_once["running"] < Tuning.PURSUIT_SHAKEN_OFF + turn + 0.5,
 				"and it costs %.1fs of running rather than the %.1fs chase"
 				% [at_once["running"], def.duration])
-		t.check(at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
+		t.check(at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING < Tuning.METER_MAX * 0.3,
 				"which is %.0f of a %.0f meter"
-				% [at_once["running"] * Tuning.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
+				% [at_once["running"] * Baby.EXCITEMENT_FROM_RUNNING, Tuning.METER_MAX])
 
 		# Answering during the telegraph — what a player who reads the cue actually does — is cheaper
 		# still, and that gradient is the reason the break-off is a rate rather than a clock.
 		# One that warns by radius is never charged at all: she is out of its radius before its
 		# stand-off (`EventInstance.warns_by_radius()`).
 		var early := _chase_rig(def, Tuning.RUN_SPEED)
-		t.check((early["gave_up"] or (def.pursues_within > 0.0 and early["waiting"]))
+		t.check((early["gave_up"] or (def.notice_within() > 0.0 and early["waiting"]))
 				and not early["caught"],
 				"running from '%s' the moment it appears shakes it off" % def.id)
 
@@ -395,7 +406,7 @@ func _test_the_answer_is_priced_by_how_soon_it_is_given(t) -> void:
 ##
 ## Two things have to agree and neither knows about the other: the stand-off is where it stops, and
 ## the warning decides where it starts. If the stand-off ever grows past the least it could ever be
-## created at — `PendingWarning.least_distance()`, the worst case over every heading she might be
+## created at — `SpawnSiting.least_distance()`, the worst case over every heading she might be
 ## walking and either control scheme — a pursuer *backs away* through its own telegraph instead of
 ## closing, which is a dog that visibly reverses down the street in front of her.
 ##
@@ -405,19 +416,19 @@ func _test_a_pursuer_is_sited_where_it_can_be_seen(t) -> void:
 	for def in EventCatalogue.all():
 		# Sited beside her by construction, which is what its own stand-off rule answers.
 		# One that arrives chasing has no closing-in to a stand-off for this rig to walk; the
-		# resistance's sent robber and guard are walked in `tests/test_resistance.gd`.
-		if not def.pursues or def.sets_off_beside_her or def.arrives_chasing or def.charges_at_once:
+		# resistance's sent robber and guard are walked in `tests/test_resistance_traps.gd`.
+		if def.pursuit == null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
 			continue
-		var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
-		var floor_lead := PendingWarning.least_distance()
+		var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
+		var floor_lead := SpawnSiting.least_distance()
 		t.check(standoff < floor_lead,
 				"'%s' stands off at %.0fpx, inside the %.0fpx it is sited at even on the worst axis"
 				% [def.id, standoff, floor_lead])
-		if def.pursues_within > 0.0:
+		if def.notice_within() > 0.0:
 			# A place, not a moment: the director never sites it, so what has to hold is that its
 			# trigger is outside its stand-off — which `validate_pursuit` also checks, from the
 			# other side and for a different reason.
-			t.check(def.pursues_within > standoff,
+			t.check(def.notice_within() > standoff,
 					"'%s' notices her before it has stopped coming" % def.id)
 			continue
 		t.check(_sited_at(def) >= standoff,
@@ -452,7 +463,7 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 			if arrived.is_empty():
 				warning.tick(STEP, her)
 				continue
-			arrived[0]._process(STEP)
+			arrived[0].step(STEP)
 			if arrived[0].is_lethal_at(her):
 				was_lethal = true
 				break
@@ -464,7 +475,7 @@ func _test_a_hard_fail_toward_player_row_is_lethal_by_the_time_it_reaches_her(t)
 	t.check(checked > 0, "there is at least one hard_fail TOWARD_PLAYER row to check ('cyclist')")
 
 ## A warning for `def` coming down her line from `direction`, on open ground, put up with her at
-## `her` — the construction `EventManager._warn_down_her_line()` makes, with creation done the way
+## `her` — the construction `EventsAhead._warn_down_her_line()` makes, with creation done the way
 ## `EventManager.spawn_warned()` does it: its telegraph spent. What it creates is appended to
 ## `arrived`, for the caller to tick and free.
 static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector2,
@@ -475,7 +486,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 		var path := PendingWarning.route_down_her_line(null, place, at, direction)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		arrived.append(instance)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
@@ -493,7 +504,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 ## should be enough".)*
 ##
 ## On the real map, with the warning held the way `EventManager` holds one (`warn_first()`,
-## `_run_the_warnings()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
+## `WarningBoard.run()`) and read by a real `DangerEdge`, while she walks up her sidewalk and steps
 ## out onto the carriageway and back:
 ##
 ## - **the badge is up with nothing in the world**, for no more than `Tuning.WARNING_ALONE_MAX`;
@@ -527,19 +538,19 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	var edge := DangerEdge.new()
 	t.add_child(edge)
 	edge.setup(manager, player)
-	manager.visible_view().look(VisibleView.around(her).view, false)
+	manager.visible_view().look(VisibleView.around(her, null).view, null)
 	var created: Array[EventInstance] = []
 	var where := func(at: Vector2) -> Vector2:
-		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at))
+		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		instance.came_under_a_warning = true
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		created.append(instance)
 		# In the manager's own list, so the edge measures him as the game's own badge does.
-		manager._instances.append(instance)
+		manager.world.instances.append(instance)
 		return true
 	var warning := manager.warn_first(def, her, where, arrive)
 	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
@@ -566,8 +577,8 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		elif elapsed > 0.6 and elapsed <= 0.9:
 			step = Vector2.LEFT
 		her += step * Tuning.WALK_SPEED * STEP
-		manager.visible_view().look(VisibleView.around(her).view, false)
-		manager._run_the_warnings(STEP, her)
+		manager.visible_view().look(VisibleView.around(her, null).view, null)
+		manager.warnings.run(STEP, her)
 		elapsed += STEP
 		if not created.is_empty():
 			came_at = elapsed
@@ -582,10 +593,11 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 			"he is created once his %.2fs badge is over (%.2fs)" % [def.warned_for(), came_at])
 	if created.size() == 1:
 		var bike := created[0]
-		var view := VisibleView.around(her)
+		var view := VisibleView.around(her, null)
 		t.check(ground.has(map.tile_at(map.world_to_tile(bike.global_position))),
 				"on a sidewalk")
-		t.check(PendingWarning.is_out_of_sight(view, def, her, bike.global_position),
+		t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				bike.global_position),
 				"wholly out of sight the frame he exists")
 		t.check(not bike.is_telegraphing(), "with his telegraph already spent, so he can end the day")
 		var into_sight := INF
@@ -593,10 +605,10 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		var since := 0.0
 		player.global_position = her
 		while since < 1.0 and (into_sight == INF or gone == INF):
-			bike._process(STEP)
+			bike.step(STEP)
 			since += STEP
 			edge._measure(STEP)
-			var box := EventInstance.footprint_of(def)
+			var box := EventFootprints.footprint_of(def)
 			if into_sight == INF and manager.visible_view().sees_any(
 					Rect2(bike.global_position + box.position, box.size)):
 				into_sight = since
@@ -607,7 +619,8 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 				gone = since
 		# At once from just out of sight; where its ground is further — the carriageway of a cross
 		# street just out of sight, so the far sidewalk — as soon as he has ridden the difference.
-		var just_out := PendingWarning.just_out_of_sight(view, def, her, Vector2.UP)
+		var just_out := SpawnSiting.just_out_of_sight(view, EventFootprints.footprint_of(def), her,
+				Vector2.UP)
 		var further := maxf(0.0, (bike.path[0] - just_out).dot(Vector2.UP))
 		t.check(into_sight <= further / def.speed + 3.0 * STEP,
 				"and he comes into sight as soon as he has ridden the %.0fpx his ground put him past "
@@ -674,8 +687,8 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 	# Amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks".
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
-	t.close_to(dog.pursue_speed, 130.0, "at 130px/s", 0.001)
-	var sent := EventManager.as_warned(dog)
+	t.close_to(dog.chase_speed(), 130.0, "at 130px/s", 0.001)
+	var sent := EventSpawner.as_warned(dog)
 	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
 			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
 			"sent at her, it is warned first for its own half second, within the one-second ceiling")
@@ -719,7 +732,7 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 	var edge := DangerEdge.new()
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(def.warns_before_it_exists() and def.arrives_chasing,
+		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"'%s' is warned of before it exists and arrives chasing" % id)
 		t.check(is_equal_approx(def.offscreen_notice, dog.offscreen_notice)
 				and is_equal_approx(def.duration, dog.duration),
@@ -741,15 +754,15 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t) -> void:
 ## **Nothing comes at her from off screen unwarned.** *(PLAYTEST-145: "all offscreen events should
 ## work like that".)* Every pursuer that is sent rather than met — no trigger to wait on, and not
 ## set off beside her at a door — is warned of first: the resistance's own two by their rows, and the
-## day-3 dog by the copy `EventManager.as_warned()` makes as the director sends it. Each one's badge
+## day-3 dog by the copy `EventSpawner.as_warned()` makes as the director sends it. Each one's badge
 ## alone is at most `Tuning.WARNING_ALONE_MAX`.
 func _test_every_pursuer_sent_from_off_screen_is_warned_first(t) -> void:
 	var sent := 0
 	for def in EventCatalogue.all():
-		if not def.pursues or def.pursues_within > 0.0 or def.sets_off_beside_her:
+		if def.pursuit == null or def.notice_within() > 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 			continue
 		sent += 1
-		var warned := EventManager.as_warned(def)
+		var warned := EventSpawner.as_warned(def)
 		t.check(warned.warns_before_it_exists() and warned.warned_for() <= Tuning.WARNING_ALONE_MAX,
 				"'%s' is warned first, its badge alone %.2fs, at most %.2fs"
 				% [def.id, warned.warned_for(), Tuning.WARNING_ALONE_MAX])
@@ -784,16 +797,16 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 
 		var consumed: Array[String] = []
-		var first := EventScheduler.build_day(day, rng, map, consumed)
+		var first := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed)
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
 		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
-		# it spent (`GameState.finish_day`), so every retry is the same day down to the fire itself.
+		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
 		# The other direction, the day after it burned on a day she won, is the loop below this one.
 		t.check(consumed.is_empty(),
 				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()
 		again.seed = rng.seed
-		var second := EventScheduler.build_day(day, again, map, consumed.duplicate())
+		var second := EventScheduler.build_day(DaySpec.for_day(day), again, map, consumed.duplicate())
 
 		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
 		# the retry plans **none** of it. *(Since M50 step 2 that is "none" rather than "one fewer":
@@ -801,7 +814,7 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		#
 		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
 		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
-		# that had failed now fit; an offer costs no room since M50 step 2 — see `_room_around` —
+		# that had failed now fit; an offer costs no room since M50 step 2 — see `room_around` —
 		# so the fill is identical between attempts rather than merely close. What is *not* closed
 		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
 		# there, which is the run's own history showing through and is the answer that should.
@@ -823,7 +836,7 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		var spent: Array[String] = ["burning_building"]
 		var third_rng := RandomNumberGenerator.new()
 		third_rng.seed = rng.seed
-		var third := _kinds_in(EventScheduler.build_day(day, third_rng, map, spent))
+		var third := _kinds_in(EventScheduler.build_day(DaySpec.for_day(day), third_rng, map, spent))
 		for id: String in before.keys() + third.keys():
 			var expected: int = 0 if id in spent else int(before.get(id, 0))
 			t.check(int(third.get(id, 0)) == expected,
@@ -844,8 +857,8 @@ func _test_the_run_is_always_taught(t) -> void:
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 		var consumed: Array[String] = []
 		var pursuits := 0
-		for plan in EventScheduler.build_day(day, rng, map, consumed):
-			pursuits += 1 if plan.def.pursues else 0
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed):
+			pursuits += 1 if plan.def.pursuit != null else 0
 		t.check(pursuits > 0,
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
 
@@ -867,11 +880,11 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 	var out := 256.0 / def.speed
 	_advance(instance, out - 0.2)
 	t.close_to(instance.position.x, 256.0, "it walks to the far end of its beat", 8.0)
-	t.check(instance._heading.x > 0.0, "facing the way it is going")
+	t.check(instance.facing_now().x > 0.0, "facing the way it is going")
 
 	_advance(instance, out)
 	t.close_to(instance.position.x, 0.0, "and back again", 8.0)
-	t.check(instance._heading.x < 0.0, "facing the other way on the way back")
+	t.check(instance.facing_now().x < 0.0, "facing the other way on the way back")
 	t.check(not instance.is_finished and not instance.is_leaving,
 			"a fixture that moves neither finishes nor leaves at the end of its path")
 
@@ -890,11 +903,11 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 ## telegraph ran at dawn, four streets away, would arrive with no notice in it at all.
 func _test_a_pursuer_can_wait(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
-	t.check(def.pursues_within > 0.0, "the robber waits")
+	t.check(def.notice_within() > 0.0, "the robber waits")
 	var instance := _instance(t, def, Vector2.ZERO)
 
 	# Standing there, all day, at full strength.
-	instance.player_at = Vector2(def.pursues_within + 40.0, 0.0)
+	instance.player_at = Vector2(def.notice_within() + 40.0, 0.0)
 	_advance(instance, 30.0)
 	t.check(instance.is_waiting(), "he is still standing there half a minute later")
 	t.check(not instance.is_finished, "and his duration has not been running")
@@ -902,19 +915,19 @@ func _test_a_pursuer_can_wait(t) -> void:
 	t.close_to(instance.current_intensity(), def.intensity,
 			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
 	t.check(not instance.is_lethal_at(instance.player_at), "and he cannot end the day yet")
-	t.check(instance.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
+	t.check(instance.excitement.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
 			"his field reaches the far end of the alley")
 
 	# She steps inside the trigger: the notice starts *now*.
-	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
-	instance._process(STEP)
+	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "he notices her")
 	t.check(instance.is_telegraphing(), "and the notice starts when he does, not at dawn")
 	t.check(not instance.is_lethal_at(instance.player_at), "still not lethal during the notice")
 
 	# Standing there, inside his radius, he walks up to her stand-off and charges once his warning
-	# has run (`EventDef.warns_for`).
-	_advance(instance, def.warns_for + 0.1)
+	# has run (`PursuitSpec.warns_for`).
+	_advance(instance, def.pursuit.warns_for + 0.1)
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(),
 			"then, his warning having run with her still inside his radius, he charges")
 	instance.free()
@@ -924,14 +937,14 @@ func _test_a_pursuer_can_wait(t) -> void:
 ## inbox #748: guards lift a hand, only the robber walks; inbox #788 in minty-lemur: "We should do one radius and
 ## warn inside it for 2s. If the player leaves the radius nothing happens and the warning stops. If
 ## they stay within the charge starts.")* The dog that waited (any day past `RUN_TAUGHT_DAY`), the
-## hunting roadblock's guard and the alley robber notice her inside `pursues_within` and warn for
-## their row's `warns_for` (`EventInstance.warns_by_radius()`, `notice_time()`). Each is walked here
-## from the catalogue (`_waiting_pursuers()`), so a row that starts waiting for her is walked without
-## anybody listing it:
+## hunting roadblock's guard and the alley robber notice her inside `EventDef.notice` and warn for
+## their row's `PursuitSpec.warns_for` (`EventInstance.warns_by_radius()`, `notice_time()`).
+## Each is walked here from the catalogue (`_waiting_pursuers()`), so a row that starts waiting
+## for her is walked without anybody listing it:
 ##
-## - **Walking in** is warned for the whole of `warns_for`, nothing lethal in it, and then charged
-##   and caught. The rows that stand do not move while they warn; the robber walks at her no faster
-##   than his notice walk and holds at his stand-off.
+## - **Walking in** is warned for the whole of `PursuitSpec.warns_for`, nothing lethal in it,
+##   and then charged and caught. The rows that stand do not move while they warn; the robber
+##   walks at her no faster than his notice walk and holds at his stand-off.
 ## - **Standing just inside the radius** is charged once the warning has run, and caught.
 ## - **Baiting works**: standing just inside, she turns 0.3s after it charges, runs, and gets away,
 ##   and it gives up. **Running the moment it charges** shakes it off; **walking away once it
@@ -951,26 +964,26 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 			"the waiting dog, the hunting roadblock's guard and the alley robber are walked (%s)"
 			% ", ".join(ids.keys()))
 	for def in rows:
-		var walks := def.notice_walk_speed > 0.0
+		var walks := def.pursuit.walk_speed > 0.0
 		var name := "'%s' (%s)" % [def.id, "walks" if walks else "stands"]
-		t.check(def.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
-				"%s warns for %.1fs before it charges" % [name, def.warns_for])
+		t.check(def.pursuit.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
+				"%s warns for %.1fs before it charges" % [name, def.pursuit.warns_for])
 		var walked_in := _standing_rig(t, def, -Tuning.WALK_SPEED)
-		t.check(absf(float(walked_in["notice_lasted"]) - def.warns_for) <= 2.0 * STEP
+		t.check(absf(float(walked_in["notice_lasted"]) - def.pursuit.warns_for) <= 2.0 * STEP
 				and walked_in["caught"] and not walked_in["lethal_while_telegraphing"],
 				"walking into %s she is warned %.2fs, nothing lethal in it, then charged and caught"
 				% [name, walked_in["notice_lasted"]])
 		if walks:
 			t.check(walked_in["moved_in_notice"] > 0.5 and walked_in["moved_in_notice"]
-					<= def.notice_walk_speed * walked_in["notice_lasted"] + 0.5,
+					<= def.pursuit.walk_speed * walked_in["notice_lasted"] + 0.5,
 					"%s walks at her through its warning, no faster than %.0fpx/s (moved %.1fpx)"
-					% [name, def.notice_walk_speed, walked_in["moved_in_notice"]])
+					% [name, def.pursuit.walk_speed, walked_in["moved_in_notice"]])
 		else:
 			t.check(walked_in["stood"], "%s holds its ground while she walks in (moved %.1fpx)"
 					% [name, walked_in["moved_in_notice"]])
 		var stood := _standing_rig(t, def, 0.0, INF, 10.0, 20.0)
 		t.check(stood["caught"] and not stood["lethal_while_telegraphing"]
-				and absf(float(stood["notice_lasted"]) - def.warns_for) <= 2.0 * STEP,
+				and absf(float(stood["notice_lasted"]) - def.pursuit.warns_for) <= 2.0 * STEP,
 				"standing just inside %s's radius she is charged after %.2fs of warning, and caught"
 				% [name, stood["notice_lasted"]])
 		var baited := _standing_rig(t, def, 0.0, 0.3)
@@ -989,7 +1002,7 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 				+ "and it charges once its warning has run and catches her (ran %.1fs, %.0fpx at most)"
 				% [ran_inside["ran_for"], ran_inside["farthest"]])
 		var again := _back_inside_rig(t, def)
-		t.check(again["waited"] and absf(float(again["second_warning"]) - def.warns_for) <= 2.0 * STEP,
+		t.check(again["waited"] and absf(float(again["second_warning"]) - def.pursuit.warns_for) <= 2.0 * STEP,
 				"leaving %s's radius %.2fs into its warning and coming back, its clock starts " % [name,
 				again["first_warning"]] + "again from zero: charged %.2fs after she is back inside"
 				% again["second_warning"])
@@ -1009,7 +1022,7 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 		print(("[test_events_pursuit] %s, one radius %.0fpx, warns %.1fs: walked in, warned %.2fs "
 				+ "and charged at %.0fpx; stood, charged at %.0fpx; baited, closest %.0fpx%s; "
 				+ "answered at the charge, closest %.0fpx; walked away from the charge, caught %.2fs "
-				+ "after it") % [name, def.pursues_within, def.warns_for, walked_in["notice_lasted"],
+				+ "after it") % [name, def.notice_within(), def.pursuit.warns_for, walked_in["notice_lasted"],
 				walked_in["at_the_lunge"], stood["at_the_lunge"], baited["closest"],
 				", caught" if baited["caught"] else ", got away", answered["closest"],
 				charged_then_walked["after_the_lunge"]])
@@ -1017,23 +1030,23 @@ func _test_every_waiting_charger_warns_by_radius(t) -> void:
 ## **A warning she walks out of is not a chase**, so the page's `dog-chased` (`EventBus.pursuit_began`,
 ## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.
 func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
-	var def := EventScheduler._for_day(EventCatalogue.by_id("charging_dog"), Tuning.RUN_TAUGHT_DAY + 1)
-	var standoff := Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var began: Array[String] = []
 	var listen := func(id: String) -> void: began.append(id)
 	EventBus.pursuit_began.connect(listen)
 	var dog := _instance(t, def, Vector2.ZERO)
-	dog.player_at = Vector2(def.pursues_within - 10.0, 0.0)
-	_advance(dog, def.warns_for * 0.5)
+	dog.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	_advance(dog, def.pursuit.warns_for * 0.5)
 	t.check(dog.is_telegraphing() and began.is_empty(), "warning her, it has not begun a chase")
-	dog.player_at = Vector2(def.pursues_within + 10.0, 0.0)
+	dog.player_at = Vector2(def.notice_within() + 10.0, 0.0)
 	_advance(dog, 0.5)
 	t.check(dog.is_waiting() and began.is_empty(), "and walked out of, it never did")
-	dog.player_at = Vector2(def.pursues_within - 10.0, 0.0)
+	dog.player_at = Vector2(def.notice_within() - 10.0, 0.0)
 	_advance(dog, 0.2)
 	t.check(dog.is_telegraphing() and began.is_empty(), "back inside, it warns again, still no chase")
 	dog.player_at = Vector2(standoff - 2.0, 0.0)
-	_advance(dog, def.warns_for)
+	_advance(dog, def.pursuit.warns_for)
 	t.check(not dog.is_telegraphing() and began == ["charging_dog"],
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
 	EventBus.pursuit_began.disconnect(listen)
@@ -1046,27 +1059,27 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 ## again, and how long after she was back inside he charged (`INF` if never).
 func _back_inside_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
+	instance.look.attach_nodes()
 	var result := {"first_warning": 0.0, "waited": false, "second_warning": INF}
 	var stand_at := func(off: float) -> void:
-		instance.player_at = instance.body_position() + Vector2(0.0, def.pursues_within + off)
+		instance.player_at = instance.body_position() + Vector2(0.0, def.notice_within() + off)
 	stand_at.call(-10.0)
 	var elapsed := 0.0
-	while elapsed < def.warns_for * 0.75 and not instance.is_finished:
-		instance._process(STEP)
+	while elapsed < def.pursuit.warns_for * 0.75 and not instance.is_finished:
+		instance.step(STEP)
 		if instance.is_telegraphing():
 			elapsed += STEP
 	result["first_warning"] = elapsed
 	stand_at.call(20.0)
 	for i in 30:
-		instance._process(STEP)
+		instance.step(STEP)
 		if instance.is_waiting():
 			result["waited"] = true
 			break
 	stand_at.call(-10.0)
 	var back := 0.0
-	while back < def.warns_for * 3.0 and not instance.is_finished:
-		instance._process(STEP)
+	while back < def.pursuit.warns_for * 3.0 and not instance.is_finished:
+		instance.step(STEP)
 		back += STEP
 		if not instance.is_waiting() and not instance.is_telegraphing():
 			result["second_warning"] = back
@@ -1081,8 +1094,8 @@ func _back_inside_rig(t, def: EventDef) -> Dictionary:
 ## warned, whether he charged and whether he caught her.
 func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
-	var her := Vector2(-def.pursues_within * 0.3, def.pursues_within * 0.5)
+	instance.look.attach_nodes()
+	var her := Vector2(-def.notice_within() * 0.3, def.notice_within() * 0.5)
 	var speed := 0.0
 	var ran_for := 0.0
 	var noticed_for := -1.0
@@ -1100,13 +1113,13 @@ func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 		if instance.player_running:
 			ran_for += STEP
 		var was_telegraphing := instance.is_telegraphing()
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if instance.is_telegraphing() or noticed_for >= 0.0:
 			noticed_for = maxf(noticed_for, 0.0) + STEP
 		var off := instance.body_position().distance_to(her)
 		result["farthest"] = maxf(float(result["farthest"]), off)
-		if noticed_for >= 0.0 and off > def.pursues_within:
+		if noticed_for >= 0.0 and off > def.notice_within():
 			result["stayed_inside"] = false
 		if was_telegraphing and (instance.gave_up or instance.is_leaving):
 			result["gave_up_warning"] = true
@@ -1119,9 +1132,9 @@ func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 	return result
 
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
-## of a run (`EventScheduler._for_day()`, which is where the dog's trigger switches on past
+## of a run (`EventDef.for_day()`, which is where the dog's trigger switches on past
 ## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`, which is where the roadblock's
-## guard starts to pursue), kept where it pursues and waits (`pursues_within`) and `keep` says yes,
+## guard starts to pursue), kept where it pursues and waits (`EventDef.notice`) and `keep` says yes,
 ## once per distinct set of the numbers the walk reads. One that sets off beside her or arrives
 ## chasing has no trigger to be sited inside.
 func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
@@ -1130,13 +1143,13 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 	for row in EventCatalogue.all():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventScheduler._for_day(EventCatalogue.heated(row, level), day)
-				if not def.pursues or def.pursues_within <= 0.0 or def.sets_off_beside_her \
-						or def.arrives_chasing or not keep.call(def):
+				var def := EventCatalogue.heated(row, level).for_day(day)
+				if def.pursuit == null or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or not keep.call(def):
 					continue
-				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%s" % [def.id, def.pursues_within,
-						def.telegraph_time, def.pursue_speed, def.duration, def.lethal_reach(),
-						def.notice_walk_speed, def.stands_for_its_notice]
+				var key := "%s|%.2f|%.2f|%.2f|%.2f|%.2f|%.2f|%s" % [def.id, def.notice_within(),
+						def.telegraph_time, def.chase_speed(), def.duration, def.lethal_reach(),
+						def.pursuit.walk_speed, def.pursuit.stands]
 				if seen.has(key):
 					continue
 				seen[key] = true
@@ -1158,8 +1171,8 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, inside := 10.0,
 		seconds := 40.0, from := INF, then_speed := Tuning.RUN_SPEED, stop_at := -1.0) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance._attach_the_band()
-	var start := from if from != INF else def.pursues_within - inside
+	instance.look.attach_nodes()
+	var start := from if from != INF else def.notice_within() - inside
 	var her := Vector2(0.0, start)
 	var speed := player_speed
 	var elapsed := 0.0
@@ -1182,7 +1195,7 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, insid
 		her.y += speed * STEP
 		instance.player_at = her
 		instance.player_running = speed > Tuning.WALK_SPEED
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
 			since_the_lunge += STEP
@@ -1224,7 +1237,7 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, insid
 ##
 ## A real building corner, chased round: she walks from its north face to its east face, and a dog
 ## aimed straight at wherever she currently is would cut across the building itself to follow her —
-## exactly the shape of the bug. `EventInstance._walkable_step` is the fix, and this is what it
+## exactly the shape of the bug. `EventInstance._step()` is the fix, and this is what it
 ## has to hold true of every frame regardless of the geometry, which is why the check runs the
 ## whole walk rather than sampling the end of it.
 func _test_a_pursuer_stops_at_walls(t) -> void:
@@ -1238,10 +1251,10 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 
 	var def := EventCatalogue.by_id("charging_dog")
 	var instance := EventInstance.new()
-	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0))
+	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
+			Vector2.RIGHT, map, Navigator.new(map))
 	t.add_child(instance)
 	instance.set_process(false)
-	instance._map = map
 
 	# Clear the telegraph with her held far off, so what follows is about the wall and not about
 	# the stand-off.
@@ -1259,7 +1272,7 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 	while her.distance_to(target) > 4.0 and elapsed < 15.0:
 		her = her.move_toward(target, Tuning.WALK_SPEED * STEP)
 		instance.player_at = her
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 		var tile := map.world_to_tile(instance.global_position)
 		checked += 1
@@ -1287,15 +1300,27 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 	return {}
 
 ## The alley robber on `map`, past his notice and chasing, so what follows is about the line between
-## the two of them and not about the notice. The notice is run on open ground and the map handed
-## over after it, since the notice asks for a clear line and the origin may be anywhere on `map`.
+## the two of them and not about the notice. He is set up on `map` with its navigator as
+## `EventInstance.setup()` is handed them, at a walkable tile with a clear straight run east to her,
+## since the notice asks for a clear line; each check moves him from there.
 func _a_chasing_robber(t, map: CityMap) -> EventInstance:
 	var def := EventCatalogue.by_id("alley_robbery")
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(def.pursues_within - 10.0, 0.0)
-	instance._process(STEP)
-	_advance(instance, def.warns_for + 0.1)
-	instance._map = map
+	var run := def.notice_within() - 10.0
+	var origin := Vector2.INF
+	for tile_y in range(map.size.y / 2, map.size.y - 2):
+		for tile_x in range(2, map.size.x - 2):
+			var at := map.tile_to_world(Vector2i(tile_x, tile_y))
+			if map.is_walkable(Vector2i(tile_x, tile_y)) \
+					and _sampled_line_is_walkable(map, at, at + Vector2(run, 0.0), 0.1):
+				origin = at
+				break
+		if origin != Vector2.INF:
+			break
+	t.check(origin != Vector2.INF, "the map has a clear %.0fpx run to start the robber on" % run)
+	var instance := _instance(t, def, origin, PackedVector2Array(), map)
+	instance.player_at = origin + Vector2(run, 0.0)
+	instance.step(STEP)
+	_advance(instance, def.pursuit.warns_for + 0.1)
 	return instance
 
 ## **He catches her only by touching her.** *(freckled-goose, #544: "Even then the distance would
@@ -1342,17 +1367,15 @@ func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> Event
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var at := corner + d1 * 16.0 - d2 * back
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), at)
-	instance._map = map
-	return instance
+	return _instance(t, EventCatalogue.by_id("alley_robbery"), at, PackedVector2Array(), map)
 
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
 ## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
 ## back from the mouth; she stands on the sidewalk round the building's corner, well inside his
-## 180px `pursues_within` in a straight line but with the building between them, and he goes on
+## 180px `EventDef.notice` in a straight line but with the building between them, and he goes on
 ## waiting and is drawn looking the way he was sited, not tracking her round the corner. She steps
 ## in front of the mouth, nearer still, the line between them clear, and on that frame he notices
-## her and is drawn facing her. What is checked is `_drawn_heading()`, the heading his picture is
+## her and is drawn facing her. What is checked is `drawn_heading()`, the heading his picture is
 ## chosen from, not only his own `_heading`.
 func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var map := _map()
@@ -1363,9 +1386,9 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var instance := _a_waiting_robber(t, map, mouth, 40.0)
-	var looking := instance._drawn_heading().normalized()
+	var looking := instance.look.drawn_heading().normalized()
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.pursues_within,
+	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.notice_within(),
 			"round the corner she is inside his notice in a straight line (%.1fpx)"
 			% instance.global_position.distance_to(round_the_corner))
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
@@ -1373,15 +1396,15 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	instance.player_at = round_the_corner
 	_advance(instance, 1.0)
 	t.check(instance.is_waiting(), "he does not notice her through the building")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(looking),
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(looking),
 			"and is not drawn turned toward her")
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
 			"in front of the mouth nothing stands between them")
 	instance.player_at = in_the_mouth
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "and there he notices her")
-	t.check(instance._drawn_heading().normalized().is_equal_approx(
+	t.check(instance.look.drawn_heading().normalized().is_equal_approx(
 			(in_the_mouth - instance.global_position).normalized()), "and is drawn facing her")
 	instance.free()
 
@@ -1402,19 +1425,19 @@ func _test_the_robber_does_not_lunge_through_a_wall(t) -> void:
 	var instance := _a_waiting_robber(t, map, mouth, 40.0)
 	var def := instance.def
 	var start := instance.global_position
-	var down_the_alley := start + d2 * (def.pursues_within - 20.0)
+	var down_the_alley := start + d2 * (def.notice_within() - 20.0)
 	t.check(_sampled_line_is_walkable(map, start, down_the_alley),
 			"down the alley's line, inside his radius, nothing stands between them")
 	instance.player_at = down_the_alley
-	instance._process(STEP)
+	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he notices her there")
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
 			"round the corner the building stands between them")
 	instance.player_at = round_the_corner
-	_advance(instance, def.warns_for + 0.5)
+	_advance(instance, def.pursuit.warns_for + 0.5)
 	t.check(instance.is_telegraphing() and instance.global_position.distance_to(round_the_corner)
-			<= def.pursues_within,
+			<= def.notice_within(),
 			"past his whole warning, inside his radius, he does not charge through the building")
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	instance.player_at = in_the_mouth
@@ -1443,7 +1466,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 			var instance := _a_waiting_robber(t, map, mouth, back)
 			var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 			instance.player_at = her
-			instance._process(STEP)
+			instance.step(STEP)
 			t.check(not instance.is_waiting(), "%dpx in: he notices her in the mouth" % int(back))
 			var speed := 0.0
 			var elapsed := 0.0
@@ -1452,10 +1475,10 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 			while elapsed < 8.0 and not caught and not instance.is_finished:
 				if answer == "run" and elapsed >= 0.3:
 					speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
-				her += EventInstance.walkable_step_on(map, her, d1 * speed * STEP)
+				her += Navigator.new(map).step(her, d1 * speed * STEP, Mover.lattice())
 				instance.player_at = her
 				instance.player_running = speed > Tuning.WALK_SPEED
-				instance._process(STEP)
+				instance.step(STEP)
 				elapsed += STEP
 				charged = charged or instance.is_chasing()
 				caught = instance.is_lethal_at(her)
@@ -1474,10 +1497,10 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 ## The robber waits in the alley 20, 40, 60 and 90px back from the mouth; she walks along the
 ## sidewalk toward it at `WALK_SPEED`, 14px off the building's face, and on past. The building hides
 ## her until she is nearly at the mouth, so he notices her only once the line between them is clear;
-## where he charges, it is no sooner than his whole warning (`EventDef.warns_for`) after he noticed
-## her, she still inside his radius; where she walks out of his radius first, he never charges and
-## waits again; the print says how many depths charge. And he never catches her through the
-## corner: every frame that catches has a clear sampled line.
+## where he charges, it is no sooner than his whole warning (`PursuitSpec.warns_for`) after he
+## noticed her, she still inside his radius; where she walks out of his radius first, he never
+## charges and waits again; the print says how many depths charge. And he never catches her
+## through the corner: every frame that catches has a clear sampled line.
 func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var map := _map()
 	var mouth := _an_alley_mouth(map)
@@ -1489,8 +1512,8 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var charged := 0
 	for back in [20.0, 40.0, 60.0, 90.0]:
-		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back)
-		instance._map = map
+		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back, PackedVector2Array(),
+				map)
 		var her := corner - d1 * 300.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 		var elapsed := 0.0
 		var noticed_at := INF
@@ -1503,7 +1526,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 			her += d1 * Tuning.WALK_SPEED * STEP
 			instance.player_at = her
 			var was_waiting := instance.is_waiting()
-			instance._process(STEP)
+			instance.step(STEP)
 			elapsed += STEP
 			if was_waiting and not instance.is_waiting():
 				noticed_at = elapsed
@@ -1524,8 +1547,8 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 					"%dpx in: never charged, he never catches her and waits again" % int(back))
 		else:
 			charged += 1
-			t.check(lunged_at - noticed_at >= def.warns_for - 2.0 * STEP
-					and lunge_range <= def.pursues_within,
+			t.check(lunged_at - noticed_at >= def.pursuit.warns_for - 2.0 * STEP
+					and lunge_range <= def.notice_within(),
 					"%dpx in: he charges %.2fs after he noticed her, his whole warning, she %.0fpx off"
 					% [int(back), lunged_at - noticed_at, lunge_range])
 		t.check(not noticed_through_a_wall,
@@ -1541,27 +1564,27 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 ## the core: not red. Both points sit on a quarter-second step of the projection, so neither answer
 ## depends on where its samples fall.
 func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.HEAT_HUNTS_LEVEL)
-	t.check(hot.pursues and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	t.check(hot.pursuit != null and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
 			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
 			% [hot.lethal_reach(), hot.inner_radius])
 	var instance := _instance(t, hot, Vector2.ZERO)
-	instance.player_at = Vector2(hot.pursues_within - 10.0, 0.0)
-	instance._process(STEP)
+	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "the guard notices her")
 	var heading := instance.facing_now()
-	var ahead := instance.global_position + heading * hot.pursue_speed * 0.5
+	var ahead := instance.global_position + heading * hot.chase_speed() * 0.5
 	var across := heading.orthogonal()
-	t.check(instance.will_be_lethal(ahead + across * 20.0), "his course 20px from her reads red")
-	t.check(not instance.will_be_lethal(ahead + across * 50.0),
+	t.check(instance.excitement.will_be_lethal(ahead + across * 20.0), "his course 20px from her reads red")
+	t.check(not instance.excitement.will_be_lethal(ahead + across * 50.0),
 			"his course 50px from her, beyond his reach, does not")
 	instance.free()
 
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
-## building's face (`_walkable_step`) and catches her only once the line between them clears the
+## building's face (`_step()`) and catches her only once the line between them clears the
 ## building's corner, never through it. Every frame of the chase is checked against a line sampled
-## a quarter pixel at a time, a second answer to the question `_clear_line_to()` asks, so a frame
+## a quarter pixel at a time, a second answer to the question `clear_line_to()` asks, so a frame
 ## that catches through the corner fails it wherever it falls.
 func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
 	var map := _map()
@@ -1584,7 +1607,7 @@ func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
 			caught = true
 			if not _sampled_line_is_walkable(map, instance.global_position, her):
 				through_a_wall += 1
-		instance._process(STEP)
+		instance.step(STEP)
 		elapsed += STEP
 	t.check(caught, "he catches her in the end")
 	t.check(through_a_wall == 0, "and never with the building between them")
@@ -1601,7 +1624,7 @@ func _sampled_line_is_walkable(map: CityMap, from: Vector2, to: Vector2, per_px 
 			return false
 	return true
 
-## **`_clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
+## **`clear_line_to()` against the sampled line, over the real map.** Seeded segments up to a
 ## stand-off long from walkable ground near buildings, in every direction, each answered both by
 ## stepping tile boundaries and by sampling an eighth of a pixel at a time; the two have to agree.
 ## The guard counts how many of them crossed a building, so a sweep that only ever asked open
@@ -1611,8 +1634,8 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 544
 	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO)
-	instance._map = map
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), Vector2.ZERO,
+			PackedVector2Array(), map)
 	var asked := 0
 	var blocked := 0
 	var disagreed := 0
@@ -1628,7 +1651,7 @@ func _test_a_clear_line_is_every_tile_the_line_crosses(t) -> void:
 		asked += 1
 		if not sampled:
 			blocked += 1
-		if instance._clear_line_to(to) != sampled:
+		if instance.clear_line_to(to) != sampled:
 			disagreed += 1
 	t.check(blocked > 40, "the sweep crossed buildings (%d of %d)" % [blocked, asked])
 	t.check(disagreed == 0, "stepping tiles and sampling agree on every line (%d did not)" % disagreed)
@@ -1643,9 +1666,9 @@ func _a_small_map(buildings: Array[Vector2i]) -> CityMap:
 	return map
 
 func _clear_on(t, map: CityMap, from: Vector2, to: Vector2) -> bool:
-	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from)
-	instance._map = map
-	var clear := instance._clear_line_to(to)
+	var instance := _instance(t, EventCatalogue.by_id("alley_robbery"), from,
+			PackedVector2Array(), map)
+	var clear := instance.clear_line_to(to)
 	instance.free()
 	return clear
 

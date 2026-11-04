@@ -77,7 +77,7 @@ class GateState extends RefCounted:
 	## reads it, once a frame, to choose which of the four boom textures to draw.
 	var raised := false
 	## Seconds the car at the front of this gate's queue has been held at the stop line —
-	## `Crowd`'s own clock for `Tuning.GATE_STOP_SECONDS`, reset the moment nobody is held here.
+	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
 	var stopped_for := 0.0
 
 ## One region growth's result: which crossings are wall today and which are doors, plus the
@@ -97,9 +97,9 @@ class RegionPlan extends RefCounted:
 	var alley_doors: Array[Rect2i] = []
 	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the roadblock row, one
 	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
-	## appended to `EventManager._plans` by the caller, rather than merged anywhere: a caller that
-	## only wants to know where the wall runs never has to filter it back out of the day's whole
-	## plan.
+	## appended to the day's plan (`EventManager.plans()`) by the caller, rather than merged
+	## anywhere: a caller that only wants to know where the wall runs never has to filter it back
+	## out of the day's whole plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
 	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
 	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
@@ -209,7 +209,7 @@ static func _area_touch_points(map: CityMap, rect: Rect2i) -> Array:
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		if segment:
 			if not seen_keys.has(segment.key()):
 				seen_keys[segment.key()] = true
@@ -247,8 +247,8 @@ static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-	var segment_a := StreetNetwork.beside_block(block, side_a)
-	var segment_b := StreetNetwork.beside_block(block, side_b)
+	var segment_a := map.network.beside_block(block, side_a)
+	var segment_b := map.network.beside_block(block, side_b)
 	if not segment_a or not segment_b:
 		return []
 	return [segment_a, segment_b, vertical]
@@ -342,7 +342,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var wanted: int = demanded[key]
 		if wanted < 0:
 			continue   # a conflict was recorded; keep the default
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		var ra := region_of_junction(map, segment.a)
 		var rb := region_of_junction(map, segment.b)
 		if ra == wanted:
@@ -363,15 +363,15 @@ static func _demand_ground(demanded: Dictionary, segment: StreetNetwork.Segment,
 
 ## Junction adjacency over real segments only — `absent_segments` is never traversed, so a region
 ## can never grow across ground that is not there to cross. Built fresh per call: this only ever
-## runs once per city, at generation, so caching it the way `StreetNetwork._links()` caches the
-## full lattice would save nothing.
+## runs once per city, at generation, so keeping it the way `StreetNetwork` keeps the full
+## lattice's adjacency would save nothing.
 static func _growth_graph(map: CityMap) -> Array:
 	var total := StreetNetwork.node_total()
 	var adjacency: Array = []
 	adjacency.resize(total)
 	for i in total:
 		adjacency[i] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		var u := StreetNetwork.node_of(segment.a)
@@ -560,7 +560,7 @@ static func ground_region_of(map: CityMap, segment: StreetNetwork.Segment) -> in
 ## run and independent of any day's tree.
 static func boundary_segments(map: CityMap) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if not map.has_street(segment.key()):
 			continue
 		if region_of_junction(map, segment.a) != region_of_junction(map, segment.b):
@@ -610,7 +610,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		return plan
 	for segment in boundary_segments(map):
 		if tree.is_on_the_tree(segment.key()):
-			plan.doors.append(segment)
+			stand_door(map, segment, plan)
 		else:
 			plan.walls.append(segment)
 	for rect in map.alley_rects:
@@ -641,8 +641,6 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var vertical: bool = info[2]
 		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
 		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
-	for segment in plan.doors:
-		_add_door_bodies(map, segment, plan)
 	for rect in plan.alley_doors:
 		_add_alley_door_bodies(map, rect, plan)
 	return plan
@@ -667,7 +665,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## inner one of a mouth's pair stood inside an alley walled at both ends, where she can never
 ## reach — so `EventDef.guard_sides` is set here to the one side that does, the same way
 ## `body.def.solid()` already mutates the fresh duplicate `SealPlanner.alley_mouth_wall()` hands
-## back — with no change to `EventInstance._draw_roadblock()`, which already draws one guard per
+## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 		at_start: bool) -> EventScheduler.Planned:
@@ -677,7 +675,7 @@ static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 	return body
 
 ## Which side of a mouth body's own band is the street side, in `EventDef.guard_sides`'s own `-1`/
-## `+1` reading of `EventInstance._guard_post_offset()`'s `side` — the one this mouth's alone,
+## `+1` reading of `EventFootprints.guard_post_offset()`'s `side` — the one this mouth's alone,
 ## `-1` at the mouth `SealPlanner.alley_mouth_rect()` places at `rect.position` (`at_start`), `+1`
 ## at the one it places at `rect.end - 1`.
 ##
@@ -685,10 +683,10 @@ static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
 ## `rect.position`.** `at_start`'s mouth sits at the low-coordinate end of whichever axis the alley
 ## runs on, so moving further negative from it leaves the rect — the street — and moving positive
 ## enters it — the alley's own inside. The mouth at `rect.end - 1` is the high-coordinate end, so
-## the same two directions swap which one is outside. `_guard_post_offset()`'s own sign convention
-## (`side < 0` is the negative axis direction on both its vertical and broadside branches) agrees
-## with this reading on both axes, so one formula answers a vertical alley's north/south mouths and
-## a horizontal alley's west/east ones alike.
+## the same two directions swap which one is outside. `EventFootprints.guard_post_offset()`'s own sign
+## convention (`side < 0` is the negative axis direction on both its vertical and broadside
+## branches) agrees with this reading on both axes, so one formula answers a vertical alley's
+## north/south mouths and a horizontal alley's west/east ones alike.
 static func _alley_mouth_street_side(at_start: bool) -> int:
 	return -1 if at_start else 1
 
@@ -698,6 +696,14 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 ## she on" without a second lookup — see `EventManager`'s detention teleport.
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
+
+## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its
+## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
+## each of the day's street doors through, and a scene recipe's authored checkpoint
+## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
+static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+	plan.doors.append(segment)
+	_add_door_bodies(map, segment, plan)
 
 ## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
 ## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would

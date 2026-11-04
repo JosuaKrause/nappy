@@ -5,6 +5,12 @@ extends RefCounted
 ## catalogue row now carries, `shape.reach() == obstructs_radius`, checked over the whole
 ## catalogue, every heated copy of every row, and every seal candidate's `sealed_variant()`.
 
+## How far the probe that asks the physics world "is anything solid here" reaches round its point,
+## in px: small enough that a probe a few pixels off a body's edge is clear of it.
+const _PROBE_RADIUS := 0.5
+## How far past an edge (or inside it) a probe stands to be clearly on one side of it, in px.
+const _PROBE_MARGIN := 1.0
+
 func run(t) -> void:
 	_test_reach_and_across(t)
 	_test_distance_to_spine_of_a_point(t)
@@ -15,10 +21,10 @@ func run(t) -> void:
 	_test_every_heated_copy_agrees_with_its_shape(t)
 	_test_every_seal_candidate_agrees_with_its_shape(t)
 	_test_every_spread_row_still_fills_the_pavement_it_blocked(t)
-	_test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t)
+	await _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t)
 	_test_rect_reach_across_and_distance_to_spine(t)
 	_test_rect_collision_shape(t)
-	_test_a_built_building_carries_its_own_footprint_as_its_body(t)
+	await _test_a_built_building_carries_its_own_footprint_as_its_body(t)
 	_test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t)
 	_test_field_distance_of_a_stationary_point_is_unchanged(t)
 	_test_field_distance_of_a_stationary_segment_is_a_capsule(t)
@@ -173,6 +179,20 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t) -> void:
 						Tuning.PLAYER_BODY_RADIUS]))
 	t.check(checked >= 6, "and some spread row actually blocked a pavement to check (%d)" % checked)
 
+# ----------------------------------------------------------------- the world's answer ---
+# What stops a mover is the body the physics world holds, so a body's extent is asked of that world
+# the way the player's own body is stopped by it: a small circle put at a point, asking whether
+# anything solid is there (`PhysicsDirectSpaceState2D.intersect_shape()`). The world takes a body in
+# on the physics tick after it enters the tree, so a caller lets one tick pass first.
+
+func _solid_at(node: Node2D, point: Vector2) -> bool:
+	var probe := CircleShape2D.new()
+	probe.radius = _PROBE_RADIUS
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = probe
+	query.transform = Transform2D(0.0, point)
+	return not node.get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty()
+
 # ------------------------------------------------------------- the hard-seal axis ---
 # `SealPlanner._hard_positions` spaces a hard seal's bodies to cover a street's whole width with no
 # gap, treating each body's own reach as the distance it covers *across* the street — `positions_
@@ -187,7 +207,7 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t) -> void:
 const _HARD_SEAL_SEED := 424242
 
 func _real_segment(map: CityMap, horizontal: bool) -> StreetNetwork.Segment:
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if segment.horizontal == horizontal and map.has_street(segment.key()):
 			return segment
 	return null
@@ -200,6 +220,8 @@ func _along_axis(segment: StreetNetwork.Segment) -> Vector2:
 
 func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 	var map := CityGenerator.generate(_HARD_SEAL_SEED)
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	var def := EventCatalogue.by_id("barricade")
 	t.check(def != null and def.shape != null and def.shape.half_length > 0.0,
 			"'barricade' is a hard seal row whose shape is a real segment, not a point")
@@ -209,38 +231,56 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 				"the map has a real %s street to check" % ("horizontal" if horizontal else "vertical"))
 		if not segment:
 			continue
-		var positions := SealPlanner._hard_positions(map, segment, def)
+		var positions := SealPlanner.positions_across(map.tile_rect_to_world(segment.tile_rect()),
+				segment.horizontal, def.obstructs_radius)
 		t.check(positions.size() > 0, "the seal places at least one body on this street")
 		if positions.is_empty():
 			continue
 		var instance := EventInstance.new()
+		instance.atlas = atlas
 		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT, map)
 		t.add_child(instance)
-		instance.set_process(false)
 
 		var along := _along_axis(segment)
-		var axis := instance._solid_axis()
+		var axis := instance.solid_axis()
 		var street_kind := "horizontal" if horizontal else "vertical"
 		t.check(absf(axis.dot(along)) < 0.05,
-				("on a %s street, _solid_axis() (%s) is perpendicular to the street's own "
+				("on a %s street, solid_axis() (%s) is perpendicular to the street's own "
 						% [street_kind, axis])
 				+ ("direction (%s), not parallel to it — dot %.3f" % [along, axis.dot(along)]))
 
 		t.check(instance.is_solid(), "the hard seal placement actually builds a body")
-		var collision := instance._obstruction.get_child(0) as CollisionShape2D
-		t.check(collision != null and collision.shape is CapsuleShape2D,
-				"'barricade's built body is a CapsuleShape2D, not a CircleShape2D")
-		if collision and collision.shape is CapsuleShape2D:
-			# A capsule's own long axis stands along local Y before any rotation is applied —
-			# `GroundShape.collision_shape()`'s own docstring — so rotating `Vector2.DOWN` by the
-			# body's `rotation` gives the capsule's actual spine direction in world space; it must
-			# line up with `_solid_axis()` (parallel or anti-parallel, since a capsule is symmetric
-			# end to end), not merely be perpendicular to it.
-			var spine := Vector2.DOWN.rotated(collision.rotation)
-			t.check(absf(spine.dot(axis)) > 0.95,
-					("on a %s street, the built capsule's own spine (%s) matches _solid_axis() (%s)"
-							% [street_kind, spine, axis]))
+		await PhysicsTicks.pass_ticks(t, 1)
+		# A capsule's long axis is its reach and its short one is its `across()`, so the body is
+		# what the packing arithmetic needs only if the long axis lies across the street: solid out
+		# to nearly its full reach toward each kerb, and solid only `across()` along the street.
+		var centre := instance.global_position
+		var cross := along.rotated(PI * 0.5)
+		var reach := def.shape.reach()
+		var thickness := def.shape.across()
+		t.check(reach > thickness + 2.0 * _PROBE_MARGIN,
+				"'barricade' reaches further than it is thick (%.1f vs %.1f), so the two axes differ"
+				% [reach, thickness])
+		t.check(_solid_at(instance, centre), "the world holds the body at its own centre")
+		for sign in [-1.0, 1.0]:
+			t.check(_solid_at(instance, centre + cross * sign * (reach - _PROBE_MARGIN)),
+					("on a %s street, the body is solid across the street, %.0fpx toward the "
+							% [street_kind, reach - _PROBE_MARGIN]) + "kerb on one side of it")
+			t.check(not _solid_at(instance, centre + cross * sign * (reach + _PROBE_MARGIN)),
+					"and stops at its reach (%.0fpx) toward that kerb" % reach)
+			t.check(_solid_at(instance, centre + along * sign * (thickness - _PROBE_MARGIN)),
+					("and along the street it is solid within its thickness (%.0fpx)" % thickness))
+			t.check(not _solid_at(instance, centre + along * sign * (thickness + _PROBE_MARGIN)),
+					("and is not solid beyond it along the street, which a disc of its reach "
+							+ "would be (%.0fpx out)") % (thickness + _PROBE_MARGIN))
+			# The corner of the capsule's bounding box lies outside the rounded end, so a body
+			# that is a rectangle of the same extent is solid there and a capsule is not.
+			for side in [-1.0, 1.0]:
+				t.check(not _solid_at(instance, centre + cross * sign * (reach - _PROBE_MARGIN)
+						+ along * side * (thickness - _PROBE_MARGIN)),
+						"and the bounding box's corner is clear: the end is rounded, not square")
 		instance.free()
+	atlas.release(&"events")
 
 # ---------------------------------------------------------------- the rectangle ---
 # A building's footprint is the one shape in the game that is not already a point or a band — see
@@ -289,35 +329,39 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 	var inset_depth := footprint.y - Building.NORTH_EDGE_INSET
 	t.check(is_equal_approx(building.shape.half_extents.y, inset_depth * 0.5),
 			"the north-south half-extent is the footprint's, short by the north edge's own inset")
-	var collision := building._collision
-	t.check(collision != null and collision.shape is RectangleShape2D,
-			"the building's own collision body is a RectangleShape2D")
-	if collision and collision.shape is RectangleShape2D:
-		var size: Vector2 = (collision.shape as RectangleShape2D).size
-		t.check(is_equal_approx(size.x, footprint.x),
-				"full width — the inset is only along the north edge")
-		t.check(is_equal_approx(size.y, inset_depth),
-				"and its depth is the footprint's, less the north edge's own inset")
-	# The lot's own north edge sits at local y = -footprint.y (the node's origin is the south edge
-	# centre); the body's own north edge is `collision.position.y - shape.half_extents.y`.
-	var lot_north_edge_y := -footprint.y
-	var body_north_edge_y := collision.position.y - building.shape.half_extents.y
-	t.check(is_equal_approx(body_north_edge_y - lot_north_edge_y, Building.NORTH_EDGE_INSET),
-			"the body's own north edge is NORTH_EDGE_INSET (%.0fpx) south of the lot's"
-			% Building.NORTH_EDGE_INSET)
-	var body_south_edge_y := collision.position.y + building.shape.half_extents.y
-	t.check(is_equal_approx(body_south_edge_y, 0.0), "the body's own south edge is unchanged")
+	await PhysicsTicks.pass_ticks(t, 1)
+	# The world's answer for the body, asked at probes off each edge: x from the node's centre, y
+	# up from its south edge (negative is north).
+	var half := footprint.x * 0.5
+	var north_edge := -inset_depth
+	var lot_north_edge := -footprint.y
+	t.check(_solid_at(building, Vector2(0.0, -inset_depth * 0.5)), "the world holds the building's body")
+	t.check(_solid_at(building, Vector2(half - _PROBE_MARGIN, -inset_depth * 0.5))
+			and _solid_at(building, Vector2(-half + _PROBE_MARGIN, -inset_depth * 0.5)),
+			"it is solid to the east-west edges of the footprint, the inset leaves them whole")
+	t.check(not _solid_at(building, Vector2(half + _PROBE_MARGIN, -inset_depth * 0.5))
+			and not _solid_at(building, Vector2(-half - _PROBE_MARGIN, -inset_depth * 0.5)),
+			"and no wider than the footprint")
+	t.check(_solid_at(building, Vector2(0.0, -_PROBE_MARGIN)),
+			"it is solid to the south edge, the lot's own kerb")
+	t.check(not _solid_at(building, Vector2(0.0, _PROBE_MARGIN)), "and not past it, so the south edge is unchanged")
+	t.check(_solid_at(building, Vector2(0.0, north_edge + _PROBE_MARGIN)),
+			"it is solid up to NORTH_EDGE_INSET (%.0fpx) short of the lot's north edge" % Building.NORTH_EDGE_INSET)
+	t.check(not _solid_at(building, Vector2(0.0, north_edge - _PROBE_MARGIN)),
+			"and not past that edge")
+	t.check(not _solid_at(building, Vector2(0.0, lot_north_edge + _PROBE_MARGIN)),
+			"so the strip of the lot's north edge, inside the inset, is ground she may step into")
 	building.free()
 
 # -------------------------------------------------------------- the strike box ---
 
 ## `Tuning.CAR_STRIKE_HALF_LENGTH`/`CAR_STRIKE_HALF_WIDTH` is the lethal rectangle
-## `CrowdAgent.will_be_lethal()` reads — a different mechanism from this shape, on the player's own
+## `CrowdExcitement.will_be_lethal()` reads — a different mechanism from this shape, on the player's own
 ## "lethal != noise" — but the noise shape still has to be at least as big as what it stands next
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.
 func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
-	var shape: GroundShape = CrowdAgent._car_shadow_shape()
+	var shape: GroundShape = CarStrategy.shadow_shape()
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
 			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"
 			% [shape.reach(), Tuning.CAR_STRIKE_HALF_LENGTH])
@@ -352,19 +396,19 @@ func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
 			+ "no half_length added, which is the capsule's whole point")
 
 ## M114, the moving field grows forward: the resting disc's own width is what the ellipse keeps
-## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Tuning.field_scale(e)`
+## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Field.scale(e)`
 ## dead ahead, `R/(1+e)` behind, both derived from `GroundShape.eccentric_distance()`'s own
 ## docstring.
 func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
 	var speed := 130.0
-	var e := Tuning.field_eccentricity(speed)
-	var scale := Tuning.field_scale(e)
+	var e := Field.eccentricity(speed)
+	var scale := Field.scale(e)
 	var velocity := Vector2(speed, 0.0)
 	var outer := 100.0
 	var forward_r := outer * scale
 	var forward := Vector2(forward_r, 0.0)
 	t.check(is_equal_approx(GroundShape.eccentric_distance(Vector2.ZERO, velocity, forward), outer),
-			("dead ahead, the level set at 'outer' sits at outer * field_scale(e) (%.1f) — the field "
+			("dead ahead, the level set at 'outer' sits at outer * Field.scale(e) (%.1f) — the field "
 					% forward_r) + "reaches further ahead of itself than it is wide")
 	var rear_r := outer / (1.0 + e)
 	var behind := Vector2(-rear_r, 0.0)
@@ -397,7 +441,7 @@ func _test_forward_reach_grows_monotonically_with_speed(t) -> void:
 	var outer := 120.0
 	var previous := outer
 	for speed in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
-		var scale := Tuning.field_scale(Tuning.field_eccentricity(speed))
+		var scale := Field.scale(Field.eccentricity(speed))
 		var forward_reach := outer * scale
 		t.check(forward_reach >= previous - 0.001,
 				("forward reach at %.0fpx/s (%.1f) is not less than the previous speed's (%.1f) — " % [
@@ -425,7 +469,7 @@ func _test_approaching_costs_more_than_receding(t) -> void:
 ## D2: nobody builds the general capsule-and-ellipse sum, because a moving emitter's field is priced
 ## from its centre as a point (`GroundShape.field_distance()`). That is only true to the row's own
 ## body when the body lies inside its own field's core — the patrol car's 21px capsule inside its
-## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.drives`): the
+## 44px core, `police_patrol` being the one emitting segment that moves (`EventDef.vehicle`): the
 ## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
 ## half-length. A moving segment reaching past its core would quietly drop its own body from its
 ## field — this is the regression guard.
@@ -435,7 +479,7 @@ func _test_no_emitting_segment_row_moves(t) -> void:
 		if def.shape == null or def.shape.kind != GroundShape.Kind.SEGMENT or def.intensity <= 0.0:
 			continue
 		checked += 1
-		if not def.mobile and not def.pursues:
+		if not def.mobile and def.pursuit == null:
 			continue
 		t.check(def.shape.reach() <= def.inner_radius,
 				("'%s' emits, is a segment and moves, so its %.0fpx body must lie inside its %.0fpx "

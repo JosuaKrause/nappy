@@ -18,8 +18,12 @@ func run(t) -> void:
 	var rows: Array = report.samples
 	t.check(rows.size() == 4 and report.dropped_after_capacity == 1,
 		"a full buffer preserves captured frames and counts the omitted tail")
-	t.check(buffer._values.size() == 4 * FrameTraceBuffer.COLUMNS.size(),
-		"overflow never grows storage")
+	var flooded := FrameTraceBuffer.new(4)
+	for i in 60:
+		flooded.append(1000000 + i * 20000, i, i, counters)
+	var flood := flooded.report(60.0)
+	t.check(flood.samples.size() == 4 and flood.dropped_after_capacity == 56,
+		"overflow never grows storage: sixty frames through four cells keep four and count the rest")
 	t.check(rows[1][0] == 1040000 and rows[1][1] == 21 and rows[1][2] == 19,
 		"the slow interval retains its raw timestamp and both engine frame IDs")
 	t.check(rows[1][3] == 40000 and rows[1][5] == 900 and rows[2][5] == 200,
@@ -45,12 +49,6 @@ func run(t) -> void:
 	var empty := FrameTraceBuffer.new(1).report(60.0)
 	t.check(empty.samples.is_empty() and empty.summary.max_ms == 0.0,
 		"a run with no rendered samples explicitly exports an empty report")
-	var main_fields: Array[String] = []
-	for property in (load("res://src/main.gd") as Script).get_script_property_list():
-		main_fields.append(String(property.name))
-	for field in FrameTrace.MAIN_FIELDS:
-		t.check(field in main_fields,
-			"main.gd still has %s, which the frame trace reads by name" % field)
 	var decoded: Dictionary = JSON.parse_string(JSON.stringify(report))
 	t.check(decoded.samples[1][3] == 40000 and decoded.samples[1][5] == 900,
 		"export round trip retains frame attribution")

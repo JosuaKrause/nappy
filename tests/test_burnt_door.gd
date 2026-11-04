@@ -15,12 +15,13 @@ const SEED := 1
 const DAY := 8
 
 func run(t) -> void:
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_state := GameState.city_state
-	var city: City = CITY_SCENE.instantiate()
+	t.gives_back_observers()
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_state := GameState.attempt_spend.city_state
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	var fronts := EventScheduler._open_ground_for(EventCatalogue.by_id("burning_building"),
+	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
 			city.map, {})
 	t.check(not fronts.is_empty(), "the city has fronts a fire can catch on")
 	var held_doors := 0
@@ -30,7 +31,7 @@ func run(t) -> void:
 	var step := maxi(1, fronts.size() / 10)
 	for i in range(0, fronts.size(), step):
 		var shell_at := city.map.tile_to_world(fronts[i])
-		GameState.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
+		GameState.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
 		var director := _task_on_offer(t, city)
 		var door := city.way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
@@ -46,7 +47,7 @@ func run(t) -> void:
 			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
 					and city.map.is_walkable(tile) and not city.map.is_closed(tile) \
 					and not city.map.is_on_home_block(tile) and not city.map.is_obstructed(tile) \
-					and director._reachable_from_home(tile):
+					and director.reaches_from_home(tile):
 				stand_tiles.append(tile)
 		var tip := director.red_arrow_target()
 		if not stand_tiles.is_empty():
@@ -55,12 +56,12 @@ func run(t) -> void:
 					"front %s: the arrow %s ends on the door %s" % [fronts[i], tip, door])
 			t.check(director.contact_position().is_equal_approx(door),
 					"front %s: and the contact stands on it" % fronts[i])
-			t.check(is_equal_approx(director._contact.reach, ResistanceDirector.DOOR_REACH),
+			t.check(is_equal_approx(director.contact().reach, ResistanceDirector.DOOR_REACH),
 					"front %s: touched under the door reach" % fronts[i])
 			# Standing on each tile she can stand on within reach completes it, the side tiles
 			# a door's own frontage tile under a café's tables leaves her too.
 			for tile in stand_tiles:
-				t.check(director._contact.would_complete_at(city.map.tile_to_world(tile)),
+				t.check(director.contact().would_complete_at(city.map.tile_to_world(tile)),
 						"front %s: a touch from the frontage tile %s counts" % [fronts[i], tile])
 			if tile_is_taken(city, frontage):
 				from_the_side += 1
@@ -74,18 +75,18 @@ func run(t) -> void:
 			+ "being taken (%d)" % from_the_side)
 
 	# A run with no recorded scar burns a front for the task, and stands on that building's door too.
-	GameState.scars = []
+	GameState.attempt_spend.scars = []
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
-	if director.current_step() != null and director._rider != null:
-		var door := city.way_in_behind(director._rider.global_position)
+	if director.current_step() != null and director.rider() != null:
+		var door := city.way_in_behind(director.rider().global_position)
 		t.check(door != Vector2.INF and director.red_arrow_target().is_equal_approx(door),
 				"with no recorded scar the arrow %s ends on the burnt building's door %s"
 				% [director.red_arrow_target(), door])
 	director.free()
 
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
+	GameState.attempt_spend.scars = saved_scars
+	GameState.attempt_spend.city_state = saved_state
 	city.free()
 
 ## Whether the frontage tile `tile` cannot be stood on today, whatever the reason.
@@ -94,21 +95,21 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 
 ## Day 8 started through the real order and its mark read, so the task is placed.
 func _task_on_offer(t, city: City) -> ResistanceDirector:
-	GameState.completed_resistance_steps = []
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	GameState.resistance.completed_steps = []
+	GameState.resistance.failed_steps = []
+	GameState.resistance.progress = 0
 	var state := CityState.new()
-	GameState.city_state = state
+	GameState.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng("closures"))
 	var none: Array[String] = []
-	city.events.start_day(DAY, _rng("events"), none, city.map.doorstep_world_position())
+	city.events.start_day(DaySpec.for_day(DAY), _rng("events"), none, city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
 	director.setup(city, city.map)
 	director.start_day(DAY, _rng("resistance"), 300.0)
-	director._on_contact_completed(5)
+	director.contact().complete_now()
 	return director
 
 func _rng(stream: String) -> RandomNumberGenerator:

@@ -26,7 +26,7 @@ never adds one. `EventScheduler`'s one-shot roll is the model:
 var roll := rng.randf()
 var threshold := 1.0 / float(remaining)
 if roll > threshold:
-    Telemetry.note("roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
+    _note(trace, "roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
     continue
 ```
 
@@ -34,8 +34,8 @@ That hoist is a one-line edit with a way to be **catastrophically wrong**: consu
 from a day's RNG and every event placed after it moves, and the determinism invariant takes every
 other guarantee in the game down with it.
 
-`tests/test_telemetry.gd` plans every day of the run (`Tuning.RUN_LENGTH_DAYS`) with the log off and
-again with it on and requires the plans to be **identical event for event**.
+`tests/test_telemetry.gd` plans every day of the run (`Tuning.RUN_LENGTH_DAYS`) handed no trace and
+again handed one that keeps every line, and requires the plans to be **identical event for event**.
 
 ## Per-frame checks go in the observer
 
@@ -52,7 +52,10 @@ front of an unchanged body, and it takes one of two shapes by how often it runs,
 costs with the record off is paid by every player; the scenery queue alone has a third.
 
 A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
-halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own:
+halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own (the
+crowd reads and charges through the `CrowdTiming` sink it is handed, `timing.running()`,
+`timing.enter()`, `timing.leave()`, which `FrameRecordTiming` in `src/telemetry/` forwards to the same
+statics, so `src/crowd/` names none of the record):
 
 ```gdscript
 func _physics_process(delta: float) -> void:
@@ -64,25 +67,30 @@ func _physics_process(delta: float) -> void:
 		_tick_the_crowd(delta)
 ```
 
-A thing timed **once per body per frame** (a crowd agent, a live event) copies the switch when it
-is made and keeps its body where it is, so off it pays one member read: a static read and a second
-call on each of a couple of hundred bodies made every player's frame measurably longer on a desktop
-(docs/evidence/m159-frame-record-2026-10-04/). It is made per day, after the recorder has started:
+A thing timed **once per body per frame** (a live event) copies the switch when it is made, so off
+it pays one member read: a
+static read and a second call on each of a couple of hundred bodies made every player's frame
+measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). It is made per day,
+after the recorder has started. A live event times its drawn frame, its look's redraw gate, with
+no call to itself; its step runs inside the event manager's physics tick, which is timed once:
 
 ```gdscript
 var _timed := FrameRecord.on
-var _timing := false
 
-func _process(delta: float) -> void:
-	if _timed and not _timing and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
-		_timing = true
-		_process(delta)
-		_timing = false
+func _process(_delta: float) -> void:
+	if _timed and FrameRecord.on:
+		var outer := FrameRecord.enter(FrameRecord.EVENTS)
+		look.redraw_if_the_picture_changed()
 		FrameRecord.leave(outer)
 		return
-	# the body, unchanged
+	look.redraw_if_the_picture_changed()
 ```
+
+A step that re-ran itself could not take back what the inner run emitted, which is why a car's
+frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A
+crowd agent is not timed on its own: it steps inside the crowd's physics tick
+(`Crowd._step_the_agents()`), which is timed once, and keeps its `CrowdTiming` only to count its
+draws.
 
 The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
 queue's alone. It reads `FrameRecord.on` once into a local and, under the record, also times what
@@ -95,8 +103,9 @@ and none of it changes what the queue does or in what order. It is not a pattern
 another system.
 
 A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
-a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)`: one
-guarded static read off, one added integer on, never a time (the page's clock steps in 100µs, and a
+a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)` (a
+crowd agent's is `if frame_timing != null and frame_timing.running(): frame_timing.drew()`, through
+the sink it is handed): one guarded read off, one added integer on, never a time (the page's clock steps in 100µs, and a
 `_draw()` is far shorter) and never a branch in the body. It exists because the player asked which
 kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a node's own
 `_draw()` is the only place that is known. A new `_draw()` override in `src/` takes the line with
@@ -107,9 +116,17 @@ beyond the scenery queue's own jobs and the `_draw()` counter, no deferred marke
 scenery queue's, no branch that changes what the body does — and a new timed system takes one of
 the first two shapes, with its bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
 
+## Game logic never names the run log
+
+A system that decides things writes its own account through the `RunTrace` it was handed
+(`src/run_trace.gd`), never `Telemetry` itself: `RunSession` makes the one that writes into the
+log, `main` hands it on, and a component handed none writes nowhere. A day's or a section's start
+and end reach the log as `EventBus` events `RunSession` listens to (docs/TELEMETRY.md, "Who writes
+it"); nothing in the run flow calls the log or the observer inline.
+
 ## Adding an entry
 
-1. `Telemetry.note("kind", "sentence")` where the thing happens.
+1. `trace.note("kind", "sentence")` where the thing happens, on the component's own trace.
 2. A row in the table in `docs/TELEMETRY.md`.
 3. **A kind reused from that table**, not a synonym for one.
 

@@ -38,7 +38,7 @@ func _signature(planned: Array) -> String:
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## Whether a plan's field reaches a rect — mirrors `EventScheduler._reaches_rect`.
 func _reaches(plan, rect: Rect2) -> bool:
@@ -80,15 +80,15 @@ func _test_scheduler_is_deterministic(t) -> void:
 	for day in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
-		var first := EventScheduler.build_day(day, _rng(day), map, consumed_a)
-		var second := EventScheduler.build_day(day, _rng(day), map, consumed_b)
+		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_a)
+		var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_b)
 		t.check(_signature(first) == _signature(second),
 				"day %d replans identically from the same seed" % day)
 
 	var consumed: Array[String] = []
-	var day_one := EventScheduler.build_day(1, _rng(1), map, consumed)
+	var day_one := EventScheduler.build_day(DaySpec.for_day(1), _rng(1), map, consumed)
 	consumed.clear()
-	var day_two := EventScheduler.build_day(2, _rng(2), map, consumed)
+	var day_two := EventScheduler.build_day(DaySpec.for_day(2), _rng(2), map, consumed)
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 func _test_scheduler_respects_placement_and_caps(t) -> void:
@@ -145,7 +145,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 			return rng
 		for day in range(1, 15):
 			var groups := {}
-			for plan in EventScheduler.build_day(day, rng_for.call(day), map, consumed):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map, consumed):
 				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 					continue
 				t.check(int(seen.get(plan.def.id, day)) == day,
@@ -183,7 +183,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(day, rng, map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree):
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -195,21 +195,30 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 
 ## Not the ordinary placement check — `_test_scheduler_respects_placement_and_caps` already holds
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
-## checks is `EventInstance._alley_crossing_path()`'s own reason for existing: that the two-point
-## dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
+## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
+## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
 ## off `CityMap.alley_rects` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
 func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 	var checked := 0
+	var solid := 0
 	for run_seed in [4242, 2102613802, 90210]:
 		var map := CityGenerator.generate(run_seed)
 		for rect: Rect2i in map.alley_rects:
+			# An alley the generator has made solid stays in `alley_rects` (see `SealPlanner`'s
+			# note on `_make_the_pair_solid`) and has no ground to stand on, so a mouse is never
+			# placed in it and the dash it is given there is cut to nothing.
+			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+				solid += 1
+				continue
 			checked += 1
 			var vertical := rect.size.y > rect.size.x
 			var at := map.tile_to_world(rect.position + Vector2i(rect.size.x / 2, rect.size.y / 2))
-			var path := EventInstance._alley_crossing_path(map, at)
+			var path := _dash_of_the_mouse_at(map, at)
 			t.check(path.size() == 2,
 					"seed %d alley %s: the crossing path has exactly two points" % [run_seed, rect])
+			if path.size() < 2:
+				continue
 			var delta: Vector2 = path[1] - path[0]
 			t.check(not is_zero_approx(delta.x) or not is_zero_approx(delta.y),
 					"seed %d alley %s: the crossing path actually moves" % [run_seed, rect])
@@ -230,18 +239,29 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 						and point.y >= world_rect.position.y and point.y <= world_rect.end.y,
 						"seed %d alley %s: the dash stays inside the alley it crosses" % [run_seed, rect])
 	t.check(checked > 0, "some seed generated an alley to check (%d)" % checked)
+	t.check(checked > 10 * solid,
+			"and the alleys passed over as solid are a few (%d of %d)" % [solid, checked + solid])
+
+## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.path`, which the
+## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
+func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	var path := instance.path
+	instance.free()
+	return path
 
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
 ## a row that started telegraphing the moment it existed dashed and finished off screen before she
-## ever walked into the alley — nothing happened, from where she was standing. `pursues_within`
-## without `pursues` (`EventDef.pursues_within`'s own note, `EventInstance._check_for_notice()`) is
+## ever walked into the alley — nothing happened, from where she was standing. `EventDef.notice`
+## without `EventDef.pursuit` (`EventDef.notice`'s own note, `EventNoticeRun`) is
 ## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
 ## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
 ## isolation.
 func _test_the_mouse_waits_until_she_is_near(t) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
-	t.check(def.pursues_within > 0.0 and not def.pursues,
+	t.check(def.notice_within() > 0.0 and def.pursuit == null,
 			"alley_mouse waits like a pursuer without becoming one")
 
 	var map: CityMap
@@ -264,7 +284,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 
 	# Far away — well past the trigger, and past where `EventManager` actually streams a `MAP` row
 	# in from (`EVENT_STREAM_RADIUS`, 900px).
-	instance.player_at = at + Vector2(def.pursues_within + 400.0, 0.0)
+	instance.player_at = at + Vector2(def.notice_within() + 400.0, 0.0)
 	_advance(instance, 5.0)
 	t.check(instance.is_waiting(), "far away, it is still only waiting several seconds later")
 	t.check(not instance.is_telegraphing(), "and has not started telegraphing")
@@ -272,8 +292,8 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 	t.check(not instance.is_finished, "and has not finished")
 
 	# She steps inside the trigger: the notice, and the clock, start now.
-	instance.player_at = at + Vector2(def.pursues_within - 10.0, 0.0)
-	instance._process(STEP)
+	instance.player_at = at + Vector2(def.notice_within() - 10.0, 0.0)
+	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she notices it")
 	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")
 
@@ -370,7 +390,7 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 			if Tuning.act_for_day(day) != act:
 				act = Tuning.act_for_day(day)
 				used_this_act = []
-			var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [],
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [],
 					used_this_act)
 			for block in map.calm_blocks:
 				if used_this_act.has(block):
@@ -388,28 +408,28 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 
 func _test_successors_resolve(t) -> void:
 	for def in EventCatalogue.all():
-		if def.spawns_on_finish == "":
+		if def.aftermath.on_finish == "":
 			continue
-		t.check(EventCatalogue.by_id(def.spawns_on_finish) != null,
+		t.check(EventCatalogue.by_id(def.aftermath.on_finish) != null,
 				"'%s' spawns '%s', which exists in the catalogue"
-				% [def.id, def.spawns_on_finish])
+				% [def.id, def.aftermath.on_finish])
 
-## The opposite direction: `spawns_on_sight` names what arrives once a row has been seen,
-## `spawns_on_finish`'s own check above, mirrored. `burning_building` is the only row that
+## The opposite direction: `aftermath.on_sight` names what arrives once a row has been seen,
+## `aftermath.on_finish`'s own check above, mirrored. `burning_building` is the only row that
 ## carries one today.
 func _test_sighted_successors_resolve(t) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
-		if def.spawns_on_sight == "":
+		if def.aftermath.on_sight == "":
 			continue
 		checked += 1
-		t.check(EventCatalogue.by_id(def.spawns_on_sight) != null,
+		t.check(EventCatalogue.by_id(def.aftermath.on_sight) != null,
 				"'%s' summons '%s' on sight, which exists in the catalogue"
-				% [def.id, def.spawns_on_sight])
-	t.check(checked > 0, "there is at least one row with a spawns_on_sight ('burning_building')")
+				% [def.id, def.aftermath.on_sight])
+	t.check(checked > 0, "there is at least one row with an aftermath.on_sight ('burning_building')")
 
-## It has no scheduled day at all, so nothing but `EventManager._summon_the_sighted_row()` can
-## put one in the world — see `EventDef.spawns_on_sight` on `burning_building`.
+## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
+## put one in the world — see `EventDef.aftermath.on_sight` on `burning_building`.
 func _test_fire_truck_is_never_scheduled(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
@@ -422,7 +442,7 @@ func _test_fire_truck_is_never_scheduled(t) -> void:
 ## (`ResistanceDirector.NOTICE_RADIUS`'s own reasoning), so she may be anywhere from the kerb the
 ## engine stops at to that far up its street. From each such point, standing still, the engine's
 ## warning is walked the way `EventManager` runs it: its place is the one
-## `PendingWarning.on_its_route()` gives (what `EventManager._summon_the_sighted_row()` hands the
+## `PendingWarning.on_its_route()` gives (what `EventSpawner._summon_the_sighted_row()` hands the
 ## warning), and the engine is created there with its telegraph spent, as `spawn_warned()` does.
 ## What holds: the place is up the road from the kerb and wholly out of sight when it is created, its
 ## badge alone was at most `Tuning.WARNING_ALONE_MAX`, and **from the badge to the earliest its field
@@ -468,12 +488,13 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			wrong.append("its badge was up alone %.2fs" % warning.shown)
 		elif (place - kerb).dot(travel) >= 0.0:
 			wrong.append("created at the kerb or past it at %v" % place)
-		elif not PendingWarning.is_out_of_sight(VisibleView.around(her), truck, her, place):
+		elif not SpawnSiting.is_out_of_sight(VisibleView.around(her, null),
+				EventFootprints.footprint_of(truck), her, place):
 			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
-		while engine.contribution_at(her) <= 0.0 and to_reach < 10.0:
+		while engine.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
 			engine.player_at = her
-			engine._process(STEP)
+			engine.step(STEP)
 			to_reach += STEP
 		var badge_to_reach := warning.shown + to_reach
 		if badge_to_reach + 0.001 < truck.minimum_telegraph():
@@ -516,7 +537,7 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
 
 ## How far the share of the fill's walls a day keeps from the gatehouse day on may sit from
-## `Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: a couple of hundred
+## `EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: a couple of hundred
 ## rolls, so a share honoured by the roll lands well
 ## inside it (about five standard deviations) and one not honoured at all, every wall kept or none,
 ## lands far outside it.
@@ -590,6 +611,6 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 				% [day, removed.size(), back])
 	t.check(walls > 0, "the days from the gatehouse day had walls to thin (%d)" % walls)
 	var share := float(kept) / maxf(1.0, float(walls))
-	t.check(absf(share - Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
+	t.check(absf(share - EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
 			"from the gatehouse day the fill keeps %.2f of its walls (%d of %d); the share asked "
-			% [share, kept, walls] + "for is %.2f" % Tuning.GATEHOUSE_DAY_WALL_ROW_SHARE)
+			% [share, kept, walls] + "for is %.2f" % EventScheduler.GATEHOUSE_DAY_WALL_ROW_SHARE)

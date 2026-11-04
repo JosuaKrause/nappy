@@ -50,8 +50,14 @@ output="$(cd "$(dirname "$output")" && pwd)/$(basename "$output")"
 cd "$root"
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
 source "$root/tools/lib_dev_flags.sh"
+PROJECT_DIR="$root"
+# project.godot and docs/ARCHITECTURE.md have been found rewritten after tools that run Godot; this
+# reverts such a rewrite on exit and keeps a deliberate edit (tools/lib_import_restore.sh).
+# shellcheck source=tools/lib_import_restore.sh
+source "$PROJECT_DIR/tools/lib_import_restore.sh"
+import_restore_arm "$PROJECT_DIR"
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
+trap 'rm -rf "$work"; import_restore_run' EXIT
 cp "$recipe" "$work/input.json"
 # Each round drafts from the input, then plays the draft as the scene it is: a body the scene puts to
 # wait on ground the stretch cut off (the manifest's `in_the_void`) has its tile added to the input's

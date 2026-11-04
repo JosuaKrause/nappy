@@ -12,39 +12,43 @@ extends RefCounted
 ## *(`docs/TODO.md`, M87, "No rig can drive a heading that is not an axis": a heading is now an
 ## arbitrary unit vector, `TouchControls.heading_to()`'s own answer, and `1s5e`'s letters can only
 ## ever name four of them. `3@45@` presses `move_left`/`move_right` and `move_up`/`move_down`
-## through `TouchControls._set_axis()` at the bearing's own fractional strength — the same call
+## through `TouchControls.set_axis()` at the bearing's own fractional strength — the same call
 ## the real touch scheme presses through — so the vector stays unit length and the rig still
 ## walks at `Tuning.WALK_SPEED` like every other press. The letters are shorthand for four
 ## particular bearings now, not a second mechanism.)*
 ##
-## `_ready()` never runs on a script-only instance — the node is never added to a tree here — so
-## this calls it and `_process()` by hand, the way `tests/test_main.gd` already reaches past
-## `_ready()` for `main.gd`. Every test releases whatever it pressed, since `Input`'s polled state
-## is global and outlives the node that set it.
+## The rig is built the way `main` builds it, by `AutoScreenshot.from_config()` from the words a
+## player types (`RunConfig.parse()`), and handed a clock the suite moves (`simulation_clock`, the
+## one a scene recipe hands its screenshot). It stands in the tree, so its own `_ready()` and
+## `_process()` run on real frames, and what a word of the script means is read off what the rig
+## presses on `Input` at a time on that clock. Every test releases whatever it pressed, since
+## `Input`'s polled state is global and outlives the node that set it.
 
 func run(t) -> void:
-	_test_a_bare_direction_is_unaffected(t)
-	_test_a_script_parses_into_timed_steps(t)
-	_test_an_angled_step_parses_its_own_bearing(t)
-	_test_letters_are_shorthand_for_four_bearings(t)
-	_test_a_malformed_script_parses_to_nothing(t)
-	_test_a_script_can_mix_letters_and_angles(t)
-	_test_a_decimal_duration_parses_a_fractional_second(t)
-	_test_a_second_decimal_point_is_malformed(t)
-	_test_the_stand_still_letter_presses_nothing(t)
-	_test_an_uppercase_letter_marks_a_running_step(t)
-	_test_a_script_presses_one_action_at_a_time_in_order(t)
-	_test_a_running_step_presses_and_releases_the_run_action(t)
-	_test_a_stand_still_step_presses_nothing_and_releases_nothing(t)
-	_test_an_angled_step_presses_both_axes_at_fractional_strength(t)
-	_test_an_angled_step_releases_both_axes_when_it_ends(t)
-	_test_a_script_lets_go_of_the_last_action_when_it_ends(t)
-	_test_a_pursuit_stops_the_script_from_resuming(t)
-	_test_a_pursuit_reverses_an_angled_step_too(t)
+	await _test_a_bare_direction_is_held_for_the_whole_run(t)
+	await _test_a_script_runs_in_timed_steps(t)
+	await _test_an_angled_step_presses_its_own_bearing(t)
+	await _test_letters_are_shorthand_for_four_bearings(t)
+	await _test_a_malformed_script_presses_nothing(t)
+	await _test_a_script_can_mix_letters_and_angles(t)
+	await _test_a_decimal_duration_runs_a_fractional_second(t)
+	await _test_a_second_decimal_point_is_malformed(t)
+	await _test_the_stand_still_letter_presses_nothing(t)
+	await _test_an_uppercase_letter_marks_a_running_step(t)
+	await _test_a_script_presses_one_action_at_a_time_in_order(t)
+	await _test_a_running_step_presses_and_releases_the_run_action(t)
+	await _test_a_stand_still_step_presses_nothing_and_releases_nothing(t)
+	await _test_an_angled_step_presses_both_axes_at_fractional_strength(t)
+	await _test_an_angled_step_releases_both_axes_when_it_ends(t)
+	await _test_a_script_lets_go_of_the_last_action_when_it_ends(t)
+	await _test_a_pursuit_stops_the_script_from_resuming(t)
+	await _test_a_pursuit_reverses_an_angled_step_too(t)
 	_test_a_headless_run_has_nothing_to_photograph(t)
 	_test_the_scan_finds_a_bare_wait_on_the_render_loop(t)
 	_test_only_a_covered_recording_needs_an_on_demand_frame(t)
 	_test_no_capture_under_src_waits_on_the_render_loop_alone(t)
+
+const UI := preload("res://tests/ui_screens.gd")
 
 # --------------------------------------------------------------- photographing ---
 
@@ -65,205 +69,257 @@ func _test_a_headless_run_has_nothing_to_photograph(t) -> void:
 	t.check(not AutoScreenshot.can_photograph(DisplayServer.get_name()),
 			"and this suite is itself headless, which is why the name is a parameter")
 
+# ------------------------------------------------------------------ the rig ---
+
+const _MOVES: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"move_down"]
+
+## A rig for the words a player types after `--walk` (and `--flee`), built by the game's own
+## `from_config()` and standing in the tree on `clock`. `--after 600` keeps it from ever reaching
+## its capture, which quits a headless process.
+func _rig(t, clock, words: Array, flee := false) -> AutoScreenshot:
+	var args := ["--screenshot", "scratch_unused.png", "--after", "600", "--walk"] + words
+	if flee:
+		args.append("--flee")
+	var node := AutoScreenshot.from_config(RunConfig.parse(PackedStringArray(args), "", true))
+	node.simulation_clock = clock.read
+	t.add_child(node)
+	return node
+
+## Moves the clock to `seconds` and lets the rig's frames read it.
+func _at(t, clock, seconds: float) -> void:
+	clock.now = seconds
+	await UI.frames(t)
+
+## The strength each move action is pressed at, left, right, up, down.
+func _strengths() -> Array[float]:
+	var found: Array[float] = []
+	for action in _MOVES:
+		found.append(Input.get_action_strength(action))
+	return found
+
+func _strengths_are(left: float, right: float, up: float, down: float) -> bool:
+	var found := _strengths()
+	return is_equal_approx(found[0], left) and is_equal_approx(found[1], right) \
+			and is_equal_approx(found[2], up) and is_equal_approx(found[3], down)
+
+func _nothing_pressed() -> bool:
+	return _strengths_are(0.0, 0.0, 0.0, 0.0)
+
+func _let_go(rig: Node) -> void:
+	rig.free()
+	for action in _MOVES:
+		Input.action_release(action)
+	Input.action_release(&"run")
+
 # ------------------------------------------------------------------- parsing ---
 
-## `1s5e|north` etc. still means exactly what it always meant: held for the whole run, and never
-## routed through `_parse_script` at all — `from_command_line` checks `_DIRECTIONS` first.
-func _test_a_bare_direction_is_unaffected(t) -> void:
-	t.check(AutoScreenshot._DIRECTIONS.has("north"), "a direction word is still in the old table")
-	t.check(AutoScreenshot._parse_script("north").is_empty(),
-			"and read as a script it is not a run of <seconds><letter> pairs, so it parses to nothing")
+## `--walk north` still means exactly what it always meant: held for the whole run, and never
+## routed through the script's parsing at all.
+func _test_a_bare_direction_is_held_for_the_whole_run(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["north"])
+	t.check(Input.is_action_pressed("move_up"), "a direction word presses its action at once")
+	await _at(t, clock, 59.0)
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"and still holds it a minute in, as one key held down")
+	_let_go(rig)
 
-## The player's own example, and the one named in `docs/TODO.md`. Asserted on `direction` rather
-## than an action name — `docs/TODO.md`'s own words are "the letters become shorthand for four
-## particular bearings rather than a separate mechanism" — but the resulting press is bit-for-bit
-## what the old `"action"`-keyed shape produced; see `_test_a_script_presses_one_action_at_a_time_in_order`.
-func _test_a_script_parses_into_timed_steps(t) -> void:
-	var steps := AutoScreenshot._parse_script("1s5e")
-	t.check(steps.size() == 2, "1s5e is two steps (got %d)" % steps.size())
-	if steps.size() != 2:
-		return
-	t.check(steps[0]["direction"] == Vector2.DOWN and is_equal_approx(steps[0]["seconds"], 1.0),
-			"one second of south (got %s)" % steps[0])
-	t.check(steps[1]["direction"] == Vector2.RIGHT and is_equal_approx(steps[1]["seconds"], 5.0),
-			"then five of east (got %s)" % steps[1])
+## The player's own example, and the one named in `docs/TODO.md`: one second of south then five of
+## east, read left to right. The resulting press is bit-for-bit what the old `"action"`-keyed shape
+## produced; see `_test_a_script_presses_one_action_at_a_time_in_order`.
+func _test_a_script_runs_in_timed_steps(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1s5e"])
+	await _at(t, clock, 0.5)
+	t.check(_strengths_are(0.0, 0.0, 0.0, 1.0),
+			"one second of south (got %s)" % [_strengths()])
+	await _at(t, clock, 3.0)
+	t.check(_strengths_are(0.0, 1.0, 0.0, 0.0),
+			"then east, at 3s, well within its five (got %s)" % [_strengths()])
+	await _at(t, clock, 5.9)
+	t.check(Input.is_action_pressed("move_right"), "still east at 5.9s, short of the six it ends at")
+	await _at(t, clock, 6.1)
+	t.check(_nothing_pressed(), "and nothing pressed once the five seconds of east are up")
+	_let_go(rig)
 
 ## `3@45@2e` is the syntax `docs/TODO.md` asks for: a duration and a bearing in degrees between a
 ## pair of `@`s, coexisting with `<seconds><letter>` in the same script — the closing `@` is what
 ## stops a bearing's own digits from swallowing the next step's, the way a letter already ends a
 ## step's digits without any separator at all.
-func _test_an_angled_step_parses_its_own_bearing(t) -> void:
-	var steps := AutoScreenshot._parse_script("3@45@2e")
-	t.check(steps.size() == 2, "3@45@2e is two steps (got %d)" % steps.size())
-	if steps.size() != 2:
-		return
-	t.check(is_equal_approx(steps[0]["seconds"], 3.0), "three seconds at the angle (got %s)" % steps[0])
-	# The convention `TelemetryLog.compass()` reads a bearing back with: +y is south, so 0° is
+func _test_an_angled_step_presses_its_own_bearing(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["3@45@2e"])
+	await _at(t, clock, 1.0)
+	# The convention `RunTrace.compass()` reads a bearing back with: +y is south, so 0° is
 	# north, 90° is east and a bearing runs clockwise between them.
 	var expected := Vector2(sin(deg_to_rad(45.0)), -cos(deg_to_rad(45.0)))
-	t.check(steps[0]["direction"].is_equal_approx(expected),
-			"45° parses to the same vector TelemetryLog.compass() would read 45° back off (got %s)"
-			% steps[0]["direction"])
-	t.check(is_equal_approx(steps[0]["direction"].length(), 1.0),
-			"and the parsed direction is unit length (got %.6f)" % steps[0]["direction"].length())
-	t.check(steps[1]["direction"] == Vector2.RIGHT and is_equal_approx(steps[1]["seconds"], 2.0),
+	var pressed := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	t.check(pressed.is_equal_approx(expected),
+			"45° presses the vector RunTrace.compass() would read 45° back off (got %s)" % pressed)
+	t.check(is_equal_approx(pressed.length(), 1.0),
+			"and the pressed direction is unit length (got %.6f)" % pressed.length())
+	await _at(t, clock, 3.5)
+	t.check(_strengths_are(0.0, 1.0, 0.0, 0.0),
 			"then two seconds east — the old vocabulary unaffected by the new step beside it (got %s)"
-			% steps[1])
+			% [_strengths()])
+	await _at(t, clock, 5.5)
+	t.check(_nothing_pressed(), "and nothing once both steps are over")
+	_let_go(rig)
 
 ## *(`docs/TODO.md`: "The letters become shorthand for four particular bearings rather than a
-## separate mechanism.")* Asserted directly: a lettered step's own direction is exactly the vector
-## the matching bearing would parse to, not a value a different code path happens to agree with.
+## separate mechanism.")* Asserted directly: a lettered step presses exactly what the matching
+## bearing presses, not a value a different code path happens to agree with.
 func _test_letters_are_shorthand_for_four_bearings(t) -> void:
 	var by_letter := {"n": 0.0, "s": 180.0, "e": 90.0, "w": 270.0}
 	for letter: String in by_letter:
-		var from_letter: Vector2 = AutoScreenshot._LETTERS[letter]
-		var from_bearing: Vector2 = AutoScreenshot._bearing_to_direction(by_letter[letter])
-		t.check(from_letter.is_equal_approx(from_bearing),
+		var clock := UI.FakeClock.new()
+		var rig := _rig(t, clock, ["1" + letter])
+		var from_letter := _strengths()
+		_let_go(rig)
+		rig = _rig(t, clock, ["1@%d@" % int(by_letter[letter])])
+		var from_bearing := _strengths()
+		_let_go(rig)
+		var same := true
+		for i in from_letter.size():
+			same = same and is_equal_approx(from_letter[i], from_bearing[i])
+		t.check(same and from_letter.max() == 1.0,
 				"'%s' is shorthand for %.0f° (got %s vs %s)"
 				% [letter, by_letter[letter], from_letter, from_bearing])
 
-## Four ways to be malformed, and all of them fail the whole script rather than skipping one step —
+## Seven ways to be malformed, and all of them fail the whole script rather than skipping one step —
 ## a script that silently drops a bad step walks a different route than the one asked for, which is
-## exactly what determinism exists to rule out. The last three are the angled step's own ways.
-func _test_a_malformed_script_parses_to_nothing(t) -> void:
-	t.check(AutoScreenshot._parse_script("").is_empty(), "the empty string is not a script")
-	t.check(AutoScreenshot._parse_script("5").is_empty(),
-			"a number with nothing after it has no direction to press")
-	t.check(AutoScreenshot._parse_script("5x").is_empty(),
-			"an unknown letter is not one of the walk directions")
-	t.check(AutoScreenshot._parse_script("0s").is_empty(),
-			"a zero-second step presses nothing for no time, which is not a step")
-	t.check(AutoScreenshot._parse_script("3@").is_empty(),
-			"an '@' with no digits after it has no bearing to read")
-	t.check(AutoScreenshot._parse_script("3@45").is_empty(),
-			"an '@' with no closing '@' would swallow whatever comes after it as more bearing")
-	t.check(AutoScreenshot._parse_script("3@x@").is_empty(),
-			"a non-digit between the '@'s is not a bearing either")
-
-## The three shapes M204 (the trailer) added to the walk script, so a shot's path can turn on a
-## street rather than only on a whole second: a decimal duration, `p` standing still, and an
-## uppercase letter running instead of walking. See `_parse_script()`'s own doc for why each exists.
-
-## `1.7w` — a duration may carry a decimal point, since a whole second is 92px of street and a
-## turn wants finer placing than that.
-func _test_a_decimal_duration_parses_a_fractional_second(t) -> void:
-	var steps := AutoScreenshot._parse_script("1.7w")
-	t.check(steps.size() == 1, "1.7w is one step (got %d)" % steps.size())
-	if steps.size() != 1:
-		return
-	t.check(steps[0]["direction"] == Vector2.LEFT and is_equal_approx(steps[0]["seconds"], 1.7),
-			"1.7 seconds west (got %s)" % steps[0])
-
-## A second decimal point in the same duration is malformed, the same as every other way a step can
-## fail to parse — the whole script refuses rather than guessing which point was meant.
-func _test_a_second_decimal_point_is_malformed(t) -> void:
-	t.check(AutoScreenshot._parse_script("1.5.5s").is_empty(),
-			"a duration with two decimal points has no single number to read")
-
-## `0.6p` — she stops, sees the wrong street for what it is, and turns, with nothing pressed, the
-## same as a player letting go. `direction` is `Vector2.ZERO` rather than a fifth vocabulary word,
-## so the same `_hold_direction()`/`_release_direction()` pair a lettered step uses presses nothing
-## for it.
-func _test_the_stand_still_letter_presses_nothing(t) -> void:
-	var steps := AutoScreenshot._parse_script("0.6p")
-	t.check(steps.size() == 1, "0.6p is one step (got %d)" % steps.size())
-	if steps.size() != 1:
-		return
-	t.check(steps[0]["direction"] == Vector2.ZERO and is_equal_approx(steps[0]["seconds"], 0.6),
-			"0.6 seconds standing still (got %s)" % steps[0])
-
-## `2S` — that direction at a run, `run` marked on the step so `_start_step()` holds the `run`
-## action for its duration. The lower-case letter beside it stays a walk, so the same script can
-## mix the two.
-func _test_an_uppercase_letter_marks_a_running_step(t) -> void:
-	var steps := AutoScreenshot._parse_script("2S3e")
-	t.check(steps.size() == 2, "2S3e is two steps (got %d)" % steps.size())
-	if steps.size() != 2:
-		return
-	t.check(steps[0]["direction"] == Vector2.DOWN and is_equal_approx(steps[0]["seconds"], 2.0)
-			and bool(steps[0].get("run", false)),
-			"two seconds south at a run (got %s)" % steps[0])
-	t.check(steps[1]["direction"] == Vector2.RIGHT and not bool(steps[1].get("run", false)),
-			"then three seconds east at a walk — the lower-case letter beside it unaffected (got %s)"
-			% steps[1])
+## exactly what determinism exists to rule out. The last three are the angled step's own ways. A
+## script that parsed to nothing presses nothing.
+func _test_a_malformed_script_presses_nothing(t) -> void:
+	var cases := {
+		"": "the empty string is not a script",
+		"5": "a number with nothing after it has no direction to press",
+		"5x": "an unknown letter is not one of the walk directions",
+		"0s": "a zero-second step presses nothing for no time, which is not a step",
+		"3@": "an '@' with no digits after it has no bearing to read",
+		"3@45": "an '@' with no closing '@' would swallow whatever comes after it as more bearing",
+		"3@x@": "a non-digit between the '@'s is not a bearing either",
+	}
+	for word: String in cases:
+		var clock := UI.FakeClock.new()
+		var rig := _rig(t, clock, [word])
+		var at_once := _nothing_pressed()
+		await _at(t, clock, 0.5)
+		t.check(at_once and _nothing_pressed(), cases[word])
+		_let_go(rig)
 
 ## A script can mix the old vocabulary and the new one in the same string, in the same
 ## left-to-right order — `docs/TODO.md`'s own requirement for where the angled step lands.
 func _test_a_script_can_mix_letters_and_angles(t) -> void:
-	var steps := AutoScreenshot._parse_script("1s3@45@2e")
-	t.check(steps.size() == 3, "one lettered step, one angled step, one lettered step (got %d)"
-			% steps.size())
-	if steps.size() != 3:
-		return
-	t.check(steps[0]["direction"] == Vector2.DOWN, "the lettered step first")
-	t.check(is_equal_approx(steps[1]["direction"].length(), 1.0)
-			and not steps[1]["direction"].is_equal_approx(Vector2.DOWN),
-			"the angled step in the middle, its own bearing rather than an axis")
-	t.check(steps[2]["direction"] == Vector2.RIGHT, "and the lettered step after it, unaffected")
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1s3@45@2e"])
+	await _at(t, clock, 0.5)
+	t.check(_strengths_are(0.0, 0.0, 0.0, 1.0), "the lettered step first")
+	await _at(t, clock, 2.0)
+	var pressed := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	t.check(is_equal_approx(pressed.length(), 1.0) and not pressed.is_equal_approx(Vector2.DOWN)
+			and not Input.is_action_pressed("move_down"),
+			"the angled step in the middle, its own bearing rather than an axis (got %s)" % pressed)
+	await _at(t, clock, 4.5)
+	t.check(_strengths_are(0.0, 1.0, 0.0, 0.0),
+			"and the lettered step after it, unaffected")
+	_let_go(rig)
+
+## The three shapes M204 (the trailer) added to the walk script, so a shot's path can turn on a
+## street rather than only on a whole second: a decimal duration, `p` standing still, and an
+## uppercase letter running instead of walking.
+
+## `1.7w` — a duration may carry a decimal point, since a whole second is 92px of street and a
+## turn wants finer placing than that.
+func _test_a_decimal_duration_runs_a_fractional_second(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1.7w"])
+	await _at(t, clock, 1.6)
+	t.check(_strengths_are(1.0, 0.0, 0.0, 0.0),
+			"west at 1.6s, within its 1.7 (got %s)" % [_strengths()])
+	await _at(t, clock, 1.8)
+	t.check(_nothing_pressed(), "and let go at 1.8s, past them")
+	_let_go(rig)
+
+## A second decimal point in the same duration is malformed, the same as every other way a step can
+## fail to parse — the whole script refuses rather than guessing which point was meant.
+func _test_a_second_decimal_point_is_malformed(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1.5.5s"])
+	var at_once := _nothing_pressed()
+	await _at(t, clock, 0.5)
+	t.check(at_once and _nothing_pressed(), "a duration with two decimal points has no single number to read")
+	_let_go(rig)
+
+## `0.6p` — she stops, sees the wrong street for what it is, and turns, with nothing pressed, the
+## same as a player letting go.
+func _test_the_stand_still_letter_presses_nothing(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["0.6p"])
+	await _at(t, clock, 0.3)
+	t.check(_nothing_pressed(), "0.6 seconds standing still presses nothing")
+	_let_go(rig)
+
+## `2S` — that direction at a run, the `run` action held for the step. The lower-case letter beside
+## it stays a walk, so the same script can mix the two.
+func _test_an_uppercase_letter_marks_a_running_step(t) -> void:
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["2S3e"])
+	await _at(t, clock, 1.0)
+	t.check(Input.is_action_pressed("move_down") and Input.is_action_pressed("run"),
+			"two seconds south at a run")
+	await _at(t, clock, 3.0)
+	t.check(Input.is_action_pressed("move_right") and not Input.is_action_pressed("run"),
+			"then three seconds east at a walk — the lower-case letter beside it unaffected")
+	_let_go(rig)
 
 # -------------------------------------------------------------------- stepping ---
 
-## A fresh rig ready to run a script, never added to a tree — `_seconds_to_wait` is set high
-## enough that no test here ever reaches `--after` and calls `_capture()`, which quits the process
-## headless rather than photographing it, and would therefore end the suite mid-run.
-func _script_rig(script: String) -> AutoScreenshot:
-	var node := AutoScreenshot.new()
-	node._seconds_to_wait = 60.0
-	node._script = AutoScreenshot._parse_script(script)
-	return node
-
-## `_ready()` presses the first step's direction immediately, the same as a bare direction would —
-## and each step ends by releasing its own press and pressing the next one, never both at once.
+## Each step ends by releasing its own press and pressing the next one, never both at once.
 func _test_a_script_presses_one_action_at_a_time_in_order(t) -> void:
-	var node := _script_rig("1s2e")
-	node._ready()
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1s2e"])
 	t.check(Input.is_action_pressed("move_down"), "the first step is pressed as soon as it is ready")
-	node._process(0.5)
+	await _at(t, clock, 0.5)
 	t.check(Input.is_action_pressed("move_down"),
 			"and still pressed before its second is up (0.5s in)")
 
-	node._process(0.6)
+	await _at(t, clock, 1.1)
 	t.check(not Input.is_action_pressed("move_down"),
 			"the first action lets go once its second is up (1.1s in)")
 	t.check(Input.is_action_pressed("move_right"), "and the second step's action takes over")
-
-	Input.action_release("move_down")
-	Input.action_release("move_right")
-	node.free()
+	_let_go(rig)
 
 ## An uppercase step (`2S`) holds `run` for its own duration and lets go once a walking step
-## follows it — a running step followed by a walking one slows back down rather than running on,
-## the exact behaviour `_advance_script()`'s own doc names.
+## follows it — a running step followed by a walking one slows back down rather than running on.
 func _test_a_running_step_presses_and_releases_the_run_action(t) -> void:
-	var node := _script_rig("2S3e")
-	node._ready()
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["2S3e"])
 	t.check(Input.is_action_pressed("move_down"), "the running step presses its direction")
 	t.check(Input.is_action_pressed("run"), "and holds run for its own duration")
 
-	node._process(2.1)
+	await _at(t, clock, 2.1)
 	t.check(Input.is_action_pressed("move_right"), "the walking step after it takes over")
 	t.check(not Input.is_action_pressed("run"), "and run lets go, since the next step only walks")
+	_let_go(rig)
 
-	Input.action_release("move_down")
-	Input.action_release("move_right")
-	Input.action_release("run")
-	node.free()
+	clock.now = 0.0
+	rig = _rig(t, clock, ["1S"])
+	t.check(Input.is_action_pressed("run"), "a running step that is the last one still runs")
+	await _at(t, clock, 1.1)
+	t.check(not Input.is_action_pressed("run"), "and lets go of run when the script ends")
+	_let_go(rig)
 
-## `0.6p` presses no `move_*` action for its duration — `_hold_direction(Vector2.ZERO)` sets both
-## axes to zero rather than skipping the step, so the release that follows is the same call every
-## other step's end already uses.
+## `0.6p` presses no `move_*` action for its duration — it does not skip the step, so the next one
+## starts when it is over.
 func _test_a_stand_still_step_presses_nothing_and_releases_nothing(t) -> void:
-	var node := _script_rig("0.6p2e")
-	node._ready()
-	t.check(not Input.is_action_pressed("move_down") and not Input.is_action_pressed("move_up")
-			and not Input.is_action_pressed("move_left") and not Input.is_action_pressed("move_right"),
-			"standing still presses no move_* action at all")
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["0.6p2e"])
+	t.check(_nothing_pressed(), "standing still presses no move_* action at all")
 
-	node._process(0.7)
+	await _at(t, clock, 0.7)
 	t.check(Input.is_action_pressed("move_right"), "the step after it takes over as normal")
-
-	Input.action_release("move_right")
-	node.free()
+	_let_go(rig)
 
 ## The trap the milestone is named for: an angled step must press *both* axes, at the bearing's
 ## own fractional strength, not one axis at full strength — a step that pressed a shorter vector
@@ -271,8 +327,8 @@ func _test_a_stand_still_step_presses_nothing_and_releases_nothing(t) -> void:
 ## than the boolean `is_action_pressed()` the other stepping tests use, since strength is exactly
 ## what is being asserted here.
 func _test_an_angled_step_presses_both_axes_at_fractional_strength(t) -> void:
-	var node := _script_rig("3@45@")
-	node._ready()
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["3@45@"])
 	var right := Input.get_action_strength("move_right")
 	var up := Input.get_action_strength("move_up")
 	var down := Input.get_action_strength("move_down")
@@ -285,87 +341,87 @@ func _test_an_angled_step_presses_both_axes_at_fractional_strength(t) -> void:
 	t.check(is_equal_approx(combined.length(), 1.0),
 			"the two fractional presses combine back into a unit vector — must never press a "
 			+ "vector shorter than one (got %.6f)" % combined.length())
+	_let_go(rig)
 
-	Input.action_release("move_right")
-	Input.action_release("move_up")
-	node.free()
-
-## The release path (`_release_direction`) is shared with the lettered steps, so a script ending
-## on an angled one has to let go of both axes just as cleanly as
-## `_test_a_script_lets_go_of_the_last_action_when_it_ends` checks for a lettered one.
+## The release path is shared with the lettered steps, so a script ending on an angled one has to
+## let go of both axes just as cleanly as a lettered one.
 func _test_an_angled_step_releases_both_axes_when_it_ends(t) -> void:
-	var node := _script_rig("1@45@")
-	node._ready()
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1@45@"])
 	t.check(Input.get_action_strength("move_right") > 0.0, "the angle is pressed once ready")
-	node._process(1.1)
+	await _at(t, clock, 1.1)
 	t.check(Input.get_action_strength("move_right") == 0.0
 			and Input.get_action_strength("move_up") == 0.0,
 			"and both axes let go once the one step's second is up")
-
-	Input.action_release("move_right")
-	Input.action_release("move_up")
-	node.free()
+	_let_go(rig)
 
 ## The last step releases its own press rather than leaving it held, since nothing after the
-## script is meant to keep walking — `_advance_script` calls `_release_direction()` once the
-## index runs off the end, and never presses a next step.
+## script is meant to keep walking.
 func _test_a_script_lets_go_of_the_last_action_when_it_ends(t) -> void:
-	var node := _script_rig("1s1e")
-	node._ready()
-	node._process(1.1)
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1s1e"])
+	await _at(t, clock, 1.1)
 	t.check(Input.is_action_pressed("move_right"), "the second and last step is pressed (1.1s in)")
 
-	node._process(1.1)
+	await _at(t, clock, 2.2)
 	t.check(not Input.is_action_pressed("move_right"),
 			"the script lets go of it once the last step's second is up (2.2s in)")
 	t.check(not Input.is_action_pressed("move_down"), "and nothing earlier is still held either")
+	_let_go(rig)
 
-	Input.action_release("move_down")
-	Input.action_release("move_right")
-	node.free()
+# --------------------------------------------------------------------- a pursuit ---
 
-## `_turn_and_run` repurposes `_holding` or `_holding_direction` the instant a pursuit starts, and
-## a script resuming underneath it would fight it for the same pressed axes — so once `_fled` is
-## true the script must stop advancing, whatever `_elapsed` says.
+## A pursuit as the director announces one: an event whose def carries a pursuit, telegraphed on
+## the bus the rig listens to.
+func _telegraph_a_pursuer() -> void:
+	var def := EventDef.new()
+	def.id = "test_pursuer"
+	def.pursuit = PursuitSpec.new()
+	def.telegraph_time = 2.0
+	var instance := EventInstance.new()
+	instance.setup(def, Vector2.ZERO)
+	EventBus.event_telegraphed.emit(instance)
+	instance.free()
+
+## A pursuit repurposes the pressed axes the instant it starts (about-turn, hold run), and a script
+## resuming underneath it would fight it for the same axes — so once the rig has fled, the script
+## stops advancing, whatever the clock says.
 func _test_a_pursuit_stops_the_script_from_resuming(t) -> void:
-	var node := _script_rig("1s1e")
-	node._ready()
-	node._fled = true
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["1s1e"], true)
+	await _at(t, clock, 0.1)
+	_telegraph_a_pursuer()
+	await _at(t, clock, 0.2)
 
-	node._process(5.0)
-	t.check(Input.is_action_pressed("move_down"),
-			"a fled rig never advances past the step it fled during")
+	await _at(t, clock, 5.0)
+	t.check(Input.is_action_pressed("move_up") and not Input.is_action_pressed("move_down"),
+			"a fled rig holds the about-turned step it fled during, and never advances past it")
 	t.check(not Input.is_action_pressed("move_right"),
 			"and never presses a later step's action either")
+	_let_go(rig)
 
-	Input.action_release("move_down")
-	Input.action_release("move_right")
-	node.free()
-
-## A bare direction holds through `_holding`, which `_turn_and_run` already knew how to reverse.
-## Any script step — lettered or angled — holds through `_holding_direction` instead, so without
-## the `elif` in `_turn_and_run` a pursuit starting mid-script would press `run` in whatever
-## direction was already held instead of turning round — the wrong answer to the one encounter
-## with a right one.
+## A bare direction reverses through its one action; any script step — lettered or angled — holds
+## two axes, so a pursuit starting mid-script has to negate those too, or the rig would press `run`
+## in whatever direction was already held instead of turning round — the wrong answer to the one
+## encounter with a right one.
 func _test_a_pursuit_reverses_an_angled_step_too(t) -> void:
-	var node := _script_rig("5@45@")
-	node._ready()
-	var before := node._holding_direction
-	node._turn_and_run()
-	t.check(node._holding_direction.is_equal_approx(-before),
-			"turning round negates the diagonal (got %s from %s)" % [node._holding_direction, before])
+	var clock := UI.FakeClock.new()
+	var rig := _rig(t, clock, ["5@45@"], true)
+	var before := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	await _at(t, clock, 0.1)
+	_telegraph_a_pursuer()
+	await _at(t, clock, 0.2)
+	var after := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	t.check(after.is_equal_approx(-before),
+			"turning round negates the diagonal (got %s from %s)" % [after, before])
 	t.check(Input.is_action_pressed("run"), "and holds run, the same as a bare-direction flee")
-
-	Input.action_release("move_left")
-	Input.action_release("move_down")
-	Input.action_release("run")
-	node.free()
+	_let_go(rig)
 
 # ------------------------------------------------------------ a hidden window ---
 
 ## The line a capture must not wait on by itself: on macOS a window nobody can see is not drawn, so
 ## this signal never comes and the rig ends on its wall-clock limit with no picture.
-## `AutoScreenshot.drawn_frame()` is the wait that draws the frame on demand instead.
+## `DrawnFrame.wait()` is the wait that draws the frame on demand instead.
 const _BARE_RENDER_LOOP_WAIT := "await RenderingServer.frame_post_draw"
 
 ## The lines of `source` that wait on `_BARE_RENDER_LOOP_WAIT`, comments aside. Pure over a string
@@ -409,15 +465,15 @@ func _test_only_a_covered_recording_needs_an_on_demand_frame(t) -> void:
 	t.check(not AutoScreenshot.recording_frame_needs_force(false, false),
 		"covering an ordinary game does not install the movie-writer workaround")
 
-## Every capture under `src/` waits through `drawn_frame()`, so a hidden rig still photographs.
+## Every capture under `src/` waits through `DrawnFrame.wait()`, so a hidden rig still photographs.
 func _test_no_capture_under_src_waits_on_the_render_loop_alone(t) -> void:
 	var scripts := _scripts_under("res://src")
 	t.check(scripts.has("res://src/dev/auto_screenshot.gd"),
 		"there were scripts to scan (%d), the capture's own among them" % scripts.size())
-	t.check(FileAccess.get_file_as_string("res://src/dev/auto_screenshot.gd")
-			.contains("static func drawn_frame("), "the wait a capture uses instead exists")
+	t.check(FileAccess.get_file_as_string("res://src/drawn_frame.gd")
+			.contains("static func wait("), "the wait a capture uses instead exists")
 	for path in scripts:
 		var waits := _bare_render_loop_waits(FileAccess.get_file_as_string(path))
 		t.check(waits.is_empty(),
 			"%s waits on RenderingServer.frame_post_draw alone, which never comes while the " % path
-			+ "window is hidden -- await AutoScreenshot.drawn_frame(get_tree()) instead")
+			+ "window is hidden -- await DrawnFrame.wait(get_tree()) instead")

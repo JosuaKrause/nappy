@@ -5,7 +5,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(CityGenerator.generate(1917501))
 	var rng := RandomNumberGenerator.new()

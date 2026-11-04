@@ -8,10 +8,11 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/plush_moose_arrow_cost.gd      (prints PLUSH_MOOSE lines)
 ##
-## **The rig.** Per seed and day, a real city through the real day order (`CityState.begin_day()`,
-## `City.start_day()`, `EventManager.start_day()`, then the director), the mark read so the task is
-## placed and her route rigged, and the day's longest route walked through
-## `EventManager._site_what_is_on_her_way()` and `_place_what_is_owed_ahead()` until the rigged bag
+## **The rig.** Per seed and day, a real city in a run of its own (`RunCity.with_own_run()`) through
+## the real day order (`CityState.begin_day()`, `City.start_day()`, `EventManager.start_day()`, then
+## the director, handed her as `main` hands her), the mark read so the task is placed and her route
+## rigged, and the day's longest route walked through
+## `EventsAhead.site_what_is_on_her_way()` and `place_what_is_owed_ahead()` until the rigged bag
 ## is spent, so day 11 has its second mast on her route and day 6 its second man shouting, the way a
 ## played day has them.
 ##
@@ -21,33 +22,29 @@ extends RefCounted
 ##
 ## **What is timed**, in milliseconds of wall clock in the debug build the test runner uses:
 ##
-## - **tick**: `retarget_the_arrow()` with her at each position — what `_process()` runs twice a
-##   second. On the per-target fields (`ArrowField`) it is a lookup, plus starting the sweep of the
-##   one it now points at when it moved the arrow; on the walk it replaced, the whole walk.
-## - **sweep slice**: one frame's `_sweep_the_arrow_fields(ARROW_SWEEP_TILES_PER_FRAME)` while a
-##   sweep is under way, over the first sweep from nothing and every sweep a tick started; and how
-##   many frames the longest of them took to finish.
-## - **whole sweep at once**: the same field swept in one go, for scale — what one frame would cost
-##   if the sweep were not spread.
+## - **choice**: `retarget_the_arrow()` with her at each position — what `tick()` runs twice a
+##   second. On the per-target fields (`WalkField`) it is a lookup, plus starting the sweep of the
+##   one it now points at when it moved the arrow.
+## - **tick while sweeping**: one of the director's physics ticks (`ResistanceDirector.tick()`, one
+##   `ARROW_SWEEP_TILES_PER_TICK` slice of a sweep with the rest of its tick) while a sweep is under
+##   way (`arrow_sweeping()`), over the first sweep from nothing and every sweep a choice started; and
+##   how many ticks the longest of them took to finish.
+## - **whole sweep at once**: the same field swept in one go over a fresh layout of what blocks her
+##   (`WalkField.ground_for()`), for scale — what one tick would cost if the sweep were not spread.
 ##
-## "no length from her" counts positions where her tile has no walking length to any target. Both
-## versions of the director are measured by the same file: it asks for the fields' functions by
-## name, so at a commit with the walk instead it times the walk.
+## "no length from her" counts positions where her tile has no walking length to any target: the
+## arrow's field of every target names no closest target there (`arrow_nearest_at()`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
 const DAYS: Array[int] = [6, 11, 13]
 const POSITIONS := 10
 const STEP := 0.1
+## The seed of each city's own run: the one the test runner starts the live run on.
+const RUN_SEED := 2
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
-	var fields := ClassDB.class_exists("ArrowField") or ResourceLoader.exists(
-			"res://src/resistance/arrow_field.gd")
+	t.gives_back_observers()
 	for day in DAYS:
 		var ticks: Array[int] = []
 		var slices: Array[int] = []
@@ -56,12 +53,12 @@ func run(t) -> void:
 		var unreached := 0
 		var targets := 0
 		for seed_value in SEEDS:
-			var city: City = CITY_SCENE.instantiate()
+			var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 			t.add_child(city)
 			city.build(CityGenerator.generate(seed_value))
-			GameState.scars = []
 			var director := _read_the_mark(t, city, day, seed_value)
 			var player := _rig_player(t, director.contact_position())
+			director.use_player(player)
 			_walk_the_rigged_bag(city, player)
 			var step := director.current_step()
 			if step == null or step.is_pickup:
@@ -70,74 +67,49 @@ func run(t) -> void:
 				director.free()
 				city.free()
 				continue
-			var found := director._arrow_candidates(step)
+			var found := director.arrow_targets()
 			targets = maxi(targets, found.size())
 			print("PLUSH_MOOSE seed %d day %d: %d targets" % [seed_value, day, found.size()])
 			var spots := _positions(city, director)
-			if fields:
-				# The first sweep from nothing, a frame's slice at a time, as `_process()` runs it.
-				player.global_position = spots[0]
-				director.retarget_the_arrow()
-				frames.append(_sweep_to_the_end(director, slices))
-				# And the same sweep at once, for scale.
-				var started := Time.get_ticks_usec()
-				var at_once: RefCounted = load("res://src/resistance/arrow_field.gd").call("start",
-						city.map, found,
-						Vector2i(city.map.day_record_version, city.map.obstruction_version))
-				var ground: PackedInt32Array = director.call("_ground_for_the_arrow")
-				at_once.call("advance", city.map, ground, 1 << 30)
-				at_once.call("advance", city.map, ground, 1 << 30)
-				whole.append(Time.get_ticks_usec() - started)
-				director.call("_settle_the_arrow")
+			# The first sweep from nothing, a tick's slice at a time, as `tick()` runs it.
+			player.global_position = spots[0]
+			director.retarget_the_arrow()
+			frames.append(_sweep_to_the_end(director, slices))
+			# And the same sweep at once, for scale.
+			var started := Time.get_ticks_usec()
+			var at_once := WalkField.start(city.map, found,
+					Vector2i(city.map.day_record_version, city.map.obstruction_version))
+			var ground := WalkField.ground_for(city.map)
+			at_once.advance(city.map, ground, 1 << 30)
+			at_once.advance(city.map, ground, 1 << 30)
+			whole.append(Time.get_ticks_usec() - started)
 			for at in spots:
 				player.global_position = at
-				var started := Time.get_ticks_usec()
+				var chose := Time.get_ticks_usec()
 				director.retarget_the_arrow()
-				ticks.append(Time.get_ticks_usec() - started)
-				if fields:
-					# A tick that moved the arrow starts the sweep of the one it now points at.
-					frames.append(_sweep_to_the_end(director, slices))
-				if _no_length_from(director, step, at):
+				ticks.append(Time.get_ticks_usec() - chose)
+				# A choice that moved the arrow starts the sweep of the one it now points at.
+				frames.append(_sweep_to_the_end(director, slices))
+				if director.arrow_nearest_at(city.map.world_to_tile(at)) == null:
 					unreached += 1
 			player.free()
 			director.free()
 			city.free()
-		var line := "PLUSH_MOOSE day %d: %d positions, up to %d targets | tick mean %.3f ms worst %.3f ms" \
+		var line := "PLUSH_MOOSE day %d: %d positions, up to %d targets | choice mean %.3f ms worst %.3f ms" \
 				% [day, ticks.size(), targets, _mean(ticks), _worst(ticks)]
-		if fields:
-			line += " | sweep slice mean %.3f ms worst %.3f ms over %d slices" \
-					% [_mean(slices), _worst(slices), slices.size()]
-			line += " | frames to finish a sweep worst %d" % _worst_count(frames)
-			line += " | whole sweep at once mean %.2f ms worst %.2f ms" % [_mean(whole), _worst(whole)]
+		line += " | tick while sweeping mean %.3f ms worst %.3f ms over %d ticks" \
+				% [_mean(slices), _worst(slices), slices.size()]
+		line += " | ticks to finish a sweep worst %d" % _worst_count(frames)
+		line += " | whole sweep at once mean %.2f ms worst %.2f ms" % [_mean(whole), _worst(whole)]
 		print(line + " | no length from her %d" % unreached)
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
 
-## Whether no target had a walking length from `at`: on the fields, her tile read in the field of
-## every target; on the walk, every length it returned.
-func _no_length_from(director: ResistanceDirector, step: ResistanceSteps.Step, at: Vector2) -> bool:
-	if director.has_method("_settle_the_arrow"):
-		var nearest: RefCounted = director.get("_arrow_nearest")
-		return nearest == null or int(nearest.call("length_at", director._map.world_to_tile(at))) < 0
-	var lengths: Array[int] = director.call("_walking_lengths", at,
-			director._arrow_candidates(step))
-	for length in lengths:
-		if length >= 0:
-			return false
-	return true
-
-## Runs the sweeps under way a frame's slice at a time, timing each slice into `slices`, and
-## answers how many frames they took.
+## Runs the sweeps under way a physics tick of the director at a time (`ResistanceDirector.tick()`),
+## timing each tick into `slices`, and answers how many ticks they took.
 func _sweep_to_the_end(director: ResistanceDirector, slices: Array[int]) -> int:
 	var count := 0
-	while (director.get("_arrow_nearest_next") != null or director.get("_arrow_own_next") != null) \
-			and count < 1000:
+	while director.arrow_sweeping() and count < 1000:
 		var started := Time.get_ticks_usec()
-		director.call("_sweep_the_arrow_fields", director.get_script().get_script_constant_map()
-				.get("ARROW_SWEEP_TILES_PER_FRAME", 1500))
+		director.tick(1.0 / Engine.physics_ticks_per_second)
 		slices.append(Time.get_ticks_usec() - started)
 		count += 1
 	return count
@@ -153,14 +125,13 @@ func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirec
 	for step in ResistanceSteps.all():
 		if step.day < day:
 			done.append(step.index)
-	GameState.completed_resistance_steps = done
-	GameState.failed_resistance_steps = []
-	GameState.resistance_progress = 0
+	var run: RunState = city.run
+	run.resistance.completed_steps = done
 	var state := CityState.new()
-	GameState.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, day)
 	city.start_day(state, day, _rng(seed_value, day, "closures"))
-	city.events.start_day(day, _rng(seed_value, day, "events"), [],
+	city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 			city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
@@ -169,11 +140,13 @@ func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirec
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:
-		director._on_contact_completed(mark.index)
+		director.contact().complete_now()
 	return director
 
 ## Walks the day's longest route until the bag the mark rigged is spent, the way
-## `tests/test_route_bag.gd` does, so what the rig puts on her route is in the day's plans.
+## `tests/test_route_bag.gd` does, so what the rig puts on her route is in the day's plans. A route
+## names `ReachabilityGrid` cells, two tiles square, so a cell's centre is half a tile past its first
+## tile's centre on both axes.
 func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 	var path := _the_longest_route(city)
 	if path.size() < 2:
@@ -182,8 +155,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 	var direction := 1
 	player.global_position = path[0]
 	var walked := 0.0
-	city.events._find_player()
-	var bag := city.events._director.route_bag()
+	city.events.use_player(player)
+	var bag := city.events.ahead.director().route_bag()
 	while walked < 600.0 and bag and not bag.bag_in_front().is_empty():
 		var next: Vector2 = path[index + direction] if index + direction >= 0 \
 				and index + direction < path.size() else Vector2.INF
@@ -196,8 +169,8 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 			index += direction
 			continue
 		player.velocity = toward.normalized() * Tuning.WALK_SPEED
-		city.events._site_what_is_on_her_way(STEP)
-		city.events._place_what_is_owed_ahead(STEP)
+		city.events.ahead.site_what_is_on_her_way(STEP)
+		city.events.ahead.place_what_is_owed_ahead(STEP)
 		player.global_position += player.velocity * STEP
 		walked += STEP
 
@@ -209,7 +182,8 @@ func _the_longest_route(city: City) -> Array[Vector2]:
 				longest = route
 	var points: Array[Vector2] = []
 	for i in range(longest.size() - 1, -1, -1):
-		points.append(EventScheduler.WalkSiting._cell_centre(city.map, longest[i]))
+		points.append(city.map.tile_to_world(longest[i] * ReachabilityGrid.CELL)
+				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5))
 	return points
 
 func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
@@ -219,11 +193,11 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
-					and director._reachable_from_home(tile):
+					and director.reaches_from_home(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = [director.contact_position()]
-	if director._read_mark:
-		spots[0] = director._read_mark.global_position
+	if director.read_mark():
+		spots[0] = director.read_mark().global_position
 	var stride := maxi(1, sidewalk.size() / POSITIONS)
 	for i in range(stride / 2, sidewalk.size(), stride):
 		if spots.size() >= POSITIONS:

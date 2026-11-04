@@ -149,7 +149,7 @@ fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # `git describe`'s own form -- the nearest version tag, commits since, and the abbreviated hash --
-# rather than a bare `rev-parse --short HEAD`, so this matches what `Telemetry.source_version()`
+# rather than a bare `rev-parse --short HEAD`, so this matches what `BuildInfo.source_version()`
 # writes into a run folder's own name (`Telemetry._file_tag()`). `-dirty` is left off deliberately:
 # this compares against the tail of a folder name that was written the moment a run *started*, and
 # a tree dirty right now says nothing about whether it was dirty then, so a bare describe is

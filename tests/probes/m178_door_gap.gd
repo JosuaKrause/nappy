@@ -76,7 +76,7 @@ func _plan_day(map: CityMap, day: int, tree: RouteTree,
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
-	return EventScheduler.build_day(day, rng, map, consumed, scars, used_calm, tree, 0, doors)
+	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, scars, used_calm, tree, 0, doors)
 
 func _placed(plans: Array[EventScheduler.Planned]) -> int:
 	var total := 0

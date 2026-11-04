@@ -21,9 +21,11 @@ const REACH := 36.0
 ## The `decoration` atlas group the two pictures below are regions of — `_enter_tree()`/
 ## `_exit_tree()` acquire and release it, the same pairing `ClosureMarker` uses for its own
 ## `street_kit` group, rather than trusting `City`'s own hold on it: a `ContactPoint` built by a
-## test with no `City` around it (`tests/test_resistance.gd`'s bare pickups and rides) still
+## test with no `City` around it (`tests/test_resistance_steps.gd`'s bare pickups and rides) still
 ## needs a region to draw, and `AtlasLibrary` reference-counts, so acquiring a group already
 ## resident from boot (`main.RESIDENT_GROUPS`) still costs one page load for the whole process.
+## The library is the city's, handed by the director (`atlas`); a contact nobody handed one makes
+## its own.
 const ATLAS_GROUP := &"decoration"
 ## The two prepared pictures a pickup draws from (`docs/GRAPHICS.md`, "M100 — Small, real, and
 ## nobody's").
@@ -47,26 +49,29 @@ var touch_ellipse := Vector2.ZERO
 ## named district door. No distance completes it, however near she stands.
 var by_crossing := false
 
+## The player whose touch completes it, handed in by its director (`use_player()`).
 var _player: Stroller
 var _pulse := 0.0
 ## Set only for a perform step: the instance this contact rides on. The contact stands on it —
 ## where the task is, and where the red arrow ends — and follows it.
 var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
+## The baked atlas pages this contact draws from (`AtlasLibrary`), handed by its director before
+## it is added; a contact nobody handed one makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(ATLAS_GROUP)
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(ATLAS_GROUP)
+	atlas.release(ATLAS_GROUP)
 
 ## A pickup: a bare chalk mark at a fixed point.
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
 	step = which
 	position = at
-	# A mark on the ground belongs under everything that stands on it, including the
-	# player who is standing on it to read it.
-	z_index = -1
 
 ## A perform: the contact follows `instance`, standing `offset` from it — zero for every task, so
 ## it stands on the thing itself.
@@ -75,11 +80,14 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 	_rider = instance
 	_rider_offset = offset
 	position = instance.global_position + offset
-	z_index = -1
 
 ## Whether the thing this rides on is still there to be touched.
 func rider_alive() -> bool:
 	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
+
+## Hands the contact the player whose touch completes it.
+func use_player(player: Stroller) -> void:
+	_player = player
 
 func _physics_process(delta: float) -> void:
 	if is_done:
@@ -89,10 +97,11 @@ func _physics_process(delta: float) -> void:
 		if not rider_alive():
 			return
 		global_position = _rider.global_position + _rider_offset
-	if not _player:
-		_player = get_tree().get_first_node_in_group("player") as Stroller
-		if not _player:
-			return
+	# Out of the `player` group she is stood aside for the title screen (`Stroller.stand_aside()`),
+	# and the city this contact stands in plays on behind it: nobody is playing, so nothing is
+	# touched.
+	if not _player or not is_instance_valid(_player) or not _player.is_in_group("player"):
+		return
 	if would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()
@@ -156,7 +165,7 @@ static func has_a_body(instance: EventInstance) -> bool:
 ## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
 ## body's centre rather than a band round its outline, so it reaches past the body by at least
 ## `within` on every side, its ends included, and is the same circle an any-instance task already
-## retargeted onto a look-alike from (`ResistanceDirector._reach_distance()`).
+## retargeted onto a look-alike from (`ResistanceDirector.touch_reach()`).
 static func body_reach(instance: EventInstance, within := REACH) -> float:
 	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 
@@ -178,17 +187,15 @@ func _complete() -> void:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not draws_a_mark():
 		return
 	_draw_chalk()
 
-## Whether this contact draws a chalk picture at all — `_draw()`'s one question, pure, so a headless
-## test (which never calls `_draw()`) can ask it. Only a pickup is a chalk mark. A perform's contact
-## is invisible, untouched or done: a rider has to look exactly like the ordinary row it rides on,
-## or approaching it would already answer "is this the one", and a bare point's destination is the
-## item the world draws there.
+## Whether this contact draws a chalk picture at all — `_draw()`'s one question, pure, so a test can
+## ask it without a picture to read (a headless draw pass makes no pixels). Only a pickup is a chalk
+## mark. A perform's contact is invisible, untouched or done: a rider has to look exactly like the
+## ordinary row it rides on, or approaching it would already answer "is this the one", and a bare
+## point's destination is the item the world draws there.
 func draws_a_mark() -> bool:
 	return step != null and step.is_pickup
 
@@ -200,7 +207,7 @@ func draws_a_mark() -> bool:
 ## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
 func _draw_chalk() -> void:
 	var picture := MARK_TOUCHED if is_done else MARK
-	var texture := AtlasLibrary.region(picture)
+	var texture := atlas.region(picture)
 	if not texture:
 		return
 	var flicker := 0.75 + 0.25 * sin(_pulse * 2.0)

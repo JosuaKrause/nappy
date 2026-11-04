@@ -14,7 +14,7 @@ extends RefCounted
 ## walked next to him without effect which highlights an even worse drop in effect".*
 ##
 ## **The rig.** A real `EventInstance` (`EventCatalogue`'s own def, or a historical copy — see
-## `_historical_def()`), given a long straight two-point path so `_advance_along_path()` — the
+## `_historical_def()`), given a long straight two-point path so `EventRouteWalk.advance()` — the
 ## same function the scheduler's placement drives — carries it at its own `speed`, pacing back
 ## and forth if `def.paces`. Never added to a tree: `contribution_at()`, `accumulate_landed()` and
 ## `_process()` all work on a bare `.setup()` instance, the same convention
@@ -47,12 +47,12 @@ extends RefCounted
 ## loose dog) — coming at her at its own intensity.
 ##
 ## So a `TOWARD_PLAYER` row is spawned here the way `EventManager.spawn_warned()` creates it: its
-## telegraph spent, `PendingWarning.least_distance()` away — the closest it is ever created, since a
+## telegraph spent, `SpawnSiting.least_distance()` away — the closest it is ever created, since a
 ## figure in `docs/COSTS.md` may not depend on which way a particular walk was going — and closing at
 ## both speeds because she is walking into it.
 ##
 ## **Such a row has no free pulse phase and is measured once rather than averaged.** It is created
-## at the age that has it reach her at the loud of its beat (`EventManager.age_when_warned()`), so how
+## at the age that has it reach her at the loud of its beat (`EventSpawner.age_when_warned()`), so how
 ## far through the beat it is when it reaches her is fixed, not by when she happened to arrive.
 ## Averaging eight phases onto it would be averaging over something the game does not vary.
 
@@ -84,13 +84,13 @@ func _row(id: String) -> void:
 			% ["px", "awake", "asleep", "awake", "asleep", "awake", "asleep", "awake", "asleep"])
 	for offset in OFFSETS:
 		var old_hist_awake := pass_net_averaged(historical, offset, 3.5, 1.0)
-		var old_hist_asleep := pass_net_averaged(historical, offset, 3.5, Tuning.SLEEPING_SENSITIVITY)
+		var old_hist_asleep := pass_net_averaged(historical, offset, 3.5, Baby.SLEEPING_SENSITIVITY)
 		var today_hist_awake := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-		var today_hist_asleep := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, Tuning.SLEEPING_SENSITIVITY)
+		var today_hist_asleep := pass_net_averaged(historical, offset, Tuning.EXCITEMENT_DECAY_WALKING, Baby.SLEEPING_SENSITIVITY)
 		var old_now_awake := pass_net_averaged(current, offset, 3.5, 1.0)
-		var old_now_asleep := pass_net_averaged(current, offset, 3.5, Tuning.SLEEPING_SENSITIVITY)
+		var old_now_asleep := pass_net_averaged(current, offset, 3.5, Baby.SLEEPING_SENSITIVITY)
 		var proposed_awake := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
-		var proposed_asleep := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, Tuning.SLEEPING_SENSITIVITY)
+		var proposed_asleep := pass_net_averaged(current, offset, Tuning.EXCITEMENT_DECAY_WALKING, Baby.SLEEPING_SENSITIVITY)
 		print("  %6.0f | %9.2f %9.2f | %9.2f %9.2f | %9.2f %9.2f | %9.2f %9.2f"
 				% [offset, old_hist_awake, old_hist_asleep, today_hist_awake, today_hist_asleep,
 				old_now_awake, old_now_asleep, proposed_awake, proposed_asleep])
@@ -158,11 +158,11 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 	# Past the telegraph, plus the requested phase offset -- moved for real, nobody watching. A row
 	# that comes at her is created with its telegraph already spent and meets her from there.
 	if toward_her:
-		instance.resume(EventManager.age_when_warned(def), 0.0)
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 	var warm := 0.0 if toward_her else def.telegraph_time + 0.05 + phase_delay
 	var warm_steps := int(ceil(warm / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	# "Different directions" made exact: she starts on the side the instance is currently heading
 	# toward and walks straight at it, offset in Y by the lane she is giving it.
@@ -171,7 +171,7 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 		heading_x = 1.0
 	# Where a row that comes at her is created, closest; otherwise the fixed window that clears
 	# every radius in the catalogue.
-	var lead := PendingWarning.least_distance() if toward_her else LEAD
+	var lead := SpawnSiting.least_distance() if toward_her else LEAD
 	var her_pos := instance.position + Vector2(heading_x * lead, offset)
 	var her_velocity := Vector2(-heading_x * Tuning.WALK_SPEED, 0.0)
 
@@ -186,10 +186,10 @@ static func _pass_net(def: EventDef, offset: float, decay: float, sensitivity: f
 		var closing := def.speed + Tuning.WALK_SPEED
 		steps = int(ceil(((lead + def.field_reach()) / closing) / STEP)) + 120
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		her_pos += her_velocity * STEP
 		if her_pos.distance_to(instance.position) <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 
 	instance.free()

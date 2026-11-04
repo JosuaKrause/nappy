@@ -5,14 +5,13 @@ extends RefCounted
 ## The player's words *(2026-10-04, calm-kestrel, inbox #558: "the fire truck has no collision at
 ## all -- I can walk through it without it being lethal"; asked what touching it should do: "Lethal
 ## driving, solid parked")*. The truck is built the way the patrol car is (sunny-finch,
-## `EventDef.drives`): lethal only in front of it, with a car's warning, while it drives its route.
+## `EventDef.vehicle`): lethal only in front of it, with a car's warning, while it drives its route.
 ## Her real `CharacterBody2D` rig is swept against a real `fire_truck` instance's body with the
 ## synchronous `move_and_collide()` sweep `tests/test_police_car.gd` uses, and the truck is stepped
 ## by hand, a frame at a time, told where she and her pram are the way `EventManager` tells it.
 
 const STEP := 1.0 / 60.0
 const WALK := 2.0
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 func run(t) -> void:
 	_test_the_row_is_a_car_with_the_engines_body(t)
@@ -57,10 +56,11 @@ func _her(t, at: Vector2, facing: Vector2) -> Stroller:
 func _step(engine: EventInstance, player: Stroller) -> void:
 	engine.player_at = player.global_position
 	engine.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
-	engine._process(STEP)
-	if engine._obstruction:
-		engine._obstruction.force_update_transform()
-		for child in engine._obstruction.get_children():
+	engine.step(STEP)
+	var body := _body_of(engine)
+	if body:
+		body.force_update_transform()
+		for child in body.get_children():
 			(child as Node2D).force_update_transform()
 
 func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
@@ -73,6 +73,13 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 
 ## What stops `player` walking on along `heading` from where she stands: the collider a further
 ## step would meet, or null.
+## The solid body the engine carries as a child (the one `StaticBody2D` that holds every piece).
+func _body_of(engine: EventInstance) -> StaticBody2D:
+	for child in engine.get_children():
+		if child is StaticBody2D:
+			return child
+	return null
+
 func _what_stops(player: Stroller, heading: Vector2) -> Object:
 	var hit := player.move_and_collide(heading * WALK, true)
 	return hit.get_collider() if hit else null
@@ -81,7 +88,7 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 
 func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 	var def := _truck()
-	t.check(def.drives, "fire_truck drives: solid in every state, lethal in front while driving")
+	t.check(def.vehicle != null, "fire_truck drives: solid in every state, lethal in front while driving")
 	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
 	t.check(is_equal_approx(def.shape.reach() * 2.0, 58.0)
@@ -111,7 +118,7 @@ func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
 		if not pressed and absf(engine.global_position.x) < 6.0:
 			pressed = true
 			stopped = _walk(player, Vector2.UP, 70.0) < 70.0 \
-					and _what_stops(player, Vector2.UP) == engine._obstruction
+					and _what_stops(player, Vector2.UP) == _body_of(engine)
 	t.check(pressed and stopped, "walking into a driving truck's flank, its body stops her")
 	t.check(not struck, "and it never strikes her beside it")
 	player.free()
@@ -130,9 +137,9 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 		for i in int(8.0 / STEP):
 			_step(engine, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
-			held = held or engine.is_standing()
+			held = held or engine.car.is_standing()
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -142,23 +149,23 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 				"facing %s, warned %.2fs before the strike, at least the %.2fs to walk off the road"
 				% [facing, warning, Tuning.required_horn_time()])
 		t.check(not held, "and it did not stop against her first")
-		t.check(engine.will_be_lethal(player.global_position), "the doubled caret was up over it")
+		t.check(engine.excitement.will_be_lethal(player.global_position), "the doubled caret was up over it")
 		player.free()
 		engine.free()
 
 ## **Created where the game creates it**, just out of sight up its street
-## (`PendingWarning.on_its_route()`, the place `EventManager._summon_the_sighted_row()` asks for),
+## (`PendingWarning.on_its_route()`, the place `EventSpawner._summon_the_sighted_row()` asks for),
 ## from each of the four sides, with her standing in its lane facing it. On any street that place is
 ## nearer her than its warning reaches her (1.7s of its 190px/s past the touch, the touch counting
 ## its body and hers): up a north-south street the view is 180px to either side of her, and across
 ## an east-west one 320px. A truck driving from its first frame would strike her inside the time it
-## takes to walk off the road. A car that drives is created standing (`_drive()`'s car that has
+## takes to walk off the road. A car that drives is created standing (`EventCarDriving`'s car that has
 ## stood): it waits there while she is in its lane within its warning, and nothing strikes her.
 ## Once she is further along its lane than its warning reaches, it drives on, and the strike comes
 ## after the full warning.
 func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 	var def := _truck()
-	var warning_reach := (Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
+	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
 			+ def.shape.half_length + def.shape.radius + Tuning.PLAYER_BODY_RADIUS
 	var nearer_than_its_warning := 0
 	var sides := {Vector2.DOWN: "the north", Vector2.UP: "the south", Vector2.RIGHT: "the west",
@@ -168,7 +175,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 		var her := Vector2.ZERO
 		var stop := her + travel * 600.0
 		var place := PendingWarning.on_its_route(def, her, stop, travel, 4000.0,
-				VisibleView.around(her))
+				VisibleView.around(her, null))
 		t.check(place != Vector2.INF, "from %s, there is a place out of sight to create it" % side)
 		if place == Vector2.INF:
 			continue
@@ -192,7 +199,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 		for i in int(5.0 / STEP):
 			_step(engine, player)
 			var now := float(i) * STEP
-			if warned_at < 0.0 and engine.closes_on(player.global_position):
+			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
@@ -222,8 +229,8 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	var lethal := false
 	for i in int(5.0 / STEP):
 		_step(engine, player)
-		warned = warned or engine.closes_on(player.global_position)
-		lethal = lethal or engine.will_be_lethal(player.global_position) \
+		warned = warned or engine.car.closes_on(player.global_position)
+		lethal = lethal or engine.excitement.will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
 		if engine.is_parked:
 			break
@@ -241,7 +248,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.is_parked:
 				break
-		var gap := engine._gap_to_her(engine.global_position, engine._heading)
+		var gap := engine.car.gap_to_her(engine.global_position, engine.facing_now())
 		t.check(engine.is_parked and gap > 0.0 and not lethal,
 				"%.0fpx past its kerb, it parks %.0fpx short of her and the day goes on"
 				% [past, gap])
@@ -269,7 +276,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	for i in int(5.0 / STEP):
 		_step(engine, player)
 		var now := float(i) * STEP
-		if warned_at < 0.0 and engine.closes_on(player.global_position):
+		if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 			warned_at = now
 		if engine.is_lethal_at(player.global_position):
 			struck_at = now
@@ -292,7 +299,7 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 		if player.move_and_collide(Vector2.RIGHT * Tuning.WALK_SPEED * STEP) != null:
 			touched = true
 	t.check(not struck, "a truck driving away from her never strikes her behind it")
-	t.check(engine.is_driving(), "and it was driving")
+	t.check(engine.car.is_driving(), "and it was driving")
 	player.free()
 	engine.free()
 	# Standing beside its line, it passes her without a strike.
@@ -320,11 +327,11 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
-	t.check(not engine.is_driving() and not engine.will_be_lethal(Vector2(40.0, 0.0)),
+	t.check(not engine.car.is_driving() and not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not driving")
 	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)
-	t.check(engine._obstruction != null, "and its body is still there")
+	t.check(engine.is_solid() and _body_of(engine) != null, "and its body is still there")
 	# Her first rig goes before the walks: placed with no frame run, the physics server still has
 	# its body at the origin, under the truck, where it would stop a walker instead of the truck.
 	player.free()
@@ -332,7 +339,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		var from: Vector2 = engine.global_position - approach * 90.0
 		var walker := _her(t, from, approach)
 		var walked := _walk(walker, approach, 180.0)
-		t.check(walked < 180.0 and _what_stops(walker, approach) == engine._obstruction,
+		t.check(walked < 180.0 and _what_stops(walker, approach) == _body_of(engine),
 				"walking %s into the parked truck, its own body stops her (%.0fpx)"
 				% [approach, walked])
 		var stood := walker.global_position.distance_to(engine.global_position)
@@ -343,13 +350,13 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 	engine.free()
 
 ## Parked, its field is priced from its centre as it was before it had a body
-## (`EventDef.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
+## (`VehicleSpec.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
 ## the fire's siting check closes about its kerb is the whole of it and a pass costs what
 ## `docs/COSTS.md` says.
 func _test_parked_its_field_is_a_points(t) -> void:
 	var def := _truck()
-	t.check(def.field_from_its_centre, "fire_truck's field is priced from its centre")
-	var moving := def.outer_radius * Tuning.field_scale(Tuning.field_eccentricity(def.speed))
+	t.check(def.vehicle.field_from_its_centre, "fire_truck's field is priced from its centre")
+	var moving := def.outer_radius * Field.scale(Field.eccentricity(def.speed))
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"
 			% [moving, def.field_reach()])
@@ -363,11 +370,11 @@ func _test_parked_its_field_is_a_points(t) -> void:
 			"the truck has parked and stands still")
 	var same := true
 	for d: float in [40.0, 100.0, 250.0, def.outer_radius - 5.0]:
-		var along := engine.contribution_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
-		var abeam := engine.contribution_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
+		var along := engine.field_at(Vector2(d, 0.0), -1.0, Vector2.ZERO)
+		var abeam := engine.field_at(Vector2(0.0, d), -1.0, Vector2.ZERO)
 		same = same and absf(along - abeam) < 0.0001 and along > 0.0
 	t.check(same, "along its street its field is what it is abeam, at every distance")
-	t.check(engine.contribution_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
+	t.check(engine.field_at(Vector2(def.outer_radius + 5.0, 0.0), -1.0, Vector2.ZERO) == 0.0,
 			"and it ends at its 340px along the street, not past its body's end")
 	player.free()
 	engine.free()
@@ -375,7 +382,7 @@ func _test_parked_its_field_is_a_points(t) -> void:
 ## **The route-redundancy guarantee with it parked** (the **city** skill: a day leaves distinct
 ## routes from home to its calm areas, counted as a max flow, `StreetNetwork.route_count()`). The
 ## engine parks on the carriageway's near tile across from the fire
-## (`EventManager.where_the_summoned_row_stops()`), its body a capsule along the street. On a real
+## (`EventSpawner.where_the_summoned_row_stops()`), its body a capsule along the street. On a real
 ## city, at every such kerb tried, every tile the body overlaps at all is blocked; the street it
 ## stands in counts as closed unless a way along it past the body is left inside its own corridor;
 ## and every calm area must keep as many distinct routes from home, up to two, as it had without
@@ -409,7 +416,7 @@ func _kerbs(map: CityMap) -> Array[Array]:
 		var inward := map.pavement_inward(tile)
 		if inward == Vector2i.ZERO:
 			continue
-		var park := EventManager.where_the_summoned_row_stops(map, map.tile_to_world(tile))
+		var park := EventSpawner.where_the_summoned_row_stops(map, map.tile_to_world(tile))
 		if park == Vector2.INF or not Tile.is_road(map.tile_type_at_world(park)):
 			continue
 		kerbs.append([park, Vector2(absf(float(inward.y)), absf(float(inward.x)))])
@@ -423,20 +430,20 @@ func _routes_lost(map: CityMap, kerbs: Array[Array], body: GroundShape) -> Vecto
 	var open := map.blocked_segments()
 	var before: Array[int] = []
 	for area in areas:
-		before.append(StreetNetwork.route_count(home, area.access, open, 2))
+		before.append(map.network.route_count(home, area.access, open, 2))
 	var lost := Vector2i.ZERO
 	for kerb: Array in kerbs:
 		var park: Vector2 = kerb[0]
 		var along: Vector2 = kerb[1]
 		var blocked := _tiles_touched(body, park, along)
-		var segment := StreetNetwork.segment_containing(map.world_to_tile(park))
+		var segment := map.network.segment_containing(map.world_to_tile(park))
 		if segment == null or _passes(map, park, along, body, blocked):
 			continue
 		lost.x += 1
 		var closed := open.duplicate()
 		closed[segment.key()] = true
 		for i in areas.size():
-			if StreetNetwork.route_count(home, areas[i].access, closed, 2) < before[i]:
+			if map.network.route_count(home, areas[i].access, closed, 2) < before[i]:
 				lost.y += 1
 	return lost
 
@@ -510,7 +517,7 @@ func _test_a_loss_to_it_names_its_own_cause(t) -> void:
 	t.check(line != Texts.HARD_FAIL_TEXT.get("police_patrol", "")
 			and line != Texts.HARD_FAIL_TEXT.get("car_strike", ""),
 			"and not the patrol car's or a crowd car's")
-	t.check(MAIN_SCRIPT._hard_fail_cause_suffix("fire_truck", "fire_truck") == "fire-truck",
+	t.check(LossCause.hard_fail_suffix("fire_truck", "fire_truck") == "fire-truck",
 			"the run log and the page's counter name the cause 'fire-truck'")
 
 # ----------------------------------------------------------------- picture ---
@@ -518,10 +525,10 @@ func _test_a_loss_to_it_names_its_own_cause(t) -> void:
 func _test_its_picture_stands_over_its_body(t) -> void:
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]))
 	var shape := _truck().shape
-	t.check(is_equal_approx(engine._body_anchor("side").y,
-			shape.half_length * absf(engine._solid_axis().y) + shape.radius
-			+ float(EventInstance.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
+	t.check(is_equal_approx(engine.look.body_anchor("side").y,
+			shape.half_length * absf(engine.solid_axis().y) + shape.radius
+			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
-	t.check(EventInstance._picture_drop_of(_truck()) > shape.reach(),
+	t.check(EventFootprints.picture_drop_of(_truck()) > shape.reach(),
 			"and the drawn box allows for the lowered picture")
 	engine.free()

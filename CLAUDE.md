@@ -2,7 +2,7 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
-**These guidelines and `.claude/skills/` are shared by Claude Code and Codex.** Hooks inject
+**These guidelines and `.claude/skills/` are written for Claude Code; Codex support is frozen (below).** Hooks inject
 **orchestrating** at session start and the path rules before each edit (the table below); if a
 rule did not arrive, or is no longer in context, read its skill file before the governed work.
 Every matching skill applies, to edits through any tool, patches and scripts included, and so
@@ -10,28 +10,19 @@ does any skill whose description matches the task; one asked for by name is read
 even if the skill picker does not list it. A skill's relative resource paths resolve from its own
 directory. The system, developer and user instructions take precedence over repository guidance.
 
-## Codex integration
+## Codex integration is frozen
 
-Codex finds the skills through `.agents/skills`, a link to `.claude/skills`, and runs the same hook
-scripts through `.codex/hooks.json` and the adapter `tools/codex-hooks.py`: it loads the rules for
-every path a patch touches, rename destinations included, lints each edited doc, denies an unbounded
-`git grep` on Codex's own Bash calls the same way Claude Code's does and a GitHub write outside an
-agent's own identity every time, even an ordinary one that Claude Code's guard, once the player
-switches its asking on, asks them about instead, and reloads the startup rules on session start,
-resume, compaction and subagent start. **A change to a hook script under `.claude/hooks/` or to the
-hooks in `.claude/settings.json` checks whether the adapter and its tests need to change — a new
-tool name, payload field or hook event — and updates them in the same PR when they do** (brisk-heron
-6), because Codex names its tools differently (`apply_patch` rather than `Edit`/`Write`) and a hook
-that works only in Claude Code leaves Codex unguarded; a change to a hook's own logic alone needs
-nothing from the adapter. The hooks need Python 3.9+, Bash and jq, and run only once the repository
-is trusted and the hooks are reviewed through `/hooks`; restart Codex if new hooks or skills do not
-appear. Where a rule says `Read`, Codex uses file-reading tools or shell reads; where it says `Edit`
-or `Write`, `apply_patch`, which keeps the diff reviewable, fails on a stale match and is what the
-path rules load on — shell scripts are for tools, git and inspection. Where a skill names Claude's
-`Agent`/`Task` tools or Sonnet, use the Codex delegation tools and models with the same scope fences
-and verification; an agent has an isolated worktree only if one was actually created. The post-edit
-lint hook does not replace `./tools/lint.sh` before committing a governed doc, `CLAUDE.md` included.
-A request for a PR ends with a reviewable PR.
+**Codex support is frozen while the player is not using Codex** (inbox #901 in freckled-moose). Its files stay as they
+are (`.agents/skills`, `.codex/`, the adapter `tools/codex-hooks.py` and its tests, the `codex-coder`
+and `codex-reviewer` identities, the skills' Codex asides), and nothing keeps them in step: a change
+to a hook or to the hooks in `.claude/settings.json` does not update the adapter, which may lag.
+Before Codex works here again, the adapter and the asides are brought up to date in one pull
+request; what the section said while Codex was in use, including the lifted rule that a hook change
+updates the adapter (brisk-heron 6), is in the record amber-penguin (`tools/decisions.sh
+amber-penguin`).
+
+The post-edit lint hook does not replace `./tools/lint.sh` before committing a governed doc,
+`CLAUDE.md` included. A request for a PR ends with a reviewable PR.
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
@@ -116,6 +107,7 @@ rather than a place:
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | build a worksheet for the player to answer the review items in | **review-answers** |
+| ask the player a question — never in a dialog; the orchestrating Claude Code session's go on the board, and one about an inbox note may go on its issue — or read or write the Nappy board, the shared doc of open questions and running work | **board** |
 | **end a session** | **session-cleanup** |
 
 **A manual sequence done a second time becomes a script** (woolly-finch 23). It follows
@@ -230,23 +222,10 @@ its first line as well.
 a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
 last.
 
-## Editing files
+## Moving files
 
-**An edit fails loudly or it is not an edit.** Whatever tool makes a change — a dedicated edit
-tool, `sed`, a heredoc, a script — the change is either visibly correct or visibly rejected: a
-replacement that matches nothing must say so rather than look like a success. In a repo where the
-docs *are* the design and get committed alongside the code, a doc edit that quietly did nothing is
-a lie in the commit rather than a missing change.
-
-So a script or a one-liner that rewrites a file **asserts the anchors before writing** —
-`str.index` rather than a silent `replace`, a `grep -c` that must return the count you expect —
-and **verifies after**, with line counts and a `grep` for something that must have survived. That
-holds for a small change as much as for the large-scale and structural work a script is the right
-tool for: moving a file whole, splitting a document, deleting a whole section, renaming an
-identifier across the tree, applying the same change to thirty files.
-
-**And grep for what pointed at it before you move anything**, since a reference is not visible
-from the file being moved.
+**Grep for what pointed at a file before you move it**, since a reference is not visible from the
+file being moved.
 
 ---
 

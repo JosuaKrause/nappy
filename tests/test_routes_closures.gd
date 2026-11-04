@@ -56,11 +56,11 @@ func _test_every_planned_day_keeps_the_invariant(t) -> void:
 			var reachable := 0
 			var closed := map.blocked_segments(_closed_set(closures))
 			for area in ClosurePlanner.calm_areas(map):
-				if StreetNetwork.route_count(home, area.access, closed, 1) >= 1:
+				if map.network.route_count(home, area.access, closed, 1) >= 1:
 					reachable += 1
-			t.check(reachable >= Tuning.MIN_CALM_AREAS_REACHABLE,
+			t.check(reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d calm areas can still be walked to, need %d"
-					% [map.seed_used, day, reachable, Tuning.MIN_CALM_AREAS_REACHABLE])
+					% [map.seed_used, day, reachable, ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 
 ## docs/CITY.md's oldest exemption: the home is a notch in a block with one exit, so sealing
 ## the street outside it seals the player in however well connected the rest of the city is.
@@ -188,7 +188,7 @@ func _test_a_mid_segment_opening_stays_reachable_from_its_own_side(t) -> void:
 	for map in _maps:
 		var grid := ReachabilityGrid.build(map)
 		var found_this_seed := 0
-		for segment in StreetNetwork.segments():
+		for segment in map.network.segments():
 			if found_this_seed >= _OPENINGS_PER_SEED:
 				break
 			if not map.has_street(segment.key()):
@@ -346,7 +346,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 		areas: Array[ClosurePlanner.CalmArea], closed: Dictionary) -> bool:
 	var blocked := {}
 	for key: Vector3i in closed:
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if not segment:
 			continue
 		for at_a in [true, false]:
@@ -363,7 +363,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 				break
 		if found:
 			reachable += 1
-			if reachable >= Tuning.MIN_CALM_AREAS_REACHABLE:
+			if reachable >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE:
 				return true
 	return false
 
@@ -390,7 +390,7 @@ func _test_a_wall_off_the_corridor_never_fails_the_invariant(t) -> void:
 			var areas := ClosurePlanner.calm_areas(map)
 			var closed := {}
 			var refused := 0
-			for segment in StreetNetwork.segments():
+			for segment in map.network.segments():
 				var key := segment.key()
 				if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key):
 					continue

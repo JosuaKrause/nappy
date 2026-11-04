@@ -17,11 +17,9 @@ enum Piece {
 }
 
 ## Every picture below is a region name on the `street_kit` atlas group — `_enter_tree()`/
-## `_exit_tree()` acquire and release it, so `AtlasLibrary.region()` only ever runs while it is
-## held. **`FENCE_ACROSS`'s own native width is read elsewhere through `AtlasLibrary.native_size()`
-## rather than `.get_width()` on this constant** — see `src/city/city.gd`'s own call site, which is
-## outside this milestone's fence and still reads the old `Texture2D` shape until it is updated to
-## match.
+## `_exit_tree()` acquire and release it on `atlas`, so `atlas.region()` only ever runs while it is
+## held. **`FENCE_ACROSS`'s own native width is read elsewhere through `AtlasTable.native_size()`**
+## — the city's panel pitch, which is measured before any marker exists.
 const FENCE_ACROSS := &"closures/barrier_across"
 const FENCE_ALONG := &"closures/barrier_along"
 const SIGN := &"closures/sign_closed"
@@ -60,33 +58,36 @@ const CAUSES_VERTICAL := {
 ## How far up the screen an end-on panel's picture is drawn above its feet
 ## (`RoadClosure.end_on_rise()`). Its feet, and so its y-sort, stay on the ground it covers.
 @export var rise := 0.0
+## The baked atlas pages this piece draws from (`AtlasLibrary`), handed by the city before it is
+## added; a piece nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## Acquires the `street_kit` group before anything here can be drawn — see `Building.
 ## _enter_tree()`'s own doc for why this is paired with `_exit_tree()` rather than folded into
 ## `_ready()`. `AtlasLibrary` reference-counts, so `CityEdge`, `TrafficLight` and this class
 ## acquiring the same group independently is still one page load.
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"street_kit")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"street_kit")
+	atlas.release(&"street_kit")
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not scenery_resident:
 		return
 	match piece:
 		Piece.CAUSE:
 			_draw_cause()
 		Piece.POST:
-			Sprites.draw_standing(self, AtlasLibrary.region(POST), Vector2.ZERO)
+			Sprites.draw_standing(self, atlas.region(POST), Vector2.ZERO)
 		_:
 			_draw_panel()
 			if piece == Piece.SIGN:
 				# On the barrier rather than beside it, so it shares the panel's y and cannot
 				# be sorted behind the thing it is bolted to.
-				Sprites.draw_standing(self, AtlasLibrary.region(SIGN), Vector2(0.0, 2.0))
+				Sprites.draw_standing(self, atlas.region(SIGN), Vector2(0.0, 2.0))
 
 ## What closed the street, centred on the street's middle with its own contact shadow under it.
 ## Lying across the screen it stands on this node with a point shadow as wide as 0.64 of its
@@ -96,14 +97,14 @@ func _draw_cause() -> void:
 	var name := cause_picture(kind, across)
 	if name == &"":
 		return
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	# `x * 0.32` is a cause's own point shape's radius, read off its own picture the same way a
 	# tree's is.
 	var radius := texture.get_size().x * 0.32
 	if across:
 		Sprites.draw_shadow(self, Vector2.ZERO, radius)
 	else:
-		var lie := float(AtlasLibrary.native_size(CAUSES[kind]).x)
+		var lie := float(AtlasTable.baked().native_size(CAUSES[kind]).x)
 		GroundShape.segment(maxf(0.0, lie * 0.32 - radius), radius) \
 				.draw_shadow(self, Vector2.ZERO, Vector2.DOWN)
 	Sprites.draw_standing(self, texture, cause_feet(kind, across))
@@ -122,13 +123,13 @@ static func cause_picture(cause_kind: int, lies_across: bool) -> StringName:
 static func cause_feet(cause_kind: int, lies_across: bool) -> Vector2:
 	if lies_across or not CAUSES.has(cause_kind):
 		return Vector2.ZERO
-	return Vector2(0.0, AtlasLibrary.native_size(CAUSES[cause_kind]).x * 0.5)
+	return Vector2(0.0, AtlasTable.baked().native_size(CAUSES[cause_kind]).x * 0.5)
 
 ## One panel, stretched to exactly the width it is covering. A gap between panels would be a
 ## lie about where the player can walk, which is the same rule the event barriers follow.
 func _draw_panel() -> void:
 	var name := FENCE_ACROSS if across else FENCE_ALONG
-	var texture := AtlasLibrary.region(name)
+	var texture := atlas.region(name)
 	var size := texture.get_size()
 	if across:
 		Sprites.draw_standing(self, texture, Vector2.ZERO, Vector2(span, size.y))

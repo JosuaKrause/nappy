@@ -2,8 +2,9 @@ class_name AutoScreenshot
 extends Node
 ## Dev tool: let the game run for a while, save the viewport to a PNG, quit.
 ##
-## Headless runs never call `_draw()`, so a clean headless boot says nothing about whether
-## the game looks right. This gives a windowed run a way to produce a checkable image.
+## A headless run calls `_draw()` but its dummy renderer makes no pixels, so a clean headless boot
+## says nothing about whether the game looks right. This gives a windowed run a way to produce a
+## checkable image.
 ##
 ##     godot --path . -- --screenshot out.png [--after 4.0]
 ##                                            [--walk north|south|east|west|1s5e|3@45@2e]
@@ -32,7 +33,7 @@ extends Node
 ## step's digits without a separator.
 ##
 ## **The letters are shorthand for four particular bearings, not a second mechanism.** Every step
-## — lettered or angled — presses through `TouchControls._set_axis()`, the exact call the real
+## — lettered or angled — presses through `TouchControls.set_axis()`, the exact call the real
 ## touch scheme presses `move_left`/`move_right` and `move_up`/`move_down` through, at the step's
 ## own fractional strength: a 45° step presses both axes at 0.707 each rather than one axis at
 ## 1.0, so the vector stays unit length and the rig still walks at `Tuning.WALK_SPEED` (92px/s)
@@ -117,6 +118,8 @@ const _OPPOSITE := {
 var _path := ""
 var _seconds_to_wait := DEFAULT_SECONDS
 var _elapsed := 0.0
+## Whether Godot's movie writer is recording the run — see `_draw_covered_recording_frame()`.
+var _recording := false
 ## A recipe's movement and screenshot share physics time; ordinary rigs retain their own clock.
 var simulation_clock: Callable
 var before_capture: Callable
@@ -152,34 +155,23 @@ var _presses: Array[Dictionary] = []
 ## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
 var _tap_at := Vector2.INF
 
-## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace
-## or a recording. Returns null without one of those requests or outside a debug build.
-## `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee` and `--press` are developer
-## furniture like every flag `DevFlags` gates, and are gated here rather than moved there because
-## this file already owns their parsing.
+## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace,
+## a frame record or a recording bounded by `--after` (`RunConfig.screenshot_rig()`). Returns null
+## without one of those requests, which is always outside a debug build: `config.active_args` is
+## empty there. `--screenshot`, `--after`, `--walk`, `--smooth-walk`, `--flee`, `--press` and
+## `--tap` are parsed here, from those gated words, because this file owns what they do.
 ##
-## **Deliberately has no override, for the same reason `DevFlags.enabled()` does not get one.**
-## What this gate reaches is scripted input (`--walk`, `--flee`, `--press` can drive any action or
-## bare key, including `key:r` and `key:q`) and a PNG written straight to disk — automation built
-## for the person who already has the source, not a capability to hand a public build's visitor
-## through an address bar. Unlike `Telemetry`'s `?telemetry=1`, which only asks that *this run's own
-## log* go where a run's log already goes on every other platform, an override here would let
-## anyone drive the game like a rig. The entry point stays what it already is: run a debug build.
-static func from_command_line() -> AutoScreenshot:
-	if not OS.is_debug_build():
+## **No release page reaches this.** What it drives is scripted input (`--walk`, `--flee`,
+## `--press` can drive any action or bare key, including `key:r` and `key:q`) and a PNG written
+## straight to disk — automation built for the person who already has the source, not a capability
+## to hand a public build's visitor through an address bar. The entry point is a debug build.
+static func from_config(config: RunConfig) -> AutoScreenshot:
+	if not config.screenshot_rig():
 		return null
-	var args := OS.get_cmdline_user_args()
-	var index := args.find("--screenshot")
-	var has_picture := index != -1 and index + 1 < args.size()
-	# A timed, capture-free run: `--frame-trace` or `--frame-record` measuring, or Godot's own
-	# movie writer recording (`tools/record.sh`, `tools/trailer.sh`) — either way the rig drives
-	# her and quits at `--after`, and nothing here saves a picture of its own.
-	var timed_trace := (DevFlags.frame_trace_requested() or DevFlags.frame_record_requested()
-			or DevFlags.recording()) and "--after" in args
-	if not has_picture and not timed_trace:
-		return null
+	var args := config.active_args
 	var node := AutoScreenshot.new()
-	node._path = args[index + 1] if has_picture else ""
+	node._path = config.screenshot_path
+	node._recording = config.recording
 	var after := args.find("--after")
 	if after != -1 and after + 1 < args.size():
 		node._seconds_to_wait = float(args[after + 1])
@@ -223,13 +215,14 @@ static func from_command_line() -> AutoScreenshot:
 ## A capture that fires on the very next frame rather than after a timed `--after` wait — what
 ## `StillWatch` (`src/dev/still_watch.gd`, `--quit-when-still`) hands off to the moment its own
 ## heuristic fires, so that trigger goes through this file's one `_capture()` — the headless
-## guard, the `drawn_frame()` wait, the save, the stdout line and the quit — rather than a second
+## guard, the `DrawnFrame.wait()`, the save, the stdout line and the quit — rather than a second
 ## writer of the same picture. `_seconds_to_wait` of `0.0` means the very first `_process()` tick
 ## already satisfies `_elapsed >= _seconds_to_wait`, so nothing here duplicates the wait/capture
 ## branch already at the bottom of `_process()`.
-static func immediate(path: String) -> AutoScreenshot:
+static func immediate(path: String, recording := false) -> AutoScreenshot:
 	var node := AutoScreenshot.new()
 	node._path = path
+	node._recording = recording
 	node._seconds_to_wait = 0.0
 	return node
 
@@ -303,7 +296,7 @@ static func _parse_script(word: String) -> Array[Dictionary]:
 const _STAND := "p"
 
 ## The unit vector `degrees` clockwise from north (-y) points along — the inverse of what
-## `TelemetryLog.compass()` reads back off a vector, and the same convention: +y is south, so 0°
+## `RunTrace.compass()` reads back off a vector, and the same convention: +y is south, so 0°
 ## is north, 90° is east, 180° is south and 270° is west. `.normalized()` on the way out is what
 ## makes "a step must never press a vector shorter than one" true by construction rather than by
 ## trusting `sin`/`cos` to land on exactly 1.0.
@@ -335,7 +328,7 @@ func _ready() -> void:
 ## while hundreds of output frames repeat the last texture. A visible recording stays on the
 ## engine's render path, and non-recording runs never force a draw.
 func _draw_covered_recording_frame() -> void:
-	if recording_frame_needs_force(DevFlags.recording(), DisplayServer.window_can_draw()):
+	if recording_frame_needs_force(_recording, DisplayServer.window_can_draw()):
 		RenderingServer.force_draw(false)
 
 ## The recording-only gate above as a pure question, so the scope contract can be checked without
@@ -344,12 +337,12 @@ static func recording_frame_needs_force(recording: bool, window_can_draw: bool) 
 	return recording and not window_can_draw
 
 ## Presses `direction` through the same call the real touch scheme drives —
-## `TouchControls._set_axis()` on both axes, at `direction`'s own fractional strength, rather than
+## `TouchControls.set_axis()` on both axes, at `direction`'s own fractional strength, rather than
 ## `Input.action_press()` on a single `move_*` action. A diagonal step needs both axes pressed at
 ## once, which one action name cannot express.
 func _hold_direction(direction: Vector2) -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", direction.x)
-	TouchControls._set_axis(&"move_up", &"move_down", direction.y)
+	TouchControls.set_axis(&"move_left", &"move_right", direction.x)
+	TouchControls.set_axis(&"move_up", &"move_down", direction.y)
 	_holding_direction = direction
 
 ## Lets go of whatever `_hold_direction()` last pressed. A no-op when nothing is held, so callers
@@ -357,8 +350,8 @@ func _hold_direction(direction: Vector2) -> void:
 func _release_direction() -> void:
 	if _holding_direction == Vector2.ZERO:
 		return
-	TouchControls._set_axis(&"move_left", &"move_right", 0.0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0.0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	_holding_direction = Vector2.ZERO
 
 ## Steps the script forward against `_elapsed`, the same clock `--after` and `--flee` already read,
@@ -410,7 +403,7 @@ func _press_plan(tick: int) -> void:
 	_holding_direction = direction.normalized()
 
 func _on_telegraphed(instance: EventInstance) -> void:
-	if _fled or _flee_at < INF or not instance.def.pursues:
+	if _fled or _flee_at < INF or instance.def.pursuit == null:
 		return
 	_flee_at = _elapsed + _dither
 
@@ -457,9 +450,9 @@ func _process(delta: float) -> void:
 ## keycodes, the way a screen's own shortcuts usually are. Without `key:`, a rig can reach no screen
 ## whose shortcuts are keycodes, which is the pause screen entirely.
 ##
-## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.** `main.
-## _input()` marks every event handled while `_rig_locked_out`, except one carrying this exact
-## device id — see that function's own doc for why a tag on the event and not its class.
+## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.**
+## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
+## device id — see `RigLock.is_the_rigs_own_press()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent
@@ -519,7 +512,7 @@ func _turn_and_run() -> void:
 ## There is nothing to save either way — a headless viewport has no texture — so the only thing the
 ## await could ever buy is the wait itself.
 ##
-## A window that exists but is not being drawn is the other half, and `drawn_frame()` below is what
+## A window that exists but is not being drawn is the other half, and `DrawnFrame.wait()` is what
 ## answers it.
 func _capture() -> void:
 	if before_capture.is_valid():
@@ -529,7 +522,7 @@ func _capture() -> void:
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
 		get_tree().quit(1)
 		return
-	var forced: bool = await drawn_frame(get_tree())
+	var forced: bool = await DrawnFrame.wait(get_tree())
 	var image := get_viewport().get_texture().get_image()
 	var error := image.save_png(_path)
 	if error != OK:
@@ -544,44 +537,10 @@ func _capture() -> void:
 ## so a still taken from a hidden window says so.
 const FORCED_FRAME_NOTE := " (window not visible, so this frame was drawn on demand)"
 
-## Returns once the viewport texture holds a frame drawn since the call, and whether that frame had
-## to be forced. Every capture under `src/` waits here rather than on `RenderingServer.frame_post_draw`
-## alone, which `tests/test_auto_screenshot.gd` holds.
-##
-## **A window that cannot be seen is not drawn at all.** On macOS the main loop skips its draw step
-## whenever no window of the process is visible by the system's own occlusion test — fully covered
-## by another app's opaque window or minimized, and by that test's definition also on another Space
-## or behind a locked screen — while processing and physics carry on in real time. So a bare
-## `await frame_post_draw` in a covered rig waits for a signal that never comes, the walk and the
-## clock run on, and the rig ends on its own wall-clock limit with no picture. A rig's window takes
-## no focus, so whatever the operator has in front of it is enough to cover it.
-##
-## So each frame this checks `DisplayServer.window_can_draw()`, and when it is false draws one frame
-## on demand with `RenderingServer.force_draw()`, which renders every viewport into its texture —
-## the one a capture reads — and emits `frame_post_draw` like any other frame. It is forced from
-## `process_frame`, before this frame's scripts run, so it shows the state the skipped draw would
-## have shown. `swap_buffers` is off because there is nothing on screen to present to. Its frame
-## step is 0, so shader `TIME` and particles do not advance on a forced frame — nothing the game
-## draws uses either.
-##
-## A coroutine: callers write `await AutoScreenshot.drawn_frame(get_tree())`. Never called headless —
-## the null display server can draw nothing, forced or not, which is `can_photograph()`'s question.
-static func drawn_frame(tree: SceneTree) -> bool:
-	var state := {"drawn": false}
-	var on_drawn := func() -> void: state["drawn"] = true
-	RenderingServer.frame_post_draw.connect(on_drawn, CONNECT_ONE_SHOT)
-	var forced := false
-	while not state["drawn"]:
-		await tree.process_frame
-		if not state["drawn"] and not DisplayServer.window_can_draw():
-			RenderingServer.force_draw(false)
-			forced = true
-	return forced
-
 ## Whether a run driving the display server called `display_name` has a frame to photograph.
 ##
 ## A parameter rather than a call to `DisplayServer.get_name()` inside, for the same reason
-## `Telemetry._reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
+## `TelemetryPage.reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
 ## few things a test cannot fake, so welding it in would make the guard itself the untestable part
 ## of the guard. `"headless"` is the name Godot gives the null display server that `--headless`
 ## selects, and it is the name `main.gd` and `Telemetry` already compare against for the same

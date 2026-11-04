@@ -33,7 +33,7 @@ func _test_everything_that_stands_still_is_solid(t) -> void:
 	for def in EventCatalogue.all():
 		# A moving wall pins her against a building on a two-tile pavement, which is a different
 		# game from being priced out of a street. See `dog_walker`.
-		if def.mobile or def.pursues:
+		if def.mobile or def.pursuit != null:
 			continue
 		# Nothing checks that a thing sited out of where she happens to be walking leaves a route
 		# to a park, so `EventDef.validate()` refuses a body on one outright.
@@ -181,11 +181,11 @@ func _test_nothing_stands_on_the_doorstep_street(t) -> void:
 
 ## `plan` as `[position.x, position.y, obstructs_radius]`, appended to `bodies` — or not, for the
 ## same two exemptions the rule and its own probe make: a `checkpoint_hut`/`checkpoint_gate` door
-## body costs by design, and a `scenery` row has no ground to keep clear of.
+## body costs by design, and a `Role.SCENERY` row has no ground to keep clear of.
 func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 	if not plan.is_placed() or plan.def.obstructs_radius <= 0.0:
 		return
-	if plan.def.scenery or plan.def.id.begins_with("checkpoint"):
+	if plan.def.role == EventDef.Role.SCENERY or plan.def.id.begins_with("checkpoint"):
 		return
 	bodies.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_radius))
 
@@ -201,7 +201,7 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## every catalogue placement and every seal body on these same full days is asked whether it stands
 ## on a tile `StreetTrees.footprint_tiles` covers. The seals are asked here rather than only in
 ## `tests/test_seals.gd` because they are the half that does **not** go through
-## `EventScheduler._open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
+## `EventScheduler.open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
 ## one rule, and a day's plan is where the two have to agree. `fallen_tree` is the single exception
 ## and is excluded by name: it is the body that stands in a pit and empties it.
 ##
@@ -216,7 +216,7 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## the generator — it did, twice, the day this was written — and say nothing about holds.
 ## **Two seeds and five days.** A (seed, day) here is the most expensive unit anywhere in this
 ## suite — a `RouteTree`, a region plan, a closure plan, two seal plans and a `build_day` — and
-## what it proves is that five refusals inside `_open_ground_for` fire, which every single pair
+## what it proves is that five refusals inside `open_ground_for` fire, which every single pair
 ## exercises over its whole day's worth of candidates. The days stay five rather than one because
 ## holds come from four different planners and each has its own first day (region walls from
 ## `REGION_WALL_FIRST_DAY`, closures from act I), so the sample has to span the acts; the seeds
@@ -253,7 +253,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 
 			var boundary := {}
@@ -267,10 +267,10 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
 			var unheld_rng := RandomNumberGenerator.new()
 			unheld_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals_unheld := SealPlanner.plan_day(map, day, tree, unheld_rng, boundary)
+			var seals_unheld := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, unheld_rng, boundary)
 			t.check(seals.size() == seals_unheld.size(),
 					"seed %d day %d: holding the hard seals' ground plans the same seals (%d vs %d)"
 					% [map.seed_used, day, seals.size(), seals_unheld.size()])
@@ -289,7 +289,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				checked_trees += 1
 
 			var consumed: Array[String] = []
-			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 				if not plan.is_placed():
 					continue
 				checked += 1
@@ -364,7 +364,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				map.hold_segment(segment.key())
 			for segment in region_plan.doors:
 				map.hold_segment(segment.key())
-			for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 				map.hold_segment(segment.key())
 
 			var boundary := {}
@@ -378,11 +378,11 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, day, tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
 
 			var consumed: Array[String] = []
 			var bodies: Array = []
-			for plan in EventScheduler.build_day(day, _rng(day), map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)

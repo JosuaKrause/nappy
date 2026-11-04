@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/m213_far_end.gd
 ##
 ## **The walk.** Every `ALLEY` tile of six cities stands in for a mark. She walks in from the
-## alley's near end (`ResistanceDirector._alley_ends()`), starting one and a half tiles outside its
+## alley's near end (`ResistanceDirector.alley_ends()`), starting one and a half tiles outside its
 ## mouth, up to 34px short of the mark on its near side — inside `ContactPoint.REACH` (36px), so the
 ## mark is read — and back out the way she came, in 8px steps. A bare `alley_robbery` stands where
 ## a draw put him; the walk counts as reaching the mark when he is still `is_waiting()` at the end.
@@ -16,7 +16,7 @@ extends RefCounted
 ##
 ## **The screen.** She stands on every `ALLEY` tile in turn; the screen is 640x360 world px
 ## around her, unrotated (`Tuning.VIEW_HALF_EXTENT`); the director relocates the mark to
-## `_nearest_alley_within()` and draws its guard exactly as `_maybe_set_a_trap()` does for a
+## `nearest_alley_within()` and draws its guard exactly as `_maybe_set_a_trap()` does for a
 ## relocation. Counted: a relocated mark whose picture, or whose guard's body, shows on that
 ## screen, and a relocation that leaves the mark unguarded.
 ##
@@ -39,25 +39,25 @@ func run(t) -> void:
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
 func _task_guards(t) -> void:
-	var saved := GameState.completed_resistance_steps.duplicate()
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
+	var saved := GameState.resistance.completed_steps.duplicate()
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
 	var placed := 0
 	var unguarded := 0
 	var seen := 0
 	for seed_value in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in [13]:
-			GameState.completed_resistance_alley_tiles = []
+			GameState.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
-			GameState.completed_resistance_steps = done
+			GameState.resistance.completed_steps = done
 			var state := CityState.new()
-			GameState.city_state = state
+			GameState.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(day, _rng(seed_value, day, "events"), [],
+			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
@@ -74,12 +74,12 @@ func _task_guards(t) -> void:
 			camera.name = "Camera2D"
 			player.add_child(camera)
 			t.add_child(player)
+			city.events.use_player(player)
 			player.set_physics_process(false)
 			player.global_position = her
-			var screen := func(p: Vector2) -> bool:
-				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-			director.set_sight(screen, screen)
+			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0), null)
+			director.set_sight(city.events.sees)
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard
@@ -92,8 +92,8 @@ func _task_guards(t) -> void:
 			player.free()
 			director.free()
 		city.free()
-	GameState.completed_resistance_steps = saved
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.resistance.completed_steps = saved
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	print("[m213] guarded tasks %d: unguarded %d, guard body on screen %d" % [placed, unguarded,
 			seen])
 	t.check(true, "probe ran")
@@ -106,7 +106,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 func _reachability(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.pursues_within + ContactPoint.REACH
+	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var names := ["whole circle", "leaning bearing", "far end"]
 	var asleep := {"through": [0, 0, 0], "passage": [0, 0, 0]}
 	var counted := {"through": 0, "passage": 0}
@@ -115,7 +115,7 @@ func _reachability(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map)
+		director.setup(null, map, null, GameState)
 		var rngs: Array[RandomNumberGenerator] = []
 		for i in 3:
 			var rng := RandomNumberGenerator.new()
@@ -125,7 +125,7 @@ func _reachability(t) -> void:
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
-			var ends := director._alley_ends(mark)
+			var ends := director.alley_ends(mark)
 			if ends.is_empty():
 				continue
 			var kind := "through" if _in_a_through_alley(map, tile) else "passage"
@@ -139,14 +139,14 @@ func _reachability(t) -> void:
 				var guard_at := Vector2.INF
 				match i:
 					0:
-						guard_at = director._draw_guard_position(rngs[i], mark, Vector2.INF,
+						guard_at = director.draw_guard_position(rngs[i], mark, Vector2.INF,
 								min_distance, max_distance)
 					1:
-						guard_at = director._draw_guard_position(rngs[i], mark, far,
+						guard_at = director.draw_guard_position(rngs[i], mark, far,
 								min_distance, max_distance)
 					2:
 						guard_at = director._draw_guard_position_near_far_mouth(rngs[i], mark,
-								far, min_distance, max_distance, [], Vector2.INF, 0.0, false)
+								far, min_distance, max_distance, Vector2.INF, 0.0, false)
 				if guard_at == Vector2.INF:
 					unguarded[kind][i] += 1
 					continue
@@ -168,8 +168,8 @@ func _reachability(t) -> void:
 	t.check(true, "probe ran")
 
 func _on_screen(t) -> void:
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	GameState.completed_resistance_alley_tiles = []
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	GameState.facts.completed_resistance_alley_tiles = []
 	var marks_seen := 0
 	var guards_seen := 0
 	var guards_centre_seen := 0
@@ -178,7 +178,7 @@ func _on_screen(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map)
+		director.setup(null, map, null, GameState)
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
@@ -186,17 +186,16 @@ func _on_screen(t) -> void:
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
-			var screen := func(p: Vector2) -> bool:
-				return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-						and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-			director.set_sight(screen, screen)
-			var mark := director._nearest_alley_within(her)
+			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+					Tuning.VIEW_HALF_EXTENT * 2.0), null)
+			director.set_sight(city.events.sees)
+			var mark := director.nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue
 			relocations += 1
 			if _shows(mark, her, 16.0, 16.0):
 				marks_seen += 1
-			var guard_at := director._guard_position(rng, mark, true, her, true)
+			var guard_at := director.guard_position(rng, mark, true, her, true)
 			if guard_at == Vector2.INF:
 				unguarded += 1
 				continue
@@ -207,7 +206,7 @@ func _on_screen(t) -> void:
 				guards_seen += 1
 			var _unused := robbery
 		director.free()
-	GameState.completed_resistance_alley_tiles = saved_tiles
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
 	print("[m213] relocations %d: mark picture on screen %d, guard centre on screen %d, guard body on screen %d, unguarded %d"
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
 	t.check(true, "probe ran")
@@ -233,7 +232,7 @@ func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -
 		var steps := ceili(from.distance_to(to) / 8.0)
 		for s in steps + 1:
 			robber.player_at = from.lerp(to, float(s) / float(maxi(steps, 1)))
-			robber._process(STEP)
+			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true
 	robber.free()

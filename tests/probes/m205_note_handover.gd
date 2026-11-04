@@ -47,21 +47,21 @@ func run(t) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var reach_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var reach_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 	var inner_awake := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var inner_asleep := _handover_net_averaged(def, true, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 	var linger := ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS
 	var linger_awake := _handover_then_linger_net_averaged(def, Tuning.EXCITEMENT_DECAY_WALKING,
 			1.0, linger)
 	var linger_asleep := _handover_then_linger_net_averaged(def, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY, linger)
+			Baby.SLEEPING_SENSITIVITY, linger)
 	# The ordinary full pass -- "what walking past him costs" -- is `M174Pass`'s own 0px figure,
 	# the same simulation `docs/COSTS.md`'s "the pass — awake"/"the pass — asleep" rows are
 	# generated from (re-run rather than trust a number quoted here).
 	var pass_awake := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var pass_asleep := M174Pass.pass_net_averaged(def, 0.0, Tuning.EXCITEMENT_DECAY_WALKING,
-			Tuning.SLEEPING_SENSITIVITY)
+			Baby.SLEEPING_SENSITIVITY)
 
 	print("\n== homeless_yeller : the note handover ==")
 	print("  %28s | %10s %10s" % ["", "awake", "asleep"])
@@ -105,7 +105,7 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 	# row it measures, since a `MAP` row's telegraph is hours over by the time she reaches it.
 	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	var her_pos: Vector2 = instance.global_position + Vector2(LEAD, 0.0)
 	var incoming_sum := 0.0
@@ -114,13 +114,13 @@ func _handover_net(def: EventDef, at_inner_radius: bool, decay: float, sensitivi
 	# sums stop the moment either stopping rule fires.
 	var steps := int(ceil((LEAD / Tuning.WALK_SPEED) / STEP)) + 240
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		var to_instance: Vector2 = instance.global_position - her_pos
 		if to_instance.length() > 1.0:
 			her_pos += to_instance.normalized() * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
 		if distance <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 		var stop_radius := def.inner_radius if at_inner_radius else ContactPoint.REACH
 		if distance <= stop_radius:
@@ -152,7 +152,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 
 	var warm_steps := int(ceil((def.telegraph_time + 0.05 + phase_delay) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	var her_pos: Vector2 = instance.global_position + Vector2(LEAD, 0.0)
 	var direction := Vector2(-1.0, 0.0)
@@ -162,7 +162,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 	var reached := false
 	var linger_remaining := linger_seconds
 	for _i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		if not reached:
 			var to_instance: Vector2 = instance.global_position - her_pos
 			if to_instance.length() > 1.0:
@@ -172,7 +172,7 @@ func _handover_then_linger_net(def: EventDef, decay: float, sensitivity: float,
 		her_pos += direction * Tuning.WALK_SPEED * STEP
 		var distance := her_pos.distance_to(instance.global_position)
 		if distance <= def.outer_radius:
-			incoming_sum += instance.contribution_at(her_pos) * sensitivity * STEP
+			incoming_sum += instance.excitement.contribution_at(her_pos) * sensitivity * STEP
 			decay_sum += decay * STEP
 		if not reached and distance <= def.inner_radius:
 			reached = true

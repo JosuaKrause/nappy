@@ -147,7 +147,7 @@ reject_route_with_screenshot() {
 # ------------------------------------------------------------------ a rig's own lockdown ---
 # M195: a rig's window takes no focus, hears no stray key, and always closes. `rig_flag_present()`
 # and `rig_kill_after_seconds()` below are the shell half of the same three-defence lockdown
-# `DevFlags.is_rig()`/`_lock_out_a_rig()` (src/main.gd) apply from inside the game -- see the
+# `RunConfig.is_rig`/`RigLock` (src/dev/rig_lock.gd) apply from inside the game -- see the
 # `RIG_FLAGS` and `RIG_QUIT_SECONDS` marker blocks in src/dev/dev_flags.gd's own doc comment,
 # which both sides read live so shot.sh/run.sh can never name a different set of flags, or a
 # different deadline, than the game itself is locking down and timing against.
@@ -194,7 +194,7 @@ _rig_quit_constant() {
 # `src/autoload/tuning.gd`'s own DAY_LENGTH_SECONDS -- read live, the day-length fallback for a
 # rig with no --after and no --day-length of its own (a --route, or a bare --walk/--flee/--press/
 # --tap with none of --screenshot, --frame-trace or --frame-record beside it), matching what
-# `DevFlags.rig_quit_seconds()` falls back to on the GDScript side (that side additionally shortens
+# `RunConfig.rig_quit_seconds()` falls back to on the GDScript side (that side additionally shortens
 # it for a curfew day; this side stays with the longer, ordinary-day number, which can only ever
 # make the external kill wait a little longer than the in-game timer, never race it).
 _tuning_day_length_seconds() {
@@ -239,7 +239,7 @@ rig_kill_after_seconds() {
 # The same kill wait for a rig Godot's movie writer is recording (`--write-movie`, which
 # tools/record.sh and tools/trailer.sh launch with), given the dev flags being forwarded. Under the
 # writer the game counts its own deadline -- the same script-plus-margin-under-a-ceiling one -- in
-# game seconds rather than wall seconds (`main._process()`), so this stretches that deadline by
+# game seconds rather than wall seconds (`RigLock._process()`), so this stretches that deadline by
 # `movie_slowdown` (`DevFlags.RIG_MOVIE_SLOWDOWN`, the wall seconds a recorded game second may
 # take) and adds the same kill grace.
 rig_kill_after_movie_seconds() {

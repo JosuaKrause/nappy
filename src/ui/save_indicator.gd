@@ -11,10 +11,11 @@ extends CanvasLayer
 ## node is the only one that listens**: a write raises it through `EventBus.save_written`, deleting
 ## the save file through `EventBus.save_deleted`, and the browser's later answer to either arrives
 ## on `EventBus.save_write_settled` or `EventBus.save_deletion_settled`. Nothing is relayed by
-## `main`: the deletion a run's end makes comes from `GameState`, an autoload with no way to reach
-## `main`, and a web save's answer may come after a scene reload has freed the `main` that saved,
-## where a callable bound to it would be dropped and the symbol would stay fully shown for good. So
-## one place decides when the symbol begins and is answered, and a change begins it exactly once.
+## `main`: the deletion a run's end makes comes from `GameSave`'s own `run_ended` subscriber,
+## under the sitting, with no way to reach `main`, and a web save's answer may come after a scene
+## reload has freed the `main` that saved, where a callable bound to it would be dropped and the
+## symbol would stay fully shown for good. So one place decides when the symbol begins and is
+## answered, and a change begins it exactly once.
 ## Every change carries its operation id from `GameSave`, on its announcement and on its answer, so
 ## an answer settles the change it belongs to and nothing else. `begin()` raises it, and it is fully
 ## shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as long as **any**
@@ -41,8 +42,8 @@ extends CanvasLayer
 ##
 ## **It outlives the scene reloads a run makes.** The held restart deletes the save and frees `main`,
 ## and a symbol freed with it would never show the deletion, or show it only until the reload.
-## `outlive_the_scene()` hands it to the scene tree's root, which a reload leaves alone; the
-## `main` that boots next takes it back with `carried()` instead of building a second, so one
+## `outlive_the_scene()` hands it to the `Sitting` `main` keeps at the tree's root across a reload;
+## the `main` that boots next takes it back with `carried()` instead of building a second, so one
 ## symbol keeps its clocks and its picture across the reload and settles from the browser's answer
 ## on the freshly booted screen. The day-14 hand-over to the escape reloads the scene the same way
 ## and carries the symbol the same way (`main._reload_the_scene()` is the one place either reload
@@ -52,9 +53,9 @@ extends CanvasLayer
 ## all the same.
 ##
 ## Built by `main._ready()` — before a resumed run's own charge can end the run and delete the
-## save — and by `main._ready_escape()` for a run's own escape. The finale is reached in ordinary
+## save — the boot into a run's own escape included. The finale is reached in ordinary
 ## play (a won day 14 with every task complete hands the run over to it, see
-## `main._hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
+## `DayDirector.hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
 ## escape draws the symbol too. Not built under the `--start-escape` dev flag, where
 ## `GameSave.uses_save()` refuses every read, write and deletion and there is nothing to show.
 
@@ -76,7 +77,7 @@ const FADE_SECONDS := 1.5
 ## bug a shared tint constant would reintroduce.
 const _PEAK_ALPHA := 0.9
 
-## The name every symbol is given, and what `carried()` looks for on the tree's root.
+## The name every symbol is given, and what `carried()` looks for on its home.
 const _NODE_NAME := "SaveIndicator"
 
 ## Above the title screen's own 95 (`TitleScreen.layer`), so a write mid-boot still shows through
@@ -202,18 +203,26 @@ class Showing extends RefCounted:
 var _icon_rect: TextureRect
 var _plain_texture: Texture2D
 var _struck_texture: Texture2D
-var _showing := Showing.new()
+var _showing: Showing
+## The baked atlas pages the symbol draws from (`AtlasLibrary`), handed by `main` before it enters
+## the tree; a symbol nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
-func _init() -> void:
+## `timeline` is the symbol's timeline, handed in so whoever builds the symbol can keep a hand on it
+## — begin and answer changes on it, move its clocks, read its state — and a fresh one by default.
+func _init(timeline: Showing = null) -> void:
+	_showing = timeline if timeline != null else Showing.new()
 	name = _NODE_NAME
 	layer = _LAYER
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"ui")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"ui")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"ui")
+	atlas.release(&"ui")
 
 func _ready() -> void:
 	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
@@ -231,8 +240,8 @@ func _ready() -> void:
 	ScreenOrientation.pin_to_design_box(root)
 	_icon_rect = TextureRect.new()
 	_icon_rect.name = "Icon"
-	_plain_texture = AtlasLibrary.region(_ICON)
-	_struck_texture = AtlasLibrary.region(_ICON_UNAVAILABLE)
+	_plain_texture = atlas.region(_ICON)
+	_struck_texture = atlas.region(_ICON_UNAVAILABLE)
 	_icon_rect.texture = _plain_texture
 	_icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -278,32 +287,23 @@ func _on_save_changed(operation: int, result: int) -> void:
 func is_showing() -> bool:
 	return not _showing.is_idle()
 
-## Hands the symbol to the scene tree's root, so the scene reload the held restart or the day-14
-## hand-over makes does not free it — see the class doc. Does nothing once it is already there, or
-## off the tree.
-func outlive_the_scene() -> void:
-	var tree := get_tree()
-	if tree == null:
+## Hands the symbol to `home`, the `Sitting` `main` keeps across the scene reload the held restart
+## or the day-14 hand-over makes, so the reload does not free it — see the class doc. **Only a
+## symbol that is up needs moving**: an idle one is freed with the scene that holds it and the next
+## boot builds its own. Does nothing once it is already there (an idle one stays, and the next boot
+## adopts it again), or off the tree.
+func outlive_the_scene(home: Sitting) -> void:
+	if get_tree() == null or home == null or not is_showing():
 		return
-	var home := _home(tree)
 	if get_parent() != home:
 		reparent(home, false)
 
-## The symbol an earlier `main` handed to the tree's root with `outlive_the_scene()`, or `null`
-## when none did. A `main` boots into it rather than building a second one.
-static func carried(tree: SceneTree) -> SaveIndicator:
-	if tree == null:
+## The symbol an earlier `main` handed to `home` with `outlive_the_scene()`, or `null` when none
+## did. A `main` boots into it rather than building a second one.
+static func carried(home: Sitting) -> SaveIndicator:
+	if home == null:
 		return null
-	return _home(tree).get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
-
-## Where a symbol that outlives its scene lives: the tree's root, which a scene reload leaves alone.
-## `_home_override` is the seam a test points at a plain node instead, since a suite runs while the
-## root is still busy adding the runner and cannot take a child; `null`, the default, answers
-## normally, and a test sets it back when done.
-static var _home_override: Node = null
-
-static func _home(tree: SceneTree) -> Node:
-	return _home_override if _home_override != null else tree.root
+	return home.get_node_or_null(NodePath(_NODE_NAME)) as SaveIndicator
 
 func _process(delta: float) -> void:
 	if _showing.is_idle():

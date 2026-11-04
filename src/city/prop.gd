@@ -5,10 +5,10 @@ extends ScenerySprite
 
 enum Kind { TREE, PLAYGROUND_FRAME, BOLLARD, STREET_TREE, SACK, SACK_PILE }
 
-## `AtlasLibrary` region names in the "decoration" group (`CityDecals.DECORATION_ATLAS`), whose
-## lifetime is the city's: `City.build()` acquires the group before any prop is spawned and
+## Region names in the "decoration" atlas group (`CityDecals.DECORATION_ATLAS`), whose lifetime
+## is the city's: `City.build()` acquires the group on its library before any prop is spawned and
 ## `City._exit_tree()` releases it, so every region asked for below is always available.
-## `AtlasLibrary.native_size()` answers with nothing acquired, which is what lets
+## `AtlasTable.native_size()` answers with nothing acquired, which is what lets
 ## `StreetTrees.footprint_radius()` plan tree clearance off `TREES` ahead of any city existing.
 const TREES: Array[StringName] = [&"props/tree_a", &"props/tree_b"]
 const SWING_FRAME := &"props/swing_frame"
@@ -20,6 +20,9 @@ const SACK_PILE := &"props/garbage_sacks_pile"
 ## Deterministic per-prop variation, so a park does not shimmer between frames.
 @export var variant := 0
 @export var scale_factor := 1.0
+## The city's library (`AtlasLibrary`), handed before the prop is added: the city holds the
+## decoration group on it, and the prop draws its regions from it.
+var atlas: AtlasLibrary
 
 ## This prop's own ground shape — a point for a tree, a street tree, the bollard, a sack or a
 ## sack pile, sized off the same texture fraction the shadow always used; a capsule for the swing
@@ -44,7 +47,7 @@ func _ready() -> void:
 ## per object, M61) rather than a second number. A tree, a sack and a pile stay bodiless; a post
 ## stops her *(2026-10-10, the player, azure-puffin, on the bollards: "it will make the middle of
 ## the road impassable when going from street to pedestrian road. that's okay. this is intended")*,
-## and `City.BOLLARD_SPACING` keeps every gap between posts narrower than her body, so a row of
+## and `CityMap.BOLLARD_SPACING` keeps every gap between posts narrower than her body, so a row of
 ## them shuts the carriageway band while the pavements beside it stay open. Open to overturn: the
 ## radius is the shadow's 0.4 of the 12px picture (4.8px), not the picture's 6px rim.
 func _add_bollard_body() -> void:
@@ -56,14 +59,14 @@ func _add_bollard_body() -> void:
 	add_child(body)
 
 ## A post's ground shape: a point of 0.4 of the 12px picture (4.8px), the one definition its body,
-## its shadow and anything planning round it (`RouteRig`) read.
+## its shadow and anything planning round it (`RouteRigPlanner`, the route rig's planner) read.
 static func bollard_shape() -> GroundShape:
-	return GroundShape.point(AtlasLibrary.native_size(BOLLARD).x * 0.4)
+	return GroundShape.point(AtlasTable.baked().native_size(BOLLARD).x * 0.4)
 
 func _compute_shape() -> GroundShape:
 	match kind:
 		Kind.TREE, Kind.STREET_TREE:
-			var size := Vector2(AtlasLibrary.native_size(TREES[absi(variant) % TREES.size()])) \
+			var size := Vector2(AtlasTable.baked().native_size(TREES[absi(variant) % TREES.size()])) \
 					* scale_factor
 			return GroundShape.point(size.x * 0.28)
 		Kind.PLAYGROUND_FRAME:
@@ -71,15 +74,13 @@ func _compute_shape() -> GroundShape:
 		Kind.BOLLARD:
 			return bollard_shape()
 		Kind.SACK:
-			return GroundShape.point(AtlasLibrary.native_size(SACK).x * 0.35)
+			return GroundShape.point(AtlasTable.baked().native_size(SACK).x * 0.35)
 		Kind.SACK_PILE:
-			return GroundShape.point(AtlasLibrary.native_size(SACK_PILE).x * 0.3)
+			return GroundShape.point(AtlasTable.baked().native_size(SACK_PILE).x * 0.3)
 		_:
 			return GroundShape.point(0.0)
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if not scenery_resident:
 		return
 	match kind:
@@ -87,16 +88,16 @@ func _draw() -> void:
 			_draw_tree()
 		Kind.PLAYGROUND_FRAME:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, AtlasLibrary.region(SWING_FRAME), Vector2.ZERO)
+			Sprites.draw_standing(self, atlas.region(SWING_FRAME), Vector2.ZERO)
 		Kind.BOLLARD:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, AtlasLibrary.region(BOLLARD), Vector2.ZERO)
+			Sprites.draw_standing(self, atlas.region(BOLLARD), Vector2.ZERO)
 		Kind.SACK:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, AtlasLibrary.region(SACK), Vector2.ZERO)
+			Sprites.draw_standing(self, atlas.region(SACK), Vector2.ZERO)
 		Kind.SACK_PILE:
 			shape.draw_shadow(self, Vector2.ZERO)
-			Sprites.draw_standing(self, AtlasLibrary.region(SACK_PILE), Vector2.ZERO)
+			Sprites.draw_standing(self, atlas.region(SACK_PILE), Vector2.ZERO)
 		Kind.STREET_TREE:
 			_draw_street_tree()
 
@@ -105,7 +106,7 @@ func _draw() -> void:
 ## height), `half_length` from what is left of half its width once the rounded ends are accounted
 ## for.
 static func _playground_frame_shape() -> GroundShape:
-	var size := Vector2(AtlasLibrary.native_size(SWING_FRAME))
+	var size := Vector2(AtlasTable.baked().native_size(SWING_FRAME))
 	var radius := size.y * 0.5
 	return GroundShape.segment(size.x * 0.5 - radius, radius)
 
@@ -115,9 +116,9 @@ func _draw_tree() -> void:
 	# The size is read off the region table rather than off the drawn texture, since `scale_factor`
 	# is applied here and the two answer the same number either way — a region reports its
 	# source's own size.
-	var size := Vector2(AtlasLibrary.native_size(name)) * scale_factor
+	var size := Vector2(AtlasTable.baked().native_size(name)) * scale_factor
 	shape.draw_shadow(self, Vector2.ZERO)
-	Sprites.draw_standing(self, AtlasLibrary.region(name), Vector2.ZERO, size, absi(variant) % 4 < 2)
+	Sprites.draw_standing(self, atlas.region(name), Vector2.ZERO, size, absi(variant) % 4 < 2)
 
 ## The same standing tree every park tree draws, unscaled by `scale_factor`. The street tree's pit
 ## is a ground decal owned by `CityDecals`, so it stays under the player and other entities.

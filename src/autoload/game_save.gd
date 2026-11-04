@@ -1,39 +1,47 @@
 class_name GameSave
-extends RefCounted
+extends Node
 ## Persists a run to disk so the game can be closed and picked up again — see docs/MECHANICS.md,
-## "Saving and resuming". Not an autoload, the same shape `DevFlags` already uses: every member
-## below is `static`, so the class is a namespace for file I/O and format policy rather than an
-## object with a lifetime of its own. Lives beside `GameState`, the one thing it reads and writes,
-## rather than under `src/ui/` with the symbol that announces a write — a save module is data, the
-## symbol is presentation, and the two only meet through `EventBus`.
+## "Saving and resuming". Not an autoload and no static holds its state: **one `GameSave` is
+## held by the `Sitting`**, which outlives the scene reloads that free the `main` using it, because
+## the web flush below, the operation ids and the file's path outlive those reloads. `main` hands it
+## the run's configuration each boot (`configure()`) and uses it; a suite builds its own, at a
+## scratch path (`GameSave.new(path)`), and hands it to the boot it drives (`main.use_save()`). The
+## pure policy and format (the `Result` words, `file_data()`, `moment_result()`) stay `static`. **It is
+## handed the run it reads or writes** (`run: RunState`) on every call that touches one — `main` hands
+## the run it plays, a test whichever run it built, and `RunState` itself for its checkpoint — and
+## names no autoload for it. Lives beside `RunState`, the one thing it reads
+## and writes, rather than under `src/ui/` with the symbol that announces a write — a save module is
+## data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
-## **The save is the run, never the moment inside a day.** `GameState.save_snapshot()` says what a
-## run holds; this file only adds the facts a run does not know about itself — whether a day was
-## under way when the file was written, which section of the escape it is in, and which build
+## **The save is the run, never the moment inside a day.** The run's registered parts
+## (`RunState.run_parts`) say what a run holds and where in the file each part sits; this file
+## only adds the facts a run does not know about itself — whether a day was under way when the
+## file was written, which section of the escape it is in, and which build
 ## wrote it — and turns the result into JSON. *Asked for "that exact state", the crowd included, and overturned by the player to a
 ## restart at dawn that costs a nerve* — see docs/MECHANICS.md, "Saving and resuming", for what
 ## that costs and why.
 ##
 ## **The escape's section rides beside those, not inside the snapshot.** `"escape_section"` is a
 ## top-level key like `"day_under_way"`, so a file written before the escape was a run's ending is
-## still a complete snapshot (`GameState.snapshot_is_complete()` asks only about `"state"`) and
-## still resumes, reading as `FinaleController.Section.NONE` by absence. Putting it in
-## `_SAVE_FIELDS` instead would have made every save on disk unreadable for the sake of one int.
+## still a complete snapshot (`RunState.snapshot_is_complete()` asks only about `"state"`) and
+## still resumes, reading as `DaySpec.Section.NONE` by absence. Putting it in
+## the snapshot instead would have made every save on disk unreadable for the sake of one int.
 ## `"completed_resistance_alley_tiles"` rides the same way, for the same reason, reading as "none
 ## recorded" by absence. `"fenced_park"`/`"fenced_park_act"` ride the same way too: a save from
 ## before the one calm area a run could fence existed loads with none chosen, which is exactly what
 ## a run that has not reached act III looks like anyway.
 ##
-## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save written
-## before there were two modes, which reads as normal mode; `"checkpoint"` is absent from one
-## written before there were checkpoints, which reads as checkpoint zero, day 1 of the same city —
-## see `GameState.checkpoint`. **A checkpoint is the run in exactly the shape the file carries it**
-## (`run_data()`, every key below but the ones about the file itself), so a field a later build adds
-## to the save is in every checkpoint the moment it is in `run_data()`, and `restore_run_data()` is
-## the one function that reads both back.
+## **The mode and the checkpoint ride the same way.** `"hard_mode"` is absent from a save
+## written before there were two modes, which reads as normal mode; `"checkpoint"` is absent
+## from one written before there were checkpoints, which reads as checkpoint zero, day 1 of the
+## same city — see `RunCalendar.checkpoint`. **A checkpoint is the run in exactly the
+## shape the file carries it** (`RunStateRegistry.run_data()`, every key below but the ones
+## about the file itself), so a field a later build adds to the save is in every checkpoint the
+## moment it is in `run_data()`, and `RunStateRegistry.restore_run_data()` is the one function
+## that reads both back.
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
-## run; `set_path_override()` is the one seam a test uses to point at a scratch file instead, and
+## run; a suite hands the constructor a scratch path instead, and
 ## `uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
 ## or the test runner never touches either.
 ##
@@ -48,13 +56,14 @@ extends RefCounted
 ## that saved, and a callable bound to `main` would then be dropped and leave the symbol shown for
 ## good.
 ##
-## **Deleting the save is a change in the save state, and answers the same way.** *(cozy-pelican,
-## 2026-10-02: "show deleting the save file with a save symbol as well. every change in the save
-## state needs to show the symbol".)* `clear()` answers a `Result` like `write()` does and, on the
-## web, is not kept until IndexedDB has dropped the file too, which only a flush's own answer says
-## — see `_flush()`. It tells `EventBus` what it came to (`save_deleted`, and
-## `save_deletion_settled` for a web flush), which is how the symbol shows a deletion made by
-## `GameState._end_run()`, an autoload that cannot reach `main`'s indicator.
+## **Deleting the save is a change in the save state, and answers the same way.**
+## *(cozy-pelican, 2026-10-02: "show deleting the save file with a save symbol as well. every
+## change in the save state needs to show the symbol".)* `clear()` answers a `Result` like
+## `write()` does and, on the web, is not kept until IndexedDB has dropped the file too, which
+## only a flush's own answer says — see `_flush()`. It tells `EventBus` what it came to
+## (`save_deleted`, and `save_deletion_settled` for a web flush), which is how the symbol shows
+## a deletion made when a run ends (`clear_when_a_run_ends()`), which cannot reach `main`'s
+## indicator.
 ##
 ## **Every write and every deletion is one operation with its own id**, from `_new_operation()`,
 ## carried on its announcement and on its later answer alike. *(golden-otter, 2026-10-02: "if a new
@@ -63,11 +72,14 @@ extends RefCounted
 ## change begun last decides what it shows, and an answer to a change a symbol never began — one
 ## announced before a scene reload, to a symbol that did not survive it — settles nothing there.
 
-## Bumped only when the shape `GameState.save_snapshot()` writes changes — never for an ordinary
+## Bumped only when the shape `RunState.save_snapshot()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
 ## build with the same format keeps finding an older build's save, and only a format change drops
 ## one.** The build string below is recorded for a person to read, not for this comparison.
 const FORMAT_VERSION := 1
+
+## The name `main` gives it under the `Sitting`, and what the next boot looks for there.
+const NODE_NAME := "GameSave"
 
 const _DEFAULT_PATH := "user://save.json"
 
@@ -162,94 +174,89 @@ window.nappySaveFlush = function (token, answer) {
 ## The two page-side objects a web flush needs, made once and **held for the page's lifetime**: a
 ## `JavaScriptObject` made by `create_callback()` stops answering the moment GDScript lets go of
 ## it, silently, so a callback held only by a local would never settle a flush.
-static var _window: JavaScriptObject = null
-static var _flush_answer: JavaScriptObject = null
+var _window: JavaScriptObject = null
+var _flush_answer: JavaScriptObject = null
 
-## Every flush still waiting for its answer, by the operation id of the write or deletion it
-## carries, which is also the token the page's answer names: `{"settled": Callable, "deleting":
-## bool, "waited": float}`, the callable its `write()` or `clear()` was given, whether the flush
-## carries a deletion, and the seconds of clamped frames it has waited so far. The first of the
-## answer and the timeout to arrive removes the entry; the second finds nothing and does nothing.
-static var _pending_flushes: Dictionary = {}
-## The id `_new_operation()` handed out last. Only ever grows, for the life of the process, so a
-## larger id is always a change begun later — which is how `SaveIndicator` knows the newest — and
-## no id is reused across the scene reloads a held restart and the day-14 hand-over make.
-static var _last_operation := 0
+## Every flush still waiting for its answer — see `Flushes`.
+var _flushes := Flushes.new()
+## The id `_new_operation()` handed out last. Only ever grows, for the life of this node. In the
+## game that is the life of the process, because the `Sitting` that holds the node is never freed
+## and `main` parks it across every reload; a second `GameSave` (every suite builds its own) starts
+## again at 0. A larger id is always a change begun later — which is how `SaveIndicator` knows the
+## newest — and no id is reused across the scene reloads a held restart and the day-14 hand-over make.
+var _last_operation := 0
 ## When the last frame ticked the flushes' clocks, in `Time.get_ticks_usec()`. Set when the first
 ## flush begins waiting, so the step it first counts is the time since then.
-static var _last_tick_usec := 0
+var _last_tick_usec := 0
 
-## Set by a test to redirect every read and write at a scratch file instead of the player's own —
-## see the **verify** skill's testing policy: an agent's run never lands in a saved game. `""`
-## (the default) means "answer normally"; a test sets this before calling
-## `_write_now()`/`_read_now()` directly (bypassing `uses_save()`'s gate, which a headless test
-## runner would otherwise always fail) and clears it back to `""` when done, the same shape
-## `DevFlags._invincible_override` already uses for the same reason.
-static var _path_override := ""
+## Where this save lives: the player's own (`_DEFAULT_PATH`) unless the one that makes it hands in
+## another. A suite makes its own with a scratch file and hands it to the boot it drives
+## (`main.use_save()`), so an agent's run never lands in a saved game — see the **verify** skill's
+## testing policy.
+var _file_path: String
 
-static func set_path_override(path: String) -> void:
-	_path_override = path
+## A save at `file_path`; the game builds one with none, which is the player's own.
+func _init(file_path := _DEFAULT_PATH) -> void:
+	_file_path = file_path
 
-static func _path() -> String:
-	return _path_override if _path_override != "" else _DEFAULT_PATH
+func _path() -> String:
+	return _file_path
 
-## Set by a test to force `uses_save()`'s own answer, bypassing the headless display server this
-## suite always boots against — the same seam `DevFlags._invincible_override` is for the same
-## reason: a headless runner can drive `write()`/`try_resume()` (the gated names `main.gd` actually
-## calls) no other way, since `uses_save()` refuses a headless run unconditionally. `null` (the
-## default) means "answer normally"; a test sets this to `true` before exercising the gated path
-## against a scratch file (`set_path_override()` first, never `_DEFAULT_PATH`) and clears it back
-## to `null` when done, or the override leaks into every suite that runs after it.
-static var _uses_save_override: Variant = null
+## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
+## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
+## before the run has said which flags it carries.
+var _config: RunConfig
+
+func configure(config: RunConfig) -> void:
+	_config = config
 
 ## The one function every read and write of the player's save goes through. Every checkout and
 ## worktree of this repository shares one `user://`, so a dev flag, a headless run, the test
 ## runner and `tools/check.sh`'s boot must all fall through to an ordinary, unsaved run rather than
 ## any of them reading or writing what may be the player's own day 9.
 ##
-## `DisplayServer.get_name() == "headless"` answers the null display server a headless run boots
-## against (see the **verify** skill on `AutoScreenshot.can_photograph()`, the same check) —
-## checked first and unconditionally, since a headless boot carries no dev flag at all and would
-## otherwise read as an ordinary release run. `DevFlags.enabled()` is the same gate every other dev
-## flag already answers to (`OS.is_debug_build()`), so this reaches `--seed`, `--day`, `--walk` and
-## the rest by construction rather than by naming each one again; `DevFlags.no_save()` and a
-## flagless debug run's own empty argument list are the two ways a *windowed* debug session still
-## answers "no" — the first because it asked to, the second because nothing here can tell a bare
-## `tools/run.sh` apart from the player's own desktop build otherwise, and the flag exists exactly
-## so an agent can ask for one anyway.
+## `config.headless` answers the null display server a headless run boots against (see the
+## **verify** skill on `AutoScreenshot.can_photograph()`, the same check), read once at boot by
+## `RunConfig.at_boot()` — checked first and unconditionally, since a headless boot carries no dev
+## flag at all and would otherwise read as an ordinary release run. A test that wants the saving of
+## a windowed run hands `configure()` a config parsed with `headless_display` false. On a debug build any dev flag at all keeps the run off
+## the save (`config.active_args` is not empty), which reaches `--seed`, `--day`, `--walk` and the
+## rest by construction rather than by naming each one again; `--no-save` and a flagless debug
+## run's own empty argument list are the two ways a *windowed* debug session still answers "no" —
+## the first because it asked to, the second because nothing here can tell a bare `tools/run.sh`
+## apart from the player's own desktop build otherwise, and the flag exists exactly so an agent
+## can ask for one anyway.
 ##
 ## **A web page keeps its ordinary save too, debug build or release, unless it actually used one
-## of `DevFlags.live_debug_requested()`'s own parameters.** *(docs/DECISIONS.md, M193, "the live page's ?debug=1
-## reaches the debug flags": "a visitor who tries `?day=12` does not lose their own day 3".)*
-## `DevFlags.web_debug_flag_used()` answers that — `false` for the ordinary release page everyone
-## else gets, and for `?debug=1` alone with none of the bundle's own parameters named, since
-## neither one is a run built any differently from the one every other visitor gets.
-static func uses_save() -> bool:
-	if _uses_save_override != null:
-		return bool(_uses_save_override)
-	if DisplayServer.get_name() == "headless":
+## of the release-safe bundle's own parameters** (M193, the live page's ?debug=1 reaches the debug
+## flags: "a visitor who tries `?day=12` does not lose their own day 3").
+## `config.web_debug_flag_used` answers that — `false` for the ordinary release page everyone else
+## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
+## is a run built any differently from the one every other visitor gets.
+func uses_save() -> bool:
+	if _config == null or _config.headless:
 		return false
-	if not DevFlags.enabled():
-		return not DevFlags.web_debug_flag_used()
-	return _debug_run_uses_save(DevFlags.active_args(), DevFlags.no_save()) \
-			and not DevFlags.web_debug_flag_used()
+	if not _config.debug_build:
+		return not _config.web_debug_flag_used
+	return _debug_run_uses_save(_config.active_args, _config.no_save) \
+			and not _config.web_debug_flag_used
 
 ## The one piece of `uses_save()`'s policy that does not depend on the live environment — pulled
 ## out so a test can drive every combination of flags directly rather than only through whichever
-## shape `OS.is_debug_build()` happens to answer under the runner. Called only once `enabled()`
-## already holds, so a release build's own empty argument list never reaches this at all.
+## shape `OS.is_debug_build()` happens to answer under the runner. Called only on a debug build, so
+## a release build's own empty argument list never reaches this at all.
 static func _debug_run_uses_save(args: PackedStringArray, no_save: bool) -> bool:
 	return not no_save and args.is_empty()
 
 ## Whether a save file is currently on disk — read by `main.gd` for nothing gameplay-facing; a
 ## test's own way to check `clear()`/`write()` actually touched the filesystem.
-static func has_save() -> bool:
+func has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
 ## Deletes the save, if there is one, and answers what the deletion came to — which is also what
-## the save symbol shows, through `EventBus.save_deleted`. `GameState._end_run()` (a run that is
-## over) and `main._restart_run()` (the held restart) both call this; a run that is over or has been
-## thrown away leaves nothing to resume.
+## the save symbol shows, through `EventBus.save_deleted`. `clear_when_a_run_ends()`'s
+## subscriber (a run that is over) and `main._restart_run()` (the held restart) both call this;
+## a run that is over or has been thrown away leaves nothing to resume.
 ##
 ## `Result.REFUSED` for a dev run or a headless run (`uses_save()`) and when there is no file to
 ## delete: a restart after the run already ended and deleted the save changes nothing, so it draws
@@ -259,14 +266,14 @@ static func has_save() -> bool:
 ## `Result.FAILED`, exactly once, and only if its object still exists then — `EventBus`
 ## `save_deletion_settled` says the same to anything listening, which is how a symbol outlives the
 ## `main` that raised it. `settled` is never called for any other answer.
-static func clear(settled := Callable()) -> Result:
+func clear(settled := Callable()) -> Result:
 	if not uses_save() or not has_save():
 		return Result.REFUSED
 	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
 	var persistent := OS.is_userfs_persistent()
 	var removed := _clear_now()
-	var result := _moment_result(removed, on_web, persistent)
+	var result := moment_result(removed, on_web, persistent)
 	if result == Result.FAILED:
 		Telemetry.note("save", "the deletion was not kept (%s)"
 				% ("the file could not be removed" if not removed else "the browser refused storage"))
@@ -276,11 +283,9 @@ static func clear(settled := Callable()) -> Result:
 		_flush(operation, settled, true)
 	return result
 
-## The ungated mechanics `clear()` calls through, and the seam `tests/test_save.gd` calls directly
-## (pointed at a scratch path with `set_path_override()`) to put the scratch file away, since
-## `clear()` itself refuses a headless run. Returns whether the file is gone; a file that was not
-## there to begin with is already gone, so that is `true` and writes nothing to the run log.
-static func _clear_now() -> bool:
+## The ungated mechanics `clear()` calls through. Returns whether the file is gone; a file that was
+## not there to begin with is already gone, so that is `true` and writes nothing to the run log.
+func _clear_now() -> bool:
 	if not has_save():
 		return true
 	var removed := DirAccess.remove_absolute(ProjectSettings.globalize_path(_path())) == OK
@@ -290,7 +295,7 @@ static func _clear_now() -> bool:
 	Telemetry.note("save", "deleted the save")
 	return true
 
-## Writes the current `GameState` to disk and answers what the save moment came to, which is also
+## Writes `run` to disk and answers what the save moment came to, which is also
 ## what the save symbol shows, through `EventBus.save_written` — `main._save_now()` is just the one
 ## place the game calls this from, and relays nothing. `Result.REFUSED` for a dev run, a headless
 ## run and a run that has already ended, which draw nothing for a write that was never meant to
@@ -299,16 +304,16 @@ static func _clear_now() -> bool:
 ## is called with `Result.CONFIRMED` or `Result.FAILED`, exactly once, and only if its object still
 ## exists then. `settled` is never called for any other answer. **The symbol is answered by the bus,
 ## not by `settled`**, because a scene reload may free the caller before the browser answers.
-static func write(day_under_way: bool, settled := Callable()) -> Result:
-	if not uses_save() or _run_has_ended():
+func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
+	if not uses_save() or _run_has_ended(run):
 		return Result.REFUSED
 	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
 	# Read at every save moment rather than once, so the answer is the engine's own at the moment
 	# the save is meant to be kept.
 	var persistent := OS.is_userfs_persistent()
-	var wrote := _write_now(day_under_way)
-	var result := _moment_result(wrote, on_web, persistent)
+	var wrote := _write_now(run, day_under_way)
+	var result := moment_result(wrote, on_web, persistent)
 	if result == Result.FAILED:
 		Telemetry.note("save", "the save was not kept (%s)"
 				% ("the file could not be written" if not wrote else "the browser refused storage"))
@@ -319,13 +324,13 @@ static func write(day_under_way: bool, settled := Callable()) -> Result:
 	return result
 
 ## What a save moment comes to before any browser has answered — the pure half of `write()` and of
-## `clear()`, so a test can reach the web's branches from a desktop runner. `done` is
-## `_write_now()`'s or `_clear_now()`'s own answer, `persistent` is `OS.is_userfs_persistent()`:
+## `clear()`, public so the web's branches can be asked from a desktop runner. `done` is
+## the file write's or removal's own answer, `persistent` is `OS.is_userfs_persistent()`:
 ## false on a web page whose browser refused IndexedDB at boot, where Godot carries on from memory
 ## alone and a flush would report success for a copy no reload will ever find — so a page in that
 ## state is a failed change without ever flushing. For a deletion that is the right answer too: a
 ## stored copy this page could not reach is one a later visit can bring back.
-static func _moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
+static func moment_result(done: bool, on_web: bool, persistent: bool) -> Result:
 	if not done:
 		return Result.FAILED
 	if not on_web:
@@ -336,13 +341,13 @@ static func _moment_result(done: bool, on_web: bool, persistent: bool) -> Result
 
 ## A fresh id for one write or deletion — see the class doc. Called only for a change that is
 ## announced, never for a refused one, which announces nothing.
-static func _new_operation() -> int:
+func _new_operation() -> int:
 	_last_operation += 1
 	return _last_operation
 
-## Whether the run has an ending, after which nothing is written — see `_write_now()`.
-static func _run_has_ended() -> bool:
-	return GameState.ending != GameEnums.Ending.NONE
+## Whether `run` has an ending, after which nothing is written — see `write()`, where the refusal lives.
+static func _run_has_ended(run: RunState) -> bool:
+	return run.header.ending != GameEnums.Ending.NONE
 
 ## Starts a web flush for `operation` and settles it through `settled` — see `_FLUSH_JS` for the
 ## page's half and `FLUSH_TIMEOUT_SECONDS` for the backstop. The operation id is the flush's token,
@@ -363,122 +368,135 @@ static func _run_has_ended() -> bool:
 ## gap is why every write carries the whole run rather than a change to it: the next write lands
 ## during the next ordinary session, long before the following quit, so a save that never reached
 ## IndexedDB on one close is caught up by the time the game is closed again.
-static func _flush(operation: int, settled: Callable, deleting := false) -> void:
-	var token := _register_flush(operation, settled, deleting)
+func _flush(operation: int, settled: Callable, deleting := false) -> void:
+	var token := _flushes.register(operation, settled, deleting)
 	_start_the_clock()
 	if _flush_answer == null:
 		JavaScriptBridge.eval(_FLUSH_JS)
 		_window = JavaScriptBridge.get_interface("window")
-		_flush_answer = JavaScriptBridge.create_callback(_on_flush_answered)
+		_flush_answer = JavaScriptBridge.create_callback(_flushes.answer)
 	if _window == null or _flush_answer == null:
 		# Deferred, so the answer never arrives before the caller has been handed `PENDING` and
 		# had the chance to begin whatever waits for it — an answer to nothing begun is dropped.
-		_settle.call_deferred(token, Result.FAILED, "the page's JavaScript is not reachable")
+		_flushes.fail.call_deferred(token, "the page's JavaScript is not reachable")
 		return
 	_window.call("nappySaveFlush", token, _flush_answer)
 
 ## Starts counting frames for the flushes' timeout, if no flush is already being counted. The
 ## `SceneTree`'s `process_frame` fires every frame whether or not the tree is paused, so a flush
-## started as the summary pauses the tree still times out, and it needs no node of its own to
-## survive the held restart's scene reload.
-static func _start_the_clock() -> void:
+## started as the summary pauses the tree still times out. The connection is on this node, which
+## survives the held restart's scene reload because `main` parks it with the `Sitting`.
+func _start_the_clock() -> void:
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.process_frame.is_connected(_tick):
 		return
 	_last_tick_usec = Time.get_ticks_usec()
 	tree.process_frame.connect(_tick)
 
-static func _tick() -> void:
+func _tick() -> void:
 	var now := Time.get_ticks_usec()
 	var elapsed := float(now - _last_tick_usec) / 1000000.0
 	_last_tick_usec = now
-	_advance(_clamped_step(elapsed))
-
-## What one frame adds to a flush's wait, however long it was since the last frame.
-static func _clamped_step(elapsed_seconds: float) -> float:
-	return clampf(elapsed_seconds, 0.0, MAX_FLUSH_STEP_SECONDS)
-
-## Adds `step` seconds to every flush's wait and fails the ones past `FLUSH_TIMEOUT_SECONDS`, then
-## stops the clock once nothing waits. The seam `tests/test_save.gd` drives without a browser.
-static func _advance(step: float) -> void:
-	for token: int in _pending_flushes.keys():
-		var entry: Dictionary = _pending_flushes[token]
-		entry["waited"] = float(entry["waited"]) + step
-		if float(entry["waited"]) >= FLUSH_TIMEOUT_SECONDS:
-			_settle(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS)
-	if _pending_flushes.is_empty():
+	_flushes.advance(elapsed)
+	if _flushes.is_empty():
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree and tree.process_frame.is_connected(_tick):
 			tree.process_frame.disconnect(_tick)
 
-## The page's answer to one flush: `[token, message]`, `message` empty on success.
-static func _on_flush_answered(args: Array) -> void:
-	if args.size() < 2:
-		return
-	var message := str(args[1])
-	if message.is_empty():
-		_settle(int(args[0]), Result.CONFIRMED, "")
-	else:
-		_settle(int(args[0]), Result.FAILED, message)
+## The flushes waiting for the browser's answer, as a table of their own: **registered** when a
+## write or deletion hands its change to the browser, **answered** by the page's callback or
+## **timed out** by the frames that pass, whichever comes first. Apart from `GameSave`'s fields
+## and the `JavaScriptBridge`, so a desktop run, or a test, drives the whole of a flush's life
+## by registering one and giving it the page's answer or the frames' time: `GameSave` holds the one
+## the game uses, and each flush is keyed by the operation id of its change, which is also the token
+## the page's answer names.
+class Flushes extends RefCounted:
+	## Per token: `{"settled": Callable, "deleting": bool, "waited": float}`, the callable its
+	## `write()` or `clear()` was given, whether the flush carries a deletion, and the seconds of
+	## clamped frames it has waited so far. The first of the answer and the timeout to arrive
+	## removes the entry; the second finds nothing and does nothing.
+	var _waiting: Dictionary = {}
 
-## Puts `operation`'s flush in the table of flushes waiting for an answer, and answers its token,
-## which is the operation id itself.
-static func _register_flush(operation: int, settled: Callable, deleting := false) -> int:
-	_pending_flushes[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
-	return operation
+	## Puts `operation`'s flush in the table, and answers its token, which is the operation id itself.
+	func register(operation: int, settled: Callable, deleting := false) -> int:
+		_waiting[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
+		return operation
 
-## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
-## finds the token gone and does nothing, so a flush that answers after timing out stays failed
-## rather than flipping the symbol it already struck through. A `settled` whose object is gone — a
-## held restart reloads `main` while a flush is still out — is skipped. **The answer always goes out
-## on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled` for a write,
-## each with the operation id), which is what reaches the symbol that outlived the `main` a reload
-## freed.
-static func _settle(token: int, result: Result, reason: String) -> void:
-	if not _pending_flushes.has(token):
-		return
-	var entry: Dictionary = _pending_flushes[token]
-	var settled: Callable = entry["settled"]
-	var deleting: bool = entry["deleting"]
-	_pending_flushes.erase(token)
-	var kept := result == Result.CONFIRMED
-	if deleting:
-		if kept:
-			Telemetry.note("save", "the browser dropped the deleted save")
+	## Whether `token`'s flush is still waiting for an answer.
+	func waits_for(token: int) -> bool:
+		return _waiting.has(token)
+
+	func is_empty() -> bool:
+		return _waiting.is_empty()
+
+	## The page's answer to one flush: `[token, message]`, `message` empty on success.
+	func answer(args: Array) -> void:
+		if args.size() < 2:
+			return
+		var message := str(args[1])
+		if message.is_empty():
+			_settle(int(args[0]), Result.CONFIRMED, "")
 		else:
-			Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
-		EventBus.save_deletion_settled.emit(token, kept)
-	else:
-		if kept:
-			Telemetry.note("save", "the browser kept the save")
-		else:
-			Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
-		EventBus.save_write_settled.emit(token, kept)
-	if settled.is_valid():
-		settled.call(result)
+			_settle(int(args[0]), Result.FAILED, message)
 
-## The ungated mechanics `write()` calls through, and the seam `tests/test_save.gd` calls directly
-## so a headless test (where `uses_save()` always answers `false`, see its own doc) can still
-## exercise the actual file format — pointed at a scratch path with `set_path_override()` first,
-## never at `_DEFAULT_PATH`.
-##
-## **Refuses once `GameState.ending` is set**, checked here rather than only in `write()` so a test
-## can drive it without also having to make `uses_save()` answer `true` under the headless runner.
-## A finished run already had its save cleared in `GameState._end_run()`; this is the second line
-## of the same reasoning `CLAUDE.md`'s "check before accepting, never repair afterwards" asks for
-## elsewhere in this project — a stray write between the ending firing and the player being shown
-## it must not resurrect a file that answering the ending question already deleted.
+	## `token`'s flush failed for `reason` without the page having answered it.
+	func fail(token: int, reason: String) -> void:
+		_settle(token, Result.FAILED, reason)
+
+	## Adds one frame's time to every flush's wait — however long it was since the last frame, no
+	## more than `MAX_FLUSH_STEP_SECONDS`, and never a negative step — and fails the ones past
+	## `FLUSH_TIMEOUT_SECONDS`.
+	func advance(elapsed_seconds: float) -> void:
+		var step := clampf(elapsed_seconds, 0.0, MAX_FLUSH_STEP_SECONDS)
+		for token: int in _waiting.keys():
+			var entry: Dictionary = _waiting[token]
+			entry["waited"] = float(entry["waited"]) + step
+			if float(entry["waited"]) >= FLUSH_TIMEOUT_SECONDS:
+				_settle(token, Result.FAILED, "no answer within %.0fs" % FLUSH_TIMEOUT_SECONDS)
+
+	## Settles one pending flush, once: whichever of the page's answer and the timeout arrives second
+	## finds the token gone and does nothing, so a flush that answers after timing out stays failed
+	## rather than flipping the symbol it already struck through. A `settled` whose object is gone —
+	## a held restart reloads `main` while a flush is still out — is skipped. **The answer always
+	## goes out on `EventBus` first** (`save_deletion_settled` for a deletion, `save_write_settled`
+	## for a write, each with the operation id), which is what reaches the symbol that outlived the
+	## `main` a reload freed.
+	func _settle(token: int, result: Result, reason: String) -> void:
+		if not _waiting.has(token):
+			return
+		var entry: Dictionary = _waiting[token]
+		var settled: Callable = entry["settled"]
+		var deleting: bool = entry["deleting"]
+		_waiting.erase(token)
+		var kept := result == Result.CONFIRMED
+		if deleting:
+			if kept:
+				Telemetry.note("save", "the browser dropped the deleted save")
+			else:
+				Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
+			EventBus.save_deletion_settled.emit(token, kept)
+		else:
+			if kept:
+				Telemetry.note("save", "the browser kept the save")
+			else:
+				Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
+			EventBus.save_write_settled.emit(token, kept)
+		if settled.is_valid():
+			settled.call(result)
+
+## The ungated mechanics `write()` calls through. `write()` has already refused a run whose
+## `run.header.ending` is set (`_run_has_ended()`), the one path to the file, so this does not
+## check again: a stray write between the ending firing and the player being shown it must not
+## resurrect a file that `clear_when_a_run_ends()` deleted, and `write()` is where that is held.
 ##
 ## Returns whether the file was written and closed; on the web that is not yet a kept save — see
 ## `write()`.
-static func _write_now(day_under_way: bool) -> bool:
-	if _run_has_ended():
-		return false
+func _write_now(run: RunState, day_under_way: bool) -> bool:
 	var file := FileAccess.open(_path(), FileAccess.WRITE)
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
 		return false
-	var stored := file.store_string(JSON.stringify(file_data(day_under_way)))
+	var stored := file.store_string(JSON.stringify(file_data(run, day_under_way)))
 	file.close()
 	if not stored:
 		push_warning("GameSave: could not write %s" % _path())
@@ -487,18 +505,19 @@ static func _write_now(day_under_way: bool) -> bool:
 	Telemetry.note("save", "wrote the save (%s)" % state_word)
 	return true
 
-## Everything the save file holds, as the plain JSON-safe dictionary `_write_now()` stringifies:
-## `run_data()`, plus the facts about the file and the run's mode rather than about where the run
-## stands — the format and the build that wrote it, whether a day was under way, the mode, and the
-## checkpoint. `FILE_KEYS` names those, and `tests/test_run_checkpoints.gd` reads every other key
-## off this function to check a checkpoint gives each one back.
-static func file_data(day_under_way: bool) -> Dictionary:
-	var data := run_data()
+## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`
+## stringifies: `RunStateRegistry.run_data()`, plus the facts about the file and the run's mode
+## rather than about where the run stands — the format and the build that wrote it, whether a
+## day was under way, the mode, and the checkpoint. `FILE_KEYS` names those, and
+## `tests/test_run_checkpoints.gd` reads every other key off this function to check a checkpoint
+## gives each one back.
+static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
+	var data := run.run_parts.run_data()
 	data["format_version"] = FORMAT_VERSION
-	data["build"] = TitleScreen.build_text()
+	data["build"] = BuildInfo.build_text()
 	data["day_under_way"] = day_under_way
-	data["hard_mode"] = GameState.hard_mode
-	data["checkpoint"] = GameState.checkpoint.duplicate(true)
+	data["hard_mode"] = run.calendar.hard_mode
+	data["checkpoint"] = run.calendar.checkpoint.duplicate(true)
 	return data
 
 ## The keys of `file_data()` that are not the run's own state, and so are neither part of a
@@ -508,82 +527,37 @@ const FILE_KEYS: Array[String] = [
 	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
 ]
 
-## Where the run stands, in the shape the save carries it: `GameState.save_snapshot()` under
-## `"state"`, and the run's facts that ride beside it as top-level keys. This is also exactly what
-## a checkpoint is — `GameState._keep_a_checkpoint_if_one_is_due()` keeps it at a checkpoint day's
-## dawn — so the save and the checkpoint can never carry two different ideas of what a run is.
-static func run_data() -> Dictionary:
-	var alley_tiles: Array = []
-	for tile: Vector2i in GameState.completed_resistance_alley_tiles:
-		alley_tiles.append({"x": tile.x, "y": tile.y})
-	return {
-		"escape_section": GameState.escape_section,
-		"completed_resistance_alley_tiles": alley_tiles,
-		"fenced_park": {"x": GameState.fenced_park.x, "y": GameState.fenced_park.y},
-		"fenced_park_act": GameState.fenced_park_act,
-		"posters": GameState.posters.to_data(),
-		"pelican": GameState.pelican.to_data(),
-		"state": GameState.save_snapshot(),
-	}
+## Connects the deletion of the save to the end of a run: **a finished run leaves no save**,
+## since a save that named an ended run would have to be specially refused on load rather than
+## simply not existing. `main` calls this once a boot, before anything can end the run, and a
+## suite that ends a run calls it too; connecting twice changes nothing. (`main._restart_run()`
+## also clears the save, for the held restart that abandons a run before it ends on its own.)
+func clear_when_a_run_ends() -> void:
+	if not EventBus.run_ended.is_connected(_on_run_ended):
+		EventBus.run_ended.connect(_on_run_ended)
 
-## The other half of `run_data()`: puts every field it carries back on `GameState`, from a save
-## read off disk or from a checkpoint alike. `data["state"]` must already have passed
-## `GameState.snapshot_is_complete()`. Each rider is read with a default for its absence, so a save
-## from a build that never wrote it loads with the value a run that has not got that far holds.
-## Leaves `hard_mode` and `checkpoint` alone: they are the file's keys, not the run's state.
-static func restore_run_data(data: Dictionary) -> void:
-	GameState.restore_snapshot(data["state"])
-	# After the snapshot, never before: `restore_snapshot()` writes every field a run holds and
-	# this one is not among them, so a save from a build that never wrote the key leaves the run in
-	# the ordinary fourteen days rather than half-way into an escape it never reached.
-	GameState.escape_section = int(data.get("escape_section", 0))
-	# Same reasoning, same shape, for the alley tiles the resistance has already used this run: a
-	# save from a build that never wrote the key leaves the list empty rather than half-restored.
-	GameState.completed_resistance_alley_tiles.clear()
-	for raw: Dictionary in data.get("completed_resistance_alley_tiles", []):
-		GameState.completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
-	# And the one park barriers may already stand around, the same way again: a save from before
-	# `fenced_park` existed loads with none chosen, so act III can still choose one fresh — the same
-	# state a run that has not reached act III yet is already in.
-	var fenced_park: Variant = data.get("fenced_park", null)
-	if fenced_park is Dictionary:
-		GameState.fenced_park = Vector2i(int(fenced_park.get("x", -1)), int(fenced_park.get("y", -1)))
-	else:
-		GameState.fenced_park = Vector2i(-1, -1)
-	GameState.fenced_park_act = int(data.get("fenced_park_act", 0))
-	# And the walls, the same way again: a save from before there were posters loads with none up,
-	# and the next dawn pastes the city's from `PosterWalls.FIRST_DAY` onward.
-	GameState.posters.reset()
-	var posters: Variant = data.get("posters", {})
-	if posters is Dictionary:
-		GameState.posters.restore(posters)
-	# And the pelican bag's count, the same way again: a save from before it loads at 0.
-	GameState.pelican.reset()
-	var pelican: Variant = data.get("pelican", {})
-	if pelican is Dictionary:
-		GameState.pelican.restore(pelican)
+func _on_run_ended(_ending: GameEnums.Ending) -> void:
+	clear()
 
-## Tries to resume a run. Returns `{}` when there is nothing to resume — no file, a file this build
-## cannot read, or a dev/headless run `uses_save()` already refused — and `{"day_under_way": bool}`
-## once `GameState` has been overwritten with the save's own fields. The caller (`main._ready()`)
-## still owns what a `true` costs: the same lost-day path an ordinary loss takes, through
-## `GameState.finish_day()`, so this function only ever reads and restores, never spends a nerve.
-static func try_resume() -> Dictionary:
+## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a
+## file this build cannot read, or a dev/headless run `uses_save()` already refused — and
+## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The
+## caller (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary
+## loss takes, through `RunCalendar.finish_day()`, so this function only ever reads and
+## restores, never spends a nerve.
+func try_resume(run: RunState) -> Dictionary:
 	if not uses_save():
 		return {}
-	return _read_now()
+	return _read_now(run)
 
-## The ungated mechanics `try_resume()` calls through — the seam `tests/test_save.gd` uses to
-## exercise a garbled or version-mismatched file directly, since `uses_save()` always answers
-## `false` under the headless test runner (see its own doc).
+## The ungated mechanics `try_resume()` calls through.
 ##
 ## Every way a file fails to become a resumable run answers the same "drop it for a fresh title
-## screen" the design asks for, rather than a half-loaded `GameState`: no file at that path,
-## text that is not valid JSON, JSON that is not an object, a `format_version` this build does not
-## carry, or a `"state"` missing a field this build's own `GameState.save_snapshot()` writes — see
-## `GameState.snapshot_is_complete()`. Only past every one of those does `GameState` actually
-## change.
-static func _read_now() -> Dictionary:
+## screen" the design asks for, rather than a half-loaded run: no file at that path, text that is
+## not valid JSON, JSON that is not an object, a `format_version` this build does not carry, or a
+## `"state"` missing a field this build's own `RunState.save_snapshot()` writes — see
+## `RunState.snapshot_is_complete()`. Only past every one of those does `run` actually change.
+func _read_now(run: RunState) -> Dictionary:
 	var path := _path()
 	if not FileAccess.file_exists(path):
 		return {}
@@ -596,7 +570,7 @@ static func _read_now() -> Dictionary:
 	# drop one for a fresh title screen. `JSON.parse_string()` reports the same failure by printing
 	# an engine `ERROR: Parse JSON failed…` on its way to returning null, which is right for code
 	# that never expects bad JSON and wrong here; the instance form reports through its own return
-	# value instead and prints nothing, the same shape `GroundLayers._load_manifest()` already uses
+	# value instead and prints nothing, the same shape `GroundRecipe` already uses
 	# for a manifest file that also may not parse.
 	var parser := JSON.new()
 	if parser.parse(text) != OK:
@@ -610,43 +584,43 @@ static func _read_now() -> Dictionary:
 	if typeof(data.get("state", null)) != TYPE_DICTIONARY:
 		return {}
 	var state: Dictionary = data["state"]
-	if not GameState.snapshot_is_complete(state):
+	if not run.snapshot_is_complete(state):
 		return {}
-	return _apply(data)
+	return _apply(run, data)
 
-## Everything a readable save puts back on `GameState`, from `_read_now()`'s file and from
+## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
-static func _apply(data: Dictionary) -> Dictionary:
-	restore_run_data(data)
+static func _apply(run: RunState, data: Dictionary) -> Dictionary:
+	run.run_parts.restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
 	# normal run, and one from before there were checkpoints goes back to day 1 of its own city.
-	GameState.hard_mode = bool(data.get("hard_mode", false))
+	run.calendar.hard_mode = bool(data.get("hard_mode", false))
 	var kept: Variant = data.get("checkpoint", {})
-	GameState.checkpoint = _usable_checkpoint(kept)
+	run.calendar.checkpoint = _usable_checkpoint(run, kept)
 	return {"day_under_way": bool(data.get("day_under_way", false))}
 
-## The run on `GameState` written out the way a save is and read straight back the way a save is —
+## `run` written out the way a save is and read straight back into it the way a save is —
 ## through JSON and `_apply()` — without touching the disk. **A normal run sent back to its
 ## checkpoint boots on this** (`main._carry_the_run_into_the_next_boot()`): the scene is reloaded,
 ## so no node remembers anything after the checkpoint, and the run it boots on is exactly what a
 ## load would give it, on every run, a dev-flagged or headless one with no save at all included.
 ## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
-static func load_in_memory() -> void:
+func load_in_memory(run: RunState) -> void:
 	var parser := JSON.new()
-	if parser.parse(JSON.stringify(file_data(false))) != OK:
+	if parser.parse(JSON.stringify(file_data(run, false))) != OK:
 		push_error("GameSave: the run could not be written out as JSON")
 		return
-	_apply(parser.data)
+	_apply(run, parser.data)
 
 ## A checkpoint read off disk, kept only when it could be given back: a dictionary whose `"state"`
 ## carries every field this build's snapshot does. Anything else — absent, garbled, or from a
 ## snapshot shape this build no longer reads — falls back to checkpoint zero (`{}`) rather than a
 ## half-applied run, the same answer `_read_now()` gives a whole save it cannot read.
-static func _usable_checkpoint(raw: Variant) -> Dictionary:
+static func _usable_checkpoint(run: RunState, raw: Variant) -> Dictionary:
 	if not raw is Dictionary:
 		return {}
 	var kept: Dictionary = raw
 	var state: Variant = kept.get("state", null)
-	if not state is Dictionary or not GameState.snapshot_is_complete(state):
+	if not state is Dictionary or not run.snapshot_is_complete(state):
 		return {}
 	return kept

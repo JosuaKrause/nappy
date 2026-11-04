@@ -45,12 +45,17 @@ var _mirrored := false
 var _faces_away := false
 
 var signals: TrafficSignals
+## The baked atlas pages this head draws from (`AtlasLibrary`), handed by the city before it is
+## added; a head nobody handed one (a suite's) makes its own when it first enters the tree.
+var atlas: AtlasLibrary = null
 
 func _enter_tree() -> void:
-	AtlasLibrary.acquire(&"street_kit")
+	if atlas == null:
+		atlas = AtlasLibrary.new()
+	atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	AtlasLibrary.release(&"street_kit")
+	atlas.release(&"street_kit")
 
 func set_scenery_resident(resident: bool) -> void:
 	super.set_scenery_resident(resident)
@@ -100,17 +105,15 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_OTHER)
 	if not scenery_resident:
 		return
 	# The 5.0 here is the signal head's own shape, a point — small enough that a `GroundShape`
 	# instance bought nothing over the literal `Sprites.draw_shadow` already took.
 	Sprites.draw_shadow(self, Vector2.ZERO, 5.0)
 	if arm_is_vertical and _faces_away:
-		Sprites.draw_standing(self, AtlasLibrary.region(HEAD_BACK), Vector2.ZERO)
+		Sprites.draw_standing(self, atlas.region(HEAD_BACK), Vector2.ZERO)
 		return
-	Sprites.draw_standing(self, AtlasLibrary.region(HEAD if arm_is_vertical else HEAD_SIDE),
+	Sprites.draw_standing(self, atlas.region(HEAD if arm_is_vertical else HEAD_SIDE),
 			Vector2.ZERO, Vector2.ZERO, _mirrored)
 	var lamp := _lamp()
 	# With the power out the head is all that is left: its three lenses are drawn dark in the

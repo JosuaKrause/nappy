@@ -1,1071 +1,138 @@
 class_name EventInstance
 extends Node2D
-## One live event in the world: its lifetime, its telegraph phase, its excitement field and
-## its drawing.
+## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
+## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
+## (`src/events/views/`), which reads its public state and draws it.
 ##
-## The excitement model is entirely a *query* — `contribution_at()`. Nothing pushes a value
-## at the baby, so there is no ordering to get wrong, events compose by simple addition, and
-## the whole thing is testable without a scene.
-##
-## **Every picture below is the name its region is baked under, never a loaded texture and never
-## a file path.** The authoring SVG it came from lives under `art/`, which the engine ignores, so
-## there is nothing here to `load()` even by accident: `_drawn()` hands the draw call a region of
-## the one `events` page. Everything the drawing asks of a picture goes through the two helpers
-## beside `_drawn()`: `_native_size()` for a size read outside a draw, and nothing else — a
-## `Texture2D` never appears in this file again.
+## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
+## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
+## baby, so there is no ordering to get wrong, events compose by simple addition, and the whole
+## thing is testable without a scene.
 
-const CAT_CROUCHED := "events/cat_crouched"
-const CAT_RUNNING := "events/cat_running"
-## The `"side"` entry of `MOUSE_BY_VIEW` below, east-facing per `facings.csv` — see
-## `EventCatalogue._alley_mouse()`. Also `icon_for()`'s own badge silhouette.
-const MOUSE := "events/mouse"
-## The dash's own second frame, and the `"side"` entry of `MOUSE_BY_VIEW_B` — its tail curls a
-## little differently rather than crossing legs it has no room to draw at this scale, read off
-## `_gait_stepping()` the same way every other family's own `_b` table is.
-const MOUSE_B := "events/mouse_b"
-## The only generic here, and it is not a look: it is the *walker* half of a dog walker, which is a
-## picture of somebody holding a lead rather than a picture of nobody in particular. Every row draws
-## something of its own.
-const PERSON := "events/person"
-const YELLER := "events/yeller"
-const NEIGHBOR := "events/neighbor_front"
-const BUSKER := "events/busker"
-const POSTER_CREW := "events/poster_crew"
-## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
-## which is what tells the two crews apart at badge size.
-const POSTER_CREW_SQUARE := "events/poster_crew_square"
-const ROBBER_WAITING := "events/robber_waiting"
-const ROBBER_LUNGING := "events/robber_lunging"
-const PROTESTER := "events/protester"
-## The eight pointing poses, one per 45° bearing sector — see `_protester_texture()`. Ordered
-## clockwise from north to match `TelemetryLog.compass()`'s own bearing convention.
-const PROTESTER_POINT_N := "events/protester_point_n"
-const PROTESTER_POINT_NE := "events/protester_point_ne"
-const PROTESTER_POINT_E := "events/protester_point_e"
-const PROTESTER_POINT_SE := "events/protester_point_se"
-const PROTESTER_POINT_S := "events/protester_point_s"
-const PROTESTER_POINT_SW := "events/protester_point_sw"
-const PROTESTER_POINT_W := "events/protester_point_w"
-const PROTESTER_POINT_NW := "events/protester_point_nw"
-const GUNMAN := "events/gunman"
-## The unsuffixed source is every family's own side view — see `docs/GRAPHICS.md`'s side-facing
-## convention, `docs/evidence/svg-vehicles-2026-09-10/facings.csv`. The four-way suffixed sets below
-## it are each family's front, back and two diagonals, bound through `_draw_eight_view()`; the old
-## `_end.svg` single foreshortened picture each of these four rows drew for *both* north and south
-## headings is superseded by the two-way `_front`/`_back` split and stays on disk unbound (see
-## `docs/GRAPHICS.md`, the events table).
-const DELIVERY_VAN := "events/delivery_van"
-const DELIVERY_VAN_FRONT := "events/delivery_van_front"
-const DELIVERY_VAN_BACK := "events/delivery_van_back"
-const DELIVERY_VAN_FRONT_DIAGONAL := "events/delivery_van_front_diagonal"
-const DELIVERY_VAN_BACK_DIAGONAL := "events/delivery_van_back_diagonal"
-const FIRE_ENGINE := "events/fire_engine"
-const FIRE_ENGINE_FRONT := "events/fire_engine_front"
-const FIRE_ENGINE_BACK := "events/fire_engine_back"
-const FIRE_ENGINE_FRONT_DIAGONAL := "events/fire_engine_front_diagonal"
-const FIRE_ENGINE_BACK_DIAGONAL := "events/fire_engine_back_diagonal"
-const POLICE_CAR := "events/police_car"
-const POLICE_CAR_FRONT := "events/police_car_front"
-const POLICE_CAR_BACK := "events/police_car_back"
-const POLICE_CAR_FRONT_DIAGONAL := "events/police_car_front_diagonal"
-const POLICE_CAR_BACK_DIAGONAL := "events/police_car_back_diagonal"
-const UNMARKED_VAN := "events/unmarked_van"
-const UNMARKED_VAN_FRONT := "events/unmarked_van_front"
-const UNMARKED_VAN_BACK := "events/unmarked_van_back"
-const UNMARKED_VAN_FRONT_DIAGONAL := "events/unmarked_van_front_diagonal"
-const UNMARKED_VAN_BACK_DIAGONAL := "events/unmarked_van_back_diagonal"
-const VAN_VICTIM := "events/van_victim"
-## The night raid's van: `_draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the same
-## octant/mirror convention `EightDirection` gives every other family. Its side picture is
-## authored facing west, the same as `unmarked_van` and `army_truck` below
-## (`docs/evidence/svg-vehicles-2026-09-10/facings.csv`), so it takes the same `side_faces_west`
-## override those two do.
-const RIOT_VAN := "events/riot_van"
-const RIOT_VAN_FRONT := "events/riot_van_front"
-const RIOT_VAN_BACK := "events/riot_van_back"
-const RIOT_VAN_FRONT_DIAGONAL := "events/riot_van_front_diagonal"
-const RIOT_VAN_BACK_DIAGONAL := "events/riot_van_back_diagonal"
-const ARMY_TRUCK := "events/army_truck"
-const ARMY_TRUCK_FRONT := "events/army_truck_front"
-const ARMY_TRUCK_BACK := "events/army_truck_back"
-const ARMY_TRUCK_FRONT_DIAGONAL := "events/army_truck_front_diagonal"
-const ARMY_TRUCK_BACK_DIAGONAL := "events/army_truck_back_diagonal"
-const FLAME := "events/flame"
-const BARRIER_SEGMENT := "events/barrier_segment"
-const BARRIER_SEGMENT_VERTICAL := "events/barrier_segment_vertical"
-const BARRIER_END := "events/barrier_end"
-const RUBBLE := "events/rubble"
-const CHECKPOINT_BLOCK := "events/checkpoint_block"
-const ROADBLOCK_SEGMENT := "events/roadblock_segment"
-const ROADBLOCK_SEGMENT_VERTICAL := "events/roadblock_segment_vertical"
-const ROADBLOCK_END := "events/roadblock_end"
-## A hunting roadblock's own shadow once it draws as a guard rather than as the band: person-scale,
-## matching `alley_robbery`'s own `GroundShape.point(9.0)` rather than `def.shape` — the band's 60px
-## capsule, which is still what the collision body and the cold picture are built from.
-const _GUARD_SHADOW_RADIUS := 9.0
-## The gap between a posted roadblock guard's picture and the barrier's, so the two never touch —
-## see `_guard_post_offset()`.
-const _GUARD_POST_CLEARANCE := 2.0
-const BARRICADE_PILE := "events/barricade_pile"
-const CAFE_TABLE := "events/cafe_table"
-const CAFE_SITTER := "events/cafe_sitter"
-const DOG := "events/dog"
-const CYCLIST := "events/cyclist"
-const STALL := "events/stall"
-const LEAF_BLOWER := "events/leaf_blower"
-const PIGEON := "events/pigeon"
-const PIGEON_DOWN := "events/pigeon_down"
-const ICE_CREAM_VAN := "events/ice_cream_van"
-const ICE_CREAM_VAN_FRONT := "events/ice_cream_van_front"
-const ICE_CREAM_VAN_BACK := "events/ice_cream_van_back"
-const ICE_CREAM_VAN_FRONT_DIAGONAL := "events/ice_cream_van_front_diagonal"
-const ICE_CREAM_VAN_BACK_DIAGONAL := "events/ice_cream_van_back_diagonal"
-const LORRY := "events/lorry"
-const LORRY_FRONT := "events/lorry_front"
-const LORRY_BACK := "events/lorry_back"
-const LORRY_FRONT_DIAGONAL := "events/lorry_front_diagonal"
-const LORRY_BACK_DIAGONAL := "events/lorry_back_diagonal"
-const CHARGING_DOG := "events/charging_dog"
-const CHATTING_MOTHER_WALKING := "events/chatting_mother_walking"
-const CHATTING_MOTHER_TALKING := "events/chatting_mother_talking"
-## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
-const FALLEN_TREE := "events/fallen_tree"
-const CAR_ACCIDENT := "events/car_accident"
-const CAR_ACCIDENT_SHADOW := "events/car_accident_shadow"
-const SKIP := "events/skip"
-const SCAFFOLDING := "events/scaffolding"
-const BURST_MAIN := "events/burst_water_main"
-const MOVING_VAN := "events/moving_van"
-const MOVING_VAN_VERTICAL := "events/moving_van_vertical"
-const BURNT_OUT_CAR := "events/burnt_out_car"
-const BURNT_OUT_CAR_VERTICAL := "events/burnt_out_car_vertical"
-const COLLAPSED_FRONTAGE := "events/collapsed_frontage"
-## Directional siblings for the three whole-street scenes. Vehicles and upright props are authored
-## in the street's projection rather than rotating every pixel of the horizontal composition.
-const FALLEN_TREE_VERTICAL := "events/fallen_tree_vertical"
-const CAR_ACCIDENT_VERTICAL := "events/car_accident_vertical"
-const CAR_ACCIDENT_VERTICAL_SHADOW := "events/car_accident_vertical_shadow"
-const BURST_MAIN_VERTICAL := "events/burst_water_main_vertical"
-## The crash's and the burst main's second frames, one per street axis: the same canvas and every
-## pixel of the scene but the moving part — the crash's smoke one puff further up, the main's
-## fountain surging and splashing on the rims. `_wide_scene_texture()` picks them off
-## `_idle_stepping()`, on the two periods below, since neither scene ever moves.
-const CAR_ACCIDENT_B := "events/car_accident_b"
-const CAR_ACCIDENT_VERTICAL_B := "events/car_accident_vertical_b"
-const BURST_MAIN_B := "events/burst_water_main_b"
-const BURST_MAIN_VERTICAL_B := "events/burst_water_main_vertical_b"
-## A puff of smoke's own tempo: slow enough that the smoke reads as rising rather than flickering.
-const CAR_ACCIDENT_SMOKE_PERIOD := 1.2
-## A splash's: water under pressure surges quickly, so the fountain beats faster than the smoke.
-const BURST_MAIN_SPLASH_PERIOD := 0.5
-
-# ---------------------------------------------------------- eight-view families ---
-# Every family below shares the crowd walker's own convention (`docs/GRAPHICS.md`, "the crowd
-# walkers"; `CrowdAgent.WALKER_VIEW_BY_SECTOR`): N back, NE/NW back_diagonal, E/W side, SE/SW
-# front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
-# feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
-# rather than shared — an event and a walker have no common base to hang one array on — and
-# `_select_view()` below is `CrowdAgent._update_walker_view()`'s own shape applied generally: one
-# held sector per instance, since only one `Look` is ever live on a given instance.
-const EIGHT_VIEW_BY_SECTOR: Array[String] = [
-	"side", "front_diagonal", "front", "front_diagonal", "side",
-	"back_diagonal", "back", "back_diagonal",
-]
-
-const PERSON_BY_VIEW := {
-	"front": "events/person_front",
-	"back": "events/person_back",
-	"side": "events/person_side",
-	"front_diagonal": "events/person_front_diagonal",
-	"back_diagonal": "events/person_back_diagonal",
-}
-## Feet-passing companion to `PERSON_BY_VIEW`, the walker frame-authoring rule applied to the dog
-## walker's own body: cardinal and side views lift the coat and head one pixel and cross the legs
-## and shoes, the two diagonals leave everything but the legs untouched. See `_gait_stepping()`.
-const PERSON_BY_VIEW_B := {
-	"front": "events/person_front_b",
-	"back": "events/person_back_b",
-	"side": "events/person_side_b",
-	"front_diagonal": "events/person_front_diagonal_b",
-	"back_diagonal": "events/person_back_diagonal_b",
-}
-const YELLER_BY_VIEW := {
-	"front": "events/yeller_front",
-	"back": "events/yeller_back",
-	"side": "events/yeller_side",
-	"front_diagonal": "events/yeller_front_diagonal",
-	"back_diagonal": "events/yeller_back_diagonal",
-}
-## See `PERSON_BY_VIEW_B` above for the frame-authoring rule.
-const YELLER_BY_VIEW_B := {
-	"front": "events/yeller_front_b",
-	"back": "events/yeller_back_b",
-	"side": "events/yeller_side_b",
-	"front_diagonal": "events/yeller_front_diagonal_b",
-	"back_diagonal": "events/yeller_back_diagonal_b",
-}
-## The neighbor, the passer-by's own body in work clothes (`docs/GRAPHICS.md`, the neighbor): the
-## same five views and the same feet-passing frames, so the gait is the dog walker's own.
-const NEIGHBOR_BY_VIEW := {
-	"front": "events/neighbor_front",
-	"back": "events/neighbor_back",
-	"side": "events/neighbor_side",
-	"front_diagonal": "events/neighbor_front_diagonal",
-	"back_diagonal": "events/neighbor_back_diagonal",
-}
-const NEIGHBOR_BY_VIEW_B := {
-	"front": "events/neighbor_front_b",
-	"back": "events/neighbor_back_b",
-	"side": "events/neighbor_side_b",
-	"front_diagonal": "events/neighbor_front_diagonal_b",
-	"back_diagonal": "events/neighbor_back_diagonal_b",
-}
-const BUSKER_BY_VIEW := {
-	"front": "events/busker_front",
-	"back": "events/busker_back",
-	"side": "events/busker_side",
-	"front_diagonal": "events/busker_front_diagonal",
-	"back_diagonal": "events/busker_back_diagonal",
-}
-## The strumming hand raised — read by `_draw_busker()` off `_idle_stepping()`'s own timer rather
-## than `_gait_stepping()`'s distance, since he never moves. Everything but the hand/arm draped
-## over the guitar is byte-identical to frame a.
-const BUSKER_BY_VIEW_B := {
-	"front": "events/busker_front_b",
-	"back": "events/busker_back_b",
-	"side": "events/busker_side_b",
-	"front_diagonal": "events/busker_front_diagonal_b",
-	"back_diagonal": "events/busker_back_diagonal_b",
-}
-const POSTER_CREW_BY_VIEW := {
-	"front": "events/poster_crew_front",
-	"back": "events/poster_crew_back",
-	"side": "events/poster_crew_side",
-	"front_diagonal": "events/poster_crew_front_diagonal",
-	"back_diagonal": "events/poster_crew_back_diagonal",
-}
-## The pasting frame: the back view — the crew facing the wall it pastes, which is how every crew
-## on her way stands — with the brush raised to the wall, alternated with frame a on the idle timer
-## (`POSTER_CREW_PASTE_PERIOD`) so the crew is seen pasting. The other four views have no second
-## frame and name frame a's own picture.
-const POSTER_CREW_BY_VIEW_B := {
-	"front": "events/poster_crew_front",
-	"back": "events/poster_crew_back_b",
-	"side": "events/poster_crew_side",
-	"front_diagonal": "events/poster_crew_front_diagonal",
-	"back_diagonal": "events/poster_crew_back_diagonal",
-}
-## The square crew's five views. A 44x44 canvas where the sidewalk crew's is 30x44: the worker is
-## that family's own figure, unmoved on the anchor, and the extra width is the advertising column
-## he stands at. The column is a cylinder, so it is the same picture in all five and only the
-## worker turns.
-const POSTER_CREW_SQUARE_BY_VIEW := {
-	"front": "events/poster_crew_square_front",
-	"back": "events/poster_crew_square_back",
-	"side": "events/poster_crew_square_side",
-	"front_diagonal": "events/poster_crew_square_front_diagonal",
-	"back_diagonal": "events/poster_crew_square_back_diagonal",
-}
-const CAFE_SITTER_BY_VIEW := {
-	"front": "events/cafe_sitter_front",
-	"back": "events/cafe_sitter_back",
-	"side": "events/cafe_sitter_side",
-	"front_diagonal": "events/cafe_sitter_front_diagonal",
-	"back_diagonal": "events/cafe_sitter_back_diagonal",
-}
-## A lean, not a stride: the sitters never move, so this alternates on `_idle_stepping()`'s own
-## timer rather than on `_gait_stepping()`'s distance. Everything but the lap/table-contact stays
-## put; the seated body above it leans a couple of pixels — see the SVG's own comment.
-const CAFE_SITTER_BY_VIEW_B := {
-	"front": "events/cafe_sitter_front_b",
-	"back": "events/cafe_sitter_back_b",
-	"side": "events/cafe_sitter_side_b",
-	"front_diagonal": "events/cafe_sitter_front_diagonal_b",
-	"back_diagonal": "events/cafe_sitter_back_diagonal_b",
-}
-const VAN_VICTIM_BY_VIEW := {
-	"front": "events/van_victim_front",
-	"back": "events/van_victim_back",
-	"side": "events/van_victim_side",
-	"front_diagonal": "events/van_victim_front_diagonal",
-	"back_diagonal": "events/van_victim_back_diagonal",
-}
-## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `_draw_abduction()` off
-## `_victim_gait_stepping()`, her own short scripted walk to the van rather than the ordinary
-## distance-driven gait — see that function's doc.
-const VAN_VICTIM_BY_VIEW_B := {
-	"front": "events/van_victim_front_b",
-	"back": "events/van_victim_back_b",
-	"side": "events/van_victim_side_b",
-	"front_diagonal": "events/van_victim_front_diagonal_b",
-	"back_diagonal": "events/van_victim_back_diagonal_b",
-}
-const PROTESTER_BY_VIEW := {
-	"front": "events/protester_front",
-	"back": "events/protester_back",
-	"side": "events/protester_side",
-	"front_diagonal": "events/protester_front_diagonal",
-	"back_diagonal": "events/protester_back_diagonal",
-}
-## The plain rank's own stride — see `PERSON_BY_VIEW_B` for the rule. The eight
-## `protester_point_*` poses stay single; `_draw_protest()` only reaches this table when
-## `_protester_texture()` answers its own `PROTESTER` sentinel.
-const PROTESTER_BY_VIEW_B := {
-	"front": "events/protester_front_b",
-	"back": "events/protester_back_b",
-	"side": "events/protester_side_b",
-	"front_diagonal": "events/protester_front_diagonal_b",
-	"back_diagonal": "events/protester_back_diagonal_b",
-}
-const LEAF_BLOWER_BY_VIEW := {
-	"front": "events/leaf_blower_front",
-	"back": "events/leaf_blower_back",
-	"side": "events/leaf_blower_side",
-	"front_diagonal": "events/leaf_blower_front_diagonal",
-	"back_diagonal": "events/leaf_blower_back_diagonal",
-}
-## See `PERSON_BY_VIEW_B` for the frame-authoring rule. `leaf_blower` never moves today, so this
-## is never actually reached in play — wired for uniformity the way `lorry`'s own diagonal views
-## are, in case a future site ever turns him.
-const LEAF_BLOWER_BY_VIEW_B := {
-	"front": "events/leaf_blower_front_b",
-	"back": "events/leaf_blower_back_b",
-	"side": "events/leaf_blower_side_b",
-	"front_diagonal": "events/leaf_blower_front_diagonal_b",
-	"back_diagonal": "events/leaf_blower_back_diagonal_b",
-}
-const ROBBER_WAITING_BY_VIEW := {
-	"front": "events/robber_waiting_front",
-	"back": "events/robber_waiting_back",
-	"side": "events/robber_waiting_side",
-	"front_diagonal": "events/robber_waiting_front_diagonal",
-	"back_diagonal": "events/robber_waiting_back_diagonal",
-}
-const ROBBER_LUNGING_BY_VIEW := {
-	"front": "events/robber_lunging_front",
-	"back": "events/robber_lunging_back",
-	"side": "events/robber_lunging_side",
-	"front_diagonal": "events/robber_lunging_front_diagonal",
-	"back_diagonal": "events/robber_lunging_back_diagonal",
-}
-## The lunge's own stride — see `PERSON_BY_VIEW_B`. The waiting posture stays single: a man only
-## watching the street is not moving yet.
-const ROBBER_LUNGING_BY_VIEW_B := {
-	"front": "events/robber_lunging_front_b",
-	"back": "events/robber_lunging_back_b",
-	"side": "events/robber_lunging_side_b",
-	"front_diagonal": "events/robber_lunging_front_diagonal_b",
-	"back_diagonal": "events/robber_lunging_back_diagonal_b",
-}
-## His warning, between the wait and the lunge: both hands out of his coat, held low, walking at her
-## through his notice *(inbox #748: "robber can walk towards her")*. 26×44 against the waiting
-## picture's 22×44, the body moved with the canvas, so the swap keeps his feet where they were.
-const ROBBER_ALERT_BY_VIEW := {
-	"front": "events/robber_alert_front",
-	"back": "events/robber_alert_back",
-	"side": "events/robber_alert_side",
-	"front_diagonal": "events/robber_alert_front_diagonal",
-	"back_diagonal": "events/robber_alert_back_diagonal",
-}
-## The alert walk's other frame, alternated with `ROBBER_ALERT_BY_VIEW` by `_gait_stepping()` as he
-## walks at her through his notice, the way `ROBBER_LUNGING_BY_VIEW_B` is with his lunge: one walk
-## cycle, the same canvas and anchor per view. Held still (a held lunge he stands for) he shows the
-## first.
-const ROBBER_ALERT_BY_VIEW_B := {
-	"front": "events/robber_alert_front_b",
-	"back": "events/robber_alert_back_b",
-	"side": "events/robber_alert_side_b",
-	"front_diagonal": "events/robber_alert_front_diagonal_b",
-	"back_diagonal": "events/robber_alert_back_diagonal_b",
-}
-## The policeman on foot (`art/events/policeman_*`): the robber's set one for one — the same
-## canvases, anchors and postures, east-authored like the robber's — so he is drawn the way the
-## robber is (`_draw_policeman()`). The unsuffixed lunge is his badge silhouette (`icon_for()`).
-const POLICEMAN_LUNGING := "events/policeman_lunging"
-const POLICEMAN_WAITING_BY_VIEW := {
-	"front": "events/policeman_waiting_front",
-	"back": "events/policeman_waiting_back",
-	"side": "events/policeman_waiting_side",
-	"front_diagonal": "events/policeman_waiting_front_diagonal",
-	"back_diagonal": "events/policeman_waiting_back_diagonal",
-}
-const POLICEMAN_LUNGING_BY_VIEW := {
-	"front": "events/policeman_lunging_front",
-	"back": "events/policeman_lunging_back",
-	"side": "events/policeman_lunging_side",
-	"front_diagonal": "events/policeman_lunging_front_diagonal",
-	"back_diagonal": "events/policeman_lunging_back_diagonal",
-}
-## **A policeman who is about to charge stands square-on with one hand raised, palm out**, as the
-## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
-## van lets out, through day 8, for the second he stands beside her before he charges
-## (`policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor, sharing his
-## waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about to charge hold up their
-## hands; an event that does not spawn already charging always needs a warning.)*
-const POLICEMAN_ALERT_BY_VIEW := {
-	"front": "events/policeman_alert_front",
-	"back": "events/policeman_alert_back",
-	"side": "events/policeman_alert_side",
-	"front_diagonal": "events/policeman_alert_front_diagonal",
-	"back_diagonal": "events/policeman_alert_back_diagonal",
-}
-## The lunge's own stride, as `ROBBER_LUNGING_BY_VIEW_B` is the robber's.
-const POLICEMAN_LUNGING_BY_VIEW_B := {
-	"front": "events/policeman_lunging_front_b",
-	"back": "events/policeman_lunging_back_b",
-	"side": "events/policeman_lunging_side_b",
-	"front_diagonal": "events/policeman_lunging_front_diagonal_b",
-	"back_diagonal": "events/policeman_lunging_back_diagonal_b",
-}
-const CHATTING_MOTHER_WALKING_BY_VIEW := {
-	"front": "events/chatting_mother_walking_front",
-	"back": "events/chatting_mother_walking_back",
-	"side": "events/chatting_mother_walking_side",
-	"front_diagonal": "events/chatting_mother_walking_front_diagonal",
-	"back_diagonal": "events/chatting_mother_walking_back_diagonal",
-}
-## The pacing walk's own stride — see `PERSON_BY_VIEW_B`. The talking posture stays single: she is
-## frozen for the whole of a conversation, `is_chatting()`'s own meaning.
-const CHATTING_MOTHER_WALKING_BY_VIEW_B := {
-	"front": "events/chatting_mother_walking_front_b",
-	"back": "events/chatting_mother_walking_back_b",
-	"side": "events/chatting_mother_walking_side_b",
-	"front_diagonal": "events/chatting_mother_walking_front_diagonal_b",
-	"back_diagonal": "events/chatting_mother_walking_back_diagonal_b",
-}
-const CHATTING_MOTHER_TALKING_BY_VIEW := {
-	"front": "events/chatting_mother_talking_front",
-	"back": "events/chatting_mother_talking_back",
-	"side": "events/chatting_mother_talking_side",
-	"front_diagonal": "events/chatting_mother_talking_front_diagonal",
-	"back_diagonal": "events/chatting_mother_talking_back_diagonal",
-}
-
-## The animal/rider families below reuse the existing unsuffixed constant as `"side"` rather than
-## preloading a second copy of the same picture: `docs/evidence/svg-vehicles-2026-09-10/
-## facings.csv` marks every one of them "existing canonical source" rather than a new drawing, and
-## `docs/GRAPHICS.md` says to replace a preload only where the suffixed source is a different
-## picture from the one already live. `mouse` joins them below.
-const MOUSE_BY_VIEW := {
-	"front": "events/mouse_front",
-	"back": "events/mouse_back",
-	"side": MOUSE,
-	"front_diagonal": "events/mouse_front_diagonal",
-	"back_diagonal": "events/mouse_back_diagonal",
-}
-## The dash's own second frame — its tail curls a little differently rather than crossing legs it
-## has no room to draw at this scale, unlike `CAT_RUNNING_BY_VIEW_B`'s quadrupeds — alternated by
-## `_gait_stepping()` the same way every other family's own `_b` table is.
-const MOUSE_BY_VIEW_B := {
-	"front": "events/mouse_front_b",
-	"back": "events/mouse_back_b",
-	"side": MOUSE_B,
-	"front_diagonal": "events/mouse_front_diagonal_b",
-	"back_diagonal": "events/mouse_back_diagonal_b",
-}
-const CAT_CROUCHED_BY_VIEW := {
-	"front": "events/cat_crouched_front",
-	"back": "events/cat_crouched_back",
-	"side": CAT_CROUCHED,
-	"front_diagonal": "events/cat_crouched_front_diagonal",
-	"back_diagonal": "events/cat_crouched_back_diagonal",
-}
-const CAT_RUNNING_BY_VIEW := {
-	"front": "events/cat_running_front",
-	"back": "events/cat_running_back",
-	"side": CAT_RUNNING,
-	"front_diagonal": "events/cat_running_front_diagonal",
-	"back_diagonal": "events/cat_running_back_diagonal",
-}
-## The dash's own stride. Unlike the humanoid families (`PERSON_BY_VIEW_B`), a quadruped's low
-## silhouette has no coat or head to lift, so every view here only shifts the leg marks — the
-## distance-driven bob (`_current_bob()`) still supplies the vertical motion cue. The crouched
-## posture stays single: it is the telegraph, held still.
-const CAT_RUNNING_BY_VIEW_B := {
-	"front": "events/cat_running_front_b",
-	"back": "events/cat_running_back_b",
-	"side": "events/cat_running_b",
-	"front_diagonal": "events/cat_running_front_diagonal_b",
-	"back_diagonal": "events/cat_running_back_diagonal_b",
-}
-const DOG_BY_VIEW := {
-	"front": "events/dog_front",
-	"back": "events/dog_back",
-	"side": DOG,
-	"front_diagonal": "events/dog_front_diagonal",
-	"back_diagonal": "events/dog_back_diagonal",
-}
-## Shared by the dog walker's own dog and the loose dog — see `CAT_RUNNING_BY_VIEW_B` for why a
-## quadruped's b frame only shifts the legs.
-const DOG_BY_VIEW_B := {
-	"front": "events/dog_front_b",
-	"back": "events/dog_back_b",
-	"side": "events/dog_b",
-	"front_diagonal": "events/dog_front_diagonal_b",
-	"back_diagonal": "events/dog_back_diagonal_b",
-}
-## The normal dog's third picture per view — the dog walker's and the loose dog's, not the charging
-## dog's — so it walks step, rest, opposite step, rest *(2026-09-27, teal-marmot: "the normal dog
-## should have three frames. we have the resting one now and one leg forward. now we need one
-## frame with the other leg forward")*. What a c picture *is* depends on the view, and
-## `dog_picture()` is the one place that says so.
-const DOG_BY_VIEW_C := {
-	"front": "events/dog_front_c",
-	"back": "events/dog_back_c",
-	"side": "events/dog_c",
-	"front_diagonal": "events/dog_front_diagonal_c",
-	"back_diagonal": "events/dog_back_diagonal_c",
-}
-
-## Which of the normal dog's three pictures a view draws on a beat of its four-beat walk: the
-## first step while `stepping` in the first half of the stride, the opposite step while `stepping`
-## in the second, and the rest pose whenever it is not stepping — between the two steps, and for
-## as long as it stands still. **The rest and the opposite step are different tables per view.**
-## The side and both diagonals rest on their b picture (legs gathered under the body) and take the
-## opposite step on c; front and back already alternate their diagonal leg pairs between a and b,
-## so their c picture is the square neutral stance and is their rest.
-static func dog_picture(view: String, stepping: bool, second_half: bool) -> String:
-	var cardinal := view == "front" or view == "back"
-	if not stepping:
-		return DOG_BY_VIEW_C[view] if cardinal else DOG_BY_VIEW_B[view]
-	if not second_half:
-		return DOG_BY_VIEW[view]
-	return DOG_BY_VIEW_B[view] if cardinal else DOG_BY_VIEW_C[view]
-
-const CHARGING_DOG_BY_VIEW := {
-	"front": "events/charging_dog_front",
-	"back": "events/charging_dog_back",
-	"side": CHARGING_DOG,
-	"front_diagonal": "events/charging_dog_front_diagonal",
-	"back_diagonal": "events/charging_dog_back_diagonal",
-}
-## See `CAT_RUNNING_BY_VIEW_B`.
-const CHARGING_DOG_BY_VIEW_B := {
-	"front": "events/charging_dog_front_b",
-	"back": "events/charging_dog_back_b",
-	"side": "events/charging_dog_b",
-	"front_diagonal": "events/charging_dog_front_diagonal_b",
-	"back_diagonal": "events/charging_dog_back_diagonal_b",
-}
-## **The dog that waits for her has a stage of its own on each side of the gallop** *(velvet-marten,
-## #698: "the waiting charging dog needs a proper resting frame when in wait. It looks like it's
-## flying"; polite-toad, #722: "a distinct alert and rest post for each charger that gets triggered
-## by the player")*: sitting, ears soft and tail on the ground, while it waits, and up on four stiff
-## legs with its hackles raised and its jaw shut on its teeth while it stands for its notice, the
-## open red jaw kept for the charge. Each is one still picture — "nobody walks -- only the robber"
-## (inbox #748) — on the gallop's own canvases and bottom-centre anchor, so the swap does not move
-## the dog. Drawn from the SVGs: the gallop keeps its comic transfers, and the player judges the
-## style switch in the game (inbox #748: "yes that's what I've been saying all along").
-const CHARGING_DOG_RESTING_BY_VIEW := {
-	"front": "events/charging_dog_resting_front",
-	"back": "events/charging_dog_resting_back",
-	"side": "events/charging_dog_resting",
-	"front_diagonal": "events/charging_dog_resting_front_diagonal",
-	"back_diagonal": "events/charging_dog_resting_back_diagonal",
-}
-const CHARGING_DOG_ALERT_BY_VIEW := {
-	"front": "events/charging_dog_alert_front",
-	"back": "events/charging_dog_alert_back",
-	"side": "events/charging_dog_alert",
-	"front_diagonal": "events/charging_dog_alert_front_diagonal",
-	"back_diagonal": "events/charging_dog_alert_back_diagonal",
-}
-const CYCLIST_BY_VIEW := {
-	"front": "events/cyclist_front",
-	"back": "events/cyclist_back",
-	"side": CYCLIST,
-	"front_diagonal": "events/cyclist_front_diagonal",
-	"back_diagonal": "events/cyclist_back_diagonal",
-}
-## The pedal's own two positions — rider and bike are one picture, so one phase swaps both without
-## anything here needing to know they are drawn together.
-const CYCLIST_BY_VIEW_B := {
-	"front": "events/cyclist_front_b",
-	"back": "events/cyclist_back_b",
-	"side": "events/cyclist_b",
-	"front_diagonal": "events/cyclist_front_diagonal_b",
-	"back_diagonal": "events/cyclist_back_diagonal_b",
-}
-## The pelican that about one cyclist in four hundred is instead *(minty-hedgehog, statement 8: "One
-## in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg only")* — the same
-## bike, path for path, on the same canvases, so it shares the cyclist's registration, wheel contact
-## and pedal frames and only the rider differs. Drawn when `is_pelican` is set; see
-## `EventManager.rolls_a_pelican()` for who decides that and when.
-const PELICAN_BY_VIEW := {
-	"front": "events/pelican_cyclist_front",
-	"back": "events/pelican_cyclist_back",
-	"side": "events/pelican_cyclist",
-	"front_diagonal": "events/pelican_cyclist_front_diagonal",
-	"back_diagonal": "events/pelican_cyclist_back_diagonal",
-}
-## See `CYCLIST_BY_VIEW_B`: the pelican's own two pedal positions.
-const PELICAN_BY_VIEW_B := {
-	"front": "events/pelican_cyclist_front_b",
-	"back": "events/pelican_cyclist_back_b",
-	"side": "events/pelican_cyclist_b",
-	"front_diagonal": "events/pelican_cyclist_front_diagonal_b",
-	"back_diagonal": "events/pelican_cyclist_back_diagonal_b",
-}
-const PIGEON_BY_VIEW := {
-	"front": "events/pigeon_front",
-	"back": "events/pigeon_back",
-	"side": PIGEON,
-	"front_diagonal": "events/pigeon_front_diagonal",
-	"back_diagonal": "events/pigeon_back_diagonal",
-}
-const PIGEON_DOWN_BY_VIEW := {
-	"front": "events/pigeon_down_front",
-	"back": "events/pigeon_down_back",
-	"side": PIGEON_DOWN,
-	"front_diagonal": "events/pigeon_down_front_diagonal",
-	"back_diagonal": "events/pigeon_down_back_diagonal",
-}
-## The vehicle-scale families below share the same five-view shape as every family above, but not
-## all of them share its mirror convention: `docs/evidence/svg-vehicles-2026-09-10/README.md` — "the
-## existing delivery van, fire engine, unmarked van, riot van, army truck and moving van side
-## pictures visibly place the cab at the left" — so their single `"side"` picture is authored facing
-## **west**, backwards from every side picture above. `_draw_eight_view()`'s own `side_faces_west`
-## parameter is the one bit that reads, per family, from `facings.csv`'s `mirror_x` column rather
-## than being assumed; every front, back and diagonal view is unaffected; each is its own picture
-## for its own compass point regardless of which way the side view faces.
-const DELIVERY_VAN_BY_VIEW := {
-	"front": DELIVERY_VAN_FRONT,
-	"back": DELIVERY_VAN_BACK,
-	"side": DELIVERY_VAN,
-	"front_diagonal": DELIVERY_VAN_FRONT_DIAGONAL,
-	"back_diagonal": DELIVERY_VAN_BACK_DIAGONAL,
-}
-const FIRE_ENGINE_BY_VIEW := {
-	"front": FIRE_ENGINE_FRONT,
-	"back": FIRE_ENGINE_BACK,
-	"side": FIRE_ENGINE,
-	"front_diagonal": FIRE_ENGINE_FRONT_DIAGONAL,
-	"back_diagonal": FIRE_ENGINE_BACK_DIAGONAL,
-}
-## East-authored, like `CYCLIST_BY_VIEW` above — no `side_faces_west` override at the call site.
-const ICE_CREAM_VAN_BY_VIEW := {
-	"front": ICE_CREAM_VAN_FRONT,
-	"back": ICE_CREAM_VAN_BACK,
-	"side": ICE_CREAM_VAN,
-	"front_diagonal": ICE_CREAM_VAN_FRONT_DIAGONAL,
-	"back_diagonal": ICE_CREAM_VAN_BACK_DIAGONAL,
-}
-## East-authored — see `ICE_CREAM_VAN_BY_VIEW` above.
-const LORRY_BY_VIEW := {
-	"front": LORRY_FRONT,
-	"back": LORRY_BACK,
-	"side": LORRY,
-	"front_diagonal": LORRY_FRONT_DIAGONAL,
-	"back_diagonal": LORRY_BACK_DIAGONAL,
-}
-const UNMARKED_VAN_BY_VIEW := {
-	"front": UNMARKED_VAN_FRONT,
-	"back": UNMARKED_VAN_BACK,
-	"side": UNMARKED_VAN,
-	"front_diagonal": UNMARKED_VAN_FRONT_DIAGONAL,
-	"back_diagonal": UNMARKED_VAN_BACK_DIAGONAL,
-}
-const ARMY_TRUCK_BY_VIEW := {
-	"front": ARMY_TRUCK_FRONT,
-	"back": ARMY_TRUCK_BACK,
-	"side": ARMY_TRUCK,
-	"front_diagonal": ARMY_TRUCK_FRONT_DIAGONAL,
-	"back_diagonal": ARMY_TRUCK_BACK_DIAGONAL,
-}
-## East-authored — see `ICE_CREAM_VAN_BY_VIEW` above.
-const POLICE_CAR_BY_VIEW := {
-	"front": POLICE_CAR_FRONT,
-	"back": POLICE_CAR_BACK,
-	"side": POLICE_CAR,
-	"front_diagonal": POLICE_CAR_FRONT_DIAGONAL,
-	"back_diagonal": POLICE_CAR_BACK_DIAGONAL,
-}
-## `_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas, true)` — west-authored like
-## `UNMARKED_VAN_BY_VIEW` and `ARMY_TRUCK_BY_VIEW` above, see that pair's own doc comment — so the
-## side view mirrors on **east** to match `facings.csv`'s recorded `mirror_x`, corrected from M56's
-## own hand-written octant match, which had it backwards.
-const RIOT_VAN_BY_VIEW := {
-	"front": RIOT_VAN_FRONT,
-	"back": RIOT_VAN_BACK,
-	"side": RIOT_VAN,
-	"front_diagonal": RIOT_VAN_FRONT_DIAGONAL,
-	"back_diagonal": RIOT_VAN_BACK_DIAGONAL,
-}
-
-## **The vehicles that move roll on wheels that stay on the ground.** *(2026-09-11, the player:
-## "cars could bop up and down while the wheels stay in the same place".)* Each of these looks'
-## five views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas
-## and anchor, which `_draw_eight_view()` draws back down by `_current_bob()` so the lift
-## `_draw()` gives the whole drawing reaches the body alone. The parked delivery and ice-cream vans
-## never move, so their pictures keep their wheels and sit still.
-const POLICE_CAR_WHEELS_BY_VIEW := {
-	"front": "events/police_car_front_wheels",
-	"back": "events/police_car_back_wheels",
-	"side": "events/police_car_wheels",
-	"front_diagonal": "events/police_car_front_diagonal_wheels",
-	"back_diagonal": "events/police_car_back_diagonal_wheels",
-}
-const FIRE_ENGINE_WHEELS_BY_VIEW := {
-	"front": "events/fire_engine_front_wheels",
-	"back": "events/fire_engine_back_wheels",
-	"side": "events/fire_engine_wheels",
-	"front_diagonal": "events/fire_engine_front_diagonal_wheels",
-	"back_diagonal": "events/fire_engine_back_diagonal_wheels",
-}
-const UNMARKED_VAN_WHEELS_BY_VIEW := {
-	"front": "events/unmarked_van_front_wheels",
-	"back": "events/unmarked_van_back_wheels",
-	"side": "events/unmarked_van_wheels",
-	"front_diagonal": "events/unmarked_van_front_diagonal_wheels",
-	"back_diagonal": "events/unmarked_van_back_diagonal_wheels",
-}
-const RIOT_VAN_WHEELS_BY_VIEW := {
-	"front": "events/riot_van_front_wheels",
-	"back": "events/riot_van_back_wheels",
-	"side": "events/riot_van_wheels",
-	"front_diagonal": "events/riot_van_front_diagonal_wheels",
-	"back_diagonal": "events/riot_van_back_diagonal_wheels",
-}
-const ARMY_TRUCK_WHEELS_BY_VIEW := {
-	"front": "events/army_truck_front_wheels",
-	"back": "events/army_truck_back_wheels",
-	"side": "events/army_truck_wheels",
-	"front_diagonal": "events/army_truck_front_diagonal_wheels",
-	"back_diagonal": "events/army_truck_back_diagonal_wheels",
-}
-const LORRY_WHEELS_BY_VIEW := {
-	"front": "events/lorry_front_wheels",
-	"back": "events/lorry_back_wheels",
-	"side": "events/lorry_wheels",
-	"front_diagonal": "events/lorry_front_diagonal_wheels",
-	"back_diagonal": "events/lorry_back_diagonal_wheels",
-}
-const WHEELS_BY_LOOK := {
-	EventDef.Look.POLICE_CAR: POLICE_CAR_WHEELS_BY_VIEW,
-	EventDef.Look.FIRE_ENGINE: FIRE_ENGINE_WHEELS_BY_VIEW,
-	EventDef.Look.UNMARKED_VAN: UNMARKED_VAN_WHEELS_BY_VIEW,
-	EventDef.Look.RIOT_VAN: RIOT_VAN_WHEELS_BY_VIEW,
-	EventDef.Look.ARMY_TRUCK: ARMY_TRUCK_WHEELS_BY_VIEW,
-	EventDef.Look.LORRY: LORRY_WHEELS_BY_VIEW,
-}
-## The wheels pictures drawn under their body rather than over it: the end views of the 34x50
-## trucks and vans, whose tyres stand out along both flanks and whose body was always drawn over
-## their inner edge. Every other wheels picture is drawn over its body, the order each tyre had
-## when it was part of the one picture — so a vehicle at rest is the same pixels either way.
-const WHEELS_BEHIND_THE_BODY: Array[String] = [
-	"events/fire_engine_front_wheels", "events/fire_engine_back_wheels",
-	"events/unmarked_van_front_wheels", "events/unmarked_van_back_wheels",
-	"events/riot_van_front_wheels", "events/riot_van_back_wheels",
-	"events/army_truck_front_wheels", "events/army_truck_back_wheels",
-	"events/lorry_front_wheels", "events/lorry_back_wheels",
-]
-
-## The region door's own kit — see `RegionPlanner` and `docs/CITY.md`, "Regions and the wall".
-const HUT_NORTH := "checkpoints/hut_north"
-const HUT_SOUTH := "checkpoints/hut_south"
-const HUT_EAST := "checkpoints/hut_east"
-const HUT_WEST := "checkpoints/hut_west"
-## The stationary picture beside a hut (`checkpoint_hut`) or alone (`checkpoint_post`) — a guard
-## who never turns, since neither row ever moves. The guard who does — a heated `roadblock`'s
-## escort and `masked_pursuer` — reads `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below
-## instead, through `_draw_eight_view()`.
-const GUARD_STANDING := "checkpoints/guard_standing"
-const GUARD_LUNGING := "checkpoints/guard_lunging"
-## Bound through `_draw_eight_view()` for the two rows whose guard actually turns as he moves.
-## East-authored, like the person/animal families: `guard_lunging_side.svg`'s own comment —
-## "East-authored oblique views mirror about the feet" — so no `side_faces_west` override. Each
-## view's own ground anchor (standing 22×44, anchor (11, 44); lunging 36×44, anchor (17, 44)) is
-## within a pixel of `Sprites.draw_standing()`'s own bottom-centre assumption, same as every other
-## family bound that way — only the stationary kit's `_draw_at_anchor()` calls need `_GUARD_ANCHOR`
-## below, since those draw through `draw_texture_rect()` directly.
-const GUARD_STANDING_BY_VIEW := {
-	"front": "checkpoints/guard_standing_front",
-	"back": "checkpoints/guard_standing_back",
-	"side": "checkpoints/guard_standing_side",
-	"front_diagonal": "checkpoints/guard_standing_front_diagonal",
-	"back_diagonal": "checkpoints/guard_standing_back_diagonal",
-}
-const GUARD_LUNGING_BY_VIEW := {
-	"front": "checkpoints/guard_lunging_front",
-	"back": "checkpoints/guard_lunging_back",
-	"side": "checkpoints/guard_lunging_side",
-	"front_diagonal": "checkpoints/guard_lunging_front_diagonal",
-	"back_diagonal": "checkpoints/guard_lunging_back_diagonal",
-}
-## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
-## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
-## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
-## of the shaft (`masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
-## guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
-## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
-## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
-const GUARD_ALERT_BY_VIEW := {
-	"front": "checkpoints/guard_alert_front",
-	"back": "checkpoints/guard_alert_back",
-	"side": "checkpoints/guard_alert_side",
-	"front_diagonal": "checkpoints/guard_alert_front_diagonal",
-	"back_diagonal": "checkpoints/guard_alert_back_diagonal",
-}
-const BOOM_GATE_NS_LOWERED := "checkpoints/boom_gate_ns_lowered"
-const BOOM_GATE_NS_RAISED := "checkpoints/boom_gate_ns_raised"
-const BOOM_GATE_EW_LOWERED := "checkpoints/boom_gate_ew_lowered"
-const BOOM_GATE_EW_RAISED := "checkpoints/boom_gate_ew_raised"
-
-## The basement vent's blow, and the one picture in the catalogue that is a *volume* of air rather
-## than a body: `steam.svg` is the cloud alone on a 32×48 canvas, standing on the middle of the
-## floor grate it rises out of.
-const STEAM := "events/steam"
-## Its second frame: the cloud lifted and spread and a fresh puff pushing up out of the grate.
-## Alternated off `_idle_stepping(STEAM_BILLOW_PERIOD)` for the instance's whole life, which is
-## exactly one blow — between blows `InteriorEvents` keeps no instance at all.
-const STEAM_B := "events/steam_b"
-const STEAM_BILLOW_PERIOD := 0.7
-## The vent's floor grate, which is **not** the blow's picture: a blow is an instance that comes
-## and goes, and a vent that is there all the time, blowing or not, is what a player can plan
-## around. So no look draws it — `InteriorEvents` lays one at every vent for the whole section,
-## through `steam_grate()`, at floor level under everything that stands, and each blow's cloud
-## rises out of it. A ground decal on its own 32×32 canvas, centred on the vent's point, which is
-## the two cloud frames' bottom-centre anchor, so the column comes up out of the slots with no
-## offset of its own.
-const STEAM_GRATE := "events/steam_grate"
-
-## The mast — a pole and horns standing on a street — and the two overlays `_draw_mast()` puts
-## above it, never its own colour, so a lamp and a set of arcs can be tinted per state rather than
-## baked into a second picture. `MAST_LAMP` sits at the horn housing; `SOUND_PULSE` is
-## `art/events/sound_pulse.svg`, prepared unbound since M100 and bound here for the first time —
-## its own comment already names the anchor `_MAST_PULSE_AT` reads from.
-const MAST := "events/mast"
-const MAST_LAMP := "events/mast_lamp"
-const SOUND_PULSE := "events/sound_pulse"
-## `mast.svg`'s own horn housing, read off the source the way `_HUT_ANCHOR` is — where the lamp
-## sits and where the arcs rise from, both measured from the mast's own bottom-centre ground point.
-const _MAST_LAMP_AT := Vector2(0.0, -44.0)
-const _MAST_PULSE_AT := Vector2(0.0, -48.0)
-
-## The finale's crater, the mark an off-screen explosion leaves on the street. One of the three
-## prepared sizes; the row obstructs at exactly half this picture's width, so the hole and the
-## ground she cannot walk on are the same circle — see `EventCatalogue._impact_crater()`.
-const IMPACT_CRATER := "props/impact_crater_2x2"
-## Its centre, which is also its ground point: the picture is a hole in the road rather than a
-## thing standing on it, so it is registered on its middle and not on its base. The source's own
-## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
-## canvas, and `EventCatalogue._impact_crater()`'s own 32px body is half of the same width.
-const _CRATER_ANCHOR := Vector2(32.0, 32.0)
-## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
-## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
-## pixels short of the canvas's own bottom edge. See `_draw_at_anchor`.
-const _HUT_ANCHOR := Vector2(28.0, 52.0)
-const _GUARD_ANCHOR := Vector2(11.0, 44.0)
-
-## A boom's two posts, as the ground point each of them stands on in its own canvas — the near
-## post is the `ground anchor` the SVG documents, the far one is the receiving post at the other
-## end of the arm, read off the same post box and base plate the near one is read off. Both states
-## of each boom put its posts in exactly these places, which is what keeps a raised bar registered
-## with the lowered one it replaces.
-const _BOOM_NS_NEAR_POST := Vector2(84.0, 59.0)
-const _BOOM_NS_FAR_POST := Vector2(5.0, 55.0)
-const _BOOM_EW_NEAR_POST := Vector2(21.0, 88.0)
-const _BOOM_EW_FAR_POST := Vector2(18.5, 12.0)
-## **A boom hangs from its body's ground point midway between its two posts, not from one of
-## them.** A gate is sited on the middle of the carriageway — `RegionPlanner._add_door_bodies`
-## puts it on the road's own centre line between the two huts — and a picture hung by the near
-## post alone puts its whole arm to one side of that point: on the kerb, with the lanes it exists
-## to bar left open underneath it. Anchored between the posts, each post lands just outside a kerb
-## and the arm crosses the lanes, which is the shape the picture was drawn as.
-const _BOOM_NS_ANCHOR := (_BOOM_NS_NEAR_POST + _BOOM_NS_FAR_POST) * 0.5
-const _BOOM_EW_ANCHOR := (_BOOM_EW_NEAR_POST + _BOOM_EW_FAR_POST) * 0.5
-## The lowered arm's own extent inside each canvas — the striped bar itself, not the posts or the
-## sockets. Only `boom_arm_span()` reads them: where the bar lands across the road is the thing a
-## test can check and `_draw()` cannot.
-const _BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
-const _BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
-
-## The one silhouette that stands for a look, at any size, as the picture's own path — `""` for a
-## look with nothing to put in a badge. The badge turns it into a region of the `events` page the
-## same way everything in this file does; a path is what makes the table comparable, which is the
-## rule below.
-##
-## It lives here rather than in `DangerEdge` for the same reason the caret lives in `Sprites`: a
-## cue that belongs to the vocabulary does not belong to a class, and the screen-edge badge's whole
-## job is to draw *the thing's own picture* — a second table of which picture that is, kept in the
-## UI, is how a badge ends up showing a generic van for a fire engine. `tests/test_events.gd`
-## asserts every visible row has one and that no two looks return the same picture, which is the
-## half of the one-picture-per-row rule that a `look` field cannot enforce by itself.
-static func icon_for(look: EventDef.Look) -> String:
-	match look:
-		EventDef.Look.CAT: return CAT_RUNNING
-		EventDef.Look.MOUSE: return MOUSE
-		EventDef.Look.YELLER: return YELLER
-		EventDef.Look.DOG_WALKER: return PERSON
-		EventDef.Look.CAFE: return CAFE_TABLE
-		EventDef.Look.DELIVERY_VAN: return DELIVERY_VAN
-		EventDef.Look.BUSKER: return BUSKER
-		EventDef.Look.ROADWORKS: return BARRIER_SEGMENT
-		EventDef.Look.FIRE_ENGINE: return FIRE_ENGINE
-		EventDef.Look.BURNING_BUILDING: return FLAME
-		EventDef.Look.BURNT_SHELL: return RUBBLE
-		EventDef.Look.LOOSE_DOG: return DOG
-		EventDef.Look.STALL: return STALL
-		EventDef.Look.LEAF_BLOWER: return LEAF_BLOWER
-		EventDef.Look.BIRDS: return PIGEON
-		EventDef.Look.CYCLIST: return CYCLIST
-		EventDef.Look.ICE_CREAM_VAN: return ICE_CREAM_VAN
-		EventDef.Look.LORRY: return LORRY
-		EventDef.Look.CHARGING_DOG: return CHARGING_DOG
-		EventDef.Look.CHATTING_MOTHER: return CHATTING_MOTHER_WALKING
-		EventDef.Look.POLICE_CAR: return POLICE_CAR
-		EventDef.Look.POSTER_CREW: return POSTER_CREW
-		EventDef.Look.POSTER_CREW_SQUARE: return POSTER_CREW_SQUARE
-		EventDef.Look.ROADBLOCK: return CHECKPOINT_BLOCK
-		EventDef.Look.UNMARKED_VAN: return UNMARKED_VAN
-		EventDef.Look.ROBBER: return ROBBER_LUNGING
-		EventDef.Look.RIOT_VAN: return RIOT_VAN
-		EventDef.Look.ARMY_TRUCK: return ARMY_TRUCK
-		EventDef.Look.BARRICADE: return BARRICADE_PILE
-		EventDef.Look.PROTEST: return PROTESTER
-		EventDef.Look.FIREFIGHT: return GUNMAN
-		EventDef.Look.FALLEN_TREE: return FALLEN_TREE
-		EventDef.Look.CAR_ACCIDENT: return CAR_ACCIDENT
-		EventDef.Look.SKIP: return SKIP
-		EventDef.Look.SCAFFOLDING: return SCAFFOLDING
-		EventDef.Look.BURST_MAIN: return BURST_MAIN
-		EventDef.Look.MOVING_VAN: return MOVING_VAN
-		EventDef.Look.BURNT_OUT_CAR: return BURNT_OUT_CAR
-		EventDef.Look.COLLAPSED_FRONTAGE: return COLLAPSED_FRONTAGE
-		EventDef.Look.CHECKPOINT_HUT: return HUT_SOUTH
-		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
-		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
-		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
-		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
-		EventDef.Look.STEAM: return STEAM
-		EventDef.Look.LOUDSPEAKER_MAST: return MAST
-		EventDef.Look.NEIGHBOR: return NEIGHBOR
-		# The side view rather than `GUARD_LUNGING`, which is `MASKED_PURSUER`'s badge: the same man,
-		# and the one picture of his that no other look already stands for.
-		EventDef.Look.DOOR_GUARD: return str(GUARD_LUNGING_BY_VIEW["side"])
-		# The same reasoning for the same man: `ROBBER`'s badge is the lunge seen from the front,
-		# so the robber a handed-over task sets on her is badged by the one view of it no other
-		# look already stands for.
-		EventDef.Look.ROBBER_GIVING_CHASE: return str(ROBBER_LUNGING_BY_VIEW["side"])
-		# The same man again: `MASKED_PURSUER` already stands for the front (`GUARD_LUNGING`) and
-		# `DOOR_GUARD` for the side, so the guard the van's task sets on her is badged by the back.
-		EventDef.Look.VAN_GUARD_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["back"])
-		# The policeman's own lunge silhouette, the unsuffixed picture drawn for his badge.
-		EventDef.Look.POLICEMAN_GIVING_CHASE: return POLICEMAN_LUNGING
-		# The guard once more: the front, side and back of his lunge are taken, so the guardsman
-		# a torn poster sends from day 9 is badged by its front diagonal.
-		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
-		_: return ""
-
-## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
-## picture. A vehicle that rolls on wheels of its own (`WHEELS_BY_LOOK`) has its side view split
-## in two, and a badge showing the body alone would be a van with no wheels — so the badge draws
-## this over the same rectangle, the same order the street draws it in.
-static func icon_wheels_for(look: EventDef.Look) -> String:
-	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(look, {})
-	return str(wheels_by_view.get("side", ""))
-
-## Whether a def's instance draws itself as a **spread** — segments or a whole scene fitted
-## across `def.obstructs_radius`, laid along whichever axis `_spread_is_vertical` picks for the
-## street it stands on. That is `_draw_spread`, `_draw_cafe` or `_draw_wide_scene`, nothing else in
-## `_draw_body`'s dispatch: `ROADWORKS`, `BURNT_SHELL`, `STALL`, `ROADBLOCK`, `BARRICADE`,
-## `SCAFFOLDING` and `COLLAPSED_FRONTAGE` go to the first, `CAFE` to the second. The three seal
-## pictures wide enough to span the whole street (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) use
-## `_draw_wide_scene`, which fits one scene to the obstruction and anchors vertical scenes at the
-## far end so their centre sits on the ground point. Each has an authored east-west asset selected
-## by `_wide_scene_texture`.
-## `PROTEST` and `FIREFIGHT` also fill
-## `obstructs_radius`-worth of ground but draw it with their own functions that never call
-## `_spread_is_vertical` or `_spread_at` — a protest rank and a firefight's cover are laid along
-## local X unconditionally, so a corner costs them nothing and they are rightly outside this test.
-##
-## **This is the test `EventScheduler._open_ground_for` asks before it will offer a corner as a
-## site.** See that function and `docs/DECISIONS.md`, "a spread on a corner is placed as if the
-## corner were nothing" — a junction has no single street for `_spread_is_vertical` or
-## `_centred_on_the_pavement_band` to answer about, so only a row that actually asks either
-## question has anything to lose by standing on one.
-static func has_a_spread(def: EventDef) -> bool:
-	return def.has_a_spread
-
-## Which texture a "whole scene" seal picture (`FALLEN_TREE`, `CAR_ACCIDENT`, `BURST_MAIN`) draws,
-## given whether the street it stands on rotates the spread onto local Y (`_spread_vertical`).
-##
-## **A separate directional asset, not a runtime rotation of the one texture.**
-## The spread axis remap only relabels which texture dimension is "along" the obstruction; it never
-## turns pixels. `_wide_scene_texture` therefore supplies an authored composition for each street
-## axis, so cars keep the right projection and people and barriers remain upright. Repeatable
-## segments are close enough to square for the dimension swap itself. `EventDef.look` and
-## `_spread_vertical` together pick the texture, with no field on the def.
-##
-## `frame_b` asks for the scene's second frame where it has one — the crash's smoke and the burst
-## main's fountain. On screen the two are `EventScenery` layers built by `_build_scenery()`, and
-## `_update_scenery()` alternates their frame off its own `_idle_stepping()` call; `_draw_body()`
-## only picks `frame_b` here when it draws the whole scene itself, which happens on the halo's own
-## canvas (`canvas != self`) or before `_build_scenery()` has run (`_scenery == null`). The fallen
-## tree has nothing that moves and answers its one picture either way.
-static func _wide_scene_texture(look: EventDef.Look, vertical: bool, frame_b := false) -> String:
-	match look:
-		EventDef.Look.FALLEN_TREE: return FALLEN_TREE_VERTICAL if vertical else FALLEN_TREE
-		EventDef.Look.CAR_ACCIDENT:
-			if frame_b:
-				return CAR_ACCIDENT_VERTICAL_B if vertical else CAR_ACCIDENT_B
-			return CAR_ACCIDENT_VERTICAL if vertical else CAR_ACCIDENT
-		EventDef.Look.BURST_MAIN:
-			if frame_b:
-				return BURST_MAIN_VERTICAL_B if vertical else BURST_MAIN_B
-			return BURST_MAIN_VERTICAL if vertical else BURST_MAIN
-		_: return ""
-
-## A crash scene has several separate contacts with the ground, so it carries a matching shadow
-## picture rather than painting one ellipse across the entire closed street. `""` for a scene with
-## no authored contact art, which is every one but the crash. Both of the crash's frames stand on
-## the same contacts — only the smoke moves — so each axis has one shadow for its two frames.
-static func _wide_scene_shadow(picture: String) -> String:
-	if picture == CAR_ACCIDENT or picture == CAR_ACCIDENT_B:
-		return CAR_ACCIDENT_SHADOW
-	if picture == CAR_ACCIDENT_VERTICAL or picture == CAR_ACCIDENT_VERTICAL_B:
-		return CAR_ACCIDENT_VERTICAL_SHADOW
-	return ""
-
-## The selected picture for a stationary vehicle. The row keeps one look because both files
-## depict the same vehicle rather than two catalogue entries.
-static func _stationary_vehicle_texture(look: EventDef.Look, side_view: bool) -> String:
-	match look:
-		EventDef.Look.MOVING_VAN:
-			return MOVING_VAN if side_view else MOVING_VAN_VERTICAL
-		EventDef.Look.BURNT_OUT_CAR:
-			return BURNT_OUT_CAR if side_view else BURNT_OUT_CAR_VERTICAL
-		_:
-			return ""
-
-## Preserves the authored end-on projection instead of stretching it to the circular collision
-## diameter. Side views are fitted to that diameter because their long silhouette is the width the
-## solid row claims on the axis where that picture is used.
-static func _stationary_vehicle_extent(picture: String, side_view: bool,
-		side_width: float) -> Vector2:
-	var size := _native_size(picture)
-	if not side_view:
-		return size
-	return Vector2(side_width, size.y * side_width / size.x)
+## Fraction of full intensity an event emits while still telegraphing.
+const TELEGRAPH_INTENSITY_FRACTION := 0.15
 
 var def: EventDef
 ## Waypoints for a mobile event, in world space. Empty for a stationary one.
 var path: PackedVector2Array = PackedVector2Array()
 
-var age := 0.0
+## How long it has existed, in seconds: its own clock. A set from outside (a resume, a rig) settles
+## the phase against the new age; its own tick advances `_age` and settles once its notice clock has
+## been held.
+var age: float:
+	get:
+		return _age
+	set(value):
+		_age = value
+		_settle_the_notice()
+var _age := 0.0
 ## Whether this was created where a warning pointed, once that warning was over
 ## (`EventManager.spawn_warned()`), rather than simply appearing. `DangerEdge` reads it to carry
 ## the warning's badge on to the thing itself until it comes into view, and `resume()` reads it to
 ## tell a fresh instance from one streamed back in.
 var came_under_a_warning := false
-var is_finished := false
 
-## Whether this cyclist is drawn as the pelican (`PELICAN_BY_VIEW`) rather than the kid. Set once,
-## by `EventManager` as it creates the rider, and never changed afterwards, so a rider is one or the
-## other for its whole ride. **The picture is all it changes**: the def, the field, the lethal
-## radius, the speed and the cost are the row's own either way, and nothing reads it but the
-## drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals). Meaningless
-## on any look but `CYCLIST`. See `rider_pictures()`.
+## **What this event does**, composed per catalogue row (`EventBehaviours.compose()`): each an
+## `EventBehaviour` owning its own state, ticked in this order. The typed fields below are the same
+## objects, null for a behaviour the row is not composed of.
+var _behaviours: Array[EventBehaviour] = []
+## A conversation or a door's hold (`EventDef.detain_seconds`).
+var hold: EventHold
+## The unmarked van's take of a bystander.
+var abduction: EventAbduction
+## Going away once it is over (`Phase.LEAVING`); every event has one.
+var departure: EventDeparture
+## Following its route or pacing its beat (`EventDef.mobile`).
+var route: EventRouteWalk
+## A car's driving: its proposed frame, its standing for her, its give-way and its strike
+## (`EventCarDriving`). Null for anything that does not drive.
+var car: EventCarDriving
+## A barrier its guards stand at and walk out of (`EventBarrierPost`): the roadblock's. Null for
+## anything else.
+var barrier_post: EventBarrierPost
+## A vehicle that stops for her and lets men out (`EventDef.investigates()`).
+var investigation: EventInvestigation
+## Coming after her: the notice, the stand-off and lunge, the charge, the give-up
+## (`EventDef.pursuit`).
+var pursuit: EventPursuit
+## A man on foot who may stop her and walk back to the vehicle that let him out (every pursuer).
+var on_foot: EventOfficer
+## A row that waits for her and then runs its own event without chasing her (the mouse, the
+## flock, the masked man).
+var notice_run: EventNoticeRun
+## A flock's birds (`EventDef.flock_size`).
+var flock: EventFlock
+## A row sent down her line that is retired once it cannot reach her (the loose dog).
+var unreachable: EventUnreachable
+
+## **Where this event is in its life, stored and changed in one place** (`transition()`), so every
+## question about it — is it waiting, warning, done — reads one value rather than re-deriving the
+## phase from a dozen flags each frame. Every row has one, a pursuer or not.
+enum Phase {
+	## A row that waits for her (`EventDef.notice`) has not noticed her: standing there, at full
+	## strength unless its notice is quiet, not lethal, not moving.
+	WAITING,
+	## Its telegraph or notice is running: a row's own telegraph from the frame it exists, or for a
+	## row that waits, its warning from the frame it noticed her (`chase_age() < notice_time()`).
+	WARNING,
+	## Happening at full strength: a pursuer charging her, a crossing cat running, a flock up.
+	ACTIVE,
+	## The man a vehicle let out has reached her and stands with her through his stop
+	## (`PursuitSpec.stop_excitement`).
+	STOPPED,
+	## Over and getting out of shot: it emits nothing, cannot end the day and carries no cue.
+	LEAVING,
+	## A row that stops where it arrives has stopped there (`EventDef.stops_where_it_arrives`):
+	## still the same event, standing still, for the rest of the day.
+	PARKED,
+	## Its guard has gone for good and only his barrier stands, solid and silent
+	## (`PursuitSpec.leaves_its_body`). It waits for nothing.
+	SPENT,
+	## Gone: finished where it stood, or out of sight at the end of its departure.
+	DONE,
+}
+
+## Where it is in its life — see `Phase`. Changed only by `transition()`.
+var phase := Phase.WARNING
+## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
+## flush or the masked man's run. A row that left, parked or stopped before that is still within
+## its telegraph's clock (`is_telegraphing()`).
+var _telegraph_ended := false
+
+## Whether it is over and gone (`Phase.DONE`).
+var is_finished: bool:
+	get:
+		return phase == Phase.DONE
+
+## **The one place its phase changes**, and with it what every phase change owes: the field it
+## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
+## showing its scenery on the next drawn frame, when its look reads `is_finished`.
+func transition(to: Phase) -> void:
+	if phase == to:
+		return
+	if phase == Phase.WARNING and to == Phase.ACTIVE:
+		_telegraph_ended = true
+	phase = to
+	excitement.invalidate_contribution()
+	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
+	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
+	if to == Phase.PARKED:
+		_move.parked = def.when_it_stops == EventDef.WhenItStops.PARKS
+	elif to == Phase.LEAVING or to == Phase.DONE:
+		_move.parked = false
+
+## **A telegraph or notice that has run its time is over**: asked wherever the notice clock or
+## the age moves, so the stored phase is never behind the clock.
+func _settle_the_notice() -> void:
+	if phase == Phase.WARNING and chase_age() >= notice_time():
+		transition(Phase.ACTIVE)
+
+## Whether this cyclist is drawn as the pelican (`EventPictures.PELICAN_BY_VIEW`) rather than the
+## kid. Set once, by `EventManager` as it creates the rider, and never changed afterwards, so a
+## rider is one or the other for its whole ride. **The picture is all it changes**: the def, the
+## field, the lethal radius, the speed and the cost are the row's own either way, and nothing reads
+## it but the drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals).
+## Meaningless on any look but `CYCLIST`. See `FigureLook.rider_pictures()`.
 var is_pelican := false
 
 ## What every run log line and every GoatCounter event calls a pelican, in place of its row's own
@@ -1073,94 +140,23 @@ var is_pelican := false
 ## beginning".)*
 const PELICAN_NAME := "pelican"
 
-## Whether `EventBus.pelican_excited_her` has gone out for this pelican: once per pelican, on the
-## first share of the meter it lands (`accumulate_landed()`).
-var _reported_excitement := false
-
-## Every point this instance has ever landed on her meter, never pruned — the running total
-## `EncounterWatch` measures an encounter's share against, since `landed()` keeps only the halo's
-## `ExcitementHalo.WINDOW` and an encounter can be longer. Telemetry only: nothing that decides
-## anything reads it.
-var landed_ever := 0.0
+## This event as a thing that charges the baby (`EventExcitement`): its present rate at a point,
+## its ledger of what it has landed, its projection and its caret's strength.
+var excitement := EventExcitement.new(self)
 
 ## `EncounterWatch`'s own record of this instance's encounters with her, made the first time it is
-## on screen or lands on her, or `null` until then. Telemetry only, like `landed_ever`.
+## on screen or lands on her, or `null` until then. Telemetry only, like
+## `ExcitementSource.landed_ever`.
 var encounter: EncounterWatch.Record = null
 
-## The box, in this node's own space, that what this instance draws roughly fills: its row's own
-## picture (`icon_for()`) standing on its feet at the origin, stretched along the run a spread, a
-## protest or a firefight covers, and grown by the wheel of a flock. An empty box for a row that
-## draws nothing of its own (`Look.NONE`). Not pixel-exact — no halo, no badge, no bob, the view a
-## mover is drawn in this frame aside — and it does not need to be: `EncounterWatch` asks only
-## whether most of it is in view. Worked out once, on first asking, from what `setup()` decided.
+## The box, in this node's own space, that what this instance draws roughly fills
+## (`EventFootprints.drawn_box_of()`), with the run its own street gives a spread. Worked out once,
+## on first asking, from what `setup()` decided.
 func drawn_box() -> Rect2:
-	if _drawn_box_known:
-		return _drawn_box
-	_drawn_box_known = true
-	var box := box_of(def)
-	if not box.has_area():
-		_drawn_box = Rect2()
-		return _drawn_box
-	var size := box.size
-	box = _with_the_drop(def, box)
-	var half := maxf(11.0, def.obstructs_radius)
-	if def.has_a_spread and _spread_vertical:
-		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
-	elif def.has_a_spread or def.look == EventDef.Look.PROTEST \
-			or def.look == EventDef.Look.FIREFIGHT:
-		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
-	if def.flock_size > 0:
-		box = box.grow(def.flock_spread)
-	_drawn_box = box
+	if not _drawn_box_known:
+		_drawn_box_known = true
+		_drawn_box = EventFootprints.drawn_box_of(def, _spread_vertical)
 	return _drawn_box
-
-## The box a row's own picture fills standing on its feet at the origin — `drawn_box()` before an
-## instance exists, and without the run a spread covers, which only an instance's own street decides.
-## Empty for a row that draws nothing of its own.
-static func box_of(row: EventDef) -> Rect2:
-	var icon := icon_for(row.look)
-	if icon.is_empty():
-		return Rect2()
-	var size := _native_size(icon)
-	return Rect2(-size.x * 0.5, -size.y, size.x, size.y)
-
-## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
-## faces: the union of every picture its look can draw (`family_sources()` — a cyclist coming down
-## the screen draws its front view, not the side view its badge shows) wherever it can stand (the
-## picture of a car that drives is lowered over its body, `_picture_drop_of()`), its body shadow (a
-## disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
-## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
-## wholly outside the camera's view by (`PendingWarning.just_out_of_sight()`), so nothing of it
-## shows on the frame it exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And
-## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
-## its feet at its tallest (`largest_mark_rect()`), which stands well above the picture. Empty for a
-## row that draws nothing of its own.
-static func footprint_of(row: EventDef) -> Rect2:
-	var box := Rect2()
-	var any := false
-	for picture in family_sources(row.look):
-		var size := _native_size(picture)
-		if size.x <= 0.0 or size.y <= 0.0:
-			continue
-		var one := Rect2(-size.x * 0.5, -size.y, size.x, size.y)
-		box = one if not any else box.merge(one)
-		any = true
-	if not any:
-		return box_of(row)
-	box = _with_the_drop(row, box)
-	if row.draws_body_shadow and row.shape != null:
-		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
-		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if row.look == EventDef.Look.LOOSE_DOG:
-		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
-	box = box.grow(BOB_HEIGHT + EntityHalo.HALO_MARGIN)
-	if row.intensity > 0.0 or row.hard_fail:
-		box = box.merge(_with_the_drop(row,
-				largest_mark_rect().grow_individual(0.0, BOB_HEIGHT, 0.0, 0.0)))
-	return box
-
-## How far the loose dog's slack lead trails behind it, in px — `_draw_loose_dog()`'s own reach.
-const LOOSE_LEAD_REACH := 26.0
 
 var _drawn_box := Rect2()
 var _drawn_box_known := false
@@ -1169,15 +165,17 @@ var _drawn_box_known := false
 ## own moment) and it has neither given up nor left. Telemetry only — `EncounterWatch` counts a
 ## chase as an influence.
 func is_chasing() -> bool:
-	return def.pursues and _pursuit_began_reported and not is_finished and not is_leaving \
+	return def.pursuit != null and _charge.began and not is_finished and not is_leaving \
 			and not is_waiting()
 
 ## Whether this charger's charge has begun and is still running: `EventBus.pursuit_began` sent for
 ## it (a pursuer's charge, the masked man's run up his shaft) and it has neither left, finished nor
-## had its charge end. Asked by `DangerEdge`, which meets the frame a charge starts at its true
-## approach rather than its smoothed one, so the badge is up from the frame he runs.
+## had its charge end; true for the whole charge. Read by `DangerEdge` and handed to `BadgeModel` as
+## `Subject.charging`; on a charger's first moving frame the model meets the charge at its true
+## approach rather than its smoothed one and raises its badge from outside the view proper, so it is
+## up from the frame he runs.
 func has_charged() -> bool:
-	return _pursuit_began_reported and not _charge_ended and not is_finished and not is_leaving \
+	return _charge.began and not _charge.ended and not is_finished and not is_leaving \
 			and not is_waiting()
 
 ## The name the run log and the page's counter call this instance by: `PELICAN_NAME` for a pelican,
@@ -1193,15 +191,11 @@ static func named_for_the_log(id: String, pelican: bool) -> String:
 ## A mast that has been reached and silenced — `EventManager.silence_mast()`/`silence_all_masts()`
 ## set this rather than calling `_finish()`, since a silenced mast still stands, with no arcs and
 ## no field, and `is_finished` means *this has left*. Harmless on every row but a mast: nothing
-## else ever sets it. See `current_intensity()` and `_draw_mast()`.
+## else ever sets it. See `current_intensity()` and `FigureLook._draw_mast()`.
 var silenced := false
 
-## `DevFlags.skip_events()`, read once at spawn — the same "read once" shape `main._debug` and
-## `main._readout_requested` are, and for the same two reasons: re-parsing `--skip`'s comma list
-## (and, on the Web, re-asking the address bar) on every `_draw()` would be silly work repeated up
-## to a couple of dozen times a frame for an answer that cannot change once the page is loaded, and
-## a test can set this directly to check the skip without a real `--skip` flag behind it.
-var _skip_draw := DevFlags.skip_events()
+## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
+var skip_draw := false
 
 ## Where the player is, in world space, or `INF` for nowhere.
 ##
@@ -1212,49 +206,16 @@ var _skip_draw := DevFlags.skip_events()
 ##
 ## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
 ## that is *leaving* uses it to know when it is out of sight. `ExcitementHalo` writes the same
-## value again every frame through `set_player_at()`, part of the duck type it reads back for the
-## caret — the two writers agree because both read `_player.global_position` the same frame.
+## value again every frame through `excitement.set_player_at()`, which keeps it here, for the caret
+## — the two writers agree because both read `_player.global_position` the same frame.
 var player_at := Vector2.INF
 
 ## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her
 ## facing), told beside `player_at` by `EventManager`, or `Vector2.INF` with no pram (a rig, or the
-## escape's carrying). Only a car that drives asks it (`EventDef.drives`): the pram is the part of
+## escape's carrying). Only a car that drives asks it (`EventDef.vehicle`): the pram is the part of
 ## her that meets a car first when she faces it, so a car that stopped only for her own body would
 ## shove the pram, and a strike stated over her body alone would be stopped short by the pram.
 var pram_at := Vector2.INF
-
-## Her current velocity, her current decay rate (`Baby.decay_rate()`, her locomotion times the
-## ground she is on) and the baby's current sensitivity (`Baby.current_sensitivity()`) —
-## everything `expected_impact_at()` needs to answer "if she keeps doing what she is doing." All
-## three default to the values that make it answer exactly as it always did (held still, nothing
-## given back, nothing damped) for any caller — a data-level test among them — that has not told
-## this instance otherwise.
-var player_velocity := Vector2.ZERO
-var player_decay_rate := 0.0
-var player_sensitivity := 1.0
-
-## The sum of `expected_gross_at()` over every source `ExcitementHalo` is running this frame, told
-## once a frame through `set_expected_total_gross()` — `-1.0` (the default) means nobody has, so
-## `expected_impact_at()` nets the whole projected decay against this instance alone, exactly as it
-## always did.
-var player_expected_total_gross := -1.0
-
-## Part of `ExcitementHalo`'s duck type — see that class's doc. `EventManager` already keeps
-## `player_at` current for the chase and the leaving check; this is the same field, told from the
-## other direction, plus the three above `expected_impact_at()` needs and nothing else in this
-## file reads.
-func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
-		sensitivity: float = 1.0) -> void:
-	player_at = at
-	player_velocity = velocity
-	player_decay_rate = decay_rate
-	player_sensitivity = sensitivity
-
-## Told once a frame by `ExcitementHalo`, after every live candidate's own `expected_gross_at()`
-## has been asked at the same position — see `expected_impact_at()`'s own doc for why the total has
-## to be gathered before any one source's share of the decay can be known.
-func set_expected_total_gross(total: float) -> void:
-	player_expected_total_gross = total
 
 ## The camera's whole view this frame (`VisibleView.view`), written beside `player_at` by
 ## `EventManager._tell_them_where_she_is()`: what a waiting charger's notice is held to
@@ -1263,24 +224,8 @@ var player_view := Rect2()
 
 ## Whether she is running right now. Written beside `player_at` and by the same pass, because the
 ## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
-## fact about her and not about the gap. See `_chase`.
+## fact about her and not about the gap. See `EventPursuit`.
 var player_running := false
-
-## Whether another structure of the same region boundary is charging her harder than this one is,
-## at `player_at`. Written once a frame by `EventManager._tell_them_where_she_is()`, `false` for
-## every row that is not a `EventDef.barrier_structure` and for the one of them that is the
-## maximum.
-##
-## **It exists so the two cues that say "this will cost you" agree with the meter, which keeps only
-## that maximum.** `expected_impact_at()` returns nothing for an outranked structure and
-## `ExcitementHalo.select_sources()` leaves it out, so a corner where a wall meets a door draws one
-## rim on the barrier that is actually charging her rather than five rims sharing one barrier's
-## worth of cost — and `MAX_SOURCES` is not spent on four bodies that land nothing.
-##
-## **Told from outside rather than asked here**, for the same reason `player_at` is: an instance
-## has no view of the others, and the answer is a property of where she is standing this frame.
-## `false` until somebody says otherwise, which is the ordinary behaviour a data-level test gets.
-var outranked_by_a_stronger_barrier := false
 
 ## Whether the baby is awake right now. Written once a frame by `EventManager` alongside
 ## `player_at`, and read by exactly one row: `chatting_mother`'s conversation is the only thing in
@@ -1291,19 +236,13 @@ var outranked_by_a_stronger_barrier := false
 var baby_awake := true
 
 ## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, set by `EventManager._stream_in` from `Planned.gate_state`. `null` for every look
+## GateState`, set by `EventStreaming.stream_in` from `Planned.gate_state`. `null` for every look
 ## but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired to
 ## `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
 var gate_state: RegionPlanner.GateState = null
 
 ## Facing, for art with a front and a back. Only a mobile event ever changes it.
 var _heading := Vector2.RIGHT
-
-## The eight-view sector this instance is currently drawn in, for whichever family reads
-## `EIGHT_VIEW_BY_SECTOR` instead of a single side-mirrored picture — see `_select_view()`. Reset
-## in `setup()` to the exact nearest sector for the instance's own siting, the same "no prior-view
-## hold on a fresh placement" rule `EightDirection.nearest()`'s own doc names.
-var _view_sector := 2
 
 var _path_travelled := 0.0
 var _telegraph_announced := false
@@ -1314,106 +253,115 @@ var _activation_announced := false
 ## shared because neither exposes it as a constant reachable from this file. Reset in `setup()`
 ## and `resume()` so a stride never starts mid-cycle — see `_advance_gait()`.
 var _gait_phase := 0.0
-## Whether this instance actually covered ground the most recent `_process()` tick — the gate that
+## Whether this instance actually covered ground on its most recent step (`step()`) — the gate that
 ## makes a stopped figure (a queue, a give-way, a waiting robber, a chatting mother, a stationary
 ## yeller, the dog walker's own stop) hold frame a rather than whatever `_gait_phase` last landed
-## on. See `_advance_gait()` and `_gait_stepping()`.
+## on. See `_advance_gait()` and `EventLook.gait_is_stepping()`.
 var _gait_moving := false
 ## A deterministic 0..1 drawn once, in `setup()`, from this instance's own siting position — the
-## same position-hash approach `_flock_roll()` uses, since the day's own RNG is not reachable from
-## here and streaming an instance out and back in must not draw twice from it. Offsets the café
-## sitters' and the busker's own idle timer (`_idle_stepping()`) so two of either kind placed on
-## the same day do not lean or strum in lockstep.
+## same position-hash approach `EventFlock._roll()` uses, since the day's own RNG is not reachable
+## from here and streaming an instance out and back in must not draw twice from it. Offsets the café
+## sitters' and the busker's own idle timer (`EventLook.idle_is_stepping()`) so two of either kind
+## placed on the same day do not lean or strum in lockstep.
 var _idle_phase_offset := 0.0
 
-## The city, for the questions only the ground can answer: whether the ground a step would land on
-## is somewhere anybody can stand (`_walkable_step`), whether a notice, a lunge or a catch has a
-## clear line (`_clear_line_to`), and whether a building keeps this field from her (`_walled_off`,
-## which asks `_walls` instead where the building's own walls were handed over). `null` in
-## every data-level test that builds an instance without one — a rig that walks a straight line on
-## purpose gets exactly the unclamped movement and the open-ground field it always has — and in the
-## building's interior, and always set by `EventManager._create`, the only real caller in the city.
-var _map: CityMap
-## The building's own wall grid indoors (`InteriorScene.wall_grid()`), handed over by
-## `set_walls()` for `_walled_off()` alone, with none of the city's other questions behind it: a
-## stairwell has no pavement band to centre on and no alley for a mouse to cross, but its walls stop
-## excitement as a city's buildings do. `null` in the city, where `_walled_off()` asks `_map`.
-var _walls: CityMap
-
+## **The map of the world this instance stands in** (`WorldMap`), handed in by the manager that makes
+## it: the questions about the ground that are not about moving over it — where a body stands on a
+## pavement, which way a spread lies, which alley a mouse crosses, whether a wall keeps this field
+## from her — and the world it adds what it draws beside itself to (`WorldMap.add_entity()`: its
+## band, the far guard walking off, the slices of a long picture). The city's map outdoors, the
+## building's indoors, and open ground (`WorldMap.open_ground()`) for a data rig that names none,
+## where every street question answers "no street" and nothing is walled.
+var _map: WorldMap
+## **How this figure moves, and what it sees along**: every step, walk, way round and way out, and
+## every notice, lunge and catch line, go through it (`Navigator`), asked as `_mover`. Handed in by
+## `setup()` — `EventManager` hands every figure its world's own — or, for a rig that hands none, one
+## over `_map`: on open ground a rig that walks a straight line on purpose gets exactly the
+## unclamped movement it asks for.
+var _navigator: Navigator
+## What this figure walks as (`mover_for()`): a figure on foot or a car, at its body's radius.
+var _mover: Mover
+## What this figure sees along: the layers `_mover` names, less street ground, which is where a car
+## may drive and not what it can see. A car that investigates notices her in an alley mouth or on
+## a square as a figure would.
+var _sight: Mover
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
-## `_process()` has dropped it. See `is_solid()`.
+## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
 
-## The child that re-draws this event's own body in a ring of offsets — see `EntityHalo`, the
-## class shared with `CrowdAgent` that owns the ring, the shared shader material and the drawing.
-## Built on this instance's first nonzero glow and freed on the spot once it has faded back out,
-## or by `ExcitementHalo` through `release_halo()` once this instance is queued for deletion, so it
-## is `null` whenever nothing is drawn — see `set_halo_strength()`, and `EntityHalo`'s class doc
-## for why a rim held by every live event leaves most of them dark on the web.
-var _halo: EntityHalo
+## The rim `ExcitementHalo` lights on this event (`Rim`), handed to its source: its own body's,
+## or the band's while a guard walks away from his barrier.
+var _rim := Rim.new(self)
 
-## `[when, points]` entries landed on her from this event, `when` stamped from `_clock` in
-## seconds, for whatever is still inside `ExcitementHalo.WINDOW` — a true sliding sum rather than
-## a decayed average, so a burst reads as itself for the whole window and then drops. Lazily
-## grown: an event that has never landed anything keeps this empty. Duck-typed with `CrowdAgent`'s
-## own copy — see `ExcitementHalo`'s class doc for the whole shape. See `accumulate_landed()` and
-## `landed()`.
-var _landed_history: Array = []
+func _init() -> void:
+	excitement.rim = _rim
 
-## This event's own simulation clock, in seconds, advanced by `delta` in `_process()` while the
-## event is still live. `landed()` is measured against this rather than `Time.get_ticks_msec()` so
+## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
+## event is still live. `excitement.landed()` is measured against this rather than the wall clock so
 ## that a paused game does not empty the halo, and so a rig can measure the window on simulated
 ## time by advancing this directly instead of waiting on the wall clock. Frozen once `is_finished`
-## — see `_process()` — so a spent instance's history simply stops moving rather than continuing
+## — see `step()` — so a spent instance's history simply stops moving rather than continuing
 ## to drain toward zero after nothing more can land on it.
 var _clock := 0.0
 
-## Whether `_draw_spread` and `_draw_cafe` lay their segments along local Y rather than local X.
-## Decided once, in `setup()`, from the street the instance stands on — see `_spread_is_vertical`.
-## Never a per-row field: two rows on the same street face the same way for the same reason, and a
-## row that had to say so itself could disagree with the street it was actually placed on.
+## Whether `SpreadLook._draw_spread` and `RankLook._draw_cafe` lay their segments along local Y
+## rather than local X. Decided once, in `setup()`, from the street the instance stands on — see
+## `_spread_is_vertical`. Never a per-row field: two rows on the same street face the same way for
+## the same reason, and a row that had to say so itself could disagree with the street it was
+## actually placed on.
 var _spread_vertical := false
 ## Whether a stationary vehicle shows its side. The moving van sits along the street while the
 ## burnt car lies across it; a junction, off-street ground or data-level rig follows its facing.
 var _stationary_vehicle_side := true
 
-## Everything `_draw()` reads that can change over time, as one comparable value — see
-## `_picture_key()` and `_redraw_if_the_picture_changed()`. `x` is a bit field and so is never
-## negative, which makes this starting value one no key can ever equal: the first tick of an
-## instance's life always asks for its own draw rather than relying on a coincidence.
-var _picture := Vector4i(-1, 0, 0, 0)
-var _scenery: EventScenery
-
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT, map: CityMap = null) -> void:
+		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null) -> void:
 	def = definition
 	path = route
+	_behaviours = EventBehaviours.compose(self, definition)
+	_map = map if map else WorldMap.open_ground()
+	_navigator = navigator if navigator else _map.navigator()
+	_mover = mover_for(definition)
+	_move.radius = _mover.radius
+	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
+	# walked through as a person or an animal (`EventDef.stands_as`, inbox #905 in freckled-moose).
+	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
+	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`, inbox #909 in freckled-moose):
+	# a figure that never moves has parked from the start; one that drives to where it stops
+	# parks once it is there (`transition()`).
+	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
+	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := route[0] if route.size() > 0 else at
-	if map and not definition.mobile and definition.obstructs_radius > 0.0 \
+	if not definition.mobile and definition.obstructs_radius > 0.0 \
 			and definition.pavement_side == EventDef.Pavement.ANY:
-		start = _centred_on_the_pavement_band(map, start)
+		start = _centred_on_the_pavement_band(_map, start)
 	position = start
 	_heading = face
-	_view_sector = EightDirection.nearest(face)
-	_map = map
-	_spread_vertical = _spread_is_vertical(map, position)
-	_stationary_vehicle_side = _stationary_vehicle_uses_side(definition.look, map, position, face)
+	look = EventLooks.for_row(self)
+	look.face(face)
+	if look is SpreadLook:
+		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
+	_spread_vertical = _spread_is_vertical(_map, position)
+	_stationary_vehicle_side = EventFootprints.stands_side_on(definition, _map, position, face)
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
 	_idle_phase_offset = _position_roll(101)
-	# **A car that drives is created standing** (`_drive()`), so it drives off only once she is out
-	# of its way. Created just out of sight on a north-south street, the fire engine is nearer her
-	# than its warning reaches, and driving from its first frame it struck her inside the time it
-	# takes to walk off the road: put into her path, which is not her stepping into its path.
-	_standing = definition.drives
-	if definition.look == EventDef.Look.MOUSE:
-		# `alley_mouse` is `MAP`-placed rather than director-sited, so it arrives here with no
-		# route at all (`EventScheduler._build_placement`'s default case) — this is the one place
-		# its own dash gets built, from the alley it actually landed in rather than a flat offset.
-		path = _alley_crossing_path(map, position)
+	# A row that waits has not noticed her yet; any other is in its telegraph from now, or past a
+	# telegraph of no length.
+	if definition.notice != null:
+		_notice.stop()
+		phase = Phase.WAITING
+	else:
+		_notice.start(0.0)
+		phase = Phase.WARNING
+		_settle_the_notice()
+	if definition.path_mode == EventDef.PathMode.ACROSS_ITS_ALLEY:
+		# Placed on the map with no route at all, so its own dash is built here, from the alley it
+		# actually landed in rather than a flat offset, and cut to the ground it fits on.
+		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
 
 ## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
 ## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
@@ -1434,14 +382,15 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 ## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
 ## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
 ## *also* "no line to walk," on purpose.
-static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
+static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2:
 	var tile := map.world_to_tile(at)
 	if map.pavement_inward(tile) == Vector2i.ZERO:
 		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
 		# here has one band to be centred on.
 		return at
-	var x_offset := CityMap.corridor_offset(tile.x)
-	var offset := x_offset if x_offset >= 0 else CityMap.corridor_offset(tile.y)
+	var offsets := map.corridor_offsets(tile)
+	var x_offset := offsets.x
+	var offset := x_offset if x_offset >= 0 else offsets.y
 	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
 			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
 	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
@@ -1452,52 +401,34 @@ static func _centred_on_the_pavement_band(map: CityMap, at: Vector2) -> Vector2:
 ## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
 ## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
 ## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, the barricade a stopped convoy
-## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either.
+## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
+## (`WorldMap.corridor_offsets()`).
 ##
 ## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
 ## two streets at once, with no single direction to be wrong about — and a tile whose coordinates
 ## are **neither** is off any corridor at all: a square, a park, a courtyard. Both keep the spread's
 ## long-standing lay along local X, which is what every row drew before this rule existed and is the
 ## smallest answer for ground that was never a street to lie across in the first place.
-static func _spread_is_vertical(map: CityMap, at: Vector2) -> bool:
-	if not map:
-		return false
+static func _spread_is_vertical(map: WorldMap, at: Vector2) -> bool:
 	var tile := map.world_to_tile(at)
-	for alley: Rect2i in map.alley_rects:
-		if alley.has_point(tile):
-			# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
-			# spread and a vertical alley keeps the default horizontal spread.
-			return alley.size.x > alley.size.y
-	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
-	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
+	var alley := map.alley_at(tile)
+	if alley.has_area():
+		# An alley's barrier closes its short mouth, so a horizontal alley gets a vertical
+		# spread and a vertical alley keeps the default horizontal spread.
+		return alley.size.x > alley.size.y
+	var offsets := map.corridor_offsets(tile)
+	var on_a_north_south_street := offsets.x >= 0
+	var on_an_east_west_street := offsets.y >= 0
 	return on_an_east_west_street and not on_a_north_south_street
 
-## The roadworks panel source follows the spread's authored projection. The vertical source is
-## selected for an east-west street or horizontal alley; the ordinary source remains the broad
-## panel for a north-south street or vertical alley.
-static func _roadwork_segment_texture(spread_vertical: bool) -> String:
-	return BARRIER_SEGMENT_VERTICAL if spread_vertical else BARRIER_SEGMENT
-
-## The roadblock's barrier follows the same projection rule as the roadworks one above: the
-## end-on picture for a band stacked down a north-south column (an east-west street or a
-## horizontal alley), the broadside one otherwise. Stacking the broadside picture down a column
-## repeats a side view per segment rather than drawing one barrier running away from the camera.
-static func _roadblock_segment_texture(spread_vertical: bool) -> String:
-	return ROADBLOCK_SEGMENT_VERTICAL if spread_vertical else ROADBLOCK_SEGMENT
-
-## The `Rect2i` (from `CityMap.alley_rects`) that `at` falls inside, in **world** space, or an
-## empty `Rect2` when it is not inside any of them — a data-level rig with no map, or a placement
-## that has fallen off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
+## The alley (`WorldMap.alley_at()`) that `at` falls inside, in **world** space, or an empty
+## `Rect2` when it is not inside any — open ground, the building, or a placement that has fallen
+## off the lattice. `corridor_offset` cannot answer this the way `_spread_is_vertical`
 ## does above: an alley is cut into the middle of a block rather than laid on the periodic street
 ## pattern that function reads, so its own tiles are never on a corridor at all.
-static func _alley_rect_at(map: CityMap, at: Vector2) -> Rect2:
-	if not map:
-		return Rect2()
-	var tile := map.world_to_tile(at)
-	for rect in map.alley_rects:
-		if rect.has_point(tile):
-			return map.tile_rect_to_world(rect)
-	return Rect2()
+static func _alley_rect_at(map: WorldMap, at: Vector2) -> Rect2:
+	var rect := map.alley_at(map.world_to_tile(at))
+	return map.tile_rect_to_world(rect) if rect.has_area() else Rect2()
 
 ## A two-point dash across the **short** side of the alley `at` sits in, for `alley_mouse` — see
 ## `EventCatalogue._alley_mouse()`. `_alley_rect_at` gives the alley's own rect rather than a
@@ -1505,10 +436,10 @@ static func _alley_rect_at(map: CityMap, at: Vector2) -> Rect2:
 ## (2) is always the narrower side of a real alley, and she can only be walking the longer one, so
 ## crossing the narrower side is crossing her path by construction rather than by luck.
 ##
-## Falls back to a short fixed dash along local X when there is no rect to ask — `_alley_rect_at`
-## returning empty — which `validate()` and a real `MAP` placement never let happen; this is only
-## for a data-level rig that calls `setup()` with no map at all.
-static func _alley_crossing_path(map: CityMap, at: Vector2) -> PackedVector2Array:
+## Falls back to a short fixed dash along local X where no alley holds it — `_alley_rect_at`
+## returning empty — which a city's `MAP` placement never lets happen: on open ground, and in the
+## building, whose basement mouse crosses its corridor this way.
+static func _alley_crossing_path(map: WorldMap, at: Vector2) -> PackedVector2Array:
 	var rect := _alley_rect_at(map, at)
 	if rect.size == Vector2.ZERO:
 		return PackedVector2Array([at - Vector2(32.0, 0.0), at + Vector2(32.0, 0.0)])
@@ -1522,146 +453,31 @@ static func _alley_crossing_path(map: CityMap, at: Vector2) -> PackedVector2Arra
 	return PackedVector2Array([Vector2(at.x, rect.position.y),
 			Vector2(at.x, rect.position.y + rect.size.y)])
 
-## Whether a stationary vehicle is seen side-on at this point. The moving van faces along the
-## street and the burnt car lies perpendicular to it. A junction or ground outside the lattice has
-## no single street axis, so the vehicle's own facing supplies the coherent default.
-static func _stationary_vehicle_uses_side(look: EventDef.Look, map: CityMap, at: Vector2,
-		face: Vector2) -> bool:
-	if not map:
-		return absf(face.x) >= absf(face.y)
-	var tile := map.world_to_tile(at)
-	var on_a_north_south_street := CityMap.corridor_offset(tile.x) >= 0
-	var on_an_east_west_street := CityMap.corridor_offset(tile.y) >= 0
-	if on_a_north_south_street != on_an_east_west_street:
-		var parallel_side := on_an_east_west_street
-		return not parallel_side if look == EventDef.Look.BURNT_OUT_CAR else parallel_side
-	return absf(face.x) >= absf(face.y)
-
 func _ready() -> void:
-	# Moves itself in `_process`, not on the physics tick, so physics interpolation would draw it
-	# gliding between two stale tick positions rather than where `_process` actually put it. Set
-	# on the instance itself rather than inherited from a parent: every instance is added under
-	# `City`'s shared, y-sorted `Entities` node (`City.add_entity()`), beside the player, who does
-	# want her own physics-tick motion interpolated.
-	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	# Stepped on the physics tick (`EventManager` steps it), so it is drawn interpolated between two
+	# ticks as she is, and moves as smoothly as she does. Placed here, so drawn from where it stands
+	# rather than gliding in from the origin.
+	reset_physics_interpolation()
 	EventBus.event_telegraphed.emit(self)
 	_telegraph_announced = true
-	# `solid_once_it_starts` is the one row shape that does not put its body down here — see that
-	# field's own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
-	if def.obstructs_radius > 0.0 and not def.solid_once_it_starts:
+	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
+	# — see its own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
+	if def.obstructs_radius > 0.0 and def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS:
 		_build_obstruction()
-	# A car's body is its `shape` (`EventDef.drives`), put down here like any other unless she is
+	# A car's body is its `shape` (`EventDef.vehicle`), put down here like any other unless she is
 	# already where it would stand, in which case `_become_solid_once_it_starts()` puts it down the
 	# first frame she is not — a body never goes down around her.
-	if def.drives and _gap_to_her(position, _heading) >= 0.0:
+	if car and car.gap_to_her(position, _heading) >= 0.0:
 		_build_obstruction()
-	if def.flock_size > 0:
-		_build_the_flock()
-	_build_scenery()
-	if def.look == EventDef.Look.ROADBLOCK:
-		_build_the_band()
+	if flock:
+		flock.build()
+	look.build_nodes()
 
-## The whole A/B sources remain the badge and halo pictures. The visible scene is instead
-## retained in painter-order layers behind this node's caret and ahead of its halo.
-func _build_scenery() -> void:
-	if def.look not in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
-		return
-	var picture := _wide_scene_texture(def.look, _spread_vertical)
-	var half := maxf(11.0, def.obstructs_radius)
-	var size := _native_size(picture)
-	var thickness := size.x if _spread_vertical else size.y
-	_scenery = EventScenery.new()
-	_scenery.configure(picture, _spread_extent(half * 2.0, thickness),
-			_wide_scene_anchor(_spread_vertical, half), _wide_scene_shadow(picture))
-	add_child(_scenery)
-	_update_scenery()
-
-func _update_scenery() -> void:
-	if _scenery == null:
-		return
-	_scenery.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
-	var period := CAR_ACCIDENT_SMOKE_PERIOD if def.look == EventDef.Look.CAR_ACCIDENT \
-			else BURST_MAIN_SPLASH_PERIOD
-	_scenery.set_frame(_idle_stepping(period))
-
-## Where this instance's body was left standing when its pursuer walked out of it, in world space,
-## or `Vector2.INF` while the two are still the same place. See `EventDef.body_stays_behind`.
-var _body_left_at := Vector2.INF
-
-## **Two guards, one on each side of the band** *(2026-09-25: "have one guard on each side?")*,
-## and which of them set off: `0` while both hold their posts, then the side of the one on her side
-## — the only one who gives chase, "since the other one will be blocked" by his own barrier. This
-## node is the chaser from then on; the other stays drawn standing at his post, beside the band
-## left at `body_position()` until his partner starts to walk away, when he leaves too
-## (`_send_the_far_guard_off()`). See
-## `_draw_roadblock()`.
-var _chaser_side := 0
-
-## `+1` or `-1`: which side of a band laid along `vertical`'s axis the offset `toward` falls on,
-## across it. Level with the band's own line counts as `+1`.
-static func _guard_side_toward(vertical: bool, toward: Vector2) -> int:
-	var across := toward.x if vertical else toward.y
-	return -1 if across < 0.0 else 1
-
-## **Where a posted roadblock guard's feet stand relative to the band's centre: beside it, never
-## over it.** *(2026-09-25: "also the guards are on top of the barrier?")* The whole of his standing
-## picture is kept clear of the whole of the barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
-##
-## - **End-on** (`vertical`), the column is as wide as `roadblock_segment_vertical.svg`, so he stands
-##   level with the band's centre, half the column's width and half his own out to the east or west.
-## - **Broadside**, the barrier stands as tall as `roadblock_segment.svg` on the band's line, so to
-##   the north his feet stand that far behind it and to the south his own height in front of it —
-##   his head clear of the barrier's foot rather than over it.
-##
-## Measured off the pictures themselves, so a redrawn barrier or guard moves the post with it.
-static func _guard_post_offset(vertical: bool, side: int) -> Vector2:
-	var guard := _native_size(GUARD_STANDING_BY_VIEW["front"])
-	if vertical:
-		var column := _native_size(ROADBLOCK_SEGMENT_VERTICAL)
-		return Vector2(signf(side) * (column.x * 0.5 + guard.x * 0.5 + _GUARD_POST_CLEARANCE), 0.0)
-	if side < 0:
-		return Vector2(0.0, -(_native_size(ROADBLOCK_SEGMENT).y + _GUARD_POST_CLEARANCE))
-	return Vector2(0.0, guard.y + _GUARD_POST_CLEARANCE)
-
-## Which way a posted guard faces: straight out from the barrier on his own side, towards where she
-## would come from — so the turn to face her the frame the near one notices her is still a turn.
-static func _guard_post_heading(vertical: bool, side: int) -> Vector2:
-	var outward := Vector2.RIGHT if vertical else Vector2.DOWN
-	return outward * (-1.0 if side < 0 else 1.0)
-
-## Whether the barrier has been left behind — read by `_draw_roadblock()` to know whether to draw
-## the band under its own feet or back at the post, and by `tests/test_heat.gd`.
-func has_left_its_body_behind() -> bool:
-	return _body_left_at != Vector2.INF
-
-## Where that body stands, which is where the street is still shut. `global_position` while nothing
-## has been left behind, so a caller never has to ask which case it is holding.
+## Where its body stands, which is where the street is still shut: `global_position`, or where a
+## barrier's guard left it (`EventBarrierPost.body_position()`), so a caller never has to ask which
+## case it is holding.
 func body_position() -> Vector2:
-	return global_position if _body_left_at == Vector2.INF else _body_left_at
-
-## Pins the body at the place the pursuer is walking away from. Called once, the frame he stops
-## waiting.
-##
-## **The body is a child node, so it moves with him unless something holds it.** `_keep_the_body_
-## where_it_was_left()` is that something, run every frame he moves rather than reparenting: a
-## reparent mid-`_process` would change the tree under the loop that is walking it, and the body
-## has to be freed with this instance in any case, which staying a child is exactly what
-## guarantees.
-## **Records the place only once.** The branch that calls this runs on every frame he is hunting,
-## because the body is never freed — so without the guard the barrier would be re-left wherever he
-## has walked to, which is a body that follows him at exactly the speed he moves.
-##
-## **A roadblock's chaser sets off from his own post**, the one on her side of the band: this node
-## steps from the band's centre, where his notice was measured — inside the band's own field, which
-## `Tuning.validate_pursuit()` requires — out to that post the frame he notices her, and `_chase()`
-## walks him from there. Beside the band he is nearer her than the centre is, which costs her none
-## of his warning: he charges on its clock (`warns_by_radius()`), not at a distance from him.
-func _leave_the_body_behind() -> void:
-	if _body_left_at == Vector2.INF:
-		_body_left_at = global_position
-		if def.look == EventDef.Look.ROADBLOCK:
-			_set_off_from_the_near_post()
-	_keep_the_body_where_it_was_left()
+	return barrier_post.body_position() if barrier_post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
 ## picture (`warning_rect()`) inside the camera's view this frame (`player_view`). *(Inbox #788 in minty-lemur, the
@@ -1671,101 +487,59 @@ func _leave_the_body_behind() -> void:
 ## included. Always true for any other row, and for an instance nobody has handed a view
 ## (`player_view` empty, a rig that steps it directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
-	if not def.pursues or not warns_by_radius() or not player_view.has_area():
+	if def.pursuit == null or not warns_by_radius() or not player_view.has_area():
 		return true
 	return player_view.encloses(warning_rect())
 
 ## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
-## feet: a roadblock's guard at the post on her side of the band (`warning_guard_rect()`), anyone
-## else where he stands.
+## feet: a roadblock's guard at the post on her side of the band
+## (`EventFootprints.warning_guard_rect()`), anyone else where he stands.
 func warning_rect() -> Rect2:
-	if def.look == EventDef.Look.ROADBLOCK:
-		return warning_guard_rect(_spread_vertical, body_position(), player_at)
-	var size := _warning_picture_size(def.look)
+	if barrier_post:
+		return EventFootprints.warning_guard_rect(_spread_vertical, body_position(), player_at)
+	var size := EventFootprints.warning_picture_size(def)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
-
-## The largest of a look's warning pictures: the dog's alert, the robber's two alert frames, and the
-## guard's raised hand for anyone else drawn standing in a warning.
-static func _warning_picture_size(look: EventDef.Look) -> Vector2:
-	if _warning_sizes.has(look):
-		return _warning_sizes[look]
-	var families: Array[Dictionary] = [GUARD_ALERT_BY_VIEW]
-	if look == EventDef.Look.CHARGING_DOG:
-		families = [CHARGING_DOG_ALERT_BY_VIEW]
-	elif look == EventDef.Look.ROBBER:
-		families = [ROBBER_ALERT_BY_VIEW, ROBBER_ALERT_BY_VIEW_B]
-	var size := Vector2.ZERO
-	for family in families:
-		for view: String in family:
-			size = size.max(_native_size(family[view]))
-	_warning_sizes[look] = size
-	return size
-
-static var _warning_sizes := {}
-
-## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
-## of a band at `band_at` laid along `vertical` — what his warning draws (`chaser_pictures()`), at
-## the widest and tallest of its views, standing on his feet.
-static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
-	var feet := band_at + _guard_post_offset(vertical, _guard_side_toward(vertical, her - band_at))
-	if _warning_guard == Vector2.ZERO:
-		for view: String in GUARD_ALERT_BY_VIEW:
-			_warning_guard = _warning_guard.max(_native_size(GUARD_ALERT_BY_VIEW[view]))
-	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
-
-static var _warning_guard := Vector2.ZERO
-
-func _set_off_from_the_near_post() -> void:
-	var toward := player_at - global_position if player_at != Vector2.INF else Vector2.ZERO
-	_chaser_side = _guard_side_toward(_spread_vertical, toward)
-	global_position += _guard_post_offset(_spread_vertical, _chaser_side)
-	if player_at != Vector2.INF and not player_at.is_equal_approx(global_position):
-		_heading = (player_at - global_position).normalized()
-
-func _keep_the_body_where_it_was_left() -> void:
-	if not _obstruction or _body_left_at == Vector2.INF:
-		return
-	_obstruction.global_position = _body_left_at
 
 ## Some events are physically in the way. The body is a child so it travels with a mobile
 ## event and disappears with the instance.
 ##
-## Built from `def.parts()` — one `CollisionShape2D` per piece, a `CircleShape2D` for a point and a
-## `CapsuleShape2D` for a segment — so the collision resources agree with whatever `_draw_body()`
-## actually drew: the same datum, read twice. A capsule stands along local Y by default;
-## `_solid_axis()` says which of this instance's own axes the spine actually lies along, and each
-## `CollisionShape2D` is rotated to match.
-##
-## **One body, several shapes.** A row that declares no parts gets exactly one piece at the origin
-## (see `EventDef.parts()`), which is the single shape this always built; the crash gets one per
-## car, offset along the spread axis by the piece's own reading of whichever picture is in use. One
-## `StaticBody2D` holds them all, so nothing downstream — the debug view's bounding-box layer, which
-## walks the physics tree, or `is_solid()` — has to learn that a row may have more than one.
+## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), the one the
+## day's blocked record is written from too (`EventSpawner.obstructed_footprint()`), so the body that
+## stops her and the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
+## piece, so nothing downstream — the debug view's bounding-box layer, which walks the physics
+## tree, or `is_solid()` — has to learn that a row may have more than one.
 func _build_obstruction() -> void:
-	var body := StaticBody2D.new()
-	for piece in def.parts():
-		var collision := CollisionShape2D.new()
-		collision.shape = piece.shape.collision_shape()
-		collision.position = _spread_at(piece.offset_for(_spread_vertical))
-		if piece.shape.half_length > 0.0:
-			collision.rotation = _solid_axis().angle() - PI * 0.5
-		body.add_child(collision)
+	var body := EventFootprints.solid_footprint_of(def, solid_axis(), _spread_vertical).body()
 	add_child(body)
 	_obstruction = body
+
+## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
+## at rather than the figure — a guard at his band — in px: the alley robber's own, a man on foot.
+const FIGURE_RADIUS := 9.0
+
+## **What a row walks as** (`Mover`): a car that drives as a vehicle, kept to the street and passing
+## a soft seal's pavement; anything else as a figure on foot, stopped by everything that stops her.
+## Its radius is the row's own shape where that shape is the thing that moves — a dog, a bike, a
+## car — and a man's (`FIGURE_RADIUS`) where the shape is a solid he stands at.
+static func mover_for(row: EventDef) -> Mover:
+	var radius := FIGURE_RADIUS
+	if row.shape != null and (row.obstructs_radius <= 0.0 or row.vehicle != null):
+		radius = row.shape.reach()
+	return Mover.vehicle(radius) if row.vehicle != null else Mover.on_foot(radius)
 
 ## Where each of this instance's solid pieces stands, in world space — paired index for index with
 ## `solid_part_shapes()` below, the same two-parallel-arrays shape `flock_offsets()` and
 ## `flock_velocities()` already hand `DebugLayers`.
 ##
 ## **A per-tile solid record reads the same pieces, index for index.**
-## `EventManager.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
+## `EventSpawner.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
 ## pair, but it is the same data: one disc of `obstructs_radius` for every row but the crash, which
 ## records tiles under each car and leaves the ground between them open — the whole reason the crowd
 ## steps round the cars and walks the debris.
 func solid_part_centres() -> PackedVector2Array:
 	var centres := PackedVector2Array()
 	for piece in def.parts():
-		centres.append(global_position + _spread_at(piece.offset_for(_spread_vertical)))
+		centres.append(global_position + spread_at(piece.offset_for(_spread_vertical)))
 	return centres
 
 ## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`. Each lies
@@ -1776,25 +550,37 @@ func solid_part_shapes() -> Array[GroundShape]:
 		shapes.append(piece.shape)
 	return shapes
 
-## Built by `set_halo_strength()` the first time `ExcitementHalo` picks this instance, never in
+## Built by its rim the first time `ExcitementHalo` picks this instance, never in
 ## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
-## web's renderer can read — see `EntityHalo`'s class doc. `EntityHalo` gets `self`'s own
-## `_draw_body` and `_current_bob` so its ring rides the same lift `_draw()` gives the body.
-func _build_halo() -> void:
-	_halo = EntityHalo.new(_draw_body, _current_bob)
-	add_child(_halo)
+## web's renderer can read — see `EntityHalo`'s class doc. `EntityHalo` gets the look's own
+## `EventLook.draw_body` and `EventLook.current_bob` so its ring rides the same lift
+## `EventLook.draw()` gives the body.
+func _build_halo() -> EntityHalo:
+	var halo := EntityHalo.new(look.draw_body, look.current_bob)
+	var holder := _rim_holder()
+	holder.add_child(halo)
+	halo.position = global_position - holder.global_position
 	# **First child, so first of the behind-parent drawers.** The rim and the visible scene's layers
 	# (`EventScenery`) both opt into `show_behind_parent`, and siblings that do are painted in
-	# tree order: a rim added after the scenery -- which `_ready()` built long before any pick --
-	# painted over the pictures it is meant to outline.
-	move_child(_halo, 0)
+	# tree order, so a rim after the scenery, which `_ready()` builds long before any pick, would
+	# paint over the pictures it is meant to outline.
+	holder.move_child(halo, 0)
+	return halo
+
+## What the rim stands behind: this node, or what the look names instead (`EventLook.rim_holder()`,
+## the first slice of a long picture drawn in slices, so the rim is behind the whole picture as it
+## is behind a picture drawn on this node).
+func _rim_holder() -> Node2D:
+	var holder := look.rim_holder()
+	return holder if holder != null else self
 
 ## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_process()` —
-## false through the notice of a `solid_once_it_starts` row, which is what that flag is for, and
-## false while a boom (`EventDef.lifts_for_traffic`) stands raised.
+## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_tick()` —
+## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for, and
+## false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised.
 func is_solid() -> bool:
-	return _obstruction != null and not (def.lifts_for_traffic and is_raised())
+	return _obstruction != null \
+			and not (def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and is_raised())
 
 ## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
 ## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
@@ -1803,8 +589,8 @@ func is_raised() -> bool:
 	return gate_state != null and gate_state.raised
 
 ## A boom's body follows its arm: solid while it is down, not while it is up. *(2026-09-24, the
-## player: "I didn't say it should stay solid when it's open".)* Called once a frame from
-## `_process()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
+## player: "I didn't say it should stay solid when it's open".)* Called once a step from
+## `_tick()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
 ## holds the body — the debug view's bounding-box layer — ever sees it vanish.
 ##
 ## **It never comes down on her, and that is `Crowd`'s half, not this one's.** The arm is the one
@@ -1812,7 +598,7 @@ func is_raised() -> bool:
 ## the body cannot go down around her: following the arm is enough. Deferred, because the switch
 ## can land while the physics server is mid-query.
 func _let_the_body_follow_the_arm() -> void:
-	if not def.lifts_for_traffic or _obstruction == null:
+	if def.solid_when != EventDef.SolidWhen.WHILE_LOWERED or _obstruction == null:
 		return
 	var open := is_raised()
 	if open == _arm_was_open:
@@ -1827,7 +613,7 @@ func _let_the_body_follow_the_arm() -> void:
 ## position costs a comparison rather than a deferred call a frame.
 var _arm_was_open := false
 
-## The body of a `solid_once_it_starts` row, put down the frame its notice ends — **unless she is
+## The body of a `SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
 ## standing in it**, in which case the vent goes on emitting at full rate and stays passable until
 ## she is out of the footprint.
 ##
@@ -1841,10 +627,10 @@ var _arm_was_open := false
 ## has her does, once a frame — and an infinite distance is outside every footprint, so a rig with
 ## no player in it gets the body immediately rather than never.
 func _become_solid_once_it_starts() -> void:
-	if def.drives and _obstruction == null and _gap_to_her(position, _heading) >= 0.0:
+	if car and _obstruction == null and car.gap_to_her(position, _heading) >= 0.0:
 		_build_obstruction()
 		return
-	if not def.solid_once_it_starts or _obstruction != null:
+	if def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS or _obstruction != null:
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return
@@ -1853,371 +639,137 @@ func _become_solid_once_it_starts() -> void:
 	_build_obstruction()
 
 # -------------------------------------------------------------------- a car ---
-# `EventDef.drives`: a body that moves and never into her, and a strike ahead of its nose while it
-# drives. See that field's own doc for why the two are separate things.
-
-## True while `_drive()` is running this frame's ordinary `_process()` body inside itself.
-var _driving := false
-## Whether the car is standing: its last frame's movement was taken back — it would have put the
-## body into her, turned her into its path, or crossed a stop line it gives way at — or, on its
-## route, she is still in its lane within its warning. See `_drive()`. A standing car is not
-## driving, so it neither warns nor strikes.
-var _standing := false
+# `EventDef.vehicle`: a body that moves and never into her, and a strike ahead of its nose while it
+# drives — `EventCarDriving`, which answers for the car below.
 
 ## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, so a car
-## that drives stops where they stop (`_room_to_its_line()`). Null in a rig with no city, which
-## then has no red light to stop at.
+## that drives stops where they stop (`EventCarDriving.room_to_its_line()`). Null in a rig with no
+## city, which then has no red light to stop at.
 var signals: TrafficSignals = null
 
-## How near the car's body may be moved to her and her pram, in px. Above zero so the car stops a
-## hair short of the contact her own collision already rests at rather than on it.
-const DRIVEN_CLEARANCE := 0.5
-
-## Runs a car's frame, and **takes back whatever part of it would have brought the body into her or
-## her pram** — the step along its route, the chase toward her, the departure and a turn onto a new
-## heading alike — so the car stands where it was, facing the way it faced, until she moves. It
-## stops rather than pushes: a car that shoved her could shove her into a wall, which is the pin the
-## mobile exemption from solidity exists to prevent.
-##
-## **Positional, never a force**, the crowd's own rule for bodies (the **crowd-traffic** skill): the
-## pose the frame would end on is checked, rather than a brake asked to want something, because a
-## brake arrives a frame late and a car a frame late is inside her.
-##
-## **A pose that leaves her no nearer is always allowed**, so a car she walked up against drives on
-## along its flank or away from her rather than wedging for good: only a pose both nearer than
-## `DRIVEN_CLEARANCE` and nearer than it already was is refused — the same "an agent already
-## standing where it may not be is left alone" the crowd's own guard keeps.
-##
-## **Driving its nose into her on the carriageway is the strike, not a stop.** The step is still
-## taken back — the body never goes into her — but a car that was driving its route does not stand
-## for her then: it is still driving, and with her inside the strike area (`_in_front()`, which
-## reaches `Tuning.PATROL_STRIKE_LEAD` past the touch for exactly this) `is_lethal_at()` ends the
-## day. What it stands for is the rest — a flank or a corner turned into her, a pram poking over the
-## kerb, a car leaving.
-##
-## **No strike without its full warning, unless she steps into a moving car's path.** Three more
-## refusals keep every other way of putting her in front of it out:
-##
-## - **A turn that newly puts her in front of it** within its warning's reach is refused, and the car
-##   stands instead: the raid's pacing car reversing at the end of its beat would otherwise turn a
-##   woman standing behind a car driving away from her into one standing in front of it, struck with
-##   none of the warning she is owed. *(minty-hedgehog, the player on cars: "when I walk behind a
-##   standing car right now and it starts moving I die -- that is not correct the car is driving
-##   away from me".)*
-## - **A car that has stood drives on only once she is out of its way**: on its route it goes on
-##   standing while she is in its lane within its warning, so it never pulls away into her.
-## - **It gives way where the crowd's cars do** (`_room_to_its_line()`): short of a zebra she is
-##   waiting at on a street whose traffic gives way, and at a red light. A step past that line is
-##   refused and the car stands, so the zebra stays the safe way over and the light the main road's
-##   contract.
-func _drive(delta: float) -> void:
-	var at := position
-	var heading := _heading
-	var travelled := _path_travelled
-	var phase := _gait_phase
-	var was := _gap_to_her(at, heading)
-	var line := _room_to_its_line(at, heading)
-	# Never further than the end of a route it stops at (`_route_left()`): it never stands for her,
-	# nor turns onto her, where it cannot reach her.
-	var left := _route_left(travelled)
-	var warning := _short_of_its_stop(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, left)
-	var known := player_at != Vector2.INF
-	var ahead_before := known and _meets_her(at, heading, player_at, warning)
-	var was_leaving := is_leaving
-	_driving = true
-	_process(delta)
-	_driving = false
-	if is_finished:
-		_standing = false
+## **The end of its route, reached or cut short** (`EventRouteWalk`), acted on only for a committed
+## pose. A figure's step is checked as each part of it is taken (the navigator's swept step), so the
+## pose it reached the end on is already the one it keeps, and it is done there at once. A car's step
+## is checked once its whole tick is proposed (`EventCarDriving.check()`), which may take the pose
+## back: while that step is open the end is kept (`_ends_its_route_on_commit`) and acted on once the
+## step is committed (`_commit_the_step()`), never if the pose that reached it is taken back.
+func _end_its_route(may_park := true) -> void:
+	if car != null and _move.open:
+		_ends_its_route_on_commit = true
+		_may_park_on_commit = _may_park_on_commit and may_park
 		return
-	var on_its_route := _drives_its_route()
-	var now := _gap_to_her(position, _heading)
-	var into_her := now < DRIVEN_CLEARANCE and now < was - 0.001
-	var in_its_way := _standing and on_its_route and ahead_before
-	var turns_onto_her := on_its_route and known and not ahead_before \
-			and not _heading.is_equal_approx(heading) \
-			and _meets_her(position, _heading, player_at, warning)
-	var past_its_line := on_its_route and line < INF \
-			and (position - at).dot(heading) > maxf(line, 0.0) + 0.001
-	if into_her or in_its_way or turns_onto_her or past_its_line:
-		var departing := _heading
+	_be_done(may_park)
+
+## The end of its route reached during an open car step (`_end_its_route()`), with whether it may
+## park there, acted on once the step is committed.
+var _ends_its_route_on_commit := false
+var _may_park_on_commit := true
+
+## Where this event charges its time to the frame record, handed in by whoever makes it
+## (`EventSpawner.create()`, from its manager's own). With the record off, `_process()` pays two
+## member reads and no call: with the crowd's agents beside the live events, a static read and a
+## call into a second function made every player's frame measurably longer on a desktop
+## (docs/evidence/m159-frame-record-2026-10-04/).
+var timing := FrameTiming.new()
+## The baked atlas pages this event's look draws from (`AtlasLibrary`), handed in by whoever makes
+## it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
+var atlas: AtlasLibrary
+
+## **A drawn frame only redraws.** What the event does is stepped on the physics tick by its manager
+## (`step()`); here it takes the draw layer its warning puts it on (`_take_the_layer_it_warns_on()`),
+## and its look asks for a redraw if the picture changed, moves its drawing nodes and hides what a
+## finished event leaves (`EventLook.redraw_if_the_picture_changed()`), all from the state the last
+## tick left, so the tick writes no drawing property. Timed under the record's events, as the step
+## is.
+func _process(_delta: float) -> void:
+	if look == null:
+		return
+	_take_the_layer_it_warns_on()
+	if timing.on:
+		var outer := timing.enter(FrameTiming.EVENTS)
+		look.redraw_if_the_picture_changed()
+		timing.leave(outer)
+		return
+	look.redraw_if_the_picture_changed()
+
+## Whether a hand holds it still, so its manager does not step it: a scene recipe that walks it
+## itself (`SceneRecipeRuntime`). Its drawing goes on.
+var held_by_hand := false
+
+## **Walks it on by hand by `delta` seconds**, for the hand that holds it (`held_by_hand`, a scene
+## recipe's held event, `SceneRecipeRuntime`): the straight walk away along its heading at its
+## departure's own pace (`EventDeparture.speed()`), its stride advancing by the ground covered, as
+## the departure's plain branch walks it (`EventDeparture.leave()`), with no removal and no
+## manager's step. Its move stands where it now does (`MoveProposal.place()`), since the crowd's
+## separation pass reads the move, not the node.
+func walk_on_by_hand(delta: float) -> void:
+	var step := departure.speed() * delta
+	position += _heading * step
+	_move.place(position)
+	_path_travelled += step
+	_advance_gait(step)
+
+## **One physics tick of the event**, which its manager runs in a fixed order
+## (`EventManager._step_them()`), **proposed, checked, then committed** (`MoveProposal`, the world's
+## shape for every mover's step): the step is opened at the pose it stands at
+## (`_propose_the_step()`), the tick works out where it goes, and the step is closed
+## (`_commit_the_step()`), checked by its checker and committed. A figure's checker is the
+## navigator, which every step of its walk, chase and departure goes through as it is taken, so its
+## proposal arrives at the close already checked; a car that drives is checked there by its own
+## checks (`EventCarDriving.check()`), which take the step back where it would bring the body into
+## her. Nothing once it is finished.
+func step(delta: float) -> void:
+	if is_finished:
+		return
+	_propose_the_step()
+	_tick(delta)
+	_commit_the_step()
+
+## Its move this tick (`MoveProposal`), its own, on its map's list of moves (`WorldMap.moves`) while
+## it is in the world: one that keeps its course rather than giving way (`MoveProposal.yields`),
+## reaching as far round its centre as it walks or drives through the navigator (`mover_for()`).
+## Outside a step it stands where the event does: it joins there (`_enter_tree()`), and a move to
+## other ground (`move_to()`) puts it there too.
+var _move := MoveProposal.new()
+
+## Opens the step at the pose it stands at; a car notes what its check will hold the step to.
+func _propose_the_step() -> void:
+	_move.propose(position)
+	_ends_its_route_on_commit = false
+	_may_park_on_commit = true
+	if car != null:
+		car.note_the_pose(position)
+
+## **Closes the step**: the pose the tick proposed is checked (a car's own checks; a figure's were
+## made as each part was taken), committed, and only then is what the tick decided on it acted on —
+## the end of a car's route reached on a pose it keeps (`_end_its_route()`) — and a car's body laid
+## along its heading.
+func _commit_the_step() -> void:
+	_move.to = position
+	var ends := _ends_its_route_on_commit
+	_ends_its_route_on_commit = false
+	if car != null and not car.check(_move, ends):
+		ends = false
+	var at := _move.commit()
+	if position != at:
 		position = at
-		_heading = heading
-		# A departure that began this frame keeps the way it is leaving in, whatever else the frame
-		# did — the chase's last step into her is what is taken back, not the turn away from her,
-		# which `_be_done()` made where the car stands and which brings it no nearer.
-		if is_leaving and not was_leaving \
-				and _gap_to_her(at, departing) >= minf(was, DRIVEN_CLEARANCE) - 0.001:
-			_heading = departing
-		_path_travelled = travelled
-		_gait_phase = phase
-		_gait_moving = false
-		var strikes := into_her and on_its_route and not _standing and not turns_onto_her \
-				and not past_its_line and _meets_her(at, heading, player_at,
-						_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, left))
-		_standing = not strikes
-		_redraw_if_the_picture_changed()
-	else:
-		_standing = false
-	_turn_the_body()
-
-## Whether the car is standing — see `_drive()`.
-func is_standing() -> bool:
-	return _standing
-
-## **How far the car's centre may still go before the line it gives way at**, the crowd car's own
-## two lines: `INF` when there is none ahead, or once its nose is past it (the crowd's commit rule —
-## a car that has reached the paint clears it rather than stopping on it).
-##
-## - **A red light**, at a signalled junction ahead whose arm is not green
-##   (`TrafficSignals.green_for()`; amber is not green, as it is not for a crowd car): the nose stops
-##   `Tuning.CAR_STOP_LINE_SETBACK` short of the junction box, where `Crowd.give_way_at_junctions()`
-##   holds the crowd's cars.
-## - **A zebra she is waiting at**, on a street whose traffic gives way (not the main road, whose
-##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of
-##   the car's line and `Tuning.CAR_ZEBRA_WAIT_RADIUS` along of the paint: the centre stops
-##   `CAR_STOP_LINE_SETBACK` short of the paint's near edge, `CrowdAgent._distance_to_stop_line()`'s
-##   own arithmetic — **unless the zebra is on the far side of the junction box ahead**, where that
-##   line would stand it inside the box: then it holds at the box's entry line, as at a red light,
-##   and that is decided from `Tuning.CAR_JUNCTION_SIGHT` short of the box, wherever she waits along
-##   that zebra, rather than from the zebra's own sight circle.
-##
-## Only on its route and along a street's own axis, which is every route a patrol drives.
-func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
-	if _map == null or not _drives_its_route():
-		return INF
-	var vertical := absf(heading.y) > absf(heading.x)
-	if absf(heading.y if vertical else heading.x) < 0.99:
-		return INF
-	var direction := signf(heading.y if vertical else heading.x)
-	var along := at.y if vertical else at.x
-	var cross := at.x if vertical else at.y
-	var tile := float(Tuning.TILE_SIZE)
-	var nose := def.shape.reach()
-	var room := INF
-	# The junction box this car is coming to, as `CrowdAgent.junction_ahead()` finds it: the crossing
-	# street's whole corridor, its zebras included. `to_the_box` is from the nose to its near edge.
-	var along_tile := floori(along / tile)
-	var index := CityMap.junction_index(along_tile)
-	if CityMap.corridor_offset(along_tile) < 0 and direction > 0.0:
-		index += 1
-	var low := float(index * CityMap.period()) * tile
-	var near := low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
-	var to_the_box := (near - along) * direction - nose
-	var box_line := to_the_box - Tuning.CAR_STOP_LINE_SETBACK
-	# The red light.
-	if signals != null:
-		var corridor := CityMap.junction_index(floori(cross / tile))
-		var junction := Vector2i(corridor, index) if vertical else Vector2i(index, corridor)
-		if to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT \
-				and signals.is_signalled(junction) and not signals.green_for(junction, vertical):
-			room = minf(room, box_line)
-	var gives_way := player_at != Vector2.INF \
-			and _map.street_kind_at(vertical, _map.world_to_tile(at)) != GameEnums.StreetKind.MAIN \
-			and absf((player_at.x if vertical else player_at.y) - cross) \
-					<= Tuning.STREET_WIDTH * tile * 0.5
-	# **The zebra on the far side of the box ahead is decided at the box's entry line**, wherever
-	# she is along it rather than within a sight circle: decided any later, the nose is already in
-	# the box and the car would stand there, short of that zebra — and nothing enters a box it
-	# cannot leave (the **crowd-traffic** skill), least of all a car the crossing traffic cannot see.
-	# So from `CAR_JUNCTION_SIGHT` out, with her waiting at either tile of that zebra, it holds at the
-	# box's entry line, where a red light stops it.
-	if gives_way and to_the_box >= 0.0 and to_the_box <= Tuning.CAR_JUNCTION_SIGHT:
-		var her_along := player_at.y if vertical else player_at.x
-		var first := index * CityMap.period() \
-				+ (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH if direction > 0.0 else 0)
-		var lane_index := floori(cross / tile)
-		for k in Tuning.SIDEWALK_WIDTH:
-			var zebra := Vector2i(lane_index, first + k) if vertical \
-					else Vector2i(first + k, lane_index)
-			if _map.tile_at(zebra) == GameEnums.TileType.CROSSING \
-					and absf(her_along - float(first + k) * tile) <= Tuning.CAR_ZEBRA_WAIT_RADIUS:
-				room = minf(room, box_line)
-				break
-	# The zebra she is waiting at.
-	if gives_way and at.distance_to(player_at) <= Tuning.CAR_ZEBRA_SIGHT:
-		var waiting_along := player_at.y if vertical else player_at.x
-		var step := Vector2i(0, int(direction)) if vertical else Vector2i(int(direction), 0)
-		var here := _map.world_to_tile(at)
-		var run_start := -1
-		for k in range(0, ceili(Tuning.CAR_ZEBRA_SIGHT / tile) + 1):
-			var at_tile := here + step * k
-			var along_index: int = at_tile.y if vertical else at_tile.x
-			if _map.tile_at(at_tile) != GameEnums.TileType.CROSSING:
-				run_start = -1
-				continue
-			if run_start < 0:
-				run_start = along_index
-			if absf(waiting_along - float(along_index) * tile) > Tuning.CAR_ZEBRA_WAIT_RADIUS:
-				continue
-			var edge := float(run_start + (0 if direction > 0.0 else 1)) * tile
-			var to_the_paint := (edge - along) * direction
-			# **Nothing enters a box it cannot leave** (the **crowd-traffic** skill). A zebra on the
-			# far side of the box ahead would stand the car inside the box, where the crossing
-			# traffic — which cannot see a patrol car's body — drives through it; so it holds at the
-			# box's entry line instead, where a red light stops it. A car whose nose is already in
-			# the box has committed, and stands short of the paint.
-			if to_the_box >= 0.0 and (edge - near) * direction > 0.5:
-				room = minf(room, box_line)
-			elif to_the_paint - nose >= 0.0:
-				room = minf(room, to_the_paint - Tuning.CAR_STOP_LINE_SETBACK)
-			break
-	return room
-
-## `seconds` of the car's travel past the touch, cut to what it can cover before the line it gives
-## way at (`_room_to_its_line()`) and before the end of a route it stops at (`_route_left()`): a
-## car that will stand at a red light or a zebra short of her, or park short of her, neither warns
-## her nor reads as lethal to her, since it never reaches her.
-func _short_of_its_line(seconds: float) -> float:
-	var cut := _short_of_its_stop(seconds, _route_left(_path_travelled))
-	var line := _room_to_its_line(global_position, _heading)
-	if line == INF or def.speed <= 0.0:
-		return cut
-	return minf(cut, Tuning.PATROL_STRIKE_LEAD + maxf(line, 0.0) / def.speed)
-
-## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
-## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
-## other row, which drives on past the end of its route as it leaves. The kerb is a place it stops,
-## like a line it gives way at, but with nothing past it: where it parks it is not driving, so its
-## warning, its strike and its standing for her end at the touch it would make there, without
-## `Tuning.PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
-## and one created with her past its kerb stood off screen for as long as she stayed there.
-func _route_left(travelled: float) -> float:
-	if not def.stops_where_it_arrives or def.paces or path.size() < 2:
-		return INF
-	return maxf(_path_length() - travelled, 0.0)
-
-## `seconds` of the car's travel cut to the `left` px of a route it stops at (`_route_left()`).
-func _short_of_its_stop(seconds: float, left: float) -> float:
-	if left == INF or def.speed <= 0.0:
-		return seconds
-	return minf(seconds, left / def.speed)
-
-## Lays a car's body along its heading, which `_build_obstruction()` read once. A capsule turns; a
-## point would not need to.
-func _turn_the_body() -> void:
-	if _obstruction == null or def.shape == null or def.shape.half_length <= 0.0:
+	if car == null or is_finished:
 		return
-	var angle := _solid_axis().angle() - PI * 0.5
-	for child in _obstruction.get_children():
-		var collision := child as CollisionShape2D
-		if collision and not is_equal_approx(collision.rotation, angle):
-			collision.rotation = angle
+	if ends:
+		_be_done(_may_park_on_commit)
+	car.turn_the_body()
 
-## How far apart the car's body would be from her and from her pram with the car at `at` facing
-## `heading`: the smaller gap, negative where they would overlap, `INF` for anything that does not
-## drive or with nobody told where she is.
-func _gap_to_her(at: Vector2, heading: Vector2) -> float:
-	if not def.drives or def.shape == null or player_at == Vector2.INF:
-		return INF
-	var gap := _gap_to(at, heading, player_at, Tuning.PLAYER_BODY_RADIUS)
-	if pram_at != Vector2.INF:
-		gap = minf(gap, _gap_to(at, heading, pram_at, Stroller.PRAM_BODY_RADIUS))
-	return gap
-
-func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
-	var local := (centre - at).rotated(-heading.angle())
-	return def.shape.distance_to_spine(local) - def.shape.radius - radius
-
-## Whether this car is driving right now: the one state its warning and its strike are live in. On
-## its route (`_drives_its_route()`) and not standing (`is_standing()`).
-func is_driving() -> bool:
-	return _drives_its_route() and not _standing
-
-## Whether the car is on its route rather than in any other state: not standing still through a
-## telegraph or parked, not leaving — it is over, and nothing that is over ends the day — and **not
-## stopped to investigate**: the heated copy that has noticed her stands where it stopped while the
-## man it let out pursues her (`EventDef.investigates`, `_investigate()`), and a standing car
-## strikes nobody. Once he is back in it drives its route again, and is a car on it like any other.
-func _drives_its_route() -> bool:
-	if not def.drives or is_finished or is_leaving or is_parked:
-		return false
-	if not def.mobile or path.size() < 2 or is_telegraphing_still():
-		return false
-	if def.pursues and not is_waiting():
-		return false
-	if def.investigates and not _runs_its_route():
-		return false
-	return def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
-
-## Whether a circle of `radius` at `centre` is in front of a car at `at` facing `heading`, within
-## `seconds` of its travel past the point its body would touch it: past the nose (`shape`'s spine
-## ends `half_length` ahead of its centre), across no wider than the body and the circle together —
-## the ground the body sweeps — and no further ahead than the touch plus that travel. **Nothing
-## behind it and nothing beside it**: a circle level with the body's flank is outside, whatever the
-## car is doing. *(leafy-puffin, inbox #648: "lethal only in front while driving".)*
-func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
-		seconds: float) -> bool:
-	var local := (centre - at).rotated(-heading.angle())
-	var nose := def.shape.half_length
-	if local.x <= nose or absf(local.y) > def.shape.radius + radius:
-		return false
-	return local.x <= nose + def.shape.radius + radius + def.speed * seconds
-
-## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
-## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's
-## own condition (`Crowd._strike()`): the kerb is the edge she chose to step over, so a pram poking
-## over it from the sidewalk is a car stopping for her, not a strike.
-func _meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> bool:
-	if not _on_the_carriageway(her):
-		return false
-	if _in_front(at, heading, her, Tuning.PLAYER_BODY_RADIUS, seconds):
-		return true
-	if pram_at == Vector2.INF or player_at == Vector2.INF:
-		return false
-	return _in_front(at, heading, her + (pram_at - player_at), Stroller.PRAM_BODY_RADIUS, seconds)
-
-## Whether `at` is on the carriageway: a road or a crossing tile. True with no map, which is every
-## data-level rig built without one, as `_clear_line_to()` is.
-func _on_the_carriageway(at: Vector2) -> bool:
-	return _map == null or Tile.is_road(_map.tile_type_at_world(at))
-
-## **The car's warning, a horn said with the mark over her head**: true while it drives at her where
-## she stands on the carriageway, within `Tuning.CAR_HORN_TIME` of its travel of the strike — so the
-## warning comes that long before the strike whatever the car's speed, the crowd car's contract
-## (`Tuning.validate_traffic()`, which holds it against walking off the carriageway with the
-## doubled margin). `EventManager._warn_about_the_ground_she_is_on()` raises the mark from it. Not
-## while a line it gives way at, or the end of a route it parks at, stands between them
-## (`_short_of_its_line()`): it will stop there.
-func closes_on(her: Vector2) -> bool:
-	return is_driving() and _meets_her(global_position, _heading, her,
-			_short_of_its_line(Tuning.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))
-
-## Whether the frame record (`FrameRecord`) was running when this event was made, read once here
-## so that, with the record off, `_process()` pays one member read rather than a static read and a
-## call into a second function: with the crowd's agents beside the live events, that difference
-## made every player's frame measurably longer on a desktop
-## (docs/evidence/m159-frame-record-2026-10-04/). An event is made per day, after the recorder has
-## started, so every one made under a record is timed.
-var _timed := FrameRecord.on
-## True while `_process()` runs its own body inside the record's timing, so the call it makes to
-## itself is the body rather than another round of timing.
-var _timing := false
-
-func _process(delta: float) -> void:
-	# The record's timing, when this event was made under one and it is still running: the body
-	# below runs inside it through the call to itself. See `_timed`.
-	if _timed and not _timing and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		_timing = true
-		_process(delta)
-		_timing = false
-		FrameRecord.leave(outer)
-		return
-	if is_finished:
-		return
-	# A car runs its frame inside `_drive()`, which takes back whatever part of it would have put
-	# its body into her. The body below runs through the call to itself.
-	if def.drives and not _driving:
-		_drive(delta)
-		return
+## What it does in one tick, run by `step()`.
+func _tick(delta: float) -> void:
 	_clock += delta
-	age += delta
+	_age += delta
 	_hold_the_notice_clock(delta)
-	_walk_the_far_guard_off(delta)
+	_settle_the_notice()
+	if barrier_post:
+		barrier_post.far.walk_off(delta)
 	# The gait phase advances by whatever this tick actually adds to `_path_travelled` below,
-	# whichever branch does the adding (`_leave`, `_advance_along_path`, `_chase`) or none of them
-	# — see `_advance_gait()`, called once at every exit from this function.
+	# whichever behaviour does the adding or none of them — see `_advance_gait()`, called once at
+	# every exit from this function.
 	var _travelled_before := _path_travelled
 
 	if not _activation_announced and not is_telegraphing():
@@ -2225,91 +777,47 @@ func _process(delta: float) -> void:
 		EventBus.event_activated.emit(self)
 
 	if is_leaving:
-		_leave(delta)
-		_fly_the_flock(delta)
+		departure.leave(delta)
+		for behaviour in _behaviours:
+			behaviour.step_leaving(delta)
 		_advance_gait(_path_travelled - _travelled_before)
-		if has_left_its_body_behind() and not is_finished:
+		if barrier_post and barrier_post.has_left_its_body() and not is_finished:
 			# He walks off and the barrier does not go with him: its body stays where it was built
 			# through the departure as through the chase (its picture is its own node).
-			_keep_the_body_where_it_was_left()
-		_redraw_if_the_picture_changed()
+			barrier_post.keep_the_body()
 		return
 
 	if is_chatting():
-		# The one thing that runs while she is otherwise frozen. Her own controls are locked by
-		# `Stroller.detain()`, called the frame `start_chat()` fires; here it is only a clock, held
-		# apart from `_has_expired()` because `duration` means something else for every other row.
-		_chat_seconds_left = maxf(0.0, _chat_seconds_left - delta)
-		# `redetains` is the one thing that skips `_be_done()` here: a checkpoint's hut or post
-		# stays exactly where it is, still solid, ready for `EventManager` to arm it again the
-		# instant she is released and clear of `detain_distance()` — see `EventDef.redetains`.
-		# `chatting_mother` has none of this: her conversation ending is what starts her own
-		# departure, `_be_done()`'s ordinary meaning for anything that is not a fixture.
-		#
-		# **And nothing here shows her again, deliberately.** This clock runs in `_process`, a
-		# *drawn* frame; the release that moves her runs in `EventManager`'s `_physics_process`, so
-		# a door that ended the hold by un-hiding her right here put her back on the screen at the
-		# place she went in for every frame drawn before the next physics tick — which is exactly
-		# what the player saw. See `_enter_inspection()`.
-		if _chat_seconds_left <= 0.0 and not def.redetains:
-			_be_done()
+		# The one thing that runs while she is otherwise frozen (`EventHold.step()`): her own controls
+		# are locked by `Stroller.detain()`, and here only the hold's clock runs.
+		hold.step(delta)
 		# Frozen, so no distance is covered — `_advance_gait(0.0)` marks the frame stopped rather
 		# than leaving `_gait_moving` at whatever it read the tick before the conversation started.
 		_advance_gait(0.0)
-		_redraw_if_the_picture_changed()
 		return
 
-	_fly_the_flock(delta)
-	if def.investigates:
-		_investigate()
-		if _runs_its_route() and def.mobile and path.size() > 1:
-			_advance_along_path(delta)
-	elif def.pursues and has_stopped_her():
-		# **He has reached her and stopped her** (`EventDef.stop_excitement`): he stands with her
-		# while his field lands the stop, and then walks back to the vehicle that let him out.
-		if age - _stopped_her_at >= Tuning.OFFICER_STOP_SECONDS:
-			_be_done()
-	elif def.pursues:
-		# **A pursuer that has a route runs it until it notices her.** No field says so — see
-		# `EventDef.at_heat()`'s own note on `PRESSES` — it is read off the two flags a mobile
-		# pursuer already carries: while it is only `is_waiting()` it has not decided anything about
-		# her yet, so it patrols its path exactly as a plain mobile row would; `_chase` below is what
-		# turns it round the frame it notices. A stationary pursuer (`alley_robbery`) has no path to
-		# run and this is simply never true of it.
-		if is_waiting() and def.mobile and path.size() > 1:
-			_advance_along_path(delta)
-		_chase(delta)
-		_stop_her_if_he_has_reached_her()
-		_lay_the_trail()
-	elif def.pursues_within > 0.0:
-		# The same waiting state a pursuer gets, for a row that only waits and then runs its own
-		# path rather than turning to chase her once noticed — see `_check_for_notice()` and
-		# `EventDef.pursues_within`'s own note that the field is not only for a pursuer any more.
-		_check_for_notice()
-		_warn_on_its_line(delta)
-		_flush_the_flock_if_she_is_among_them()
-		if not is_waiting() and def.mobile and path.size() > 1 and not is_telegraphing_still():
-			_advance_along_path(delta)
-	elif def.mobile and path.size() > 1 and not is_telegraphing_still() and not is_parked:
-		_advance_along_path(delta)
-	_give_up_what_cannot_reach_her(delta)
+	# What it does, in the order it was composed (`EventBehaviours.compose()`): each behaviour
+	# decides for itself whether this tick is one it acts on.
+	for behaviour in _behaviours:
+		if behaviour.steps_each_tick:
+			behaviour.step(delta)
 
-	# A car that drives keeps its body through a chase (`EventDef.drives`): cars that drive are the
-	# only bodies that move, and `_drive()` is what keeps them off her.
-	if _obstruction and def.pursues and not def.drives and not is_waiting():
+	# A car that drives keeps its body through a chase (`EventDef.vehicle`): cars that drive are the
+	# only bodies that move, and `EventCarDriving` is what keeps them off her.
+	if _obstruction and def.pursuit != null and def.vehicle == null and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
-		# `_walkable_step`'s own note says why a moving pursuer may not keep a body: "giving a
+		# `_step`'s own note says why a moving pursuer may not keep a body: "giving a
 		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
-		# A hunting `abduction` or raid never gets here: it hunts on foot (`EventDef.hunts_on_foot`)
+		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.hunts`)
 		# and stays parked, solid, while its men come after her.
 		#
-		# **`body_stays_behind` is the other case, and it is not an exception to that rule.** The
+		# **`PursuitSpec.leaves_its_body` is the other case, and it is not an exception to that rule.** The
 		# body still stops moving with the pursuer; it stops moving at all. A barrier built across
 		# a road is not the bulk of the man who was standing at it, so he walks out of it and it
 		# stays where it was built — the street he abandoned stays shut. Nothing is pinned, because
 		# nothing follows her.
-		if def.body_stays_behind:
-			_leave_the_body_behind()
+		if barrier_post:
+			barrier_post.leave_the_body()
 		else:
 			_obstruction.queue_free()
 			_obstruction = null
@@ -2317,58 +825,35 @@ func _process(delta: float) -> void:
 	_become_solid_once_it_starts()
 	_let_the_body_follow_the_arm()
 
-	if def.look == EventDef.Look.UNMARKED_VAN:
-		_update_the_take()
-
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
 		_be_done()
-	if has_left_its_body_behind() and not _guard_spent:
+	if barrier_post and barrier_post.has_left_its_body() and not _guard_spent:
 		# The body is a child of a node that is walking away, so it is re-pinned on every frame he
-		# moves. The band's picture is its own node (`RoadblockBand`), which stands at the body and
-		# needs no redraw for it. A spent guard moves nothing, so there is nothing to re-pin.
-		_keep_the_body_where_it_was_left()
-	_move_the_band()
-	_draw_a_warning_guard_on_top()
-	_redraw_if_the_picture_changed()
+		# moves. The band's picture is its own node (`RoadblockLook.RoadblockBand`), which stands at
+		# the body and needs no redraw for it. A spent guard moves nothing, so there is nothing to
+		# re-pin.
+		barrier_post.keep_the_body()
 
-## **A roadblock's guard warning her is drawn over everything round him**, for the whole of his
-## warning: from the frame he steps out to his post with his hand raised until he charges. *(Inbox
-## #771 in minty-lemur, 2026-10-18: "the second guard is invisible (hidden) until it already charges".)* He sorts
-## at his own feet like any other figure, so anything standing between him and her with its feet
-## nearer her than his — a van parked in front of his post, another band and the guard posted on
-## its far side — is drawn over him, and a man who is hidden while he warns has not warned. Above
-## the rest of the street (`WARNING_GUARD_Z`) only while he warns; once he charges he sorts with
-## everything else again.
-func _draw_a_warning_guard_on_top() -> void:
-	if def.look != EventDef.Look.ROADBLOCK:
+## **A pursuer that warns over the street is drawn on the warning layer for the whole of its
+## warning** (`PursuitSpec.warns_over_the_street`, `DrawLayer.Layer.WARNING`): the roadblock's guard,
+## from the frame he steps out to his post with his hand raised until he charges, over every figure
+## on the street, under the city's overhead layer. Once he charges he sorts with the street again,
+## on the entity layer at his own feet. Taken on the drawn frame (`_process()`), from the phase the
+## last tick left: a look never writes the event, and the tick writes no drawing property.
+func _take_the_layer_it_warns_on() -> void:
+	if def.pursuit == null or not def.pursuit.warns_over_the_street:
 		return
-	var wanted := WARNING_GUARD_Z if is_standing_for_its_notice() else 0
-	if z_index != wanted:
-		z_index = wanted
+	DrawLayer.draw_on(self, DrawLayer.Layer.WARNING if is_standing_for_its_notice()
+			else DrawLayer.Layer.ENTITIES)
 
-## How far above the street's own figures a warning roadblock guard is drawn — one step, under the
-## city's overhead layer (`City.OVERHEAD_Z_INDEX`).
-const WARNING_GUARD_Z := 1
+# ------------------------------------------------------------------- the hold ---
 
-# ------------------------------------------------------------------- the chat ---
-# `chatting_mother`'s whole mechanic: a trigger rather than a field. `EventManager` decides *when*
-# — it is the one place holding the `Stroller` reference `detain()` needs — and everything about
-# *what happens once it has* lives here, the same split `_chase` draws between "what decides" and
-# "what plays out".
-
-## Whether she has ever had her one conversation. Checked by `EventManager` before it will ever
-## call `start_chat()` again: once true, this instance can never detain a second time, whatever
-## she does — she is spent as a detainer the moment the first one starts.
-var _has_chatted := false
-## Seconds left in the conversation currently running, or `0.0` when none is.
-var _chat_seconds_left := 0.0
-
-## Whether a conversation is running right now. Freezes pacing (see `_process`) and switches the
-## posture from strolling to talking (see `_draw_chatting_mother`) — the only two things about her
-## that a conversation changes, since the lock on the player's own movement lives on `Stroller`.
+## Whether a conversation or a door's hold is running right now (`EventHold`). Freezes pacing (see
+## `_tick()`) and switches a mother's posture from strolling to talking
+## (`FigureLook._draw_chatting_mother`).
 func is_chatting() -> bool:
-	return _chat_seconds_left > 0.0
+	return hold != null and hold.is_running()
 
 ## Whether the guard this instance draws is inside with her for its own hold right now — he is the
 ## one taking her in, so he is not also standing in the street, see
@@ -2379,557 +864,115 @@ func is_chatting() -> bool:
 func is_its_guard_inside() -> bool:
 	return def.redetains and is_chatting()
 
-## Whether a checkpoint's own hold suppresses *every* drawing of this instance, halo included.
-##
-## **True only where the guard is the whole of what this row draws.** `checkpoint_post` is one
-## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
-## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
-## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
-## reads as the door having been removed rather than as her having gone through it, which is the
-## opposite of what the hold is for.
-##
-## Read by `_draw()`, by `_draw_body()` (the halo's own re-draw entry point — see that function's
-## doc for why the halo needs its own guard rather than inheriting `_draw()`'s), and by a test, so
-## the three can never drift apart from each other.
-func is_suppressed_by_its_own_hold() -> bool:
-	return is_its_guard_inside() and def.look == EventDef.Look.CHECKPOINT_POST
-
-## Whether this instance has ever detained anybody. See `_has_chatted`.
+## Whether this instance has ever held her (`EventHold.has_held()`). A row that does not redetain
+## never holds her twice.
 func has_chatted() -> bool:
-	return _has_chatted
+	return hold != null and hold.has_held()
 
-## Starts the one conversation this instance will ever have. Called by `EventManager` the frame it
-## decides the player has come within `def.detain_distance()` of an instance that has not chatted
-## yet — see
-## `EventManager._check_detentions()`. Spends the instance as a detainer immediately, before the
-## clock has run a single frame, so a second call before this one finishes can never restart it.
+## Starts a hold, the frame `CheckpointController.check_detentions()` decides she has come within
+## `def.detain_distance()` of an instance that may take her (`EventHold.start()`).
 func start_chat() -> void:
-	_has_chatted = true
-	_chat_seconds_left = def.detain_seconds
-	if def.redetains:
-		_enter_inspection()
-
-## The checkpoint's own *"gone inside"* — reached only by `start_chat()` above, and only for a
-## `redetains` row, so `chatting_mother`'s one conversation is untouched. `EventInstance` holds no
-## `Stroller` reference of its own; the `player` group is the same lookup `Crowd`, `HUD` and the
-## resistance director already use to reach her from outside the player scene.
-##
-## **Going in is this row's to do and coming out is not**, and the asymmetry is the whole of it.
-## Hiding her happens on the same frame as `start_chat()`, which `EventManager` calls from its own
-## `_physics_process`, so there is nothing for a drawn frame to catch. Showing her again has to
-## happen on the frame she is *moved* — `EventManager._release_finished_door_detentions()`, also a
-## physics frame — and this instance's own clock runs in `_process`, a drawn one. Un-hiding her
-## when the clock ran out drew her at the place she went in until the next physics tick:
-## *(2026-09-20, the player: "when I reappear I briefly spawn at my old location before
-## teleporting to the new location. I should directly spawn at the new location".)* So the release
-## owns both halves of coming back, and nothing is left hidden by it — a day boundary landing
-## mid-hold is already caught by `Stroller.reset_at()`, and a hold's own instance cannot be
-## streamed out from under her, since she is standing against it.
-func _enter_inspection() -> void:
-	var stroller := get_tree().get_first_node_in_group("player") as Stroller
-	if not stroller:
-		return
-	stroller.hide_for_inspection()
-	stroller.focus_camera_on(global_position)
+	if hold:
+		hold.start()
 
 ## Whether the chase ended because she shook it off rather than because the clock ran out. Read by
 ## the telemetry, which is the only thing that can tell the two apart from outside.
 var gave_up := false
-## How long the gap to her has been opening, in seconds. The chase ends when it reaches
-## `Tuning.PURSUIT_SHAKEN_OFF`; anything that closes the gap puts it back to zero. See `_chase`.
-var _outrun_for := 0.0
-## The gap on the previous frame, so `_chase` can tell opening from closing. `INF` before the first.
-var _last_range := INF
-## For a pursuer with `pursues_within`: the age at which she came close enough for it to take an
-## interest, or `INF` while it is still only standing there. Its telegraph and its chase are both
-## measured from here rather than from birth. See `is_waiting()`. Carried across a stream-out by
-## `resume()`'s own `from_noticed_at`, so a notice made before an instance left the world is not
-## made twice.
-var _noticed_at := INF
-## Whether `EventBus.pursuit_began` has already been sent for this instance's own chase — a row
-## with no `pursues_within` at all (`is_waiting()` never true) starts chasing on its very first
-## `_chase()` call rather than on a `_noticed_at` transition, so this is stated over "have I told
-## `VisitCounter` yet" rather than re-derived from `_noticed_at`. See `EventBus.pursuit_began`'s own
-## doc.
-var _pursuit_began_reported := false
+## **Its notice's clock** (`Warning`, read against `age`): started when it exists for a row with no
+## wait, and when it notices her for one that waits (`EventDef.notice`); stopped while it waits.
+## `chase_age()` is its elapsed time, and a stream-out carries its start (`noticed_at()`).
+var _notice := Warning.new()
+## Its charge as it is counted — its warning, its start and the one way it ended — and the one
+## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
+## no wait (`is_waiting()` never true) starts chasing on its very first `EventPursuit` call rather than
+## on a notice, so whether it has begun is the record's `began`.
+var _charge := ChargeRecord.new(Callable(self, &"charger_name"), EventBus)
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
-## (`EventManager._warn_at_the_doors()`, which sets it every frame); once the crossing's warning has
-## run with her still across, this hut's guard comes out and charges at once
-## (`EventDef.charges_at_once`). Drawn
-## with `guard_alert_front` beside the hut instead of `guard_standing` (`_draw_checkpoint_hut()`).
+## (`CheckpointController.warn_at_the_doors()`, which sets it every frame); once the crossing's
+## warning has run with her still across, this hut's guard comes out and charges at once
+## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Drawn with `guard_alert_front` beside the hut instead of
+## `guard_standing` (`CheckpointLook._draw_checkpoint_hut()`).
 var guard_warns_her := false
-## Whether `EventBus.pursuit_warned` has already been sent for this instance's first warning.
-var _warning_reported := false
-## Whether this instance's charge has ended for its counter: caught (`report_the_catch()`), over
-## (`_be_done()`), or cut short by the day ending some other way (`report_the_charge_cut_short()`).
-## Exactly one of the three is sent.
-var _charge_ended := false
 
 ## **Whether this instance has a charging counter**: every pursuer, and a row that waits for her
-## and runs its own line at her once she is near (`EventDef.charges_within`, the masked man in the
+## and runs its own line at her once she is near (`NoticeSpec.runs_within`, the masked man in the
 ## escape's stairwell). Telemetry only.
 func counts_a_charge() -> bool:
-	return def.pursues or def.charges_within > 0.0
-
-## The name its counter goes under when something other than its row gave it its errand
-## (`charger_name()`): `task_guard` for day 13's task guard once the task sets him on her, in her
-## view or sent from out of it (`ResistanceDirector._set_the_task_guard_on_her()`). Empty for every
-## other instance. Telemetry only.
-var counted_as := ""
-
-## **The day-3 lesson's dog**, the one the run tip is shown for: the first `charging_dog`
-## `EventManager` creates on `Tuning.RUN_TAUGHT_DAY` (`EventManager._create()`), which is the lesson
-## `EventDirector._teach_the_run()` puts first. Telemetry only — it names the dog's charging counter
-## (`charger_name()`) and nothing that decides anything reads it.
-var is_the_lesson := false
+	return def.pursuit != null or (def.notice != null and def.notice.runs_within > 0.0)
 
 ## The name a charge is counted under (`EventBus.pursuit_warned`, `pursuit_began`, `pursuit_caught`,
-## `pursuit_ended`): `charging_dog_tutorial` for the day-3 lesson's dog (`is_the_lesson`), otherwise
-## the row's own `def.id`. Telemetry only.
+## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
+## from out of her view counts as `task_guard`), otherwise the row's own `def.id` — the day-3
+## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
 func charger_name() -> String:
-	if counted_as != "":
-		return counted_as
-	return "charging_dog_tutorial" if is_the_lesson else def.id
+	return def.counts_charges_as if def.counts_charges_as != "" else def.id
 
 ## **Its charge caught her**, said once: by `EventManager._check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
-## (`_stop_her_if_he_has_reached_her()`), whose catch does not. Telemetry only: it sends
+## (`EventOfficer`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge
 ## ends in exactly one of caught, shaken off, outlasted and cut short, whatever the day does
-## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Also asked by
-## `InteriorEvents` when the masked man catches her. Nothing for a row with no charging counter
+## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. Nothing for
+## a row with no charging counter
 ## (`counts_a_charge()`) or a charge that has not begun.
 func report_the_catch() -> void:
-	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended:
-		return
-	_charge_ended = true
-	EventBus.pursuit_caught.emit(charger_name())
+	if counts_a_charge():
+		_charge.catch()
 
 ## **Its charge was cut short**: the day, or the escape's section, ended some other way while it
 ## was still charging — the meter reached its cap, another thing caught her, she reached home.
 ## Sends `EventBus.pursuit_cut_short` once, so that charge too ends in exactly one counted way.
-## Asked by `EventManager.end_the_charges_still_running()` and `InteriorEvents` as they end.
+## Asked by `EventManager.end_the_charges_still_running()` as a walk ends.
 ## Telemetry only.
 func report_the_charge_cut_short() -> void:
-	if not counts_a_charge() or not _pursuit_began_reported or _charge_ended or is_finished:
-		return
-	_charge_ended = true
-	EventBus.pursuit_cut_short.emit(charger_name())
+	if counts_a_charge() and not is_finished:
+		_charge.cut_short()
 
 ## Sends `EventBus.pursuit_warned` once for this instance: its warning has gone up. Never for one
-## that charges at once (`EventDef.charges_at_once`, the checkpoint guard): his warning was the hut's
-## or the post's guard's raised hand, counted where it went up (`EventManager._warn_at_the_doors()`),
-## so a crossing counts one warning at an alley's door as at a boom.
+## that charges at once (the checkpoint guard): his warning was the hut's or the post's guard's
+## raised hand, counted where it went up (`CheckpointController`), so a crossing counts one warning
+## at an alley's door as at a boom.
 func _report_the_warning() -> void:
-	if _warning_reported or not counts_a_charge() or def.charges_at_once:
-		return
-	_warning_reported = true
-	EventBus.pursuit_warned.emit(charger_name())
+	if counts_a_charge() and not def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE):
+		_charge.warn()
 
 ## **Whether its notice is a warning she is shown, standing**, rather than its approach: one that
-## warns by radius, the man a vehicle lets out (`EventDef.sets_off_beside_her`), day 13's guard
-## raising his warning in her view. Its charge, and so its `-chased`, comes only when that ends; a
-## pursuer whose telegraph is its approach (the day-3 dog) has come for her from its first frame.
+## warns by radius, the man a vehicle lets out (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`), day 13's
+## guard raising his warning in her view. Its charge, and so its `-chased`, comes only when that
+## ends; a pursuer whose telegraph is its approach (the day-3 dog) has come for her from its first
+## frame.
 func _its_notice_is_a_warning() -> bool:
-	return warns_by_radius() or def.sets_off_beside_her or _stands_for_this_notice
-## True once she has come close enough during the telegraph for the thing to start, which ends the
-## telegraph there and then. **The start is fired by her, not by a clock**, and two rows want it
-## for the same reason at two distances.
-##
-## **The lunge of a pursuer that comes for her through its telegraph** (the day-3 dog), at
-## `Tuning.pursuit_standoff()`, and the two alternatives each fail in their own way. A charger that
-## waits for her has no lunge: its charge is its warning running out (`warns_by_radius()`). It reaches its stand-off in about a third of a second and then has the rest of a
-## 2.4s telegraph to spend while she keeps walking into it — so *holding a distance* means backing
-## away from her, and a dog that reverses down the street in front of you is not a dog that is
-## about to charge. **Standing still instead** is worse: she closes the last hundred pixels
-## herself, reaches it **before** the clock lets it fire, and it kills her from a standing start on
-## the first lethal frame.
-##
-## Firing on proximity gives both halves at once: it never reverses, and the chase always starts at
-## the stand-off however she approached it — which is the whole content of the contract, since
-## `Tuning.pursuit_standoff()` is the distance that leaves her `PURSUIT_REACTION` to answer.
-##
-## **A flock's flush**, at the birds themselves — see `_flush_the_flock_if_she_is_among_them()`.
-## The same sentence about a different distance: a clock cannot know when she reached them, so a
-## clock put the birds up behind her.
-var _lunged := false
-## True once a wall has held a pursuer's lunge back: she came inside its stand-off with no clear
-## line between them (`_clear_line_to()`), or it first noticed her already inside it, which only a
-## wall between them can do. **The lunge needs a clear line** *(mossy-beaver, inbox #650: "how can
-## it pursue without noticing? obviously it needs a clear line")*, and a lunge simply deferred until
-## the line clears is the **events** skill's trap: at an alley mouth the line clears with her
-## already inside the stand-off, and he would lunge from a fraction of it.
-##
-## **Only a pursuer that comes for her through its notice holds a lunge** — the day-3 dog, and day
-## 13's task guard set on her (`notice_her_at()`); a charger that waits for her charges on its
-## warning's clock instead, and behind a wall goes on warning until the line clears
-## (`_hold_the_notice_clock()`).
-##
-## So from here on it holds `EventDef.sets_off_beside_her`'s ground — it holds its position while
-## she is nearer than the stand-off and follows at the stand-off once she is further — and lunges
-## the moment she is back at the full stand-off with the line clear. **Its notice does not run out
-## while she is inside the stand-off** (`_notice_paused_for`): a notice that ran out there would
-## start the chase from a fraction of the stand-off, the same trap reached by her standing still.
-## So the chase starts from the full stand-off however she came: by the lunge as she leaves, or by
-## the notice running out while she is already outside it.
-var _lunge_held := false
-## Seconds the notice has stood still because a held lunge (`_lunge_held`) had her inside its
-## stand-off; `chase_age()` leaves them out. **A held pursuer she stays beside never sets off**, for
-## as long as she stays: he stands turned toward her with the doubled red caret up, his field
-## charging her meter (at full strength for day 13's task guard; the day-3 teaching dog's warning
-## period is damped), and the chase starts only once she walks back out to the
-## stand-off. That is fair because the one way out of it is the walk the contract was written for —
-## the lunge from the full stand-off, with all of `PURSUIT_REACTION` to answer it. See `_pause_a_held_notice()`.
-var _notice_paused_for := 0.0
-
-## Comes after her — the one kind of thing running is the answer to. See `EventDef.pursues` and
-## `Tuning.validate_pursuit`.
-##
-## **It comes through its own telegraph**, the way a fire engine does, and that is the whole of
-## why a pursuer can force a run at all. A telegraph it spends standing still is a head start she
-## can simply walk away with: at `pursue_speed` against `WALK_SPEED` it closes about 56px a
-## second, so two seconds of politeness hands her more ground than the entire chase can take
-## back. An ordinary pursuer's notice is *the sight of it coming*, and `Tuning.PURSUIT_MIN_NOTICE`
-## bounds its approach. A sent pursuer instead arrives chasing after its offscreen badge alone.
-##
-## **A pursuer that waited for her and stands for its notice is the exception the player asked for**
-## (`EventDef.stands_for_its_notice`, inbox #748: "robber can walk towards her but guards should lift
-## their hand in warning"; "nobody walks -- only the robber"): the head start is hers to take, and
-## what keeps it a chase is the rest of this function — the charge once its warning has run with her
-## still inside its radius (`warns_by_radius()`), and a chase faster than her walk once it has
-## charged. One that set off beside her charges when its notice has run.
-##
-## **But it closes to a stand-off and holds it, rather than arriving.** The paragraph above buys the
-## notice in seconds and says nothing about *where* the pursuer spends them: sited across her line a
-## couple of hundred pixels ahead — which is where she was already walking — it closes the gap in
-## three quarters of a second and then stands **inside its own lethal radius** for the rest of a
-## telegraph it is not yet allowed to kill her during. The moment it is, it does, from a standing
-## start. Every line of `validate_pursuit` passes while that happens, because every line of it is
-## about speeds and durations and a pursuit is played out in distances.
-##
-## `Tuning.pursuit_standoff()` is the same contract restated as a distance, and holding it is what
-## makes the notice real from *any* approach geometry — including the one the director produces.
-##
-## **And it gives up when it is being outrun, not when a gap has reached a size.** The pursuer is
-## faster than a walk and slower than a run by construction, so "the gap is opening" is a statement
-## the player can only make by running — which is why it can carry the whole of the design. Walking
-## away cannot end a chase at any distance. Sustained running ends one after
-## `Tuning.PURSUIT_SHAKEN_OFF` seconds, once an ordinary pursuer's approach notice floor is met;
-## a sent pursuer can be shaken off while still offscreen.
-##
-## A pursuer may also be a **place** before it is a moment: something that raises the meter on
-## sight, and comes for her if she gets close. While
-## it is waiting it emits at full strength, is not lethal and does not move; `pursues_within` is
-## where that stops.
-##
-## **And a pursuer that waited for her warns inside its one radius, on a clock** (`warns_by_radius()`;
-## inbox #788 in minty-lemur, the player: "We should do one radius and warn inside it for 2s. If the player leaves
-## the radius nothing happens and the warning stops. If they stay within the charge starts"). From
-## the frame it notices her inside `pursues_within` it shows its warning for its row's `warns_for`
-## (`notice_time()`); once she is back outside `pursues_within` it stops warning and waits again,
-## from where it stands (`_stop_warning()`), and can warn again from the start; still inside when
-## the warning has run, it charges, along a clear line (`_hold_the_notice_clock()`). Walking away
-## from the warning is safe; standing in it is not.
-func _chase(delta: float) -> void:
-	if player_at == Vector2.INF or is_telegraphing_still() or _guard_spent:
-		return
-	var toward := player_at - global_position
-	var range_to_her := toward.length()
-	if range_to_her < 1.0:
-		return
-	# From what ends her day, not from where the field's core ends: the same `lethal_reach()`
-	# `Tuning.validate_pursuit()` states the contract over. Every row but `roadblock` has no
-	# `lethal_radius` and reads its `inner_radius` here; a roadblock's guard catches at a man's reach,
-	# not at the band's 86px core. A charger that waits for her charges on its warning's clock rather
-	# than at this distance; the robber's slow walk stops at it.
-	#
-	# `standoff_reach()` is that same reach unless the row keeps its lunge further out than its catch
-	# (`EventDef.lunge_reach`, the alley robber's): his catch and his lunge are set separately.
-	var standoff := charge_radius()
-	if is_waiting():
-		# **It notices her only along a clear line** (`_clear_line_to()`, the catch's own test):
-		# within `pursues_within` round a building's corner, he has not seen her. *(leafy-puffin,
-		# inbox #648: "yes noticing needs a clear line".)* And a charger that waits for her notices
-		# her only once his warning would stand in her view (`_would_stand_in_her_view()`).
-		if range_to_her <= def.pursues_within and _clear_line_to(player_at) \
-				and _would_stand_in_her_view():
-			_noticed_at = age
-			# `VisitCounter`'s own "-warned", once per instance: the warning level below the
-			# charge that `pursuit_began` reports (docs/TELEMETRY.md, "The page counts visits").
-			if warns_by_radius():
-				_report_the_warning()
-			# It turns to face her on the frame it notices: a dog or a guard that was looking
-			# elsewhere is now looking at her. A waiting robber is already drawn facing her along a
-			# clear line (`_robber_waiting_heading()`), so for him the cue is the posture switch,
-			# waiting to lunging, on this frame.
-			_heading = toward.normalized()
-			# Noticed already inside the stand-off, which only a wall can do — `pursues_within` is
-			# wider than the stand-off on every row (`Tuning.validate_pursuit()`) — so the wall held
-			# the lunge back as well as the notice. See `_lunge_held`. A charger that warns by
-			# radius has no lunge to hold: its charge is its warning running out.
-			if range_to_her <= standoff and not warns_by_radius():
-				_lunge_held = true
-		return
-	# **Out of its warning radius, it stops warning** and waits again where it stands. Measured from
-	# where it noticed her (`body_position()`, the band's centre for a roadblock's guard, who stepped
-	# out to his post), so the frame it waits again it does not notice her again.
-	if is_telegraphing() and warns_by_radius() \
-			and body_position().distance_to(player_at) > def.pursues_within:
-		_stop_warning()
-		return
-	# A raised hand that is the indicator of a charge to come is a warning too: the man a vehicle
-	# lets out, day 13's guard in her view.
-	if is_telegraphing() and _its_notice_is_a_warning():
-		_report_the_warning()
-	if not _pursuit_began_reported and not (_its_notice_is_a_warning() and is_telegraphing()):
-		_pursuit_began_reported = true
-		# `VisitCounter`'s own "dog-chased" — actually coming for her, whether that is a transition
-		# out of `is_waiting()`, the charge of one that warns by radius (its warning is not a chase:
-		# she can walk out of it, `warns_by_radius()`), or (a row with no `pursues_within` at all)
-		# this chase's first frame. See docs/TELEMETRY.md, "The page counts visits".
-		EventBus.pursuit_began.emit(charger_name())
-	_heading = toward.normalized()
-	# **She ran, so it backs off.** Counting seconds of the *gap actually opening* is the same
-	# sentence said about the geometry instead of about the player, and in play it is a different
-	# rule: a run opens the gap at 38px/s against the day-3 dog, a fifth of a pixel a frame, so a
-	# corner, a kerb, a body in the way or the 0.37s it takes to reverse a walk all reset the timer
-	# and the dog keeps coming while she is plainly running from it. The rule here is the one a
-	# player can state and therefore learn: **run and it gives up.**
-	#
-	# `_last_range` is still tracked because the leaving phase reads it; nothing decides on it.
-	#
-	# **A charger that waits for her is shaken off only once he has charged**: while he warns, a
-	# run inside his radius counts for nothing (inbox #788 in minty-lemur: "If they stay within the charge
-	# starts"), so she answers his warning by leaving the radius, not by running on the spot, and
-	# running beside a roadblock's band does not send its guards off without a lure.
-	if player_running and not (warns_by_radius() and is_telegraphing()):
-		_outrun_for += delta
-	else:
-		_outrun_for = 0.0
-	_last_range = range_to_her
-	# An ordinary pursuer keeps its approach notice. A sent pursuer already warned with its badge:
-	# running counts while it is still offscreen, too (tall-owl: "starting to run while he's
-	# offscreen still counts towards the shaking off timer? sure"). One that warns by radius warned
-	# her in place for as long as she stood in its radius, so running counts from its charge (above).
-	var may_give_up := def.arrives_chasing or def.charges_at_once or warns_by_radius() \
-			or chase_age() >= Tuning.PURSUIT_MIN_NOTICE
-	if _outrun_for >= Tuning.PURSUIT_SHAKEN_OFF and may_give_up:
-		gave_up = true
-		_be_done()
-		return
-	# Straight at her, and no faster than its own speed: the contract is the speed, so nothing
-	# here may quietly exceed it.
-	var step := minf(def.pursue_speed * delta, range_to_her)
-	if is_telegraphing():
-		# **It closes to the stand-off, holds it, and lunges when she reaches it.** The lunge is
-		# fired by *her* rather than by the clock, whichever comes first — see `_lunged`.
-		#
-		# **Unless it set off beside her** (`EventDef.sets_off_beside_her`): spawned inside its own
-		# stand-off, the lunge would fire on its first frame, so the notice runs its whole length
-		# and it neither lunges early nor backs off — it holds its ground while she is nearer than
-		# the stand-off and follows at it once she is further.
-		#
-		# **The lunge needs a clear line too** *(mossy-beaver, inbox #650: "how can it pursue
-		# without noticing? obviously it needs a clear line")*, and a wall that holds it back hands
-		# him the door guard's ground rather than a lunge from wherever the line clears — see
-		# `_lunge_held`. Once held, he lunges the moment she is back at the full stand-off with
-		# the line clear, which is where a walker leaving him puts her, and his notice does not
-		# run out while she is inside it (`_pause_a_held_notice()`).
-		# **A pursuer with a notice walk of its own closes to its stand-off at it**
-		# (`EventDef.notice_walk_speed`, the alley robber's: inbox #761 in minty-lemur, "we can increase the
-		# noticing if the robber starts walking slowly"), so his alert walk is seen; every lunge
-		# below is decided exactly as it is for a pursuer that closes at its chase speed. **A held
-		# one keeps its stand-off at its chase speed** rather than at the walk: it is already at its
-		# lunge, and a robber left trailing out of an alley mouth at a walk while she walks on past
-		# starts his chase from deep in the alley, where a straight chase slides along its walls
-		# and a walker can outlast it — the one way walking could win.
-		if def.notice_walk_speed > 0.0 and not (def.sets_off_beside_her or _lunge_held):
-			step = minf(def.notice_walk_speed * delta, range_to_her)
-		var clear := _clear_line_to(player_at)
-		if def.sets_off_beside_her or _lunge_held:
-			step = clampf(range_to_her - standoff, 0.0, step)
-			if _lunge_held and clear and range_to_her >= standoff:
-				_lunged = true
-		elif warns_by_radius():
-			# **A charger that waits for her charges when his warning runs out, not on a
-			# distance** (`EventDef.warns_for`): she can walk anywhere inside his radius, up to
-			# him, and he only warns; one that walks at her through his warning (the robber) holds
-			# at his stand-off.
-			step = clampf(range_to_her - standoff, 0.0, step)
-		elif range_to_her <= standoff:
-			if clear:
-				_lunged = true
-			else:
-				_lunge_held = true
-				step = 0.0
-		else:
-			step = minf(step, range_to_her - standoff)
-		# **A pursuer that stands for its notice closes nothing** (`EventDef.stands_for_its_notice`,
-		# inbox #748: "nobody walks -- only the robber"), and every lunge decided above still
-		# fires: only the closing stops, so she is never the one who walks the last of the gap into
-		# a catch from a standing start.
-		if is_standing_for_its_notice():
-			step = 0.0
-	# **Day 13's task guard walks round buildings toward her** (`_paths_to_her`): where no clear
-	# line runs to her he follows the walk to her instead of the straight line. Only the direction
-	# changes; how far he may close, and when he lunges, are decided above as for every pursuer.
-	if _paths_to_her:
-		_keep_the_way_to_her_fresh()
-		if step > 0.0:
-			_heading = _way_toward_her(_heading)
-	var moved := _walkable_step(_heading * step)
-	position += moved
-	# Ground covered, not ground gained: sliding along a wall is still moving, and the bob is driven
-	# by distance so that a thing holding its ground reads as standing still.
-	_path_travelled += moved.length()
+	return warns_by_radius() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
+			or _stands_for_this_notice
 
 # ------------------------------------------------------------ the investigation ---
-# *(merry-stork, the player: "an investigating police car should not leave the street. it should
-# stop if close to her and a policeman should emerge and pursue her"; inbox #669 in coral-lark: "once the
-# policeman reaches her they stop and walk back to the car" · "Van stops, men get out
-# (Recommended)".)*
 
-## Whether this investigating vehicle has noticed her along a clear line, from that frame on —
-## `_noticed_at` waits until it has also stopped, which a car with its body in a junction box does
-## only once the body is clear of the box (`_stands_in_a_junction()`).
-var _seen_her := false
-## How many men this vehicle has stopped for and still owes: `EventDef.lets_out` from the frame it
-## stops until `EventManager` has put them all down (`let_out()`).
-var _officers_owed := 0
-## The men this vehicle let out, once they are in the world.
-var _officers: Array[EventInstance] = []
-## True once every man it let out is back in: a car drives its route again from here, and a van
-## stands where it always stood. It does not stop for her a second time.
-var _investigated := false
-
-## **An investigating vehicle notices her and stops** (`EventDef.investigates`): while it waits, a
-## car drives its route (`_process()`), and from the frame she is within `pursues_within` of it along
-## a clear line (`_clear_line_to()`, every notice's test) it has seen her. It stops — where it is,
-## on its route — as soon as its body is clear of every junction box (`_stands_in_a_junction()`),
-## which it is at once unless it saw her from inside one, and then owes the men it lets out
-## (`officers_owed()`). From then on it stands while they are out, and once every one of them is
-## back in (`_officer_is_back()`) — or it has none, streamed back in already stopped — it is done
-## investigating: a car drives on along its route, standing first while she is in its way
-## (`_standing`, `_drive()`), and a van stands where it is.
-func _investigate() -> void:
-	if _investigated:
-		if not _left_her_once and _left_her():
-			_left_her_once = true
-		return
-	if is_waiting():
-		if not _seen_her and player_at != Vector2.INF \
-				and global_position.distance_to(player_at) <= def.pursues_within \
-				and _clear_line_to(player_at):
-			_seen_her = true
-		if _seen_her and not _stands_in_a_junction():
-			_noticed_at = age
-			_officers_owed = def.lets_out
-		return
-	if _officers_owed > 0:
-		return
-	for officer in _officers:
-		if not _officer_is_back(officer):
-			return
-	_investigated = true
-	_officers.clear()
-	# A car that stood for its men has stood, so it pulls away only once she is out of its way —
-	# never into her (`_drive()`'s own rule for a car that has stood).
-	_standing = def.drives
-
-## **A car that stood for its man is quiet until it has left her: the man is the encounter.** From
-## the frame an investigating car stops for her, through his notice, chase, stop and walk back, and
-## on as it drives on — past her, or waiting at a line beside her — until it is outside its own
-## field's reach of her (`_left_her()`), its field is off. So what the encounter costs her is his
-## notice, his chase and his stop: substantial, and never the end of a calm day by itself for a
-## player who stands through all of it *(inbox #669 in coral-lark: "a substantial cost but not lethal
-## directly")*. While she stays within its resting reach, a car that stood for a policeman does not
-## then also cost her as a passing car. Once it has left her — measured at rest, while a moving car's
-## field reaches further ahead (`GroundShape.eccentric_distance()`) — it is an ordinary car, and one
-## that then drives at her costs her as any car does. Its strike and its horn are a driving car's
-## and come back the moment it drives. *Chosen while building, open to overturn.*
+## A car that stood for its man is quiet until it has left her (`EventInvestigation`).
 func is_quiet_for_its_man() -> bool:
-	return def.investigates and def.drives and not is_waiting() and not _left_her_once
+	return investigation != null and investigation.is_quiet_for_its_man()
 
-## True once an investigating car, done with its man, has been outside its own field's reach of her
-## — it stays an ordinary car from then on, whatever she does after. Latched once a frame by
-## `_investigate()`, so the field stays a pure query.
-var _left_her_once := false
-
-## Whether she is outside this car's field from where it is: further than its outer radius past its
-## own body, or nobody to be near.
-func _left_her() -> bool:
-	return player_at == Vector2.INF or global_position.distance_to(player_at) \
-			> def.outer_radius + def.shape.reach()
-
-## Whether this investigating vehicle is running its route: before it has stopped for her, and
-## again once it is done investigating. Always false for one that never moves.
-func _runs_its_route() -> bool:
-	return is_waiting() or _investigated
-
-## **Whether any part of this car's body stands in a junction box**: a tile under its spine, from
-## its tail to its nose, inside the crossing street's whole corridor as well as its own
-## (`CityMap.junction_at()`) — the box with its zebras, the ground a red light holds a car short of
-## (`_room_to_its_line()`). An investigating car never stops there: nothing stands in a box it
-## cannot leave, and the crossing traffic cannot see a patrol car's body to wait for it
-## (sunny-finch, the **crowd-traffic** skill). False for anything that does not drive.
-func _stands_in_a_junction() -> bool:
-	if not def.drives or _map == null or def.shape == null:
-		return false
-	var axis := _solid_axis()
-	var reach := def.shape.reach()
-	for i in JUNCTION_SAMPLES + 1:
-		var point := global_position + axis * lerpf(-reach, reach, float(i) / JUNCTION_SAMPLES)
-		if CityMap.junction_at(_map.world_to_tile(point)) != Vector2i(-1, -1):
-			return true
-	return false
-
-## How many steps `_stands_in_a_junction()` takes along the body: under a quarter tile each for the
-## patrol's 42px, so no tile under it is stepped over.
-const JUNCTION_SAMPLES := 8
-
-## Whether a man this vehicle let out is back in it — gone from the world, by getting in at its
-## door (`_walk_back()`) or by having been out of her sight — or no longer exists.
-static func _officer_is_back(officer: EventInstance) -> bool:
-	return not is_instance_valid(officer) or officer.is_finished
-
-## How many men this vehicle has stopped for and still owes. Read by
-## `EventManager._let_the_officers_out()`.
+## How many men this vehicle has stopped for and still owes (`EventInvestigation`). Read by
+## `EventsAhead.let_the_officers_out()`.
 func officers_owed() -> int:
-	return _officers_owed if not is_finished and not is_leaving else 0
+	return investigation.officers_owed() if investigation else 0
 
-## Hands the vehicle one man `EventManager` put down at its door (`door_for_its_officer()`), so it
-## stands until he is back, and starts his trail at the door he got out of, which is where he walks
-## back to.
+## Hands the vehicle one man `EventManager` put down at its door, so it stands until he is back and
+## he walks back to that door (`EventInvestigation.let_out()`).
 func let_out(officer: EventInstance) -> void:
-	_officers_owed = maxi(_officers_owed - 1, 0)
-	_officers.append(officer)
-	officer._vehicle = self
-	officer._trail = PackedVector2Array([officer.global_position])
+	if investigation:
+		investigation.let_out(officer)
 
 ## The first man this vehicle let out who is still in the world, or null.
 func its_officer() -> EventInstance:
-	for officer in _officers:
-		if is_instance_valid(officer):
-			return officer
-	return null
+	var out := its_officers()
+	return out[0] if not out.is_empty() else null
 
 ## Every man this vehicle let out who is still in the world.
 func its_officers() -> Array[EventInstance]:
-	var out: Array[EventInstance] = []
-	for officer in _officers:
-		if is_instance_valid(officer):
-			out.append(officer)
-	return out
-
-## **One of its men has stopped her: every man it let out walks back to it** — "once the policeman
-## reaches her they stop and walk back to the car" (inbox #669 in coral-lark), so a vehicle that let out more than
-## one man whose catch is a stop costs her once, not once a man. The one who stopped her stands with
-## her through his stop first.
-func _call_back_its_officers(stopped_by: EventInstance) -> void:
-	for officer in its_officers():
-		if officer != stopped_by:
-			officer._be_done()
+	if investigation == null:
+		return [] as Array[EventInstance]
+	return investigation.its_officers()
 
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
@@ -2942,409 +985,111 @@ func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 
 # ------------------------------------------------------------------- the stop ---
 
-## The vehicle that let this man out, or null for everything else — a torn poster's man included.
-var _vehicle: EventInstance = null
-## The way he came, laid down every `TRAIL_STEP` px while he is out (`_lay_the_trail()`), from the
-## door: walked back in reverse, it is ground he has already walked, so no building stands between
-## him and his vehicle on the way back.
-var _trail := PackedVector2Array()
-## The age at which he reached her and stopped her (`EventDef.stop_excitement`), or `INF`.
-var _stopped_her_at := INF
 ## Whether she is inside a district door's hold this frame, told by
-## `EventManager._tell_them_where_she_is()`. **A man who would stop her waits outside for her**: a
-## stop is a cost on the meter, and inside a hold nothing but the door's toll reaches her
-## (`EventManager.door_holding_her_at()`), so a stop made there would land nothing. He keeps after
-## her and stops her once she is let out — as a pursuer's chase goes on past a hut. *Chosen while
-## building, open to overturn: ending his chase on a hold, as the door's own guard's ends, is the
-## other way.*
+## `EventManager._tell_them_where_she_is()`: a man who would stop her waits outside for her
+## (`EventOfficer`).
 var she_is_held := false
 
-## How far apart the points of a man's trail are, in px: a third of a tile, so a corner he went
-## round is a corner on the way back.
-const TRAIL_STEP := 10.0
-
-## Whether this man has reached her and stopped her. See `EventDef.stop_excitement`.
+## Whether this man has reached her and stopped her (`EventOfficer`, `PursuitSpec.stop_excitement`).
 func has_stopped_her() -> bool:
-	return _stopped_her_at != INF
+	return on_foot != null and on_foot.has_stopped_her()
 
-## **His catch, made a stop** (`EventDef.stop_excitement`): chasing — his notice over and not a
-## man walking back — within his catch's own reach of her and along a clear line, which is the
-## very test `is_lethal_at()` asks of a man whose catch ends the day. From here he stands with her
-## (`_process()`), his field lands the stop (`current_intensity()`), and every man his vehicle let
-## out walks back to it.
-func _stop_her_if_he_has_reached_her() -> void:
-	if def.stop_excitement <= 0.0 or has_stopped_her() or player_at == Vector2.INF or she_is_held:
-		return
-	if is_finished or is_leaving or is_waiting() or is_telegraphing():
-		return
-	if global_position.distance_to(player_at) > def.lethal_reach() \
-			or not _clear_line_to(player_at):
-		return
-	_stopped_her_at = age
-	report_the_catch()
-	_heading = (player_at - global_position).normalized()
-	if is_instance_valid(_vehicle):
-		_vehicle._call_back_its_officers(self)
-
-## Lays the next point of his trail once he is `TRAIL_STEP` from the last. Only a man a vehicle let
-## out has one.
-func _lay_the_trail() -> void:
-	if _trail.is_empty():
-		return
-	if global_position.distance_to(_trail[_trail.size() - 1]) >= TRAIL_STEP:
-		_trail.append(global_position)
-
-## **He walks back the way he came, and gets in**: toward the last point of his trail, dropping each
-## point as he reaches it, and gone once he is at the door (`_finish()`). Back along his own trail
-## rather than straight at the vehicle, since a chase can take him round a corner the straight line
-## would cut through a building. True while he is still walking back.
-func _walk_back(step: float) -> bool:
-	while not _trail.is_empty():
-		var target := _trail[_trail.size() - 1]
-		var toward := target - global_position
-		if toward.length() > step:
-			_heading = toward.normalized()
-			position += _heading * step
-			_path_travelled += step
-			return true
-		position = target
-		step -= toward.length()
-		_path_travelled += toward.length()
-		_trail.remove_at(_trail.size() - 1)
-	_finish()
-	return false
-
-## Ends this chase from outside `_chase()`'s own loop, in the one state `_chase()` reaches when she
-## has outrun it: `gave_up` set, `_be_done()` called — the same departure, the same drawing and the
-## same `TelemetryObserver._watch_the_chase()` "gave up" line as an ordinary shake-off, because it is
-## that give-up and not a second kind. See `EventManager._end_the_guard_for_a_hold()` —
-## *(2026-09-24, the player: "if she voluntarily goes to a hut the whole pursuit has been
-## accomplished")* — a checkpoint hut's hold has just done what the chase was for, whatever
-## `_chase()` itself was doing when it happened, a telegraph still running included.
-##
-## `_be_done()`'s own guard makes a second call, or one on anything already finished or leaving, a
-## no-op rather than a double departure.
+## **Ends this chase from outside it**, in the state `EventPursuit` leaves a pursuer she has outrun:
+## `gave_up` set and `_be_done()` called, so the same departure, drawing and "gave up" line as an
+## ordinary shake-off. A checkpoint hut's hold has done what the chase was for, whatever the chase
+## was doing, a telegraph still running included (`CheckpointController.
+## _end_the_guard_for_a_hold()`, 2026-09-24). A second call, or one on anything finished or
+## leaving, is a no-op.
 func give_up_the_chase() -> void:
 	if is_finished or is_leaving:
 		return
 	gave_up = true
 	_be_done()
 
-## **Notices her now, wherever she is**: a waiting pursuer told to come after her by what she did
-## rather than by what it saw — day 13's waiting guard, the moment she has done the roadblock's task,
-## from wherever he stands (`ResistanceDirector._set_the_task_guard_on_her()`; inbox #651 follow-up,
-## the player: "as long as he starts pursuing when you hit the task it's fine"). The notice
-## `_chase()` makes, without its range and its clear line: the clock starts, he turns to her, and
-## from then on he is an ordinary pursuer — his notice runs before he may lunge, he closes only to
-## his stand-off while it runs, and he lunges only along a clear line. Noticed already inside his
-## stand-off, which only a wall between them allows here, the lunge is held as `_chase()` holds it
-## (`_lunge_held`). **A guard already warning her by sight is set on her the same way**, his own
-## warning giving way to this notice, since she could walk out of a warning and he would never come.
-## Nothing for a pursuer already charging or done, or for a `her` of `Vector2.INF`.
+## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
+## by what it saw — day 13's waiting guard the moment she has done the roadblock's task
+## (`ResistanceDirector._set_the_task_guard_on_her()`, curly-gecko). It is
+## `EventPursuit`'s notice without its range and its clear line: the clock starts, he turns to her,
+## and from then on he is an ordinary pursuer, closing only to his stand-off while his notice runs
+## and lunging only along a clear line; noticed inside his stand-off, his lunge is held
+## (`EventPursuit.lunge_held`). A guard already warning her by sight is set on her the same way,
+## since she could walk out of his warning and he would never come. Nothing for a row that does
+## not pursue, a pursuer already charging, leaving or done, or a `her` of `Vector2.INF`. **A row
+## that left before it ever noticed her still answers `is_waiting()`**, and the task guard is moved
+## with his state rather than made again (`EventManager.move_extra()`), so the leaving guard is
+## refused here: a man walking off is never turned back into a warning.
 ##
 ## `notice` replaces the row's `telegraph_time` for this notice when it is not negative, and `stand`
-## has him stand still in his warning for it (`is_standing_for_its_notice()`): day 13's guard, in her
-## view, raises his warning for a second and then charges *(inbox #764 in minty-lemur, the player: "yes, we can do
-## a 1s on screen and 1s off-screen warning if they were not visible")*.
-##
-## **From here he walks round buildings toward her** (`_paths_to_her`): set on her from wherever he
-## stands, he may start a city away with blocks between them.
+## has him stand still in his warning for it (`is_standing_for_its_notice()`): in her view, day
+## 13's guard raises his warning for a second and then charges (inbox #764 in minty-lemur). From
+## here he walks round buildings toward her (`_chase_way`), since he may start a city away.
 func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
+	if pursuit == null:
+		return
 	if not (is_waiting() or (is_telegraphing() and warns_by_radius())) or her == Vector2.INF \
-			or is_finished:
+			or is_finished or is_leaving:
 		return
 	# A warning of his own already under way gives way to the one the task sets: the lunge it held
 	# back and the notice it held still start again from here.
-	_lunge_held = false
-	_notice_paused_for = 0.0
+	pursuit.lunge_held = false
 	if stand:
-		_warning_reported = false
+		_charge.warned = false
 	player_at = her
-	_noticed_at = age
-	_paths_to_her = true
+	if _chase_way == null:
+		_chase_way = _navigator.way_to(_mover, _sight)
 	_notice_time = notice
 	_stands_for_this_notice = stand
+	_notice_her()
 	var toward := her - global_position
 	if toward.length() >= 1.0:
 		_heading = toward.normalized()
 	if toward.length() <= charge_radius():
-		_lunge_held = true
+		pursuit.lunge_held = true
 
-## `_chase()`'s own notice check, folded out for anything that waits on `pursues_within` without
-## also `pursues` — a row that runs its own path once noticed rather than turning to chase her.
-## `alley_mouse` is the first: `EventScheduler` places it on an `ALLEY` tile at dawn, well outside
-## `Tuning.VIEW_HALF_EXTENT`, so telegraphing from the moment it exists dashed and finished off
-## screen long before she ever walked into the alley — the review finding this exists to fix.
+## **The part of the step `delta_pos` this figure takes** (`Navigator.step()`): the whole of it where
+## the swept step is open to it, else a slide along whichever single axis is, else none. Everything
+## that moves this figure decides *how far and which way*; this is the one place that gets to say
+## no, so a chase, a walk back and a departure all stop where she would.
 ##
-## Turns to face her the same way `_chase()` does, which costs nothing here: `_advance_along_path`
-## overwrites `_heading` from the path's own direction the instant it starts moving, so this only
-## shows for whatever is left of the frame it happens on.
-func _check_for_notice() -> void:
-	if player_at == Vector2.INF or not is_waiting():
-		return
-	var toward := player_at - global_position
-	if toward.length() > def.pursues_within:
-		return
-	_noticed_at = age
-	_heading = toward.normalized()
-
-## **Birds go up when she reaches them, and a clock cannot know when that is.**
-## *(2026-09-20: "birds are also very late to start. they shouldn't prematurely start but they
-## should basically start fluttering when I touch them not after".)* A flock's telegraph is the
-## birds still pecking — `_fly_the_flock()` keeps them on the ground for the whole of it — so
-## whatever the telegraph's length, it is the wait between her walking into the flock and the flock
-## reacting. Walked into at `Tuning.WALK_SPEED` it put them up well past her.
-##
-## So the flush is fired by her arrival at **the birds' own spread plus her body**, the distance at
-## which she is genuinely among them rather than near them, exactly the way a pursuer's lunge is
-## fired by her reaching its stand-off — the same `_lunged` flag, because `is_telegraphing()` is
-## already the one place that answers "has this started". `flock_spread` is what the birds are
-## scattered across and `PLAYER_BODY_RADIUS` is the pram: the first bird she is level with is the
-## one that goes up.
-##
-## **`telegraph_time` stays what it was and is the backstop, not the wait.** It now only decides a
-## flock she came near and never reached — and shortening it would put *those* birds up sooner,
-## which is the "prematurely start" half of the same sentence. The contract
-## `Tuning.validate_event()` checks is unchanged and still satisfied by the number; what changed is
-## that a walk-in no longer has to wait for it.
-func _flush_the_flock_if_she_is_among_them() -> void:
-	if def.flock_size <= 0 or _lunged or player_at == Vector2.INF:
-		return
-	if is_waiting() or not is_telegraphing():
-		return
-	if global_position.distance_to(player_at) > def.flock_spread + Tuning.PLAYER_BODY_RADIUS:
-		return
-	_lunged = true
-
-## Clamps a chase's own step so it can never end standing on ground the city says nobody can. A
-## pursuing instance moves by setting its own position, and nothing above this function has ever
-## asked the map anything — harmless while every mobile row travelled a route the scheduler had
-## already checked, and not harmless the moment something steers freely at the player. Everything
-## above this function decides *how far and which way* to move; this is the one place that gets to
-## say no.
-##
-## **Not a body.** `obstructs_radius` is for something that stands still — see "Solid things are
-## solid" in docs/EVENTS.md — and giving a pursuer one would let a moving wall pin her against a
-## building on a two-tile pavement, exactly what `dog_walker`'s own exemption exists to avoid. What
-## was missing here is smaller than a body: the position `_chase` sets every frame never asked the
-## map anything at all, so a straight line toward her cut through whatever stood between the two of
-## them.
+## **Swept, and with its body's reach**: the tiles the whole step crosses are asked, so a long frame
+## cannot carry a chaser through a wall a tile thick, and the ground its radius reaches past the
+## landing point in the way it is going has to be open too. **Not a body**: `obstructs_radius` is
+## for something that stands still — see "Solid things are solid" in docs/EVENTS.md — and giving a
+## pursuer one would let a moving wall pin her against a building on a two-tile pavement, exactly
+## what `dog_walker`'s own exemption exists to avoid.
 ##
 ## **Slides along whichever single axis is still open** rather than stopping dead the instant it
 ## grazes a corner, because a chase that gives up meters before the wall does is not one that was
 ## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
 ## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
-func _walkable_step(delta_pos: Vector2) -> Vector2:
-	if not _map:
-		return delta_pos
-	return walkable_step_on(_map, global_position, delta_pos)
-
-## `_walkable_step()`'s own rule asked of any point on `map`: the part of the step `delta_pos` from
-## `from` a chaser actually takes. Static so that a placement can walk a chase it has not started
-## yet the way the chase will walk it (`ResistanceDirector._his_walk_reaches_her()`).
-static func walkable_step_on(map: CityMap, from: Vector2, delta_pos: Vector2) -> Vector2:
-	if delta_pos.is_zero_approx():
-		return delta_pos
-	if map.is_walkable(map.world_to_tile(from + delta_pos)):
-		return delta_pos
-	var along_x := Vector2(delta_pos.x, 0.0)
-	var along_y := Vector2(0.0, delta_pos.y)
-	var first := along_x if absf(delta_pos.x) >= absf(delta_pos.y) else along_y
-	var second := along_y if first == along_x else along_x
-	for candidate in [first, second]:
-		if not candidate.is_zero_approx() \
-				and map.is_walkable(map.world_to_tile(from + candidate)):
-			return candidate
-	return Vector2.ZERO
+func _step(delta_pos: Vector2) -> Vector2:
+	return _navigator.step(global_position, delta_pos, _mover)
 
 # ------------------------------------------------------ the task guard's way to her ---
 # *(curly-gecko, the player: "as long as he starts pursuing when you hit the task it's fine".)*
 
-## Whether this pursuer walks the way to her round buildings rather than straight at her: set by
-## `notice_her_at()`, which only day 13's done task calls, for the waiting guard it sets on her
-## from wherever he stands — at another roadblock, a city away, with blocks between them. Every
-## other pursuer starts within sight of her or just off screen with a straight run at her, so it
-## keeps the straight line `_walkable_step()` slides along walls. *Proposed, not asked for:* the way
-## round is for this guard alone.
-##
-## **Where he has a clear line to her he goes straight at her**, exactly as before; only where a
-## building stands between them does he follow the walk instead. The walk is a sweep out from her
-## over the ground she can walk (`ArrowField`, the red arrow's own sweep, a slice a frame), and he
-## steps down it toward her, aiming at the farthest of the next few tiles he can see.
-var _paths_to_her := false
+## The way he walks to her round buildings rather than straight at her (`ChaseWay`, made by
+## `Navigator.way_to()`), or null for a pursuer who chases straight: set by `notice_her_at()`, which
+## only day 13's done task calls, for the waiting guard it sets on her from wherever he stands — at
+## another roadblock, a city away, with blocks between them. Every other pursuer starts within sight
+## of her or just off screen with a straight run at her, so it keeps the straight line `_step()`
+## slides along walls. *Proposed, not asked for:* the way round is for this guard alone.
+var _chase_way: ChaseWay
 ## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
 ## `telegraph_time` (`notice_time()`).
 var _notice_time := -1.0
 ## Whether `notice_her_at()` asked it to stand still with its warning up for that notice
 ## (`is_standing_for_its_notice()`), as day 13's task guard does in her view.
 var _stands_for_this_notice := false
-## The sweep he follows (`ArrowField`, out from where she stood when it began), or null before the
-## first one has reached him.
-var _her_way: ArrowField
-## The ground `_her_way` was swept over, which is what the walk down it is asked against.
-var _her_way_ground := PackedInt32Array()
-## The sweep under way that will replace `_her_way`, its ground, and her tile it began from.
-var _her_way_next: ArrowField
-var _her_way_next_ground := PackedInt32Array()
-var _her_way_next_from := Vector2i(-1, -1)
-## Her tile `_her_way` was swept from.
-var _her_way_from := Vector2i(-1, -1)
-## The ground laid out for the sweeps, and the state of what blocks her it was laid out for
-## (`CityMap.day_record_version`, `CityMap.obstruction_version`).
-var _her_way_ground_laid := PackedInt32Array()
-var _her_way_ground_versions := Vector2i(-1, -1)
-## The tiles down `_her_way` from the tile he stood on when it was walked
-## (`_her_way_chain_from`), as world points, nearest first; walked again when he is on another tile
-## or the sweep changes.
-var _her_way_chain := PackedVector2Array()
-var _her_way_chain_from := Vector2i(-1, -1)
-var _her_way_chain_field: ArrowField
-
-## How many tiles of a sweep one frame of his chase runs: under half a millisecond, half the red
-## arrow's slice (`ResistanceDirector.ARROW_SWEEP_TILES_PER_FRAME`), since his runs whenever she
-## has moved on rather than only when the targets change. A sweep is adopted as soon as it has
-## reached his tile, so from close by it takes a frame or two.
-const WAY_SWEEP_TILES_PER_FRAME := 500
-## How far, in tiles either way, she walks from where his sweep began before another is begun,
-## at the least: close to her a sweep is a frame or two, and a walk two tiles stale is a corner cut
-## wrong.
-const WAY_REFRESH_TILES := 2
-## **And while he is far, a sweep is begun only once she has walked a quarter of his walk to her**
-## from where the last began. Far off, every sweep is many frames, and one begun every two tiles of
-## her walk kept a sweep under way on most frames of a chase she walked away from; a walk that is
-## a quarter stale still takes him the right way round the buildings, and it is refreshed more
-## often the nearer he comes.
-const WAY_REFRESH_SHARE := 4
-## How many tiles down the sweep he looks for the farthest he can see to aim at, so his walk
-## cuts the corners the four-way tile walk takes rather than zig-zagging along it.
-const WAY_LOOKAHEAD_TILES := 6
-## How far apart, in px, `_way_is_open()` asks the ground along a line to an aim.
-const WAY_LINE_SAMPLE := 8.0
-
-## Begins a fresh sweep out from her when she has walked on from where the last began or what
-## blocks her has changed, runs a slice of the one under way, and adopts it the moment it has
-## reached his tile. A sweep runs the walk out from her in rings, so every tile at most as far as
-## his is final once his is reached, and the walk down from his tile never asks one further out.
-func _keep_the_way_to_her_fresh() -> void:
-	if not _map or player_at == Vector2.INF:
-		return
-	var versions := Vector2i(_map.day_record_version, _map.obstruction_version)
-	if _her_way_next == null:
-		var her := _map.world_to_tile(player_at)
-		var stale := WAY_REFRESH_TILES
-		if _her_way != null:
-			var his := _her_way.length_at(_map.world_to_tile(global_position))
-			stale = maxi(stale, floori(float(his) / WAY_REFRESH_SHARE))
-		var moved := absi(her.x - _her_way_from.x) >= stale \
-				or absi(her.y - _her_way_from.y) >= stale
-		if _her_way != null and not moved and _her_way.versions == versions:
-			return
-		var target: Array[Dictionary] = [{"key": 0, "at": player_at, "reach": 0.0,
-				"beat": PackedVector2Array()}]
-		_her_way_next = ArrowField.start(_map, target, versions)
-		_her_way_next_ground = _ground_for_the_way(versions)
-		_her_way_next_from = her
-		# Laying out the ground is a frame's work of its own, like the sweep's own layout.
-		return
-	_her_way_next.advance(_map, _her_way_next_ground, WAY_SWEEP_TILES_PER_FRAME)
-	if _her_way_next.done or _her_way_next.length_at(_map.world_to_tile(global_position)) >= 0:
-		_her_way = _her_way_next
-		_her_way_ground = _her_way_next_ground
-		_her_way_from = _her_way_next_from
-		_her_way_next = null
-		_her_way_next_ground = PackedInt32Array()
-
-## The ground his sweeps run over, the red arrow's own (`ArrowField.ground_for()`): what she cannot
-## walk right now is blocked — today's closures, the soft seals, the tile under every stationary
-## body standing and a precinct's posts. So where no clear line runs to her he walks round what she
-## has to walk round; with a clear line he goes straight at her, through a barrier as any chase does
-## (`_walkable_step()` asks only the tiles). Laid out once for each state of what blocks her.
-func _ground_for_the_way(versions: Vector2i) -> PackedInt32Array:
-	if versions == _her_way_ground_versions and not _her_way_ground_laid.is_empty():
-		return _her_way_ground_laid
-	_her_way_ground_laid = ArrowField.ground_for(_map)
-	_her_way_ground_versions = versions
-	return _her_way_ground_laid
-
-## Which way he walks toward her: `straight` where he has a clear line to her or no sweep has
-## reached him yet, else toward the farthest of the next `WAY_LOOKAHEAD_TILES` tiles down the walk
-## that he can see along open ground (`_way_is_open()`), or the next one where he sees none.
-func _way_toward_her(straight: Vector2) -> Vector2:
-	if _her_way == null or _clear_line_to(player_at):
-		return straight
-	var here := _map.world_to_tile(global_position)
-	if here != _her_way_chain_from or _her_way != _her_way_chain_field:
-		_her_way_chain = _down_the_way(here)
-		_her_way_chain_from = here
-		_her_way_chain_field = _her_way
-	if _her_way_chain.is_empty():
-		return straight
-	var aim := _her_way_chain[0]
-	for i in range(_her_way_chain.size() - 1, 0, -1):
-		if _way_is_open(global_position, _her_way_chain[i]):
-			aim = _her_way_chain[i]
-			break
-	var toward := aim - global_position
-	return toward.normalized() if toward.length() >= 1.0 else straight
-
-## Up to `WAY_LOOKAHEAD_TILES` tiles down `_her_way` from `from`, each the open neighbour one step
-## nearer her, as tile centres: empty where `from` is no part of the walk or is already where the
-## sweep began.
-func _down_the_way(from: Vector2i) -> PackedVector2Array:
-	var chain := PackedVector2Array()
-	var tile := from
-	var length := _her_way.length_at(tile)
-	if length < 0:
-		return chain
-	for i in WAY_LOOKAHEAD_TILES:
-		var best := tile
-		var best_length := length
-		for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-			var next := tile + offset
-			if not _open_for_the_way(next):
-				continue
-			var next_length := _her_way.length_at(next)
-			if next_length >= 0 and next_length < best_length:
-				best = next
-				best_length = next_length
-		if best == tile:
-			break
-		tile = best
-		length = best_length
-		chain.append(_map.tile_to_world(tile))
-	return chain
-
-## Whether `tile` is ground his walk may step onto: walkable, and not blocked in the ground
-## `_her_way` was swept over. Asked before `ArrowField.length_at()`, which answers a blocked tile
-## through its neighbours and would otherwise lead him onto it.
-func _open_for_the_way(tile: Vector2i) -> bool:
-	if not _map.in_bounds(tile) or not _map.is_walkable(tile):
-		return false
-	return _her_way_ground[tile.y * _map.size.x + tile.x] != ArrowField.BLOCKED
-
-## Whether he can walk straight from `from` to `to`: a clear line (`CityMap.clear_line()`) that
-## also crosses nothing blocked in his sweep's ground, asked every `WAY_LINE_SAMPLE` px.
-func _way_is_open(from: Vector2, to: Vector2) -> bool:
-	if not _map.clear_line(from, to):
-		return false
-	var length := from.distance_to(to)
-	var along := WAY_LINE_SAMPLE
-	while along < length:
-		var tile := _map.world_to_tile(from.move_toward(to, along))
-		if not _map.in_bounds(tile) \
-				or _her_way_ground[tile.y * _map.size.x + tile.x] == ArrowField.BLOCKED:
-			return false
-		along += WAY_LINE_SAMPLE
-	return true
 
 ## How far along its route this instance has got, so streaming it out and back in can resume it
-## instead of rewinding it. See `EventManager._stream_in`.
+## instead of rewinding it. See `EventStreaming.stream_in`.
 func path_travelled() -> float:
 	return _path_travelled
 
 ## How fast and which way this thing is actually travelling, in px/s.
 ##
-## Asked by `EventManager._warn_about_the_ground_she_is_on`, which has to know whether a lethal
+## Asked by `WarningBoard.warn_about_the_ground_she_is_on`, which has to know whether a lethal
 ## thing is coming *at her* rather than merely near her — walking orthogonally away from a cyclist
 ## must take the mark down, because there is no way it can reach her.
 ##
@@ -3358,17 +1103,17 @@ func travel_velocity() -> Vector2:
 	# as a closing speed, and an engine standing at a kerb is not closing on anybody.
 	if is_parked:
 		return Vector2.ZERO
-	if def.pursues:
+	if def.pursuit != null:
 		if is_waiting() or is_telegraphing():
 			return Vector2.ZERO
-		return _heading * def.pursue_speed
+		return _heading * def.chase_speed()
 	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
 		return _heading * def.speed
 	return Vector2.ZERO
 
 ## `travel_velocity()`'s own answer, except for a pursuer that has been noticed and is holding
 ## its telegraph's stand-off: the caret's projection asks where this is *going*, which is
-## `pursue_speed` toward her the instant it has decided to come, not the moment its lunge is
+## `PursuitSpec.speed` toward her the instant it has decided to come, not the moment its lunge is
 ## allowed to fire. `travel_velocity()` itself has to stay zero there — the exclamation mark's
 ## "it is not closing" reads that answer literally, and a mark that said otherwise would warn her
 ## about a thing that is deliberately holding still — so this is a second query for the caret
@@ -3377,13 +1122,13 @@ func travel_velocity() -> Vector2:
 ## **A waiting pursuer still has no course.** `is_waiting()` means nobody has been noticed yet, so
 ## there is nothing here to project toward; only the moment it decides changes the answer, exactly
 ## as `travel_velocity()` already has it.
-func _caret_velocity() -> Vector2:
+func caret_velocity() -> Vector2:
 	if is_finished or is_leaving:
 		return Vector2.ZERO
-	if def.pursues:
+	if def.pursuit != null:
 		if is_waiting():
 			return Vector2.ZERO
-		return _heading * def.pursue_speed
+		return _heading * def.chase_speed()
 	return travel_velocity()
 
 ## Which way this instance was sited facing (`setup()`'s own `face`), unmoved for anything
@@ -3395,307 +1140,118 @@ func _caret_velocity() -> Vector2:
 func facing_now() -> Vector2:
 	return _heading
 
-## The age `_noticed_at` was set at, or `INF` before a `pursues_within` row has noticed her — the
-## save half of `resume()`'s own restore, so a caller that carries this across a stream-out (see
-## `EventManager._stream_out()`) reads it here rather than reaching into the private field.
+## Where on its own clock it noticed her, held time counted back in, or `INF` for a row that waits
+## and has not noticed her (and for a row with no wait) — what a stream-out carries
+## (`EventStreaming.stream_out()`) and `resume()` gives back.
 func noticed_at() -> float:
-	return _noticed_at
+	return _notice.started_at() if def.notice != null else INF
+
+## Noticing her: its notice's clock starts now and it is warning (`Phase.WARNING`), or already past
+## a notice of no length.
+func _notice_her() -> void:
+	_notice.start(age)
+	transition(Phase.WARNING)
+	_settle_the_notice()
 
 ## Puts an instance back where a previous incarnation of the same plan had got to. Restores the
 ## age as well as the distance, so the telegraph, the pulse phase and the duration all continue
 ## rather than starting again — an event that streams in and out must not become immortal by
-## being visited twice.
-##
-## `from_noticed_at` is the same restore for `_noticed_at`, and it is general over every
-## `pursues_within` row rather than particular to whichever one exposed the gap: a fresh instance
-## always starts `is_waiting()` (`_noticed_at == INF`), so a row streamed out after it had already
-## noticed her came back standing where the day planted it, having forgotten the chase. Defaulted
-## to `INF` so a caller that only ever restored age and distance — every caller before this field
-## existed — keeps restoring exactly what it always restored, still `is_waiting()` unless told
-## otherwise.
+## being visited twice. `from_noticed_at` restores a notice it had made (`noticed_at()`), so a row
+## streamed out after it had noticed her does not come back standing where the day planted it.
 func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> void:
 	if from_age <= 0.0:
 		return
 	age = from_age
 	_path_travelled = from_travelled
-	_noticed_at = from_noticed_at
-	# A resume restores an instance already past age 0 (the guard above), and a pursuer streamed
-	# back in still `is_waiting()` given the restored `_noticed_at` is the one case that has not
-	# begun chasing yet — every other pursuer streamed back in, including a `pursues_within <= 0.0`
-	# row that never waits at all, was already chasing before it streamed out. Stated over the
-	# restored value rather than over `is_waiting()` itself, which this assignment runs ahead of.
-	# **A row created where its warning pointed is not streamed back in**: `EventManager.
-	# spawn_warned()` sets `came_under_a_warning` before calling this only to spend a telegraph
-	# the warning already ran, and it has chased nothing yet.
-	_pursuit_began_reported = not came_under_a_warning \
-			and not (def.pursues_within > 0.0 and from_noticed_at == INF)
+	if def.notice != null and from_noticed_at != INF:
+		_notice.start(from_noticed_at)
+		transition(Phase.WARNING)
+		_settle_the_notice()
+	# A pursuer streamed back in still waiting is the one case that has not begun chasing yet; every
+	# other, a row with no wait included, was chasing before it streamed out. **A row created where
+	# its warning pointed is not streamed back in**: `EventManager.spawn_warned()` sets
+	# `came_under_a_warning` before calling this only to spend a telegraph the warning already ran.
+	_charge.began = not came_under_a_warning and not is_waiting()
 	# A warning it had already given before it streamed out is not reported again.
-	_warning_reported = from_noticed_at != INF
+	_charge.warned = from_noticed_at != INF
 	# A stride never starts mid-cycle, the same reason `setup()` resets it — a resumed instance is
 	# a fresh object (see this function's own doc), so this is normally already true, but the rule
 	# is stated at both entry points rather than left to rely on that.
 	_gait_phase = 0.0
 	_gait_moving = false
 	if def.mobile and path.size() > 1:
-		_advance_along_path(0.0)
+		route.advance(0.0)
+	# Put back where it was, not slid there from wherever it was made.
+	reset_physics_interpolation()
+
+## **Stands it at `at`, keeping everything it is in the middle of**: its phase, its notice, every
+## behaviour's state. What setup reads off the ground it stands on is read again for the new ground
+## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
+## afresh. `EventManager.move_extra()` is the caller, which records its body again.
+func move_to(at: Vector2) -> void:
+	global_position = at
+	_move.place(position)
+	_spread_vertical = _spread_is_vertical(_map, at)
+	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, at, _heading)
+	_idle_phase_offset = _position_roll(101)
+	excitement.invalidate_contribution()
+	reset_physics_interpolation()
+	queue_redraw()
+
+## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
+## event is out of the world (`EventStreaming.stream_out()`, `EventScheduler.Planned.behaviours`).
+func save_behaviours() -> Dictionary:
+	var out := {}
+	for behaviour in _behaviours:
+		var state := behaviour.save()
+		if not state.is_empty():
+			out[behaviour.get_script().get_global_name()] = state
+	return out
+
+## Puts back what `save_behaviours()` gave, after `resume()` has put back the age, the distance and
+## the notice. A row composed of a behaviour the state does not name keeps it fresh.
+func restore_behaviours(state: Dictionary) -> void:
+	for behaviour in _behaviours:
+		var key: StringName = behaviour.get_script().get_global_name()
+		if state.has(key):
+			behaviour.restore(state[key])
 
 # ------------------------------------------------------------------- the take ---
-# `abduction`'s own scene: a bystander walked to the van and taken, the first time she comes close
-# enough to see it happen. Drawing and telemetry only — nothing here reaches into the crowd, and
-# nothing here changes `contribution_at()`. See docs/TODO.md, M56, "the van draws its own victim".
 
-## How long the walk to the van takes, once it starts.
-const VICTIM_TAKEN_OVER := 2.5
-## How far to the side of the van the victim stands before the walk begins.
-const VICTIM_STANDING_OFFSET := 32.0
+## Where the instance writes its own account for the run log, handed in by the manager that
+## creates it; silent otherwise.
+var trace := RunTrace.new()
 
-## Age the take began, or `INF` before it has and after a hunting van abandons one mid-walk. Not
-## restored by `resume()`, which carries `age`, `travelled` and `_noticed_at` but stops there — and
-## it is harmless for a reason `_noticed_at` does not share: the whole scene is under three
-## seconds, far short of anything that gets an instance streamed out and back in.
-var _victim_taken_at := INF
-## Whether the one telemetry entry for this take has already been written, so a frame that finds
-## the walk finished twice in a row cannot log it twice.
-var _victim_logged := false
-
-## How long this instance has left before it is simply gone, or `INF` where the question does not
-## yet apply. A pursuer that is still only waiting has no expiry of its own — `_has_expired()`
-## returns false for the whole time — so its life is unbounded until she gives it a reason to end.
-func _victim_time_left() -> float:
-	if is_waiting() or def.duration <= 0.0:
-		return INF
-	return (notice_time() + def.duration) - chase_age()
-
-## Runs the scene: starts it, times it, and tells the log when it finishes.
-##
-## **Begins the first time she can see it happen.** `def.outer_radius` rather than some smaller
-## trigger, because the design's own sentence is that the take "only means anything where she can
-## see it happen" — a van she never came near never runs it. `player_at` is the same write
-## `_chase` reads, which is what lets a data-level rig drive this scene by hand.
-##
-## **Never starts without enough of the van's own life left to finish in.** A take cut short by the
-## van disappearing mid-walk would read as a bug rather than as an abduction.
-##
-## **A hunting van has other business.** The instant it stops waiting it is letting its men out
-## after her (`EventDef.hunts_on_foot`) rather than idling at the kerb, so an in-progress take is
-## abandoned rather than finished: no victim is drawn again, taken or not, and nothing is logged for
-## a take that never completed.
-func _update_the_take() -> void:
-	if (def.pursues or def.investigates) and not is_waiting():
-		_victim_taken_at = INF
-		return
-	if _victim_taken_at == INF:
-		if player_at == Vector2.INF \
-				or global_position.distance_to(player_at) > def.outer_radius \
-				or _victim_time_left() < VICTIM_TAKEN_OVER:
-			return
-		_victim_taken_at = age
-		return
-	if _victim_logged or age - _victim_taken_at < VICTIM_TAKEN_OVER:
-		return
-	_victim_logged = true
-	Telemetry.note("taken", "'%s' takes a bystander" % def.id)
-
-## Whether the scene is running right now, for `_draw_abduction` and for a test to drive by hand
-## without reaching into a private field.
+## Whether the van's take of a bystander is running right now (`EventAbduction`), for
+## `EventVehicleLook._draw_abduction` and for a test to drive by hand.
 func is_taking_a_victim() -> bool:
-	return _victim_taken_at != INF and (age - _victim_taken_at) < VICTIM_TAKEN_OVER
+	return abduction != null and abduction.is_taking()
 
 # ------------------------------------------------------------------ the flock ---
-# **A flock drawn as one picture repeated is a flock that freezes.** Offsets derived from the
-# instance's own position keep the shape from boiling between frames, which is right for a still and
-# is exactly what stops the birds ever moving apart; a single `rise` term that reaches 1.0 at the
-# end of the telegraph and then holds sends the flock up in one movement and hangs it in the air,
-# motionless, for the whole burst that is supposed to *be* the event.
-#
-# So each bird is its own body: its own place on the pavement, its own heading, its own speed, its
-# own height, its own wingbeat, and its own contribution to the excitement. Three things follow and
-# each is load-bearing:
-#
-# - **The excitement is still a pure query, and it is now a query over eleven sources.** `Baby` asks
-#   the world, the world sums `contribution_at()`, and this one sums over its birds — which is the
-#   invariant working exactly as written rather than an exception to it. It is also what makes the
-#   flock *dangerous* in the way a route-planning game can use: the middle of it stacks four or five
-#   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
-#   through it is the most expensive thing on an act I pavement.
-# - **The birds stay inside `flock_spread` of the middle**, which is what keeps the telegraph
-#   fairness contract true. The contract is stated over `outer_radius` from the instance's own
-#   position; `flock_spread + _bird_outer()` is `outer_radius`, so the union of eleven moving fields
-#   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
-#   the per-bird radius would quietly move the field the contract was written about.
-# - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
-#   leaves is a flock that is over — so being over is said with `is_leaving`, and only then do they
-#   all pick the same direction.
 
-## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
-## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
-## picture that one `_draw()` produces correctly. `RefCounted` rather than `Node` so it cannot leak.
-class Bird extends RefCounted:
-	## Where it is on the ground plane, relative to the flock's own origin.
-	var at := Vector2.ZERO
-	## How far off that ground, in px. Zero while it is standing on the pavement.
-	var lift := 0.0
-	var heading := Vector2.RIGHT
-	var speed := 0.0
-	## Radians per second, signed. What makes it wheel instead of flying out of its own event.
-	var turn := 0.0
-	## How high this one goes, and how fast it gets there.
-	var ceiling := 0.0
-	var climb := 0.0
-	## Wingbeats per second, and where in one it currently is.
-	var beat := 0.0
-	var phase := 0.0
-	## This bird's own held eight-view sector — one per bird rather than one shared with the
-	## instance's own `_view_sector`, since a flock is eleven bodies wheeling independently rather
-	## than one actor with one facing. See `EventInstance._select_view()`, the same hold applied
-	## per bird by `_draw_birds()`.
-	var view_sector := 2
-
-var _flock: Array[Bird] = []
-
-## How fast a bird crosses the ground once it is up, and how slowly it shuffles before it is.
-const BIRD_FLIGHT_SPEED := 96.0
-const BIRD_GROUND_SPEED := 7.0
-## How much faster a bird that is getting out of here goes than one that is wheeling.
-const BIRD_DEPARTURE_GAIN := 2.1
-
-## Scatters the flock across the pavement it is standing on.
-##
-## Seeded from the instance's own position rather than from an RNG, and that is not laziness: the
-## determinism invariant says nothing gameplay-relevant may call the global `randi()`, and the day's
-## RNG is not reachable from here — nor should it be, since streaming this event out and back in
-## would then consume from it twice and move every event planned after it. A hash of where it stands
-## gives the same flock every time the same flock is built, which is the property that matters.
-func _build_the_flock() -> void:
-	_flock.clear()
-	var count := def.flock_size
-	for i in count:
-		var bird := Bird.new()
-		# Spread round the middle rather than scattered independently, so eleven birds read as a
-		# flock rather than as eleven birds who happen to be near each other.
-		var angle := TAU * (float(i) + 0.35 * _flock_roll(i, 1)) / float(count)
-		var reach := def.flock_spread * (0.3 + 0.7 * _flock_roll(i, 2))
-		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
-		bird.heading = Vector2.from_angle(TAU * _flock_roll(i, 3))
-		bird.view_sector = EightDirection.nearest(bird.heading)
-		bird.speed = BIRD_GROUND_SPEED
-		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
-		bird.turn = (1.2 + 1.4 * _flock_roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
-		bird.ceiling = 20.0 + 34.0 * _flock_roll(i, 5)
-		bird.climb = 34.0 + 40.0 * _flock_roll(i, 6)
-		bird.beat = 6.0 + 5.0 * _flock_roll(i, 7)
-		bird.phase = TAU * _flock_roll(i, 8)
-		_flock.append(bird)
-
-## The oblique view: a circle on the ground is drawn as an ellipse, so the flock's footprint is
-## squashed on Y exactly as every shadow in the game is.
-const GROUND_SQUASH := 0.55
-
-## A deterministic 0..1 from the flock's own position, its index and a salt. One salt per property,
-## or every bird's speed would be a function of its own heading.
-func _flock_roll(index: int, salt: int) -> float:
-	var mixed := int(global_position.x) * 73856093 + int(global_position.y) * 19349663 \
-			+ index * 83492791 + salt * 2971215073
-	return float(absi(mixed) % 4096) / 4096.0
-
-## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it waits
-## for her and while it telegraphs, which is the part she can see from down the street and walk
-## around; **up and wheeling** for the duration, which is the part that costs; and **away** once it
-## is over.
-##
-## **The wait is on the ground with the telegraph, not in the air with the burst**, and the two are
-## separate predicates: `is_waiting()` is false for a row with no trigger and `is_telegraphing()` is
-## false *while* a row waits, so a flock asked only the second question would hold its whole wait in
-## the air — birds flying in place over a pavement for as long as it takes her to walk up to them,
-## which is the frozen-flock bug with a longer fuse.
-func _fly_the_flock(delta: float) -> void:
-	if _flock.is_empty():
-		return
-	var grounded := is_waiting() or is_telegraphing()
-	for bird in _flock:
-		bird.phase += bird.beat * TAU * delta
-		if grounded:
-			# Pecking about. It has to move — a bird standing perfectly still is the bug being
-			# fixed, one phase earlier — but slowly enough that the flock is plainly still on the
-			# ground and plainly still avoidable.
-			bird.speed = BIRD_GROUND_SPEED
-			bird.heading = bird.heading.rotated(bird.turn * 0.5 * delta)
-			bird.lift = 0.0
-		elif is_leaving:
-			# Everybody the same way now, and climbing hard. What is over says so by leaving, and a
-			# flock that was still wheeling would read as still happening.
-			bird.heading = _steer(bird.heading, _heading, BIRD_TURN_IN, delta)
-			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED * BIRD_DEPARTURE_GAIN,
-					260.0 * delta)
-			bird.lift += bird.climb * delta
-		else:
-			bird.heading = bird.heading.rotated(bird.turn * delta)
-			bird.speed = move_toward(bird.speed, BIRD_FLIGHT_SPEED, 320.0 * delta)
-			bird.lift = move_toward(bird.lift, bird.ceiling, bird.climb * delta)
-			# Turned back before the edge of its own event, not at it. A bird's own wheel is wider
-			# than the flock at every speed either of them wants, so without this they simply fly
-			# out of the field they are supposed to be, and take the fairness contract with them.
-			#
-			# **From half way out** rather than from the boundary, because a turn is not free: at
-			# `BIRD_FLIGHT_SPEED` and `BIRD_TURN_IN` the tightest circle a bird can fly has a radius
-			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
-			# already outside by the time it has come round. Starting at half the spread leaves it
-			# the room the turn costs.
-			if bird.at.length() > def.flock_spread * 0.5:
-				bird.heading = _steer(bird.heading, -bird.at.normalized(), BIRD_TURN_IN, delta)
-		bird.at += bird.heading * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta
-		if not is_leaving and bird.at.length() > def.flock_spread:
-			# The steering above is what a bird turning back *looks* like; this is the line that
-			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
-			# `_bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
-			# reaches exactly as far as the event was validated to. Steering from half way out means
-			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
-			bird.at = bird.at.normalized() * def.flock_spread
-
-## Turns `heading` toward `wanted` at up to `rate` radians a second.
-##
-## **Rotating rather than interpolating, and that is not a style choice.** The first version was
-## `heading.lerp(wanted, k)`, which cannot turn a vector round: interpolating between a unit vector
-## and its opposite runs *down the same line* to zero and back out the way it came, so normalising
-## the result gives the heading it started with. A bird flying directly out of its own flock was
-## therefore the one case the containment could not fix, and it is the case that matters — it flew
-## 202px out of a 62px wheel while the code that was supposed to hold it ran every frame.
-func _steer(heading: Vector2, wanted: Vector2, rate: float, delta: float) -> Vector2:
-	var difference := angle_difference(heading.angle(), wanted.angle())
-	return heading.rotated(clampf(difference, -rate * delta, rate * delta))
-
-## How hard a bird can turn, in radians a second. Fast enough that the wheel it flies fits inside
-## the flock — see the note in `_fly_the_flock` — and slow enough to read as a bird banking.
-const BIRD_TURN_IN := 4.6
-
-## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
-## the far edge of the wheel reaches exactly as far as the event says it does and no further.
-func _bird_outer() -> float:
-	return maxf(def.inner_radius + 1.0, def.outer_radius - def.flock_spread)
-
-## `_bird_outer()`, read by `DebugLayers` so a flock's own fields layer draws the exact radius
-## `_flock_contribution_at()` sums over rather than a second formula that could drift from it.
+## The radius one bird emits over (`EventFlock.bird_outer()`), read by `DebugLayers` so a flock's
+## own fields layer draws the exact radius `_flock_contribution_at()` sums over.
 func flock_outer_radius() -> float:
-	return _bird_outer()
+	return flock.bird_outer() if flock else 0.0
 
 ## Each live bird's own ground-plane offset from this instance's origin — empty for anything
-## without a flock. The one place `DebugLayers` reads into `_flock`, which otherwise has no public
-## accessor: see that class for why the fields layer draws one pair of radii per bird rather than
-## one for the whole instance.
+## without a flock. What `DebugLayers` draws one pair of radii per bird from.
 func flock_offsets() -> Array[Vector2]:
-	var offsets: Array[Vector2] = []
-	for bird in _flock:
-		offsets.append(bird.at)
-	return offsets
+	if flock == null:
+		return [] as Array[Vector2]
+	return flock.offsets()
 
-## Each live bird's own `heading * speed`, parallel to `flock_offsets()` — the velocity
-## `_flock_contribution_at()` already reads per bird, exposed so the debug view's fields layer can
-## draw the same eccentric boundary rather than a circle standing in for it.
+## Each live bird's own `heading * speed`, parallel to `flock_offsets()`.
 func flock_velocities() -> Array[Vector2]:
-	var velocities: Array[Vector2] = []
-	for bird in _flock:
-		velocities.append(bird.heading * bird.speed)
-	return velocities
+	if flock == null:
+		return [] as Array[Vector2]
+	return flock.velocities()
+
+## Its birds (`EventFlock.birds`), or none for a row that is one body.
+func birds() -> Array[EventFlock.Bird]:
+	return flock.birds if flock else _NO_BIRDS
+
+static var _NO_BIRDS: Array[EventFlock.Bird] = []
 
 # --------------------------------------------------------------- going away ---
 # **Nothing vanishes while you are looking at it.** An event that ends by `_finish()` wherever it
@@ -3707,88 +1263,30 @@ func flock_velocities() -> Array[Vector2]:
 # and it disappears in a way nothing in the world could explain. The cat runs on, the flock climbs
 # away, the dog that lost interest trots off — and each of them is gone because it left.
 
-## True once it has stopped being an event and is only getting out of shot. It emits nothing, it
-## cannot end the day, and it carries no cue: whatever it was, it is over. **The one exception is a
-## guard walking away from his barrier** (`EventDef.body_stays_behind`): the walk ends with the
-## instance still there as the barrier (`_stand_as_the_barrier()`), `is_leaving` cleared. The
+## True once it has stopped being an event and is only getting out of shot (`Phase.LEAVING`). It
+## emits nothing, it cannot end the day, and it carries no cue: whatever it was, it is over. **The
+## one exception is a guard walking away from his barrier** (`PursuitSpec.leaves_its_body`): the walk
+## ends with the instance still there as the barrier (`EventBarrierPost.stand_as_the_barrier()`, `Phase.SPENT`). The
 ## barrier costs nothing while he goes, as a roadblock's band never costs anything
 ## (`EventCatalogue._roadblock()`'s `intensity` 0).
-var is_leaving := false
+var is_leaving: bool:
+	get:
+		return phase == Phase.LEAVING
 
 ## True once a row that `EventDef.stops_where_it_arrives` has reached the end of its route and
-## stopped there. Unlike `is_leaving` this is not an ending: it is still the same event, standing
-## still, for the rest of the day. See `_be_done()`.
-var is_parked := false
-var _leaving_for := 0.0
-
-## True when `LEAVING_GIVES_UP` may not end this instance while she could still be watching it.
-## Set by `leave_for_a_completed_task()`, whose departure starts with her beside it, and by
-## `_be_done()` for every car that drives (`EventDef.drives`), whose body she can stand against so
-## a departure can be held up beside her (`_drive()`), by `_be_done()` for a guard walking away
-## from his barrier, who is in her view as he goes, and for the man a vehicle let out, who walks back
-## to it (`_walk_back()`). False for every other departure — see
-## `_leave()` and `LEAVING_GIVES_UP`'s own doc for why those need no such wait.
-var _leaving_must_clear_sight := false
-
-## The most it may spend on the way out. A backstop rather than a timing: with no player to be out
-## of sight of — a headless rig, a streamed-out day — nothing else would ever end it. **Not a
-## backstop for a departure she is actually standing next to**: `leave_for_a_completed_task()`, and
-## `_be_done()` for a car that drives, a man walking back to his vehicle and a guard walking away
-## from his barrier, set `_leaving_must_clear_sight`, which keeps this clock from
-## ending an instance she could still be watching — see `_leave()`.
-const LEAVING_GIVES_UP := 6.0
-
-## How long a row sent down her line without a warning (`loose_dog`) may be out of sight and not
-## closing on her before it is retired, in seconds.
-const CANNOT_REACH_HER_GIVES_UP := 2.0
-## How often the gap to her is looked at, in seconds, and the least it must have shrunk by, per
-## second, to count as closing — a dog running at 132px/s after a walker going away at 92 closes at
-## 40, a dog after someone running (168px/s) at none.
-const CLOSING_LOOK_EVERY := 0.5
-const CLOSING_AT_LEAST := 10.0
-
-var _gap_looked_at := INF
-var _gap_look_clock := 0.0
-var _not_closing_for := 0.0
-
-## **A row sent down her line that cannot reach her is retired, not left to run on out of sight.**
-## *(sunny-hedgehog, 2026-09-27: "a loose dog that spawns behind me never arrives it stays offscreen
-## indefinitely".)* The director sends it ahead of her, but she may turn round or run (`RUN_SPEED`
-## 168 against its 132), and a dog behind her that is not gaining on her never arrives: it ran its
-## whole route out of sight and charged nothing. Once it is more than `Tuning.OUT_OF_SIGHT` from
-## her — nothing on screen — and has not closed on her for `CANNOT_REACH_HER_GIVES_UP` seconds, it
-## is finished where it stands; nothing is seen to go. A dog that is closing, even slowly after a
-## walker going away, runs on and passes her.
-func _give_up_what_cannot_reach_her(delta: float) -> void:
-	if not def.comes_down_her_line() or def.telegraphs or is_finished or is_leaving \
-			or player_at == Vector2.INF:
-		return
-	var gap := global_position.distance_to(player_at)
-	if gap <= Tuning.OUT_OF_SIGHT:
-		_gap_looked_at = INF
-		_gap_look_clock = 0.0
-		_not_closing_for = 0.0
-		return
-	_gap_look_clock += delta
-	if _gap_look_clock < CLOSING_LOOK_EVERY:
-		return
-	if _gap_looked_at != INF and (_gap_looked_at - gap) / _gap_look_clock < CLOSING_AT_LEAST:
-		_not_closing_for += _gap_look_clock
-	else:
-		_not_closing_for = 0.0
-	_gap_looked_at = gap
-	_gap_look_clock = 0.0
-	if _not_closing_for >= CANNOT_REACH_HER_GIVES_UP:
-		_finish()
-
+## stopped there (`Phase.PARKED`). Unlike `is_leaving` this is not an ending: it is still the same
+## event, standing still, for the rest of the day. See `_be_done()`.
+var is_parked: bool:
+	get:
+		return phase == Phase.PARKED
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
-## event with a `spawns_on_finish` stops **where the thing it leaves belongs** — a convoy's
+## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — a convoy's
 ## barricade is across the street it shut, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes has always simply been over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
-## the building (`EventManager.where_the_summoned_row_stops()`) and stays there for the rest of the
+## the building (`EventSpawner.where_the_summoned_row_stops()`) and stays there for the rest of the
 ## day, because a standing field beside a fire she was led to is the cost that makes the pair a
 ## street to turn round on rather than one to hurry past.
 ##
@@ -3798,67 +1296,28 @@ func _give_up_what_cannot_reach_her(delta: float) -> void:
 ##
 ## Everything else that runs out of route drives on and is gone.
 func _be_done(may_park := true) -> void:
-	if is_finished or is_leaving or is_parked or _guard_spent:
+	if phase == Phase.DONE or phase == Phase.LEAVING or phase == Phase.PARKED \
+			or phase == Phase.SPENT:
 		return
-	if counts_a_charge() and _pursuit_began_reported and not _charge_ended:
-		_charge_ended = true
+	if counts_a_charge():
 		# `VisitCounter`'s own "-shaken"/"-outlasted" — a charge that had begun is over without
-		# catching her, `gave_up` telling which of the two ways. A charge that caught her reported
-		# its catch instead (`report_the_catch()`), so it ends in exactly one of the three. See
-		# `EventBus.pursuit_ended`'s own doc.
-		EventBus.pursuit_ended.emit(charger_name(), gave_up)
+		# catching her, `gave_up` telling which of the two ways. A charge that caught or was cut
+		# short already ended, so the record says nothing (`ChargeRecord`).
+		_charge.end(gave_up)
 	if def.stops_where_it_arrives and may_park:
-		is_parked = true
+		transition(Phase.PARKED)
 		# The gait is driven by distance covered, so the distance has to stop here or a parked
 		# engine bobs for ever at the kerb. Clamped to the route's own length rather than left
 		# where the last step put it, so `path_travelled()` still answers "the whole route" for a
 		# streaming resume.
-		_path_travelled = _path_length()
+		_path_travelled = route.length()
 		queue_redraw()
 		return
-	if (_leaving_speed() <= 0.0 or def.spawns_on_finish != ""):
+	if (departure.speed() <= 0.0 or def.aftermath.on_finish != ""):
 		_finish()
 		return
-	is_leaving = true
-	_invalidate_contribution_cache()
-	_leaving_for = 0.0
-	# Something on a route carries on the way it was going; anything else goes away from her,
-	# which is the only direction a flushed flock or a dog that has lost interest can mean.
-	if not (def.mobile and path.size() > 1) and player_at != Vector2.INF \
-			and not global_position.is_equal_approx(player_at):
-		_heading = (global_position - player_at).normalized()
-	if def.drives:
-		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
-		# into her is refused (`_drive()`), and a car that has a body she can stand against is gone
-		# only once she could not be watching (`_leaving_must_clear_sight`), not off
-		# `LEAVING_GIVES_UP`'s clock while she stands beside it. An investigating car reaches here
-		# only at the end of its route, which it drives on to once its man is back in
-		# (`_investigate()`), so it leaves the way it was going, as every patrol does.
-		_leaving_must_clear_sight = true
-	if _is_a_guard_leaving_his_barrier():
-		# **He is in her view as he goes**, and the barrier he leaves is there to be looked at: he is
-		# gone only once she could not be watching, never off `LEAVING_GIVES_UP`'s clock beside her.
-		_leaving_must_clear_sight = true
-		# **And he walks off over walkable ground**, by the way `leave_along()` plans on from its
-		# end (`_way_on_out_of_sight()`), never in a straight line across a roof: straight away
-		# from her, from anywhere not level with the band along its street, crosses the buildings
-		# beside it in her view.
-		_walks_a_way = true
-		_way = PackedVector2Array()
-		_way_on = PackedVector2Array()
-		# **And never through his own band**: a road tile under the barrier is walkable to the
-		# search, since the band is a body and not a tile, and she usually stands on the side she
-		# lured him from, so the nearest ground out of her sight lies straight through the concrete
-		# she cannot pass. The search refuses the tiles under the band (`_way_avoids`, what
-		# `leave_along()` refuses for a cordon's park), so he goes round by the open ground, and so
-		# does his partner at the far post (PR #781's review 3).
-		_way_avoids = _tiles_under_the_band()
-		# And on a band whose far guard leaves too, his partner at the far post goes with him.
-		_send_the_far_guard_off()
-	if not _trail.is_empty():
-		# **A man a vehicle let out walks back to it** (`_walk_back()`) rather than away from her,
-		# and he is in her view as he goes, so he is gone only at its door or out of her sight.
-		_leaving_must_clear_sight = true
+	transition(Phase.LEAVING)
+	departure.begin()
 
 ## Ends this instance early because a resistance step's contact rode on it and she has just
 ## completed the step — called by `ResistanceDirector._on_contact_completed()` on the instance
@@ -3874,8 +1333,8 @@ func _be_done(may_park := true) -> void:
 ## exactly as often as away.
 ##
 ## **And she is standing right next to him when it starts**, unlike everything else that leaves —
-## so `_leaving_must_clear_sight` keeps `LEAVING_GIVES_UP` from popping him out of existence
-## mid-screen at six seconds if she is still nearby; see `_leave()`.
+## so the departure is held to her sight: its six-second backstop does not pop him out of
+## existence mid-screen while she is still nearby (`EventDeparture`).
 ##
 ## **A row that parks where its route runs out leaves anyway when asked** — the warned neighbor,
 ## whose ordinary end is standing at the door (`EventDef.stops_where_it_arrives`) and who runs
@@ -3886,315 +1345,27 @@ func leave_for_a_completed_task() -> void:
 	_be_done(false)
 	if not is_leaving:
 		return
-	_leaving_must_clear_sight = true
-	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
-		_heading = (global_position - player_at).normalized()
+	departure.for_a_completed_task()
 
-## **Leaves down a way chosen for it**: walks `way`'s points in order at `speed` (0 keeps the row's
-## own departure speed), then **plans the rest from where she is now** (`_way_on_out_of_sight()`, a
-## short search over walkable ground) and walks that at the same pace, again each time it runs out,
-## until she could not be watching — `Tuning.OUT_OF_SIGHT` from her, the end every departure here
-## has. Steering straight away from her instead runs into walls and the city's edge, and sliding
-## along one at the size of whatever part of the step is left square to it is, beside the city's
-## edge, next to nothing: a person standing at the edge of her screen. Only where the search finds
-## nothing does it step away from her over walkable ground (`_walkable_step()`). **It never ends at
-## the way's last point**: that point was chosen out of her sight from where she was when the way
-## was planned, and she may since have walked there herself, so ending there would be a vanishing in
-## front of her (see "going away" above: the end of an event is a departure, not a deletion).
-##
-## For a departure that may not go in a straight line away from her: day 12's park people, walked
-## out through the cordon's last gap (`ParkCordon`) rather than through the tape. `speed` gives a
-## row that stands where it was placed, which has no departure of its own, a walking pace. An
-## instance already leaving on its own is turned onto the way. Like `leave_for_a_completed_task()`
-## it is a departure she may be standing beside, so `LEAVING_GIVES_UP` does not end it while she
-## could still be watching. `avoid` is ground the rest planned past the way's end never enters,
-## nor a step away from her where no rest is found: the cordon's park, whose grass is walkable and
-## whose tape is a body rather than a tile, so the nearest ground out of her sight is often across
-## it. Answers whether it is now leaving along the way: not for something finished, parked, a guard
-## leaving his barrier, or a row that ends rather than leaving (`spawns_on_finish`).
+## **Leaves down a way chosen for it** (`EventDeparture.along()`): day 12's park people, walked out
+## through the cordon's last gap rather than through the tape. Answers whether it is now leaving
+## along the way.
 func leave_along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
-	if is_finished or is_parked or _guard_spent or _is_a_guard_leaving_his_barrier():
-		return false
-	_way_speed = speed
-	if not is_leaving:
-		_be_done(false)
-	if not is_leaving:
-		_way_speed = 0.0
-		return false
-	_way = way.duplicate()
-	_way_on = PackedVector2Array()
-	_way_avoids = avoid
-	_walks_a_way = true
-	_leaving_must_clear_sight = true
-	return true
+	return departure.along(way, speed, avoid)
 
-## What is left of the way `leave_along()` set, in order; empty once it is walked, or for any other
-## departure. The way planned on from its end (`_way_on_out_of_sight()`) is not part of it.
+## What is left of the way `leave_along()` set, in order (`EventDeparture.way_left()`).
 func way_left() -> PackedVector2Array:
-	return _way
-
-## The way `leave_along()` set, each point dropped as it is reached; the way planned on from its
-## end, the same, and the tiles that one never enters; whether this departure walks one; and its
-## pace, 0 for the row's own.
-var _way := PackedVector2Array()
-var _way_on := PackedVector2Array()
-var _way_avoids := Rect2i()
-var _walks_a_way := false
-var _way_speed := 0.0
-
-## How many tiles `_way_on_out_of_sight()` looks at before it gives up: several times the tiles
-## within `Tuning.OUT_OF_SIGHT` of her, so it gives up only where walls leave no way out at all.
-const WAY_ON_SEARCH_LIMIT := 4096
-
-## Walks `step` pixels of `leave_along()`'s way; past its end, of a way planned on from where it
-## stands (`_way_on_out_of_sight()`, again each time one runs out while she could still be
-## watching); and only where none is found, or one is walked to its end inside this step, away from
-## her over walkable ground.
-func _walk_the_way(step: float) -> void:
-	var left := _walk_points(false, step)
-	if left <= 0.0:
-		return
-	if _way_on.is_empty() and _map and player_at != Vector2.INF:
-		_way_on = _way_on_out_of_sight()
-	left = _walk_points(true, left)
-	if left <= 0.0:
-		return
-	var away := _heading
-	if player_at != Vector2.INF and not global_position.is_equal_approx(player_at):
-		away = (global_position - player_at).normalized()
-	var moved := _step_clear_of_the_avoided(away * left)
-	if moved.is_zero_approx() and player_at != Vector2.INF:
-		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
-		# farther from her.
-		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
-			var along := _step_clear_of_the_avoided(side * left)
-			if not along.is_zero_approx() and (global_position + along).distance_to(player_at) \
-					> (global_position + moved).distance_to(player_at):
-				moved = along
-	if moved.is_zero_approx():
-		return
-	_heading = moved.normalized()
-	position += moved
-	_path_travelled += moved.length()
-
-## `_walkable_step()`'s part of `delta_pos`, or none where that would end on `_way_avoids`.
-func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
-	var moved := _walkable_step(delta_pos)
-	if _map and _way_avoids.has_point(_map.world_to_tile(global_position + moved)):
-		return Vector2.ZERO
-	return moved
-
-## Walks up to `step` pixels down `_way`, or `_way_on` when `planned`, dropping each point as it is
-## reached; answers how much of the step is left once that way is walked, 0 while it is not.
-func _walk_points(planned: bool, step: float) -> float:
-	var points := _way_on if planned else _way
-	var left := step
-	while left > 0.0 and not points.is_empty():
-		var toward := points[0] - global_position
-		if toward.length() > left:
-			_heading = toward.normalized()
-			position += _heading * left
-			_path_travelled += left
-			left = 0.0
-			break
-		position = points[0]
-		left -= toward.length()
-		_path_travelled += toward.length()
-		points.remove_at(0)
-	if planned:
-		_way_on = points
-	else:
-		_way = points
-	return left
-
-## **The rest of a way out, planned from where she is now**: the tile centres from the tile it
-## stands on to the nearest walkable tile more than `Tuning.OUT_OF_SIGHT` and a tile from her, by a
-## breadth-first search over the tiles `CityMap.is_walkable()` admits outside `_way_avoids`
-## (`leave_along()`'s `avoid`), square steps only, so that each leg stays on the two tiles it joins.
-## Empty when no such tile is found within `WAY_ON_SEARCH_LIMIT` tiles, and the step falls back to
-## walking away from her.
-func _way_on_out_of_sight() -> PackedVector2Array:
-	return _way_on_out_of_sight_from(global_position)
-
-## `_way_on_out_of_sight()` from any point, not only this instance's own: the far guard at a band
-## walks off from his post by the same search (`_walk_the_far_guard_off()`).
-func _way_on_out_of_sight_from(at: Vector2) -> PackedVector2Array:
-	var start := _map.world_to_tile(at)
-	var came_from: Dictionary[Vector2i, Vector2i] = {start: start}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	while head < queue.size() and head < WAY_ON_SEARCH_LIMIT:
-		var tile := queue[head]
-		head += 1
-		if _map.tile_to_world(tile).distance_to(player_at) \
-				> Tuning.OUT_OF_SIGHT + Tuning.TILE_SIZE:
-			var way := PackedVector2Array()
-			while tile != start:
-				way.insert(0, _map.tile_to_world(tile))
-				tile = came_from[tile]
-			return way
-		for step: Vector2i in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
-			var next := tile + step
-			if not came_from.has(next) and _map.is_walkable(next) \
-					and not _way_avoids.has_point(next):
-				came_from[next] = tile
-				queue.append(next)
-	return PackedVector2Array()
-
-func _leave(delta: float) -> void:
-	_leaving_for += delta
-	var step := _leaving_speed() * delta
-	if _walks_a_way:
-		_walk_the_way(step)
-	elif not _trail.is_empty():
-		if not _walk_back(step):
-			return
-	else:
-		position += _heading * step
-		_path_travelled += step
-	var gone := player_at != Vector2.INF \
-			and global_position.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	# `LEAVING_GIVES_UP` is a backstop for a departure nobody could be watching (a headless rig, a
-	# streamed-out day) — not for one she is standing next to. `_leaving_must_clear_sight` holds
-	# the clock off until she genuinely could not be watching: no player to be out of sight of, or
-	# already past `OUT_OF_SIGHT`. A completed task's departure, a car that drives, the man walking
-	# back to the vehicle that let him out and the guard walking away from his barrier set the flag
-	# (see its doc); every other departure gives up on the clock as it always did.
-	var may_give_up := not _leaving_must_clear_sight or player_at == Vector2.INF or gone
-	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		if _is_a_guard_leaving_his_barrier():
-			_stand_as_the_barrier()
-		else:
-			_finish()
-
-## How fast this instance walks away once it is over. The row's own departure speed, except for a
-## guard who set off from a barrier (`EventDef.body_stays_behind`): a roadblock has none of its own
-## (it never travelled), and he leaves at the pace he chased at rather than vanishing in the street.
-func _leaving_speed() -> float:
-	if _way_speed > 0.0:
-		return _way_speed
-	if _is_a_guard_leaving_his_barrier():
-		return def.pursue_speed
-	return def.departure_speed()
+	return departure.way_left()
 
 ## True once the guard who set off from a barrier is gone for good, and this instance is only the
 ## barrier: solid and silent, for as long as the roadblock would have stood
 ## had he never set off. He does not come back for her, and **the guard who stayed at the other
-## post walks off with him** (`_send_the_far_guard_off()`), so the band stands unmanned: nothing
+## post walks off with him** (`RoadblockFarGuard`), so the band stands unmanned: nothing
 ## notices or chases from this instance again. (A choice open to overturn; the alternative is that
 ## the one who chased walks back to his post and the barrier is armed again.)
-var _guard_spent := false
-
-## Whether this is a spent guard, or one on his way out from a barrier: what a stream-out carries
-## (`EventScheduler.Planned.guard_spent`) so that a barrier streamed in again comes back as only
-## the barrier (`come_back_as_the_barrier()`), never as a guard who has forgotten and chases again.
-func is_a_spent_guard() -> bool:
-	return _guard_spent or (is_leaving and _is_a_guard_leaving_his_barrier())
-
-## True for the man who set off from a barrier (`EventDef.body_stays_behind`) once he has left it
-## behind: what `_leaving_speed()`, the field and the halo ask of the departure.
-func _is_a_guard_leaving_his_barrier() -> bool:
-	return def.body_stays_behind and has_left_its_body_behind()
-
-## The tiles under a barrier's solid body where it was left (`body_position()`), as the smallest
-## rect holding them: the ground a guard walking off from it, and the far guard, never walk through.
-func _tiles_under_the_band() -> Rect2i:
-	if def.shape == null:
-		return Rect2i()
-	var tiles := def.shape.tiles_under(body_position(), _solid_axis())
-	var low := tiles[0]
-	var high := tiles[0]
-	for tile in tiles:
-		low = Vector2i(mini(low.x, tile.x), mini(low.y, tile.y))
-		high = Vector2i(maxi(high.x, tile.x), maxi(high.y, tile.y))
-	return Rect2i(low, high - low + Vector2i.ONE)
-
-## Which side's guard set off, the other half of what a stream-out carries; `0` while both stand.
-func chaser_side() -> int:
-	return _chaser_side
-
-## **The barrier outlives its guard.** *(Playtest: "the guarded barriers disappear after shaking off
-## the pursuer. that doesn't make sense.")* A chase that ends — she shook him off, or his time ran
-## out — sends the man away (`_be_done()`), and once he is out of the picture the instance goes
-## back to being what it was before he set off: waiting, with its body and its picture where they
-## were built and the post he left empty. Nothing appears and nothing disappears.
-func _stand_as_the_barrier() -> void:
-	_guard_spent = true
-	is_leaving = false
-	_walks_a_way = false
-	_way_avoids = Rect2i()
-	_leaving_for = 0.0
-	_leaving_must_clear_sight = false
-	_noticed_at = INF
-	global_position = _body_left_at
-	_keep_the_body_where_it_was_left()
-	_invalidate_contribution_cache()
-	_move_the_band()
-
-## A fresh instance of a plan whose guard was already spent when it streamed out: only the barrier,
-## at the place the plan stands, waiting and solid, with the post `side` left empty. Called by
-## `EventManager._stream_in()` after `resume()`. Nothing is reported again.
-func come_back_as_the_barrier(side: int) -> void:
-	_guard_spent = true
-	_chaser_side = side
-	# It comes back unmanned: the far guard left with his partner.
-	_far_guard_gone = true
-	_body_left_at = global_position
-	_noticed_at = INF
-	is_leaving = false
-	# Its charge, and the warning before it, were counted before it streamed out and are over:
-	# nothing about them is counted again, its end at the day's end included.
-	_pursuit_began_reported = true
-	_warning_reported = true
-	_charge_ended = true
-	_keep_the_body_where_it_was_left()
-	_invalidate_contribution_cache()
-	_move_the_band()
-
-func _advance_along_path(delta: float) -> void:
-	# Movement starts when the telegraph does, so an approaching siren is audible and
-	# visible while it is still far away — which is what makes the warning usable.
-	_path_travelled += def.speed * delta
-	var remaining := _path_travelled
-	# **A beat rather than a journey.** The distance covered is folded back and forth over
-	# the route, so the same walk up and down happens for ever and the end of the path is never
-	# reached — which is what stops a fixture that moves from departing like something that was
-	# passing through. Folded rather than reset, so streaming it out and back in resumes it mid-beat
-	# exactly as `resume()` promises.
-	var back := false
-	if def.paces:
-		var beat := _path_length()
-		if beat <= 0.0:
-			return
-		var cycle := fmod(_path_travelled, beat * 2.0)
-		back = cycle > beat
-		remaining = beat * 2.0 - cycle if back else cycle
-	for i in range(1, path.size()):
-		var segment := path[i] - path[i - 1]
-		var length := segment.length()
-		if remaining <= length:
-			_heading = segment.normalized()
-			# Facing the way it is actually walking. Without this a man pacing a pavement moons
-			# along it backwards for half of every beat, which is worse than not moving at all.
-			if back:
-				_heading = -_heading
-			position = path[i - 1] + segment.normalized() * remaining
-			return
-		remaining -= length
-	position = path[path.size() - 1]
-	if def.paces:
-		return
-	# A mobile event that has driven off the end of its route is done, whatever its
-	# nominal duration says — and it keeps going until it is out of sight, rather than stopping
-	# dead on the pavement she is walking down. See "going away" above.
-	_be_done()
-
-## The length of the whole route, in px.
-func _path_length() -> float:
-	var total := 0.0
-	for i in range(1, path.size()):
-		total += path[i].distance_to(path[i - 1])
-	return total
+var _guard_spent: bool:
+	get:
+		return phase == Phase.SPENT
 
 func _has_expired() -> bool:
 	if is_waiting():
@@ -4203,57 +1374,64 @@ func _has_expired() -> bool:
 	# **A vehicle waits for its men**: a hunting van's `duration` runs from its notice, and a van
 	# gone from the kerb would leave a man walking back to nothing. It may leave only once every
 	# man it let out is back in.
-	for officer in _officers:
-		if not _officer_is_back(officer):
-			return false
+	if investigation and not investigation.all_back():
+		return false
 	return def.duration > 0.0 and chase_age() >= notice_time() + def.duration
 
 func _finish() -> void:
-	if is_finished:
-		return
-	is_finished = true
-	if _scenery != null:
-		_scenery.hide()
-	_invalidate_contribution_cache()
+	transition(Phase.DONE)
 
 # ------------------------------------------------------------------ emission ---
 
-## True while the event is visible but has not yet reached full strength.
-##
-## A pursuer that comes for her through its telegraph (the day-3 dog) has a second way out of it:
-## `_lunged`, when she walked up to the stand-off before the clock ran out. A charger that waits
-## for her has none: it charges when its warning has run (`warns_by_radius()`).
+## True while the event is visible but has not yet reached full strength: `Phase.WARNING`, ended
+## when its clock has run (`_settle_the_notice()`) or, for a pursuer that comes for her through its
+## telegraph (the day-3 dog), when she walks up to its stand-off first (`EventPursuit`). **A
+## telegraph is a promise about the encounter's clock, not its phase**: a row that leaves,
+## parks, stops or is done before that answers true until the clock runs out — the day-3 dog
+## shaken off at 2s into its 4.5s telegraph is still telegraphing as it trots away, to the mark,
+## the alert and its pictures.
 func is_telegraphing() -> bool:
-	if is_waiting():
-		return false
-	if _lunged:
+	if phase == Phase.WARNING:
+		return true
+	if phase == Phase.ACTIVE or phase == Phase.WAITING or _telegraph_ended or is_waiting():
 		return false
 	return chase_age() < notice_time()
 
 ## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
-## on her (`EventDef.stands_for_its_notice`): the dog that waited, the hunting roadblock's guard, the
+## on her (`PursuitSpec.stands`): the dog that waited, the hunting roadblock's guard, the
 ## man a vehicle lets out, and day 13's guard set on her in her view (`notice_her_at()`). **Asked of the def the instance was handed**, so the day-3 dog — the same row, sent
 ## down her heading with no trigger to have waited behind — is false here and spends its telegraph
 ## coming, which is the lesson; and false for anything that has not noticed her yet or has lunged.
 func is_standing_for_its_notice() -> bool:
-	return (def.stands_for_its_notice or _stands_for_this_notice) and is_telegraphing() \
-			and (def.pursues_within > 0.0 or def.sets_off_beside_her)
+	var stands := def.pursuit != null and def.pursuit.stands
+	return (stands or _stands_for_this_notice) and is_telegraphing() \
+			and (def.notice != null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
+
+## **Holds a row that crouches before its run `seconds` longer** — a crossing whose run a solid cut
+## short (`EventDef.crouch_for_a_run()`), so it still reaches the middle when she does. Its telegraph
+## only grows, so the fairness contract it was validated under still holds.
+func hold_still_longer(seconds: float) -> void:
+	if seconds > 0.0 and def.still_while_telegraphing:
+		_notice_time = notice_time() + seconds
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
-## warns for its row's `warns_for` (`warns_by_radius()`); anything else for its row's
-## `telegraph_time`, or the notice a task gave it when it set it on her (`notice_her_at()`).
+## warns for its row's `PursuitSpec.warns_for` (`warns_by_radius()`); anything else for its row's
+## `telegraph_time`, the notice a task gave it when it set it on her (`notice_her_at()`), or a
+## crossing's crouch held longer (`hold_still_longer()`).
 func notice_time() -> float:
 	if _notice_time >= 0.0:
 		return _notice_time
-	if warns_by_radius() and def.warns_for > 0.0:
-		return def.warns_for
+	if warns_by_radius() and def.pursuit and def.pursuit.warns_for > 0.0:
+		return def.pursuit.warns_for
 	return def.telegraph_time
 
-## True for a pursuer that is only standing there, because she has not come near enough for it to
-## take an interest. It emits at full strength, it is not lethal, and it does not move.
-## See `EventDef.pursues_within`.
+## True for a row that waits (`EventDef.notice`) and has not noticed her: its notice's clock is not
+## running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is gone without
+## ever having noticed her, and of a barrier whose guard has gone for good (`Phase.SPENT`), which
+## waits for nothing. Waiting, it emits at full strength unless its notice is quiet, it is not
+## lethal, and it does not move.
 func is_waiting() -> bool:
-	return def.pursues_within > 0.0 and _noticed_at == INF
+	return def.notice != null and not _notice.is_running()
 
 ## How long this has been *happening*, which is not always how long it has existed.
 ##
@@ -4261,40 +1439,40 @@ func is_waiting() -> bool:
 ## when it notices her — a telegraph spent at dawn, four streets away, is not a notice, and
 ## `telegraph_time` and `duration` are both promises about the encounter rather than about the day.
 ##
-## Less `_notice_paused_for`, the time a held lunge's notice stood still with her inside its
-## stand-off.
+## It is the notice's own clock (`_notice`, a `Warning` read against `age`), less whatever held it:
+## a held lunge with her inside its stand-off, a waiting charger behind a wall at its warning's last
+## moment, the masked man's wait. Zero for a row that waits and has not noticed her.
 func chase_age() -> float:
-	if def.pursues_within <= 0.0:
-		return age - _notice_paused_for
-	return 0.0 if _noticed_at == INF else age - _noticed_at - _notice_paused_for
+	return _notice.elapsed(age)
 
 ## **Whether this pursuer warns by radius rather than by a clock**: one that waited for her and
-## noticed her by sight (`pursues_within` on the def it was handed) — the dog that waited, the alley
-## robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764 in minty-lemur, the
-## player: a warning happens when she comes close; she can turn around; if she keeps getting closer
-## the charge starts; inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player
-## leaves the radius nothing happens and the warning stops. If they stay within the charge
-## starts.")* **One radius, and a warning on a clock inside it**: from the frame it notices her
-## inside `pursues_within` it warns for its row's `warns_for` (`notice_time()`); back outside the
-## radius before that, the warning stops and it waits again (`_stop_warning()`), its clock reset;
-## still inside when it runs out, it charges.
+## noticed her by sight (`EventDef.notice` on the def it was handed) — the dog that waited, the
+## alley robber and every guard drawn from his row, the hunting roadblock's guard. *(Inbox #764
+## in minty-lemur, the player: a warning happens when she comes close; she can turn around; if
+## she keeps getting closer the charge starts; inbox #788 in minty-lemur: "We should do one
+## radius and warn inside it for 2s. If the player leaves the radius nothing happens and the
+## warning stops. If they stay within the charge starts.")* **One radius, and a warning on a
+## clock inside it**: from the frame it notices her inside `EventDef.notice` it warns for its
+## row's `PursuitSpec.warns_for` (`notice_time()`); back outside the radius before that, the
+## warning stops and it waits again (`_stop_warning()`), its clock reset; still inside when it
+## runs out, it charges.
 ##
-## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_paths_to_her`):
+## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_chase_way`):
 ## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
 ## would leave him nothing to do; he keeps his timed notice. Nor one with no trigger — the day-3 dog
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
-	return (def.pursues or def.charges_within > 0.0) and def.pursues_within > 0.0 \
-			and not def.sets_off_beside_her and not _paths_to_her
+	return def.notice != null and (def.pursuit != null or def.notice.runs_within > 0.0) \
+			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and _chase_way == null
 
-## **The stand-off a pursuer closes to and holds**, `Tuning.pursuit_standoff()` over
+## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
 ## `EventDef.standoff_reach()`: the distance a pursuer that comes for her through its telegraph
 ## lunges from (the day-3 dog's gold timing is spent at it), and where one that walks at her through
 ## its warning (the robber) stops. A charger that waits for her charges on its warning's clock, not
 ## on this distance (`warns_by_radius()`).
 func charge_radius() -> float:
-	return Tuning.pursuit_standoff(def.pursue_speed, def.standoff_reach())
+	return PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 
 ## **It stops warning and waits again, where it stands**: she has gone back out of its warning
 ## radius. Its notice is forgotten, so the next time she comes inside the radius it notices her and
@@ -4303,94 +1481,56 @@ func charge_radius() -> float:
 ## dog and the guards never moved. A roadblock's guard, who stepped out to his post on her side when
 ## he noticed her, is back at the band he was standing at, with the band's body under him again.
 func _stop_warning() -> void:
-	_noticed_at = INF
-	_notice_paused_for = 0.0
-	_lunge_held = false
-	if def.body_stays_behind and has_left_its_body_behind():
-		global_position = _body_left_at
-		_body_left_at = Vector2.INF
-		_chaser_side = 0
-		if _obstruction:
-			_obstruction.position = Vector2.ZERO
-		_move_the_band(true)
-	_invalidate_contribution_cache()
+	_notice.stop()
+	transition(Phase.WAITING)
+	if pursuit:
+		pursuit.lunge_held = false
+	if barrier_post:
+		barrier_post.back_at_the_band()
+	excitement.invalidate_contribution()
 
-## **A row that waits and runs its own line runs on a distance, with no warning clock**
-## (`EventDef.charges_within`, the masked man): the one exception to the one-radius rule every
-## waiting charger keeps *(inbox #788 in minty-lemur, the player, of the stairwell's man: "No delay, as on main")*,
-## since in the stairwell his warning is off screen, so a delay before he runs buys her nothing she
-## can see to answer. While it warns, she back outside `pursues_within` has it wait again, and she
-## inside `charges_within` starts its run — at once if she came in from outside it, after
-## `Tuning.WARNING_ALONE_MAX` of warning if it noticed her already inside, so it never runs at her
-## with no warning at all. Its run is the end of its telegraph (`_lunged`), as a flock's flush is;
-## its notice does not run out before then (`_hold_the_notice_clock()`).
-func _warn_on_its_line(delta: float) -> void:
-	if def.charges_within <= 0.0 or is_waiting() or _lunged or player_at == Vector2.INF:
-		return
-	var range_to_her := global_position.distance_to(player_at)
-	if _warned_on_its_line_for == 0.0:
-		_noticed_inside_its_charge = range_to_her <= def.charges_within
-		_report_the_warning()
-	_warned_on_its_line_for += delta
-	if range_to_her > def.pursues_within:
-		_noticed_at = INF
-		_warned_on_its_line_for = 0.0
-		return
-	if range_to_her > def.charges_within:
-		_noticed_inside_its_charge = false
-		return
-	if not _noticed_inside_its_charge or _warned_on_its_line_for >= Tuning.WARNING_ALONE_MAX:
-		_lunged = true
-		# His run is his charge, for his counter (`EventBus.pursuit_began`).
-		if not _pursuit_began_reported:
-			_pursuit_began_reported = true
-			EventBus.pursuit_began.emit(charger_name())
-
-## How long a row that runs its own line has been warning her, and whether it noticed her already
-## inside its charge distance. See `_warn_on_its_line()`.
-var _warned_on_its_line_for := 0.0
-var _noticed_inside_its_charge := false
-
-## The notice clock for this tick, run straight after `age` advances and before anything asks
-## `is_telegraphing()`. Every notice runs, a waiting charger's warning included (`notice_time()`),
-## held still only while a held lunge has her inside its stand-off (`_pause_a_held_notice()`), and
-## a waiting charger's at its last moment while a wall stands between them: **his charge needs a
-## clear line** *(mossy-beaver, inbox #650: "how can it pursue without noticing? obviously it needs
-## a clear line")*, so he goes on warning until the line clears or she leaves his radius. **A row
-## that runs its own line has no notice clock** (`_warn_on_its_line()`, the masked man): for every
-## tick of its warning the age it noticed her moves on with the tick, so its notice never runs out
-## and its run comes only from her coming within `charges_within`. Moving the notice rather than
-## counting a pause is what a stream-out carries (`noticed_at()`, `resume()`).
+## **Holds the notice clock for this tick** (`_notice.hold()`), run straight after `age`
+## advances and before the phase is settled, so a frame whose notice is held is never seen as
+## the charge starting. Every notice runs, a waiting charger's warning included
+## (`notice_time()`), held only: while a held lunge has her inside its stand-off
+## (`_pause_a_held_notice()`); at a waiting charger's last moment while a wall stands between
+## them, since **his charge needs a clear line** (mossy-beaver, inbox #650), so he goes on
+## warning until the line clears or she leaves his radius; and for every tick of a row that runs
+## its own line (`EventNoticeRun`, the masked man), whose run comes only from her coming
+## within `NoticeSpec.runs_within`. A held clock is what a stream-out carries (`noticed_at()`),
+## so it comes back exactly as far run.
 func _hold_the_notice_clock(delta: float) -> void:
-	if def.charges_within > 0.0 and not _lunged and not is_waiting() \
-			and chase_age() - delta < def.telegraph_time:
-		_noticed_at += delta
+	if _telegraph_ended or is_waiting():
 		return
-	if warns_by_radius() and def.pursues and not _lunged and not is_waiting() \
-			and player_at != Vector2.INF and chase_age() >= notice_time() \
-			and chase_age() - delta < notice_time() and not _clear_line_to(player_at):
-		_notice_paused_for += delta
+	if def.notice and def.notice.runs_within > 0.0 and chase_age() - delta < def.telegraph_time:
+		_notice.hold(delta)
+		return
+	if warns_by_radius() and def.pursuit and player_at != Vector2.INF \
+			and chase_age() >= notice_time() and chase_age() - delta < notice_time() \
+			and not clear_line_to(player_at):
+		_notice.hold(delta)
 		return
 	_pause_a_held_notice(delta)
 
 ## Holds a held lunge's notice clock still for this tick while she is inside its stand-off — see
-## `_notice_paused_for`. Run straight after `age` advances, before anything asks
-## `is_telegraphing()`, so the frame the notice would have run out is never seen as the chase
-## starting. Only while the notice was still running at the start of this tick: a chase already
-## under way is never turned back into a notice.
+## `pursuit.lunge_held`. Run straight after `age` advances, before the phase is settled, so the frame
+## the notice would have run out is never seen as the chase starting. Only while the notice was
+## still running at the start of this tick: a chase already under way is never turned back into
+## a notice.
 func _pause_a_held_notice(delta: float) -> void:
-	if not _lunge_held or _lunged or is_waiting() or player_at == Vector2.INF:
+	if pursuit == null or not pursuit.lunge_held or _telegraph_ended or is_waiting() \
+			or player_at == Vector2.INF:
 		return
 	if chase_age() - delta >= notice_time():
 		return
 	if global_position.distance_to(player_at) < charge_radius():
-		_notice_paused_for += delta
+		_notice.hold(delta)
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
 ##
 ## `pulse_multiplier_override` (`< 0.0` means "not given") replaces the instant's own
 ## `0.25 + 0.75 × pulse(age)` reading — the only caller that ever passes one is
-## `_caret_intensity_over_horizon()`, asking for the pulse's own mean over
+## `caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if is_finished or is_leaving:
@@ -4404,19 +1544,19 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if is_quiet_for_its_man():
 		return 0.0
 	if has_stopped_her():
-		# **The stop** (`EventDef.stop_excitement`): from twice its mean rate to nothing over
-		# `Tuning.OFFICER_STOP_SECONDS`, so its whole lands `stop_excitement` on her standing beside
-		# him — at the centre of his own field, which is where his catch puts her. A short sharp
+		# **The stop** (`PursuitSpec.stop_excitement`): from twice its mean rate to nothing over
+		# `Tuning.OFFICER_STOP_SECONDS`, so its whole lands that many points on her standing
+		# beside him — at the centre of his own field, which is where his catch puts her. A short sharp
 		# spike rather than a field she strolls out of, and his field, so walking away takes some
-		# of it off. Nothing after it: he is walking back by then (`_process()`).
-		var into := clampf((age - _stopped_her_at) / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
-		return 2.0 * def.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
+		# of it off. Nothing after it: he is walking back by then (`_tick()`).
+		var into := clampf(on_foot.stopped_for() / Tuning.OFFICER_STOP_SECONDS, 0.0, 1.0)
+		return 2.0 * def.pursuit.stop_excitement / Tuning.OFFICER_STOP_SECONDS * (1.0 - into)
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
 		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
 		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
-		# nothing here scales through `Tuning.SLEEPING_SENSITIVITY`, it emits exactly zero.
+		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
 		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if baby_awake else 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
@@ -4462,22 +1602,22 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 	return 0.625 - 0.375 * mean_cos
 
 ## The multiplier the phase this instance is in puts on `def.intensity`, and the one place the
-## three answers live — `_caret_intensity_over_horizon()` divides by exactly this rather than
+## three answers live — `caret_intensity_over_horizon()` divides by exactly this rather than
 ## repeating the conditions, so the caret's projection and the meter can never disagree about which
 ## phase damps.
 ##
 ## **The damping says *this has not started yet*, and for a waiting row that is a claim about the
 ## thing rather than about its clock.** A pursuer that waits has been standing there since she came
 ## round the corner — what has not started is the lunge, not the man — so its notice is the one
-## telegraph in the game that does not quieten what it is warning about. `EventDef.
-## quiet_until_noticed` is the opposite case and it is a real one: birds pecking on a pavement are
+## telegraph in the game that does not quieten what it is warning about. A quiet notice
+## (`NoticeSpec.quiet`) is the opposite case and it is a real one: birds pecking on a pavement are
 ## nearly nothing until they go up, so both their wait and their notice damp like an ordinary
 ## telegraph.
 func _notice_damping() -> float:
 	if is_waiting():
-		return Tuning.TELEGRAPH_INTENSITY_FRACTION if def.quiet_until_noticed else 1.0
-	if is_telegraphing() and (def.pursues_within <= 0.0 or def.quiet_until_noticed):
-		return Tuning.TELEGRAPH_INTENSITY_FRACTION
+		return TELEGRAPH_INTENSITY_FRACTION if def.notice.quiet else 1.0
+	if is_telegraphing() and (def.notice == null or def.notice.quiet):
+		return TELEGRAPH_INTENSITY_FRACTION
 	return 1.0
 
 ## `current_intensity()` with the telegraph's own damping undone — the rate this row will
@@ -4487,175 +1627,34 @@ func _notice_damping() -> float:
 ## skipped, by dividing it back out of the same call rather than a second copy of the ramp and
 ## pulse logic above it.
 ##
-## Only `expected_gross_at()`'s own projection reads this. Every other caller of
-## `contribution_at()` — the halo, the exclamation mark, the meter itself — wants what a source is
+## Only the projection reads this (`ExcitementSource.expected_gross_at()`). Every caller of the
+## present rate — the halo, the exclamation mark, the meter itself — wants what a source is
 ## actually doing right now, damped or not, because it is asking about the present rather than
 ## about the course this thing is on. Without this, a `cyclist` ridden straight at a standing
 ## player through its own 2s telegraph reads at `TELEGRAPH_INTENSITY_FRACTION` (15%) the whole
-## time, and `expected_gross_at()` under-counts the approach by the same fraction.
+## time, and the projection under-counts the approach by the same fraction.
 ##
 ## **And a pulse is projected at its own mean over the horizon, not at this instant's beat** — see
 ## `_pulse_mean_multiplier()`'s own doc for why a frozen instant could read anywhere from a quarter
 ## to the full peak of a row whose pulse turns over inside `Tuning.EXPECTED_IMPACT_HORIZON`.
-func _caret_intensity_over_horizon() -> float:
+func caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
 	if def.pulse_period > 0.0:
-		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON, def.pulse_period)
+		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON,
+				def.pulse_period)
 	return current_intensity(pulse_override) / _notice_damping()
 
-## Duck-typed with `CrowdAgent`'s own copy — see `ExcitementHalo`'s class doc. `points` is not
-## recomputed here: `Baby._update_excitement()` traces it back from the meter's own sum as this
-## event's exact share of what landed this frame — `contribution × sensitivity × delta` — so the
-## halo can never disagree with what the bar actually did. *(2026-09-08, the player: "don't derive
-## it from the source numbers but trace an increase in excitement back to its constituents".)*
-## Stamped with `_clock`, this event's own simulation clock, rather than the wall clock, so a
-## paused game does not empty the halo and a rig can measure the window on simulated time.
-func accumulate_landed(points: float) -> void:
-	_prune_landed_history()
-	if points > 0.0:
-		_landed_history.append([_clock, points])
-		landed_ever += points
-		# A pelican's first share of the meter, for `VisitCounter` and the run log — told once, and
-		# never read back by anything here.
-		if is_pelican and not _reported_excitement:
-			_reported_excitement = true
-			EventBus.pelican_excited_her.emit(self)
-
-## The sum of every entry still inside `ExcitementHalo.WINDOW`. Pruned here too, not only on
-## write, so a source nobody has visited in a while reports honestly the moment it is asked rather
-## than waiting for its next landing.
-func landed() -> float:
-	_prune_landed_history()
-	var total := 0.0
-	for entry in _landed_history:
-		total += entry[1]
-	return total
-
-func _prune_landed_history() -> void:
-	var cutoff := _clock - ExcitementHalo.WINDOW
-	while not _landed_history.is_empty() and _landed_history[0][0] < cutoff:
-		_landed_history.pop_front()
-
-## Excitement per second this event contributes at a point.
+## **This event's field at a point**, with no question about what stands between: what its source
+## charges on open ground (`EventExcitement`), and what the caret's projection asks before it asks
+## about walls at the two bodies' own projected places.
 ##
-## `intensity_override` replaces `current_intensity()` for this one call when given (`< 0.0`
-## means "not given" — every intensity this def can carry is positive). The only caller that ever
-## passes one is `expected_gross_at()`'s own projection, asking for `_caret_intensity_over_horizon()`
-## — the row's live rate, its pulse projected at the horizon's own mean rather than frozen at this
-## instant's beat — in place of whatever a telegraph has this one currently damped to; every other
-## caller gets the answer it always got.
-##
-## `velocity_override` replaces `travel_velocity()` for the field's own kernel, the same way, when
-## given (`Vector2.INF` means "not given"). The only caller is `expected_gross_at()` too, and for
-## the same reason: its projection translates the *sample point* by `_caret_velocity()` rather than
-## moving the source, and the ellipse the translated point is measured against has to be oriented by
-## that same velocity or the two disagree about which way this thing is going. A pursuer holding its
-## telegraph stand-off is the case that matters — `travel_velocity()` is zero there (it is holding
-## still) while `_caret_velocity()` is the lunge it is about to make.
-## The cache `contribution_at()` below keeps for its plain query (no override given) — see that
-## function's own doc.
-var _contribution_age := -1.0
-var _contribution_at := Vector2.INF
-var _contribution_cache := 0.0
-
-## Forces the next `contribution_at()` call to recompute rather than trust the cache. `age` never
-## moves outside this instance's own `_process()`, but `is_finished`/`is_leaving` can: `.retire()`
-## calls `_finish()` directly, with no `_process()` tick of this instance's own in between, so a
-## cache keyed only on `(age, world_position)` would otherwise go on answering the pre-finish
-## contribution for the rest of the tick that finished it — the same class of defect
-## `CrowdAgent.contribution_at()`'s own doc names
-## as the reason that method has no cache at all, since its position and jolt are written from
-## outside its `_process()` the same way. `_finish()` and `_be_done()` both call this the instant
-## either flag flips to `true`. `is_finished` is never cleared, and `is_leaving` is cleared only by a
-## guard who leaves a barrier, which invalidates again as it does (`_stand_as_the_barrier()`), so one
-## invalidation at each transition is the whole of what correctness needs — the very next call
-## recomputes, and every call after that hits the cache honestly.
-func _invalidate_contribution_cache() -> void:
-	_contribution_age = -1.0
-
-## **The plain query — no override given — is cached once per frame per position**, the same
-## `age`-keyed shape `_caret_strength()` documents below: `Baby._update_excitement()` (physics
-## rate) and `ExcitementHalo.select_sources()` (frame rate) both ask every live instance for its
-## contribution at the same point most frames, so a repeat this tick answers from the cache
-## instead of re-running the field. `expected_impact_at()`'s own projection passes an
-## override or a translated `world_position` for every sample but its first, so those calls never
-## match the cache key and always recompute, which is correct — the cache is only ever for the
-## single point every ordinary caller actually asks about.
-func contribution_at(world_position: Vector2, intensity_override := -1.0,
-		velocity_override := Vector2.INF) -> float:
-	var cacheable := intensity_override < 0.0 and velocity_override == Vector2.INF
-	if cacheable and _contribution_age == age and _contribution_at == world_position:
-		return _contribution_cache
-	var result := _contribution_at_uncached(world_position, intensity_override, velocity_override)
-	if cacheable:
-		_contribution_age = age
-		_contribution_at = world_position
-		_contribution_cache = result
-	return result
-
-## **Nothing reaches her through a building**: a field is zero wherever `_walled_off()` says a
-## building stands between this node and the point. Asked only once the field is positive, so a
-## source out of reach costs no line at all.
-##
-## **A source beyond `EventDef.silent_beyond()` of the point answers zero before anything else is
-## asked** — its intensity, its velocity, its shape — since that field is zero there by
-## construction and the wall is only asked of a positive one. Not for a flock or anything leaving:
-## a flock's birds and a guard's band stand away from this node.
-func _contribution_at_uncached(world_position: Vector2, intensity_override: float,
-		velocity_override: Vector2) -> float:
-	if not is_leaving and _flock.is_empty():
-		var reach := def.silent_beyond()
-		if global_position.distance_squared_to(world_position) > reach * reach:
-			return 0.0
-	var field := _field_at(world_position, intensity_override, velocity_override)
-	if field > 0.0 and _walled_off_now(global_position, world_position):
-		return 0.0
-	return field
-
-## Whether a building stands between a source standing at `source_at` and her at `her_at`, deep
-## enough to keep its excitement from her — `CityMap.wall_between()`, measured from this node
-## (a flock's centre, a shaped row's middle) to her centre. *(plaid-wombat, inbox #554: "Excitement
-## should not go through any wall".)* Asked of `wall_grid()`, so indoors the building's own walls
-## answer it; false with no grid at all, which is every data-level rig built without one.
-func _walled_off(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	return grid != null and grid.wall_between(source_at, her_at)
-
-## What `_walled_off()` asks: the building's walls indoors (`_walls`), the city's map outdoors, and
-## `null` for a rig with neither. Read by the debug view's fields layer too, which cuts this
-## source's outline from its own node along the same lines (`DebugLayers.open_runs()`).
-func wall_grid() -> CityMap:
-	return _walls if _walls != null else _map
-
-## Indoors, the grid `_walled_off()` asks — `InteriorEvents` hands every source in the building its
-## walls this way, since it has no `CityMap` to give `setup()`. See `_walls`.
-func set_walls(walls: CityMap) -> void:
-	_walls = walls
-
-## The last line `contribution_at()` asked about and its answer, kept by value. The meter's sum,
-## the halo's pick and the caret's present rate ask the same pair in a frame, and the answer
-## depends on nothing but the two points and the map — a body moved from outside is a new key, so
-## nothing here can answer stale the way a clock-keyed cache of the field would.
-var _wall_from := Vector2.INF
-var _wall_to := Vector2.INF
-var _wall_map: CityMap = null
-var _wall_answer := false
-
-## `_walled_off()` through that one-line cache, for `contribution_at()` alone: the caret's
-## projection asks a different pair at every step and would only push the frame's own pair out.
-func _walled_off_now(source_at: Vector2, her_at: Vector2) -> bool:
-	var grid := wall_grid()
-	if source_at != _wall_from or her_at != _wall_to or grid != _wall_map:
-		_wall_from = source_at
-		_wall_to = her_at
-		_wall_map = grid
-		_wall_answer = _walled_off(source_at, her_at)
-	return _wall_answer
-
-## The field alone, with no question about what stands between — what `contribution_at()` charges
-## on open ground, and what the caret's projection asks before it asks about walls at the two
-## bodies' own projected places.
-func _field_at(world_position: Vector2, intensity_override: float,
+## `intensity_override` (`< 0.0` means "not given") replaces `current_intensity()`: the projection
+## passes `caret_intensity_over_horizon()`, the row's live rate, in place of whatever a telegraph has
+## it damped to. `velocity_override` (`Vector2.INF` means "not given") replaces `travel_velocity()`
+## for the kernel: the projection translates the sample point by `caret_velocity()`, and the ellipse
+## that point is measured against has to be oriented by that same velocity — a pursuer holding its
+## stand-off is still, and about to lunge.
+func field_at(world_position: Vector2, intensity_override: float,
 		velocity_override: Vector2) -> float:
 	if is_finished:
 		return 0.0
@@ -4664,40 +1663,43 @@ func _field_at(world_position: Vector2, intensity_override: float,
 		# roadblock's band has no field strength of its own (`EventCatalogue._roadblock()`).
 		return 0.0
 	var intensity := intensity_override if intensity_override >= 0.0 else current_intensity()
-	if not _flock.is_empty():
+	if not birds().is_empty():
 		return _flock_contribution_at(world_position, intensity)
 	var velocity := velocity_override if velocity_override != Vector2.INF else travel_velocity()
-	# `EventDef.emission_at_distance()` rather than `Tuning.falloff` direct, so the one row with a
+	# `EventDef.emission_at_distance()` rather than `Field.falloff` direct, so the one row with a
 	# two-part field is charged for both parts here and not only in the cost table — and so that a
 	# row shaping its own drop-off (`EventDef.falloff_power`) is felt as the shape it is priced at.
 	# The peak handed over is this phase's, so the telegraph and the pulse damp the core and the
-	# field together; an uncored row comes back bit for bit what it always did.
+	# field together; an uncored row is charged its plain falloff.
 	return def.emission_at_distance(_field_distance(world_position, velocity), intensity)
 
-## The distance `contribution_at()` prices this row's field at — `GroundShape.field_distance()`
+## The distance `field_at()` prices this row's field at — `GroundShape.field_distance()`
 ## over this row's own shape (D1's `body ⊕ disc` stationary, D2's `point ⊕ ellipse` moving), or the
 ## same kernel with no body at all for the handful of emitting rows with no shape (`playground`,
 ## whose look is drawn by the park itself rather than by `EventInstance`).
 func _field_distance(world_position: Vector2, velocity: Vector2) -> float:
-	return _field_distance_at(global_position, world_position, velocity)
+	return field_distance_from(global_position, field_shape(), solid_axis(), world_position,
+			velocity)
 
-## `_field_distance()` for a field centred somewhere other than this node: the band a guard has
-## walked away from.
-func _field_distance_at(centre: Vector2, world_position: Vector2, velocity: Vector2) -> float:
-	var shape := field_shape()
+## `_field_distance()` with its datum handed in — where the field stands, its shape (null for a
+## point) and the axis its body lies along: the kernel the caret's projection prices every sample
+## with too, its datum read once before it samples (`EventExcitement._begin_the_projection()`),
+## since nothing about it moves while the projection runs.
+func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
+		world_position: Vector2, velocity: Vector2) -> float:
 	if shape != null:
-		return shape.field_distance(centre, _solid_axis(), velocity, world_position)
+		return shape.field_distance(centre, axis, velocity, world_position)
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
-## The datum this row's field is priced from (`_field_distance_at()`) and drawn from (`DebugLayers`):
+## The datum this row's field is priced from (`field_distance_from()`) and drawn from (`DebugLayers`):
 ## its `shape`, or none — a point at its centre — for a row whose field is priced from its centre
-## (`EventDef.field_from_its_centre`, the fire engine) or that has no shape.
+## (`VehicleSpec.field_from_its_centre`, the fire engine) or that has no shape.
 func field_shape() -> GroundShape:
-	return null if def.field_from_its_centre else def.shape
+	return null if def.vehicle and def.vehicle.field_from_its_centre else def.shape
 
 ## A flock is its birds, summed.
 ##
-## The same shape as `City.total_excitement_at` one level down: nothing is pushed anywhere, the
+## The same shape as `WorldContext.total_excitement_at` one level down: nothing is pushed anywhere, the
 ## sources compose by plain addition, and there is no ordering to get wrong. Each bird carries an
 ## equal share of the event's intensity over a radius that leaves room for the wheel, so the middle
 ## of the flock — where four or five fields overlap — comes out at about what the event says it is
@@ -4707,19 +1709,20 @@ func field_shape() -> GroundShape:
 ##
 ## **Each bird is its own point kernel**, eccentric by its own `heading * speed` rather than the
 ## instance's own `travel_velocity()` (always zero for a flock — it is not itself `mobile` or
-## `pursues`) — a cheap read off `Bird`, already carried for the wheel, so a bird diving toward her
-## costs more than one peeling away exactly as any other moving point in the game does. The bodies
-## stay points either way: a flock's own field was never a capsule, and eleven of them is not where
-## the general capsule-and-ellipse sum earns its cost.
+## `EventDef.pursuit`) — a cheap read off `Bird`, already carried for the wheel, so a bird
+## diving toward her costs more than one peeling away exactly as any other moving point in the
+## game does. The bodies stay points either way: a flock's own field was never a capsule, and
+## eleven of them is not where the general capsule-and-ellipse sum earns its cost.
 func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float:
 	var total_intensity := intensity if intensity >= 0.0 else current_intensity()
-	var share := total_intensity / float(_flock.size())
-	var outer := _bird_outer()
+	var share := total_intensity / float(birds().size())
+	var outer := flock.bird_outer()
 	var total := 0.0
-	for bird in _flock:
-		var d := GroundShape.eccentric_distance(global_position + bird.at, bird.heading * bird.speed,
+	for bird in birds():
+		var d := GroundShape.eccentric_distance(global_position + bird.at,
+				bird.heading * bird.speed,
 				world_position)
-		total += Tuning.falloff(d, share, def.inner_radius, outer, def.falloff_power)
+		total += Field.falloff(d, share, def.inner_radius, outer, def.falloff_power)
 	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
@@ -4730,564 +1733,66 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## around. A roadblock is that row: the node is the man once he leaves the post, and what he
 ## reaches with is a pair of arms rather than the width of the barrier he left standing.
 ##
-## **A pursuer catches her only by touching her**, so its catch also needs `_clear_line_to()` her:
+## **A pursuer catches her only by touching her**, so its catch also needs `clear_line_to()` her:
 ## within reach across a building's corner is not a catch. *(freckled-goose, #544: "Even then the
 ## distance would not physically connect so counting it as caught would be unfair. Only if the
 ## Robert touches the player should it end instantly".)* The reach is unchanged; what is added is
 ## that nothing stands between them. Every other `hard_fail` row keeps the straight-line distance.
 ##
-## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.drives`): one strikes
+## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands (`is_driving()`). A body touching her is
-## not enough, and not needed: the strike reaches `Tuning.PATROL_STRIKE_LEAD` of its travel past the
-## touch, so a car driving its nose into her strikes her rather than standing for her (`_drive()`).
-## Its telegraph is not asked: its warning is a car's, `closes_on()`, not a field coming up to
+## else — not behind it, not beside it, not while it stands (`EventCarDriving.is_driving()`). A body touching her is
+## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the
+## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
+## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to
 ## strength.
 func is_lethal_at(world_position: Vector2) -> bool:
-	if def.drives:
-		return is_driving() and _meets_her(global_position, _heading, world_position,
-				_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, _route_left(_path_travelled)))
+	if car:
+		return car.strikes(world_position)
 	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
 	if not def.hard_fail or is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
-	return not def.pursues or _clear_line_to(world_position)
+	return def.pursuit == null or clear_line_to(world_position)
 
-## Whether the straight line from this node to `world_position` crosses only ground
-## `CityMap.is_walkable()` agrees with — the question a pursuer's catch asks, since a catch across a
-## wall is a man reaching through a building, and the one its notice and its lunge ask in
-## `_chase()`, since he can neither see nor go for her through one. `CityMap.clear_line()` walks it,
-## the one walk every caller asks, so a line that clips a building's corner by a pixel is blocked
-## however short it is. True with no map, which is every data-level rig built without one, exactly
-## as `_walkable_step()` is.
-func _clear_line_to(world_position: Vector2) -> bool:
-	return not _map or _map.clear_line(global_position, world_position)
-
-## One bounded integral cache per source, with a by-value key rather than a clock or identity.
-var _expected_landed_key: Array = []
-var _expected_landed_cache := 0.0
-
-## The gross points this event is anticipated to land over `Tuning.EXPECTED_IMPACT_HORIZON` **if
-## she and it both carry on exactly as they are**, before her own decay is netted against it —
-## `expected_impact_at()` is the net; this is the half of it every source projects for itself, and
-## `ExcitementHalo` reads it too, once a frame, to learn what the horizon's decay has to be shared
-## between. Duck-typed with `CrowdAgent`'s own copy.
-##
-## *(2026-09-20, overturning 2026-09-08's "I don't want a caret when walking into a car from the
-## side": "caret communicates anticipated net gain. basically if I keep doing what I'm doing I
-## very likely get that amount in net gain".)* Her own current `player_velocity` now moves her
-## through the projection exactly as `velocity` moves the source — a café she is walking toward
-## now does expect something, because she is not going to stay held still against it. What she
-## already answered stays true of the *source's* own half: a car passing wide of a **stationary**
-## her still expects nothing from that car, because nothing about the car's course crosses her
-## line — the overturn is that her line is no longer flattened to a point.
-##
-## **Projected at `_caret_velocity()` and `_caret_intensity_over_horizon()`, not
-## `travel_velocity()` and `current_intensity()`.** The row's *live* course and rate, because the
-## caret is asking what this thing is on its way to doing rather than what a telegraph currently
-## has it doing: a telegraphing `cyclist` is already moving at its route speed (`travel_velocity()`
-## already answers that), but reads at 15% of its own field the whole time it telegraphs —
-## projecting the damped rate would keep the sum under the line until the telegraph is nearly over,
-## the same gap a pursuer holding its stand-off would have if the caret read its own zeroed
-## `travel_velocity()`. `current_rate` below is deliberately still the real, possibly-damped
-## `contribution_at()` — what she is actually being charged right now — so the subtraction is the
-## live approach minus the honest present, not the live approach minus itself. A pulsing row's own
-## rate is the horizon's own **mean** of the pulse rather than this instant's beat — see
-## `_caret_intensity_over_horizon()`'s own doc.
-##
-## **Skipped without sampling once neither body is moving, or the reach cannot close inside the
-## horizon.** Two bodies both held still is the one case where nothing about the answer can
-## change, and the reach the early-out compares against is now the pair's own closing speed
-## (`player_velocity - velocity`), not the source's alone — a fast source she is outrunning no
-## longer over-reaches its true closing distance the way comparing only its own speed would.
-##
-## **Floored at zero, and scaled by `player_sensitivity` here rather than left to the caller** —
-## `Baby.current_sensitivity()`, read the same way the backward-looking halo bakes it into
-## `landed()` — so the total `ExcitementHalo` sums across every live source is already in the units
-## the shared decay is taken out of.
-func expected_gross_at(player_position: Vector2) -> float:
-	if is_finished or is_leaving:
-		return 0.0
-	# A barrier the meter is not charging her for has no impact to project: the strongest structure
-	# of a boundary is the whole of what lands, and the others would each promise the same cost
-	# over again. See `outranked_by_a_stronger_barrier`.
-	if outranked_by_a_stronger_barrier:
-		return 0.0
-	var velocity := _caret_velocity()
-	var closing := player_velocity - velocity
-	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + def.field_reach()
-	if global_position.distance_to(player_position) > reach:
-		return 0.0
-	if velocity.is_zero_approx() and player_velocity.is_zero_approx():
-		return 0.0
-	var current_rate := contribution_at(player_position)
-	var live_intensity := _caret_intensity_over_horizon()
-	var future_integral: float
-	# Compare the effective sample inputs by value, including mutable definition/shape fields.
-	# Age alone cannot cover a retirement, silence, external movement or changed player state.
-	# Flocks retain their ordinary path: every bird has independently mutable geometry.
-	if _flock.is_empty():
-		var key := [global_position, player_position, player_velocity, velocity,
-			live_intensity, def.intensity, def.inner_radius, def.outer_radius,
-			def.falloff_power, def.core_intensity, def.core_radius, _solid_axis(),
-			def.shape.kind if def.shape else -1,
-			def.shape.half_length if def.shape else 0.0,
-			def.shape.half_extents if def.shape else Vector2.ZERO]
-		if key != _expected_landed_key:
-			_expected_landed_cache = _sample_expected_landed(player_position, velocity, live_intensity)
-			_expected_landed_key = key
-		future_integral = _expected_landed_cache
-	else:
-		future_integral = _sample_expected_landed(player_position, velocity, live_intensity)
-	# Present contribution, sensitivity and shared netting remain live on every request.
-	var gross := future_integral - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
-
-## Only the future integral is reusable. The key above covers every input these samples read;
-## shape radius is read by neither the reach guard (`EventDef.field_reach()`) nor field distance,
-## which measures from the spine.
-func _sample_expected_landed(player_position: Vector2, velocity: Vector2,
-		live_intensity: float) -> float:
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	var integral := 0.0
-	for i in steps:
-		# Projecting the *source* forward by `velocity * t` and querying its field at her own
-		# projected position, `player_position + player_velocity * t`, is the same number as
-		# holding the source still and asking for its field at the pair's relative offset instead
-		# — `_field_at` is the field every caller of `contribution_at` is charged, translated, so
-		# nothing here recomputes a falloff or a flock sum of its own. `velocity` (the source's
-		# own) is passed a second time, as the override, so the ellipse the translated point is
-		# measured against is oriented the way the source is actually travelling, not the pair's
-		# relative heading — see `contribution_at()`'s own doc for why the two must agree.
-		# The field translates; a wall does not. So the wall is asked between the two bodies'
-		# own projected places, where a building actually stands, never at the translated point.
-		var t := float(i + 1) * dt
-		var sample := player_position + player_velocity * t - velocity * t
-		var rate := _field_at(sample, live_intensity, velocity)
-		if rate > 0.0 and _walled_off(global_position + velocity * t,
-				player_position + player_velocity * t):
-			rate = 0.0
-		integral += rate * dt
-	return integral
-
-## The net points this event is anticipated to add to the bar over `Tuning.EXPECTED_IMPACT_HORIZON`
-## **if she and it both carry on exactly as they are** — the caret's own answer to *"if I keep
-## doing what I'm doing, how much will I get"*, which is `ExcitementHalo.net_landed()`'s question
-## asked forward instead of back: `expected_gross_at()` less her own decay over the same horizon.
-## See `wants_a_mark()` for what a result at or above `Tuning.EXPECTED_IMPACT_POINTS` does with the
-## answer.
-##
-## **`player_decay_rate` (`Baby.decay_rate()`) defaults to `0.0`, which answers exactly as this
-## function always did — held still, nothing given back — for any caller that has not told this
-## instance her actual state, a data-level test among them.**
-##
-## **Shared between every source worth a mark when `ExcitementHalo` is driving the frame, charged
-## against this source alone otherwise.** *(2026-09-20, on the un-shared version this replaces:
-## "with two sources near her every caret reads low".)* `player_expected_total_gross` is `-1.0` —
-## "not given" — for any caller that has not told this instance the frame's total, which keeps the
-## old, pessimistic-but-independent answer for a data-level test or a single source read alone.
-## `ExcitementHalo` sums `expected_gross_at()` over every live event and crowd body once a frame,
-## the same once-a-frame pass it already runs for the halo's own `total_landed`, and hands the sum
-## back through `set_expected_total_gross()` before anything asks for a net — the *sources that
-## earn a caret* are exactly the ones whose own `expected_gross_at()` is positive, since a source
-## contributing nothing to the total also draws nothing from it, so summing over every live
-## candidate rather than only the ones already worth a mark changes nothing about the answer and
-## needs no second, smaller pass to find them.
-##
-## **`ExcitementHalo.net_landed()`'s own arithmetic, forward instead of back.** Every source's
-## share of the horizon's decay scales by the identical factor
-## `player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON / player_expected_total_gross`, so summing
-## every source's own `expected_impact_at()` back up reproduces `player_expected_total_gross` less
-## the whole decay exactly — the bar's own projected rise — rather than approximately, the same
-## exactness `net_landed()`'s own doc proves for the backward-looking halo.
-func expected_impact_at(player_position: Vector2) -> float:
-	var gross := expected_gross_at(player_position)
-	if gross <= 0.0:
-		return 0.0
-	var decay := player_decay_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	if player_expected_total_gross >= 0.0:
-		return ExcitementHalo.net_landed(gross, player_expected_total_gross, decay)
-	return maxf(gross - decay, 0.0)
-
-## Whether this event's own current course puts her inside the radius that ends the day at some
-## point before `Tuning.EXPECTED_IMPACT_HORIZON`, her position held fixed — `is_lethal_at()`'s
-## straight-line reach, `def.lethal_reach()`, asked at every step of the same projection
-## `expected_impact_at()` takes, rather than only at the position she is standing at now. The
-## doubled caret's own question.
-##
-## **The straight-line reach without the clear-line test.** A pursuer's real catch also needs
-## `_clear_line_to()` her, and the caret does not ask it: it projects the pursuer straight at her,
-## so it can read red while a building still stands between them, before he has come round the
-## corner. Whether it should ask is open to overturn (the polite-rabbit record says why it does
-## not).
-##
-## **`is_lethal_at()`'s guards, minus its own telegraph gate.** A telegraphing `hard_fail` row
-## cannot fire *yet* — that gate is exactly right for `is_lethal_at()`'s own callers, which ask
-## whether it is lethal **right now** — but the caret is asking whether its course, once the
-## telegraph clears, puts her inside the radius that ends the day, which a telegraphing row can
-## answer just as truly as a live one: a `cyclist` ridden straight at her through its whole
-## telegraph has to read red, or the doubled caret only ever appears in the last fraction of a
-## second. `is_waiting()`, `is_finished` and `is_leaving` still refuse it — a waiting pursuer has
-## not decided anything about her yet, so there is no course to be lethal on.
-##
-## **A car that drives asks its own strike along its own course** (`EventDef.drives`): driving now,
-## and her in front of its nose on the carriageway from some point of its next
-## `EXPECTED_IMPACT_HORIZON` straight ahead — so the doubled caret is over a patrol car exactly when
-## staying where she is in its lane would end the day.
-func will_be_lethal(player_position: Vector2) -> bool:
-	if def.drives:
-		if not is_driving():
-			return false
-		# Only as far as the line it gives way at, where it will stand rather than reach her, and
-		# the end of a route it stops at, where it parks (`_route_left()`).
-		var horizon := def.speed * Tuning.EXPECTED_IMPACT_HORIZON
-		var line := _room_to_its_line(global_position, _heading)
-		if line < INF:
-			horizon = minf(horizon, maxf(line, 0.0))
-		var left := _route_left(_path_travelled)
-		horizon = minf(horizon, left)
-		var steps := ceili(horizon / (def.speed * 0.25))
-		for i in steps + 1:
-			var ahead := minf(float(i) * def.speed * 0.25, horizon)
-			if _meets_her(global_position + _heading * ahead, _heading, player_position,
-					_short_of_its_stop(Tuning.PATROL_STRIKE_LEAD, left - ahead)):
-				return true
-		return false
-	if is_finished or is_leaving or is_waiting() or not def.hard_fail:
-		return false
-	var velocity := _caret_velocity()
-	var reach := def.lethal_reach()
-	if velocity.is_zero_approx():
-		return global_position.distance_to(player_position) <= reach
-	var dt := 0.25
-	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
-	for i in steps + 1:
-		var future_at := global_position + velocity * (float(i) * dt)
-		if future_at.distance_to(player_position) <= reach:
-			return true
-	return false
-
-# ------------------------------------------------------------------ drawing ---
-
-## Asks for a redraw when what this instance is showing has actually changed.
-##
-## Moving a `Node2D` does not invalidate its draw list — the transform is applied when the list is
-## replayed — so an event only redraws when its **picture** changes, exactly the gate
-## `CrowdAgent._redraw_if_the_picture_changed()` already gives every walker and car. Most of a
-## day's live instances are scenery that never moves — the seals, a checkpoint's hut, a café
-## frontage, a market stall, a barricade — and rebuilding their draw lists at the tick rate is the
-## largest single drawing cost in a frame, for a picture that is identical every time. See
-## `docs/evidence/m124-frame-cost-2026-09-13/README.md`.
-##
-## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
-## below names every time-varying thing `_draw()` and `_draw_body()` read rather than a plausible
-## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
-## a continuous function of the clock and could not be named by a key at all.
-##
-## The key is stored on every tick whether or not it asked for a draw, so the *transition out of*
-## a never-settling state — a van that has finished taking its victim — is still a change the
-## comparison can see.
-##
-## **Off screen none of it runs** (`DrawnView`, `_drawn_reach()`): no key, no caret projection and
-## no redraw, never-settling pictures included, since most of a day's live instances are off screen
-## and the key's caret was the projection's only caller there. The picture is left as it was, and
-## the first tick any of it is back inside the box redraws it from what it is now, caret included,
-## before the margin has let any of it onto the screen. The band and the scenery are still moved
-## and shown as before. Answers whether it asked for a draw.
-func _redraw_if_the_picture_changed() -> bool:
-	_update_scenery()
-	if not _in_the_drawn_view():
-		_picture_is_stale = true
-		_move_the_band()
-		return false
-	var key := _picture_key()
-	var changed := key != _picture or _picture_is_stale
-	_picture = key
-	_picture_is_stale = false
-	var asked := changed or _picture_never_settles()
-	if asked:
-		queue_redraw()
-	_move_the_band(changed)
-	return asked
-
-## True while what this instance shows is not being kept current because none of it can be on the
-## screen, so the first tick it is back in the box redraws it whatever the key says.
-var _picture_is_stale := false
-
-## Whether anything this instance draws can be on the screen (`DrawnView`): its own picture, caret
-## and spread about its feet, or the band it left at its post (`RoadblockBand`, whose redraw rides on
-## this gate). A flock that is leaving is always drawn, since its birds fly off past any reach.
-func _in_the_drawn_view() -> bool:
-	if is_leaving and not _flock.is_empty():
-		return true
-	var reach := _drawn_reach()
-	if DrawnView.shows(self, reach):
-		return true
-	return _band != null and _band.is_inside_tree() and DrawnView.shows(_band, reach)
-
-## Everything this instance can draw about its feet: the row's whole footprint, caret included
-## (`footprint_of()`), with the run its own street gives a spread (`drawn_box()`), and the caret at
-## its tallest for a row with no picture of its own to carry one, and a street fire's whole burning
-## front and its smoke (`_fire_front_box()`). Worked out once: nothing here moves with the instance.
-func _drawn_reach() -> Rect2:
-	if not _drawn_reach_known:
-		_drawn_reach_known = true
-		_drawn_reach_box = footprint_of(def).merge(drawn_box()).merge(largest_mark_rect())
-		var front := _fire_front_box()
-		if front.has_area():
-			_drawn_reach_box = _drawn_reach_box.merge(front)
-	return _drawn_reach_box
-
-var _drawn_reach_box := Rect2()
-var _drawn_reach_known := false
-
-## How finely the key reads the two continuous quantities it carries: an eighth of a pixel of the
-## body's own lift, and a hundred-and-twenty-eighth of the caret's swell, which moves that mark by
-## about a tenth of a pixel. Both are well under anything a screen shows at any zoom the game uses,
-## so no visible movement is ever held back waiting for a step — and a coarser quantum would
-## visibly stair-step a walking event's bob.
-const BOB_STEPS_PER_PX := 8.0
-const SWELL_STEPS := 128.0
-
-## Whether this row's picture keeps moving between one tick and the next whatever the key says, so
-## that gating it on the key at all would freeze an animation.
-##
-## Four, and each is a continuous function of the clock rather than a frame chosen from a set: a
-## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a
-## **burning building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age
-## × k)` and are drawn rather than authored; and an **abduction mid-take**, whose victim slides
-## from her standing offset to the van over `VICTIM_TAKEN_OVER` seconds. Every one of them is a
-## handful of instances on a day at most, and none of them was ever going to be gated.
-func _picture_never_settles() -> bool:
-	if not _flock.is_empty():
-		return true
-	if is_taking_a_victim():
-		return true
-	return def.look == EventDef.Look.BURNING_BUILDING or def.look == EventDef.Look.FIREFIGHT
-
-## Which heading the next draw would pick this instance's eight-view sector from.
-##
-## Ordinarily `_heading`. The one exception is a robber who has not noticed her yet: `_draw_robber`
-## picks his view from `_robber_waiting_heading()` — her position, whenever anything has told this
-## instance where she is and nothing built stands between them — rather than from the alley he was
-## sited facing, so the key has to read the same thing or the one turn in the game that happens
-## without the body moving would never reach the screen.
-func _drawn_heading() -> Vector2:
-	if def.look == EventDef.Look.ROBBER and is_waiting():
-		return _robber_waiting_heading()
-	if def.look == EventDef.Look.ROADBLOCK and not has_left_its_body_behind():
-		return _guard_post_heading(_spread_vertical, 1)
-	return _heading
-
-## Which pose `_draw_protest()` is standing its rank in: 0 for anything that is not a protest, 1
-## for the plain pose, and 2..9 for the eight `protester_point_*` bearings in `_POINTING_POSES`'
-## own order. The objective belongs to the resistance director and moves when a step is completed,
-## which is the only thing about a protest's picture that changes while nothing about the protest
-## does.
-func _protest_pose() -> int:
-	if def.look != EventDef.Look.PROTEST:
-		return 0
-	return _POINTING_POSES.find(_protester_texture(global_position, _protest_objective())) + 2
-
-## Everything `_draw()` reads that can change from one tick to the next, as one comparable value.
-##
-## `x` is a bit field — one bit per question the drawing asks, in an order that is arbitrary and
-## only has to be stable. `y` carries the three small integers: the eight-view sector the next draw
-## would land on (`_select_view()` is what actually advances `_view_sector`, and it only runs inside
-## a draw, so the key has to compute the sector it *would* move to rather than read the one left
-## over from the last one), the caret's own 0/1/2 strength, and the protest pose. `z` and `w` are
-## the two continuous quantities, quantised — see `BOB_STEPS_PER_PX` and `SWELL_STEPS`.
-func _picture_key() -> Vector4i:
-	# `_caret_strength()` is cached against `age` and was already asked once per draw through
-	# `wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
-	var caret := _caret_strength()
-	var swell := 0.0
-	var flashed_off := false
-	if caret > 0:
-		swell = mark_swell()
-		# The flash is the mark's telegraph phase and takes it off the screen for part of every
-		# beat, so it is part of the picture rather than of the mark's size.
-		flashed_off = is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55
-	# **Only the looks that actually read an idle timer carry one.** `_idle_stepping()` is a
-	# function of the clock alone and knows nothing about the row asking, so handing it to every
-	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
-	# belong to their own small layers, while the steam is already a cloud-only picture.
-	var idle := false
-	if def.look == EventDef.Look.CAFE:
-		idle = _idle_stepping(SITTER_IDLE_PERIOD)
-	elif def.look == EventDef.Look.BUSKER:
-		idle = _idle_stepping(BUSKER_STRUM_PERIOD)
-	elif def.look == EventDef.Look.POSTER_CREW:
-		idle = _idle_stepping(POSTER_CREW_PASTE_PERIOD)
-	elif def.look == EventDef.Look.STEAM:
-		idle = _idle_stepping(STEAM_BILLOW_PERIOD)
-	var flags := 0
-	flags = flags * 2 + (1 if is_finished else 0)
-	flags = flags * 2 + (1 if is_suppressed_by_its_own_hold() else 0)
-	flags = flags * 2 + (1 if is_leaving else 0)
-	flags = flags * 2 + (1 if _gait_stepping() else 0)
-	# The normal dog alone tells its two steps apart (`dog_picture()`), so only its two looks carry
-	# the stride's half: every other family draws the same picture in both halves.
-	var three_pose_dog := def.look in [EventDef.Look.DOG_WALKER, EventDef.Look.LOOSE_DOG]
-	flags = flags * 2 + (1 if three_pose_dog and _gait_second_half() else 0)
-	flags = flags * 2 + (1 if _heading_is_west() else 0)
-	flags = flags * 2 + (1 if is_telegraphing() else 0)
-	flags = flags * 2 + (1 if is_waiting() else 0)
-	flags = flags * 2 + (1 if is_chatting() else 0)
-	flags = flags * 2 + (1 if has_stopped_her() else 0)
-	flags = flags * 2 + (1 if is_its_guard_inside() else 0)
-	flags = flags * 2 + (1 if is_taking_a_victim() else 0)
-	flags = flags * 2 + (1 if _victim_gait_stepping() else 0)
-	flags = flags * 2 + (1 if idle else 0)
-	flags = flags * 2 + (1 if gate_state != null and gate_state.raised else 0)
-	flags = flags * 2 + (1 if guard_warns_her else 0)
-	flags = flags * 2 + (1 if gate_runs_north_south(_heading) else 0)
-	flags = flags * 2 + (1 if flashed_off else 0)
-	# A mast's lamp and arcs (`_draw_mast()`): amber in the telegraph that opens every broadcast
-	# cycle, green with the arcs while it speaks, and neither once silenced — read off the city's
-	# broadcast clock rather than `is_telegraphing()`, which a mast passes once at creation.
-	var mast := def.look == EventDef.Look.LOUDSPEAKER_MAST
-	flags = flags * 2 + (1 if mast and silenced else 0)
-	flags = flags * 2 + (1 if mast and _mast_is_telegraphing_now() else 0)
-	var sector := EightDirection.update(_view_sector, _drawn_heading())
-	# A car's picture is anchored on its live heading (`_body_anchor()`), and its shadow and
-	# body turn with it, so a car rounding a corner redraws as it turns rather than only when it
-	# crosses into another sector. Whole degrees, above the protest's own poses.
-	var turn := posmod(roundi(rad_to_deg(_heading.angle())), 360) if def.drives else 0
-	return Vector4i(
-			flags,
-			sector + 8 * caret + 32 * _protest_pose() + 320 * turn,
-			roundi(_current_bob() * BOB_STEPS_PER_PX),
-			roundi(swell * SWELL_STEPS))
-
-func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_EVENTS)
-	# `--skip events`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (e)): returns
-	# before anything below is asked for, so a frame under the flag differs from an ordinary one by
-	# drawing alone — the excitement field, the telegraph and everything else `EventInstance` does
-	# keep running.
-	if _skip_draw:
-		return
-	if is_finished:
-		return
-	if is_suppressed_by_its_own_hold():
-		return
-	var bob := _current_bob()
-	# Told to `Sprites` as well as to the canvas, for the reason `Sprites._base_transform` gives:
-	# the mirror inside `draw_standing()` sets an absolute matrix and can read nothing back, so a
-	# west-facing family that was not handed this lift would drop it — a dog walker heading west
-	# drawn flat while the same walker heading east bobs.
-	var lift := Transform2D(0.0, Vector2(0.0, bob))
-	Sprites.set_base_transform(lift)
-	draw_set_transform_matrix(lift)
-	_draw_body()
-	Sprites.set_base_transform(Transform2D.IDENTITY)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_mark()
+## Whether the straight line from this node to `world_position` crosses only ground this figure
+## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question a pursuer's catch asks, since a
+## catch across a wall, a barrier or a café is a man reaching through it, and the one its notice
+## and its lunge ask in `EventPursuit`, since he can neither see nor go for her through one.
+## `WorldMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
+## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
+## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
+## built without a map, exactly as `_step()` is.
+func clear_line_to(world_position: Vector2) -> bool:
+	return _navigator.clear_line(global_position, world_position, _sight)
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:
 	return def.still_while_telegraphing and is_telegraphing()
 
-## The bob a moving event rides on: a stride's worth of lift, once per stride's worth of ground.
-## Sized against a walking pace rather than a running one — 34px is roughly a step.
-const BOB_PER_PX := PI / 34.0
-const BOB_HEIGHT := 2.5
-
-## **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
-## tile a second, against the player's three — slides along without a leg moving and reads as
-## parked, which gets reported as *the dog walkers are not moving* when the movement is fine.
-##
-## A bob rather than a stride, because the art has legs drawn into it and a sprite cannot swing
-## its own. Driven by **distance covered**, not by time, so it is the movement itself that shows:
-## something stopped is still, and something fast bobs faster.
-##
-## Pulled out of `_draw()` so `EntityHalo` can ride the same lift: a walking entity's ring of
-## re-drawn bodies has to bob with it, or the outline slides off the sprite it is meant to trace.
-##
-## **A vehicle rolls rather than strides**: a look in `WHEELS_BY_LOOK` rides `WheelBob.lift()`
-## over the ground it has covered while it is covering any, about a pixel on the body alone — see
-## `_draw_eight_view()` for the wheels it leaves on the ground — and sits still the tick it stops.
-func _current_bob() -> float:
-	if WHEELS_BY_LOOK.has(def.look):
-		return WheelBob.lift(_path_travelled) if _gait_moving else 0.0
-	if def.pursues or is_leaving:
-		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
-	if def.mobile and def.speed > 0.0 and path.size() > 1 and not is_telegraphing_still():
-		return -absf(sin(_path_travelled * BOB_PER_PX)) * BOB_HEIGHT
-	return 0.0
-
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame
-# alternation (`CrowdAgent._advance_walker_gait()`/`_walker_gait_frame()`), applied generally to
-# whichever family a `_draw_*` below reads it from. The bob above is unchanged and stays the cue
-# for every family that was not given a second frame this round.
+# alternation (`WalkerLook.advance()`/`gait_frame()`): the stride is kept here, by the ground the
+# event covers, and read by whichever look draws a second frame (`EventLook.gait_is_stepping()`).
 
 ## The mother's and the walker's own rate, in radians of gait phase per pixel walked. Pinned again
 ## here rather than shared: neither `Stroller` nor `CrowdAgent` exposes it as a constant reachable
 ## from this file, and a cross-file literal agreement is worth restating rather than importing.
 const GAIT_RATE := 0.09
 
-## A few seconds per swap — slow enough that a café frontage reads as sitting rather than
-## fidgeting. See `_idle_stepping()`.
-const SITTER_IDLE_PERIOD := 3.4
-## A strum's own tempo. See `_idle_stepping()`.
-const BUSKER_STRUM_PERIOD := 0.5
-## A brush stroke's, for a poster crew pasting. See `POSTER_CREW_BY_VIEW_B`.
-const POSTER_CREW_PASTE_PERIOD := 0.8
-
-## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_process()`
-## passes `_path_travelled`'s own delta, which is never negative) and records whether anything
-## moved at all, which is the "stopped" gate `_gait_stepping()` reads. Called once per tick, at
-## every exit from `_process()`, the same "add the distance once, however the caller reached this
-## point" shape `CrowdAgent._advance_walker_gait()` has — asking `_draw_body()` to do it would
-## double the addition once per halo ring, exactly the trap that function's own doc names.
+## Advances `_gait_phase` by `moved` (px covered this tick, positive or exactly zero — `_tick()`
+## passes `_path_travelled`'s own delta, which is never negative) and records whether anything moved
+## at all, which is the "stopped" gate `EventLook.gait_is_stepping()` reads. Called once per tick, at
+## every exit from `_tick()`, the same "add the distance once, however the caller reached this
+## point" shape `WalkerLook.advance()` has — asking `EventLook.draw_body()` to do it would double
+## the addition once per halo ring, exactly the trap that function's own doc names.
 func _advance_gait(moved: float) -> void:
 	_gait_moving = moved > 0.0
 	_gait_phase = wrapf(_gait_phase + moved * GAIT_RATE, 0.0, TAU)
 
-## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
-## stride while `_advance_gait()` last saw ground covered, frame a (rest) otherwise — the walker's
-## own `_walker_gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything move this
-## tick" instead of a speed floor, since an event's own stop states (`is_waiting()`, `is_chatting()`,
-## `is_telegraphing_still()`) already read as zero distance covered rather than a small residual
-## speed to floor against. A pure query on state `_process()` already settled this tick, so calling
-## it more than once — the main draw, then once per halo ring — always agrees with itself.
-func _gait_stepping() -> bool:
-	return _gait_moving and sin(_gait_phase * 2.0) > 0.0
-
-## Whether the stride is in its second half — the half a stepping normal dog takes its opposite
-## step in (`dog_picture()`). `_gait_stepping()` is true twice per turn of `_gait_phase`, once in
-## each half, so the two together split the turn into four equal beats: step, rest, opposite step,
-## rest, each `PI / 2 / GAIT_RATE` (17.5px) of ground. The dog therefore changes picture exactly
-## when the dog walker's own two frames swap, and a whole four-beat walk is 70px: a beat is 545ms
-## at the dog walker's 32px/s, close to the 450ms the pictures were reviewed at, and 132ms at the
-## loose dog's 132px/s, where the dog is running.
-func _gait_second_half() -> bool:
-	return _gait_phase >= PI
-
-## The victim's own short scripted walk to the van (`VICTIM_STANDING_OFFSET` over
-## `VICTIM_TAKEN_OVER` seconds, `_update_the_take()`) is a straight-line lerp on `age` rather than
-## anything that touches `_path_travelled`, so it gets its own derived stride instead of sharing
-## `_gait_phase` — a persistent field would have nothing to reset between takes that `age -
-## _victim_taken_at` restarting at zero does not already give it. The walk is at a constant speed
-## by construction (linear interpolation over a fixed time), so the distance covered by moment
-## `t` is exactly `t * (VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER)`, fed through the same
-## `GAIT_RATE` and doubled-phase test `_gait_stepping()` uses. `sin(0) == 0`, so the walk always
-## starts on frame a rather than mid-stride.
-func _victim_gait_stepping() -> bool:
-	if not is_taking_a_victim():
-		return false
-	var elapsed := age - _victim_taken_at
-	var speed := VICTIM_STANDING_OFFSET / VICTIM_TAKEN_OVER
-	return sin(elapsed * speed * GAIT_RATE * 2.0) > 0.0
-
 ## A deterministic 0..1 from this instance's own siting position, an index and a salt — the same
-## hash `_flock_roll()` already uses for a flock's own scatter, generalised to one index (0) since
+## hash `EventFlock._roll()` already uses for a flock's own scatter, generalised to one index (0) since
 ## nothing outside a flock needs more than one draw. No global RNG is reachable from here, and
 ## streaming an instance out and back in must not draw from one twice; a hash of where the day
 ## placed it answers the same way every time the same plan places the same instance.
@@ -5295,2048 +1800,171 @@ func _position_roll(salt: int) -> float:
 	var mixed := int(position.x) * 73856093 + int(position.y) * 19349663 + salt * 2971215073
 	return float(absi(mixed) % 4096) / 4096.0
 
-## Whether the café sitters' or the busker's own idle frame is up right now: a plain 50/50 split of
-## `period` seconds, offset per instance by `_idle_phase_offset` so two placed the same day do not
-## swap in lockstep. Driven by `_clock` rather than `age`, the same simulated-time clock `landed()`
-## already measures against, so a paused game holds the frame rather than drifting it.
-func _idle_stepping(period: float) -> bool:
-	var phase := fmod(_clock + _idle_phase_offset * period, period)
-	return phase >= period * 0.5
-
 # ------------------------------------------------------------------ the halo ---
-# The ring itself is `EntityHalo`'s job now, shared with `CrowdAgent` — see that class for the
-# offsets, the shared material, and why a `canvas_item` shader on this entity's own sprite could
-# not have bloomed outward on its own.
-
-## The drop shadow under an entity, drawn for the entity itself and skipped for its halo.
-##
-## *(2026-09-07, the player: "the halo should not include the shadow".)* `EntityHalo` re-runs
-## `_draw_body()` on its own canvas to trace the silhouette, and the shadow is the first thing
-## `_draw_body()` puts down — so without this the ellipse got traced too, putting a soft amber lobe
-## on the pavement beside every glowing entity. **The shadow is not part of the thing**: it is the
-## ground under it, and a cue that means *this is charging you* has nothing to say about the ground.
-##
-## Routed through here rather than guarded at each of the fifteen call sites, so a `_draw_*` helper
-## added later gets the rule by using the same function every other one uses.
-func _draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
-	if canvas == _halo:
-		return
-	Sprites.draw_shadow(canvas, at, radius)
-
-## The shadow for a row read off its own `GroundShape` rather than a fixed radius — every
-## spread-drawn row (`_draw_spread`, `_draw_cafe`, `_draw_protest`, `_draw_firefight`,
-## `_draw_wide_scene`'s own fallback) and the stationary vehicles (`_draw_stationary_vehicle`).
-## Same halo guard as `_draw_shadow` above, routed through `shape.draw_shadow()` along
-## `_solid_axis()` — a point shape ignores the axis, same as `GroundShape.draw_shadow()` does.
-func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Vector2.ZERO) -> void:
-	if canvas == _halo:
-		return
-	shape.draw_shadow(canvas, at, _solid_axis())
-
-## This row's own body shadow: one `GroundShape` shadow per solid piece, at the piece's own offset
-## along the spread axis. The single ellipse or capsule every row drew before, for anything that
-## declares no parts; two patches under two cars for the one row that does, so the ground under a
-## crash is dark where the cars are and lit where the picture leaves a way through.
-##
-## `def.draws_body_shadow` opts a row out entirely (its own doc names which) — leaving its
-## body and its picture untouched: this is the one function that puts a shadow patch down, so
-## refusing here is the whole of "no shadow" rather than a special case at each call site.
-func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
-	if not def.draws_body_shadow:
-		return
-	for piece in def.parts():
-		_draw_shape_shadow(canvas, piece.shape,
-				origin + _spread_at(piece.offset_for(_spread_vertical)))
+# The ring itself is `EntityHalo`'s, shared with `CrowdAgent` — see that class for the offsets, the
+# shared material, and why a `canvas_item` shader on this entity's own sprite could not bloom
+# outward on its own.
 
 ## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
 ## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
-## `_spread_at()` already lays the drawn body along.
-func _spread_axis() -> Vector2:
+## `spread_at()` already lays the drawn body along.
+func spread_axis() -> Vector2:
 	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
 
-## The ground-plane direction this instance's own solid body's spine lies along, for whichever of
-## the three families ever has a segment shape: a car that drives (`EventDef.drives`), along its
-## own heading; a spread-drawn row (`_spread_axis()`, above); or the one stationary-vehicle row wide
-## enough to be a segment (`moving_van` — see `GroundShape.band()` on that row), which lies along
-## whichever of the street's axes `_stationary_vehicle_side` already draws it on. Never asked of a
-## point shape, where an axis means nothing.
-func _solid_axis() -> Vector2:
-	# A car's body lies along the way it is driving, and turns with it (`_turn_the_body()`).
-	if def.drives:
-		return _heading.normalized() if not _heading.is_zero_approx() else Vector2.RIGHT
-	if def.has_a_spread or def.look == EventDef.Look.PROTEST or def.look == EventDef.Look.FIREFIGHT:
-		return _spread_axis()
-	return Vector2.RIGHT if _stationary_vehicle_side else Vector2.DOWN
-
-## `_solid_axis()`, read by `DebugLayers` so its shadow and bounding-box layers rotate a segment
-## the same way `_draw_shape_shadow()` and `_build_obstruction()` already do, rather than guessing
-## an axis of their own.
+## The ground-plane direction this instance's own solid body's spine lies along
+## (`EventFootprints.solid_axis_of()`): its heading for a car that drives, its street's axis for a
+## spread, the side it shows for a stationary vehicle. Read by its body, its field, its behaviours,
+## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere.
 func solid_axis() -> Vector2:
-	return _solid_axis()
+	return EventFootprints.solid_axis_of(def, _heading, _spread_vertical, _stationary_vehicle_side)
 
-## Forwards to `_halo`'s own `set_glow()` — see `EntityHalo`'s class doc for the duck-typed shape
-## `CrowdAgent` shares. Called by `ExcitementHalo` once a frame for every live instance — above
-## zero for the handful `select_sources()` picked, zero for everything else. Refuses a nonzero
-## glow once the event is finished, because a finished event still sits in
-## `EventManager.instances()` for one more frame than its `contribution_at()` (already zero) would
-## otherwise buy it.
+## **This event's rim** (`SourceRim`), as `ExcitementHalo` lights it once a frame. Its own body's
+## rim, with two rules of an event's own on top of the lifetime every rim keeps:
 ##
-## **The rim is built on the first nonzero glow and given back once it has faded all the way out**
-## — not the frame the target first reaches zero, or a source that just left `MAX_SOURCES` would be
-## cut off mid-fade instead of draining over `EntityHalo.FADE_OUT_SECONDS`. The same lifetime
-## `CrowdAgent.set_halo_strength()` gives its own rim; `release_halo()` is how it is given back.
-func set_halo_strength(strength: float, colour: Color) -> void:
-	# **While a guard walks away from his barrier any rim is the barrier's**, on the band
-	# (`RoadblockBand`'s own) and not on the man, who is costing her nothing. **An instance
-	# never holds two rims at once** (`ExcitementHalo` counts one block per instance against
-	# `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built, and the
-	# band's on the spot as the instance's own is wanted again once the barrier stands alone.
-	if is_leaving and _is_a_guard_leaving_his_barrier() and _band != null and not is_finished:
-		if _halo:
-			EntityHalo.release(_halo)
-			_halo = null
-		_glow_the_band(strength, colour)
-		return
-	if _band_halo and strength > 0.0 and not is_finished:
-		_release_the_band_halo()
-	else:
-		_glow_the_band(0.0, colour)
-	if strength <= 0.0 or is_finished:
-		if _halo:
-			_halo.set_glow(0.0, colour)
-			if _halo.is_faded_out():
-				EntityHalo.release(_halo)
-				_halo = null
-		return
-	if not _halo:
-		_build_halo()
-	_halo.set_glow(strength, colour)
+## - **A finished event refuses a lit rim**, since it still sits among the live instances for one
+##   more frame than its field (already zero) would otherwise buy it.
+## - **While a guard walks away from his barrier any rim is the barrier's**, on the band
+##   (`RoadblockLook.RoadblockBand`'s own, `band`) and not on the man, who is costing her nothing.
+##   **An instance never holds two rims at once** (`ExcitementHalo` counts one block per source
+##   against `EntityHalo.RIM_BUDGET`): the man's is given back on the spot as the band's is built,
+##   and the band's on the spot as the instance's own is wanted again once the barrier stands alone.
+class Rim extends SourceRim:
+	var _event: EventInstance
+	## The band's rim, built when a departing guard's barrier becomes the thing costing her.
+	var band: SourceRim
 
-## The band's own rim, built when a departing guard's barrier becomes the thing costing her and
-## given back once it has faded.
-func _glow_the_band(strength: float, colour: Color) -> void:
-	if strength <= 0.0:
-		if _band_halo:
-			_band_halo.set_glow(0.0, colour)
-			if _band_halo.is_faded_out():
-				_release_the_band_halo()
-		return
-	if _band_halo == null:
-		_band_halo = EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
-		_band.add_child(_band_halo)
-	_band_halo.set_glow(strength, colour)
+	func _init(event: EventInstance) -> void:
+		super(event._build_halo)
+		_event = event
+		band = SourceRim.new(event._build_band_halo)
 
-var _band_halo: EntityHalo
+	func set_strength(strength: float, colour: Color) -> void:
+		if _event._the_band_carries_the_rim():
+			_let_go()
+			band.set_strength(strength, colour)
+			return
+		if band.is_held() and strength > 0.0 and not _event.is_finished:
+			band.release()
+		else:
+			band.set_strength(0.0, colour)
+		super.set_strength(0.0 if _event.is_finished else strength, colour)
+
+	func is_held() -> bool:
+		return super.is_held() or band.is_held()
+
+	func release() -> void:
+		_let_go()
+		band.release()
+
+	## Gives back the rims that stand behind a slice of the look (`SpreadLook.Slice`), on the spot,
+	## when the look is about to let go of its slices (`SpreadLook.letting_go_of_the_slices`).
+	func release_on_slices() -> void:
+		if _halo != null and _halo.get_parent() is SpreadLook.Slice:
+			_let_go()
+		var banded := band.entity_halo()
+		if banded != null and banded.get_parent() is SpreadLook.Slice:
+			band.release()
+
+## Whether the band carries this event's rim: a guard has left the barrier he stood at and the band
+## still stands.
+func _the_band_carries_the_rim() -> bool:
+	return is_leaving and barrier_post != null and barrier_post.has_left_its_body() \
+			and look.band_node() != null and not is_finished
+
+## The band's rim, behind the band's first slice, drawn before every other part of the band, as a
+## rim is behind the picture it outlines (`_rim_holder()`).
+func _build_band_halo() -> EntityHalo:
+	var halo := EntityHalo.new(_draw_the_band_for_the_halo, func() -> float: return 0.0)
+	var holder := (look as RoadblockLook).band_rim_holder()
+	holder.add_child(halo)
+	halo.position = look.band_node().global_position - holder.global_position
+	return halo
 
 func _draw_the_band_for_the_halo(canvas: CanvasItem) -> void:
-	_draw_the_band(canvas, Vector2.ZERO)
-
-func _release_the_band_halo() -> void:
-	if _band_halo:
-		EntityHalo.release(_band_halo)
-		_band_halo = null
-
-## Whether this instance holds a rim right now, lit or still fading — what `ExcitementHalo` counts
-## against `EntityHalo.RIM_BUDGET`.
-func holds_a_halo() -> bool:
-	return _halo != null or _band_halo != null
-
-## Frees the rim on the spot, never through `queue_free()`: a rim keeps its block in the web
-## renderer's instance buffer until the engine frees it, and a queued free lands at the end of the
-## frame, after any rim built in the meantime has already been handed a block — see
-## `EntityHalo.release()`. Called by `set_halo_strength()` once a fade is over, and by
-## `ExcitementHalo` for an instance queued for deletion, whose body goes before the next frame is
-## drawn anyway.
-func release_halo() -> void:
-	if _halo:
-		EntityHalo.release(_halo)
-		_halo = null
-	_release_the_band_halo()
-
-# ------------------------------------------------------------------ the mark ---
-# **Nothing draws a field.** A ring communicates a falloff radius, which is a number, and a number
-# is not a threat. What stands over an entity instead is a small mark, and it earns its place by
-# three rules.
-
-## How far above the entity the mark floats, and how big it is at full strength.
-const MARK_HEIGHT := 44.0
-const MARK_WIDTH := 15.0
-const MARK_FLASHES_PER_SECOND := 3.0
-
-## The caret's own answer, 0 (none), 1 (amber) or 2 (doubled red), computed once and cached —
-## `wants_a_mark()`, `mark_colour()`, `_draw_mark()` and `_picture_key()` all ask in the same
-## frame, and each is a fresh sampling loop over `expected_impact_at()` or `will_be_lethal()` if
-## they do not share one. **Cache per frame, the way the halo already does its own once-a-frame
-## work**, rather than pricing the projection four times over for every visible source every draw.
-##
-## **Keyed on where she is as well as on the clock, and the pair is load-bearing.** The answer is
-## a projection of this event's course against her position, so it goes stale when either moves —
-## and the two do not move together: `player_at` is written by `EventManager` and `ExcitementHalo`
-## once a frame, from outside, at whatever point in the frame those nodes run, while
-## `_redraw_if_the_picture_changed()` asks for the caret at the end of this instance's own
-## `_process()`. Keyed on `age` alone, the first of those to ask fixes the answer for the whole
-## tick, and a caret computed against last frame's position — or against `Vector2.INF`, before
-## anything has said where she is at all — is the one that stands.
-var _caret_strength_age := -1.0
-var _caret_strength_at := Vector2.INF
-var _caret_strength_cache := 0
-
-func _caret_strength() -> int:
-	if _caret_strength_age == age and _caret_strength_at == player_at:
-		return _caret_strength_cache
-	_caret_strength_age = age
-	_caret_strength_at = player_at
-	_caret_strength_cache = 0
-	# A permanent feature of a fixed map never appears, so there is no moment to mark: the same
-	# reason the fairness contract exempts an `AMBIENT` row.
-	if not (is_finished or is_leaving or def.kind == GameEnums.EventKind.AMBIENT):
-		if will_be_lethal(player_at):
-			_caret_strength_cache = 2
-		elif expected_impact_at(player_at) >= Tuning.EXPECTED_IMPACT_POINTS:
-			_caret_strength_cache = 1
-	return _caret_strength_cache
-
-## Whether this event is worth a mark at all.
-##
-## **The mark is raised by what a thing is projected to do to her, held still, and by nothing
-## else.** *(2026-09-08, the player: "carets shouldn't be chosen by source value but by expected
-## impact value".)* A row's own declared cost does not decide it — `expected_impact_at()` and
-## `will_be_lethal()` do, at wherever she is
-## actually standing and however this thing is actually moving, so the same row is marked at one
-## moment and not at the next: a café she is standing in is unmarked, and a cyclist whose line
-## reaches her is marked while one passing wide of her is not.
-##
-## **A stationary thing never earns a caret.** Held still, nothing about it changes under the
-## projection — see `expected_impact_at()` — which is the halo's job from the moment she is in its
-## field, not the caret's.
-func wants_a_mark() -> bool:
-	return _caret_strength() > 0
-
-## How hard the mark is breathing, 0..1, from what the event is emitting right now.
-##
-## **This is the one thing the ring did that a symbol does not get for free**, and it is
-## load-bearing: a pulsing event can be timed and slipped past between beats, and a mark that
-## sat there at a constant size would turn the pulse envelope from something to play against
-## into something random.
-func mark_swell() -> float:
-	if def.intensity <= 0.0:
-		return 1.0
-	return clampf(current_intensity() / def.intensity, 0.0, 1.0)
-
-## What colour the mark is, and it means exactly one thing: **how bad this is.**
-##
-## **Colour is the wrong channel for a *phase*.** Amber while telegraphing and red once live is a
-## good sentence and a cue nobody can read, because of **streaming**: `EVENT_STREAM_RADIUS` is 900px
-## and no telegraph in the catalogue is longer than four seconds, so all but the `AHEAD_OF_PLAYER`
-## rows finish telegraphing before they are anywhere near the screen. In play that makes amber mean
-## *near* and red mean *far*, which is a colour carrying no information and being read as something
-## else.
-##
-## **Follows the strength `_caret_strength()` computed, not `def.hard_fail`.** *(2026-09-08, the
-## player: "we can keep the double red == lethal", then "and not all lethal things need a caret
-## either".)* A `hard_fail` row still reads doubled red exactly when its own current course would
-## put her inside the radius that ends the day — `will_be_lethal()` — and reads amber like anything
-## else the rest of the time: a robber waiting in an alley she is not in carries no mark at all
-## until he stands up and comes.
-##
-## So the colour is the scale and the **flash** — visible whether or not she was there when the
-## event started — is what says it has not happened yet. See `_draw_mark`.
-func mark_colour() -> Color:
-	return Palette.MARK_LETHAL if _caret_strength() == 2 else Palette.MARK_COSTLY
-
-## A caret over anything worth looking at, breathing with what it is currently emitting.
-##
-## What is deliberately *not* here: any drawing of where the danger reaches. Nothing draws a field.
-func _draw_mark() -> void:
-	if not wants_a_mark():
-		return
-	# **The flash is the phase**, and the only channel that can carry it: it flashes while
-	# telegraphing — *this has not happened yet* — and is steady once it has. The colour cannot do
-	# this, because a telegraph is usually over before the event is on screen; a flash is a property
-	# of the mark rather than of a moment she had to be present for.
-	if is_telegraphing() and fmod(age * MARK_FLASHES_PER_SECOND, 1.0) > 0.55:
-		return
-
-	var swell := mark_swell()
-	# Never all the way to nothing: between beats the mark shrinks, it does not vanish, or a
-	# pulsing event would read as flickering in and out of existence.
-	var scale := 0.55 + 0.45 * swell
-	var at := Vector2(0.0, _picture_drop_now() - (MARK_HEIGHT + 10.0 * swell))
-	Sprites.draw_caret(self, at, MARK_WIDTH * scale, mark_colour())
-	if _caret_strength() == 2:
-		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		Sprites.draw_caret(self, at - Vector2(0.0, MARK_WIDTH * scale * 0.85),
-				MARK_WIDTH * scale, mark_colour())
-
-## The rectangle, in this node's own space, the caret `_draw_mark()` would draw this frame — its one
-## or two chevrons at their swell, outline included — or an empty one when no mark is wanted. The
-## same arithmetic the drawing does, so a test can ask what is actually drawn.
-func mark_rect() -> Rect2:
-	if not wants_a_mark():
-		return Rect2()
-	var swell := mark_swell()
-	var width := MARK_WIDTH * (0.55 + 0.45 * swell)
-	var at := Vector2(0.0, _picture_drop_now() - (MARK_HEIGHT + 10.0 * swell))
-	var top := at.y - width * 0.8
-	if _caret_strength() == 2:
-		top -= width * 0.85
-	var outline := 1.0
-	return Rect2(-width - outline, top - outline, (width + outline) * 2.0,
-			at.y + width * 0.5 + outline - (top - outline))
-
-## The largest rectangle `mark_rect()` can ever be, in a row's own space: the doubled caret at full
-## swell, outline included — what `footprint_of()` keeps off screen for a row that can be marked.
-static func largest_mark_rect() -> Rect2:
-	var top := -(MARK_HEIGHT + 10.0) - MARK_WIDTH * 0.8 - MARK_WIDTH * 0.85 - 1.0
-	var bottom := -(MARK_HEIGHT + 10.0) + MARK_WIDTH * 0.5 + 1.0
-	return Rect2(-MARK_WIDTH - 1.0, top, (MARK_WIDTH + 1.0) * 2.0, bottom - top)
-
-## The rectangle, in this node's own space, of what it draws this frame: its picture (the box of
-## every picture its look can draw, since which view is drawn turns with its heading), its shadow at
-## its feet, its danger caret as `_draw_mark()` would draw it now (`mark_rect()`, which asks the
-## instance's own projection of her), and a street fire's whole burning front and smoke
-## (`_fire_front_box()`). What `tests/test_no_pop_in.gd` checks against the view on a
-## thing's first frame: the caret is measured from the drawing's own numbers, not from
-## `footprint_of()`'s worst case, so a footprint that leaves it out fails there.
-func drawn_rect_now() -> Rect2:
-	var rect := drawn_box()
-	for picture in family_sources(def.look):
-		var size := _native_size(picture)
-		if size.x > 0.0 and size.y > 0.0:
-			rect = rect.merge(Rect2(-size.x * 0.5, -size.y, size.x, size.y))
-	if def.draws_body_shadow and def.shape != null:
-		var r := def.obstructs_radius if def.obstructs_radius > 0.0 else def.shape.radius
-		rect = rect.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if def.look == EventDef.Look.LOOSE_DOG:
-		var behind := LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH
-		rect = rect.merge(Rect2(Vector2(minf(behind, 0.0), -8.0),
-				Vector2(absf(behind), 6.0)).grow(1.0))
-	rect.position.y += _current_bob()
-	if _halo != null:
-		rect = rect.grow(EntityHalo.HALO_MARGIN)
-	var mark := mark_rect()
-	if mark.has_area():
-		rect = rect.merge(mark)
-	var front := _fire_front_box()
-	if front.has_area():
-		rect = rect.merge(front)
-	return rect
-
-## The single body-drawing entry point `_draw()` calls for the primary render and `EntityHalo`
-## calls, repeatedly at a ring of offsets, for the halo — see `_build_halo()`. Gating it here
-## rather than only in `_draw()` is what actually hides an alley post's own halo during its hold:
-## `EntityHalo` never asks `_draw()`, it re-runs this function directly, and its own alpha fades
-## over `EntityHalo.FADE_OUT_SECONDS` (0.8s) rather than cutting, which would have left a fading
-## ring around a man who is not there for most of a two-second hold if this guard lived only in
-## `_draw()`. Drawing nothing is instant either way; the fade timer keeps running underneath, so
-## the ring reappears at whatever brightness it already had rather than fading back in. A hut or a
-## gate keeps both its picture and its ring, because it never left.
-# ------------------------------------------------------------- the atlas ---
-# **One page for the whole catalogue, held from boot.** *(PLAYTEST-108: "we can do one events page
-# for now".)* Every picture in this file — the checkpoint kit and the finale's crater included — is
-# a region of `ATLAS_GROUP`, and `EventManager` is what holds a reference on it while a day's
-# events exist; `main.RESIDENT_GROUPS` is what keeps it there for the life of the process, so no
-# event ever costs a read from disk in a played frame.
-#
-# **This replaces one runtime-packed group per `EventDef.Look`.** A picture two looks both draw —
-# the guard, the dog, the boom kit — was packed into each of their groups, because a family that
-# could be released had to be self-contained; on one page each picture is one region and the
-# duplicates are gone. A single group also means nothing here has to decide *when* a family
-# arrives: a baked page is there the moment it is acquired, so an instance never draws a source
-# picture "until its pack is collected".
-
-## The one baked page everything in this file draws from.
-const ATLAS_GROUP := &"events"
-
-## The picture to draw: a region of the `events` page, whose own `get_size()` is the source
-## picture's size, so every offset, extent, anchor and mirror below reads exactly the number it
-## read from a preloaded texture.
-##
-## **Null, with an engine error naming the region, if nothing holds the page** — `AtlasLibrary`'s
-## own rule, and the reason `EventManager` acquires the group rather than trusting the boot's
-## residency. Nothing here defends against that: a drawing that quietly fell back to loading the
-## picture itself is the second resident copy the milestone exists to remove.
-static func _drawn(picture: String) -> AtlasTexture:
-	return AtlasLibrary.region(StringName(picture))
-
-## A picture's own size, answered from the region table with nothing acquired and no texture
-## loaded — what the layout arithmetic around a spread, a café rank, a protest rank or a badge
-## needs. `Vector2` rather than `Vector2i` so it is a drop-in for the `get_size()` these call sites
-## used to ask a texture for.
-static func _native_size(picture: String) -> Vector2:
-	return Vector2(AtlasLibrary.native_size(StringName(picture)))
-
-## The basement vent's floor grate, for `InteriorEvents` to lay at every vent — see `STEAM_GRATE`
-## for why no instance draws it. Fetched here rather than by name there, so the region is still
-## named in this file with every other picture of the page.
-static func steam_grate() -> AtlasTexture:
-	return _drawn(STEAM_GRATE)
-
-## Every picture a row with this look can draw, as repository paths.
-##
-## Read straight off `_draw_body()`'s own arms: if a branch there can reach a picture, it is here.
-## A look whose arm draws nothing in the street (`BURNT_SHELL`) lists its badge silhouette instead.
-## Not read by the live draw path, which has the path already in hand — this is the one place
-## "everything a look can draw" is enumerable, which is what a completeness check against
-## `assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`), the same role
-## `Stroller.sources_by_group()` plays for the rig.
-static func family_sources(look: EventDef.Look) -> Array[String]:
-	var sources: Dictionary = {}
-	match look:
-		EventDef.Look.CAT:
-			_collect_views(sources, [CAT_CROUCHED_BY_VIEW, CAT_RUNNING_BY_VIEW,
-					CAT_RUNNING_BY_VIEW_B])
-		EventDef.Look.MOUSE:
-			_collect_views(sources, [MOUSE_BY_VIEW, MOUSE_BY_VIEW_B])
-		EventDef.Look.YELLER:
-			_collect_views(sources, [YELLER_BY_VIEW, YELLER_BY_VIEW_B])
-		EventDef.Look.NEIGHBOR:
-			_collect_views(sources, [NEIGHBOR_BY_VIEW, NEIGHBOR_BY_VIEW_B])
-		EventDef.Look.DOG_WALKER:
-			_collect_views(sources, [PERSON_BY_VIEW, PERSON_BY_VIEW_B, DOG_BY_VIEW, DOG_BY_VIEW_B,
-					DOG_BY_VIEW_C])
-		EventDef.Look.CAFE:
-			_collect_views(sources, [CAFE_SITTER_BY_VIEW, CAFE_SITTER_BY_VIEW_B])
-			_collect(sources, [CAFE_TABLE])
-		EventDef.Look.DELIVERY_VAN:
-			_collect_views(sources, [DELIVERY_VAN_BY_VIEW])
-		EventDef.Look.BUSKER:
-			_collect_views(sources, [BUSKER_BY_VIEW, BUSKER_BY_VIEW_B])
-		EventDef.Look.ROADWORKS:
-			_collect(sources, [BARRIER_SEGMENT, BARRIER_SEGMENT_VERTICAL, BARRIER_END])
-		EventDef.Look.FIRE_ENGINE:
-			_collect_views(sources, [FIRE_ENGINE_BY_VIEW, FIRE_ENGINE_WHEELS_BY_VIEW])
-		EventDef.Look.BURNING_BUILDING:
-			_collect(sources, [FLAME, STEAM, STEAM_B])
-		EventDef.Look.BURNT_SHELL:
-			# Nothing in the street — the building behind it is drawn burnt instead — so its one
-			# picture is its badge silhouette (`icon_for()`).
-			_collect(sources, [RUBBLE])
-		EventDef.Look.LOOSE_DOG:
-			_collect_views(sources, [DOG_BY_VIEW, DOG_BY_VIEW_B, DOG_BY_VIEW_C])
-		EventDef.Look.STALL:
-			_collect(sources, [STALL])
-		EventDef.Look.LEAF_BLOWER:
-			_collect_views(sources, [LEAF_BLOWER_BY_VIEW, LEAF_BLOWER_BY_VIEW_B])
-		EventDef.Look.BIRDS:
-			_collect_views(sources, [PIGEON_BY_VIEW, PIGEON_DOWN_BY_VIEW])
-		EventDef.Look.CYCLIST:
-			_collect_views(sources, [CYCLIST_BY_VIEW, CYCLIST_BY_VIEW_B, PELICAN_BY_VIEW,
-					PELICAN_BY_VIEW_B])
-		EventDef.Look.ICE_CREAM_VAN:
-			_collect_views(sources, [ICE_CREAM_VAN_BY_VIEW])
-		EventDef.Look.LORRY:
-			_collect_views(sources, [LORRY_BY_VIEW, LORRY_WHEELS_BY_VIEW])
-		EventDef.Look.CHARGING_DOG:
-			_collect_views(sources, [CHARGING_DOG_RESTING_BY_VIEW, CHARGING_DOG_ALERT_BY_VIEW,
-					CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B])
-		EventDef.Look.CHATTING_MOTHER:
-			_collect_views(sources, [CHATTING_MOTHER_WALKING_BY_VIEW,
-					CHATTING_MOTHER_WALKING_BY_VIEW_B, CHATTING_MOTHER_TALKING_BY_VIEW])
-		EventDef.Look.POLICE_CAR:
-			_collect_views(sources, [POLICE_CAR_BY_VIEW, POLICE_CAR_WHEELS_BY_VIEW])
-		EventDef.Look.POSTER_CREW:
-			_collect_views(sources, [POSTER_CREW_BY_VIEW, POSTER_CREW_BY_VIEW_B])
-		EventDef.Look.POSTER_CREW_SQUARE:
-			_collect_views(sources, [POSTER_CREW_SQUARE_BY_VIEW])
-		EventDef.Look.ROADBLOCK:
-			_collect(sources, [ROADBLOCK_SEGMENT, ROADBLOCK_SEGMENT_VERTICAL, ROADBLOCK_END])
-			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
-					GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.UNMARKED_VAN:
-			_collect_views(sources, [UNMARKED_VAN_BY_VIEW, UNMARKED_VAN_WHEELS_BY_VIEW,
-					VAN_VICTIM_BY_VIEW, VAN_VICTIM_BY_VIEW_B])
-		EventDef.Look.ROBBER:
-			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_ALERT_BY_VIEW,
-					ROBBER_ALERT_BY_VIEW_B, ROBBER_LUNGING_BY_VIEW, ROBBER_LUNGING_BY_VIEW_B])
-		EventDef.Look.ROBBER_GIVING_CHASE:
-			# Sent already chasing: no notice, so no alert to draw.
-			_collect_views(sources, [ROBBER_WAITING_BY_VIEW, ROBBER_LUNGING_BY_VIEW,
-					ROBBER_LUNGING_BY_VIEW_B])
-		EventDef.Look.RIOT_VAN:
-			_collect_views(sources, [RIOT_VAN_BY_VIEW, RIOT_VAN_WHEELS_BY_VIEW])
-		EventDef.Look.ARMY_TRUCK:
-			_collect_views(sources, [ARMY_TRUCK_BY_VIEW, ARMY_TRUCK_WHEELS_BY_VIEW])
-		EventDef.Look.BARRICADE:
-			_collect(sources, [BARRICADE_PILE])
-		EventDef.Look.PROTEST:
-			_collect_views(sources, [PROTESTER_BY_VIEW, PROTESTER_BY_VIEW_B])
-			_collect(sources, [PROTESTER])
-			_collect(sources, _POINTING_POSES)
-		EventDef.Look.FIREFIGHT:
-			_collect(sources, [GUNMAN])
-		EventDef.Look.FALLEN_TREE:
-			_collect(sources, [FALLEN_TREE, FALLEN_TREE_VERTICAL])
-		EventDef.Look.CAR_ACCIDENT:
-			_collect(sources, [CAR_ACCIDENT, CAR_ACCIDENT_VERTICAL, CAR_ACCIDENT_SHADOW,
-					CAR_ACCIDENT_VERTICAL_SHADOW, CAR_ACCIDENT_B, CAR_ACCIDENT_VERTICAL_B])
-		EventDef.Look.BURST_MAIN:
-			_collect(sources, [BURST_MAIN, BURST_MAIN_VERTICAL, BURST_MAIN_B, BURST_MAIN_VERTICAL_B])
-		EventDef.Look.COLLAPSED_FRONTAGE:
-			_collect(sources, [COLLAPSED_FRONTAGE])
-		EventDef.Look.SCAFFOLDING:
-			_collect(sources, [SCAFFOLDING])
-		EventDef.Look.SKIP:
-			_collect(sources, [SKIP])
-		EventDef.Look.MOVING_VAN:
-			_collect(sources, [MOVING_VAN, MOVING_VAN_VERTICAL])
-		EventDef.Look.BURNT_OUT_CAR:
-			_collect(sources, [BURNT_OUT_CAR, BURNT_OUT_CAR_VERTICAL])
-		EventDef.Look.CHECKPOINT_HUT:
-			_collect(sources, [HUT_NORTH, HUT_SOUTH, HUT_EAST, HUT_WEST, GUARD_STANDING,
-					GUARD_ALERT_BY_VIEW["front"]])
-		EventDef.Look.CHECKPOINT_GATE:
-			_collect(sources, [BOOM_GATE_NS_LOWERED, BOOM_GATE_NS_RAISED, BOOM_GATE_EW_LOWERED,
-					BOOM_GATE_EW_RAISED])
-		EventDef.Look.CHECKPOINT_POST:
-			_collect(sources, [GUARD_STANDING, GUARD_ALERT_BY_VIEW["front"]])
-		EventDef.Look.IMPACT_CRATER:
-			_collect(sources, [IMPACT_CRATER])
-		EventDef.Look.DOOR_GUARD:
-			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
-					GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.VAN_GUARD_GIVING_CHASE:
-			# Sent already chasing: no notice, so no alert to draw.
-			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			# The masked man's notice at the foot of the shaft, and the guardsman's out of a vehicle.
-			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
-					GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.POLICEMAN_GIVING_CHASE:
-			# His alert is the man out of a vehicle's; the one a torn poster sends never shows it.
-			_collect_views(sources, [POLICEMAN_WAITING_BY_VIEW, POLICEMAN_ALERT_BY_VIEW,
-					POLICEMAN_LUNGING_BY_VIEW, POLICEMAN_LUNGING_BY_VIEW_B])
-			_collect(sources, [POLICEMAN_LUNGING])
-		EventDef.Look.STEAM:
-			_collect(sources, [STEAM, STEAM_B])
-		EventDef.Look.LOUDSPEAKER_MAST:
-			_collect(sources, [MAST, MAST_LAMP, SOUND_PULSE])
-	# A `Dictionary` while it is being built, because several arms reach the same picture twice —
-	# the dog walker's own dog is the loose dog's, and the guard stands at three different rows —
-	# and a look's pictures are a set rather than a list.
-	var paths: Array[String] = []
-	for picture: String in sources.keys():
-		paths.append(picture)
-	paths.sort()
-	return paths
-
-static func _collect(sources: Dictionary, pictures: Array) -> void:
-	for picture: String in pictures:
-		sources[picture] = true
-
-static func _collect_views(sources: Dictionary, tables: Array) -> void:
-	for table: Dictionary in tables:
-		for view in table.keys():
-			sources[str(table[view])] = true
-
-## The two pedal frames a cyclist draws, `[by_view, by_view_b]`: the pelican's when `is_pelican`
-## is set, the kid's otherwise. The one place the choice is read, so the draw and a test ask the
-## same question.
-func rider_pictures() -> Array[Dictionary]:
-	if is_pelican:
-		return [PELICAN_BY_VIEW, PELICAN_BY_VIEW_B]
-	return [CYCLIST_BY_VIEW, CYCLIST_BY_VIEW_B]
-
-## The charging dog's two frames for this stage, `[by_view, by_view_b]`, `by_view_b` empty for a
-## still pose: sitting while it waits (`is_waiting()`), its alert while it stands for its notice
-## (`is_standing_for_its_notice()`), and the gallop otherwise — the charge, the day-3 dog's approach,
-## and the trot away when it gives up. The one place the choice is read, so the draw, its halo and a
-## test ask the same question.
-func charging_dog_pictures() -> Array[Dictionary]:
-	if is_waiting():
-		return [CHARGING_DOG_RESTING_BY_VIEW, {}]
-	if is_standing_for_its_notice():
-		return [CHARGING_DOG_ALERT_BY_VIEW, {}]
-	return [CHARGING_DOG_BY_VIEW, CHARGING_DOG_BY_VIEW_B]
-
-func _draw_body(canvas: CanvasItem = self) -> void:
-	if is_suppressed_by_its_own_hold():
-		return
-	match def.look:
-		EventDef.Look.CAT:
-			_draw_cat(canvas)
-		EventDef.Look.MOUSE:
-			_draw_eight_view(MOUSE_BY_VIEW, _heading, canvas, false, MOUSE_BY_VIEW_B)
-		EventDef.Look.YELLER:
-			_draw_eight_view(YELLER_BY_VIEW, _heading, canvas, false, YELLER_BY_VIEW_B)
-		EventDef.Look.NEIGHBOR:
-			_draw_eight_view(NEIGHBOR_BY_VIEW, _heading, canvas, false, NEIGHBOR_BY_VIEW_B)
-		EventDef.Look.DOG_WALKER:
-			_draw_dog_walker(canvas)
-		EventDef.Look.CAFE:
-			_draw_cafe(canvas)
-		EventDef.Look.DELIVERY_VAN:
-			# Always sited facing east — `AT_THE_KERB` never overrides `EventScheduler.Planned.
-			# facing`'s own default — so `side_faces_west` now mirrors the parked van where
-			# `_draw_simple`'s old `_heading_is_west()` check never did: that check assumed every
-			# side picture faces east, and `delivery_van.svg` is one of the ones that does not (see
-			# `docs/evidence/svg-vehicles-2026-09-10/README.md`). A cosmetic change to an
-			# already-shipped picture, not a bug fix to gameplay: nothing about its shape, shadow or
-			# obstruction moves.
-			_draw_eight_view(DELIVERY_VAN_BY_VIEW, _heading, canvas, true)
-		EventDef.Look.BUSKER:
-			_draw_busker(canvas)
-		EventDef.Look.ROADWORKS:
-			_draw_spread(_roadwork_segment_texture(_spread_vertical), BARRIER_END, canvas)
-		EventDef.Look.FIRE_ENGINE:
-			# Drawn over its own body like the patrol car (`_body_anchor()`): the body is the
-			# truck's `shape`, and the shadow, which is that shape, stays under the node.
-			var engine_view := _select_view(_heading)
-			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
-			_draw_eight_view(FIRE_ENGINE_BY_VIEW, _heading, canvas, true, {}, false,
-					_body_anchor(engine_view))
-		EventDef.Look.BURNING_BUILDING:
-			_draw_fire(canvas)
-		EventDef.Look.BURNT_SHELL:
-			# Drawn on the building it stands against instead (`City.mark_the_burnt_frontage()`,
-			# `Building.Condition.BURNT`): nothing stands on the sidewalk here, so no picture and no
-			# shadow go down for it. The row's shape is only what its field is measured from.
-			pass
-		EventDef.Look.LOOSE_DOG:
-			_draw_loose_dog(canvas)
-		EventDef.Look.STALL:
-			_draw_spread(STALL, "", canvas)
-		EventDef.Look.LEAF_BLOWER:
-			_draw_eight_view(LEAF_BLOWER_BY_VIEW, _heading, canvas, false, LEAF_BLOWER_BY_VIEW_B)
-		EventDef.Look.BIRDS:
-			_draw_birds(canvas)
-		EventDef.Look.CYCLIST:
-			var rider := rider_pictures()
-			_draw_eight_view(rider[0], _heading, canvas, false, rider[1])
-		EventDef.Look.ICE_CREAM_VAN:
-			# East-authored: always sited facing east, same as `DELIVERY_VAN` above, but
-			# `ice_cream_van.svg` is one of the sources that already faces east, so no
-			# `side_faces_west` override and no change to the picture it draws.
-			_draw_eight_view(ICE_CREAM_VAN_BY_VIEW, _heading, canvas)
-		EventDef.Look.LORRY:
-			# `reversing_lorry`'s own facing is always exactly east or west — `AGAINST_THE_BUILDING`
-			# sets it to `-pavement_inward`, which `_wants_this_side` already refuses unless it is
-			# purely horizontal — so the diagonal and front/back views this table adds are never
-			# actually reachable; the row keeps drawing exactly the side view it always did.
-			_draw_eight_view(LORRY_BY_VIEW, _heading, canvas)
-		EventDef.Look.CHARGING_DOG:
-			var dog := charging_dog_pictures()
-			_draw_eight_view(dog[0], _heading, canvas, false, dog[1])
-		EventDef.Look.CHATTING_MOTHER:
-			_draw_chatting_mother(canvas)
-		EventDef.Look.POLICE_CAR:
-			# East-authored — see `ICE_CREAM_VAN` above — and now a real octant: `police_patrol` is
-			# mobile and turns corners along its own patrol route, so this is the first vehicle row
-			# whose diagonal views are ordinarily reachable rather than a dead branch. Drawn over
-			# its own body rather than standing on its node — see `_body_anchor()` — with the
-			# shadow, which is the body's shape, under the node on the ground.
-			var view := _select_view(_heading)
-			_draw_body_shadow(canvas, Vector2(0.0, -_current_bob()))
-			_draw_eight_view(POLICE_CAR_BY_VIEW, _heading, canvas, false, {}, false,
-					_body_anchor(view))
-		EventDef.Look.POSTER_CREW:
-			var crew := POSTER_CREW_BY_VIEW_B if _idle_stepping(POSTER_CREW_PASTE_PERIOD) \
-					else POSTER_CREW_BY_VIEW
-			_draw_eight_view(crew, _heading, canvas)
-		EventDef.Look.POSTER_CREW_SQUARE:
-			# Sited with no pavement side to turn it, so `_build_placement` leaves its facing at
-			# due east and the row draws its `side` view unmirrored, every time — the same dead
-			# branch `reversing_lorry` has above. The other four views exist so the family is
-			# whole if anything ever does turn one.
-			_draw_eight_view(POSTER_CREW_SQUARE_BY_VIEW, _heading, canvas)
-		EventDef.Look.ROADBLOCK:
-			_draw_roadblock(canvas)
-		EventDef.Look.UNMARKED_VAN:
-			_draw_abduction(canvas)
-		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
-			_draw_robber(canvas)
-		EventDef.Look.RIOT_VAN:
-			# West-authored, like `unmarked_van` and `army_truck` — see `RIOT_VAN_BY_VIEW`'s own doc
-			# comment above for why the side view needs the `side_faces_west` override to match
-			# `facings.csv` rather than M56's hand-written octant match, which had it backwards.
-			_draw_eight_view(RIOT_VAN_BY_VIEW, _heading, canvas, true)
-		EventDef.Look.ARMY_TRUCK:
-			_draw_eight_view(ARMY_TRUCK_BY_VIEW, _heading, canvas, true)
-		EventDef.Look.BARRICADE:
-			_draw_spread(BARRICADE_PILE, "", canvas)
-		EventDef.Look.PROTEST:
-			_draw_protest(canvas)
-		EventDef.Look.FIREFIGHT:
-			_draw_firefight(canvas)
-		EventDef.Look.FALLEN_TREE:
-			_draw_wide_scene(_wide_scene_texture(EventDef.Look.FALLEN_TREE, _spread_vertical), canvas)
-		EventDef.Look.CAR_ACCIDENT:
-			if canvas != self or _scenery == null:
-				_draw_wide_scene(_wide_scene_texture(EventDef.Look.CAR_ACCIDENT, _spread_vertical,
-						_idle_stepping(CAR_ACCIDENT_SMOKE_PERIOD)), canvas)
-		EventDef.Look.BURST_MAIN:
-			if canvas != self or _scenery == null:
-				_draw_wide_scene(_wide_scene_texture(EventDef.Look.BURST_MAIN, _spread_vertical,
-						_idle_stepping(BURST_MAIN_SPLASH_PERIOD)), canvas)
-		EventDef.Look.COLLAPSED_FRONTAGE:
-			_draw_spread(COLLAPSED_FRONTAGE, "", canvas)
-		EventDef.Look.SCAFFOLDING:
-			_draw_spread(SCAFFOLDING, "", canvas)
-		EventDef.Look.SKIP:
-			_draw_simple(SKIP, canvas)
-		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, def.obstructs_radius * 2.0, canvas)
-		EventDef.Look.BURNT_OUT_CAR:
-			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR, def.obstructs_radius * 2.0, canvas)
-		EventDef.Look.CHECKPOINT_HUT:
-			_draw_checkpoint_hut(canvas)
-		EventDef.Look.CHECKPOINT_GATE:
-			_draw_checkpoint_gate(canvas)
-		EventDef.Look.CHECKPOINT_POST:
-			# The guard's own picture is person-scale, but his shape is the checkpoint's own —
-			# one body covers the whole 64px alley mouth, same as `checkpoint_hut`'s hut. See
-			# `EventCatalogue._checkpoint_post`.
-			_draw_body_shadow(canvas)
-			_draw_at_anchor(canvas, GUARD_ALERT_BY_VIEW["front"] if guard_warns_her else GUARD_STANDING,
-					_GUARD_ANCHOR)
-		EventDef.Look.IMPACT_CRATER:
-			_draw_crater(canvas)
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, EventDef.Look.VAN_GUARD_GIVING_CHASE, \
-				EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			_draw_masked_pursuer(canvas)
-		EventDef.Look.POLICEMAN_GIVING_CHASE:
-			_draw_policeman(canvas)
-		EventDef.Look.STEAM:
-			_draw_simple(STEAM_B if _idle_stepping(STEAM_BILLOW_PERIOD) else STEAM, canvas)
-		EventDef.Look.LOUDSPEAKER_MAST:
-			_draw_mast(canvas)
-		EventDef.Look.NONE:
-			pass
-
-## A shadow and a sprite, facing the way it is going. What most looks are, and having it once is
-## what keeps a dozen near-identical three-line functions from existing.
-##
-## `picture_b` is `mouse`'s own second frame, read off `_gait_stepping()` when given; `""` for
-## everything else this draws (`skip`, and `mouse` before its own dash starts), which keeps every
-## other caller exactly as it was.
-func _draw_simple(picture: String, canvas: CanvasItem = self,
-		picture_b: String = "") -> void:
-	_draw_body_shadow(canvas)
-	var drawn := picture_b if not picture_b.is_empty() and _gait_stepping() else picture
-	Sprites.draw_standing(canvas, _drawn(drawn), Vector2.ZERO, Vector2.ZERO, _heading_is_west())
-
-## The five-view generalisation of `_draw_simple`, for a family that has the full
-## front/back/side/diagonal set — `_select_view()` picks the view from `heading` and
-## `EightDirection.is_mirrored()` says whether it mirrors, for every sector but one.
-##
-## **`side_faces_west` is the one bit `EightDirection` cannot answer, because it is a property of
-## the art rather than of the geometry.** `is_mirrored()` mirrors exactly the three west sectors on
-## the assumption every family's `"side"` picture is authored facing east, which holds for most —
-## `police_car`, `ice_cream_van`, `lorry` and every person/animal/rider family bound before this one
-## — but not for `delivery_van`, `fire_engine`, `unmarked_van` and `army_truck`, whose side pictures
-## place the cab at the left (`docs/evidence/svg-vehicles-2026-09-10/README.md`). Passing `true`
-## flips the mirror flag for the `"side"` view alone; every diagonal and front/back view already
-## mirrors the same way regardless, since each is authored facing its own specific compass point
-## rather than shared between two.
-##
-## `night_raid`'s van reaches this same helper through `RIOT_VAN_BY_VIEW` with the
-## `side_faces_west` override set, the same as `delivery_van`, `fire_engine`, `unmarked_van` and
-## `army_truck` above — see that const's own doc comment.
-##
-## `_draw_simple` itself is untouched and keeps drawing the one row that has no directional family
-## at all: `skip`.
-##
-## `by_view_b` is the family's own feet-passing set, read off `_gait_stepping()` when given —
-## empty for every vehicle family, which has no stride, so the lookup falls through to `by_view`.
-##
-## **A look in `WHEELS_BY_LOOK` is drawn in two layers, and its wheels and its shadow stay on the
-## ground.** `_draw()` and `EntityHalo` both lift the canvas by `_current_bob()` before calling
-## here, so the wheels picture and the shadow are drawn back down by the same amount and only the
-## body rises and falls; the wheels go over the body or, for the pictures in
-## `WHEELS_BEHIND_THE_BODY`, under it.
-##
-## **`draw_shadow` is false only for `_draw_roadblock()`'s guard.** Every other caller's own body
-## shadow — `def.parts()`'s default single piece, `def.shape` at local origin — is exactly the
-## shadow this row wants under the picture this function draws. A heated roadblock's guard is the
-## one exception: `def.shape` there is the barrier band's own shape, not his, and the band's real
-## shadow is already drawn separately, back at the post he left (`_draw_spread()`); the automatic
-## call here would draw a second, band-shaped shadow under his current position instead of his own
-## small one, so `_draw_roadblock()` draws that shadow itself and passes `false`.
-##
-## `at` is where the feet stand in local space: the node's own origin for every caller but
-## `_draw_roadblock()`, whose guard stands beside his band rather than on its centre.
-## How much empty canvas each police car view leaves below its own drawn content, in px, read off
-## the SVGs (`art/events/police_car*.svg`): the side view's tyres touch its bottom row, the front and
-## back views' bodies end two rows above theirs and the diagonals' tyres two rows above theirs —
-## the same margins the crowd car's views leave (`CrowdAgent.CAR_CANVAS_BOTTOM_MARGIN`).
-const POLICE_CAR_CANVAS_BOTTOM_MARGIN := {
-	"front": 2.0,
-	"back": 2.0,
-	"side": 0.0,
-	"front_diagonal": 2.0,
-	"back_diagonal": 2.0,
-}
-
-## The same for the fire engine's views (`art/events/fire_engine*.svg`): the side view's tyres end
-## a row above its canvas's bottom, the front and back views' wheels five rows above theirs and the
-## diagonals' four.
-const FIRE_ENGINE_CANVAS_BOTTOM_MARGIN := {
-	"front": 5.0,
-	"back": 5.0,
-	"side": 1.0,
-	"front_diagonal": 4.0,
-	"back_diagonal": 4.0,
-}
-
-## The canvas margins of the car family `look` belongs to — a patrol car's or the fire engine's —
-## both bodies a segment `EventDef.drives` lays along the heading and a picture anchored over it.
-static func _canvas_margins(look: EventDef.Look) -> Dictionary:
-	return FIRE_ENGINE_CANVAS_BOTTOM_MARGIN if look == EventDef.Look.FIRE_ENGINE \
-			else POLICE_CAR_CANVAS_BOTTOM_MARGIN
-
-## Whether `look` is a body whose picture is anchored over it by `_body_anchor()`: the patrol car's
-## and the fire engine's, the two looks of a car that drives (`EventDef.drives`).
-static func _is_anchored_over_its_body(look: EventDef.Look) -> bool:
-	return look == EventDef.Look.POLICE_CAR or look == EventDef.Look.FIRE_ENGINE
-
-## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
-## that drives, the patrol car or the fire engine (`_is_anchored_over_its_body()`):
-## **the drawn content's bottom edge lands on the southernmost point of its body**, the crowd car's
-## own registration rule (`CrowdAgent._car_body_anchor()`), because every view is a standing
-## elevation whose bottom row is the car's nearest ground contact. The body is its `shape`, a
-## capsule centred on the node and laid along the heading (`EventDef.drives`), so its southern reach
-## is `half_length · |heading.y| + radius` — the patrol car's 12px driving east or west, 21
-## north or south — plus the view's own canvas margin (`_canvas_margins()`), and the picture sits
-## over the body she walks into rather than standing in front of it. Read off the live heading
-## rather than the quantised view, the crowd car's reason: the body turns continuously as a car
-## rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
-## caret over it is lowered by the same amount (`_picture_drop_now()`).
-func _body_anchor(view: String) -> Vector2:
-	var south := def.shape.half_length * absf(_solid_axis().y) + def.shape.radius
-	return Vector2(0.0, south + float(_canvas_margins(def.look).get(view, 0.0)))
-
-## How far below its own node this instance's picture is drawn this frame — a car's
-## `_body_anchor()`, zero for every other row — so the caret over it stands the same height
-## above the picture as it does over anything else.
-func _picture_drop_now() -> float:
-	if not _is_anchored_over_its_body(def.look) or def.shape == null:
-		return 0.0
-	return _body_anchor(EIGHT_VIEW_BY_SECTOR[_view_sector]).y
-
-## The furthest below its own node a row's picture is ever drawn: a car's body reach, pointed
-## straight down the screen, and its look's largest canvas margin (`_body_anchor()`); zero
-## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box()` add it.
-static func _picture_drop_of(row: EventDef) -> float:
-	if not _is_anchored_over_its_body(row.look) or row.shape == null:
-		return 0.0
-	var margins := _canvas_margins(row.look)
-	var margin := 0.0
-	for view: String in margins:
-		margin = maxf(margin, float(margins[view]))
-	return row.shape.reach() + margin
-
-## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
-## two a picture can stand as its heading turns.
-static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
-	var drop := _picture_drop_of(row)
-	if drop <= 0.0:
-		return box
-	return box.merge(Rect2(box.position + Vector2(0.0, drop), box.size))
-
-func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem = self,
-		side_faces_west := false, by_view_b: Dictionary = {}, draw_shadow := true,
-		at := Vector2.ZERO) -> void:
-	var wheels_by_view: Dictionary = WHEELS_BY_LOOK.get(def.look, {})
-	var grounded := at
-	if not wheels_by_view.is_empty():
-		grounded = at + Vector2(0.0, -_current_bob())
-	if draw_shadow:
-		_draw_body_shadow(canvas, grounded)
-	var view := _select_view(heading)
-	var mirror := EightDirection.is_mirrored(_view_sector)
-	if view == "side" and side_faces_west:
-		mirror = not mirror
-	var picture: String = by_view[view]
-	if not by_view_b.is_empty() and _gait_stepping():
-		picture = by_view_b[view]
-	var wheels: String = wheels_by_view.get(view, "")
-	var behind := wheels in WHEELS_BEHIND_THE_BODY
-	if not wheels.is_empty() and behind:
-		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, _drawn(picture), at, Vector2.ZERO, mirror)
-	if not wheels.is_empty() and not behind:
-		Sprites.draw_standing(canvas, _drawn(wheels), grounded, Vector2.ZERO, mirror)
-
-## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
-## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
-## Its shadow is `def.shape` — a point for `burnt_out_car`, a capsule along the street for
-## `moving_van`, whose `obstructs_radius` clears `GroundShape.BAND_RADIUS` — rather than a
-## hand-picked radius of its own.
-func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
-		canvas: CanvasItem = self) -> void:
-	var picture := _stationary_vehicle_texture(look, _stationary_vehicle_side)
-	var extent := _stationary_vehicle_extent(picture, _stationary_vehicle_side, side_width)
-	_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, _drawn(picture), Vector2.ZERO, extent,
-			_stationary_vehicle_side and _heading_is_west())
-
-## The dog, and the lead it is no longer on.
-##
-## Read against `_draw_dog_walker()`, which draws the lead *taut between two bodies*: that is
-## the span it owns and the reason to cross the street. Here the same lead trails on the ground
-## behind one body, and the difference between the two pictures is the whole event.
-func _draw_loose_dog(canvas: CanvasItem = self) -> void:
-	var behind := Vector2(LOOSE_LEAD_REACH if _heading_is_west() else -LOOSE_LEAD_REACH, 0.0)
-	_draw_body_shadow(canvas)
-	# On the ground and slack, not held up at hip height. Nobody is holding it. The lead's own
-	# offset stays a plain east/west span — a composite the picture underneath it does not own,
-	# same as `_draw_dog_walker`'s taut one.
-	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
-	var view := _select_view(_heading)
-	var dog := dog_picture(view, _gait_stepping(), _gait_second_half())
-	Sprites.draw_standing(canvas, _drawn(dog), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## Every bird, drawn where it actually is.
-##
-## There is no `rise` term and no shared phase any more — see "the flock" above. What is left here
-## is only the picture: each bird on its own beat, each with a shadow on the pavement under it that
-## shrinks and fades as it climbs, and the whole flock painted back to front so a bird in front
-## overlaps the one behind rather than fighting it for the same pixel every frame.
-##
-## The shadow is what sells the height, and it is the reason a bird 40px up does not simply read as
-## a bird standing 40px further north.
-func _draw_birds(canvas: CanvasItem = self) -> void:
-	var order: Array[int] = []
-	for i in _flock.size():
-		order.append(i)
-	order.sort_custom(func(a: int, b: int) -> bool: return _flock[a].at.y < _flock[b].at.y)
-	for i in order:
-		var bird := _flock[i]
-		if bird.lift < BIRD_SHADOW_CEILING:
-			# Smaller and fainter the higher it is, and gone by the time it is over the rooftops.
-			var faded := 1.0 - bird.lift / BIRD_SHADOW_CEILING
-			_draw_shadow(canvas, bird.at, 5.0 * faded)
-		# Each bird holds its own sector — a flock is eleven bodies wheeling independently, not one
-		# actor with one facing — through the same hold `_select_view()` gives the instance itself.
-		bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)
-		var view: String = EIGHT_VIEW_BY_SECTOR[bird.view_sector]
-		var mirror := EightDirection.is_mirrored(bird.view_sector)
-		var wings: String = PIGEON_BY_VIEW[view] if sin(bird.phase) >= 0.0 \
-				else PIGEON_DOWN_BY_VIEW[view]
-		if bird.lift <= 0.0:
-			# Standing. The upstroke is a bird in flight, and a pavement full of them is a flock
-			# that has already gone — which is the thing the wait and the telegraph before it exist
-			# to show her instead.
-			wings = PIGEON_DOWN_BY_VIEW[view]
-		Sprites.draw_standing(canvas, _drawn(wings), bird.at - Vector2(0.0, bird.lift),
-				Vector2.ZERO, mirror)
-
-## How high a bird's shadow survives to. Roughly first-floor height: above it, there is nothing on
-## the pavement to cast one onto that the player can see.
-const BIRD_SHADOW_CEILING := 46.0
-
-func _draw_cat(canvas: CanvasItem = self) -> void:
-	# Crouched while telegraphing, stretched out once it bolts. The crouch *is* the
-	# telegraph, so the two silhouettes have to differ at a glance, not by a scale factor.
-	var telegraphing := is_telegraphing()
-	var by_view := CAT_CROUCHED_BY_VIEW if telegraphing else CAT_RUNNING_BY_VIEW
-	# The crouch holds still by construction (`still_while_telegraphing`), so only the dash gets a
-	# second frame — a crouching cat has nothing to stride into yet.
-	if not telegraphing and _gait_stepping():
-		by_view = CAT_RUNNING_BY_VIEW_B
-	_draw_body_shadow(canvas)
-	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## Hood up and hands in the coat while he is only somewhere; both hands out of the coat, walking at
-## her, through his notice; leaning out over a forward leg once he lunges.
-##
-## The same rule as the cat above, at the one row where reading it wrong ends the run: the postures
-## are the states `EventDef.pursues_within` invented, and `is_waiting()` and `is_telegraphing()` are
-## exactly the lines between them. What the player has to be able to see from an alley mouth is not
-## "there is a man there" but *which of the three men that is* — so the change of posture happens on
-## the frame he notices her, and again on the frame he lunges *(velvet-marten, #699: "warning (when
-## the player gets close; needs to be visually distinct), and then the actual charging")*.
-func _draw_robber(canvas: CanvasItem = self) -> void:
-	_draw_body_shadow(canvas)
-	var waiting := is_waiting()
-	var by_view := robber_pictures()
-	# Once he has noticed her, `_chase()` already keeps `_heading` pointed at her for every frame of
-	# the telegraph and the lunge alike — `_draw_body()`'s ordinary reading, `_heading`. Before that
-	# he has nothing of his own to face except the alley he was sited in, and a man only watching
-	# the street is worth nothing next to a man watching *her* — see `_robber_waiting_heading()`.
-	var heading := _robber_waiting_heading() if waiting else _heading
-	var view := _select_view(heading)
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
-## (`is_telegraphing()`, which the sent robber, arriving already chasing, never is), and the lunge
-## with its stride frame once he goes. The waiting posture holds still by construction — he has nothing to stride toward
-## yet. The one place the choice is read, so the draw, its halo and a test ask the same question.
-func robber_pictures() -> Dictionary:
-	if is_waiting():
-		return ROBBER_WAITING_BY_VIEW
-	if is_telegraphing():
-		return ROBBER_ALERT_BY_VIEW_B if _gait_stepping() else ROBBER_ALERT_BY_VIEW
-	return ROBBER_LUNGING_BY_VIEW_B if _gait_stepping() else ROBBER_LUNGING_BY_VIEW
-
-## **The policeman on foot, drawn as the robber is.** He faces her while he is after her (`_chase()`
-## keeps `_heading` on her) and his vehicle's door as he walks back (`_walk_back()`); which picture
-## is `policeman_pictures()`.
-func _draw_policeman(canvas: CanvasItem = self) -> void:
-	_draw_body_shadow(canvas)
-	var by_view := policeman_pictures()
-	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an
-## investigating vehicle stands beside her before he charges (`is_standing_for_its_notice()`); his
-## waiting posture while he stands with her through a stop (`has_stopped_her()`, through
-## `_stands_still_now()`); his lunge, with its stride, once he gives chase and as he walks back to
-## his vehicle. The one a torn poster sends arrives charging and is only ever drawn coming. The one
-## place the choice is read, so the draw, its halo and a test ask the same question.
-func policeman_pictures() -> Dictionary:
-	if is_standing_for_its_notice():
-		return POLICEMAN_ALERT_BY_VIEW
-	if _stands_still_now():
-		return POLICEMAN_WAITING_BY_VIEW
-	return POLICEMAN_LUNGING_BY_VIEW_B if _gait_stepping() else POLICEMAN_LUNGING_BY_VIEW
-
-## Whether a man on foot is drawn standing rather than lunging: while he waits for her to come
-## near (`is_waiting()`, which `is_telegraphing()` is false for, the masked man at the foot of the
-## shaft being the one who does), through his notice, and through a stop he has made of his catch
-## (`has_stopped_her()`) until he turns to walk back.
-func _stands_still_now() -> bool:
-	return is_waiting() or is_telegraphing() or (has_stopped_her() and not is_leaving)
-
-## Which way the waiting posture faces: her, whenever a caller has told this instance where she is
-## (`set_player_at()`) and **nothing built stands between them** (`_clear_line_to()`, the test his
-## notice asks), since she is the one thing worth turning toward before he has actually noticed
-## her — `_chase()`'s own `is_waiting()` branch does not move `_heading` until she is inside
-## `pursues_within`, see that function's doc. With a building between them he has not seen her, so
-## he does not visibly track her round the corner *(leafy-puffin, inbox #648: "yes noticing needs
-## a clear line")*: he keeps the facing he was sited with, which is also the harmless default a
-## data-level rig with no player position gets.
-func _robber_waiting_heading() -> Vector2:
-	if player_at != Vector2.INF:
-		var toward := player_at - global_position
-		if toward.length_squared() > 0.0001 and _clear_line_to(player_at):
-			return toward
-	return _heading
-
-## **A barrier with a guard standing at it, from the moment it is placed.** *(2026-09-19: "the
-## guard needs to be at the barrier from the beginning, standing. only then does it make sense for
-## it to start pursuing.")* Nothing here appears and nothing disappears: the band and the man are
-## both drawn for the whole of the event's life, cold or hunting, and the only thing that changes
-## is which of them is moving.
-##
-## - **Cold, or hunting but not yet noticed** (`is_waiting()`), one man stands at his post for
-##   every side `def.guard_sides` names *(2026-09-25: "have one guard on each side?")*, in the
-##   `guard_standing_*` family, each clear of the barrier's picture and facing out from it
-##   (`_guard_post_offset()`). `[-1, 1]` (both sides) is every row's own default — a cold roadblock
-##   posts two, drawings with no field, no body and no cost of their own — except the region wall's
-##   own road body, which `SealPlanner.place_hard_on()` builds with the array emptied: see
-##   `EventDef.guard_sides`, M200 ("a region wall has a guard on each sidewalk").
-## - **Once the one on her side sets off** — the only one who does, "since the other one will be
-##   blocked" — this node *is* him: it steps out to his post and `_chase()` walks it at her
-##   (`_leave_the_body_behind()`). The barrier he left is drawn back at `body_position()`, where
-##   its collision body is pinned (`EventDef.body_stays_behind`), and the other guard still stands
-##   at his post beside it. `guard_alert_*`, hand raised, while he stands at that post for his
-##   notice (`chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
-##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
-##   he is going rather than only mirroring east/west (PLAYTEST-128, M56: "the masked pursuer and
-##   the heated roadblock guard face where they are heading").
-##
-## So the street he abandoned stays visibly and physically shut behind him, and what she has to get
-## away from is a man rather than a band of concrete.
-##
-## **Two nodes, so two sort points**: the instance sorts at the chaser's feet once he has set off, and
-## the band and the guards posted beside it sort at the band's line (`RoadblockBand`).
-func _draw_roadblock(canvas: CanvasItem = self) -> void:
-	# **The barrier never rides the chaser's stride.** `_draw()` lifts the whole canvas by
-	# `_current_bob()` for anything that pursues or leaves, and the band and the posted guard are
-	# furniture of the street rather than part of the man who walked out of it. On the screen they
-	# are their own node (`RoadblockBand`), standing at the body and sorting at its own feet; the
-	# halo ring's canvas has no such node and draws them back down by the lift
-	# (*"the guard pursuer makes his barrier jump up and down"*).
-	if canvas == self and _band != null:
-		_draw_the_chaser(canvas)
-		return
-	# The halo ring (`canvas != self`) traces what is costing her: both guards and the band while
-	# the instance stands on the band, only the man once he has set off (his halo would otherwise
-	# paint over the band wherever he stands south of it). A departing guard's band has a rim of its
-	# own, `_band_halo`.
-	if _chaser_side == 0 or _guard_spent or _band == null:
-		_draw_the_band(canvas, _roadblock_band_at())
-	_draw_the_chaser(canvas)
-
-## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`.
-func _draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
-	_draw_spread(_roadblock_segment_texture(_spread_vertical), ROADBLOCK_END, canvas, band_at)
-	if _far_guard_has_left():
-		return
-	for side: int in def.guard_sides:
-		if side != _chaser_side:
-			_draw_posted_guard(canvas, band_at, side)
-
-## The man who set off, drawn on this node, which walks with him.
-func _draw_the_chaser(canvas: CanvasItem) -> void:
-	if _chaser_side == 0 or _guard_spent:
-		return
-	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
-	# one of its own; see that function's own doc comment.
-	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	_draw_eight_view(chaser_pictures(), _heading, canvas, false, {}, false)
-
-## The hunting roadblock's guard who set off, by stage: his alert, hand raised, while he stands at
-## his post for his notice (`is_standing_for_its_notice()`), his lunge once he gives chase, and his
-## standing picture as he walks away when the chase is over.
-func chaser_pictures() -> Dictionary:
-	if is_standing_for_its_notice():
-		return GUARD_ALERT_BY_VIEW
-	if is_telegraphing() or is_leaving:
-		return GUARD_STANDING_BY_VIEW
-	return GUARD_LUNGING_BY_VIEW
-
-## **The barrier's own node.** A y-sorted sibling of this instance standing at `body_position()`,
-## drawing the band and the posted guards, so that they sort at the band's line however far the
-## man who set off has walked from it. Freed with the instance.
-class RoadblockBand extends Node2D:
-	var instance: EventInstance
-
-	func _draw() -> void:
-		if instance != null and is_instance_valid(instance):
-			instance._draw_the_band(self, Vector2.ZERO)
-
-var _band: RoadblockBand
-
-# ------------------------------------------------------- the far guard leaves ---
-
-## **Once the guard on her side has left his post for good, the guard at the far post walks off
-## too**, so the band stands unmanned and reads as the barrier it now is. *(Inbox #771 in minty-lemur, 2026-10-18,
-## asked whether the far guard should leave as well once his partner has been lured off: "He leaves
-## too"; then, asked whether that holds on a day as well: "Days too")* Every roadblock sends him,
-## on a day as in the escape.
-##
-## **His partner's departure, from his own post.** He sets off the frame his partner starts walking
-## away (`_be_done()`), at the pace his partner leaves at (`EventDef.pursue_speed`,
-## `_leaving_speed()`'s for a guard leaving his barrier), standing as he walks, over walkable ground
-## by the way his partner walks (`_way_on_out_of_sight_from()`, planned again from where he is each
-## time it runs out while she could still be watching; away from her by `walkable_step_on()` only
-## where it finds none), and he is gone once she could not be watching: past `Tuning.OUT_OF_SIGHT` from her, or
-## after `LEAVING_GIVES_UP` with no player to be out of sight of — the sight rule his partner's
-## departure keeps (`_leaving_must_clear_sight`). He notices nothing, chases nothing and costs
-## nothing: the band is silent from the same frame. A band streamed back in after its guard was
-## spent comes back with neither (`come_back_as_the_barrier()`).
-##
-## **His own node** (`FarGuard`), a y-sorted sibling like the band's, so he sorts at his own feet
-## as he walks rather than at the band's line.
-var _far_guard_at := Vector2.INF
-var _far_guard_heading := Vector2.ZERO
-var _far_guard_walked := 0.0
-var _far_guard_for := 0.0
-var _far_guard_gone := false
-## The way he walks, tile centres, each dropped as he reaches it; planned from where he stands
-## whenever it is empty.
-var _far_guard_way := PackedVector2Array()
-var _far_guard: FarGuard
-
-## The far guard walking away, drawn standing, facing where he goes, on the stride his partner
-## walks on. Freed when he is gone or with the instance.
-class FarGuard extends Node2D:
-	var instance: EventInstance
-
-	func _draw() -> void:
-		if instance != null and is_instance_valid(instance):
-			instance._draw_the_far_guard(self)
-
-## Where the far guard's feet are while he walks away, in world space; `Vector2.INF` while he
-## stands at his post, and once he is gone.
-func far_guard_at() -> Vector2:
-	return _far_guard_at
-
-## Whether a guard still stands at the band's far post: the band's own drawing while both are
-## posted, and after his partner has set off, until he leaves too.
-func has_its_far_guard_posted() -> bool:
-	return def.look == EventDef.Look.ROADBLOCK and not _far_guard_has_left() \
-			and def.guard_sides.any(func(side: int) -> bool: return side != _chaser_side)
-
-func _far_guard_has_left() -> bool:
-	return _far_guard_at != Vector2.INF or _far_guard_gone
-
-## Sends the far guard off from his post, the frame his partner starts to walk away. Nothing for a
-## band with no far post.
-func _send_the_far_guard_off() -> void:
-	if def.look != EventDef.Look.ROADBLOCK or _far_guard_has_left():
-		return
-	var far := 0
-	for side: int in def.guard_sides:
-		if side != _chaser_side:
-			far = side
-			break
-	if far == 0:
-		_far_guard_gone = true
-		return
-	_far_guard_at = body_position() + _guard_post_offset(_spread_vertical, far)
-	_far_guard_heading = _guard_post_heading(_spread_vertical, far)
-	if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
-		_far_guard_heading = (_far_guard_at - player_at).normalized()
-	_far_guard_walked = 0.0
-	_far_guard_for = 0.0
-	_far_guard_way = PackedVector2Array()
-	_far_guard = FarGuard.new()
-	_far_guard.instance = self
-	_far_guard.name = "FarGuard"
-	_far_guard.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	if is_inside_tree() and get_parent() != null:
-		get_parent().add_child(_far_guard)
-	_move_the_far_guard()
-
-## One frame of the far guard's walk away, and his end once she could not be watching.
-func _walk_the_far_guard_off(delta: float) -> void:
-	if _far_guard_at == Vector2.INF:
-		return
-	var step := def.pursue_speed * delta
-	var left := step
-	if _map and player_at != Vector2.INF:
-		if _far_guard_way.is_empty():
-			_far_guard_way = _way_on_out_of_sight_from(_far_guard_at)
-		while left > 0.0 and not _far_guard_way.is_empty():
-			var toward := _far_guard_way[0] - _far_guard_at
-			if toward.length() > left:
-				_far_guard_heading = toward.normalized()
-				_far_guard_at += _far_guard_heading * left
-				left = 0.0
-				break
-			_far_guard_at = _far_guard_way[0]
-			left -= toward.length()
-			_far_guard_way.remove_at(0)
-	if left > 0.0:
-		var away := _far_guard_heading
-		if player_at != Vector2.INF and not player_at.is_equal_approx(_far_guard_at):
-			away = (_far_guard_at - player_at).normalized()
-		var moved := walkable_step_on(_map, _far_guard_at, away * left) if _map else away * left
-		if _map and _way_avoids.has_point(_map.world_to_tile(_far_guard_at + moved)):
-			moved = Vector2.ZERO
-		if not moved.is_zero_approx():
-			_far_guard_heading = moved.normalized()
-			_far_guard_at += moved
-	_far_guard_walked += step
-	_far_guard_for += delta
-	var gone := player_at != Vector2.INF \
-			and _far_guard_at.distance_to(player_at) > Tuning.OUT_OF_SIGHT
-	if gone or (player_at == Vector2.INF and _far_guard_for >= LEAVING_GIVES_UP):
-		_far_guard_at = Vector2.INF
-		_far_guard_gone = true
-		_release_the_far_guard()
-		return
-	_move_the_far_guard()
-
-func _move_the_far_guard() -> void:
-	if _far_guard == null or not _far_guard.is_inside_tree():
-		return
-	_far_guard.global_position = _far_guard_at
-	_far_guard.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
-	_far_guard.queue_redraw()
-
-func _release_the_far_guard() -> void:
-	if _far_guard != null and is_instance_valid(_far_guard):
-		_far_guard.queue_free()
-	_far_guard = null
-
-## The far guard as he walks, at his node's origin: his own small shadow on the ground and his
-## standing picture lifted by his own stride, the bob his partner's departure rides on
-## (`_current_bob()`). The view sector is put back afterwards, as `_draw_posted_guard()` puts it.
-func _draw_the_far_guard(canvas: CanvasItem) -> void:
-	_draw_shadow(canvas, Vector2.ZERO, _GUARD_SHADOW_RADIUS)
-	var kept := _view_sector
-	var bob := -absf(sin(_far_guard_walked * BOB_PER_PX)) * BOB_HEIGHT
-	_draw_eight_view(GUARD_STANDING_BY_VIEW, _far_guard_heading, canvas, false, {}, false,
-			Vector2(0.0, bob))
-	_view_sector = kept
-
-func _build_the_band() -> void:
-	_band = RoadblockBand.new()
-	_band.instance = self
-	_band.name = "RoadblockBand"
-	# Moved from `_process()`, so it opts out of physics interpolation like this instance does.
-	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-	_attach_the_band.call_deferred()
-
-## Idempotent, so a rig that never reaches the idle frame can call it itself.
-func _attach_the_band() -> void:
-	if _band == null or _band.is_inside_tree() or not is_inside_tree() or get_parent() == null:
-		return
-	_band.position = body_position()
-	get_parent().add_child(_band)
-	_move_the_band()
-
-## Keeps the band where its body is, shown while the instance is, and redrawn when asked.
-func _move_the_band(redraw := false) -> void:
-	if _band == null or not _band.is_inside_tree():
-		return
-	var at := body_position()
-	if not _band.global_position.is_equal_approx(at):
-		_band.global_position = at
-	_band.visible = not (_skip_draw or is_finished or is_suppressed_by_its_own_hold())
-	if redraw:
-		_band.queue_redraw()
+	look.draw_the_band(canvas, Vector2.ZERO)
+
+func _release_rims_on_slices() -> void:
+	_rim.release_on_slices()
+
+## The rim lit around this instance's own picture, or null: the canvas a look draws no shadow on.
+func rim() -> EntityHalo:
+	return _rim.entity_halo()
+
+# ------------------------------------------------------------------ the look ---
+
+## How this instance looks (`EventLooks.for_row()`): it draws the instance from its public state,
+## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
+var look: EventLook
+
+## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
+## from the resistance's `pointable_objective()`); unset, it points at nothing.
+var points_at := Callable()
+
+func _draw() -> void:
+	look.draw()
+
+## Builds the drawing nodes again when the instance comes back into the tree after leaving it,
+## which took them with it.
+func _enter_tree() -> void:
+	if _map:
+		_map.moves.join(_move, position)
+	if look:
+		look.enter_tree()
+
+## **Takes it out of the world now**: its move leaves the map's list at once and the node is freed
+## at the end of the frame. Every place that frees an event goes through here, because the node
+## leaves the tree only at the frame's end and a move left on the list until then is a figure
+## standing where the event last was (a mover leaves the list on going, minty-quail-34).
+func take_out() -> void:
+	if _map:
+		_map.moves.leave(_move)
+	queue_free()
 
 func _exit_tree() -> void:
-	_band_halo = null
-	if _band != null and is_instance_valid(_band):
-		_band.queue_free()
-	_band = null
-	_release_the_far_guard()
+	if _map:
+		_map.moves.leave(_move)
+	_rim.band.forget()
+	if look:
+		look.release_nodes()
 
-## Where the band is drawn in this node's local space when it is drawn on this node's own canvas (the
-## halo ring's): back at `body_position()`, and drawn down by the lift `_draw()` puts the whole canvas
-## through, so on the screen it stands exactly where its body does on every frame.
-func _roadblock_band_at() -> Vector2:
-	return body_position() - global_position + Vector2(0.0, -_current_bob())
-
-## One guard standing at his post on `side` of the band drawn at `band_at`, facing out from it.
-## **The view sector is put back afterwards**: `_select_view()` advances `_view_sector` with
-## hysteresis for the one heading this node carries — the chaser's, once there is one — and a
-## second figure turned another way must not reset it on every draw.
-func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void:
-	var feet := band_at + _guard_post_offset(_spread_vertical, side)
-	_draw_shadow(canvas, feet, _GUARD_SHADOW_RADIUS)
-	var kept := _view_sector
-	_draw_eight_view(GUARD_STANDING_BY_VIEW, _guard_post_heading(_spread_vertical, side), canvas,
-			false, {}, false, feet)
-	_view_sector = kept
-
-## How far apart the flames on a facade stand at most, how wide each is, and how tall the short
-## and the tall one of each alternating pair reach before the flicker scales them — climbing a good
-## part of an ordinary building's own wall (two to three tiles, `city.gd`'s own `_HEIGHT_TILES`)
-## rather than sitting at ankle height. The implementer's own choice, open to overturn: no field
-## here reads the actual building's height, so a one-tile sliver burns under flames taller than its
-## own roofline.
-const _FIRE_SPREAD := 14.0
-const _FIRE_WIDTH := 22.0
-const _FIRE_HEIGHT := 60.0
-const _FIRE_HEIGHT_TALL := 26.0
-## The smoke sits above the tallest flame reaches at rest, not above wherever the flicker happens
-## to have it this frame — an anchor that rode the flicker would hop a couple of pixels every beat.
-const _SMOKE_SIZE := Vector2(40.0, 60.0)
-## One plume of smoke for about every this many pixels of burning facade — three tiles — so a wide
-## front smokes along its length rather than from one point over the middle of it.
-const _SMOKE_EVERY := 96.0
-
-## The stretches of the burning facade the city draws, each as its west and east ends in this
-## instance's local x — `_facade_runs_at()`'s answer for where it stands, worked out on the first
-## draw (`_fire_facade_found`): a sited fire never moves.
-var _fire_facade := PackedVector2Array()
-var _fire_facade_found := false
-
-## Two fires share one look. **A fire with a body burns where it stands**: the finale's stairwell
-## fire (`InteriorEvents._indoor_fire()`), which is the hazard there. **A fire with none burns on
-## the facade of the building its row stands against, along the whole of it**: the street fire,
-## *"the fire goes on the building. the challenge is the fire truck not the fire"* (PLAYTEST-144,
-## statement 12) and *"the fire should be on the whole building not only the door"*
-## (sandy-egret), which has no body and no shadow to draw, only the picture.
-func _draw_fire(canvas: CanvasItem = self) -> void:
-	if def.obstructs_radius > 0.0:
-		_draw_fire_where_it_stands(canvas)
-		return
-	var against_the_wall := _wall_offset()
-	var flames := _flames_across(_fire_facade_runs())
-	for i in flames.size():
-		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
-		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
-		Sprites.draw_standing(canvas, _drawn(FLAME), against_the_wall + Vector2(flames[i].x, 0.0),
-				Vector2(flames[i].y, height))
-	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
-	var billowing := _idle_stepping(STEAM_BILLOW_PERIOD)
-	var plumes := _smoke_across(_fire_facade_runs())
-	for i in plumes.size():
-		var picture := STEAM_B if billowing != (i % 2 == 1) else STEAM
-		Sprites.draw_standing(canvas, _drawn(picture), against_the_wall
-				+ Vector2(plumes[i].x, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)),
-				Vector2(plumes[i].y, _SMOKE_SIZE.y))
-
-## `_fire_facade`, worked out on its first ask.
-func _fire_facade_runs() -> PackedVector2Array:
-	if not _fire_facade_found:
-		_fire_facade = _facade_runs_at(_map, global_position)
-		_fire_facade_found = true
-	return _fire_facade
-
-## **Everything a street fire draws, in its own space, which is far more than its picture**: the
-## whole burning front (`_fire_facade_runs()`), half a tile toward the wall (`_wall_offset()`), from
-## the ground up to the top of the smoke over the tallest flame — the flames' own flicker never
-## reaches past it. Empty for anything but a fire with no body, whose drawing is its picture. Read
-## by `_drawn_reach()` and `drawn_rect_now()`; a sited fire never moves, so neither changes.
-func _fire_front_box() -> Rect2:
-	if def.look != EventDef.Look.BURNING_BUILDING or def.obstructs_radius > 0.0:
-		return Rect2()
-	var top := -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL) - _SMOKE_SIZE.y
-	var box := Rect2()
-	var any := false
-	for run in _fire_facade_runs():
-		var one := Rect2(run.x, top, run.y - run.x, -top)
-		box = one if not any else box.merge(one)
-		any = true
-	return Rect2(box.position + _wall_offset(), box.size).grow(1.0) if any else Rect2()
-
-## Flames scaled by what the event is currently emitting, so a fire visibly roars, over the body's
-## own shadow: five flames 11px apart, spanning the ±31px the 30px body is half of.
-func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
-	var strength := 1.0
-	if def.intensity > 0.0:
-		strength = clampf(current_intensity() / def.intensity, 0.2, 1.0)
-	_draw_body_shadow(canvas)
-	for i in 5:
-		var offset := (i - 2.0) * 11.0
-		var flicker := 1.0 + 0.25 * sin(age * 9.0 + i * 1.7)
-		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		Sprites.draw_standing(canvas, _drawn(FLAME), Vector2(offset, 0.0), Vector2(18.0, height))
-
-## The facade a fire sited at `at` burns on, as the stretches of it the city draws, each as its
-## west and east ends in local x measured from `at`: the lot (`CityMap.building_rects`, one per
-## `Building`) holding the tile the sidewalk's `pavement_inward()` points at, less every column
-## whose ground in front is not walkable — the column another building's roof reaches up to cover
-## (`City._covered_ground_cols()`, the same lattice fact), whose facade is not drawn, so a flame
-## there would burn on the other building's roof. With no map or no lot there, one stretch of the
-## five flames' own width, so a data-level rig draws them as they are.
-static func _facade_runs_at(map: CityMap, at: Vector2) -> PackedVector2Array:
-	var reach := 2.0 * _FIRE_SPREAD + _FIRE_WIDTH * 0.5
-	var unclamped := PackedVector2Array([Vector2(-reach, reach)])
-	if not map:
-		return unclamped
-	var tile := map.world_to_tile(at)
-	var inward := map.pavement_inward(tile)
-	if inward == Vector2i.ZERO:
-		return unclamped
-	for rect in map.building_rects:
-		if not rect.has_point(tile + inward):
-			continue
-		var runs := PackedVector2Array()
-		var size := float(Tuning.TILE_SIZE)
-		var west := map.tile_rect_to_world(rect).position.x - at.x
-		var open_from := -1
-		for col in rect.size.x + 1:
-			var open := col < rect.size.x \
-					and map.is_walkable(Vector2i(rect.position.x + col, rect.end.y))
-			if open and open_from < 0:
-				open_from = col
-			elif not open and open_from >= 0:
-				runs.append(Vector2(west + open_from * size, west + col * size))
-				open_from = -1
-		return runs if not runs.is_empty() else unclamped
-	return unclamped
-
-## The flames along `runs` (`_facade_runs_at()`'s answer), each as its centre's local x and its
-## width: every stretch is filled edge to edge, no two flames further apart than `_FIRE_SPREAD`,
-## so the whole facade burns. **Every flame stays inside the burning building's own facade**: the
-## first and the last of a stretch touch its ends, never a tile of the neighbor's, and a stretch
-## narrower than one flame squeezes it to fit.
-static func _flames_across(runs: PackedVector2Array) -> PackedVector2Array:
-	var flames := PackedVector2Array()
-	for run in runs:
-		var width := run.y - run.x
-		var flame := minf(_FIRE_WIDTH, width)
-		var count := maxi(1, ceili((width - flame) / _FIRE_SPREAD) + 1)
-		if count == 1:
-			flames.append(Vector2((run.x + run.y) * 0.5, flame))
-			continue
-		var step := (width - flame) / float(count - 1)
-		for i in count:
-			flames.append(Vector2(run.x + flame * 0.5 + i * step, flame))
-	return flames
-
-## The smoke over `runs`, each plume as its centre's local x and its width: one for about every
-## `_SMOKE_EVERY` pixels of a stretch, spaced evenly along it and never wider than the stretch.
-static func _smoke_across(runs: PackedVector2Array) -> PackedVector2Array:
-	var plumes := PackedVector2Array()
-	for run in runs:
-		var width := run.y - run.x
-		var count := maxi(1, roundi(width / _SMOKE_EVERY))
-		for i in count:
-			plumes.append(Vector2(run.x + width * (i + 0.5) / count, minf(_SMOKE_SIZE.x, width)))
-	return plumes
-
-## How far the fire's own drawing sits from where the row was sited, toward the wall it stands
-## against — `CityMap.pavement_inward()` read the same way `_hut_doorway()` reads it, since these
-## nodes' local axes never rotate. A row with no body is never moved off the centre of the tile it
-## was sited on (`setup()` centres only a body on its pavement band), and the frontage lane's tile
-## centre is half a tile from the wall, so this is that half tile, closing the gap onto the
-## frontage. `Vector2.ZERO` with no map, the harmless default a data-level rig gets: the flames stay
-## where they are drawn with no wall to reach for.
-func _wall_offset() -> Vector2:
-	if not _map:
-		return Vector2.ZERO
-	var inward := _map.pavement_inward(_map.world_to_tile(global_position))
-	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
+## Adds `node` to the world this instance stands in, on the entity layer (`WorldMap.add_entity()`),
+## or beside it in its own parent on a map no world draws — a rig that stands it under a bare node.
+func add_beside_it(node: Node2D) -> void:
+	if _map.has_world():
+		_map.add_entity(node)
+	else:
+		get_parent().add_child(node)
 
 ## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
 ## by default, local Y on an east-west street. See `_spread_is_vertical`.
-func _spread_at(offset: float) -> Vector2:
+func spread_at(offset: float) -> Vector2:
 	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
 
-## The draw size for one slice of a spread: `along` is its length down the axis it spreads on,
-## `thickness` is its extent across that axis, swapped into `(x, y)` for whichever axis that is —
-## so a segment stays as tall as the art says on a north-south street and as wide as the art says
-## on an east-west one, whichever axis "tall" turns out to be.
-func _spread_extent(along: float, thickness: float) -> Vector2:
-	return Vector2(thickness, along) if _spread_vertical else Vector2(along, thickness)
+## Whether its spread runs down the screen rather than across it (`_spread_is_vertical()`).
+func runs_vertically() -> bool:
+	return _spread_vertical
 
-## A blocking object is drawn at exactly the width it obstructs, by repeating a segment
-## across it. Anything else would be a lie about where the player can walk. On either axis the
-## segments cover `-half` to `half` and no further (`_spread_slice_feet`).
-##
-## **The end cap is inset by half its own width, for the same reason, on either axis.** A cap
-## centred at `±half` hangs half its own width past the obstruction — `barrier_end.svg` is 6px wide,
-## so a `construction` barrier that obstructs 64px would draw 70 — which is the picture claiming
-## ground the collision does not hold. Insetting so the cap's *outer* edge lands on `±half` makes
-## the drawn extent equal the obstructed one, matching the segments rather than overhanging them.
-## A cap is an upright post on both axes, so it is drawn at its own size and its width is what it
-## covers along the run whichever way the run goes (`_cap_along`). End-on, the far post stands
-## behind the board and the near one in front of it (`_cap_sides`).
-## `origin` moves the whole spread, its shadow included, to a local point other than this node's
-## own — which is what a body left standing while its owner walks away needs (`_draw_roadblock()`,
-## `EventDef.body_stays_behind`). Zero, the default, is every other caller: the spread is drawn
-## where the instance is.
-func _draw_spread(segment_picture: String, cap: String = "", canvas: CanvasItem = self,
-		origin := Vector2.ZERO) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas, origin)
-	var segment := _native_size(segment_picture)
-	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
-	var width := half * 2.0 / segments
-	var cap_size := _native_size(cap) if not cap.is_empty() else Vector2.ZERO
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, true):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
-	for i in segments:
-		Sprites.draw_standing(canvas, _drawn(segment_picture),
-				origin + _spread_at(_spread_slice_feet(_spread_vertical, half, width, i)),
-				_spread_extent(width, thickness))
-	if not cap.is_empty():
-		for side: float in _cap_sides(_spread_vertical, false):
-			_draw_cap(canvas, cap, cap_size, origin, half, side)
+## Whether a stationary vehicle shows its side rather than its end (`EventFootprints.stands_side_on()`).
+func stands_side_on() -> bool:
+	return _stationary_vehicle_side
 
-## Where slice `index` of a spread stands its feet, along the run: every slice is `width` long and
-## together they cover `-half` to `half`, the obstruction's own extent.
-##
-## **Broadside, at the middle of its slice; end-on, at the near end of it.** `Sprites.draw_standing`
-## puts the feet at the bottom of the picture, and broadside the run is across the picture, so the
-## middle is what centres a slice on its ground. End-on the run goes *up* the picture: a slice drawn
-## `width` tall with its feet at its middle would stand half a slice up the screen from its own
-## ground, and the whole column with it — overhanging the far end of the body by half a slice and
-## falling half a slice short of the near end, where she walks up to it. With the feet at the near
-## end each slice's picture covers its own slice of ground, and the column covers exactly the
-## ground its body closes.
-static func _spread_slice_feet(vertical: bool, half: float, width: float, index: int) -> float:
-	return -half + width * (index + (1.0 if vertical else 0.5))
+## The stride's phase, in radians of `GAIT_RATE` per pixel walked (`_advance_gait()`).
+func gait_phase() -> float:
+	return _gait_phase
 
-## One end cap of a spread, standing at its end of the run — see `_draw_spread`.
-func _draw_cap(canvas: CanvasItem, cap: String, cap_size: Vector2, origin: Vector2, half: float,
-		side: float) -> void:
-	Sprites.draw_standing(canvas, _drawn(cap),
-			origin + _spread_at(_cap_offset(half, _cap_along(cap_size), side)), cap_size)
+## Whether the last tick covered any ground.
+func gait_is_moving() -> bool:
+	return _gait_moving
 
-## Which end caps are drawn before the segments (`behind` true) and which after, as the `side` of
-## each (−1 the start of the run, +1 its end). The whole spread is one node, so nothing y-sorts
-## within it and draw order is the only depth there is. Broadside, both posts stand level with the
-## board and go over it. End-on, the run goes away from the camera: the start is its far end, so
-## that post stands behind the board and is drawn first, and only the near post goes over it.
-static func _cap_sides(vertical: bool, behind: bool) -> Array[float]:
-	var sides: Array[float] = []
-	if vertical:
-		sides.append(-1.0 if behind else 1.0)
-	elif not behind:
-		sides.append(-1.0)
-		sides.append(1.0)
-	return sides
+## Seconds this instance has been stepped, the idle animations' clock.
+func clock() -> float:
+	return _clock
 
-## A whole-scene picture is one body, including on an east-west street. Its vertical asset is
-## fitted to the obstruction's diameter, so its standing point moves to the far end of the
-## obstruction: `Sprites.draw_standing` anchors the bottom edge, while this scene must span both
-## sides of the ground point. Only the three wide scenes use this path; segmented looks keep the
-## repeated standing anchors above unchanged.
-func _draw_wide_scene(picture: String, canvas: CanvasItem = self) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	var size := _native_size(picture)
-	var thickness := size.x if _spread_vertical else size.y
-	var extent := _spread_extent(half * 2.0, thickness)
-	var anchor := _wide_scene_anchor(_spread_vertical, half)
-	var shadow := _wide_scene_shadow(picture)
-	if not shadow.is_empty() and canvas != _halo:
-		canvas.draw_texture_rect(_drawn(shadow),
-				Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
-				false, Palette.SHADOW)
-	else:
-		# No authored ground-contact art for this axis (only `car_accident` has one either way) —
-		# the shape's own capsule shadow follows the same span as the body, `-half` to `half`
-		# along the spread axis.
-		_draw_body_shadow(canvas)
-	Sprites.draw_standing(canvas, _drawn(picture), anchor, extent)
+## This instance's own offset into an idle animation's period, 0..1, so two of a kind do not swap
+## in lockstep.
+func idle_offset() -> float:
+	return _idle_phase_offset
 
-static func _wide_scene_anchor(vertical: bool, half: float) -> Vector2:
-	return Vector2(0.0, half) if vertical else Vector2.ZERO
-
-## The along-axis offset for one end cap, inset from `±half` by half the cap's own extent on that
-## axis so its outer edge lands on the obstruction boundary rather than past it — see `_draw_spread`.
-## A pure function so a test can assert the arithmetic directly, against the same asset size and
-## `obstructs_radius` the drawing itself uses, rather than by parsing what `draw_texture_rect`
-## painted.
-static func _cap_offset(half: float, cap_along: float, side: float) -> float:
-	return side * (half - cap_along * 0.5)
-
-## How much of a spread's run one end cap covers on the ground: the post's own width, on both
-## axes. **Never its picture's height on an end-on run**, though that is the extent along the
-## spread there: the height is how tall the post stands, not how much of the street it takes up,
-## and insetting by it stands each end post half its height in from its end of the barrier, so on
-## a 64px column the two 26px posts cover most of it rather than capping it.
-static func _cap_along(cap_size: Vector2) -> float:
-	return cap_size.x
-
-## The tables, and the people at them.
-##
-## The hole an off-screen burst left in the road. **Flat, centred and unshadowed**, which is all
-## three of the ways it is unlike every other body in this file: the picture is ground rather than
-## an object standing on ground, so it registers on its own middle (`_CRATER_ANCHOR`) instead of on
-## its feet, and a drop shadow under a hole would read as a mound. What makes it solid anyway is
-## `def.shape` — `EventInstance._build_obstruction()` reads that and nothing here — so the circle
-## she cannot walk into is exactly half of the picture she can see.
-func _draw_crater(canvas: CanvasItem = self) -> void:
-	_draw_at_anchor(canvas, IMPACT_CRATER, _CRATER_ANCHOR)
-
-## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
-## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
-## the `guard_standing_*` family while he waits for her and through a stop (`_stands_still_now()`),
-## `guard_alert_*` for any notice he gives (`masked_pursuer_pictures()`), as a heated roadblock's
-## guard does at his post, and `guard_lunging_*` once he is actually on her line. Read from his own
-## travel heading
-## through `_draw_eight_view()`, the same helper every other moving family uses, so he turns to
-## face where he is going on every step of the shaft rather than only mirroring east/west
-## (PLAYTEST-128, M56). No `side_faces_west` override: `guard_lunging_side.svg`'s own comment says
-## the family is east-authored, the same as every person/animal family bound before it. Its own
-## body shadow — `def.shape`, a 9px point, at local origin — is exactly what `_draw_eight_view()`
-## draws by default, so nothing here calls `_draw_shape_shadow()` separately any more.
-func _draw_masked_pursuer(canvas: CanvasItem = self) -> void:
-	_draw_eight_view(masked_pursuer_pictures(), _heading, canvas)
-
-## The guard-drawn pursuer's picture for this frame. **The alert, hand raised, is every notice one
-## of them gives**: the guardsman a vehicle lets out, standing for his notice
-## (`is_standing_for_its_notice()`, read off `EventDef.stands_for_its_notice`),
-## and the masked man standing at the foot of the shaft through his notice (`is_telegraphing()`
-## after his wait, which his row's `pursues_within` gives him and no other guard-drawn row has).
-## *(Inbox #764 in minty-lemur, the player: an event that does not spawn already charging always needs a
-## warning.)* The van's guard a task sends and the guardsman a torn poster sends arrive charging and
-## never give one, nor does the door guard, whose warning was the hut's or the post's guard's from
-## her crossing (`EventDef.charges_at_once`). Otherwise `guard_standing_*` while `_stands_still_now()` — the masked man's wait,
-## a stop — and `guard_lunging_*` after.
-func masked_pursuer_pictures() -> Dictionary:
-	if is_standing_for_its_notice() or (def.pursues_within > 0.0 and is_telegraphing()):
-		return GUARD_ALERT_BY_VIEW
-	return GUARD_STANDING_BY_VIEW if _stands_still_now() else GUARD_LUNGING_BY_VIEW
-
-## **Both halves have to be drawn**: the tables are what obstructs and the conversation is what it
-## emits, so a café drawn as furniture alone is the loudest pleasant thing in act I looking like
-## something somebody left out. The spread is `_draw_spread`'s, so the width is exactly the width in
-## the way; the sitters are drawn *first* and a little behind, because the table is the part she
-## cannot walk through and the picture has to agree with that.
-##
-## Alternate tables are mirrored, which turns a rank of clones into pairs facing each other — the
-## same reason a spoiled park rolls a different def per cell. The chair's own shift stays *along*
-## the spread axis, same as the table it sits beside; the −7 lift is a fixed screen-depth nudge that
-## puts a sitter visibly behind their table whichever way the row runs, so it stays a plain Y offset
-## rather than turning with the spread.
-func _draw_cafe(canvas: CanvasItem = self) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
-	# The lean is the whole row's, the facing is each seat's. `_idle_stepping()` is a property of
-	# this instance rather than of a chair, so the frame table is chosen once here and every sitter
-	# leans together; the view and the mirror are picked per seat inside the loop below, because a
-	# party at one table faces the table rather than sharing the frontage's own bearing.
-	var by_view := CAFE_SITTER_BY_VIEW_B if _idle_stepping(SITTER_IDLE_PERIOD) else CAFE_SITTER_BY_VIEW
-	var segment := _native_size(CAFE_TABLE)
-	var along_natural := segment.y if _spread_vertical else segment.x
-	var thickness := segment.x if _spread_vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
-	var width := half * 2.0 / segments
-	for i in segments:
-		var along := -half + width * (i + 0.5)
-		# The chair is drawn at one end of the table sprite and turns round with it.
-		var alternate := i % 2 == 1
-		var chair_along := along + width * (0.26 if alternate else -0.26)
-		# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for
-		# the sitter's projected feet; it is deliberately not part of the table-facing bearing.
-		var sitter_heading := _cafe_seat_heading(_spread_vertical, alternate)
-		var sitter_sector := EightDirection.nearest(sitter_heading)
-		var view: String = EIGHT_VIEW_BY_SECTOR[sitter_sector]
-		var sitter: String = by_view[view]
-		var mirror := EightDirection.is_mirrored(sitter_sector)
-		Sprites.draw_standing(canvas, _drawn(sitter), _spread_at(chair_along) + Vector2(0.0, -7.0),
-				Vector2.ZERO, mirror)
-	for i in segments:
-		var along := -half + width * (i + 0.5)
-		Sprites.draw_standing(canvas, _drawn(CAFE_TABLE),
-				_spread_at(along), _spread_extent(width, thickness), i % 2 == 1)
-
-## The bearing from an alternating café chair to its own table. This follows the chair anchor's
-## spread-axis offset, while leaving the sprite's fixed screen-depth lift out of the calculation.
-## A horizontal frontage therefore seats its pair facing east and west; a vertical frontage seats
-## them facing south and north. The caller resolves the bearing through the shared eight-view table.
-static func _cafe_seat_heading(spread_vertical: bool, alternate: bool) -> Vector2:
-	var toward_table := Vector2.DOWN if spread_vertical else Vector2.RIGHT
-	return -toward_table if alternate else toward_table
-
-## The busker's own site facing and idle strum — he never moves, so this reads `_idle_stepping()`
-## rather than `_gait_stepping()`, the same timer the café sitters use above at a faster tempo
-## (`BUSKER_STRUM_PERIOD`). Kept as its own function rather than routed through `_draw_eight_view()`
-## because that helper's own `by_view_b` parameter is keyed to the gait, not the idle timer.
-func _draw_busker(canvas: CanvasItem = self) -> void:
-	_draw_body_shadow(canvas)
-	var view := _select_view(_heading)
-	var mirror := EightDirection.is_mirrored(_view_sector)
-	var by_view := BUSKER_BY_VIEW_B if _idle_stepping(BUSKER_STRUM_PERIOD) else BUSKER_BY_VIEW
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
-
-## The pole and horns stand whether the mast is live or silenced — a mast never leaves. On top of
-## it, the lamp and the arcs say what the pole alone cannot: amber and dark during the telegraph
-## ("it has not started yet" — the same sentence the flash carries everywhere else in the
-## vocabulary, docs/EVENTS.md, "The visual vocabulary"), green with the arcs rising while it
-## speaks, and neither once `silenced` — *(2026-09-23, the player: "there should be a visible
-## indicator about when a mast is active / has a broadcast")*.
-func _draw_mast(canvas: CanvasItem = self) -> void:
-	_draw_simple(MAST, canvas)
-	if silenced:
-		return
-	if _mast_is_telegraphing_now():
-		Sprites.draw_standing(canvas, _drawn(MAST_LAMP), _MAST_LAMP_AT, Vector2.ZERO, false,
-				Palette.SIGNAL_AMBER)
-		return
-	Sprites.draw_standing(canvas, _drawn(MAST_LAMP), _MAST_LAMP_AT, Vector2.ZERO, false,
-			Palette.SIGNAL_GREEN)
-	Sprites.draw_standing(canvas, _drawn(SOUND_PULSE), _MAST_PULSE_AT, Vector2.ZERO, false)
-
-## Whether the mast is in the silent, amber-lamped warning that opens every broadcast cycle right
-## now — `Tuning.MAST_FIRST_DAY`'s own "a 3s telegraph, a 22s period", read off `age` because a
-## mast's `age` **is** the city's broadcast clock (`EventManager._broadcast_clock`, carried in at
-## every `resume()`), not a per-instance clock that started whenever she happened to walk up.
-## That is what makes the telegraph repeat every period rather than firing once at creation the way
-## `is_telegraphing()` does for an ordinary row, and what keeps two masts met minutes apart in the
-## same phase of it. `current_intensity()`'s own cosine pulse is untouched by this — the field
-## keeps swelling and fading on the same clock; this only decides the lamp and the arcs.
-func _mast_is_telegraphing_now() -> bool:
-	if def.pulse_period <= 0.0:
-		return false
-	return fmod(age, def.pulse_period) < def.telegraph_time
-
-## The eight pointing poses, in the bearing order `_protester_texture()` indexes into: north
-## first, then clockwise. Kept beside the poses themselves rather than built in the function, so
-## the table is one thing to read rather than eight `match` arms.
-const _POINTING_POSES: Array[String] = [
-	PROTESTER_POINT_N, PROTESTER_POINT_NE, PROTESTER_POINT_E, PROTESTER_POINT_SE,
-	PROTESTER_POINT_S, PROTESTER_POINT_SW, PROTESTER_POINT_W, PROTESTER_POINT_NW,
-]
-
-## The plain rank, or whichever of the eight `protester_point_*` poses points closest to
-## `objective` from `from`. `Vector2.INF` is "nothing to point at" — a chalk-mark step or no step
-## at all — and draws the same plain `PROTESTER` the row always used. *(2026-09-11, the player:
-## "the mark is findable now -- I don't think we need pointing for that. but the other tasks are
-## not as easy and need pointing.")*
-##
-## The bearing is `TelemetryLog.compass()`'s own arithmetic — clockwise from north (`-y`), through
-## east (`+x`) at 90° — rounded to the nearest of the eight 45° sectors the poses were drawn for.
-static func _protester_texture(from: Vector2, objective: Vector2) -> String:
-	if objective == Vector2.INF:
-		return PROTESTER
-	var toward := objective - from
-	if toward.length_squared() < 0.0001:
-		return PROTESTER
-	var bearing := rad_to_deg(atan2(toward.x, -toward.y))
-	var sector := roundi(bearing / 45.0) % 8
-	if sector < 0:
-		sector += 8
-	return _POINTING_POSES[sector]
-
-## The resistance director's own read-only `pointable_objective()`, found the same way `Baby`
-## finds `WorldContext` and `ResistanceDirector` finds the player — a group looked up once and
-## cached, since nothing here is handed a reference by whoever built the scene. `Vector2.INF` with
-## no director in the tree, which a bare test rig simply never has: `_draw_protest` already treats
-## that as "nothing to point at".
-var _resistance: ResistanceDirector
-
-func _protest_objective() -> Vector2:
-	if not (_resistance and is_instance_valid(_resistance)):
-		# `is_inside_tree()` rather than a null check on `get_tree()`'s own return: `get_tree()`
-		# logs an engine `ERROR:` itself whenever a node has none, which a bare test rig (and now
-		# `tools/cost_table.gd`'s measurement of every row, `protest` among them) hits on every
-		# tick rather than once — `is_inside_tree()` answers the same question with nothing to log.
-		if not is_inside_tree():
-			return Vector2.INF
-		_resistance = get_tree().get_first_node_in_group("resistance") as ResistanceDirector
-	if not _resistance:
-		return Vector2.INF
-	return _resistance.pointable_objective()
-
-## A rank of placards as wide as the ground it takes.
-##
-## The catalogue used to say of this row: *"one person's worth, because one person is what it
-## draws… the art is the fix."* This is the fix, and the body follows it rather than the other way
-## round — a protest that fills a square is the whole content of the event, and it could not have
-## one until there was a picture of one.
-##
-## Two ranks rather than one, offset, so it reads as a crowd with depth instead of a queue; the
-## back rank is drawn first and higher up the screen. Nothing here grows with `intensity_ramp` —
-## the caret over it already breathes with what it is emitting, and a crowd that visibly recruits
-## would be a second cue saying the same thing.
-##
-## **Every body in the rank shares one pose.** They stand within a few tens of pixels of each
-## other and the objective is blocks away, so the bearing from any one of them to it is the same
-## bearing to within a sector; asking once for the whole rank is the same picture a per-body ask
-## would draw, for a fortieth of the cost.
-func _draw_protest(canvas: CanvasItem = self) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
-	var picture := _protester_texture(global_position, _protest_objective())
-	var mirror := false
-	# `PROTESTER` is `_protester_texture()`'s own sentinel for "nothing to point at" — a mark step
-	# or no step at all — which is exactly a stationary actor with no target: the rank's own site
-	# facing picks its view instead, the same as `busker` or `poster_crew`. Left as a sentinel check
-	# rather than a change to `_protester_texture()` itself, so `tests/test_protest.gd`'s own
-	# contract (a plain pose is exactly `EventInstance.PROTESTER`) keeps holding: the eight
-	# `protester_point_*` poses stay exactly as M65 bound them, unmirrored, since each is its own
-	# authored direction rather than a member of the mirrored five-view family.
-	if picture == PROTESTER:
-		var view := _select_view(_heading)
-		var by_view := PROTESTER_BY_VIEW_B if _gait_stepping() else PROTESTER_BY_VIEW
-		picture = by_view[view]
-		mirror = EightDirection.is_mirrored(_view_sector)
-	# Spaced off the body rather than off the sprite, so the rank ends where the ground it takes
-	# ends. A crowd drawn at its own natural spacing overhangs its own body by most of a person,
-	# which is the lie `_draw_spread` exists to avoid in the other direction. Off the drawn pose's
-	# own width rather than the plain one's, because a pointing pose's placard arm doubles it.
-	var across := maxi(2, roundi(half * 2.0 / (_native_size(picture).x * 0.8)))
-	var step := half * 2.0 / across
-	for rank in 2:
-		var back := rank == 0
-		var lift := -14.0 if back else 0.0
-		var shift := step * 0.5 if back else 0.0
-		for i in across - (1 if back else 0):
-			var x := -half + step * (i + 0.5) + shift
-			Sprites.draw_standing(canvas, _drawn(picture), Vector2(x, lift), Vector2.ZERO, mirror)
-
-## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
-## fourteen milestones — the same five flames as `burning_building`, on the one event in the
-## catalogue whose content is that there are *people* doing this.
-##
-## The flashes are drawn rather than authored, because a muzzle flash is a light and not an object,
-## and they are timed off the pulse envelope so they land on the beat the meter is already moving
-## on. Between beats there is nothing but two shapes behind sandbags, which is the point: it is a
-## thing to time a run past, and `can_be_timed()` already says so.
-func _draw_firefight(canvas: CanvasItem = self) -> void:
-	var half := maxf(11.0, def.obstructs_radius)
-	_draw_body_shadow(canvas)
-	var strength := 1.0
-	if def.intensity > 0.0:
-		strength = clampf(current_intensity() / def.intensity, 0.0, 1.0)
-	for side in [-1.0, 1.0]:
-		var at := Vector2(side * half * 0.62, 0.0)
-		Sprites.draw_standing(canvas, _drawn(GUNMAN), at, Vector2.ZERO, side > 0.0)
-		# Sized off the current emission and jittered per side, so the two are never in step.
-		var flare := strength * (0.6 + 0.4 * sin(age * 17.0 + side * 2.1))
-		if flare <= 0.25:
-			continue
-		var muzzle := at + Vector2(side * 15.0, -12.0)
-		canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
-		canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
-
-## A muzzle flash is a *light*, and it must not borrow the amber the danger vocabulary uses for its
-## marks. Two things that mean different things must not share a constant, or a rebalance of one
-## silently repaints the other.
-const MUZZLE_FLASH := Color("e8b64a")
-
-## The person, the dog, and the lead between them.
-##
-## The lead is drawn because it is the mechanic: what makes a dog walker worth crossing the
-## street for is the span it owns, and a span you cannot see is a span you walk into. The dog
-## leads on the side the walker is heading, so the pair reads as being dragged along.
-func _draw_dog_walker(canvas: CanvasItem = self) -> void:
-	var reach := def.inner_radius * 0.8
-	# The lead's own span stays a plain east/west offset — a composite the walker's own picture
-	# does not own, unaffected by which of the eight views that picture now is.
-	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
-	_draw_body_shadow(canvas)
-	# The dog's own shadow, not the row's shape — a two-body composite has no single shape to be
-	# either of its bodies, so this one is a per-part point like the abduction's victim.
-	_draw_shadow(canvas, to_the_dog, 9.0)
-	# Slack in the middle, so it reads as a lead rather than as a bar.
-	canvas.draw_line(Vector2(0.0, -26.0), to_the_dog + Vector2(0.0, -6.0), Palette.OUTLINE, 2.0)
-	# The dog faces the walker's own travel — the same heading, the same view, the same mirror —
-	# since it is being led rather than watching anything of its own.
-	var view := _select_view(_heading)
-	var mirror := EightDirection.is_mirrored(_view_sector)
-	# One phase for the pair, so the walker's own legs and the dog's never disagree about which of
-	# them is mid-stride: the dog steps while he does and rests while he does.
-	var stepping := _gait_stepping()
-	var person_by_view := PERSON_BY_VIEW_B if stepping else PERSON_BY_VIEW
-	var dog := dog_picture(view, stepping, _gait_second_half())
-	Sprites.draw_standing(canvas, _drawn(person_by_view[view]), Vector2.ZERO, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, _drawn(dog), to_the_dog, Vector2.ZERO, mirror)
-
-## The van, and the bystander it is taking while there is one to draw.
-##
-## `_draw_dog_walker` above is the precedent for a second figure with its own offset; here the
-## second figure has a scene rather than a fixed span, sliding from `VICTIM_STANDING_OFFSET` to
-## the van's own position over `VICTIM_TAKEN_OVER` — see `_update_the_take()`, the only place that
-## ever sets `_victim_taken_at`. Drawn first so the van's own silhouette is what she is left
-## looking at once the walk ends, the same order `_draw_cafe` draws its sitters before its tables.
-##
-## The van itself goes through `_draw_eight_view` rather than `_draw_simple`: a parked van never
-## needed more than one side-on picture, but a hunting one steers straight at her and that is not
-## always down a pavement, so it draws the full front/back/side/diagonal set the same way `police_car`
-## does once it turns off its own axis.
-## The victim and the van share one `_view_sector` field — safely, because both headings are always
-## exactly east or west by construction while they can ever be drawn together. `is_taking_a_victim()`
-## is only ever true while the van `is_waiting()` (`_update_the_take()` abandons it the instant a
-## `HUNTS`-heated copy starts hunting), and idling the van's own `_heading` is `Planned.facing`'s
-## untouched default, always due east — so the van's own `_select_view(_heading)` call below, after
-## the victim's, only ever asks for exactly the sector the victim's own call left it on (both facing
-## the same way) or its exact opposite (180° apart, always past `EightDirection`'s hold), never
-## anything a stale hold could get wrong.
-func _draw_abduction(canvas: CanvasItem = self) -> void:
-	if is_taking_a_victim():
-		var through := (age - _victim_taken_at) / VICTIM_TAKEN_OVER
-		var standing := Vector2(
-				-VICTIM_STANDING_OFFSET if _heading_is_west() else VICTIM_STANDING_OFFSET, 0.0)
-		var at := standing.lerp(Vector2.ZERO, through)
-		_draw_shadow(canvas, at, 8.0)
-		# She faces the van, which is the only place she is walking to — a pure east/west direction
-		# by construction (`standing` never has a Y component), so this always resolves to the same
-		# side view `_heading_is_west()` picked before, now read off the shared table.
-		var view := _select_view(-standing)
-		var by_view := VAN_VICTIM_BY_VIEW_B if _victim_gait_stepping() else VAN_VICTIM_BY_VIEW
-		Sprites.draw_standing(canvas, _drawn(by_view[view]), at, Vector2.ZERO,
-				EightDirection.is_mirrored(_view_sector))
-	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
-	# doc comment on `side_faces_west`.
-	_draw_eight_view(UNMARKED_VAN_BY_VIEW, _heading, canvas, true)
-
-## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
-## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
-## conversation, and it is the only telegraph that mechanic gets — there is no exclamation mark,
-## because she is a cost rather than a threat and that mark is spoken for. See
-## `docs/EVENTS.md`, "The visual vocabulary".
-func _draw_chatting_mother(canvas: CanvasItem = self) -> void:
-	_draw_body_shadow(canvas)
-	var chatting := is_chatting()
-	var by_view := CHATTING_MOTHER_TALKING_BY_VIEW if chatting else CHATTING_MOTHER_WALKING_BY_VIEW
-	# Talking holds still by construction — `_process()` freezes her pacing the instant a
-	# conversation starts — so only the walking posture gets a second frame.
-	if not chatting and _gait_stepping():
-		by_view = CHATTING_MOTHER_WALKING_BY_VIEW_B
-	var view := _select_view(_heading)
-	Sprites.draw_standing(canvas, _drawn(by_view[view]), Vector2.ZERO, Vector2.ZERO,
-			EightDirection.is_mirrored(_view_sector))
-
-## Which way a mobile event is travelling, for art that has a front and a back. A
-## stationary event never flips.
-func _heading_is_west() -> bool:
-	return _heading.x < 0.0
-
-## Advances `_view_sector` from `heading` and returns the view name to read out of whichever
-## family's own `_BY_VIEW` table is live — `CrowdAgent._update_walker_view()`'s own shape, copied
-## rather than shared since an event and a walker have no common base to hang one field on. No
-## idle floor of its own: every `heading` a caller below feeds in is already a unit vector that is
-## never actually zero — a moving actor's `_heading` is only ever overwritten by an actual step or
-## an actual notice, and a stationary one's is its own fixed siting — the same reason `Stroller`
-## never passes one either (`EightDirection.update()`'s own doc). Safe to call more than once a
-## frame with the same heading: `EntityHalo` redraws `_draw_body()` once per ring, and asking
-## `EightDirection.update()` twice from the same starting sector always answers the same way.
-func _select_view(heading: Vector2) -> String:
-	_view_sector = EightDirection.update(_view_sector, heading)
-	return EIGHT_VIEW_BY_SECTOR[_view_sector]
-
-# ------------------------------------------------------------- the region door ---
-# The checkpoint kit: `docs/GRAPHICS.md` binds each row to the file it draws. See `RegionPlanner`
-# for where the bodies stand and `EventManager` for the detention and the teleport.
-
-## Draws `texture` so its own ground anchor lands at `at` (local space, default the body's own
-## origin) — `Sprites.draw_standing`'s bottom-centre assumption is wrong for this kit: a boom
-## gate's anchor sits between its two posts rather than under the middle of the canvas, and the
-## hut's doorway is a few pixels short of the canvas's own bottom edge. No mirroring, unlike
-## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
-func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
-		at: Vector2 = Vector2.ZERO) -> void:
-	canvas.draw_texture_rect(_drawn(picture), Rect2(at - anchor, _native_size(picture)), false)
-
-## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
-## stands on rather than stored: the placement never turns, so there is nothing to cache, and this
-## is the same geometry every other row that cares which way a pavement faces already asks —
-## `EventDef.Pavement.AGAINST_THE_BUILDING`'s own facing is `-pavement_inward`, and the doorway
-## faces the carriageway for the same reason a lorry backing into a yard faces out of the wall
-## behind it. `Vector2i.DOWN` (south) with no map, the harmless default a data-level rig gets.
-func _hut_doorway() -> Vector2i:
-	if _map:
-		var tile := _map.world_to_tile(global_position)
-		var inward := _map.pavement_inward(tile)
-		if inward != Vector2i.ZERO:
-			return -inward
-	return Vector2i.DOWN
-
-func _hut_texture(doorway: Vector2i) -> String:
-	if doorway == Vector2i.UP:
-		return HUT_NORTH
-	if doorway == Vector2i.LEFT:
-		return HUT_WEST
-	if doorway == Vector2i.RIGHT:
-		return HUT_EAST
-	return HUT_SOUTH
-
-## The hut, doorway facing the carriageway, with a guard posted beside it on the pavement rather
-## than in the doorway itself — offset along whichever axis the doorway does not face, so the two
-## never overlap whichever of the four the doorway turns out to be.
-##
-## **The guard is the only part of it that goes inside for a hold.** The hut is a building: it
-## stays exactly where it is, casting the same shadow, so the two seconds read as her having gone
-## in rather than as the checkpoint having vanished.
-func _draw_checkpoint_hut(canvas: CanvasItem = self) -> void:
-	var doorway := _hut_doorway()
-	_draw_body_shadow(canvas)
-	_draw_at_anchor(canvas, _hut_texture(doorway), _HUT_ANCHOR)
-	if is_its_guard_inside():
-		return
-	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
-	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
-	# dog beside a dog walker.
-	_draw_shadow(canvas, beside, 8.0)
-	_draw_at_anchor(canvas, GUARD_ALERT_BY_VIEW["front"] if guard_warns_her else GUARD_STANDING,
-			_GUARD_ANCHOR, beside)
-
-## The boom, raised or lowered from `gate_state` (`null` reads as lowered, the safe default before
-## `Crowd` has ever touched it), over whichever axis of road `facing_now()` says this door's street
-## runs — `_heading` is the street's own along-axis here, not a direction this stationary body ever
-## turns to face, see `facing_now()`'s own doc.
-func _draw_checkpoint_gate(canvas: CanvasItem = self) -> void:
-	var raised: bool = gate_state != null and gate_state.raised
-	var runs_north_south := gate_runs_north_south(_heading)
-	var picture: String
-	var anchor: Vector2
-	if runs_north_south:
-		picture = BOOM_GATE_NS_RAISED if raised else BOOM_GATE_NS_LOWERED
-		anchor = _BOOM_NS_ANCHOR
-	else:
-		picture = BOOM_GATE_EW_RAISED if raised else BOOM_GATE_EW_LOWERED
-		anchor = _BOOM_EW_ANCHOR
-	_draw_body_shadow(canvas)
-	_draw_at_anchor(canvas, picture, anchor)
-
-## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom
-## whose arm spans east-west. `along_axis` is the street's own along-axis, which
-## `RegionPlanner._along_axis` sets to `DOWN` for a north-south street and `RIGHT` for an east-west
-## one. Named rather than inlined so the drawing and the test that measures it read the same rule.
-static func gate_runs_north_south(along_axis: Vector2) -> bool:
-	return absf(along_axis.y) > absf(along_axis.x)
-
-## How far the lowered arm reaches to either side of the gate's own ground point, across the road
-## it bars: `x` the near edge (negative), `y` the far edge, in pixels along the cross-street axis.
-## This is the number the player reads as *the bar is on the road* or *the bar is on the kerb*, and
-## nothing in `_draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
-static func boom_arm_span(runs_north_south: bool) -> Vector2:
-	if runs_north_south:
-		var ns := _BOOM_NS_ARM.position.x - _BOOM_NS_ANCHOR.x
-		return Vector2(ns, ns + _BOOM_NS_ARM.size.x)
-	var ew := _BOOM_EW_ARM.position.y - _BOOM_EW_ANCHOR.y
-	return Vector2(ew, ew + _BOOM_EW_ARM.size.y)
+## The map it stands on.
+func world_map() -> WorldMap:
+	return _map

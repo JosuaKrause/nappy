@@ -9,6 +9,9 @@ Run it through the wrapper, which owns the environment:
     tools/goatcounter.sh --json
     tools/goatcounter.sh --encounters
     tools/goatcounter.sh --by-release
+    tools/goatcounter.sh --report
+    tools/goatcounter.sh --report --by-release
+    tools/goatcounter.sh --report --markdown
 
 `VisitCounter` (`src/autoload/visit_counter.gd`) sends one GoatCounter event per moment worth
 counting, each path starting `nappy-`, to the game's own site, `nappy.goatcounter.com` -- see
@@ -52,10 +55,10 @@ session as a visit of its own: an event's count is every time it was sent, a ret
 included.
 
 Grouping follows the shape `docs/TELEMETRY.md` documents rather than a hard-coded list of event
-names, since the catalogue keeps growing: a name is either run-level (`run-*`, `ending-*`,
-`escape-*`, `controls-*`), a day event (`day-<N>-<rest>`), or -- if it matches neither shape --
-printed anyway, at the end, rather than silently dropped. `--raw` skips the grouping and the
-`--prefix` filter and prints every path GoatCounter has for the range, events and the page visit
+names, since the catalogue keeps growing: a name is either run-level (`run-*`, `mode-*`,
+`checkpoint-N-from-day-M`, `ending-*`, `escape-*`, `controls-*`), a day event (`day-<N>-<rest>`), or --
+if it matches neither shape -- printed anyway, at the end, rather than silently dropped. `--raw` skips the
+grouping and the `--prefix` filter and prints every path GoatCounter has for the range, events and the page visit
 alike -- what an assistant would otherwise reach for a hand-written request to answer.
 
 `--encounters` reads the encounter events instead of the funnel: for each event type, how many
@@ -64,6 +67,17 @@ encounters were seen (`day-<N>-seen-<event>`), how many of those were meaningful
 (`day-<N>-influenced-unseen-<event>`) as a column of their own -- overall and per day. The ratio is
 left blank when nothing was seen rather than divided by nothing. The fire's older
 `nappy-day-3-seen-fire` is a moment of its own, not an encounter, and stays out of the table.
+
+`--report` is the analysis of where players struggle as one page: the page's visitors, fresh and resumed
+runs, controls, mode, endings, the escape and the checkpoints (by the day they came from); a per-day
+table of attempts (`began`), wins, win rate and losses split crying / hard fail / timeout; every cause
+of each day's losses, biggest first; and the cause totals. It describes and concludes nothing: no day
+or cause is flagged, and the reading is written by hand each time from the whole report. A day under
+`MIN_ATTEMPTS` attempts is marked low-sample, a note on how far its numbers can be trusted; nothing
+is left out for it. With `--by-release` it prints each release window's per-day win rates and causes,
+so a balance change shows across a release; with `--json`, the same data; with `--markdown`, the page as
+Markdown to save as a stats file. `GET /stats/hits` answering 404 (once an HTML page, on a cold
+first read) is retried like a 429, saying so on stderr.
 
 `--check` proves the key works with `GET /api/v0/stats/total` for the last hour, which needs only
 the "Read statistics" permission -- the one every read-only key has. It then tries `GET /api/v0/me`
@@ -105,13 +119,17 @@ PAGE_LIMIT = 100
 # 429 is a rate limit, not a failure -- back off and try again a few times before giving up.
 MAX_RETRIES = 5
 RETRY_BACKOFF_SECONDS = 2.0
+# The statuses worth another try on any call. `GET /stats/hits` also retries a 404 (see `make_fetcher`):
+# the first read of a 30-day range once answered an HTML "404 page not found" and the identical call
+# a minute later worked, so for that one endpoint, which always exists, a 404 is a hiccup.
+RETRY_STATUSES = (429, 502, 503, 504)
 # The server closes the connection on a request line of roughly 32 KB (measured: 31 KB answered, 33 KB
 # closed); stay under it and say so, rather than send a query that can only end in a dropped connection.
 MAX_QUERY_BYTES = 30_000
 
 # The shapes VisitCounter sends outside a day, from docs/TELEMETRY.md's own list -- not the full
 # set of run-level names, which grows; a name starting with one of these is run-level regardless.
-RUN_LEVEL_PREFIXES = ("run-", "ending-", "escape-", "controls-")
+RUN_LEVEL_PREFIXES = ("run-", "mode-", "checkpoint-", "ending-", "escape-", "controls-")
 DAY_RE = re.compile(r"^day-(\d+)-(.+)$")
 
 # A lost day's own name, VisitCounter._loss_event_suffix()'s own shape: the kind
@@ -274,6 +292,16 @@ def require_https(site: str) -> None:
         )
 
 
+def normalize_site(site: str) -> str:
+    """The API base URL for `site`: a bare `https://host` (with or without a trailing slash) gains
+    `/api/v0/`, and one that already ends in `/api/v0` keeps it, so every spelling reaches the API."""
+    parts = urllib.parse.urlsplit(site.strip())
+    path = parts.path.rstrip("/")
+    if not path.endswith("/api/v0"):
+        path += "/api/v0"
+    return f"{parts.scheme}://{parts.netloc}{path}/"
+
+
 class _SameSiteRedirects(urllib.request.HTTPRedirectHandler):
     """Follows a redirect only within the request's own `https://` host.
 
@@ -319,16 +347,40 @@ def _is_transient(error: object) -> bool:
     return isinstance(error, (ConnectionError, TimeoutError, http.client.HTTPException))
 
 
+def _error_sentence(text: str) -> str:
+    """An error body as one short sentence: a JSON or plain body trimmed, an HTML page reduced to its
+    own words (its `<title>`, else its visible text with the tags, scripts and styles removed) so a
+    whole error page never lands in the output."""
+    if "<" not in text:
+        return text[:300]
+    title = re.search(r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+    if title and title.group(1).strip():
+        return " ".join(title.group(1).split())[:300]
+    bare = re.sub(r"<(script|style)\b.*?</\1>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+    bare = re.sub(r"<[^>]*>", " ", bare)
+    return " ".join(bare.split())[:300]
+
+
 def _server_answer(exc: urllib.error.HTTPError) -> str:
     """The server's own words for an HTTP error, trimmed -- the body GoatCounter sends says what was wrong."""
     try:
         text = exc.read().decode("utf-8", "replace").strip()
     except OSError:
         text = ""
-    return (text[:500] or exc.reason or "no message") if isinstance(text, str) else "no message"
+    return (_error_sentence(text) or exc.reason or "no message") if isinstance(text, str) else "no message"
 
 
-def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout: float = 20.0) -> dict[str, Any]:
+def _get(
+    opener: urllib.request.OpenerDirector,
+    url: str,
+    token: str,
+    *,
+    timeout: float = 20.0,
+    retry_statuses: tuple[int, ...] = RETRY_STATUSES,
+    notify: Callable[[str], None] | None = None,
+) -> dict[str, Any]:
+    """One GET as decoded JSON. A dropped connection or a status in `retry_statuses` is tried again up
+    to `MAX_RETRIES` times; each such retry is told to `notify`, so a caller can say it happened."""
     request = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
     attempt = 0
     while True:
@@ -338,14 +390,28 @@ def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout
                 body = response.read()
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
+                host = urllib.parse.urlsplit(url).netloc
                 raise GoatCounterHTTPError(
-                    exc.code, f"GoatCounter rejected the API key (HTTP {exc.code}) -- check GOATCOUNTER_TOKEN"
+                    exc.code,
+                    f"GoatCounter rejected the API key (HTTP {exc.code}) -- check GOATCOUNTER_TOKEN; "
+                    f"a key belongs to one site, so it may be another site's than {host}",
                 ) from exc
-            if exc.code in (429, 502, 503, 504) and attempt <= MAX_RETRIES:
+            if exc.code in retry_statuses and attempt <= MAX_RETRIES:
+                if notify:
+                    notify(
+                        f"HTTP {exc.code} from {url.partition('?')[0]} ({_server_answer(exc)}); "
+                        f"retrying, attempt {attempt} of {MAX_RETRIES}"
+                    )
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt)
                 continue
+            hint = (
+                "; a 404 on every try usually means a wrong site URL (check --site / GOATCOUNTER_SITE)"
+                if exc.code == 404
+                else ""
+            )
             raise GoatCounterHTTPError(
-                exc.code, f"GoatCounter returned HTTP {exc.code} for {url.partition('?')[0]}: {_server_answer(exc)}"
+                exc.code,
+                f"GoatCounter returned HTTP {exc.code} for {url.partition('?')[0]}: {_server_answer(exc)}{hint}",
             ) from exc
         except urllib.error.URLError as exc:
             if _is_transient(exc.reason) and attempt <= MAX_RETRIES:
@@ -366,7 +432,14 @@ def _get(opener: urllib.request.OpenerDirector, url: str, token: str, *, timeout
         return decoded
 
 
-def make_fetcher(site: str, token: str) -> Fetcher:
+def _say_retry(message: str) -> None:
+    print(f"goatcounter: {message}", file=sys.stderr)
+
+
+def make_fetcher(site: str, token: str, *, notify: Callable[[str], None] | None = _say_retry) -> Fetcher:
+    """The real fetcher for `GET /stats/hits`. A 404 from it is retried like a 429 (it is told to
+    `notify`, stderr by default, so the output says a retry happened), since that endpoint always
+    exists and its one observed 404 was transient."""
     base = site.rstrip("/") + "/stats/hits"
     opener = _build_opener()
 
@@ -378,7 +451,7 @@ def make_fetcher(site: str, token: str) -> Fetcher:
                 f"the query would be {len(query)} bytes (the server drops requests past ~32 KB); "
                 "narrow the range with --days or --start/--end"
             )
-        return _get(opener, f"{base}?{query}", token)
+        return _get(opener, f"{base}?{query}", token, retry_statuses=(*RETRY_STATUSES, 404), notify=notify)
 
     return fetch
 
@@ -852,6 +925,238 @@ def to_raw_jsonable(hits: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{"path": h.get("path"), "count": h.get("count"), "event": bool(h.get("event"))} for h in hits]
 
 
+# ------------------------------------------------------------------------------------- report ---
+
+# The one threshold `--report` prints: a sample-size note, not a place to look.
+MIN_ATTEMPTS = 20  # a day with fewer began is printed in full, marked low-sample
+# The page visit's stored path: sent as `nappy.josuakrause.com/`, GoatCounter lists it with a leading slash.
+PAGE_VISIT_PATHS = frozenset({"/nappy.josuakrause.com", "nappy.josuakrause.com/", "nappy.josuakrause.com"})
+CHECKPOINT_RE = re.compile(r"^checkpoint-(\d+)-from-day-(\d+)$")
+
+
+def _sum_matching(run_level: dict[str, int], prefix: str) -> dict[str, int]:
+    return {name[len(prefix) :]: count for name, count in run_level.items() if name.startswith(prefix)}
+
+
+def _day_report(day: int, bucket: dict[str, int]) -> dict[str, Any]:
+    began = bucket.get("began", 0)
+    won = bucket.get("won", 0)
+    totals, kind_causes, _ = split_losses(bucket)
+    unsorted: dict[str, int] = {}
+    for kind, by_cause in kind_causes.items():
+        for cause, count in by_cause.items():
+            unsorted[f"{kind}-{cause}"] = count
+    if totals.get("timeout"):
+        unsorted["timeout"] = totals["timeout"]
+    causes = dict(_sorted_desc(unsorted))
+    return {
+        "day": day,
+        "began": began,
+        "won": won,
+        "win_rate": won / began if began else None,
+        "lost": sum(totals.values()),
+        "crying": totals.get("crying", 0),
+        "hard_fail": totals.get("hard-fail", 0),
+        "timeout": totals.get("timeout", 0),
+        "causes": causes,
+        "low_sample": began < MIN_ATTEMPTS,
+    }
+
+
+def build_report(hits: list[dict[str, Any]], prefix: str) -> dict[str, Any]:
+    """Everything `--report` prints, from the API's hits: players, the per-day table, cause totals
+    and every cause per day, as plain data (the `--json` output is this dict)."""
+    grouped = group_hits(hits, prefix)
+    run: dict[str, int] = grouped["run_level"]
+    visitors = sum(h["count"] for h in hits if h.get("path") in PAGE_VISIT_PATHS and isinstance(h.get("count"), int))
+    checkpoint_days: dict[int, int] = {}
+    for name, count in run.items():
+        match = CHECKPOINT_RE.match(name)
+        if match:
+            from_day = int(match.group(2))
+            checkpoint_days[from_day] = checkpoint_days.get(from_day, 0) + count
+    days = [_day_report(day, grouped["days"][day]) for day in sorted(grouped["days"])]
+    crying: dict[str, int] = {}
+    hard_fail: dict[str, int] = {}
+    timeout = 0
+    for d in days:
+        for cause, count in d["causes"].items():
+            if cause.startswith("crying-"):
+                crying[cause[len("crying-") :]] = crying.get(cause[len("crying-") :], 0) + count
+            elif cause.startswith("hard-fail-"):
+                key = cause[len("hard-fail-") :]
+                hard_fail[key] = hard_fail.get(key, 0) + count
+        timeout += d["timeout"]
+    return {
+        "visitors": visitors,
+        "runs": {"fresh": run.get("run-fresh", 0), "resumed": sum(_sum_matching(run, "run-resumed-day-").values())},
+        "controls": _sum_matching(run, "controls-"),
+        "modes": _sum_matching(run, "mode-"),
+        "endings": _sum_matching(run, "ending-"),
+        "escape": _sum_matching(run, "escape-"),
+        "checkpoints": {
+            "total": sum(checkpoint_days.values()),
+            "from_day": {str(day): checkpoint_days[day] for day in sorted(checkpoint_days)},
+        },
+        "days": days,
+        "cause_totals": {
+            "crying": dict(_sorted_desc(crying)),
+            "hard_fail": dict(_sorted_desc(hard_fail)),
+            "timeout": timeout,
+        },
+        "thresholds": {"min_attempts": MIN_ATTEMPTS},
+    }
+
+
+def _pct(value: float | None) -> str:
+    return f"{value * 100:.0f}%" if value is not None else "-"
+
+
+def _counts_line(counts: dict[str, int]) -> str:
+    return ", ".join(f"{name} {count}" for name, count in _sorted_desc(counts)) or "(none)"
+
+
+def _cause_list(day: dict[str, Any]) -> str:
+    """Every cause of a day's losses, biggest first, each with its share of the day's attempts."""
+    began = day["began"]
+    return (
+        ", ".join(f"{cause} {count} ({_pct(count / began)})" for cause, count in day["causes"].items()) or "(no losses)"
+    )
+
+
+def _cause_lines(days: list[dict[str, Any]]) -> list[str]:
+    return [f"  day {d['day']:>2}: {_cause_list(d)}" for d in days] or ["  (no days)"]
+
+
+def _day_table(days: list[dict[str, Any]], *, full: bool) -> list[str]:
+    if not days:
+        return ["  (no days)"]
+    if not full:
+        return [
+            f"  day {d['day']:>2}: {d['won']}/{d['began']} won ({_pct(d['win_rate'])})"
+            + (" (low-sample)" if d["low_sample"] else "")
+            + f" -- {_cause_list(d)}"
+            for d in days
+        ]
+    lines = [f"  {'day':>3}  {'began':>5}  {'won':>4}  {'rate':>5}  {'lost':>4}  {'cry':>4}  {'hard':>4}  {'time':>4}"]
+    for d in days:
+        mark = "  (low-sample)" if d["low_sample"] else ""
+        lines.append(
+            f"  {d['day']:>3}  {d['began']:>5}  {d['won']:>4}  {_pct(d['win_rate']):>5}  {d['lost']:>4}  "
+            f"{d['crying']:>4}  {d['hard_fail']:>4}  {d['timeout']:>4}{mark}"
+        )
+    return lines
+
+
+def _caveats() -> list[str]:
+    return [
+        "Caveats: counts are attempts, not visitors -- events opt out of sessions, and a nerve-bought retry "
+        "begins its day again, so began is inflated by retries and a win rate is wins per attempt.",
+        f"A day with fewer than {MIN_ATTEMPTS} attempts (MIN_ATTEMPTS) is printed and marked (low-sample); "
+        "that says how far its numbers can be trusted, and nothing is left out of any table. "
+        "Only the page visit counts visitors.",
+    ]
+
+
+def format_report(report: dict[str, Any], *, title: str) -> str:
+    lines = [title, *_caveats(), "", "Players:"]
+    runs, ck = report["runs"], report["checkpoints"]
+    lines.append(f"  Visitors (page visit): {report['visitors']}")
+    lines.append(f"  Runs: {runs['fresh']} fresh, {runs['resumed']} resumed")
+    lines.append(f"  Controls: {_counts_line(report['controls'])}")
+    lines.append(f"  Mode: {_counts_line(report['modes'])}")
+    lines.append(f"  Endings: {_counts_line(report['endings'])}")
+    lines.append(f"  Escape: {_counts_line(report['escape'])}")
+    from_days = ", ".join(f"day {day}: {count}" for day, count in ck["from_day"].items())
+    lines.append(
+        f"  Checkpoints (a normal run out of nerves, by the day it came from): {ck['total']}"
+        + (f" -- {from_days}" if from_days else "")
+    )
+    lines += ["", "Per day (cry = lost crying, hard = lost hard fail, time = lost timeout):"]
+    lines += _day_table(report["days"], full=True)
+    totals = report["cause_totals"]
+    lines += ["", "Cause totals across all days:", f"  Crying: {_counts_line(totals['crying'])}"]
+    lines.append(f"  Hard fail: {_counts_line(totals['hard_fail'])}")
+    lines.append(f"  Timeout: {totals['timeout']}")
+    lines += ["", "Causes per day (every cause of the losses, biggest first, with its share of the day's attempts):"]
+    lines += _cause_lines(report["days"])
+    return "\n".join(lines)
+
+
+def format_report_by_release(windows: list[ReleaseWindow], reports: list[dict[str, Any]], *, title: str) -> str:
+    lines = [title, *_caveats()]
+    for window, report in zip(windows, reports, strict=True):
+        lines += ["", f"=== {window.label} -- {rfc3339(window.start)} to {rfc3339(window.end)} ==="]
+        lines += _day_table(report["days"], full=False)
+    if not windows:
+        lines += ["", "(no time in range)"]
+    return "\n".join(lines)
+
+
+def _md_days(days: list[dict[str, Any]]) -> list[str]:
+    if not days:
+        return ["(no days)"]
+    head = "| Day | Attempts | Won | Win rate | Lost | Crying | Hard fail | Timeout |"
+    lines = [head, "|---|---|---|---|---|---|---|---|"]
+    for d in days:
+        day = f"{d['day']} (low-sample)" if d["low_sample"] else str(d["day"])
+        lines.append(
+            f"| {day} | {d['began']} | {d['won']} | {_pct(d['win_rate'])} | {d['lost']} | {d['crying']} | "
+            f"{d['hard_fail']} | {d['timeout']} |"
+        )
+    return lines
+
+
+def _md_causes(days: list[dict[str, Any]]) -> list[str]:
+    return [f"- Day {d['day']}: {_cause_list(d)}" for d in days] or ["(no days)"]
+
+
+def format_report_markdown(report: dict[str, Any], *, title: str) -> str:
+    runs, ck, totals = report["runs"], report["checkpoints"], report["cause_totals"]
+    from_days = ", ".join(f"day {day}: {count}" for day, count in ck["from_day"].items())
+    lines = [f"# {title}", "", *_caveats(), "", "## Players", ""]
+    lines += [
+        f"- Visitors (page visit): {report['visitors']}",
+        f"- Runs: {runs['fresh']} fresh, {runs['resumed']} resumed",
+        f"- Controls: {_counts_line(report['controls'])}",
+        f"- Mode: {_counts_line(report['modes'])}",
+        f"- Endings: {_counts_line(report['endings'])}",
+        f"- Escape: {_counts_line(report['escape'])}",
+        f"- Checkpoints (by the day they came from): {ck['total']}" + (f" ({from_days})" if from_days else ""),
+        "",
+        "## Per day",
+        "",
+        *_md_days(report["days"]),
+        "",
+        "## Cause totals",
+        "",
+        f"- Crying: {_counts_line(totals['crying'])}",
+        f"- Hard fail: {_counts_line(totals['hard_fail'])}",
+        f"- Timeout: {totals['timeout']}",
+        "",
+        "## Causes per day",
+        "",
+        "Every cause of the day's losses, biggest first, with its share of the day's attempts.",
+        "",
+        *_md_causes(report["days"]),
+    ]
+    return "\n".join(lines)
+
+
+def format_report_by_release_markdown(
+    windows: list[ReleaseWindow], reports: list[dict[str, Any]], *, title: str
+) -> str:
+    lines = [f"# {title}", "", *_caveats()]
+    for window, report in zip(windows, reports, strict=True):
+        lines += ["", f"## {window.label} ({rfc3339(window.start)} to {rfc3339(window.end)})", ""]
+        lines += _md_days(report["days"])
+        if report["days"]:
+            lines += ["", *_md_causes(report["days"])]
+    if not windows:
+        lines += ["", "(no time in range)"]
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------------------------- CLI ---
 
 
@@ -897,6 +1202,20 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     mode.add_argument(
+        "--report",
+        action="store_true",
+        help=(
+            "one page on where players struggle: players, a per-day table of attempts, wins and losses, "
+            "every cause per day and the cause totals, flagging nothing; with --by-release the win rates and causes "
+            "per release; with --json the data"
+        ),
+    )
+    parser.add_argument(
+        "--markdown",
+        action="store_true",
+        help="with --report: print it as Markdown (headings, the per-day table as a table), to save as a stats file",
+    )
+    mode.add_argument(
         "--check",
         action="store_true",
         help=(
@@ -924,6 +1243,17 @@ def run_by_release(args: argparse.Namespace, site: str, token: str, start: datet
     except GoatCounterError as exc:
         print(f"goatcounter: {exc}", file=sys.stderr)
         return 1
+    if args.report:
+        reports = [build_report(hits, args.prefix) for hits in hit_lists]
+        if args.json:
+            print(json.dumps(by_release_jsonable(windows, reports), indent=2, sort_keys=True))
+            return 0
+        title = (
+            f"GoatCounter report by release for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {args.prefix!r})"
+        )
+        render = format_report_by_release_markdown if args.markdown else format_report_by_release
+        print(render(windows, reports, title=title))
+        return 0
     groups = [group_hits(hits, args.prefix) for hits in hit_lists]
     if args.encounters:
         tables = [encounter_table(group) for group in groups]
@@ -964,6 +1294,10 @@ def main(argv: list[str] | None = None) -> int:
         print("goatcounter: --days must be a positive number of days", file=sys.stderr)
         return 2
 
+    if args.markdown and (not args.report or args.json):
+        print("goatcounter: --markdown goes with --report, and not with --json", file=sys.stderr)
+        return 2
+
     if args.by_release and (args.raw or args.check):
         print(
             "goatcounter: --by-release groups the funnel or --encounters; it cannot combine with --raw or --check",
@@ -977,6 +1311,7 @@ def main(argv: list[str] | None = None) -> int:
     except GoatCounterError as exc:
         print(f"goatcounter: {exc}", file=sys.stderr)
         return 2
+    site = normalize_site(site)
 
     # The key check happens before any network call, on purpose -- see the module docstring and
     # M209's brief. GOATCOUNTER_TOKEN is never accepted as a flag: a flag lands in shell history
@@ -1025,6 +1360,15 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(to_raw_jsonable(hits), indent=2, sort_keys=True))
         else:
             print(format_raw(hits, site=site, start=start, end=end))
+        return 0
+
+    if args.report:
+        report = build_report(hits, args.prefix)
+        if args.json:
+            print(json.dumps(report, indent=2, sort_keys=True))
+        else:
+            title = f"GoatCounter report for {site} -- {rfc3339(start)} to {rfc3339(end)} (prefix {args.prefix!r})"
+            print((format_report_markdown if args.markdown else format_report)(report, title=title))
         return 0
 
     grouped = group_hits(hits, args.prefix)

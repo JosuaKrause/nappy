@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for what the escape's plan costs on a restart of the city section, which
-## replans on the same city (`main._plan_the_finale_city()`): per seed, `FinalePlanner.plan()`'s
+## replans on the same city (`main._plan_the_finale_city()`): per seed, the escape plan's
 ## wall time on the city's first plan and on three restarts after it, each with the same rng the
 ## game hands it. Not a suite: it prints rather than asserts. Run by name:
 ##
@@ -14,17 +14,18 @@ func run(t) -> void:
 	var restarts: Array[int] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var took: Array[int] = []
 		var placed: Array[int] = []
 		for attempt in RESTARTS + 1:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = seed_value
 			var started := Time.get_ticks_msec()
-			var plan := FinalePlanner.plan(map, rng)
+			var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+					_city_spec())
 			took.append(Time.get_ticks_msec() - started)
-			placed.append(plan.placements.size())
+			placed.append(placements.size())
 		firsts.append(took[0])
 		restarts.append_array(took.slice(1))
 		print("ESCAPE_REPLAN seed %5d | first %d ms | restarts %s ms | placements %s"
@@ -35,3 +36,7 @@ func run(t) -> void:
 			% [SEEDS.size(), firsts[0], firsts[-1], firsts[firsts.size() / 2], restarts[0],
 			restarts[-1], restarts[restarts.size() / 2]])
 	t.check(true, "a probe asserts nothing")
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

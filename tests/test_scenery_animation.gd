@@ -4,7 +4,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_roof_rotors(t)
 	_test_rotor_registration_matches_authored_crops(t)
-	_test_event_parts(t)
+	await _test_event_parts(t)
 	_test_water_ownership(t)
 
 func _test_roof_rotors(t) -> void:
@@ -44,7 +44,7 @@ func _test_roof_rotors(t) -> void:
 	t.remove_child(building)
 	t.check(building._roof_objects.is_empty() and building._rotor_layers.is_empty(),
 			"tree exit releases every roof object and moving child")
-	if not AtlasLibrary.is_acquired(&"buildings"):
+	if not building.atlas.is_acquired(&"buildings"):
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
 	t.check(not building._rotor_layers.is_empty() and building._rotor_layers[0].frame_b,
@@ -78,65 +78,92 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 		t.check(Building.VENT_ROTOR_RECT.get_center().distance_to(Vector2(29, 22)) < 0.01,
 				"the rotor display is centered in the generated housing's circular opening")
 
+## A crash and a burst main are drawn in slices, each holding its part's scenery
+## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's.
 func _test_event_parts(t) -> void:
-	AtlasLibrary.acquire(&"events")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
+			instance.atlas = atlas
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO)
 			instance._spread_vertical = vertical
 			t.add_child(instance)
-			instance._process(instance.def.telegraph_time + 0.01)
-			var scenery := instance._scenery
-			t.check(scenery != null and not scenery.moving_layers.is_empty(),
-					"%s/%s has independently moving detail" % [id, vertical])
+			instance.look.attach_nodes()
+			instance.step(instance.def.telegraph_time + 0.01)
+			var sceneries := (instance.look as SpreadLook)._sceneries.duplicate()
+			var moving: Array[SceneryLayer] = []
+			var still: Array[SceneryLayer] = []
+			for scenery: EventScenery in sceneries:
+				moving.append_array(scenery.moving_layers)
+				still.append_array(scenery.static_layers)
+			t.check(sceneries.size() > 1 and not moving.is_empty(),
+					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := instance._obstruction
 			var centers := instance.solid_part_centres()
-			var key := instance._picture_key()
-			var initial: bool = scenery.moving_layers[0].frame_b
-			var period := EventInstance.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
-					else EventInstance.BURST_MAIN_SPLASH_PERIOD
-			instance._process(period * 0.5)
-			for layer in scenery.moving_layers:
+			t.check(instance.look.redraw_if_the_picture_changed(),
+					"the event's first drawn frame asks for its draw, so the gate is live for the check below")
+			var initial: bool = moving[0].frame_b
+			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
+					else EventPictures.BURST_MAIN_SPLASH_PERIOD
+			instance.step(period * 0.5)
+			# The look shows the step on the next drawn frame.
+			var asked := instance.look.redraw_if_the_picture_changed()
+			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				for alternate in layer._alternates:
 					t.check(alternate != null, "every moving detail owns an alternate texture")
-			for layer in scenery.static_layers:
+			for layer in still:
 				for alternate in layer._alternates:
 					t.check(alternate == null, "stationary surroundings have no alternate texture")
-			t.check(instance._picture_key() == key, "animation leaves the static event key alone")
+			t.check(not asked, "animation leaves the static event key alone")
 			t.check(instance._obstruction == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
 			instance._finish()
-			t.check(not scenery.visible, "a finished event hides every scenery layer")
+			instance._process(0.0)
+			t.check(sceneries.all(func(scenery: EventScenery) -> bool: return not scenery.visible),
+					"a finished event hides every scenery layer")
+			# Detached, it takes its slices and their scenery with it; back in the tree, it builds
+			# them again once it has settled.
 			t.remove_child(instance)
-			t.check(scenery.moving_layers.is_empty() and scenery.static_layers.is_empty(),
-					"detaching the event releases retained atlas regions")
+			await t.get_tree().process_frame
+			t.check(sceneries.all(func(scenery: Variant) -> bool:
+					return not is_instance_valid(scenery)),
+					"detaching the event releases its scenery and its retained atlas regions")
 			t.add_child(instance)
-			t.check(not scenery.moving_layers.is_empty(), "reentry rebinds event scenery regions")
+			await t.get_tree().process_frame
+			var rebound := false
+			for scenery: EventScenery in (instance.look as SpreadLook)._sceneries:
+				rebound = rebound or not scenery.moving_layers.is_empty()
+			t.check(rebound, "reentry rebinds event scenery regions")
+			var again := (instance.look as SpreadLook)._sceneries.duplicate()
 			instance.free()
-			t.check(not is_instance_valid(scenery), "removing an event releases its scenery")
-	AtlasLibrary.release(&"events")
+			await t.get_tree().process_frame
+			t.check(again.all(func(scenery: Variant) -> bool:
+					return not is_instance_valid(scenery)),
+					"removing an event releases its scenery")
+	atlas.release(&"events")
 
 func _test_water_ownership(t) -> void:
 	var packed: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = packed.instantiate()
+	var city: City = RunCity.of_the_run(packed)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
-	var shore_reach := float(City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
+	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
 	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
 	# home boot retains none of this water.
 	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
-					City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	var surfaces: Array[SceneryWater] = []
-	for chunk: TileMapLayer in city._ground.chunks.values():
+	for chunk: TileMapLayer in city.scenery_ground.chunks.values():
 		for child in chunk.get_children():
 			if child is SceneryWater:
 				surfaces.append(child)
 	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
 	var water := surfaces[0]
-	t.check(not city._ground.tile_set.has_source(GroundTiles.WATER),
+	t.check(not city.scenery_ground.tile_set.has_source(GroundTiles.WATER),
 			"the static ground sheet contains no unused water source")
 	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
 	var expected: Dictionary[Vector2i, bool] = {}
@@ -144,7 +171,7 @@ func _test_water_ownership(t) -> void:
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
-	for key: Vector2i in city._ground.chunks:
+	for key: Vector2i in city.scenery_ground.chunks:
 		var start := key * SceneryGround.CHUNK_TILES
 		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
@@ -156,12 +183,12 @@ func _test_water_ownership(t) -> void:
 		for tile in surface.cells:
 			actual[tile] = true
 			count += 1
-			t.check(city._ground.get_cell_source_id(tile) == -1,
+			t.check(city.scenery_ground.get_cell_source_id(tile) == -1,
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")
-	for y in range(city.map.size.y + 1, city.map.size.y + City.OUTSIDE_DEPTH_TILES):
-		for x in range(-City.OUTSIDE_DEPTH_TILES, city.map.size.x + City.OUTSIDE_DEPTH_TILES):
+	for y in range(city.map.size.y + 1, city.map.size.y + CityMap.OUTSIDE_DEPTH_TILES):
+		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, city.map.size.x + CityMap.OUTSIDE_DEPTH_TILES):
 			if x < bridge_left or x >= bridge_right:
 				t.check(actual.has(Vector2i(x, y)),
 						"water fills the complete requested shore, south-west and south-east corners included")
@@ -174,7 +201,7 @@ func _test_water_ownership(t) -> void:
 	t.check(water._ripples != first_material and water._ripples.shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
 	var other := SceneryWater.new()
-	city._ground.add_child(other)
+	city.scenery_ground.add_child(other)
 	other.configure(cells.slice(0, 1))
 	other._process(0.5)
 	t.check(other._ripples != water._ripples
@@ -196,7 +223,7 @@ func _test_water_ownership(t) -> void:
 	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
 	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
 			Vector2(city.map.world_size().x + 2.0 * shore_reach,
-					City.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
+					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
 	for tile: Vector2i in expected:
-		t.check(city._ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
+		t.check(city.scenery_ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
 	city.free()

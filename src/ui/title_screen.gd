@@ -24,14 +24,15 @@ extends CanvasLayer
 ## those is what this screen exists for. **The one option is the Hard Mode checkbox**, shown only
 ## when the title begins a new game. *(gentle-osprey, the player: "a "Hard Mode" checkbox on the
 ## title screen (if new game) that decides whether checkpoints are available".)* Checked, the run
-## has no checkpoints and its last nerve is the bad ending (`GameState.hard_mode`). It is quiet on
-## purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint — because it is
-## a setting, not a way in: **pressing it never starts the run**, which still begins only from the
-## three buttons or a key, so the box can be set and changed freely first. `H` toggles it from a
-## keyboard, unnamed on screen like every other key here. It opens unchecked on every new game
-## (it reads `GameState.hard_mode`, which a fresh run begins `false`, so only `--hard` opens it
-## checked) and is never remembered between sittings: a mode kept outside the save would make a
-## returning player's run depend on something the run does not hold.
+## has no checkpoints and its last nerve is the bad ending (`RunState.calendar.hard_mode`). It
+## is quiet on purpose — Godot's own `CheckBox`, in the tagline's colour, under the hint —
+## because it is a setting, not a way in: **pressing it never starts the run**, which still
+## begins only from the three buttons or a key, so the box can be set and changed freely first.
+## `H` toggles it from a keyboard, unnamed on screen like every other key here. It opens
+## unchecked on every new game (it reads the run's `hard_mode`, which a fresh run begins
+## `false`, so only `--hard` opens it checked) and is never remembered between sittings: a mode
+## kept outside the save would make a returning player's run depend on something the run does
+## not hold.
 ##
 ## **Starting is also the controls question, and the buttons are how it is answered.**
 ## *(2026-09-07, the player: "let's make the controls a player choice and bring back the two
@@ -64,18 +65,19 @@ extends CanvasLayer
 signal start_requested(mode: ControlsMode.Mode, by_key: bool, side: ControlsMode.Side)
 signal quit_requested()
 
-## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
-## this process. A `static var` on the class rather than a member on the node: `reload_current_scene()`
-## frees this screen's own instance and builds a fresh one, but the script class itself is never
-## unloaded, so this is the one place a fact can survive the freeing that crosses it — the same
-## thing an autoload would give, with no autoload added to hold it. See `_unhandled_input()`'s own
-## doc for what it guards.
-static var _restarted_at_msec := -INF
+## The milliseconds the guard measures a restart against: empty reads `Time.get_ticks_msec()`;
+## `use_clock()` hands in another `Callable` returning milliseconds, so the guard window passing is
+## a clock that moved on rather than a wait.
+var _clock := Callable()
 
-## Called by `main._restart_run()`, immediately before it defers the reload — see that function's
-## own doc and this class's `_unhandled_input()`.
-static func note_restart_requested() -> void:
-	_restarted_at_msec = Time.get_ticks_msec()
+func use_clock(clock: Callable) -> void:
+	_clock = clock
+
+func _now_msec() -> int:
+	if _clock.is_valid():
+		var msec: int = _clock.call()
+		return msec
+	return Time.get_ticks_msec()
 
 ## How long after a restart-triggered reload a press is swallowed rather than started — see
 ## `_unhandled_input()`'s own doc. Reuses `TouchControls.DOUBLE_TAP_SECONDS` rather than a number
@@ -94,6 +96,11 @@ const _RESTART_GUARD_SECONDS := TouchControls.DOUBLE_TAP_SECONDS
 @onready var _tap_button: ModeButton = $Root/Choice/TapColumn/Tap
 @onready var _right_button: ModeButton = $Root/Choice/RightColumn/Right
 @onready var _hint: Label = $Root/Hint
+## The one line on this screen that is not addressed to the player, so it is small, dim and in the
+## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
+## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
+## just a label. It shows the version alone, `BuildInfo.version_text()`; the commit is a
+## developer's number, and the debug note and the readout carry it (`BuildInfo.build_text()`).
 @onready var _version: Label = $Root/Version
 @onready var _hard_mode: CheckBox = $Root/HardMode
 ## The box's own edge, behind Godot's `unchecked` icon — which is a translucent dark square that
@@ -119,6 +126,40 @@ var _can_quit := QuitOption.available()
 ## click from the same finger, and without the gate a single press on a button would be read twice.
 var _touch := TouchInput.available()
 
+## Hands the screen the run's answers to the touch and quit questions (`TouchInput.available(config)`,
+## `QuitOption.available(config)`), which `--touch` and `--web` can force. Called by `main` before
+## the screen enters the tree; a screen built anywhere else keeps the platform's own answers.
+func use_platform(touch: bool, can_quit: bool) -> void:
+	_touch = touch
+	_can_quit = can_quit
+
+## The run whose mode the checkbox opens on and the mode's name reads
+## (`RunState.calendar.hard_mode`), handed in by `use_run()` before the screen is first opened.
+var _run: RunState
+
+## Hands the screen the run it opens over. Called by `main` before the screen enters the tree, and
+## by a test that opens one.
+func use_run(run: RunState) -> void:
+	_run = run
+
+## Hands the screen's three buttons the baked atlas pages their symbols are drawn from
+## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
+## screen built anywhere else leaves them to make their own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	(get_node(^"Root/Choice/LeftColumn/Left") as ModeButton).atlas = atlas
+	(get_node(^"Root/Choice/TapColumn/Tap") as ModeButton).atlas = atlas
+	(get_node(^"Root/Choice/RightColumn/Right") as ModeButton).atlas = atlas
+
+## The sitting whose last restart the guard measures a press against
+## (`Sitting.restarted_at_msec`, which `main._restart_run()` stamps before its reload): a fresh
+## screen is built by that reload, so the stamp lives on the owner that outlives it, never on this
+## node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
+var _sitting: Sitting
+
+## Hands the screen the sitting it measures a restart against. Called by `main` before the screen
+## enters the tree, and by a test that drives the guard.
+func use_sitting(sitting: Sitting) -> void:
+	_sitting = sitting
 
 func _ready() -> void:
 	# **The title has a colour of its own**, or the screen is four labels in one warm off-white and
@@ -135,7 +176,7 @@ func _ready() -> void:
 	_hint.text = Texts.TITLE_HINT_BEGIN
 	_hard_mode.text = Texts.TITLE_HARD_MODE
 	_refresh_body()
-	_version.text = version_text()
+	_version.text = BuildInfo.version_text()
 	# Above the pause screen: this is the outermost frame the game runs inside, and nothing should
 	# ever be able to cover it.
 	layer = 95
@@ -180,57 +221,20 @@ func _refresh_body() -> void:
 func _wants_rotation() -> bool:
 	return ScreenOrientation.wants_rotation(get_window().size, _touch)
 
-## The one line on this screen that is not addressed to the player, so it is small, dim and in the
-## bottom corner rather than anywhere near the three lines that are — see the **cues** rule that a
-## short vocabulary stays short, which this deliberately stays outside of: it is not a danger cue,
-## just a label.
-##
-## Prefers `Telemetry.source_version()`, `git describe`'s form (`v0.0.0-49-gab12cd3`), because a
-## developer wants to know exactly what is running; an exported build has no repository to ask,
-## which is when this falls back to `application/config/version` — the setting
-## `tools/export-web.sh` bakes into the export before it is built: the release tag on a deploy,
-## `git describe` with a `-dirty` mark on a local export — so a player sees the release rather
-## than "unknown". A function rather than inline in `_ready()` so a test can call it without
-## instancing the whole scene.
-static func version_text() -> String:
-	var from_git := Telemetry.source_version()
-	if from_git != "unknown":
-		return from_git
-	return ProjectSettings.get_setting("application/config/version", "unknown")
-
-## The commit on its own, by the same two steps: `Telemetry.source_commit()` where there is a
-## repository, else `application/config/source_commit`, which `tools/export-web.sh` bakes beside
-## the version. On a release `version_text()` is the bare tag, and a tag can be moved; the hash
-## cannot.
-static func commit_text() -> String:
-	var from_git := Telemetry.source_commit()
-	if from_git != "unknown":
-		return from_git
-	return ProjectSettings.get_setting("application/config/source_commit", "unknown")
-
-## What the debug furniture says the build is — `v0.10.3 (875609a5)` on a release,
-## `v0.10.3-2-gab12cd3-dirty (ab12cd3)` on a working tree — the `git describe` form and the
-## commit together, since describe alone collapses to the tag on every release. *(2026-09-13,
-## playtest 70: "Debug mode should contain the commit + describe.")* The `DebugModeNote` and the
-## readout's first line carry it; this screen keeps the version alone, because the hash is a
-## developer's number and those two are where a developer looks.
-static func build_text() -> String:
-	return "%s (%s)" % [version_text(), commit_text()]
-
 func is_open() -> bool:
 	return visible
 
 ## Shows the screen. `again` is whether a run has just ended, which is the only difference between
 ## the two times it is shown — besides `new_game`, which is whether pressing a button begins a new
 ## run rather than one a save brought back, and is the only time the Hard Mode checkbox shows. It
-## opens on the mode the run already holds, `GameState.hard_mode`: `false` for every fresh run, and
-## `true` only under `--hard`.
+## opens on the mode the run already holds, `RunState.calendar.hard_mode`: `false` for every
+## fresh run, and `true` only under `--hard`.
 ##
 ## `mode_decided` is whether the mode is already fixed for this run, which is when a save brought
 ## it back (the title before a resumed day or a resumed escape): the checkbox has nothing to ask
-## then, so the mode's name, "Normal" or "Hard Mode" (`GameState.hard_mode`), stands in its place.
-## A new game shows the checkbox and no name; a title with neither (the escape flag's, which has
-## no run) shows neither.
+## then, so the mode's name, "Normal" or "Hard Mode" (`RunState.calendar.hard_mode`), stands in
+## its place. A new game shows the checkbox and no name; a title with neither (the escape
+## flag's, which has no run) shows neither.
 ##
 ## It does **not** touch `get_tree().paused`, which is where it differs from `PauseScreen` and why:
 ## a pause stops the world and this one deliberately does not. What stops, and what carries on
@@ -249,10 +253,10 @@ func open(again := false, new_game := false, mode_decided := false) -> void:
 	visible = true
 	if _hard_mode:
 		_hard_mode.visible = new_game
-		_hard_mode.button_pressed = new_game and GameState.hard_mode
+		_hard_mode.button_pressed = new_game and _run.calendar.hard_mode
 		_place_the_hard_mode_frame()
 	_mode_name.visible = mode_decided and not new_game
-	_mode_name.text = Texts.TITLE_MODE_HARD if GameState.hard_mode else Texts.TITLE_MODE_NORMAL
+	_mode_name.text = Texts.TITLE_MODE_HARD if _run.calendar.hard_mode else Texts.TITLE_MODE_NORMAL
 	_hint.text = Texts.TITLE_HINT_AGAIN if again else Texts.TITLE_HINT_BEGIN
 	# A press that closed this screen can leave a button's own forced-pressed look set — see
 	# `_acknowledge_and_begin()`'s own doc for why the release that would otherwise clear it may
@@ -272,8 +276,7 @@ func close() -> void:
 
 ## Whether the Hard Mode checkbox is checked — read by `main._on_title_start()` as the title is
 ## dismissed, and only for a new game, the one time the box is shown. `false` for a `TitleScreen`
-## built without its scene, which has no box to check — the bare rigs `tests/test_save.gd` drives
-## `main._on_title_start()` through.
+## built without its scene, which has no box to check.
 func hard_mode_checked() -> bool:
 	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed
 
@@ -409,7 +412,7 @@ func hard_mode_target() -> Rect2:
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
 ## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
-## every press on the screen. See `_restarted_at_msec`'s own doc for what survives the reload and
+## every press on the screen. See `Sitting.restarted_at_msec` for what survives the reload and
 ## `_RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
@@ -527,6 +530,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	if (Time.get_ticks_msec() - _restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
+	var restarted_at_msec: float = _sitting.restarted_at_msec if _sitting else -INF
+	if (_now_msec() - restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

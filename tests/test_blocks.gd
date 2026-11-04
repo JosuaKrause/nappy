@@ -90,9 +90,9 @@ func _test_enough_calm_survives_the_whole_run(t) -> void:
 		var map := _map(i)
 		var state := _worst_case(map)
 		var calm := state.calm_blocks(map.block_plans)
-		t.check(calm.size() >= Tuning.MIN_CALM_BLOCKS_AT_END,
+		t.check(calm.size() >= CityGenerator.MIN_CALM_BLOCKS_AT_END,
 				"seed %d ends the run with %d calm blocks, needs %d"
-				% [map.seed_used, calm.size(), Tuning.MIN_CALM_BLOCKS_AT_END])
+				% [map.seed_used, calm.size(), CityGenerator.MIN_CALM_BLOCKS_AT_END])
 
 ## A fire in a block whose plan has no fire in it leaves the shell and changes nothing else.
 ## Without this a scar anywhere would drag every block it touched along somebody else's arc.
@@ -198,7 +198,7 @@ func _test_park_trees_keep_their_distance(t) -> void:
 	var checked_any_pair := false
 	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 		t.add_child(city)
 		city.build(map)
 		var state := CityState.new()
@@ -248,11 +248,11 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 			total += 1
 			horizontal_seen = horizontal_seen or run.horizontal
 			vertical_seen = vertical_seen or not run.horizontal
-			t.check(run.length >= Tuning.STREET_TREE_RUN_MIN_BLOCKS \
-					and run.length <= Tuning.STREET_TREE_RUN_MAX_BLOCKS,
+			t.check(run.length >= StreetTrees.STREET_TREE_RUN_MIN_BLOCKS \
+					and run.length <= StreetTrees.STREET_TREE_RUN_MAX_BLOCKS,
 					"seed %d: a run is %d blocks long, outside %d-%d"
-					% [map.seed_used, run.length, Tuning.STREET_TREE_RUN_MIN_BLOCKS,
-					Tuning.STREET_TREE_RUN_MAX_BLOCKS])
+					% [map.seed_used, run.length, StreetTrees.STREET_TREE_RUN_MIN_BLOCKS,
+					StreetTrees.STREET_TREE_RUN_MAX_BLOCKS])
 			var keys := run.segment_keys()
 			t.check(keys.size() == run.length, "seed %d: a run names one street per block"
 					% map.seed_used)
@@ -264,7 +264,7 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 				t.check(map.has_street(key),
 						"seed %d: a run covers %s, which is not a street this city has"
 						% [map.seed_used, key])
-				var segment := StreetNetwork.by_key(key)
+				var segment := map.network.by_key(key)
 				t.check(segment != null and segment.horizontal == run.horizontal,
 						"seed %d: a run's streets all run the same way" % map.seed_used)
 				if i > 0:
@@ -294,7 +294,7 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 	t.check(same, "the same seed plants the same trees in the same pits")
 
 ## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
-## vans restaurants etc.")*. This is the ceiling `Tuning.STREET_TREE_RUNS` is chosen under, not a
+## vans restaurants etc.")*. This is the ceiling `StreetTrees.STREET_TREE_RUNS` is chosen under, not a
 ## restatement of it: raising the run count is allowed right up to the point where a tree-lined
 ## street stops being the exception, and this is the point.
 func _test_tree_lined_streets_stay_rare(t) -> void:
@@ -302,18 +302,19 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 	var ordinary_total := 0
 	for map in _maps:
 		var ordinary := 0
-		for segment in StreetNetwork.segments():
-			if map.has_street(segment.key()) \
-					and StreetTrees._street_kind_of(map, segment) == GameEnums.StreetKind.ORDINARY:
+		for segment in map.network.segments():
+			var middle := segment.tile_rect().get_center()
+			if map.has_street(segment.key()) and map.street_kind_at(not segment.horizontal,
+					middle) == GameEnums.StreetKind.ORDINARY:
 				ordinary += 1
 		ordinary_total += ordinary
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
 		var fraction := float(lined) / float(maxi(1, ordinary))
 		worst = maxf(worst, fraction)
-		t.check(fraction <= Tuning.STREET_TREE_MAX_LINED_FRACTION,
+		t.check(fraction <= StreetTrees.STREET_TREE_MAX_LINED_FRACTION,
 				"seed %d: %d of %d ordinary streets are tree-lined (%.1f%%), over the %.0f%% cap"
 				% [map.seed_used, lined, ordinary, 100.0 * fraction,
-				100.0 * Tuning.STREET_TREE_MAX_LINED_FRACTION])
+				100.0 * StreetTrees.STREET_TREE_MAX_LINED_FRACTION])
 	t.check(ordinary_total > 0, "there were ordinary streets to ask about (%d)" % ordinary_total)
 	t.check(worst > 0.0, "and at least one seed had trees at all (worst %.3f)" % worst)
 
@@ -339,9 +340,9 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
 			for i in range(row.size() - 1):
 				pairs += 1
 				var apart: float = row[i + 1] - row[i]
-				t.check(apart >= Tuning.STREET_TREE_PIT_SPACING,
+				t.check(apart >= StreetTrees.STREET_TREE_PIT_SPACING,
 						"seed %d: two pits on one kerb line %.0fpx apart, under the %.0fpx floor"
-						% [map.seed_used, apart, Tuning.STREET_TREE_PIT_SPACING])
+						% [map.seed_used, apart, StreetTrees.STREET_TREE_PIT_SPACING])
 	t.check(pairs > 0, "there were neighbouring pits to measure (%d)" % pairs)
 
 ## The mouth margin is what keeps a pit off a crossing and off a checkpoint's own doorway, and it
@@ -368,7 +369,7 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
 ## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
 func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
 	city.build(map)
 	var checked := 0
@@ -387,7 +388,7 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 ## covering the stroller while preserving the tree's ordinary sorting behavior.
 func _test_street_tree_beds_are_ground_decals(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
 	city.build(map)
 	var decals: CityDecals = city.get_node("Decals")

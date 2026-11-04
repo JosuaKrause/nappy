@@ -16,8 +16,8 @@ extends RefCounted
 ## rare to be able to still place vans restaurants etc. also, trees make it harder to spot events
 ## like yeller, dog walker, etc.")* A tree and an event never share ground, so every pit is a tile
 ## the day may not put a van, a café, a market stall, a yeller or a seal on. The four numbers that
-## keep that bill small are `Tuning.STREET_TREE_RUNS`, the two run-length bounds, and
-## `Tuning.STREET_TREE_PIT_SPACING`; `Tuning.STREET_TREE_MAX_LINED_FRACTION` is the ceiling they
+## keep that bill small are `STREET_TREE_RUNS`, the two run-length bounds, and
+## `STREET_TREE_PIT_SPACING`; `STREET_TREE_MAX_LINED_FRACTION` is the ceiling they
 ## are chosen under.
 ##
 ## **The mouth margin is what keeps a pit off a crossing and off a checkpoint.** A boundary
@@ -45,7 +45,7 @@ const _MOUTH_MARGIN_TILES := 1
 ## also keeps the building-frontage lane (offset 0 or 5) clear for anybody browsing a shopfront.
 const _CURB_OFFSETS := [1, 4]
 
-## How many placements `runs()` may try before it gives up on reaching `Tuning.STREET_TREE_RUNS`.
+## How many placements `runs()` may try before it gives up on reaching `STREET_TREE_RUNS`.
 ## A run needs three to five consecutive ordinary streets fronting housing or shops and not
 ## already taken by another run, which most of the lattice satisfies and some of it cannot — a
 ## bound rather than a `while true`, so a hostile seed ends with fewer runs instead of hanging.
@@ -57,6 +57,44 @@ const _RUN_TRIES := 240
 ## is a headless planner with no scene to build one in; `tests/test_blocks.gd` compares this
 ## against a real street tree's own `shape.reach()` so the two cannot drift apart unnoticed.
 const _FOOTPRINT_FRACTION := 0.28
+
+## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
+## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
+## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
+const STREET_TREE_PLANT_CHANCE := 0.55
+
+## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
+## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
+## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
+## street the ordinary case again.
+const STREET_TREE_MAX_LINED_FRACTION := 0.25
+
+const STREET_TREE_RUN_MAX_BLOCKS := 5
+
+## The shortest and longest a run may be, in blocks — *(2026-09-11, the player: "it should be
+## continuous segments of 3/4/5 blocks randomly placed on the map in both directions")*. Three is
+## long enough to read as deliberate planting rather than two stray trees; five is short enough
+## that a run still ends somewhere she can see.
+const STREET_TREE_RUN_MIN_BLOCKS := 3
+
+## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
+## along a single street line, so this is the whole of "how much of the city has trees": at
+## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
+## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
+##
+## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
+## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
+## way a density does.
+const STREET_TREE_RUNS := 6
+
+## Least distance between two pits along one pavement, in px — **two lot-lengths**, a lot-length
+## being one block plus the street beside it, which is the distance from a pit to the same spot
+## on the next block. Measured along the whole run rather than within one street, so a run of
+## four blocks carries about two pits a side rather than two per street.
+##
+## The spacing is what keeps a tree-lined street walkable *and* legible: a yeller or a dog walker
+## standing between two pits is still the only silhouette in a hundred pixels of pavement.
+const STREET_TREE_PIT_SPACING := 2.0 * float((Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE)
 
 ## One tree-lined run: a straight stretch of `length` consecutive blocks along one street line.
 ## `index` is the corridor the line runs down (the junction row for a horizontal run, the junction
@@ -77,12 +115,12 @@ class Run extends RefCounted:
 					else Vector3i(index, first + i, 1))
 		return found
 
-	## The streets this run covers, as the lattice's own `Segment` objects. Null for a key the
+	## The streets this run covers, as `network`'s own `Segment` objects. Null for a key the
 	## lattice does not enumerate, which `_run_is_plantable` refuses the run for.
-	func segments() -> Array[StreetNetwork.Segment]:
+	func segments(network: StreetNetwork) -> Array[StreetNetwork.Segment]:
 		var found: Array[StreetNetwork.Segment] = []
 		for key in segment_keys():
-			var segment := StreetNetwork.by_key(key)
+			var segment := network.by_key(key)
 			if segment:
 				found.append(segment)
 		return found
@@ -100,7 +138,7 @@ class Planted extends RefCounted:
 ## segments of 3/4/5 blocks randomly placed on the map in both directions")*, and rejected whole
 ## rather than trimmed: a run whose every street is not an ordinary street fronting housing or
 ## shops is not a shorter run, it is a different one, so the roll is taken again. Runs never
-## overlap, which is what makes `Tuning.STREET_TREE_RUNS` a count of *places* rather than a count
+## overlap, which is what makes `STREET_TREE_RUNS` a count of *places* rather than a count
 ## of rolls.
 ##
 ## **Two runs on the same kerb line still have to keep the pit-spacing floor between them.**
@@ -117,12 +155,12 @@ static func runs(map: CityMap) -> Array[Run]:
 	var found: Array[Run] = []
 	var taken := {}
 	for _try in _RUN_TRIES:
-		if found.size() >= Tuning.STREET_TREE_RUNS:
+		if found.size() >= STREET_TREE_RUNS:
 			break
 		var run := Run.new()
 		run.horizontal = rng.randi_range(0, 1) == 0
-		run.length = rng.randi_range(Tuning.STREET_TREE_RUN_MIN_BLOCKS,
-				Tuning.STREET_TREE_RUN_MAX_BLOCKS)
+		run.length = rng.randi_range(STREET_TREE_RUN_MIN_BLOCKS,
+				STREET_TREE_RUN_MAX_BLOCKS)
 		var along_blocks: int = Tuning.CITY_BLOCKS.x if run.horizontal else Tuning.CITY_BLOCKS.y
 		var lines: int = Tuning.CITY_BLOCKS.y if run.horizontal else Tuning.CITY_BLOCKS.x
 		if run.length > along_blocks:
@@ -141,13 +179,13 @@ static func runs(map: CityMap) -> Array[Run]:
 ## Every standing street tree in the city, fixed for the run.
 ##
 ## Planted along the **whole run** rather than street by street, which is what makes
-## `Tuning.STREET_TREE_PIT_SPACING` mean "one pit every other lot-length" instead of one per
+## `STREET_TREE_PIT_SPACING` mean "one pit every other lot-length" instead of one per
 ## street: the spacing accumulator crosses the junction between two blocks of the same run.
 static func planted(map: CityMap) -> Array[Planted]:
 	var found: Array[Planted] = []
 	if not map.recipe_dawn_tiles.is_empty():
 		for tile in map.recipe_trees:
-			var segment := StreetNetwork.segment_containing(tile)
+			var segment := map.network.segment_containing(tile)
 			if not segment:
 				continue
 			var tree := Planted.new()
@@ -187,7 +225,7 @@ static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 ## How far a street tree's own ground shape reaches from its trunk, in px — `Prop`'s street tree
 ## is a `GroundShape.point` of exactly this, and the widest of the sprites it may be drawn as is
 ## what a planner has to keep clear, since which variant a pit gets is decided where the prop is
-## built rather than here. Read from `AtlasLibrary.native_size()`, which answers with nothing
+## built rather than here. Read from `AtlasTable.native_size()`, which answers with nothing
 ## acquired — every caller here runs ahead of any `City` existing. The planners' determinism rests
 ## on this number, and the region table's size is the source picture's own:
 ## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` compares every baked
@@ -196,11 +234,11 @@ static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 static func footprint_radius() -> float:
 	var widest := 0.0
 	for name: StringName in Prop.TREES:
-		widest = maxf(widest, float(AtlasLibrary.native_size(name).x) * _FOOTPRINT_FRACTION)
+		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * _FOOTPRINT_FRACTION)
 	return widest
 
 ## Every tile a standing street tree stands on or reaches over, as a set — the ground
-## `EventScheduler._open_ground_for` refuses a candidate row, the same way it refuses a closed
+## `EventScheduler.open_ground_for` refuses a candidate row, the same way it refuses a closed
 ## street, and the ground `SealPlanner` steps its own bodies aside from.
 ##
 ## **Every pit, including one today's fallen tree empties.** An emptied pit is on a street that is
@@ -243,7 +281,7 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 	for key in run.segment_keys():
 		if taken.has(key) or not map.has_street(key):
 			return false
-		var segment := StreetNetwork.by_key(key)
+		var segment := map.network.by_key(key)
 		if not segment:
 			return false
 		if _street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:
@@ -252,7 +290,7 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 			return false
 	return true
 
-## Whether `run` would land within `Tuning.STREET_TREE_PIT_SPACING` of a pit an already-accepted
+## Whether `run` would land within `STREET_TREE_PIT_SPACING` of a pit an already-accepted
 ## run on the same kerb line (same direction, same junction row or column) could plant — the two
 ## are planted by separate calls to `_plant_side`, each with its own accumulator, so only the
 ## block gap between them is known before either is actually planted.
@@ -268,12 +306,12 @@ static func _too_close_to_a_run_on_the_same_line(run: Run, found: Array[Run]) ->
 	return false
 
 ## The fewest empty blocks that have to separate two runs on the same kerb line for
-## `Tuning.STREET_TREE_PIT_SPACING` to hold between the closest pits either could plant — the
+## `STREET_TREE_PIT_SPACING` to hold between the closest pits either could plant — the
 ## last candidate tile of one run's last block (`BLOCK_SIZE - _MOUTH_MARGIN_TILES - 1` cells in)
 ## against the first candidate tile of the other's first block (`_MOUTH_MARGIN_TILES` cells in).
 static func _min_run_gap_blocks() -> int:
 	var period := CityMap.period()
-	var tiles_needed := Tuning.STREET_TREE_PIT_SPACING / float(Tuning.TILE_SIZE)
+	var tiles_needed := STREET_TREE_PIT_SPACING / float(Tuning.TILE_SIZE)
 	var gap := ceili((tiles_needed - 2.0 * _MOUTH_MARGIN_TILES + Tuning.BLOCK_SIZE - 1) \
 			/ float(period))
 	return maxi(gap, 1)
@@ -328,10 +366,10 @@ static func _plant_side(run: Run, offset: int, rng: RandomNumberGenerator,
 					else Vector2i(cross_tile, along_tile)
 			if _chebyshev(tile, door_tile) <= 1:
 				continue
-			if rng.randf() >= Tuning.STREET_TREE_PLANT_CHANCE:
+			if rng.randf() >= STREET_TREE_PLANT_CHANCE:
 				continue
 			var along_world := (along_tile + 0.5) * float(Tuning.TILE_SIZE)
-			if last_along > -INF and absf(along_world - last_along) < Tuning.STREET_TREE_PIT_SPACING:
+			if last_along > -INF and absf(along_world - last_along) < STREET_TREE_PIT_SPACING:
 				continue
 			var tree := Planted.new()
 			tree.position = Vector2(along_world, cross) if run.horizontal \

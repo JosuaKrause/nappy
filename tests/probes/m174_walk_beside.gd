@@ -53,8 +53,8 @@ func run(t) -> void:
 		var rate := _mean_rate_at_inner_radius(def)
 		var awake_old := rate - 3.5
 		var awake_now := rate - Tuning.EXCITEMENT_DECAY_WALKING
-		var asleep_old := rate * Tuning.SLEEPING_SENSITIVITY - 3.5
-		var asleep_now := rate * Tuning.SLEEPING_SENSITIVITY - Tuning.EXCITEMENT_DECAY_WALKING
+		var asleep_old := rate * Baby.SLEEPING_SENSITIVITY - 3.5
+		var asleep_now := rate * Baby.SLEEPING_SENSITIVITY - Tuning.EXCITEMENT_DECAY_WALKING
 		print("%-22s %8.2f %10.2f %10.2f %10.2f %10.2f"
 				% [def.id, rate, awake_old, awake_now, asleep_old, asleep_now])
 		if awake_now <= 0.0:
@@ -72,7 +72,7 @@ func _walkable_beside(def: EventDef) -> bool:
 		return false
 	if def.id in _SCENERY or def.id in _DETAINERS:
 		return false
-	if def.pursues or def.pursues_within > 0.0:
+	if def.pursuit != null or def.notice_within() > 0.0:
 		return false
 	if def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 		return false

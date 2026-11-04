@@ -77,7 +77,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		map.hold_segment(segment.key())
 	for segment: StreetNetwork.Segment in region_plan.doors:
 		map.hold_segment(segment.key())
-	for segment: StreetNetwork.Segment in StreetNetwork.around_blocks(
+	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 
@@ -92,11 +92,11 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		boundary[rect.position] = true
 
 	var off_tree := 0
-	for segment in StreetNetwork.segments():
+	for segment in map.network.segments():
 		if map.has_street(segment.key()) and not tree.is_on_the_tree(segment.key()):
 			off_tree += 1
 
-	var seals := SealPlanner.plan_day(map, day, tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_segments)
 	var sealed := {}
 	var mouths := 0
@@ -105,7 +105,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		if map.tile_at(tile) == GameEnums.TileType.ALLEY:
 			mouths += 1
 			continue
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		if segment:
 			sealed[segment.key()] = true
 
@@ -118,7 +118,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var consumed: Array[String] = []
 	var walls := 0
 	var friction := 0
-	for plan in EventScheduler.build_day(day, _rng(map, day, "events"), map, consumed, [], [],
+	for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map, consumed, [], [],
 			tree, 0, doors, [] as Array[Vector2i], standing):
 		if not plan.is_placed():
 			continue

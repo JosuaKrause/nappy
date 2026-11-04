@@ -9,6 +9,12 @@ extends CharacterBody2D
 ##
 ## The parent/pram sources below select the complete drawing in either presentation mode.
 
+## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
+## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
+## as an ease rather than a slide or a cut; short enough that most of `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`
+## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
+const CAMERA_EASE_SECONDS := 0.5
+
 ## The illustrated family keeps different amounts of empty canvas around each projection, so its
 ## functional hand-to-handle placement uses three screen-axis distances. Scaling `facing` by these
 ## axes keeps the pram moving continuously through a turn; selecting offsets from the eight texture
@@ -66,7 +72,7 @@ const MOTHER_BACK_DIAGONAL: Array[String] = [
 	"rig/mother_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in her arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`.
+## whenever `carrying` is set; see `Pose.mother_texture()`.
 const MOTHER_CARRYING_FRONT: Array[String] = [
 	"rig/mother_carrying_front_a",
 	"rig/mother_carrying_front_c",
@@ -110,7 +116,7 @@ const FATHER_BACK_DIAGONAL: Array[String] = [
 	"rig/father_back_diagonal_b"]
 
 ## The escape scene's rig — the baby in his arms, no pram. Selected in place of the sets above
-## whenever `carrying` is set; see `_mother_texture()`, the shared parent selector.
+## whenever `carrying` is set; see `Pose.mother_texture()`, the shared parent selector.
 const FATHER_CARRYING_FRONT: Array[String] = [
 	"rig/father_carrying_front_a",
 	"rig/father_carrying_front_c",
@@ -161,7 +167,7 @@ const INDICATOR_BOTTOM_PADDING := {
 ##
 ## **The two parents are two pages and a run loads one of them.** *(PLAYTEST-109: "putting both
 ## genders in the player atlas is a bit wasteful since it's guaranteed to not use half of it.")*
-## The choice is made once per run (`GameState.start_run()`) and `docs/GRAPHICS.md` holds it
+## The choice is made once per run (`RunState.start_run()`) and `docs/GRAPHICS.md` holds it
 ## fixed — carrying and texture resolution never reroll it — so the other parent's sixty views
 ## are a page nothing in the run can ever draw. `STROLLER_ATLAS` is what the two share: the pram
 ## itself, which either parent pushes.
@@ -186,7 +192,7 @@ static func parent_atlas(male: bool) -> StringName:
 
 ## Every path the rig can draw, by the group it is baked on: each parent's pushing and carrying
 ## views over three gait frames, and the pram's five views on the group they share. Not read by
-## the live draw path — `_mother_texture()` and `_pram_texture()` turn the picture already in
+## the live draw path — `Pose.mother_texture()` and `Pose.pram_texture()` turn the picture already in
 ## hand into a region name directly — but kept as the one place "everything the rig can draw" is
 ## enumerable, which is what a completeness check against the membership file wants.
 static func sources_by_group() -> Dictionary:
@@ -292,20 +298,29 @@ var is_male := false
 ## if `is_male` were ever written afterwards. Empty before she is ready, which is why releasing it
 ## is safe only from `_exit_tree()`, which cannot run before `_ready()` has.
 var _parent_atlas: StringName = &""
+## The baked atlas pages she draws from (`AtlasLibrary`), handed by `main` before she enters the
+## tree (`main._make_player()`); a stroller nobody handed one (a suite's) makes its own when she
+## first enters the tree.
+var atlas: AtlasLibrary = null
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
-## Set once by `main._ready_escape()` before she is ever drawn; nothing else in the game ever
-## flips it, so there is no case of switching mid-walk to account for. Her collision circle is
+## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
+## flips it back, so there is no case of switching mid-walk to account for. Her collision circle is
 ## unchanged either way — see `shape`'s own doc.
 var carrying := false
 
-## `InteriorScene.slope_dir_at`, or an unset `Callable` outdoors — the one hook the escape scene's
-## diagonal stairs need from this otherwise interior-agnostic rig. Asked every physics frame for
-## whether her *current* position sits on a diagonal flight tile (`+1` descending toward east,
-## `-1` toward west, `0` off any flight), so a sideways press can be redirected along the slope —
-## see `_physics_process()`. Set once by `main._ready_escape()`, the same shape `carrying` is set
-## in; unset (`Callable()`) leaves every outdoor run and every other test untouched.
-var slope_dir_at := Callable()
+## The map of the world she walks (`WorldMap`), handed in by whoever puts her in it (`set_map()`).
+## Asked every physics frame whether her *current* position sits on a flight of stairs
+## (`WorldMap.slope_dir_at()`: `+1` descending toward east, `-1` toward west, `0` off any flight),
+## so a sideways press is turned along the slope — see `_redirect_along_a_flight()`. Only the
+## building has flights; the city's map and open ground, which a rig that names no map stands her
+## on, answer `0` everywhere.
+var _map := WorldMap.open_ground()
+
+## Puts her on `map`, the world she walks from now on: `main` as each world is built and she is
+## put into it, a test for the map it stands her on.
+func set_map(map: WorldMap) -> void:
+	_map = map
 
 ## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
 ## same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
@@ -368,7 +383,7 @@ var _alert_source := &""
 var _camera_focused := false
 var _camera_focus_point := Vector2.ZERO
 ## Where the current ease started and how long it has been running — smooth-stepped over
-## `Tuning.CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
+## `CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
 var _camera_ease_from := Vector2.ZERO
 var _camera_ease_elapsed := 0.0
 ## Whether the camera is easing back to her after a focus ended, as opposed to the ordinary
@@ -392,10 +407,12 @@ var _camera_smoothing_when_free := true
 ## is bound before she enters the tree (`main._make_player()`) and `docs/GRAPHICS.md` holds it
 ## fixed for the run, so the two can never name different pages.
 func _enter_tree() -> void:
+	if atlas == null:
+		atlas = AtlasLibrary.new()
 	_parent_atlas = parent_atlas(is_male)
-	AtlasLibrary.acquire(_parent_atlas)
-	AtlasLibrary.acquire(STROLLER_ATLAS)
-	AtlasLibrary.acquire(INDICATOR_ATLAS)
+	atlas.acquire(_parent_atlas)
+	atlas.acquire(STROLLER_ATLAS)
+	atlas.acquire(INDICATOR_ATLAS)
 
 func _ready() -> void:
 	add_to_group("player")
@@ -413,19 +430,20 @@ func _ready() -> void:
 ## never more than one of her in a running game. In the running game none of these three drops a
 ## page: the boot's own residency is still holding each of them underneath her.
 func _exit_tree() -> void:
-	AtlasLibrary.release(_parent_atlas)
-	AtlasLibrary.release(STROLLER_ATLAS)
-	AtlasLibrary.release(INDICATOR_ATLAS)
+	atlas.release(_parent_atlas)
+	atlas.release(STROLLER_ATLAS)
+	atlas.release(INDICATOR_ATLAS)
 
 ## Takes her out of the world without taking her out of the tree, for the title screen's attract
 ## mode: the home and the street in front of it, with nobody in it.
 ##
 ## **Leaving the `player` group is the whole of it**, and it is worth being explicit about why that
 ## is the right switch rather than one more flag. Everything that happens *to* her is reached
-## through that group and nothing else is: `EventManager` streams, places what the director owes,
-## tells the events where she is, warns her about the ground she is on and checks the hard fails
-## only `if _find_player()`; `Crowd` looks her up the same way before it can bump her, honk at her
-## or run her over. Out of the group, none of it can fire — so a lethal thing on the doorstep cannot
+## through that group and nothing else is: `EventManager`, handed her, streams, places what the
+## director owes, tells the events where she is, warns her about the ground she is on and checks the
+## hard fails only while she is in it (`EventWorld.has_player()`); `Crowd` is handed her only when the
+## day is engaged (`Main._hand_the_crowd_her()`), so behind the title it has nobody to bump, honk at
+## or run over. Out of the group, none of it can fire — so a lethal thing on the doorstep cannot
 ## end a day nobody is playing, and the city in the background is genuinely only a city.
 ##
 ## **Her camera stays behind, and it has to keep running.** The view is hers, and the shot the title
@@ -495,9 +513,9 @@ func _physics_process(delta: float) -> void:
 
 ## On a diagonal flight tile, a sideways press walks the slope rather than the screen axis it was
 ## pressed on — *(2026-09-10, playtest 55: "holding right or left on the switchback stairs moves
-## the player diagonally")*. `slope_dir_at` answers `+1` on a tile descending toward east, `-1`
-## toward west, `0` everywhere else (including a flat landing); off a flight, or outdoors where the
-## callable was never set, `raw` is returned unchanged.
+## the player diagonally")*. Her map's `slope_dir_at()` answers `+1` on a tile descending toward
+## east, `-1` toward west, `0` everywhere else (including a flat landing and every tile outdoors);
+## off a flight `raw` is returned unchanged.
 ##
 ## The redirection reads only `raw.x`'s **sign**, never its `y` component or which device pressed
 ## it — key, tap and joystick share this one call. Pressing *toward* the flight's own descending
@@ -506,9 +524,7 @@ func _physics_process(delta: float) -> void:
 ## press) moves nowhere, since there is no floor beside the tread to step onto. The result keeps
 ## `raw`'s own magnitude, so an analog joystick still climbs or descends at partial speed.
 func _redirect_along_a_flight(raw: Vector2) -> Vector2:
-	if not slope_dir_at.is_valid():
-		return raw
-	var slope: int = slope_dir_at.call(global_position)
+	var slope := _map.slope_dir_at(global_position)
 	if slope == 0:
 		return raw
 	if raw.x == 0.0:
@@ -598,14 +614,14 @@ func _reset_interpolation_if_shown() -> void:
 ##
 ## **The `Camera2D` rides under this body, and `is_visible_in_tree()` still walks the real parent
 ## chain regardless of `top_level`** — `top_level` decouples the camera's *transform* from hers and
-## nothing else, so `EventInstance._enter_inspection()`'s `hide_for_inspection()` (called one line
-## before `focus_camera_on()`, in a file this fence does not own) makes the camera exactly as
-## hidden-in-tree as she is, whatever the camera's own `visible` says. A plain `_camera.reset_
-## physics_interpolation()` here would be the identical silent no-op `_reset_interpolation_if_
-## shown()` exists to avoid above — except there is no later call that shows the camera again to
-## catch it the way `show_after_inspection()` catches the body's: the world keeps being drawn
-## through her for the whole hold, only her own body goes dark, so the reset has to land on this
-## call or not at all.
+## nothing else, so `CheckpointController.check_detentions()`'s `hide_for_inspection()` (called
+## one line before `focus_camera_on()`, in a file this fence does not own) makes the camera
+## exactly as hidden-in-tree as she is, whatever the camera's own `visible` says. A plain
+## `_camera.reset_physics_interpolation()` here would be the identical silent no-op
+## `_reset_interpolation_if_shown()` exists to avoid above — except there is no later call that
+## shows the camera again to catch it the way `show_after_inspection()` catches the body's: the
+## world keeps being drawn through her for the whole hold, only her own body goes dark, so the
+## reset has to land on this call or not at all.
 ##
 ## Toggling `visible` true for the one synchronous call and back is what makes it land: nothing is
 ## drawn between one call and the next frame, so the toggle is never itself seen, and
@@ -632,7 +648,7 @@ func camera_screen_center() -> Vector2:
 	return _camera.global_position
 
 ## Eases the camera onto `point` instead of following her — a checkpoint's hut, gate or post,
-## currently the only caller — over `Tuning.CAMERA_EASE_SECONDS`, smooth-stepped rather than
+## currently the only caller — over `CAMERA_EASE_SECONDS`, smooth-stepped rather than
 ## snapped or slid. `release_camera_focus()` is what hands it back.
 ##
 ## **The ease starts from where the camera was drawing, and the camera is put there in the same
@@ -655,8 +671,8 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.global_position = drawn_from
 	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
 	# computed, and without this the first interpolated frame draws from wherever the camera's
-	# transform sat under the old composition. Forced through even though `EventInstance.
-	# _enter_inspection()` — which this file does not own — has already called
+	# transform sat under the old composition. Forced through even though
+	# `CheckpointController.check_detentions()` — which this file does not own — has already called
 	# `hide_for_inspection()` by the time it calls here: see `_force_reset_camera_interpolation()`'s
 	# own doc for why a plain `_camera.reset_physics_interpolation()` would be exactly the silent
 	# no-op `_reset_interpolation_if_shown()` guards against above, one level down.
@@ -707,7 +723,7 @@ var outright_moves := 0
 ## Velocity and the shove are both zeroed, not merely left to run out: `_shove`'s own friction is
 ## keyed to wherever the last contact pushed it, and a residual one now points at the pavement she
 ## was just standing on — inside the band she is being released from — so letting it run out would
-## carry her straight back in. See `EventManager._release_finished_door_detentions()`, the only
+## carry her straight back in. See `CheckpointController.release_finished_holds()`, the only
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where
@@ -868,13 +884,13 @@ func _turn_toward(target: Vector2, delta: float) -> void:
 func _update_camera(delta: float) -> void:
 	if _camera_focused:
 		_camera_ease_elapsed += delta
-		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		var t := clampf(_camera_ease_elapsed / CAMERA_EASE_SECONDS, 0.0, 1.0)
 		_camera.global_position = _camera_ease_from.lerp(
 				_camera_focus_point, smoothstep(0.0, 1.0, t))
 		return
 	if _camera_easing_back:
 		_camera_ease_elapsed += delta
-		var t := clampf(_camera_ease_elapsed / Tuning.CAMERA_EASE_SECONDS, 0.0, 1.0)
+		var t := clampf(_camera_ease_elapsed / CAMERA_EASE_SECONDS, 0.0, 1.0)
 		_camera.global_position = _camera_ease_from.lerp(global_position, smoothstep(0.0, 1.0, t))
 		if t >= 1.0:
 			# Arrived: hand the camera back to the ordinary parented follow rather than keep
@@ -993,43 +1009,41 @@ func pram_draw_offset() -> Vector2:
 # ------------------------------------------------------------------ drawing ---
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_PLAYER)
 	# Carrying her in arms rather than pushing her ahead in the pram: there is no second figure
 	# and nothing offset in front of her, so the cue over the bundle floats over her own column —
 	# see `_draw_baby_cue()` and `baby_cue_lift()`, both of which already treat a zero offset as
 	# "shares her column" without a branch of their own.
-	var pram_offset := _pram_offset
+	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
+	var drawn := pose(gait)
+	var pram_offset := drawn.pram_offset
 
 	# Shadows belong to the ground plane, so they always go underneath both figures.
 	shape.draw_shadow(self, Vector2.ZERO)
-	var gait := clampf(velocity.length() / Tuning.WALK_SPEED, 0.0, 1.6)
 	if carrying:
-		_draw_mother(gait)
+		_draw_mother(drawn)
 	else:
 		pram_shape.draw_shadow(self, pram_offset)
 		if facing.y < 0.0:
-			_draw_pram(pram_offset)
-			_draw_mother(gait)
+			_draw_pram(drawn)
+			_draw_mother(drawn)
 		else:
-			_draw_mother(gait)
-			_draw_pram(pram_offset)
+			_draw_mother(drawn)
+			_draw_pram(drawn)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()
 
 ## The source texture supplies the complete body geometry, including the stride and its small bob.
-func _draw_mother(gait: float) -> void:
-	Sprites.draw_standing(self, _mother_texture(_mother_gait_frame(gait)), Vector2.ZERO, Vector2.ZERO,
-			_mother_is_mirrored())
+func _draw_mother(pose: Pose) -> void:
+	Sprites.draw_standing(self, pose.mother_texture(), Vector2.ZERO, Vector2.ZERO, pose.mirrored)
 
 ## Distance advances the gait so slowing down changes cadence without changing the depicted loop.
 func _advance_walk_phase(distance: float) -> void:
-	_walk_phase = wrapf(_walk_phase + distance * 0.09, 0.0, TAU)
+	_walk_phase = wrapf(_walk_phase + distance * WalkerLook.GAIT_RATE, 0.0, TAU)
 
 ## Both mother states use contact, passing, opposite contact, passing over one full turn. Keeping
 ## that loop on `TAU` preserves the contact/passing change frequency instead of doubling step rate.
-func _mother_gait_frame(gait: float) -> int:
+func mother_gait_frame(gait: float) -> int:
 	if gait <= 0.05:
 		return 1
 	var quarter := int(floor(_walk_phase / (TAU / 4.0))) % MOTHER_GAIT_LOOP.size()
@@ -1037,17 +1051,51 @@ func _mother_gait_frame(gait: float) -> int:
 
 ## The pram has authored front, back, side and diagonal projections. A hood belongs to its own
 ## three-quarter body plane, rather than sliding across an unchanged basket as the rig turns.
-func _draw_pram(at: Vector2) -> void:
-	var texture := _pram_texture()
-	Sprites.draw_standing(self, texture, at, _pram_draw_size(), _pram_is_mirrored())
+func _draw_pram(pose: Pose) -> void:
+	Sprites.draw_standing(self, pose.pram_texture(), pose.pram_offset, pose.pram_size, pose.mirrored)
 
-func _pram_draw_size() -> Vector2:
-	return _pram_texture().get_size() * PRAM_VISUAL_SCALE
+## What she is drawn as this frame, the one thing `_draw()` draws from and the one thing a test
+## reads to know what was drawn: the eight-view sector, whether it mirrors, the gait frame, the
+## authored picture of each mother pose and of the pram, and the offset and size the pram is
+## drawn at. `gait` is her speed over `Tuning.WALK_SPEED`; at or below 0.05 she stands on the
+## passing pose whatever the phase of her stride.
+func pose(gait: float) -> Pose:
+	var drawn := Pose.new()
+	drawn.view = _view_direction
+	drawn.mirrored = EightDirection.is_mirrored(_view_direction)
+	drawn.walk_phase = _walk_phase
+	drawn.gait_frame = mother_gait_frame(gait)
+	for frame in 3:
+		drawn.mother_sources.append(_mother_source(frame))
+	drawn.pram_source = _pram_source()
+	drawn.atlas = atlas
+	drawn.pram_offset = _pram_offset
+	drawn.pram_size = drawn.pram_texture().get_size() * PRAM_VISUAL_SCALE
+	return drawn
 
-## The selected parent's region for a gait frame — the run's own parent page is acquired for the
-## whole run in `_ready()`, so this is always the baked region and never the raw source.
-func _mother_texture(frame: int) -> Texture2D:
-	return AtlasLibrary.region(StringName(_mother_source(frame)))
+## The drawn state of `pose()`. Both figures mirror together, since both are authored east-facing
+## and mirrored about the feet for a west-facing view.
+class Pose extends RefCounted:
+	var view := 0
+	var mirrored := false
+	var walk_phase := 0.0
+	var gait_frame := 0
+	## The baked path of each of the mother's three poses (contact, passing, opposite contact) at this view.
+	var mother_sources: Array[String] = []
+	var pram_source := ""
+	var pram_offset := Vector2.ZERO
+	var pram_size := Vector2.ZERO
+	## The library her pages are acquired on (`Stroller.atlas`), which the pictures are read from.
+	var atlas: AtlasLibrary = null
+
+	## The region of the pose she is drawn in; the run's own parent page is acquired for the whole
+	## run in `_enter_tree()`, so this is always the baked region and never the raw source.
+	func mother_texture() -> Texture2D:
+		return atlas.region(StringName(mother_sources[gait_frame]))
+
+	## The region of the pram, off the page the two parents share.
+	func pram_texture() -> Texture2D:
+		return atlas.region(StringName(pram_source))
 
 ## The authored view this frame draws, as the path it is baked under.
 func _mother_source(frame: int) -> String:
@@ -1073,17 +1121,6 @@ func _mother_source(frame: int) -> String:
 		return FATHER_BACK_DIAGONAL[frame] if is_male else MOTHER_BACK_DIAGONAL[frame]
 	return FATHER_BACK[frame] if is_male else MOTHER_BACK[frame]
 
-## West-facing projections mirror their corresponding east-authored SVGs about the feet anchor.
-func _mother_is_mirrored() -> bool:
-	return EightDirection.is_mirrored(_view_direction)
-
-## The pram region selected by the live drawing path, off `STROLLER_ATLAS` — the page the two
-## parents share rather than the one her body is on. Its size is the region's, which is the
-## picture's own native size, so `_pram_draw_size()`'s seven-sixths lands on exactly the same
-## rectangle it always did.
-func _pram_texture() -> Texture2D:
-	return AtlasLibrary.region(StringName(_pram_source()))
-
 ## The authored pram view for the direction she is facing, as the path it is baked under.
 func _pram_source() -> String:
 	if _view_direction == 0 or _view_direction == 4:
@@ -1095,10 +1132,6 @@ func _pram_source() -> String:
 	if _view_direction == 5 or _view_direction == 7:
 		return PRAM_BACK_DIAGONAL
 	return PRAM_BACK
-
-## West-facing prams share the same explicit east-authored symmetry as the mother.
-func _pram_is_mirrored() -> bool:
-	return EightDirection.is_mirrored(_view_direction)
 
 ## Decides the eight-direction projection for this frame, with hysteresis rather than a single
 ## switching angle — `EightDirection.update()`, the selector `CrowdAgent`'s walkers now share.
@@ -1146,7 +1179,7 @@ func _draw_baby_cue(pram_offset: Vector2) -> void:
 	# The steady ones breathe rather than sit still, or a mark that is up for the whole walk
 	# home stops being read. The urgent two flash instead.
 	var breath := 0.0 if flashing else sin(_alert_phase * TAU) * BABY_CUE_BREATH
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(path)),
+	Sprites.draw_standing(self, atlas.region(StringName(path)),
 			_indicator_anchor(path, pram_offset + Vector2(aside, -baby_cue_lift() + breath)))
 
 ## The draw anchor that puts a cue's registration line (`INDICATOR_BOTTOM_PADDING` above its
@@ -1173,5 +1206,5 @@ func _draw_alert() -> void:
 	if fmod(_alert_phase * rate, 1.0) > 0.55:
 		return
 	var mark := ALERT_CLOSE if _alert == Alert.NOW else ALERT
-	Sprites.draw_standing(self, AtlasLibrary.region(StringName(mark)),
+	Sprites.draw_standing(self, atlas.region(StringName(mark)),
 			Vector2(0.0, -ALERT_HEIGHT))

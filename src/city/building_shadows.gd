@@ -15,7 +15,7 @@ extends Node2D
 ##
 ## Placed between `Ground` and `Buildings` in `city.tscn`, so it never sorts against anything and
 ## always lies flat under the crowd, the player and every event, the way a seal's own body shadow
-## does — see `EventInstance._draw_body_shadow()`. Building footprints are fixed for the run
+## does — see `EventLook._draw_body_shadow()`. Building footprints are fixed for the run
 ## (`docs/DECISIONS.md`, M61), while each nearby chunk's shadow geometry is prepared on demand and
 ## freed beyond the scenery retention boundary. Returning chunks are reconstructed from the same
 ## footprints.
@@ -35,6 +35,13 @@ const TILE := float(Tuning.TILE_SIZE)
 ## shadow commands.
 const CHUNK_TILES := 16
 
+## Alpha of the one-tile shadow every building casts (`BuildingShadows`) — the same black every
+## other shadow in the game draws (`Palette.SHADOW`), at its own alpha rather than that constant's,
+## since a shadow covering a whole tile reads differently than a small contact ellipse. A flat dark
+## rather than a darkened ground colour, so this number is the whole of the look and can be tuned
+## by eye alone.
+const BUILDING_SHADOW_ALPHA := 0.22
+
 ## One shadow tile set: tiles fully covered, and tiles cut on the diagonal from their north-east
 ## corner to their south-west corner with the upper-left half filled.
 class Tiles extends RefCounted:
@@ -50,11 +57,9 @@ var _rects: Array[Rect2i] = []
 ## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
 var falls_on := Callable()
 
-## `DevFlags.skip_shadows()`, read once when this node is built. The flag controls drawing, while
-## shadow geometry is prepared per nearby chunk and reconstructed when a chunk returns. Reading
-## the flag once avoids reparsing `--skip`'s comma list in each chunk's `_draw_chunk()`, and a test
-## can set this directly to check the skip without a real `--skip` flag behind it.
-var _skip_draw := DevFlags.skip_shadows()
+## `--skip shadows`, handed in by the city before it builds. It controls drawing only: shadow
+## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
+var skip_draw := false
 
 ## Stores `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
@@ -89,6 +94,7 @@ func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> vo
 func _prepare_chunk(key: Vector2i) -> void:
 	var tiles := _tiles_for_chunk(key)
 	var chunk := Node2D.new()
+	chunk.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
 	chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
 	add_child(chunk)
 	_resident[key] = chunk
@@ -131,6 +137,7 @@ func _rebuild_chunks() -> void:
 		var tiles: Tiles = by_chunk[key]
 		var chunk := Node2D.new()
 		chunk.name = "Chunk%d_%d" % [key.x, key.y]
+		chunk.set_meta(FrameTiming.DRAW_KIND_META, FrameTiming.Draw.SCENERY)
 		chunk.draw.connect(_draw_chunk.bind(chunk, tiles))
 		add_child(chunk)
 
@@ -195,14 +202,12 @@ static func compute(rects: Array[Rect2i]) -> Tiles:
 	return tiles
 
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
-	if _skip_draw:
+	if skip_draw:
 		return
 	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
-			Tuning.BUILDING_SHADOW_ALPHA)
+			BUILDING_SHADOW_ALPHA)
 	for tile in tiles.full:
 		canvas.draw_rect(Rect2(Vector2(tile) * TILE, Vector2.ONE * TILE), colour)
 	for tile in tiles.triangles:

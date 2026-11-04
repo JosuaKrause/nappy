@@ -12,7 +12,7 @@ extends RefCounted
 ##
 ## - **Traffic on a main road does not give way at a zebra.** The paint is still there and it is
 ##   still where a person on that road is meant to be, but what stops the cars is the light. See
-##   `CrowdAgent._crossing_ahead_somebody_is_waiting_at`.
+##   `CarStrategy._crossing_ahead_somebody_is_waiting_at`.
 ## - **The clock is simulated, and it starts again with the day.** Running off wall time would
 ##   make a run irreproducible from its seed, and *not* resetting at dawn breaks the same thing
 ##   one step along: two attempts at the same day would find the same cars at different lights
@@ -33,8 +33,11 @@ extends RefCounted
 ## green — it is a clearance period, so the crossing arm stays red through it.
 enum Phase { MAIN_GREEN, MAIN_AMBER, SIDE_GREEN, SIDE_AMBER }
 
-## Simulated seconds since the run began. Advanced by `City`, which is also what pauses it: the
-## lights stop with everything else behind the pause screen.
+## Simulated seconds since the day began (`Crowd.start_day()` sets it back to zero). **Counted in
+## physics ticks**: advanced by the crowd's own physics tick (`Crowd._physics_process()`) by the
+## tick's fixed length, so a frame drawn late runs the lights only by the ticks the engine stepped
+## and the green wave keeps its timing in ticks on every machine; the lights stop with everything
+## else behind the pause screen.
 var elapsed := 0.0
 
 ## Whether the lights have power. The blackout (`Blackout`) turns it off, and with it every light on
@@ -66,7 +69,7 @@ func has_lights(junction: Vector2i) -> bool:
 ## before left — takes it, exactly as it takes every side street's. The spine's traffic still does
 ## not give way at a zebra (that is the street's kind, not its light), so what keeps a crossing of
 ## it fair in the dark is the side street's contract, the painted carriageway and the horn; see
-## `Tuning.validate_signals()`.
+## `tests/test_tuning_fairness.gd`'s signals check.
 func is_signalled(junction: Vector2i) -> bool:
 	return powered and has_lights(junction)
 

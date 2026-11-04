@@ -14,21 +14,25 @@ extends RefCounted
 ## live roadblocks nearest the mark on foot, the day is built afresh and she walks a tile path from
 ## the mark toward it. Every `STEP` px of walking — the arrow's own half-second retarget at her
 ## walking speed — the camera's view is the 640x360 box round her led `Stroller.CAMERA_LOOK_AHEAD`
-## along her heading (`Stroller._update_camera()`'s lead), and the director does what `_process()`
-## does on the arrow's clock: settles the arrow (`_settle_the_arrow()`) and asks the guard to follow
-## it (`_move_the_task_guard_to_her_target()`). She arrives within `ARRIVED` px of the roadblock's
-## body.
+## along her heading (`Stroller._update_camera()`'s lead), and the director's own ticks
+## (`ResistanceDirector.tick()`, the step `main` runs every physics tick) run the arrow to rest and
+## make one more of its choices, each of which asks the guard to follow it. She arrives within
+## `ARRIVED` px of the roadblock's body. Each city stands in a run of its own
+## (`RunCity.with_own_run()`); she is handed to the director and the events as `main` hands her; the
+## guard is the live `task_guard` among the city's instances, and the arrow's roadblock the instance
+## its `arrow_key()` names.
 ##
 ## **On arrival** the guard is counted as:
-## - **guarding** the roadblock the arrow points at: over it, in its band (`inner_radius` plus its
-##   touch reach to `pursues_within` plus it), with a clear line to its body;
-## - **near it**: over it, outside the band, the farther out-of-view spot a move takes when every
+## - **guarding** the roadblock the arrow points at: in its band (`inner_radius` plus its touch reach
+##   to `EventDef.notice` plus it), with a clear line to its body;
+## - **near it**: with a clear line to it, outside the band but within
+##   `ResistanceDirector.TASK_GUARD_FARTHEST`, the farther out-of-view spot a move takes when every
 ##   spot of the band is in her view;
-## - **elsewhere**: over another roadblock, with his distance from the arrow's.
+## - **elsewhere**: anywhere else, with his distance from the arrow's.
 ## A guard who noticed her is not ticked in this rig, so none is.
 ##
 ## **And whether he stands on her way** (review of #659): on each step before she is within touch
-## reach of the arrow's roadblock, whether she is within his `pursues_within` along a clear line
+## reach of the arrow's roadblock, whether she is within his `EventDef.notice` along a clear line
 ## (`CityMap.clear_line()`) — her shortest walk passing his notice — and how near she comes to his
 ## feet; and, on arrival, whether any walk from the mark reaches touch range without entering his
 ## notice (a flood fill of this file's own, tile centres, around closures and standing bodies).
@@ -44,14 +48,11 @@ const NEAREST := 4
 const STEP := 46.0
 ## How near the roadblock's body she has arrived: within its touch reach, a little over.
 const ARRIVED := 160.0
+## The seed of each city's own run: the one the test runner starts the live run on.
+const RUN_SEED := 2
 
 func run(t) -> void:
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_scars := GameState.scars.duplicate()
-	var saved_alleys := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_state := GameState.city_state
+	t.gives_back_observers()
 	var totals := {"walks": 0, "guarding": 0, "near": 0, "elsewhere": 0, "none": 0, "moves": 0,
 			"noticed": 0, "on_his_tile": 0, "no_way": 0, "placed": 0, "placed_without_a_way": 0}
 	var elsewhere: Array[String] = []
@@ -61,11 +62,9 @@ func run(t) -> void:
 			print("DAY13_GUARD seed %d: no roadblock task" % seed_value)
 			continue
 		var targets := _nearest_on_foot(day)
-		var placed: EventInstance = day["director"]._task_guard
-		var own: EventInstance = day["director"]._rider
-		var way: bool = day["director"]._leaves_her_a_way_past(placed.global_position,
-				own.body_position(), ResistanceDirector._body_touch_reach(own), day["mark"],
-				ResistanceDirector.HerSide.new(own.body_position(), day["mark"]))
+		var placed := _task_guard(day["city"])
+		var own: EventInstance = day["director"].rider()
+		var way := _a_way_past_from(day["city"].map, placed, own, day["mark"])
 		totals["placed"] += 1
 		totals["placed_without_a_way"] += 0 if way else 1
 		_tear_down(day)
@@ -95,20 +94,13 @@ func run(t) -> void:
 			% [totals["walks"], totals["guarding"], totals["near"], totals["elsewhere"], elsewhere,
 			totals["none"], totals["moves"], totals["noticed"], totals["on_his_tile"],
 			totals["no_way"], totals["placed"], totals["placed_without_a_way"]])
-	GameState.completed_resistance_steps.assign(saved_completed)
-	GameState.failed_resistance_steps.assign(saved_failed)
-	GameState.resistance_progress = saved_progress
-	GameState.scars.assign(saved_scars)
-	GameState.completed_resistance_alley_tiles.assign(saved_alleys)
-	GameState.city_state = saved_state
 
 ## A day 13 on `seed_value` with the mark read from where it stands: `{city, director, player,
 ## step, mark}`, or empty when the day offers no roadblock task.
 func _read_the_mark(t, seed_value: int) -> Dictionary:
-	var city: City = CITY_SCENE.instantiate()
+	var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
-	GameState.scars = []
 	var director := ResistanceDirector.new()
 	var player := _start_the_day(t, city, director, seed_value)
 	var day := {"city": city, "director": director, "player": player}
@@ -119,15 +111,14 @@ func _read_the_mark(t, seed_value: int) -> Dictionary:
 	var mark_at := director.contact_position()
 	player.global_position = mark_at
 	player.facing = Vector2.DOWN
-	var view := func(at: Vector2) -> bool:
-		return _view_of(player).has_point(at)
-	director.set_sight(view, view)
-	director._on_contact_completed(mark.index)
+	city.events.visible_view().look(_view_of(player), null)
+	director.set_sight(city.events.sees)
+	director.contact().complete_now()
 	var step := director.current_step()
-	if step == null or step.task_event_id != "roadblock" or director._task_guard == null:
+	if step == null or step.task_event_id != "roadblock" or _task_guard(city) == null:
 		_tear_down(day)
 		return {}
-	director._settle_the_arrow()
+	_settle_the_arrow(director)
 	day["step"] = step
 	day["mark"] = mark_at
 	return day
@@ -142,10 +133,10 @@ static func _view_of(player: Stroller) -> Rect2:
 ## The tiles of the `NEAREST` live roadblocks nearest the mark on foot, by their body's tile.
 func _nearest_on_foot(day: Dictionary) -> Array[Vector2i]:
 	var director: ResistanceDirector = day["director"]
-	var map: CityMap = director._map
+	var map: CityMap = day["city"].map
 	var by_length: Array = []
-	for target: Dictionary in director._arrow_candidates(day["step"]):
-		var roadblock := ResistanceDirector._live_instance(target["key"])
+	for target: Dictionary in director.arrow_targets():
+		var roadblock := _live_instance(target["key"])
 		if roadblock == null:
 			continue
 		var path := _path_toward(map, day["mark"], roadblock.body_position())
@@ -188,10 +179,11 @@ func _path_toward(map: CityMap, from: Vector2, body: Vector2) -> Array[Vector2i]
 func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var director: ResistanceDirector = day["director"]
 	var player: Stroller = day["player"]
-	var map: CityMap = director._map
+	var city: City = day["city"]
+	var map: CityMap = city.map
 	var target: EventInstance = null
-	for candidate: Dictionary in director._arrow_candidates(day["step"]):
-		var roadblock := ResistanceDirector._live_instance(candidate["key"])
+	for candidate: Dictionary in director.arrow_targets():
+		var roadblock := _live_instance(candidate["key"])
 		if roadblock and map.world_to_tile(roadblock.body_position()) == tile:
 			target = roadblock
 	if target == null:
@@ -200,7 +192,8 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	if path.is_empty():
 		return {}
 	var moves := 0
-	var guard: EventInstance = director._task_guard
+	var guard := _task_guard(city)
+	var guard_at := guard.global_position if guard else Vector2.INF
 	var points: Array[Vector2] = [day["mark"]]
 	for step_tile in path:
 		points.append(map.tile_to_world(step_tile))
@@ -208,7 +201,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var next_choice := STEP
 	var noticed := false
 	var nearest := INF
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
 	for i in range(1, points.size()):
 		var from: Vector2 = points[i - 1]
 		var to: Vector2 = points[i]
@@ -218,15 +211,16 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 		player.facing = (to - from) / length
 		while next_choice <= walked + length:
 			player.global_position = from.lerp(to, (next_choice - walked) / length)
-			director._settle_the_arrow()
-			director._move_the_task_guard_to_her_target()
-			if director._task_guard != guard:
+			_settle_the_arrow(director)
+			_choose_again(director)
+			if _task_guard(city) != guard or (guard and guard.global_position != guard_at):
 				moves += 1
-				guard = director._task_guard
-			var arrow := ResistanceDirector._live_instance(director._arrow_key)
+				guard = _task_guard(city)
+				guard_at = guard.global_position if guard else Vector2.INF
+			var arrow := _live_instance(director.arrow_key())
 			var her := player.global_position
 			if guard and arrow and her.distance_to(arrow.body_position()) \
-					> ResistanceDirector._body_touch_reach(arrow):
+					> ResistanceDirector.touch_reach(arrow):
 				var off := her.distance_to(guard.global_position)
 				nearest = minf(nearest, off)
 				if off <= notice and map.clear_line(guard.global_position, her):
@@ -234,28 +228,27 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 			next_choice += STEP
 		walked += length
 	player.global_position = points.back()
-	director._settle_the_arrow()
-	director._move_the_task_guard_to_her_target()
-	if director._task_guard != guard:
+	_settle_the_arrow(director)
+	_choose_again(director)
+	if _task_guard(city) != guard or (guard and guard.global_position != guard_at):
 		moves += 1
-	var result := _what_he_guards(director, moves)
+	var result := _what_he_guards(city, director, moves)
 	result["noticed"] = noticed
 	result["nearest"] = nearest
-	result["way"] = _a_way_past(director, day["mark"])
+	result["way"] = _a_way_past_from(map, _task_guard(city), _live_instance(director.arrow_key()),
+			day["mark"])
 	return result
 
-## Whether some walk from `from` reaches ground within touch reach of the arrow's roadblock without
-## her centre coming within the guard's `pursues_within` along a clear line: a flood fill over open,
-## unobstructed walkable tiles, never onto a tile his notice reaches.
-func _a_way_past(director: ResistanceDirector, from: Vector2) -> bool:
-	var map: CityMap = director._map
-	var guard: EventInstance = director._task_guard
-	var arrow := ResistanceDirector._live_instance(director._arrow_key)
-	if guard == null or arrow == null:
+## Whether some walk from `from` reaches ground within touch reach of `roadblock` without her
+## centre coming within `guard`'s `EventDef.notice` along a clear line: a flood fill over open,
+## unobstructed walkable tiles, never onto a tile his notice reaches. Yes with either missing.
+static func _a_way_past_from(map: CityMap, guard: EventInstance, roadblock: EventInstance,
+		from: Vector2) -> bool:
+	if guard == null or roadblock == null:
 		return true
-	var notice := EventCatalogue.by_id("alley_robbery").pursues_within
-	var reach := ResistanceDirector._body_touch_reach(arrow)
-	var body := arrow.body_position()
+	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
+	var reach := ResistanceDirector.touch_reach(roadblock)
+	var body := roadblock.body_position()
 	var start := map.world_to_tile(from)
 	var seen := {start: true}
 	var queue: Array[Vector2i] = [start]
@@ -280,40 +273,66 @@ func _a_way_past(director: ResistanceDirector, from: Vector2) -> bool:
 			queue.append(next)
 	return false
 
-func _what_he_guards(director: ResistanceDirector, moves: int) -> Dictionary:
-	var guard: EventInstance = director._task_guard
-	var arrow := ResistanceDirector._live_instance(director._arrow_key)
-	if guard == null or not is_instance_valid(guard) or guard.is_finished or arrow == null:
+func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Dictionary:
+	var guard := _task_guard(city)
+	var arrow := _live_instance(director.arrow_key())
+	if guard == null or arrow == null:
 		return {"kind": "none", "from_arrow": -1.0, "clear": false, "moves": moves}
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var reach := ResistanceDirector._body_touch_reach(arrow)
+	var reach := ResistanceDirector.touch_reach(arrow)
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
-	var clear := director._map.clear_line(guard.global_position, arrow.body_position())
-	var over := ResistanceDirector._same_key(director._task_guard_over, director._arrow_key)
+	var clear := city.map.clear_line(guard.global_position, arrow.body_position())
 	var kind := "elsewhere"
-	if over and from_arrow >= robbery.inner_radius + reach - 0.5 \
-			and from_arrow <= robbery.pursues_within + reach + 0.5 and clear:
+	if from_arrow >= robbery.inner_radius + reach - 0.5 \
+			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
-	elif over:
+	elif clear and from_arrow <= ResistanceDirector.TASK_GUARD_FARTHEST + 0.5:
 		kind = "near"
 	return {"kind": kind, "from_arrow": from_arrow, "clear": clear, "moves": moves}
+
+## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
+static func _task_guard(city: City) -> EventInstance:
+	for instance in city.events.instances():
+		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
+			return instance
+	return null
+
+## The live instance an arrow key names (an instance id), or null.
+static func _live_instance(key: Variant) -> EventInstance:
+	if not key is int:
+		return null
+	var found := instance_from_id(key)
+	if not is_instance_valid(found) or not found is EventInstance \
+			or (found as EventInstance).is_finished:
+		return null
+	return found as EventInstance
+
+## Runs the arrow to rest the way the game does: it chooses, then the physics ticks `main` runs sweep
+## its walking fields a slice at a time, choosing again as each finishes, until none is under way.
+static func _settle_the_arrow(director: ResistanceDirector) -> void:
+	director.retarget_the_arrow()
+	var ticks := 0
+	while director.arrow_sweeping() and ticks < 1200:
+		director.tick(1.0 / Engine.physics_ticks_per_second)
+		ticks += 1
+
+## One of the arrow's choices: a tick as long as its clock, which chooses again and asks the guard
+## to follow it.
+static func _choose_again(director: ResistanceDirector) -> void:
+	director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 
 func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
 			done.append(step.index)
-	GameState.completed_resistance_steps.assign(done)
-	GameState.failed_resistance_steps.assign([])
-	GameState.resistance_progress = 0
-	# A read mark's alley is remembered and never chosen again, so each day built on one seed starts
-	# from none remembered and reads the same mark.
-	GameState.completed_resistance_alley_tiles.assign([])
+	var run: RunState = city.run
+	run.resistance.completed_steps.assign(done)
 	var state := CityState.new()
-	GameState.city_state = state
+	run.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, _rng(seed_value, "closures"))
-	city.events.start_day(DAY, _rng(seed_value, "events"), [], city.map.doorstep_world_position())
+	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
 	director.setup(city, city.map)
@@ -324,6 +343,8 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	player.add_child(camera)
 	t.add_child(player)
+	city.events.use_player(player)
+	director.use_player(player)
 	player.set_physics_process(false)
 	player.global_position = city.map.doorstep_world_position()
 	return player

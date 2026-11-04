@@ -12,6 +12,7 @@ extends RefCounted
 ##     How dangerous a thing is has to be visible from looking at *the thing*.
 
 func run(t) -> void:
+	_atlas.acquire(&"events")
 	_test_the_rings_are_gone(t)
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
@@ -25,20 +26,25 @@ func run(t) -> void:
 	_test_a_walker_brushing_past_is_unmarked(t)
 	_test_the_arterial_at_ordinary_density_marks_nobody(t)
 	_test_the_mark_still_breathes(t)
-	_test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
-	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
+	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
+	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
 	_test_a_director_sited_pursuer_earns_an_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
-	_test_the_badge_measures_the_things_own_speed(t)
-	_test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t)
-	_test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
+	await _test_the_badge_measures_the_things_own_speed(t)
+	await _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t)
+	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
 	_test_the_babys_cue_only_steps_aside_for_something(t)
 	_test_the_carried_babys_cue_stays_over_her_head(t)
+	_atlas.release(&"events")
 
 const STEP := 1.0 / 60.0
+
+## The events' atlas page, held for the suite: an event or a badge in the tree is drawn on real
+## frames, and the game hands each the library it draws from.
+var _atlas := AtlasLibrary.new()
 
 # ---------------------------------------------------------------- no circles ---
 
@@ -72,8 +78,8 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 	if not def:
 		return
 	var instance := _instance(def)
-	instance.set_player_at(instance.global_position)
-	t.check(not instance.wants_a_mark(),
+	instance.excitement.set_player_at(instance.global_position)
+	t.check(not instance.look.wants_a_mark(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
 
@@ -89,8 +95,8 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
 		return
 	var instance := _instance(def)
 	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
-	instance.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
-	t.check(instance.expected_impact_at(approach) > 0.0,
+	instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+	t.check(instance.excitement.expected_impact_at(approach) > 0.0,
 			"walking straight at a stationary café five seconds out nets something, unlike " +
 			"standing in front of it")
 	instance.free()
@@ -101,7 +107,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
 ## one thing under test, since the caret's own projection freezes the row's rate at the moment it
 ## is asked and a live pulse or telegraph evolving underneath the walk is a second variable this
 ## test does not want — a straight pass at a constant `Tuning.WALK_SPEED` for the whole horizon,
-## exactly what the projection assumes. The halo's own backward-looking `ExcitementHalo.net_landed()`,
+## exactly what the projection assumes. The halo's own backward-looking `ExcitementSource.net_landed()`,
 ## read after the horizon has actually elapsed, comes out close to what `expected_impact_at()`
 ## said at the start of it. `total_landed` is `landed` itself: one source, so its whole share of
 ## the decay is its own, the same simplification `expected_impact_at()`'s own doc names.
@@ -117,19 +123,19 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * Tuning.EXPECTED_IMPACT_HORIZON * 0.5
 	var player_pos := Vector2(-lead, 20.0)
-	instance.set_player_at(player_pos, player_velocity, decay, 1.0)
-	var caret_now := instance.expected_impact_at(player_pos)
+	instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	var caret_now := instance.excitement.expected_impact_at(player_pos)
 	t.check(caret_now > 0.0, "a pass through the field projects a positive net gain")
 
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / STEP))
 	for i in steps:
-		instance._process(STEP)
+		instance.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution := instance.contribution_at(player_pos)
+		var contribution := instance.excitement.contribution_at(player_pos)
 		if contribution > 0.0:
-			instance.accumulate_landed(contribution * STEP)
-	var landed := instance.landed()
-	var halo_net := ExcitementHalo.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
+			instance.excitement.accumulate_landed(contribution * STEP)
+	var landed := instance.excitement.landed()
+	var halo_net := ExcitementSource.net_landed(landed, landed, decay * Tuning.EXPECTED_IMPACT_HORIZON)
 	t.close_to(halo_net, caret_now,
 			"the halo's net after the horizon matches what the caret projected at the start of " +
 			"it, within a few points of a hundred-point bar", 3.0)
@@ -182,21 +188,21 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 			var decay := Tuning.EXCITEMENT_DECAY_WALKING
 			var lead := player_velocity.length() * horizon * 0.5
 			var player_pos := Vector2(-lead, 20.0)
-			instance.set_player_at(player_pos, player_velocity, decay, 1.0)
-			var caret_now := instance.expected_impact_at(player_pos)
+			instance.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+			var caret_now := instance.excitement.expected_impact_at(player_pos)
 			t.check(caret_now > 0.0,
 					"%s at phase %.2fs still projects a positive net gain" % [id, start_age])
 			carets.append(caret_now)
 
 			var steps := int(round(horizon / STEP))
 			for i in steps:
-				instance._process(STEP)
+				instance.step(STEP)
 				player_pos += player_velocity * STEP
-				var contribution := instance.contribution_at(player_pos)
+				var contribution := instance.excitement.contribution_at(player_pos)
 				if contribution > 0.0:
-					instance.accumulate_landed(contribution * STEP)
-			var landed := instance.landed()
-			reals.append(ExcitementHalo.net_landed(landed, landed, decay * horizon))
+					instance.excitement.accumulate_landed(contribution * STEP)
+			var landed := instance.excitement.landed()
+			reals.append(ExcitementSource.net_landed(landed, landed, decay * horizon))
 			instance.free()
 
 		var caret_average := 0.0
@@ -234,7 +240,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 ##
 ## **The shared sum is checked directly against what the two actually land.** `expected_gross_at()`
 ## gathered over both sources first, told back with `set_expected_total_gross()`, is the same
-## once-a-frame shape `ExcitementHalo._process()` runs; summing `ExcitementHalo.net_landed()`'s own
+## once-a-frame shape `ExcitementHalo._process()` runs; summing `ExcitementSource.net_landed()`'s own
 ## arithmetic across every source reproduces the total gross less the whole decay exactly (its own
 ## doc proves this for the backward-looking halo), so the sum of the two shared carets is checked
 ## against `total_landed − decay` after the walk rather than against each source's own halo in
@@ -264,33 +270,33 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING
 	var lead := player_velocity.length() * horizon * 0.5
 	var player_pos := Vector2(-lead, 0.0)
-	a.set_player_at(player_pos, player_velocity, decay, 1.0)
-	b.set_player_at(player_pos, player_velocity, decay, 1.0)
+	a.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
+	b.excitement.set_player_at(player_pos, player_velocity, decay, 1.0)
 
-	var solo_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+	var solo_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
 
-	var gross_a := a.expected_gross_at(player_pos)
-	var gross_b := b.expected_gross_at(player_pos)
+	var gross_a := a.excitement.expected_gross_at(player_pos)
+	var gross_b := b.excitement.expected_gross_at(player_pos)
 	var total_gross := gross_a + gross_b
-	a.set_expected_total_gross(total_gross)
-	b.set_expected_total_gross(total_gross)
-	var shared_sum := a.expected_impact_at(player_pos) + b.expected_impact_at(player_pos)
+	a.excitement.set_expected_total_gross(total_gross)
+	b.excitement.set_expected_total_gross(total_gross)
+	var shared_sum := a.excitement.expected_impact_at(player_pos) + b.excitement.expected_impact_at(player_pos)
 	t.check(shared_sum > solo_sum,
 			("sharing the decay reads higher in total than each netting the whole of it (%.1f " +
 					"solo vs %.1f shared)") % [solo_sum, shared_sum])
 
 	var steps := int(round(horizon / STEP))
 	for i in steps:
-		a._process(STEP)
-		b._process(STEP)
+		a.step(STEP)
+		b.step(STEP)
 		player_pos += player_velocity * STEP
-		var contribution_a := a.contribution_at(player_pos)
+		var contribution_a := a.excitement.contribution_at(player_pos)
 		if contribution_a > 0.0:
-			a.accumulate_landed(contribution_a * STEP)
-		var contribution_b := b.contribution_at(player_pos)
+			a.excitement.accumulate_landed(contribution_a * STEP)
+		var contribution_b := b.excitement.contribution_at(player_pos)
 		if contribution_b > 0.0:
-			b.accumulate_landed(contribution_b * STEP)
-	var total_landed := a.landed() + b.landed()
+			b.excitement.accumulate_landed(contribution_b * STEP)
+	var total_landed := a.excitement.landed() + b.excitement.landed()
 	var actual_net := maxf(total_landed - decay * horizon, 0.0)
 	t.close_to(actual_net, shared_sum,
 			"the two shared carets sum to roughly what the bar actually nets from both sources " +
@@ -311,8 +317,8 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 	# One frame past the telegraph is enough to turn the crouch into a heading — `cat_dash` is
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
-	instance.set_player_at(Vector2(def.outer_radius, 0.0))
-	t.check(not instance.wants_a_mark(),
+	instance.excitement.set_player_at(Vector2(def.outer_radius, 0.0))
+	t.check(not instance.look.wants_a_mark(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
 
@@ -329,12 +335,12 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	# `cyclist` is not `still_while_telegraphing`, so it is already riding its route through the
 	# whole telegraph — the player is placed relative to wherever it actually is once the
 	# telegraph clears rather than at a fixed point its own approach may have already ridden past.
-	# (A telegraphing cyclist is its own scenario below — `_caret_strength()` no longer needs the
+	# (A telegraphing cyclist is its own scenario below — `caret_strength()` no longer needs the
 	# telegraph to be over to read red.)
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
-	on_course.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(on_course.wants_a_mark() and on_course.mark_colour() == Palette.MARK_LETHAL,
+	on_course.excitement.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
+	t.check(on_course.look.wants_a_mark() and on_course.look.mark_colour() == Palette.MARK_LETHAL,
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
@@ -342,8 +348,8 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	_advance(wide, def.telegraph_time + STEP)
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
-	wide.set_player_at(wide.global_position + Vector2(0.0, 60.0))
-	t.check(not wide.will_be_lethal(wide.player_at),
+	wide.excitement.set_player_at(wide.global_position + Vector2(0.0, 60.0))
+	t.check(not wide.excitement.will_be_lethal(wide.player_at),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
 
@@ -364,69 +370,95 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var cyclist := _instance(cyclist_def,
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
-		cyclist.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
-		t.check(cyclist.wants_a_mark() and cyclist.mark_colour() == Palette.MARK_LETHAL,
+		cyclist.excitement.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
+		t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
-		t.check(cyclist.mark_swell() < 1.0,
+		t.check(cyclist.look.mark_swell() < 1.0,
 				"and the swell still reads the telegraph's own damping — the flash, not the " +
 						"colour, is what says this has not happened yet")
 		cyclist.free()
 
 	var dog_def := EventCatalogue.by_id("charging_dog")
 	if dog_def:
-		t.check(dog_def.hard_fail and dog_def.pursues and dog_def.pursues_within <= 0.0,
+		t.check(dog_def.hard_fail and dog_def.pursuit != null and dog_def.notice_within() <= 0.0,
 				"charging_dog is a hard-fail pursuer sited already noticing her")
 		var dog := _instance(dog_def)
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
-		dog.set_player_at(dog.global_position + Vector2(60.0, 0.0))
-		t.check(dog.wants_a_mark() and dog.mark_colour() == Palette.MARK_LETHAL,
+		dog.excitement.set_player_at(dog.global_position + Vector2(60.0, 0.0))
+		t.check(dog.look.wants_a_mark() and dog.look.mark_colour() == Palette.MARK_LETHAL,
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
 		dog.free()
 
 	var robber_def := EventCatalogue.by_id("alley_robbery")
 	if robber_def:
-		t.check(robber_def.pursues_within > 0.0, "alley_robbery waits for a trigger")
+		t.check(robber_def.notice_within() > 0.0, "alley_robbery waits for a trigger")
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
-		robber.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
-		t.check(not robber.wants_a_mark(),
+		robber.excitement.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
+		t.check(not robber.look.wants_a_mark(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
 
 ## A car's own equivalent, over the strike box `Crowd._strike()` actually collides against rather
-## than a def's `inner_radius`.
+## than a def's `inner_radius`. The car is one the crowd's own entry places on a straight stretch of
+## a real city (`Crowd.add_recipe_actor()`), driving down its lane at the slowest speed a car is
+## generated at.
 func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
-	var ahead := CrowdAgent.new()
-	ahead.kind = CrowdAgent.Kind.CAR
-	ahead._speed = 100.0
-	ahead.set_player_at(Vector2(60.0, 0.0))
-	t.check(ahead.will_be_lethal(ahead.player_at),
+	var street := _a_street(t)
+	if street.is_empty():
+		return
+	var city: City = street.city
+	var car: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.CAR, street.corridor,
+			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
+			Tuning.CAR_SPEED.x)
+	car.excitement.set_player_at(car.global_position + Vector2(0.0, 60.0))
+	t.check(car.excitement.will_be_lethal(car.excitement.player_at),
 			"a car whose strike box reaches the lane she is standing in front of is red")
-	ahead.free()
-
-	var beside := CrowdAgent.new()
-	beside.kind = CrowdAgent.Kind.CAR
-	beside._speed = 100.0
-	beside.set_player_at(Vector2(60.0, 50.0))
-	t.check(not beside.will_be_lethal(beside.player_at),
+	car.excitement.set_player_at(car.global_position + Vector2(50.0, 60.0))
+	t.check(not car.excitement.will_be_lethal(car.excitement.player_at),
 			"the same car passing beside her — she would have to step into it herself — is not")
-	beside.free()
+	city.free()
 
 ## `PEDESTRIAN_INTENSITY` (4.2/s) times `Tuning.EXPECTED_IMPACT_HORIZON` (5s) is 21, under
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40) by construction, so no ordinary walker can ever earn a
 ## caret on its own field — only a jolt (a bump, a horn) could add enough, and this one carries
 ## none.
 func _test_a_walker_brushing_past_is_unmarked(t) -> void:
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._speed = 60.0
-	walker.set_player_at(Vector2(20.0, 25.0))
-	t.check(walker._caret_strength() == 0,
+	var street := _a_street(t)
+	if street.is_empty():
+		return
+	var city: City = street.city
+	var walker: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.WALKER, street.corridor,
+			0, street.along, 1.0)
+	walker.excitement.set_player_at(walker.global_position + Vector2(20.0, 25.0))
+	t.check(walker.excitement.caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
-	walker.free()
+	city.free()
+
+## A real generated city in a run of its own, its crowd emptied, with a straight stretch of ordinary
+## street to place a body on: `{city, corridor, along}`, or an empty dictionary (and a failed check)
+## when the city has none.
+func _a_street(t) -> Dictionary:
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), STREET_SEED)
+	t.add_child(city)
+	city.build(CityGenerator.generate(STREET_SEED))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("test_danger:street")
+	city.crowd.start_day(1, rng, Vector2.ZERO)
+	city.crowd.clear()
+	var run: Vector2i = _street_rig.a_straight_run(city.map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch of street to place a body on")
+	if run.x < 0:
+		city.free()
+		return {}
+	return {"city": city, "corridor": run.x, "along": float(run.y + 2) * Tuning.TILE_SIZE}
+
+const STREET_SEED := 4242
+## The street rig (`tests/crowd_street_rig.gd`): places a car or a walker through the crowd's own entry.
+var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
 
 ## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
 ## measurement rather than an argument: "the answer has to be none at ordinary density, or the
@@ -437,7 +469,7 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 ## one amber caret over the whole of it.
 func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = city_scene.instantiate()
+	var city: City = RunCity.with_own_run(city_scene, 9137)
 	t.add_child(city)
 	city.build(CityGenerator.generate(9137))
 	var standing_at := CrowdLanes.arterial_pavement(city.map)
@@ -449,8 +481,8 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 	for i in int(round(40.0 / STEP)):
 		city.crowd.step(STEP)
 		for agent in city.crowd.agents():
-			agent.set_player_at(standing_at)
-			if agent._caret_strength() == 1:
+			agent.excitement.set_player_at(standing_at)
+			if agent.excitement.caret_strength() == 1:
 				amber += 1
 	t.check(amber == 0,
 			("a crowd at ordinary arterial density around a standing player marks nobody " +
@@ -470,9 +502,9 @@ func _test_the_mark_still_breathes(t) -> void:
 	var lowest := INF
 	var highest := 0.0
 	for i in int(round(def.pulse_period / STEP)):
-		instance._process(STEP)
-		lowest = minf(lowest, instance.mark_swell())
-		highest = maxf(highest, instance.mark_swell())
+		instance.step(STEP)
+		lowest = minf(lowest, instance.look.mark_swell())
+		highest = maxf(highest, instance.look.mark_swell())
 	t.check(highest > lowest * 1.5,
 			"the mark has a real swing between beats (%.2f to %.2f)" % [lowest, highest])
 	t.check(lowest > 0.0, "and never shrinks to nothing, which would read as flickering")
@@ -495,7 +527,7 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 			"the louder warning survives a quieter one raised in the same frame")
 
 	# And it goes away on its own rather than needing to be told to.
-	rig._physics_process(0.6)
+	await _physics_ticks(t, rig, 0.6)
 	t.check(rig.alert_level() == Stroller.Alert.NONE, "a warning expires by itself")
 
 	rig.warn(Stroller.Alert.SOON, 0.5)
@@ -518,8 +550,11 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var manager := EventManager.new()
 	t.add_child(manager)
+	# Its own tick off (after it enters the tree, which turns it on): the warning under test is run
+	# through `_warn_through()`, and a bare manager's whole tick wants a director.
+	manager.set_physics_process(false)
 	var rig := _rig(t)
-	rig.add_to_group("player")
+	manager.use_player(rig)
 	rig.global_position = Vector2(1000.0, 1000.0)
 
 	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
@@ -527,7 +562,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var ordinary := _instance(EventCatalogue.by_id("dog_walker"))
 	ordinary.global_position = rig.global_position
 	manager.add_child(ordinary)
-	manager._instances.append(ordinary)
+	manager.world.instances.append(ordinary)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"a dog walker whose radius covers her raises nothing over her head")
@@ -536,7 +571,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 	var lethal := _instance(EventCatalogue.by_id("abduction"))
 	lethal.global_position = rig.global_position
 	manager.add_child(lethal)
-	manager._instances.append(lethal)
+	manager.world.instances.append(lethal)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an unmarked van telegraphing over her is the flashing mark")
@@ -549,7 +584,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 
 	# Far enough away and it is somebody else's problem again.
 	rig.global_position = lethal.global_position + Vector2(lethal.def.outer_radius + 50.0, 0.0)
-	rig._physics_process(1.0)
+	await _physics_ticks(t, rig, 1.0)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"outside its outer radius there is nothing over her head")
@@ -573,8 +608,8 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 
 	# And turning round takes it away again, from the same place, on the same frame.
 	rig.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
-	rig._alert = Stroller.Alert.NONE
-	rig._alert_left = 0.0
+	# The doubled mark the step before raised is the warnings' own, and theirs to take down.
+	rig.stand_down(WarningBoard.WARNING_SOURCE)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"and walking away from the same spot takes it down — the danger has been avoided")
@@ -615,7 +650,7 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(edge._is_worth_an_arrow(instance),
+		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"'%s' is announced from off-screen: it is lethal or faster than a walk" % id)
 		instance.free()
 
@@ -624,12 +659,10 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(not edge._is_worth_an_arrow(instance),
+		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"'%s' is not, because turning round and leaving is enough" % id)
 		instance.free()
 
-	t.check(DangerEdge.MOST_AT_ONCE <= 3,
-			"and at most a handful at once, or the edge of the screen becomes wallpaper")
 	edge.free()
 
 ## **A pursuer sited off screen has to have something announcing it while it is off screen.**
@@ -641,11 +674,11 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 	var edge := DangerEdge.new()
 	var dog := EventCatalogue.by_id("charging_dog")
-	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursues,
+	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursuit != null,
 			"charging_dog is still a director-sited pursuer")
 	if dog:
 		var instance := _instance(dog)
-		t.check(edge._is_worth_an_arrow(instance),
+		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"the day-3 dog is announced off screen once it is sited there")
 		instance.free()
 
@@ -654,7 +687,7 @@ func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	if cat:
 		var instance := _instance(cat)
-		t.check(not edge._is_worth_an_arrow(instance),
+		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
 				"a three-second crossing still has nothing to announce before it arrives")
 		instance.free()
 	edge.free()
@@ -684,56 +717,65 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	# is not coming at anybody: nothing to announce.
 	var van := Vector2(600.0, 0.0)
 	var her := Vector2(walk, 0.0)
-	t.check(is_zero_approx(DangerEdge.approach_speed(van, van, her, step)),
+	t.check(is_zero_approx(BadgeModel.approach_speed(van, van, her, step)),
 			"a stationary event has no approach speed, however fast she walks towards it")
 
 	# The same van, now driving at her while she walks the other way. Her own retreat does not
 	# subtract from what it is doing either.
 	var was := Vector2(600.0, 0.0)
 	var now := was - Vector2(Tuning.WALK_SPEED * 2.0 * step, 0.0)
-	var approach := DangerEdge.approach_speed(was, now, Vector2.ZERO, step)
+	var approach := BadgeModel.approach_speed(was, now, Vector2.ZERO, step)
 	t.check(absf(approach - Tuning.WALK_SPEED * 2.0) < 1.0,
 			"and a mover is measured at its own speed (%.0f px/s)" % approach)
 
-	# The range cap, which is a window rather than a distance: the same 900px of clear ground is
+	# The range limit, which is a window rather than a distance: the same 900px of clear ground is
 	# a fire engine worth announcing and a dawdler that is somebody else's problem for now.
-	t.check(DangerEdge.announces(190.0, 800.0),
+	t.check(BadgeModel.announces(190.0, 800.0),
 			"something doing 190px/s at 800px is four seconds away and is announced")
-	t.check(not DangerEdge.announces(40.0, 800.0),
+	t.check(not BadgeModel.announces(40.0, 800.0),
 			"the same distance at 40px/s is twenty seconds away and is not")
-	t.check(not DangerEdge.announces(DangerEdge.CLOSING_SPEED - 1.0, 0.0),
+	t.check(not BadgeModel.announces(BadgeModel.CLOSING_SPEED - 1.0, 0.0),
 			"and nothing slower than a stroll is announced at any distance")
-	t.check(DangerEdge.HOLD > 0.0,
-			"a raised badge is held, so a rate hovering on the threshold cannot strobe")
 
 	# And the same thing through the real measurement, because the defect was in the plumbing
-	# rather than in the arithmetic: what the two static functions above are *given*.
+	# rather than in the arithmetic: what the two static functions above are *given*. The edge runs
+	# its own frames, and each thing moves by hand at its own speed over the frame's own length.
 	var manager := EventManager.new()
 	t.add_child(manager)
+	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	t.add_child(edge)
+	edge.atlas = _atlas
 	edge.setup(manager, standing)
+	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := _instance(def)
 	engine.global_position = Vector2(700.0, 0.0)
 	manager.add_child(engine)
-	manager._instances.append(engine)
+	manager.world.instances.append(engine)
 
 	# A second of her walking straight at a stopped fire engine.
-	for i in 60:
-		standing.global_position += Vector2(walk, 0.0)
-		edge._process(step)
-	t.check(edge._coming.is_empty(),
+	var announced_while_walking := false
+	var walked := 0.0
+	while walked < 1.0:
+		var delta: float = t.get_process_delta_time()
+		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
+		walked += delta
+		await t.get_tree().process_frame
+		announced_while_walking = announced_while_walking or not edge.model.coming.is_empty()
+	t.check(not announced_while_walking,
 			"walking towards something lethal does not announce it at the edge of the screen")
 
 	# And a second of it driving at her while she stands still.
-	for i in 60:
-		engine.global_position -= Vector2(def.speed * step, 0.0)
-		edge._process(step)
-	t.check(edge._coming.size() == 1, "a fire engine actually coming down the street does")
+	var driven := 0.0
+	while driven < 1.0:
+		var delta: float = t.get_process_delta_time()
+		engine.global_position -= Vector2(def.speed * delta, 0.0)
+		driven += delta
+		await t.get_tree().process_frame
+	t.check(edge.model.coming.size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
 	standing.free()
@@ -747,30 +789,33 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	var manager := EventManager.new()
 	t.add_child(manager)
+	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
 	var edge := DangerEdge.new()
-	t.add_child(edge)
+	edge.atlas = _atlas
 	edge.setup(manager, standing)
+	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := _instance(def)
 	engine.global_position = Vector2(700.0, 0.0)
 	manager.add_child(engine)
-	manager._instances.append(engine)
+	manager.world.instances.append(engine)
 	var id := engine.get_instance_id()
 
-	edge._process(STEP)
-	t.check(edge._watch.has(id), "a live instance gets an entry in _watch")
-	var entry: Dictionary = edge._watch[id]
-	edge._process(STEP)
-	t.check(edge._watch[id] == entry,
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+	t.check(edge.model.watch.has(id), "a live instance gets an entry in _watch")
+	var entry: Dictionary = edge.model.watch[id]
+	await t.get_tree().process_frame
+	t.check(edge.model.watch[id] == entry,
 			"the same instance's entry is the same Dictionary object next frame, mutated in " +
 			"place rather than torn down and rebuilt")
 
-	manager._instances.erase(engine)
-	edge._process(STEP)
-	t.check(not edge._watch.has(id),
+	manager.world.instances.erase(engine)
+	await t.get_tree().process_frame
+	t.check(not edge.model.watch.has(id),
 			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
 			"to sit there forever")
 
@@ -787,7 +832,7 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 	var rig := _rig(t)
 
 	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
-	rig.stand_down(EventManager.WARNING_SOURCE)
+	rig.stand_down(WarningBoard.WARNING_SOURCE)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an event cannot take down a warning the traffic raised")
 	rig.stand_down(Crowd.WARNING_SOURCE)
@@ -797,14 +842,14 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 	# And a source that has been outbid finds nothing of its own to lower, which is what keeps
 	# this from being the setter the additive rule exists to prevent.
 	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
-	rig.warn(Stroller.Alert.NOW, 0.35, EventManager.WARNING_SOURCE)
+	rig.warn(Stroller.Alert.NOW, 0.35, WarningBoard.WARNING_SOURCE)
 	rig.stand_down(Crowd.WARNING_SOURCE)
 	t.check(rig.alert_level() == Stroller.Alert.NOW,
 			"the traffic cannot clear a lethal event's mark by driving away")
 
 	# An upgrade takes the new caller's hold rather than inheriting the old one's remainder,
 	# or a second of leftover `SOON` outlives the `NOW` that replaced it.
-	rig._physics_process(0.4)
+	await _physics_ticks(t, rig, 0.4)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"and the doubled mark expires on its own hold, not on the one underneath it")
 	rig.free()
@@ -822,23 +867,23 @@ func _test_the_pram_says_how_the_baby_is(t) -> void:
 	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
 	t.check(baby.cue() == Baby.Cue.UNSETTLED,
 			"the moment the day stops progressing, it says so")
-	baby.excitement = Tuning.EXCITEMENT_NEARLY_CRYING
+	baby.excitement = Baby.EXCITEMENT_NEARLY_CRYING
 	t.check(baby.cue() == Baby.Cue.NEARLY_CRYING,
 			"and escalates before the day is lost rather than as it is lost")
 
 	baby.state = GameEnums.BabyState.ASLEEP
 	baby.excitement = 0.0
 	t.check(baby.cue() == Baby.Cue.ASLEEP, "asleep is a state with a mark of its own")
-	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Tuning.EXCITEMENT_STIR_MARGIN
+	baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - Baby.EXCITEMENT_STIR_MARGIN
 	t.check(baby.cue() == Baby.Cue.STIRRING,
 			"and stirring is warned about before it costs half the bar")
 
 	# The relationships, which are what a rebalance must not quietly break.
-	t.check(Tuning.EXCITEMENT_NEARLY_CRYING > Tuning.EXCITEMENT_CALM_THRESHOLD
-			and Tuning.EXCITEMENT_NEARLY_CRYING < Tuning.METER_MAX,
+	t.check(Baby.EXCITEMENT_NEARLY_CRYING > Tuning.EXCITEMENT_CALM_THRESHOLD
+			and Baby.EXCITEMENT_NEARLY_CRYING < Tuning.METER_MAX,
 			"the last warning band sits between the freeze and the lost day")
-	t.check(Tuning.EXCITEMENT_STIR_MARGIN > 0.0
-			and Tuning.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
+	t.check(Baby.EXCITEMENT_STIR_MARGIN > 0.0
+			and Baby.EXCITEMENT_STIR_MARGIN < Tuning.EXCITEMENT_WAKE_THRESHOLD,
 			"and stirring starts before waking, not with it")
 	baby.free()
 
@@ -941,27 +986,27 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 
 func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
+	instance.atlas = _atlas
 	instance.setup(def, Vector2.ZERO, route)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`
 ## has no `EventDirector` — that is built when a day starts — and stepping the whole frame
-## raises a script error inside `_place_what_is_owed_ahead` before ever reaching the mark.
+## raises a script error inside `EventsAhead.place_what_is_owed_ahead()` before ever reaching the mark.
 ##
 ## Worth the note: the error did not fail the suite. GDScript aborts the erroring *function* and
 ## carries on in the caller, so the assertions afterwards ran, passed, and the only sign was
 ## four stack traces in the middle of a green run.
 func _warn_through(manager: EventManager) -> void:
-	manager._find_player()
-	manager._warn_about_the_ground_she_is_on()
+	manager.warnings.warn_about_the_ground_she_is_on()
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
-## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs
-## and `_physics_process` can be stepped by hand. `SomeNode.new()` is not named `SomeNode`, so
-## the camera has to be named explicitly or the lookup fails silently.
+## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs, its
+## own tick off until a test lets real ticks pass (`_physics_ticks()`). `SomeNode.new()` is not
+## named `SomeNode`, so the camera has to be named explicitly or the lookup fails silently.
 func _rig(t) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -971,3 +1016,20 @@ func _rig(t) -> Stroller:
 	t.add_child(rig)
 	rig.set_physics_process(false)
 	return rig
+
+## Lets `seconds` of the stroller's own physics ticks pass for real, counted in ticks, one tick a
+## frame (record busy-puffin: a slow frame would pack several), its tick switched on only for them.
+## Ends on the frame after the last tick, so the rig has run every one of them.
+func _physics_ticks(t, rig: Stroller, seconds: float) -> void:
+	var steps := Engine.max_physics_steps_per_frame
+	Engine.max_physics_steps_per_frame = 1
+	rig.set_physics_process(true)
+	var ticks := ceili(seconds * Engine.physics_ticks_per_second - 0.001)
+	var ran := 0
+	while ran < ticks:
+		var before := Engine.get_physics_frames()
+		await t.get_tree().physics_frame
+		ran += Engine.get_physics_frames() - before
+	await t.get_tree().process_frame
+	rig.set_physics_process(false)
+	Engine.max_physics_steps_per_frame = steps

@@ -5,14 +5,28 @@ extends Node
 ##     tools/test.sh crowd balance   # just the suites whose name contains one of these
 ##     godot --headless --path . res://tests/tests.tscn -- crowd
 ##
-## Runs as a scene rather than via `--script` so that the autoloads (Tuning, EventBus,
-## GameState) actually exist — `--script` replaces the main loop and skips them.
+## Runs as a scene rather than via `--script` so that the autoloads (Tuning, EventBus, and the
+## `GameState` stand-in below) actually exist — `--script` replaces the main loop and skips them.
+##
+## **`GameState` is a stand-in, read by suites only.** The game's run lives on the `Sitting`
+## (`Sitting.run`), which `main` takes it from; no class under `src/` reads the autoload. The
+## suites not yet moved set and read `GameState`, and for a sitting that enters the tree holding
+## no run the stand-in and the run its `main` plays are one object: the sitting is handed the
+## stand-in as it enters (`_hand_the_stand_in()`), before the `main` that built or found it
+## takes its run. A sitting a suite hands a run keeps it. A sitting that never enters the tree
+## (one handed to a `main` with `use_sitting()`) is handed nothing here: its `main` plays the
+## run the suite handed it, or a fresh one of the sitting's own, so a suite that reads
+## `GameState` beside such a `main` hands the sitting the stand-in itself
+## (`sitting.run = GameState`). The stand-in, this hand-off and the reset below are there only
+## for the suites that read `GameState` (minty-quail, the run's state handed in).
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
 ## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
-## physics frame has passed before the first, so every suite meets the same engine state.
+## physics frame has passed before the first, so every suite meets the same engine state. After
+## each suite `SharedState` compares the shared state with what it was before, and a suite that
+## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
 ##
 ## Suites report with `check()` / `close_to()`. A probe under `tests/probes/`, and the
 ## negative fixtures under `tests/runner_fixtures/` (`engine_error.gd`, which proves the engine-error
@@ -46,9 +60,12 @@ var failures: Array[String] = []
 ## when something else quit the tree.
 var _running := ""
 var _finished := false
+## What `gives_back_observers()` recorded for the suite now running, put back once it is over.
+var _observer_hold := {}
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
+	get_tree().node_added.connect(_hand_the_stand_in)
 	# In a process where no physics frame has run, `move_and_slide()` moves a body 0 px, and after
 	# one it moves the full step. A frame passes before the first suite so that no suite, the first
 	# included, runs before the engine has stepped physics once.
@@ -63,11 +80,12 @@ func _ready() -> void:
 		var script := load(path) as GDScript
 		if script == null or not script.can_instantiate():
 			failures.append("%s failed to load (parse error or missing script)" % path)
-			print("-- %-26s %7s" % [path.get_file(), "LOAD FAIL"])
+			print("-- %-36s %7s" % [path.get_file(), "LOAD FAIL"])
 			continue
 		var suite: Object = script.new()
 		_running = path.get_file()
 		_reset_globals()
+		var shared_before := SharedState.snapshot(self)
 		# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 		# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 		# coroutine waits for it.
@@ -77,17 +95,23 @@ func _ready() -> void:
 		# synchronous run never lets happen.
 		await get_tree().process_frame
 		await get_tree().physics_frame
+		if not _observer_hold.is_empty():
+			SharedState.put_back_observers(_observer_hold)
+			_observer_hold = {}
+		for leak in SharedState.diff(shared_before, SharedState.snapshot(self)):
+			failures.append("%s left shared state changed, %s" % [path.get_file(), leak])
+			print("LEAK  %s left shared state changed, %s" % [path.get_file(), leak])
 		_running = ""
 		# Per-suite timing, because "the suite got slow" is otherwise a guessing game — and
 		# the integration suites can be five orders of magnitude heavier than the rest: the
-		# spread runs from `test_quit_option.gd` at 3ms to `test_resistance.gd` at about 192_000.
+		# spread runs from `test_quit_option.gd` at 3ms to the heaviest scene suites at over a hundred thousand.
 		#
 		# **Both columns are sized for the worst case rather than the common one**, since a
 		# single overflowing row pushes only its own line and the misalignment reads as a
-		# glitch rather than as the outlier it is pointing at. 26 clears the longest name on
-		# disk (`test_reachability_grid.gd`, 25) with a space to spare; 7 digits reach nearly
+		# glitch rather than as the outlier it is pointing at. 36 clears the longest name on
+		# disk (`test_resistance_placement_kinds.gd`, 34) with a space to spare; 7 digits reach nearly
 		# three hours, which no suite will approach without that being the news.
-		print("-- %-26s %7d ms" % [path.get_file(), Time.get_ticks_msec() - started])
+		print("-- %-36s %7d ms" % [path.get_file(), Time.get_ticks_msec() - started])
 
 	print("")
 	for failure in failures:
@@ -111,22 +135,30 @@ func _exit_tree() -> void:
 const RESET_SEED := 2
 
 ## The one place the globals a suite may leave behind are put back, called before each suite so
-## that no suite starts on another's state: the run state and the static seams a suite sets by hand
-## (the override hooks, the test arguments, the frame recorder, the remembered controls and the
-## title's restart stamp). Telemetry, `VisitCounter` and `EventBus` connections are left alone.
+## that no suite starts on another's state: the run state and the trace it writes to (a silent
+## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
+## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
+## and the static seams a suite sets by hand (the frame recorder).
+## The run log and `VisitCounter`'s own state and the `EventBus` connections are left alone, and
+## so is everything else: `SharedState` compares
+## the shared state after each suite and fails the suite that left it changed, except the fields
+## it lists with a reason (these resets are the reason for some of them). It covers the tree's
+## `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the runner,
+## `InputMap`, the pressed actions, the autoloads' variables and signal connections and every
+## `static var` under `src/`.
 func _reset_globals() -> void:
 	GameState.start_run(RESET_SEED)
-	DevFlags._invincible_override = null
-	GameSave._path_override = ""
-	GameSave._uses_save_override = null
-	SaveIndicator._home_override = null
-	DevFlags.args_for_tests = PackedStringArray()
-	FrameRecord.on = false
-	FrameRecord.ledger = null
-	ControlsMode._remembered = false
-	ControlsMode._remembered_mode = ControlsMode.Mode.TAP
-	ControlsMode._remembered_side = ControlsMode.Side.LEFT
-	TitleScreen._restarted_at_msec = -INF
+	Telemetry.configure(null)
+	GameState.use_trace(RunTrace.new())
+	VisitCounter.configure(null, GameState)
+
+## Hands the `GameState` stand-in to a `Sitting` that enters the tree holding no run — see this
+## file's header. Called as the node enters, so the `main` that adds a sitting of its own, or finds
+## one a suite parked in its home, takes the stand-in as its run.
+func _hand_the_stand_in(node: Node) -> void:
+	var sitting := node as Sitting
+	if sitting and sitting.run == null:
+		sitting.run = GameState
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
@@ -167,6 +199,13 @@ func _matches(file: String, filters: PackedStringArray) -> bool:
 		if file.contains(filter):
 			return true
 	return false
+
+## A suite that boots `main`, or drives a run the observers watch, calls this first: the observers'
+## count of the run (`SharedState.OBSERVER_FIELDS`) is put back to what it is now once the suite is
+## over, so that the next suite does not meet the days and tasks of this one. Nothing else is
+## given back for it.
+func gives_back_observers() -> void:
+	_observer_hold = SharedState.observers()
 
 # --------------------------------------------------------------- assertions ---
 

@@ -11,11 +11,16 @@ field; resist adding a script per event.
 ## Adding a row
 
 The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped is **a drawing**:
-an `EventDef.Look` of its own, an SVG in `art/events/`, a `_draw_*` in `EventInstance`, and a row
-in `EventInstance.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
+an `EventDef.Look` of its own, an SVG in `art/events/`, its pictures in `EventPictures`, a
+`_draw_*` in the look that draws its family (`src/events/views/`, picked by `EventLooks.for_row()`),
+and a row in `EventPictures.icon_for()` so the screen-edge badge has a silhouette. There is no generic to
 borrow — `tests/test_events.gd` fails the build if two rows share a picture.
 
-If it needs behaviour no field covers, add the field to `EventDef` and handle it in `EventInstance`.
+If it needs behaviour no field covers, add the field to `EventDef` and handle it in the behaviour
+that owns that rule under `src/events/behaviours/`, or in a new `EventBehaviour` that
+`EventBehaviours.compose()` adds for the rows whose data ask for it. A behaviour that keeps
+state saves and restores it (`save()`, `restore()`), or a streamed-out event comes back with it
+fresh and nothing says so.
 
 ## The fields that are decisions, and the ones that are not
 
@@ -26,15 +31,15 @@ three seconds of cat is not a place. `TOWARD_PLAYER` (`cyclist`, `loose_dog`) is
 coming at her: traffic she answers with a route, not an ambush. Neither director-sited mode may
 obstruct.
 
-**`sited_on_her_way` is a decision about *when* a place is chosen.** A `MAP` one-shot, never
-mobile, placed by her walk rather than at dawn; `EventDef.validate()` refuses any other
-combination.
+**`EventDef.on_her_way` is a decision about *when* a place is chosen.** A `MAP` row, a one-shot
+(day 3's fire) or recurring (the poster crews), never mobile, placed by her walk rather than at
+dawn; `EventDef.validate()` refuses any other combination.
 
 **`hard_fail` is a decision, and it decides where the thing goes as well as what it does.**
 
 **The role is not a decision.** `EventScheduler._role_for` reads it off the def: scenery, ambient
 and director-sited rows get none; a one-shot is a **set piece** (sited where every route touches
-it); `hard_fail`, a `walk_through_cost()` at or over `Tuning.WALL_WORTH_OF_COST` (48 points), or a
+it); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
 reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
 route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
 depends on where its beat runs, so `_a_pacing_beat_walls_a_sidewalk` decides it in the candidate
@@ -81,7 +86,7 @@ arrives chasing, with no approach: its notice is its badge alone. Running while 
 counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
 The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
-that waited for her, a robber included, warns inside its one radius on its own clock (`warns_for`),
+that waited for her, a robber included, warns inside its one radius on its own clock (`PursuitSpec.warns_for`),
 so that floor bounds nothing it does (inbox #788 in minty-lemur). Verify escape with
 the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
 
@@ -106,20 +111,22 @@ A row that arrives from off screen under the screen-edge badge — `cyclist`, `c
 her heading, the fire engine, the resistance's own `robber_giving_chase` and
 `van_guard_giving_chase`, a torn poster's pursuer on foot (`policeman_giving_chase`,
 `guardsman_giving_chase`), day 13's column, each a row `warns_before_it_exists()` answers true for
-(flagged `warned_first` on its row, or made so by `EventManager.as_warned()`, which every warning
+(flagged `warned_first` on its row, or made so by `EventSpawner.as_warned()`, which every warning
 goes through) — is a `PendingWarning` first (`EventManager.warn_first()`; PLAYTEST-145 2): nothing
 in the world, the badge up at once for the row's own `EventDef.warned_for()`, **at most
 `Tuning.WARNING_ALONE_MAX`** (`validate()` refuses longer; busy-quail #569), its place fixed against
 her so the badge moves only with her walking and never jumps. Then the thing is created **just off
 screen** (calm-kestrel #559) where its ground has a place for it from where she is by then
-(`PendingWarning.just_out_of_sight()`: everything it can draw, `EventInstance.footprint_of()`,
+(`SpawnSiting.just_out_of_sight()`: everything it can draw, `EventFootprints.footprint_of()`,
 wholly outside the camera's whole view, corners included, never nearer than
-`PendingWarning.least_distance()`) — **no pop-in** (olive-hedgehog #598), and
+`SpawnSiting.least_distance()`) — **no pop-in** (olive-hedgehog #598), and
 `tests/test_no_pop_in.gd` holds it — a sidewalk for the bike, walkable ground down her heading for
-the day-3 dog, the road on its way to the fire for the engine, its lane for the column, the
-director's own rules for the trap. A non-pursuer is created with its telegraph spent
+the day-3 dog, the road on its way to the fire for the engine, its lane for the column, and for a
+pursuer sent from out of her sight — the trap, the torn poster's man on foot — one `SpawnSiting`
+search under its named rules (`WarningBoard.send_from_out_of_sight()`). A non-pursuer is created with its telegraph spent
 (`EventManager.spawn_warned()`); **a pursuer with its telegraph still to run**, since its telegraph
-is its approach — except one that `arrives_chasing` (the resistance's sent robber and guard, and a
+is its approach — except one that arrives chasing (`PursuitSpec.Start.ARRIVES_CHASING`: the
+resistance's sent robber and guard, and a
 torn poster's pursuer on foot (olive-hedgehog #598). Where its ground has no place when the second
 is up, the warning is withdrawn; a withdrawn day-3 dog is owed again.
 
@@ -144,13 +151,13 @@ reason something else is not warned first.** What stands in the way of it is `do
 ## The contract is per event and the player experiences the sum
 
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
-`outer_radius` clear of every other event at placement (`EventScheduler._room_around()`), and it is
+`outer_radius` clear of every other event at placement (`EventScheduler.room_around()`), and it is
 the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.
-`EventScheduler._keeps_its_field_clear` names both. The reasoning is `docs/EVENTS.md`, "The contract
+`EventScheduler.Planned.keeps_its_field_clear()` names both. The reasoning is `docs/EVENTS.md`, "The contract
 is per event, and the player experiences the sum".
 
 ## A lethal radius and a solid body are the same mechanism
@@ -162,7 +169,7 @@ which is not an unfair event, it is an event that has quietly been switched off,
 
 ## Anything that stands still is solid at the width it is drawn
 
-`obstructs_radius` is **half the silhouette** and not a balance value — `EventInstance._draw_spread`
+`obstructs_radius` is **half the silhouette** and not a balance value — `SpreadLook._draw_spread`
 draws a blocking object at exactly the width it obstructs for the same reason in the other
 direction.
 
@@ -174,13 +181,14 @@ is the event). `tests/test_events.gd` requires everything else to have one.
 
 ## A car that drives is a body that moves, and its strike is not the body
 
-`EventDef.drives` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
-that move, and it answers
-the pin the mobile exemption is for by **never moving into her**: `EventInstance._drive()` takes
-back any step or turn that would bring the body into her or her pram, and the car stands for her
-until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
+`EventDef.vehicle` (`police_patrol` and every copy of it, and `fire_truck`) makes the only bodies
+that move, and it answers the pin the mobile exemption is for by **never moving into her**: every
+event's step is proposed, checked and then committed (`EventInstance.step()`), and a car's check is
+its own (`EventCarDriving.check()`): a step or turn that would bring the body into her or her pram is
+taken back, with whatever the step decided on that pose (the end of its route reached there), so the
+car stands for her until she is out of its way. Its `obstructs_radius` stays zero — it closes no ground — and its
 lethality is **a strike area ahead of its nose, only while it drives its route, only with her on
-the carriageway**, reaching `Tuning.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
+the carriageway**, reaching `EventCarDriving.PATROL_STRIKE_LEAD` past the touch so a car driving its nose
 into her strikes rather than stands. It gives way where the crowd's cars do — short of a zebra she
 is waiting at off the main road, and at a red light — so the zebra stays the safe way over. Seven
 traps:
@@ -197,13 +205,13 @@ traps:
   nearer her than a fast car's warning reaches her — the fire engine's 1.7s of 190px/s past a
   touch that counts its body and hers, against the view's 180px half height up a north-south
   street and 320px half width across an east-west one — so one driving from its first frame
-  strikes her inside the time it takes to walk off the road. A car that drives is created standing
-  (`EventInstance.setup()`), so it waits until she is out of its way, as a car that has stood does.
+  strikes her inside the time it takes to walk off the road. A car that drives is made standing
+  (`EventCarDriving`), so it waits until she is out of its way, as a car that has stood does.
 - **A car that parks where it arrives must not reach past where it parks.** Its warning, strike,
   doubled caret and standing for her are stated in seconds of its travel, and the fire engine's
   route ends at its kerb: uncut, it warned her past the kerb of a strike it could not make, ended
   the day parking short of her, and stood off screen for her there. They end at the touch it would
-  make parked (`EventInstance._route_left()`), with no strike lead past it.
+  make parked (`EventCarDriving.route_left()`), with no strike lead past it.
 - **A heading change that newly brings her inside its warning's reach is refused like a step into
   her.** A turn moves nothing, so the body check passes it — and the raid's pacing car reversing at
   the end of its beat turns her from behind a car driving away into the front of one, struck with
@@ -215,11 +223,11 @@ traps:
   is gone only once she could not be watching.
 - **A car that stops where it noticed her stops in junction boxes**, standing in the crossing
   traffic's way for a whole chase. One that notices her with any of its body on a junction drives on
-  until it is clear of the box (`EventInstance._stands_in_a_junction()`). A test on a hand-made
+  until it is clear of the box (`EventInvestigation._stands_in_a_junction()`). A test on a hand-made
   straight route away from junctions cannot see this; `tests/test_pursuer_on_foot.gd` drives real
   routes on three seeds.
 
-**A body is a route cost, not a closure.** `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
+**A body is a route cost, not a closure.** `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px) is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
 walk around does not close a park; one you have to route around does. **If a rule tests
 `obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**
@@ -240,25 +248,25 @@ nothing, cannot end the day and carries no cue, and moves until it is past `Tuni
 (420px) before it is deleted. **It is over the moment it starts leaving.**
 
 **Three things never leave**, and each would break something that reads the finishing position: a
-`spawns_on_finish` row stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
+row with an `aftermath.on_finish` stops where the thing it leaves belongs; a `stops_where_it_arrives` row parks
 and stays — still emitting, still the same event (the fire engine at its fire); and anything that
 was a *place* rather than a moment is simply over. **One thing leaves and is not deleted**: the
-guard who set off from a barrier (`EventDef.body_stays_behind`) walks away at his chasing pace over walkable ground and round his own band, and
+guard who set off from a barrier (`PursuitSpec.leaves_its_body`, `EventBarrierPost`) walks away at his chasing pace over walkable ground and round his own band, and
 the instance goes back to being only the barrier: solid and silent, since a roadblock's band
 costs nothing at any time, manned or not, on a day as in the escape (its `intensity` is 0; the
 guard is the danger), and the guard at its far post walks off with him, on every day
-(`EventInstance._send_the_far_guard_off()`). A barrier whose guard has gone raises no mark over her head (`EventManager._warn_about_the_ground_she_is_on()` passes over a spent guard), since he
+(`RoadblockFarGuard`). A barrier whose guard has gone raises no mark over her head (`WarningBoard.warn_about_the_ground_she_is_on()` passes over a spent guard), since he
 never notices her or charges again — so "it is over the moment it starts leaving" holds for the
 man and not for the barrier he left. He is in her view as he goes, so
-he is held to the sight rule like a car (`_leaving_must_clear_sight`) rather than vanishing on the
+he is held to the sight rule like a car (`EventDeparture._must_clear_sight`) rather than vanishing on the
 6-second backstop beside her; the backstop remains for a departure with no player to be out of
-sight of. A plan streamed out while he is spent or leaving must carry that (`Planned.guard_spent`), or
+sight of. A plan streamed out while he is spent or leaving must carry that (`EventBarrierPost.save()`), or
 the barrier comes back armed. **Streaming is a way out too**: `EventManager.stream_around()` takes a
 plan out by her distance from its *route*, and a car that has run out of route drives on past its
 end, so `stream_around()` keeps any live instance within `Tuning.OUT_OF_SIGHT` of her in the world
 however far its route is, or a car she follows out of its street is deleted in front of her; and a
-leaving plan it does stream out is spent, as one that finished is, the guard's `guard_spent` being
-the exception. The rest is `docs/EVENTS.md`, "Going away".
+leaving plan it does stream out is spent, as one that finished is, a spent or leaving guard (whose
+barrier comes back as only the barrier) being the exception. The rest is `docs/EVENTS.md`, "Going away".
 
 ## Pursuits
 
@@ -271,13 +279,13 @@ it was written from. The traps:
   the gap and dies on the first lethal frame. It closes to its stand-off
   (`Tuning.pursuit_standoff()`) and lunges the moment she reaches it, so the chase starts at the
   stand-off however she came. **A pursuer that stands still for its notice
-  (`EventDef.stands_for_its_notice`) closes nothing and keeps every lunge**, which
+  (`PursuitSpec.stands`) closes nothing and keeps every lunge**, which
   is what keeps standing from being this trap for one that comes for her (woolly-penguin #748);
   one that waited for her charges on its warning's clock instead (next trap); one that sets off
   beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
-  holds the ground of one that sets off beside her (`EventInstance._lunge_held`) — it stands while
+  holds the ground of one that sets off beside her (`EventPursuit.lunge_held`) — it stands while
   she is nearer than the stand-off and follows at it once she is further, or only stands if it
   stands for its notice — and lunges once she is back at the
   full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
@@ -285,10 +293,10 @@ it was written from. The traps:
 - **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
   stand-off while she walks into it, `PURSUIT_REACTION` of its approach is worth about a fifth of a
   second, too short to turn and run. So every charger that waits for her (the waiting dog, the
-  alley robber, the hunting roadblock's guard) warns for its row's `warns_for` from
+  alley robber, the hunting roadblock's guard) warns for its row's `PursuitSpec.warns_for` from
   the frame it notices her inside its one radius, and charges only if she is still inside once
   that has run; out of the radius first, it waits again (`EventInstance.warns_by_radius()`,
-  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `_chase()` adds to
+  `notice_time()`; inbox #788 in minty-lemur). **Running while it warns counts for nothing**: `EventPursuit` adds to
   `PURSUIT_SHAKEN_OFF`'s count only once it has charged, or a half-second run beside a roadblock's
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
@@ -298,17 +306,17 @@ it was written from. The traps:
   view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
-  `charges_within`, with no `warns_for` (`EventInstance._check_for_notice()`,
-  `_warn_on_its_line()`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
+  `NoticeSpec.runs_within` from outside it, with no warning clock; one who noticed her already
+  inside it warns for `Tuning.WARNING_ALONE_MAX` first (`EventNoticeRun`; inbox #788 in minty-lemur): in the stairwell his warning is off screen, which the player
   accepted (inbox #782 in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
   door's line, the hut's guard across the road (or the post's) raises his hand for
-  `Tuning.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
+  `CheckpointController.CROSSING_WARNING`; back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off
-  (`EventDef.charges_at_once`: no notice of his own, telegraph 0). So his charge is not met at the
+  (`PursuitSpec.Start.CHARGES_AT_ONCE`: no notice of his own, telegraph 0). So his charge is not met at the
   stand-off: the answer is the warning — go back, or go on running — which
-  `tests/test_checkpoints.gd` walks. **No other row may carry `charges_at_once` without the player's
+  `tests/test_checkpoints.gd` walks. **No other row may start `CHARGES_AT_ONCE` without the player's
   word**: on any other pursuer it is exactly the trap above.
 - **A break-off stated as a distance needs two inequalities, and they fight.**
   `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a **rate** — the gap opening — which only running can
@@ -320,7 +328,7 @@ it was written from. The traps:
   direction she is *actually travelling*, so a `--flee` that starts early puts the pursuit in front
   of the run. It waits for the chase.
 
-Two more about the waiting state (`pursues_within`): **whatever follows it starts when it notices
+Two more about the waiting state (`EventDef.notice`): **whatever follows it starts when it notices
 her**, not at dawn — for a pursuer its warning's clock, for anything else its telegraph; and **whatever draws it asks `is_waiting()` as well as `is_telegraphing()`** — each is
 false in the other's phase, so a picture that asks only the second holds its whole wait in the
 wrong posture.
@@ -337,7 +345,7 @@ wrong posture.
   one disc `validate_event` checked. A moving emitter is only legal while that is true.
 - **`lerp` cannot turn a vector round.** Interpolating a unit vector toward its opposite runs down
   the same line to zero and back out the way it came, so normalising gives the heading it started
-  with. Rotate by a bounded angle (`EventInstance._steer`), and steer from *half way out*, because a
+  with. Rotate by a bounded angle (`EventFlock._steer`), and steer from *half way out*, because a
   turn costs ground.
 
 ## A moving thing has to look like it is moving
@@ -370,7 +378,7 @@ of the *plan*. `EventScheduler.build_day()` plans the entire map at dawn. What s
 - **A spent plan stays spent, and a running one resumes.** Streaming may take a running event away
   and give it back; it may never rewind one that has finished, and the bookkeeping an event does
   once — a scar, a block arc — happens on its first instantiation and never again. `Planned.age` and
-  `Planned.travelled` carry it over. It **resumes** rather than catching up on lost time.
+  `Planned.travelled` carry it over, and `Planned.behaviours` each behaviour's own state. It **resumes** rather than catching up on lost time.
 
 **Do not move a guarantee out of `build_day` and into the streaming.** If something has to be true
 of a day, it has to be decided where the day is.
@@ -378,21 +386,21 @@ of a day, it has to be decided where the day is.
 ## Excitement is a pure query
 
 Events never push a value at the baby. `Baby` asks the `WorldContext` for the total at its position,
-and the world sums `contribution_at()` over live instances. This is why events compose by simple
+and the world sums `contribution_at()` over every live source (`ExcitementSource`, which each
+instance composes as `excitement`). This is why events compose by simple
 addition, there is no ordering to get wrong, and an event can be tested without a scene. **Do not
 add a code path that writes to `Baby.excitement` from outside.**
 
-**Nothing reaches her through a building, and a new source has to ask.** `EventInstance.
-contribution_at()` and `CrowdAgent.contribution_at()` zero a positive field when
-`CityMap.wall_between()` finds the line from the source to her a tile deep in a building, or at
+**Nothing reaches her through a building, and a new source has to ask.** Every source's
+`ExcitementSource.contribution_at()` zeroes a positive field when `WorldMap.wall_between()` finds the line from the source to her a tile deep in a building, or at
 the middle of a wall only one tile thick;
-anything else that ever emits goes through the same question. The trap is the caret's projection:
+anything else that ever emits is an `ExcitementSource` and goes through the same question. The trap is the caret's projection:
 it translates *her* point rather than moving the source, which is right for the field and wrong for
 the wall — a wall stays where it is, so the projection asks it between the two bodies' own
 projected places.
 
-A contact **startles the person she walked into** — the jolt is a decaying source on that agent's
-own `contribution_at()`. Anything that wants to "add excitement" should find a body to put it on
+A contact **startles the person she walked into** — the jolt is a decaying part of that agent's
+own field (`CrowdExcitement`). Anything that wants to "add excitement" should find a body to put it on
 rather than a third summand; if there genuinely is no body, that is a design conversation, not a
 plumbing one.
 

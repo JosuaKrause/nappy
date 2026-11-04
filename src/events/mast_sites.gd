@@ -10,6 +10,16 @@ extends RefCounted
 ## true without a day having to remember yesterday's roll. `EventScheduler.build_day()` calls
 ## `compute()` fresh every day it needs it.
 
+## A candidate site is refused if a mast's own field would reach inside a calm block's interior —
+## measured from the block's lot rect shrunk in by one tile on every side, so a field may still
+## brush a calm area's own pavement edge without being read as *inside* it.
+const MAST_CALM_INTERIOR_MARGIN := 32.0
+## A candidate site is refused if it is this close to the home's own doorstep, whether or not a
+## mast's field would reach that far — "never on the home street" is a stronger promise than "never
+## in range of it". One full block-and-street period, so a site has to be a street away from home
+## rather than merely outside the field.
+const MAST_HOME_STREET_MARGIN := 1.0
+
 ## One chosen site: a stable id a later slice can name — M181's day-11 task silences a mast by
 ## reaching its foot, the way she touches a chalk mark — and the ground point everything about the
 ## mast is measured from: `EventScheduler.Planned.position`, the field's own centre, and the point
@@ -90,7 +100,7 @@ static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map:
 	if seen.has(key):
 		return
 	seen[key] = true
-	if _is_eligible(at, map, door_points):
+	if is_eligible(at, map, door_points):
 		found.append(at)
 
 ## A mast's own foot may stand on her own sidewalk or on a square's paving — never a road, a
@@ -181,7 +191,7 @@ static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 ## `door_points` is `possible_door_points(map)` for a caller that asks of many tiles: it is the one
 ## costly part (every boundary segment rebuilt), and it is the same for every tile of a run. Left
 ## empty, it is computed for this one call.
-static func _is_eligible(at: Vector2, map: CityMap,
+static func is_eligible(at: Vector2, map: CityMap,
 		door_points := PackedVector2Array()) -> bool:
 	if _too_close_to_home(at, map) or _reaches_a_calm_interior(at, map):
 		return false
@@ -189,17 +199,17 @@ static func _is_eligible(at: Vector2, map: CityMap,
 	return not _reaches_a_possible_door(at, points)
 
 static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
-	var margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
+	var margin := MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 	return at.distance_to(map.doorstep_world_position()) < margin \
 			or at.distance_to(map.home_world_position()) < margin
 
 ## Whether a mast's own field, planted here, would reach inside a calm block's interior — the lot
-## rect shrunk in by `Tuning.MAST_CALM_INTERIOR_MARGIN` on every side, so a field may still brush
+## rect shrunk in by `MAST_CALM_INTERIOR_MARGIN` on every side, so a field may still brush
 ## the block's own pavement edge without counting as reaching its interior. Read off the
 ## `loudspeaker` row's own `outer_radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
 static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
-	var reach := EventCatalogue.by_id("loudspeaker").outer_radius
+	var reach := EventCatalogue.mast().outer_radius
 	var seen := {}
 	for block in map.calm_blocks:
 		var anchor := map.anchor_of(block)
@@ -207,7 +217,7 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 			continue
 		seen[anchor] = true
 		var interior := map.tile_rect_to_world(map.lot_rect(block)).grow(
-				-Tuning.MAST_CALM_INTERIOR_MARGIN)
+				-MAST_CALM_INTERIOR_MARGIN)
 		if interior.has_area() and _circle_touches_rect(at, reach, interior):
 			return true
 	return false
@@ -223,12 +233,12 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## would stand at (two huts and a gate) are `RegionPlanner._add_door_bodies()`'s own math, read
 ## from the same public calls it makes; an alley door is not checked here, since a through-alley's
 ## own crossing needs `RegionPlanner`'s private detection of which alleys actually cross a
-## boundary — `EventScheduler._place_masts()`'s own `_clear_of_the_doors()` check is the safety net
+## boundary — `EventScheduler.place_masts()`'s own `_clear_of_the_doors()` check is the safety net
 ## for that and for anything this misses, exactly as it is for held ground.
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*
 static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Array) -> bool:
-	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.by_id("loudspeaker").field_reach()
+	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
 	for position in door_points:
 		if at.distance_to(position) < limit:
 			return true
@@ -237,7 +247,7 @@ static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Arra
 ## Every point a street door could ever stand at — each boundary segment's two huts and gate, at the
 ## end its wall stands — for `_reaches_a_possible_door()`. Day-independent, like the sites, and the
 ## costly half of the question (`RegionPlanner.boundary_segments()` is rebuilt for it), so a caller
-## asking of many tiles computes it once and hands it to `_is_eligible()`. Never empty on a city
+## asking of many tiles computes it once and hands it to `is_eligible()`. Never empty on a city
 ## with region boundaries; on one with none, an empty answer means every call computes it again,
 ## which costs nothing there.
 static func possible_door_points(map: CityMap) -> PackedVector2Array:

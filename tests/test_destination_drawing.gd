@@ -3,7 +3,7 @@ extends RefCounted
 ## their destination"): the chalk mark and its touched picture belong to the pickup alone, and a
 ## task's destination — a rider, or a bare point (day 9's district door, day 11's mast foot, day
 ## 12's swing, the last night's station door) — draws no chalk picture, untouched or done, while the
-## red arrow still ends on it. Headless runs never call `_draw()`, so this asks
+## red arrow still ends on it. A headless draw pass leaves no picture to read, so this asks
 ## `ContactPoint.draws_a_mark()`, the one question `_draw()` asks before it draws the chalk.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -12,6 +12,7 @@ const SEED := 4242
 var _city: City
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_every_task_days_destination_draws_no_mark(t)
 	if _city != null:
 		_city.free()
@@ -26,31 +27,31 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 	for step in ResistanceSteps.all():
 		if step.day not in days:
 			days.append(step.day)
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	var saved_state := GameState.city_state
-	var saved_sabotage := GameState.sabotage_done
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_failed := GameState.failed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_package := GameState.resistance_carrying_package
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	var saved_state := GameState.attempt_spend.city_state
+	var saved_sabotage := GameState.resistance.sabotage_done
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_failed := GameState.resistance.failed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_package := GameState.resistance.carrying_package
 	for day in days:
 		_build_city(t)
 		var finale := day == finale_day
-		GameState.scars.clear()
-		GameState.day = day
-		GameState.failed_resistance_steps = []
-		GameState.completed_resistance_steps = _all_but_the_finale() if finale \
+		GameState.attempt_spend.scars.clear()
+		GameState.header.day = day
+		GameState.resistance.failed_steps = []
+		GameState.resistance.completed_steps = _all_but_the_finale() if finale \
 				else _completed_before(day)
-		GameState.resistance_progress = Tuning.RESISTANCE_GOAL if finale else 0
-		GameState.resistance_carrying_package = false
-		GameState.sabotage_done = false
+		GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+		GameState.resistance.carrying_package = false
+		GameState.resistance.sabotage_done = false
 		var state := CityState.new()
-		GameState.city_state = state
+		GameState.attempt_spend.city_state = state
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
-		_city.events.start_day(day, _rng(day, "events"), [], _city.map.doorstep_world_position())
+		_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
@@ -58,20 +59,20 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()
 		if not finale:
-			t.check(offered != null and offered.is_pickup and director._contact.draws_a_mark(),
+			t.check(offered != null and offered.is_pickup and director.contact().draws_a_mark(),
 					"day %d: the mark on offer draws its chalk" % day)
 			# Her touch, the way `ContactPoint._physics_process()` answers it: done, then the
 			# director activates the task.
 			if offered != null and offered.is_pickup:
-				director._contact._complete()
-			t.check(director._read_mark != null and director._read_mark.is_done
-					and director._read_mark.draws_a_mark(),
+				director.contact().complete_now()
+			t.check(director.read_mark() != null and director.read_mark().is_done
+					and director.read_mark().draws_a_mark(),
 					"day %d: the read mark keeps its touched picture" % day)
 		var task := director.current_step()
 		t.check(task != null and not task.is_pickup, "day %d: the task is on offer" % day)
 		if task != null and not task.is_pickup:
-			var contact := director._contact
-			var bare := contact._rider == null
+			var contact := director.contact()
+			var bare := director.rider() == null
 			t.check(not contact.draws_a_mark(), "day %d: the task's destination (%s) draws no chalk"
 					% [day, "a bare point" if bare else "a rider"])
 			t.check(director.red_arrow_target() != Vector2.INF,
@@ -82,20 +83,20 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 			contact.is_done = true
 			t.check(not contact.draws_a_mark(), "day %d: a done task draws no touched chalk" % day)
 		director.free()
-	GameState.scars = saved_scars
-	GameState.day = saved_day
-	GameState.city_state = saved_state
-	GameState.sabotage_done = saved_sabotage
-	GameState.completed_resistance_alley_tiles = saved_tiles
-	GameState.completed_resistance_steps = saved_completed
-	GameState.failed_resistance_steps = saved_failed
-	GameState.resistance_progress = saved_progress
-	GameState.resistance_carrying_package = saved_package
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
+	GameState.resistance.sabotage_done = saved_sabotage
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.failed_steps = saved_failed
+	GameState.resistance.progress = saved_progress
+	GameState.resistance.carrying_package = saved_package
 
 func _build_city(t) -> void:
 	if _city != null:
 		_city.free()
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 

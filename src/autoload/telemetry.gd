@@ -43,14 +43,27 @@ var _day_open := false
 ## `""` when the log is in memory only, which is what the test suite runs on.
 var _run_dir := ""
 ## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
-## at the same day without the calendar advancing — see `GameState.finish_day()` — so `begin_day`
-## is called again with the day number it just failed at, and this is what lets the second
-## attempt's pictures say so instead of overwriting the first's. Reset at the start of a run.
+## at the same day without the calendar advancing — see `RunCalendar.finish_day()` — so
+## `begin_day` is called again with the day number it just failed at, and this is what lets the
+## second attempt's pictures say so instead of overwriting the first's. Reset at the start of a
+## run.
 var _day_attempts := {}
 ## The day currently open's attempt number, `1` on a first attempt — mirrors
 ## `_day_attempts[day]` for whichever day that is, kept as its own field so nothing that names a
 ## file has to be handed the day number back in just to look the count up again.
 var _attempt := 1
+
+## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then —
+## read for `--invincible`'s header note and for the page's `?telemetry=1`.
+var _config: RunConfig
+
+## Hands this log the run's configuration. `null` puts it back to none, which reads as a run with
+## no flag at all.
+func configure(config: RunConfig) -> void:
+	_config = config
+
+func _invincible() -> bool:
+	return _config != null and _config.invincible
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
@@ -86,47 +99,22 @@ func is_active() -> bool:
 ## something guessed here.** A pile of runs that does not say which of them a person played reads as
 ## a great many plays that never happened, and every inference drawn from it is skewed.
 ##
-## Whether the deployed page has asked, this run, to be logged anyway. Read through
-## `JavaScriptBridge.eval("window.location.search")` — the one channel that reaches a Web export at
-## all, since the page it runs on has no command line for `DevFlags` to parse.
+## Whether the deployed page has asked, this run, to be logged anyway: the page's own query, as the
+## run read it at boot (`RunConfig.page_query`), since the page has no command line.
 ##
-## **Gated behind `DevFlags.enabled()` (`OS.is_debug_build()`), the same as every other developer
-## flag now.** *(2026-09-06, the player: "I never asked for telemetry on web. you added that to
-## debug in a browser. that browser build should be dev only the CI build is release.")* A release
-## build must answer nothing here — the published page collecting from a stranger's browser because
-## of a query string nobody documented is exactly what a release build carrying no modifiers rules
-## out. A debug build answers immediately, with nothing else to unlock: the browser used to debug a
-## web build is its own debug export (`tools/export-web.sh debug`), and the published build is the
-## release export. `_reads_the_url()` below is the gate itself, pulled out to a pure function so the
-## promise is a truth table a test can check rather than a build type nothing can fake.
-static func _web_override_requested() -> bool:
-	if not _reads_the_url(DevFlags.enabled(), OS.get_name() == "Web"):
+## **A debug build's alone, like every other developer flag** (2026-09-06, the player: "I never
+## asked for telemetry on web. you added that to debug in a browser. that browser build should be
+## dev only the CI build is release"). A release build answers nothing here — the published page
+## collecting from a stranger's browser because of a query string nobody documented is exactly what
+## a release build carrying no modifiers rules out. A debug build answers immediately: the browser
+## used to debug a web build is its own debug export (`tools/export-web.sh debug`).
+## `TelemetryPage.reads_the_url()` is the gate itself, pure so the promise is a truth table a test
+## can check.
+func _web_override_requested() -> bool:
+	if _config == null \
+			or not TelemetryPage.reads_the_url(_config.debug_build, OS.get_name() == "Web"):
 		return false
-	var search: Variant = JavaScriptBridge.eval("window.location.search")
-	if typeof(search) != TYPE_STRING:
-		return false
-	return _telemetry_flag_from_query(search)
-
-## The decision behind `_web_override_requested()`'s own gate, pulled out to a pure function of its
-## two inputs so the promise is a truth table a test can check rather than a build type nothing can
-## fake: a one-line boolean `and` is not worth a module this file would have to import for one call
-## site, and the next modifier this project gains should have an obvious static function to copy,
-## not a dependency to go find. debug and web is the one case `?telemetry=1`
-## exists for; release and web — the published page — is the case the promise is actually about.
-static func _reads_the_url(is_debug: bool, on_web: bool) -> bool:
-	return is_debug and on_web
-
-## `"?telemetry=1"` (with or without a leading `?`, alongside any other parameter) reads as "log
-## this run"; anything else — absent, or any other value — leaves the platform's own default in
-## place. Pulled out from `_web_override_requested()` so a test can ask the parsing question
-## directly, without a Web export to produce a real `window.location.search` to parse.
-static func _telemetry_flag_from_query(query: String) -> bool:
-	var trimmed := query.trim_prefix("?")
-	for pair in trimmed.split("&"):
-		var parts := pair.split("=")
-		if parts.size() == 2 and parts[0] == "telemetry":
-			return parts[1] == "1"
-	return false
+	return TelemetryPage.asks_for_telemetry(_config.page_query)
 
 ## **Silently does nothing on a web export, unless the page's own `?telemetry=1` says otherwise.**
 ## `user://` is browser storage there — a stranger's browser rather than a developer's disk — so by
@@ -157,14 +145,13 @@ func begin_run(run_seed: int, played := true) -> void:
 	_log = TelemetryLog.new("%s/run.log" % _run_dir)
 	_clock = 0.0
 	_day_open = false
-	_shots_today = 0
-	_last_shot = -INF
-	_shot_serial = 0
+	_shots.restart_schedule()
+	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
-			source_version()])
+			BuildInfo.source_version()])
 	if _log.path != "":
 		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
 
@@ -180,7 +167,7 @@ func begin_memory_log() -> void:
 	_run_dir = ""
 	_clock = 0.0
 	_day_open = false
-	_shot_serial = 0
+	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
 	_log.header("nappy run log  (memory)")
@@ -188,73 +175,52 @@ func begin_memory_log() -> void:
 ## Starts a day's section. Everything after this is timestamped from zero.
 ##
 ## **Also where the attempt is counted.** A nerve retries a lost day without the calendar
-## advancing — see `GameState.finish_day()` — so this is called again with the same `day`, and
-## `_day_attempts[day]` counts how many times that has happened. `_attempt` is a first attempt
-## (`1`) until it is not, and `_attempt_suffix()` is what turns that into a filename fragment.
+## advancing — see `RunCalendar.finish_day()` — so this is called again with the same
+## `day`, and `_day_attempts[day]` counts how many times that has happened. `_attempt` is a
+## first attempt (`1`) until it is not, and `_attempt_suffix()` is what turns that into a
+## filename fragment.
 func begin_day(day: int, act: int, run_seed: int, city_seed: int, length: float) -> void:
+	_open_a_day(day, "day %-2d act %d  run seed %d  city seed %d  length %.1fs"
+			% [day, act, run_seed, city_seed, length])
+
+## Starts one of the **escape's** sections, each a day of its own with its own day number — the
+## building's and the city's, after the last day — and an attempt counted the way a day's is, so a
+## retried section's lines are timed from its own start and its pictures carry its attempt. What
+## heads it is the section's own words where a day has its act and its city seed: the city is the
+## run's, already named by the run seed.
+func begin_section(day: int, title: String, run_seed: int, length: float) -> void:
+	_open_a_day(day, "day %-2d %s  run seed %d  length %.1fs" % [day, title, run_seed, length])
+
+## The section either of the two above opens: the attempt counted, the clock at zero, the shot
+## schedule cleared and the header written.
+func _open_a_day(day: int, line: String) -> void:
 	if not _log:
 		return
 	_day_attempts[day] = int(_day_attempts.get(day, 0)) + 1
 	_attempt = _day_attempts[day]
 	_clock = 0.0
 	_day_open = true
-	_shots_today = 0
-	_last_shot = -INF
+	_shots.restart_schedule()
 	_log.header("")
-	var line := "day %-2d act %d  run seed %d  city seed %d  length %.1fs" \
-			% [day, act, run_seed, city_seed, length]
 	# Noted the same way the seed is, once per day rather than as a per-frame entry, so a log
 	# from an --invincible day cannot be mistaken for one where a loss actually meant anything.
-	if DevFlags.invincible():
-		line += "  invincible"
-	_log.header(line)
-
-## Starts the **escape's** timestamped section — the fifteenth walk, which is not a day, so it has
-## no day number, no act and no city seed of its own to head a section with.
-##
-## **Without it every line of an escape run is stamped `0.0`.** `set_clock()` below only moves the
-## clock while a section is open, and a section was only ever opened by `begin_day()`, which the
-## escape's own boot (`main._ready_escape()`) never reaches — so an escape run wrote a log that
-## could not say when anything in it happened. This is the same two lines `begin_day()` writes,
-## with the fields that mean something here: the run seed and the length of the sequence.
-##
-## `_day_attempts` is deliberately untouched, so `_attempt_suffix()` keeps naming the escape's
-## pictures as a first attempt. A lost section is not a retry the calendar knows about — nothing
-## is spent on it and the sequence is one walk — so counting them would put an attempt number on
-## filenames that no day number distinguishes anyway.
-func begin_finale(run_seed: int, length: float) -> void:
-	if not _log:
-		return
-	_clock = 0.0
-	_day_open = true
-	_shots_today = 0
-	_last_shot = -INF
-	_log.header("")
-	var line := "escape  run seed %d  length %.1fs" % [run_seed, length]
-	# For the reason `begin_day()` gives: a log from an --invincible walk must not be mistaken for
-	# one where a loss meant anything.
-	if DevFlags.invincible():
+	if _invincible():
 		line += "  invincible"
 	_log.header(line)
 
 ## Closes a day's section. The clock stops here, so the between-days screen — during which the
 ## tree is paused anyway — cannot advance it.
 func end_day() -> void:
-	_cancel_burst("day ended")
+	_bursts.cancel("day ended")
 	_day_open = false
 
 func end_run() -> void:
-	_cancel_burst("run ended")
+	_bursts.cancel("run ended")
 	if not _log:
 		return
 	_log.close()
 	_log = null
 	_day_open = false
-
-func _cancel_burst(reason: String) -> void:
-	if _burst.size() == 0:
-		return
-	_finish_burst(int(_burst["token"]), "cancelled", reason)
 
 ## One thing that happened. `kind` is the column a reader scans down; reuse the kinds listed
 ## in docs/TELEMETRY.md rather than inventing a synonym for one of them.
@@ -273,21 +239,19 @@ func set_clock(seconds: float) -> void:
 ## The section's clock, put back to zero for a fresh walk — a retried section, or the second
 ## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
 ##
-## **`set_clock(0.0)` alone is not this.** A day's own retry reopens the whole section through
-## `begin_day()`, which resets `_shots_today` and `_last_shot` as well as `_clock`; a finale
-## section has no second `begin_finale()` to call, so `TelemetryObserver.start_section()` used to
-## push the clock back with `set_clock()` and leave `_last_shot` sitting wherever the previous
-## attempt's last automatic shot fell. `snapshot()`'s spacing gate
-## (`_clock - _last_shot < SHOT_SPACING`) then stayed true — the new clock read as still inside the
-## old attempt's three-second window — until the retried walk's own clock climbed back past
-## whatever the old one had reached, holding every automatic snapshot back for exactly that long.
-## This gives a section restart the same clean slate `begin_day()` gives a day's.
+## **`set_clock(0.0)` alone is not this.** It leaves the last shot's time wherever the previous walk's
+## last automatic shot fell, so `snapshot()`'s spacing gate (the clock less the last shot's time under
+## `SHOT_SPACING`)
+## would stay true — the new clock read as still inside the old walk's three-second window — until
+## the new walk's own clock climbed back past whatever the old one had reached, holding every
+## automatic snapshot back for exactly that long. This gives a walk the same clean slate
+## `begin_day()` gives a day's; `TelemetryObserver.start_section()` asks it as each section of the
+## escape begins, after its own `begin_section()`.
 func restart_section_clock() -> void:
 	if not _day_open:
 		return
 	_clock = 0.0
-	_shots_today = 0
-	_last_shot = -INF
+	_shots.restart_schedule()
 
 func clock() -> float:
 	return _clock
@@ -305,7 +269,7 @@ func current_log() -> TelemetryLog:
 # Three constraints, and the first is the one the whole file is built on:
 #
 # - **It must not touch gameplay.** A capture reads the viewport after the frame is drawn and writes
-#   a file. It changes no state and it takes no RNG. The `await` is `AutoScreenshot.drawn_frame()`,
+#   a file. It changes no state and it takes no RNG. The `await` is `DrawnFrame.wait()`,
 #   which returns after `RenderingServer.frame_post_draw`, where a drawn frame becomes readable; the
 #   one thing it may draw is that frame, on demand, when the window is hidden and the render loop is
 #   drawing none — a picture of the state as it is, not a change to it.
@@ -315,30 +279,21 @@ func current_log() -> TelemetryLog:
 # - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
 #   a directory nobody opens.
 
-## The most shots one day may produce, and the least time between two of them.
-##
-## Six is about one per losing attempt plus the moment before it. The spacing is longer than any cue
-## in the game holds for, so a condition that is true for two seconds is one picture rather than a
-## hundred and twenty.
-const SHOTS_PER_DAY := 6
-const SHOT_SPACING := 3.0
+## The most shots one day may produce, and the least time between two of them — `TelemetryShots`
+## holds both and the day's count; this is where they are named for the callers that read them.
+const SHOTS_PER_DAY := TelemetryShots.PER_DAY
+const SHOT_SPACING := TelemetryShots.SPACING
 
-var _shots_today := 0
-var _last_shot := -INF
+## The day's allowance, the spacing and the run-wide counter that names every picture.
+var _shots := TelemetryShots.new()
 
-## Names a picture, shared by `snapshot()` and `snapshot_now()` — see `_next_shot_name()`. Counts
-## from 1 for the life of the run, reset only in `begin_run()`/`begin_memory_log()`: neither a new
-## day nor a retried attempt resets it, since a number that reset could repeat, which is the exact
-## failure a clock-based name already had.
-var _shot_serial := 0
+## What the run log photographs: the game's own viewport (`_ViewportScreen`, below), asked by every
+## picture, still or burst, whether a frame can be drawn at all.
+var _screen: TelemetryScreen = _ViewportScreen.new(self)
 
-const BURST_VERSION := 1
-const BURST_TARGET_FPS := 12
-const BURST_DURATION_SECONDS := 3.0
-const BURST_MAX_FRAMES := 36
-var _burst: Dictionary = {}
-var _burst_serial := 0
-var _burst_token := 0
+## The animation bursts a person asks for (`start_burst()`), handed the same screen, the engine's
+## clock and the tree's timers, and this log's `note`. A day or the run ending cuts its sequence short.
+var _bursts := BurstRecorder.new(_screen, BurstRecorder.Clock.new(self), note)
 
 ## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
 ##
@@ -346,15 +301,12 @@ var _burst_token := 0
 ## another shot was taken a moment ago, or when there is no screen to photograph — a headless test
 ## run has a viewport with nothing in it, and the suite must not start writing images.
 func snapshot(kind: String) -> void:
-	if not _log or _log.path == "" or _shots_today >= SHOTS_PER_DAY:
+	if not _log or _log.path == "" or not _shots.allows(_clock):
 		return
-	if _clock - _last_shot < SHOT_SPACING:
+	if not _screen.can_draw():
 		return
-	if DisplayServer.get_name() == "headless":
-		return
-	_shots_today += 1
-	_last_shot = _clock
-	_capture("%s/%s" % [_type_dir("auto"), _next_shot_name(kind)])
+	_shots.take(_clock)
+	_capture("%s/%s" % [_type_dir("auto"), _shots.next_name(kind, _attempt_suffix())])
 
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
@@ -377,168 +329,19 @@ func snapshot_now(context: String) -> void:
 	if not _log:
 		return
 	note("shot", context)
-	if _log.path == "" or DisplayServer.get_name() == "headless":
+	if _log.path == "" or not _screen.can_draw():
 		return
-	_shots_today += 1
-	_capture("%s/%s" % [_type_dir("asked"), _next_shot_name("asked")])
+	_shots.take_asked()
+	_capture("%s/%s" % [_type_dir("asked"), _shots.next_name("asked", _attempt_suffix())])
 
-## Starts one bounded animation sequence in the current run's `asked/` folder. The sequence is
-## serialized one frame at a time so a slow PNG write cannot create an unbounded backlog, and the
-## timestamps record what the capture actually achieved rather than claiming the target rate.
+## Starts one bounded animation sequence in the current run's `asked/` folder (`BurstRecorder`),
+## refused with a line in the log while another is active or when there is no screen to read or no
+## run folder to write in.
 func start_burst(context: String) -> bool:
-	if _burst.size() > 0:
-		note("shot", "burst refused: another burst is active")
-		return false
-	if not _log or _log.path == "" or DisplayServer.get_name() == "headless":
-		if _log:
-			note("shot", "burst refused: no drawable viewport")
-		print("[Telemetry] burst refused: no drawable viewport")
-		return false
-	var asked_dir := _type_dir("asked")
-	var burst_path := _next_burst_path(asked_dir)
-	if DirAccess.make_dir_recursive_absolute(burst_path) != OK:
-		note("shot", "burst refused: could not create %s" % burst_path)
-		push_warning("telemetry: could not create burst directory %s" % burst_path)
-		return false
-	var started_usec := Time.get_ticks_usec()
-	_burst_token += 1
-	_burst = {
-		"dir": burst_path,
-		"context": context,
-		"started_usec": started_usec,
-		"frames": [],
-		"status": "active",
-		"reason": "",
-		"token": _burst_token,
-	}
-	if not _write_burst_metadata():
-		_burst.clear()
-		note("shot", "burst refused: could not write metadata")
-		push_warning("telemetry: burst metadata could not be written")
-		return false
-	note("shot", "burst started: %s | asked/%s" % [context, burst_path.get_file()])
-	print("[Telemetry] burst started: %s" % ProjectSettings.globalize_path(burst_path))
-	var deadline := get_tree().create_timer(BURST_DURATION_SECONDS, true)
-	deadline.timeout.connect(_on_burst_deadline.bind(_burst_token), CONNECT_ONE_SHOT)
-	_capture_burst(_burst_token)
-	return true
-
-func _next_burst_path(asked_dir: String) -> String:
-	_burst_serial += 1
-	var stamp := Time.get_ticks_usec()
-	var candidate := "%s/burst-%d-%03d" % [asked_dir, stamp, _burst_serial]
-	while DirAccess.dir_exists_absolute(candidate) or FileAccess.file_exists(candidate):
-		_burst_serial += 1
-		candidate = "%s/burst-%d-%03d" % [asked_dir, stamp, _burst_serial]
-	return candidate
-
-func _on_burst_deadline(token: int) -> void:
-	_finish_burst(token, "duration")
-
-func _burst_is_current(token: int) -> bool:
-	return _burst.size() > 0 and int(_burst.get("token", -1)) == token
-
-## Chooses the terminal condition before a render wait, so a stalled renderer cannot add a frame
-## beyond either bound. Duration wins at the shared boundary because it describes the elapsed run.
-static func _burst_finish_reason(elapsed: float, frame_count: int) -> String:
-	if elapsed >= BURST_DURATION_SECONDS:
-		return "duration"
-	if frame_count >= BURST_MAX_FRAMES:
-		return "frame_cap"
-	return ""
-
-func _capture_burst(token: int) -> void:
-	if not _burst_is_current(token):
-		return
-	var burst_dir := str(_burst.get("dir", ""))
-	var started_usec := int(_burst.get("started_usec", 0))
-	while _burst_is_current(token):
-		var elapsed := float(Time.get_ticks_usec() - started_usec) / 1000000.0
-		var frames: Array = _burst["frames"]
-		var finish_reason := _burst_finish_reason(elapsed, frames.size())
-		if finish_reason != "":
-			_finish_burst(token, finish_reason)
-			return
-		await AutoScreenshot.drawn_frame(get_tree())
-		if not _burst_is_current(token):
-			return
-		elapsed = float(Time.get_ticks_usec() - started_usec) / 1000000.0
-		if elapsed >= BURST_DURATION_SECONDS:
-			_finish_burst(token, "duration")
-			return
-		var viewport := get_viewport()
-		if not viewport:
-			_finish_burst(token, "write_failed", "viewport disappeared")
-			return
-		var image := viewport.get_texture().get_image()
-		var captured_usec := Time.get_ticks_usec()
-		elapsed = float(captured_usec - started_usec) / 1000000.0
-		frames = _burst["frames"]
-		var frame_number: int = frames.size() + 1
-		var file_name := "frame-%04d.png" % frame_number
-		var result := image.save_png("%s/%s" % [burst_dir, file_name])
-		if result != OK:
-			_finish_burst(token, "write_failed", "could not write %s" % file_name)
-			return
-		frames.append({"file": file_name, "elapsed_seconds": elapsed})
-		if not _write_burst_metadata():
-			_finish_burst(token, "write_failed", "could not update burst metadata")
-			return
-		if not _burst_is_current(token):
-			return
-		var wait_seconds := (float(frames.size()) / float(BURST_TARGET_FPS)) - elapsed
-		if wait_seconds > 0.0:
-			await get_tree().create_timer(wait_seconds, true).timeout
-	if _burst_is_current(token):
-		_finish_burst(token, "duration")
-
-func _finish_burst(token: int, reason: String, detail := "") -> void:
-	if not _burst_is_current(token):
-		return
-	var path := str(_burst["dir"])
-	var count: int = (_burst["frames"] as Array).size()
-	var finished_with_frames := (reason == "duration" or reason == "frame_cap") and count > 0
-	var ending := detail if detail != "" else reason
-	if not finished_with_frames and count == 0 and reason == "duration":
-		ending = "no frames captured before deadline"
-	_burst["status"] = "complete" if finished_with_frames else "cancelled"
-	_burst["reason"] = ending
-	var outcome := str(_burst["status"])
-	var wrote_metadata := _write_burst_metadata()
-	_burst.clear()
-	if not wrote_metadata:
-		note("shot", "burst abandoned: metadata write failed")
-		push_warning("telemetry: burst metadata could not be finalized")
-		return
-	note("shot", "burst %s: %d frames | %s" % [outcome, count, ending])
-	print("[Telemetry] burst %s: %s (%d frames)"
-			% [outcome, ProjectSettings.globalize_path(path), count])
-
-func _write_burst_metadata() -> bool:
-	if _burst.size() == 0:
-		return false
-	var elapsed := float(Time.get_ticks_usec() - int(_burst["started_usec"])) / 1000000.0
-	var metadata := {
-		"schema_version": BURST_VERSION,
-		"frames": _burst["frames"],
-		"duration_seconds": elapsed,
-		"target_fps": BURST_TARGET_FPS,
-		"context": _burst["context"],
-		"status": _burst["status"],
-		"reason": _burst["reason"],
-	}
-	var file := FileAccess.open("%s/burst.json" % _burst["dir"], FileAccess.WRITE)
-	if not file:
-		push_warning("telemetry: could not write burst metadata")
-		return false
-	file.store_string(JSON.stringify(metadata, "\t"))
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK:
-		push_warning("telemetry: could not flush burst metadata")
-		return false
-	return true
+	var asked_dir := ""
+	if _log and _log.path != "" and _screen.can_draw():
+		asked_dir = _type_dir("asked")
+	return _bursts.start(asked_dir, context)
 
 # --------------------------------------------------------------- the city grid ---
 
@@ -548,11 +351,12 @@ func _write_burst_metadata() -> bool:
 ## is not**: an arc requisitions a park, a fire leaves a shell, and today's closures are down. See
 ## `TelemetryMap`, which does the drawing and carries the reasoning.
 ##
-## It takes the day rather than reading `GameState`, for the reason everything in this file takes
+## It takes the day rather than reading the run, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
-## It also draws the day's **corridor**. The tree is grown here when the caller has none
-## to hand, and that is safe rather than convenient: `RouteTree.for_day` is a pure function of the
+## It also draws the day's **corridor**, unless `corridor` says the walk has none (the escape's
+## city). The tree is grown here when the caller has none to hand, and that is safe rather than
+## convenient: `RouteTree.for_day` is a pure function of the
 ## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
 ## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
 ## which is the invariant this whole file is built on.
@@ -577,12 +381,17 @@ func _write_burst_metadata() -> bool:
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
+		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {},
+		corridor := true) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]
-	var drawn := tree if tree else RouteTree.for_day(map, day)
+	# The escape's city has no corridor — its walk is two chains, not a tree — so its map draws none
+	# (`corridor` false) rather than one grown for a day that is not being walked.
+	var drawn: RouteTree = null
+	if corridor:
+		drawn = tree if tree else RouteTree.for_day(map, day)
 	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
@@ -593,78 +402,20 @@ func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 ## consumers — which is the shape of a rule ("telemetry never touches gameplay") quietly becoming
 ## untrue.
 func _capture(path: String) -> void:
-	await AutoScreenshot.drawn_frame(get_tree())
-	var viewport := get_viewport()
-	if not viewport:
+	await _screen.drawn()
+	var image := _screen.picture()
+	if image == null:
 		return
-	var image := viewport.get_texture().get_image()
 	if image.save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 # ----------------------------------------------------------------- provenance ---
 
-## The version the run was played on: `git describe`'s own form, `<tag>-<commits-since>-g<hash>`
-## (e.g. `v0.0.0-49-gab12cd3`), or a bare abbreviated hash where no tag is reachable, with
-## `-dirty` appended if the working tree was not clean.
-##
-## Without it a trace cannot be checked against anything: "day one was brutal" is only a finding
-## if the code that produced it can be got back. Naming the tag as well as the hash is what lets a
-## reader tell *which release this is close to* without opening a shell — the same question
-## `tools/release.sh` exists to answer when cutting one.
-##
-## **Dirty is asked separately from `git describe`, not folded into its own `--dirty` flag.**
-## `git describe --dirty` only looks at tracked files (`git diff-index`), so a file that has never
-## been committed leaves it silent — checked empirically, since the difference is easy to miss
-## reading the manual. The `status --porcelain` check below is the one this file always used, and
-## untracked files still count as dirty under it: the mark only ever claims "this is not exactly
-## that commit", and it must never claim otherwise.
-##
-## Asked of `git` at runtime rather than baked in, because the project has no build step to
-## bake it during — `tools/run.sh` starts the engine on the working tree. An exported build
-## has no repository to ask, which is what "unknown" means; `application/config/version`, which
-## `tools/export-web.sh` bakes into an export, is what a deployed build shows instead — see
-## `TitleScreen`.
-static func source_version() -> String:
-	# A browser cannot launch git; TitleScreen uses the export's baked metadata instead.
-	if OS.has_feature("web"):
-		return "unknown"
-	var repository := ProjectSettings.globalize_path("res://")
-	var describe_out: Array = []
-	if OS.execute("git", ["-C", repository, "describe", "--tags", "--always"], describe_out) != 0:
-		return "unknown"
-	var version := ("\n".join(describe_out)).strip_edges()
-	if version == "":
-		return "unknown"
-	var status: Array = []
-	if OS.execute("git", ["-C", repository, "status", "--porcelain"], status) != 0:
-		return version
-	return version + ("-dirty" if ("\n".join(status)).strip_edges() != "" else "")
-
-## The commit on its own — `git rev-parse --short HEAD`, or "unknown" where there is no
-## repository to ask. `source_version()` ends in a hash in `git describe`'s tagged form, but on a
-## commit that *is* a tag — every release — describe says only the tag, and a tag is a name a
-## later `git tag -f` can move; the hash names this code and nothing else. An export carries it as
-## `application/config/source_commit`, baked by `tools/export-web.sh` beside `config/version` —
-## see `TitleScreen.commit_text()`.
-static func source_commit() -> String:
-	if OS.has_feature("web"):
-		return "unknown"
-	var repository := ProjectSettings.globalize_path("res://")
-	var out: Array = []
-	if OS.execute("git", ["-C", repository, "rev-parse", "--short", "HEAD"], out) != 0:
-		return "unknown"
-	var commit := ("\n".join(out)).strip_edges()
-	return commit if commit != "" else "unknown"
-
-## The same thing, kept as its own name because the run folder and `tools/telemetry.sh -p` both
-## call this rather than `source_version()` directly.
-##
-## The two used to differ: `source_version()` wrote a bare `*` for a dirty tree — the log's own
-## first-line mark — and this turned it into the shell-safe word `-dirty` for a folder name and a
-## `sed` match. `git describe` now writes `-dirty` itself, so what this function does changed even
-## though what it produces for a caller did not.
+## The version a run folder's name ends in — `BuildInfo.source_version()`, the `git describe` form
+## with `-dirty` on a working tree that is not clean. `tools/telemetry.sh -p` compares a folder's
+## tail against the same `git describe` to say what is stale.
 static func _file_tag() -> String:
-	return source_version()
+	return BuildInfo.source_version()
 
 # ------------------------------------------------------------------ the files ---
 
@@ -685,19 +436,23 @@ func _type_dir(name: String) -> String:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
 
-## Names a snapshot by a per-run counter, not by any clock. *(2026-09-11, playtest 56: "phot
-## capture must use real time not game time otherwise at the end of the day all pictures get
-## overwritten", then, once a real-time name was in place, "actually why not just count up the
-## screenshot numbers?".)* Shared by `snapshot()` and `snapshot_now()` — `auto/` and `asked/` are
-## separate folders, so the two could never collide on a name either way, but one counter across
-## both means a picture's own number already says when in the run, relative to every other picture
-## the run took, it was taken. `_shot_serial` is never reset by a day boundary or a retried
-## attempt, so the counter itself cannot repeat a number the way a clock could.
-##
-## `%03d<attempt suffix>-<kind>.png` — `001-attempt1-asked.png`, `002-attempt1-asked.png` — the
-## attempt suffix and kind are what a retried day, or a heuristic-vs-asked picture, still need to
-## say without opening the file; the day clock the name used to carry is already in the run log's
-## own `shot` entry.
-func _next_shot_name(kind: String) -> String:
-	_shot_serial += 1
-	return "%03d%s-%s.png" % [_shot_serial, _attempt_suffix(), kind]
+# ------------------------------------------------------------------- the screen ---
+
+## The game's own viewport as the screen the run log photographs: nothing to draw headless, where
+## the null display server draws no frame; otherwise the wait for a drawn frame every capture shares
+## (`DrawnFrame.wait()`) and the viewport's texture once it is drawn.
+class _ViewportScreen extends TelemetryScreen:
+	var _node: Node
+
+	func _init(node: Node) -> void:
+		_node = node
+
+	func can_draw() -> bool:
+		return DisplayServer.get_name() != "headless"
+
+	func drawn() -> void:
+		await DrawnFrame.wait(_node.get_tree())
+
+	func picture() -> Image:
+		var viewport := _node.get_viewport()
+		return viewport.get_texture().get_image() if viewport else null

@@ -1,7 +1,7 @@
 extends "res://tests/events_shared_city.gd"
 ## A placement asks each candidate its rules once, and every try still rolls.
 ##
-## `EventScheduler._best_of()` rolls `Tuning.EVENT_PLACEMENT_TRIES` candidates out of the pool it is
+## `EventScheduler._best_of()` rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates out of the pool it is
 ## offered and asks each the whole rule chain against every plan of the day. The pool a walk
 ## siting offers is often one tile, and the director asks it once for every crew still owed in a
 ## look, so without the verdict kept per candidate a look that offers one tile to a dozen crews
@@ -38,7 +38,7 @@ func _judging_every_try(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	var best_room := -INF
 	var seen := {}
 	var no_calm: Array[Rect2] = []
-	for _try in Tuning.EVENT_PLACEMENT_TRIES:
+	for _try in EventScheduler.EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = pool[rng.randi_range(0, pool.size() - 1)]
 		var candidate := EventScheduler._build_placement(def, map, tile, rng)
 		if not candidate:
@@ -70,7 +70,7 @@ func _test_one_judgement_per_candidate(t) -> void:
 	var judged_once := 0
 	var refused := 0
 	for id in ["poster_crew", "homeless_yeller", "dog_walker"]:
-		var def := EventScheduler._for_day(EventCatalogue.by_id(id), day)
+		var def := EventCatalogue.by_id(id).for_day(day)
 		var role := EventScheduler._role_for(def, day)
 		var ground := {}
 		var whole := EventScheduler._ground_for(def, map, ground, corridor, role)
@@ -115,7 +115,7 @@ func _test_one_offer_per_look(t) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(day, _rng(day), map, consumed)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed)
 	var fire: EventDef = null
 	for plan in plans:
 		if plan.def.id == "burning_building":
@@ -125,7 +125,7 @@ func _test_one_offer_per_look(t) -> void:
 		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
 	var owed := 0
 	for plan in plans:
-		if plan.def.sited_on_her_way and not plan.is_placed():
+		if plan.def.on_her_way != null and not plan.is_placed():
 			owed += 1
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
@@ -188,10 +188,10 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	var already := _planned(day)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
-	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
+	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
-	for tile in EventScheduler._open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
@@ -248,13 +248,15 @@ func _longest_route(day: int) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
+	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, [] as Array[Vector2i],
+			PackedVector2Array())
 	for i in best.size():
-		points.append(EventScheduler.WalkSiting._cell_centre(_map(), best[best.size() - 1 - i]))
+		points.append(siting.cell_centre(best[best.size() - 1 - i]))
 	return points
 
 ## A crew accepted on a one-tile offer inside a look, and then a crew of the same row standing on
 ## that very tile: the next copy is refused (nothing is ever drawn inside anything else,
-## `Tuning.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept, they answer
+## `EventScheduler.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept, they answer
 ## from before the crew stood there and accept it, which is the placement no fresh judgement makes
 ## and why the director drops them.
 func _test_a_dropped_verdict_is_judged_again(t) -> void:
@@ -263,8 +265,8 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var already := _planned(day)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
 			[] as Array[Vector2i], PackedVector2Array())
-	var crew := EventScheduler._for_day(EventCatalogue.by_id("poster_crew"), day)
-	for tile in EventScheduler._open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
+	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
@@ -342,7 +344,7 @@ func _test_the_director_drops_the_verdicts(t) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []
-	var plans := EventScheduler.build_day(day, _rng(day), map, consumed)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed)
 	var fire: EventDef = null
 	for plan in plans:
 		if plan.def.id == "burning_building":

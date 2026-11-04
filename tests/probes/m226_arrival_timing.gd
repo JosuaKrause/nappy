@@ -81,9 +81,14 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		instance.came_under_a_warning = true
 		instance.is_pelican = pelican
 		# f494956e spends telegraph_time; the current game preserves a pulsing row's beat.
-		var manager: GDScript = load("res://src/events/event_manager.gd")
-		var age: float = manager.age_when_warned(def) if manager.has_method("age_when_warned") \
-				else def.telegraph_time
+		# The beat's age lives on whichever class owns it at the commit under test.
+		var age: float = def.telegraph_time
+		for owner_path: String in ["res://src/events/event_spawner.gd",
+				"res://src/events/event_manager.gd"]:
+			var beat_owner: GDScript = load(owner_path) if ResourceLoader.exists(owner_path) else null
+			if beat_owner and beat_owner.has_method("age_when_warned"):
+				age = beat_owner.age_when_warned(def)
+				break
 		instance.resume(age, 0.0)
 		source.add_child(instance)
 		source.live.append(instance)
@@ -130,7 +135,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		# Existing instances move first; a callback creates the new one for this frame's observation.
 		for instance in source.live:
 			instance.player_at = her
-			instance._process(STEP)
+			instance.step(STEP)
 		for warning in source.warnings.duplicate():
 			if warning.tick(STEP, her):
 				source.warnings.erase(warning)
@@ -148,24 +153,24 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var parts: Array[Rect2] = []
 	var def := instance.def
-	var view: String = instance._select_view(instance._heading)
-	var bob: float = instance._current_bob()
+	var view: String = instance.look.select_view(instance._heading)
+	var bob: float = instance.look.current_bob()
 	var picture := ""
 	match def.look:
 		EventDef.Look.CYCLIST:
-			var rider := instance.rider_pictures()
-			picture = rider[1 if instance._gait_stepping() else 0][view]
+			var rider := (instance.look as FigureLook).rider_pictures()
+			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			picture = instance.dog_picture(view, instance._gait_stepping(), instance._gait_second_half())
+			picture = instance.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
 			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
-			var behind := 26.0 if instance._heading_is_west() else -26.0
+			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
 			picture = instance.FIRE_ENGINE_BY_VIEW[view]
 		EventDef.Look.ARMY_TRUCK:
 			picture = instance.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance._gait_stepping()
+			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
 					else instance.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
@@ -181,12 +186,12 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 				shadow = shadow.expand(point)
 			shadow.position.y += 0.0 if not wheels.is_empty() else bob
 			parts.append(shadow)
-	if instance.wants_a_mark() and not (instance.is_telegraphing() \
+	if instance.look.wants_a_mark() and not (instance.is_telegraphing() \
 			and fmod(instance.age * instance.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
-		var swell: float = instance.mark_swell()
+		var swell: float = instance.look.mark_swell()
 		var width: float = instance.MARK_WIDTH * (0.55 + 0.45 * swell)
 		var at: float = -(instance.MARK_HEIGHT + 10.0 * swell)
-		for mark in (2 if instance._caret_strength() == 2 else 1):
+		for mark in (2 if instance.excitement.caret_strength() == 2 else 1):
 			parts.append(Rect2(-width - 1.0, at - width * 0.8 - 1.0,
 					width * 2.0 + 2.0, width * 1.3 + 2.0))
 			at -= width * 0.85

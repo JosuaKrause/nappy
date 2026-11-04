@@ -353,11 +353,28 @@ for trailer_reuse_mode in selected-reuse selected-remix; do
     fi
 done
 # The unchanged shot list passes that check and reaches the retained-footage check instead (past
-# the uv requirement, so only where uv is installed; the refusals above need neither).
+# the uv, ffmpeg and editorial-font requirements, so only where all three are installed; the
+# refusals above need none of them, and the case says `skip` where one is missing).
 checks=$(( checks + 1 ))
 trailer_cut_output="$(TRAILER_OUT="$trailer_cut_dir/out" ./tools/trailer.sh --selected-remix 2>&1)"
+trailer_font=""
+trailer_font_got=""
+if command -v jq >/dev/null 2>&1; then
+    trailer_font="$(jq -r '.style.font_family' tools/trailer/shots.json)"
+fi
+if command -v fc-match >/dev/null 2>&1 && [[ -n "$trailer_font" ]]; then
+    trailer_font_got="$(fc-match -f '%{family}\n' "$trailer_font" 2>/dev/null | head -1)"
+fi
 if ! command -v uv >/dev/null 2>&1; then
-    echo "ok   trailer.sh --selected-remix retained-footage check skipped (no uv on PATH)"
+    echo "skip trailer.sh --selected-remix retained-footage check (no uv on PATH)"
+elif ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "skip trailer.sh --selected-remix retained-footage check (no ffmpeg on PATH)"
+elif ! command -v jq >/dev/null 2>&1; then
+    echo "skip trailer.sh --selected-remix retained-footage check (no jq on PATH)"
+elif ! command -v fc-match >/dev/null 2>&1; then
+    echo "skip trailer.sh --selected-remix retained-footage check (no fc-match on PATH)"
+elif ! grep -Fixq -- "$trailer_font" <<<"${trailer_font_got//,/$'\n'}"; then
+    echo "skip trailer.sh --selected-remix retained-footage check (font $trailer_font not installed)"
 elif [[ "$trailer_cut_output" == *"requires the retained selected base"* ]]; then
     echo "ok   trailer.sh --selected-remix with the recorded timeline reaches the retained-footage check"
 else
@@ -626,7 +643,7 @@ fi
 # unrelated prerequisite is stubbed; flag validation, process supervision and log checks stay real.
 recipe_project="$work_dir/recipe-project"
 mkdir -p "$recipe_project/tools" "$recipe_project/src/dev"
-cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh "$recipe_project/tools/"
+cp tools/scene-recipes.sh tools/shot.sh tools/lib_dev_flags.sh tools/lib_disk_headroom.sh tools/lib_import_restore.sh "$recipe_project/tools/"
 cp src/dev/dev_flags.gd "$recipe_project/src/dev/"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$recipe_project/tools/bake-atlases.sh"
 chmod +x "$recipe_project/tools/bake-atlases.sh"
@@ -777,6 +794,22 @@ check_that "wait_or_kill refuses a limit that is not whole seconds and leaves th
 check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
     '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
+# The kill limit follows the plan: a fake cost table with one heavy suite makes its shard's limit
+# 2.5x its planned time plus the 120 s floor, a lighter shard's limit is lower, and the override
+# replaces both.
+tsl_costs="$work_dir/shard-limit-costs.txt"
+{
+    ls tests/test_*.gd | tail -n +2 | while read -r f; do echo "$(basename "$f") 0"; done
+    echo "$(basename "$(ls tests/test_*.gd | head -n 1)") 400000"
+} > "$tsl_costs"
+tsl_plan="$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 ./tools/test.sh --plan 2>&1)"
+check_that "test.sh --plan prints a limit of 2.5x the planned time plus 120 s for the heavy shard" \
+    '[[ "$tsl_plan" == *"shard 0  ~400s  limit 1120s"* || "$tsl_plan" == *"shard 1  ~400s  limit 1120s"* ]]'
+check_that "test.sh --plan gives the light shard a lower limit" \
+    '[[ "$tsl_plan" == *"~  0s  limit  120s"* ]]'
+check_that "TEST_SHARD_TIMEOUT_S replaces every shard's limit in --plan" \
+    '[[ "$(GODOT=/usr/bin/true TEST_SUITE_COSTS="$tsl_costs" TEST_SHARDS=2 TEST_SHARD_TIMEOUT_S=77 ./tools/test.sh --plan 2>&1)" == *"limit   77s"*"limit   77s"* ]]'
+
 # ------------------------------------------------ audit-pck.sh reads the artefact, not the tree ---
 # A minimal format-4 pack keeps this regression independent of Godot and export templates while
 # exercising the same directory and file bytes a real export exposes. The dirty fixture carries
@@ -864,10 +897,12 @@ out="$(cd "$names_repo" && ./tools/new-name.sh playtest "No words left" 2>&1)"
 status=$?
 check_that "new-name.sh refuses when every pair is taken, and writes nothing" \
     '[[ $status -ne 0 && $(ls "$names_repo/docs/playtests" | wc -l | tr -d " ") -eq 1 ]]'
+printf 'busy\nswift\n' > "$names_repo/tools/names/adjectives.txt"
 first="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look at it" 2>/dev/null)"
 second="$(cd "$names_repo" && ./tools/new-name.sh review --entry busy-otter "Look again" 2>/dev/null)"
-check_that "new-name.sh names a review item after its entry, and a second one with -2" \
-    '[[ "$first" == 2026-09-27-busy-otter && "$second" == 2026-09-27-busy-otter-2 ]]'
+printf 'busy\n' > "$names_repo/tools/names/adjectives.txt"
+check_that "new-name.sh names a review item after its entry, and a second one with a drawn pair, never a number" \
+    '[[ "$first" == 2026-09-27-busy-otter && "$second" =~ ^2026-09-27-busy-otter-[a-z]+-[a-z]+$ && -s "$names_repo/docs/review/$second.md" ]]'
 printf 'otter\nheron\n' > "$names_repo/tools/names/animals.txt"
 fresh="$(cd "$names_repo" && ./tools/new-name.sh --date 2026-09-29 decision "Moved out of a docstring" 2>/dev/null)"
 check_that "new-name.sh marks a decision drawn without --entry as not from an entry" \
@@ -901,9 +936,37 @@ lint_in_names_repo() {
     (cd "$names_repo" && ./tools/lint.sh "$@" >/dev/null 2>&1)
 }
 lint_in_names_repo docs/todo/2026-09-27-busy-otter/README.md docs/review/2026-09-27-busy-otter.md \
-    docs/review/2026-09-27-busy-otter-2.md docs/decisions/2026-09-26-M210.md
+    "docs/review/$second.md" docs/decisions/2026-09-26-M210.md
 status=$?
 check_that "lint.sh passes an entry, its review items and an old entry's decision sharing a name" '[[ $status -eq 0 ]]'
+printf '# cold-fish — A long slug\n' > "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md"
+printf '# Playtest big-tank\n' > "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+lint_in_names_repo docs/decisions/2026-09-27-cold-fish-big-tank.md
+status=$?
+rm "$names_repo/docs/decisions/2026-09-27-cold-fish-big-tank.md" "$names_repo/docs/playtests/2026-09-20-big-tank.md"
+check_that "lint.sh skips a four-word slug whose first two words are no entry, as it skips any longer slug" \
+    '[[ $status -eq 0 ]]'
+printf '# busy-otter — Further · 2026-09-27\n' > "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+check_that "lint.sh accepts a further record named after its entry" '[[ $status -eq 0 ]]'
+mkdir -p "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+printf 'priority: later\n\n# feathery-gecko — Another entry\n' > "$names_repo/docs/todo/2026-09-20-feathery-gecko/README.md"
+lint_in_names_repo docs/decisions/2026-09-27-busy-otter-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-09-20-feathery-gecko"
+rm "$names_repo/docs/decisions/2026-09-27-busy-otter-feathery-gecko.md"
+check_that "lint.sh rejects a further record whose own pair another entry already uses" '[[ $status -ne 0 ]]'
+for entry_words in cold-fish warm-yak; do
+    mkdir -p "$names_repo/docs/todo/2026-11-03-$entry_words"
+    printf 'priority: later\n\n# %s — An entry\n' "$entry_words" > "$names_repo/docs/todo/2026-11-03-$entry_words/README.md"
+    printf '# %s — Further · 2026-11-03\n' "$entry_words" > "$names_repo/docs/decisions/2026-11-03-$entry_words-feathery-gecko.md"
+done
+lint_in_names_repo docs/decisions/2026-11-03-cold-fish-feathery-gecko.md docs/decisions/2026-11-03-warm-yak-feathery-gecko.md
+status=$?
+rm -r "$names_repo/docs/todo/2026-11-03-cold-fish" "$names_repo/docs/todo/2026-11-03-warm-yak"
+rm "$names_repo/docs/decisions/2026-11-03-cold-fish-feathery-gecko.md" "$names_repo/docs/decisions/2026-11-03-warm-yak-feathery-gecko.md"
+check_that "lint.sh rejects one second pair under two entries of the same date" '[[ $status -ne 0 ]]'
 printf '# Playtest busy-otter — A second thing\n' > "$names_repo/docs/playtests/2026-09-28-busy-otter.md"
 lint_in_names_repo docs/playtests/2026-09-28-busy-otter.md
 status=$?
@@ -1008,6 +1071,14 @@ line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
 check_that "queue.sh counts an after naming a closed entry (a record, no folder) as satisfied, shown as closed" \
     '[[ $status -eq 0 && "$line" == *"(after 2026-09-04-gone-bird, closed)" ]]'
 rm "$queue_repo/docs/decisions/2026-09-04-gone-bird.md"
+printf '# gone-bird — Built · 2026-09-04\n' > "$queue_repo/docs/decisions/2026-09-04-gone-bird-brisk-heron.md"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nafter: 2026-09-04-gone-bird')" "slow-owl — Parked"
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
+check_that "queue.sh counts an after naming an entry whose only record is a named further record as closed" \
+    '[[ $status -eq 0 && "$line" == *"(after 2026-09-04-gone-bird, closed)" ]]'
+rm "$queue_repo/docs/decisions/2026-09-04-gone-bird-brisk-heron.md"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 line="$(cd "$queue_repo" && ./tools/queue.sh --band next | tail -n 1)"
 check_that "queue.sh --band prints one band, each line with its title and what it waits on" \
@@ -1161,6 +1232,54 @@ out="$(cd "$ws_repo" && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COM
 status=$?
 check_that "update-pr.sh refuses a branch that adds its own whitespace error" \
     '[[ $status -ne 0 && "$out" == *"branch.txt"* && "$out" == *"git diff --cached --check"* ]]'
+
+# ------------------- lib_import_restore.sh puts back a rewrite and keeps a deliberate edit -------------
+# A throwaway repo with the two files committed. A rewrite (spaces to tabs in ARCHITECTURE.md,
+# stripped comments and a dropped stretch key in project.godot) is reverted; a deliberate edit made
+# during the run survives with one line on stderr; a file that was already dirty is left alone.
+ir_repo="$(mktemp -d)"
+(
+    cd "$ir_repo" && git init -q . && mkdir docs \
+        && printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=1\n' > project.godot \
+        && printf 'a    b\n' > docs/ARCHITECTURE.md \
+        && git add . && git -c user.name=t -c user.email=t@example.com commit -q -m init
+)
+# shellcheck source=tools/lib_import_restore.sh
+source "$root/tools/lib_import_restore.sh"
+ir_rewrite() {
+    printf '\n[display]\nsize=1\n' > "$ir_repo/project.godot"
+    printf 'a\tb\n' > "$ir_repo/docs/ARCHITECTURE.md"
+}
+import_restore_arm "$ir_repo"
+ir_rewrite
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh reverts the known rewrite of both files" \
+    '[[ -z "$(git -C "$ir_repo" status --porcelain)" ]]'
+import_restore_arm "$ir_repo"
+printf '; comment\n\n[display]\nwindow/stretch/aspect="keep"\nsize=2\n' > "$ir_repo/project.godot"
+printf 'a    b\nnew line\n' > "$ir_repo/docs/ARCHITECTURE.md"
+ir_err="$(import_restore_run 2>&1)"
+check_that "lib_import_restore.sh keeps a deliberate edit made during the run and says so" \
+    '[[ "$(cat "$ir_repo/project.godot")" == *"size=2"* && "$(cat "$ir_repo/docs/ARCHITECTURE.md")" == *"new line"* \
+        && "$ir_err" == *"project.godot changed during the run"* && "$ir_err" == *"ARCHITECTURE.md changed during the run"* ]]'
+git -C "$ir_repo" checkout -q -- .
+printf 'mine\n' > "$ir_repo/project.godot"
+import_restore_arm "$ir_repo"
+ir_rewrite
+import_restore_run 2>/dev/null
+check_that "lib_import_restore.sh leaves a file that was already dirty alone" \
+    '[[ "$(cat "$ir_repo/project.godot")" == "$(printf "\n[display]\nsize=1")" && -z "$(git -C "$ir_repo" status --porcelain -- docs/ARCHITECTURE.md)" ]]'
+rm -rf "$ir_repo"
+# Every script the helper's header lists as covered sources it and arms it.
+for ir_script in check test cost-table bake-atlases export-web scene-draft scene-recipes record trailer shot; do
+    # A trap line carries the run step; export-web.sh, record.sh and trailer.sh trap a function that does.
+    ir_run='^[[:space:]]*trap .*import_restore_run'
+    case "$ir_script" in export-web|record|trailer) ir_run='^    import_restore_run$';; esac
+    check_that "$ir_script.sh sources lib_import_restore.sh and arms it" \
+        'grep -Fq "tools/lib_import_restore.sh\"" "$root/tools/$ir_script.sh" \
+         && grep -Eq "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
+         && grep -Eq "$ir_run" "$root/tools/$ir_script.sh"'
+done
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is

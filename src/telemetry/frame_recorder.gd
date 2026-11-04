@@ -4,24 +4,28 @@ extends Node
 ## the device. *(2026-10-03, inbox #510, asked which frames to break down and how the record
 ## should get off the phone: "Every frame, slow ones marked" and "Download plus readout line".)*
 ##
-## Built by `main` under `--frame-record` or the page's `?framerecord=1` (`DevFlags.
-## frame_record_requested()`). It marks the engine's phases for `FrameLedger`: its own physics and
-## process callbacks run first in their step (`PRIORITY_FIRST`), a child's process callback runs
-## last (`PRIORITY_LAST`), the renderer's pre-draw callback ends `draw` and its post-draw callback
-## ends `render`. The named
-## systems mark themselves through `FrameRecord`.
+## Built by `main` under `--frame-record` or the page's `?framerecord=1`. It marks the engine's
+## phases for `FrameLedger`: its own physics and process callbacks run first in their step
+## (`PRIORITY_FIRST`), a child's process callback runs last (`PRIORITY_LAST`), the renderer's
+## pre-draw callback ends `draw` and its post-draw callback ends `render`. The named systems mark
+## themselves through the `FrameTiming` they are handed (`FrameRecord`, here). **The game's own
+## `_draw()` calls are counted here, by listening**: the recorder connects the `draw` signal of
+## every node that is counted, found by its class (`draw_kind()`) in the tree as it stands at
+## `setup()` and as nodes enter it, so no drawing node reads a switch and a page without the record
+## connects nothing.
 ##
 ## **On the web, a button the page itself draws saves the record** through the browser's own
 ## download: a DOM element over the canvas rather than a game control, so a tap on it never also
 ## steers her, and the download starts inside the tap that asked for it, which is what a phone's
 ## browser requires. **On the desktop the record is written under `user://frame-records/`** on
-## every scene exit, the same file each time, so a quit or a restart leaves the whole record.
+## every scene exit, the same file each time, so a quit or a restart leaves the whole record: the
+## file's path is kept on the `Sitting` `main` hands in, which outlives the restart's reload.
 ##
 ## Frames are kept only while a day is being played — not paused, not the title, not a summary —
 ## but every frame is timed, so the phases stay in step across a pause. The record survives a
-## restart (`FrameRecord.ledger` is static), so a recording that caught a stutter is not lost to
-## the restart that followed it. **The timing runs only while a recorder is in the tree**: the
-## escape builds none, so leaving the day switches `FrameRecord.on` off and hides the page's
+## restart (the `FrameRecord` and its ledger are the `Sitting`'s), so a recording that caught a
+## stutter is not lost to the restart that followed it. **The timing runs only while a recorder is
+## in the tree**: the escape builds none, so leaving the day switches the record off and hides the page's
 ## button, and the next day's recorder switches both back on.
 
 const PRIORITY_FIRST := -1000000000
@@ -43,25 +47,36 @@ class ProcessEnd extends Node:
 		recorder.at_process_end()
 
 var ledger: FrameLedger
-var _main: Node
+## The record this recorder runs: the sitting's, handed in by `setup()`.
+var _record: FrameRecord
+## Whether the title is up, asked of whoever runs the screen and handed in by `setup()`: a frame
+## behind the title is not kept, since nobody is playing it.
+var _in_the_title: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
+## The run whose seed names the record and whose calendar day each frame carries, handed in by
+## `setup()`.
+var _run: RunState
 var _metadata: Dictionary = {}
 ## The window's viewport, whose render time the engine measures while the record is on.
 var _viewport: RID
 ## Whether scene exit writes the record on the desktop. A test turns it off.
 var save_on_exit := true
 
-## Where a native record is written, chosen once per process so every scene exit rewrites the
-## same file.
-static var _native_path := ""
-## The page button's callback into the recorder. See `_add_page_button()`.
-static var _save_callback: JavaScriptObject
+## The sitting that keeps where a native record is written (`Sitting.frame_record_path`), handed
+## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
+## file and a restart, which builds a new recorder, does not start a second.
+var _sitting: Sitting
+## The page button's callback into the recorder, held for the recorder's life. See
+## `_add_page_button()`.
+var _save_callback: JavaScriptObject
 
-func setup(main: Node, city: City, player: Stroller, day: DayController) -> void:
-	assert("_in_the_title" in main, "FrameRecorder reads main._in_the_title")
-	_main = main
+func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
+		run: RunState, sitting: Sitting) -> void:
+	_run = run
+	_sitting = sitting
+	_in_the_title = in_the_title
 	_city = city
 	_player = player
 	_day = day
@@ -73,9 +88,11 @@ func setup(main: Node, city: City, player: Stroller, day: DayController) -> void
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
 	var resolution := clock_resolution()
 	var pair := calibrate()
-	FrameRecord.start(FrameRecord.ledger if FrameRecord.ledger != null
+	_record = _sitting.frame_timing as FrameRecord
+	_record.start(_record.ledger if _record.ledger != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
-	ledger = FrameRecord.ledger
+	ledger = _record.ledger
+	_listen_for_draws()
 	_metadata = {"refresh_hz": refresh, "refresh_assumed": refresh <= 0.0,
 		"display_budget_usec": budget_usec, "timer_pair_usec": pair,
 		"timer_resolution_usec": resolution}
@@ -102,14 +119,14 @@ func _process(_delta: float) -> void:
 ## the start of drawing. The counters are read here, before the clock moves to `draw`, so their
 ## own cost is the process step's.
 func at_process_end() -> void:
-	ledger.keep = not get_tree().paused and not _main.get("_in_the_title") and _day.is_running()
+	ledger.keep = not get_tree().paused and not _in_the_title.call() and _day.is_running()
 	if ledger.keep:
 		var here := _player.global_position
 		ledger.set_counter(FrameLedger.CROWD_AGENTS, _city.crowd.agent_count())
 		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
-		ledger.set_counter(FrameLedger.DAY, GameState.day)
+		ledger.set_counter(FrameLedger.DAY, _run.header.day)
 		ledger.set_counter(FrameLedger.PROCESS_FRAME, Engine.get_process_frames())
 	ledger.process_end(Time.get_ticks_usec())
 
@@ -125,6 +142,51 @@ func _at_post_draw() -> void:
 	ledger.set_counter(FrameLedger.RENDER_OBJECTS, FrameCost.objects())
 	ledger.set_counter(FrameLedger.PRIMITIVES, FrameCost.primitives())
 
+## Connects the `draw` signal of every counted node in the tree and of every one that enters it.
+func _listen_for_draws() -> void:
+	var tree := get_tree()
+	tree.node_added.connect(_count_draws_of)
+	var pending: Array[Node] = [tree.root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		_count_draws_of(node)
+		pending.append_array(node.get_children())
+
+## Counts the `draw` signal of `node` under its kind when it is a node the record counts. A node
+## that leaves the tree and comes back is connected once.
+func _count_draws_of(node: Node) -> void:
+	var kind := draw_kind(node)
+	if kind < 0:
+		return
+	var counted := _drew.bind(kind)
+	var canvas := node as CanvasItem
+	if not canvas.draw.is_connected(counted):
+		canvas.draw.connect(counted)
+
+## Which `FrameTiming.Draw` kind a node's `_draw()` is counted under, or -1 for a node that is not
+## counted: by its class where the recorder may name it, else by the kind it declares in its
+## `FrameTiming.DRAW_KIND_META`. The crowd's agents are not here: the crowd counts them itself, through its timing sink
+## (`FrameRecordTiming`).
+static func draw_kind(node: Node) -> int:
+	if not node is CanvasItem:
+		return -1
+	if node is Prop or node is Building or node is Building.RoofObject \
+			or node is Building.StationStack or node is SceneryLayer or node is SceneryWater \
+			or node is CityDecals or node is CityEdge:
+		return FrameTiming.Draw.SCENERY
+	if node is EventInstance:
+		return FrameTiming.Draw.EVENTS
+	if node is Stroller:
+		return FrameTiming.Draw.PLAYER
+	if node is ParkFenceMarker or node is ClosureMarker or node is TrafficLight \
+			or node is ContactPoint:
+		return FrameTiming.Draw.OTHER
+	return node.get_meta(FrameTiming.DRAW_KIND_META, -1)
+
+func _drew(kind: int) -> void:
+	if _record.on:
+		_record.drew(kind)
+
 ## What one `FrameRecord.enter()`/`leave()` pair costs on this device, in microseconds, timed over
 ## `CALIBRATION_PAIRS` pairs on a scratch ledger through the same two calls the game makes. A
 ## frame's `timer_calls` times this is what the timing pairs cost in that frame: a lower bound on
@@ -132,16 +194,13 @@ func _at_post_draw() -> void:
 ## the post-draw reads, the ring copy) is not in it. On a desktop the record on against off cost
 ## more than the product (docs/evidence/m159-frame-record-2026-10-04/).
 static func calibrate() -> float:
-	var live := FrameRecord.ledger
-	var was_on := FrameRecord.on
-	FrameRecord.start(FrameLedger.new(1))
+	var scratch := FrameRecord.new()
+	scratch.start(FrameLedger.new(1))
 	var started := Time.get_ticks_usec()
 	for _i in CALIBRATION_PAIRS:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
-		FrameRecord.leave(outer)
+		var outer := scratch.enter(FrameRecord.CROWD)
+		scratch.leave(outer)
 	var elapsed := Time.get_ticks_usec() - started
-	FrameRecord.ledger = live
-	FrameRecord.on = was_on
 	return float(elapsed) / CALIBRATION_PAIRS
 
 ## The smallest step `Time.get_ticks_usec()` takes on this device, in microseconds, the least of
@@ -227,9 +286,10 @@ func report_text() -> String:
 			+ "events, halos (EntityHalo rims), scenery, badges (DangerEdge), player, other; " \
 			+ "counts, not times"
 	var metadata := _metadata.duplicate()
-	metadata["build"] = TitleScreen.build_text()
-	metadata["run_seed"] = GameState.run_seed
-	metadata["ground_mode"] = DevFlags.ground_mode()
+	metadata["build"] = BuildInfo.build_text()
+	metadata["run_seed"] = _run.header.run_seed
+	# The mode the city was handed, or a city's default for a recorder that watches none.
+	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
 	metadata["renderer"] = RenderingServer.get_current_rendering_method()
@@ -253,23 +313,24 @@ func save() -> String:
 	var text := report_text()
 	ledger.keep = false
 	if OS.get_name() == "Web":
-		var file_name := "nappy-frames-seed%d-%s.json" % [GameState.run_seed,
+		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
-	if _native_path == "":
-		_native_path = "user://frame-records/record-%s-seed%d.json" % [
-			Time.get_datetime_string_from_system().replace(":", "-"), GameState.run_seed]
-	if DirAccess.make_dir_recursive_absolute(_native_path.get_base_dir()) != OK:
+	if _sitting.frame_record_path == "":
+		_sitting.frame_record_path = "user://frame-records/record-%s-seed%d.json" % [
+			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
+	var path := _sitting.frame_record_path
+	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""
-	var file := FileAccess.open(_native_path, FileAccess.WRITE)
+	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		push_error("Cannot write the frame record: %s" % _native_path)
+		push_error("Cannot write the frame record: %s" % path)
 		return ""
 	file.store_string(text)
 	file.close()
-	var written := ProjectSettings.globalize_path(_native_path)
+	var written := ProjectSettings.globalize_path(path)
 	print("Frame record: %s" % written)
 	return written
 
@@ -281,7 +342,9 @@ func _render_cpu_reported() -> bool:
 	return false
 
 func _exit_tree() -> void:
-	FrameRecord.on = false
+	_record.stop()
+	if get_tree().node_added.is_connected(_count_draws_of):
+		get_tree().node_added.disconnect(_count_draws_of)
 	if _viewport.is_valid():
 		RenderingServer.viewport_set_measure_render_time(_viewport, false)
 	if RenderingServer.frame_pre_draw.is_connected(_at_pre_draw):
@@ -298,8 +361,9 @@ func _exit_tree() -> void:
 ## The page's own button, added once per page: a reload of the scene hands the button the new
 ## recorder's callback and shows it again rather than adding a second button; leaving the day
 ## hides it (`_exit_tree()`). Focus goes back to the canvas after
-## the tap, so the keyboard keeps steering in a desktop browser. The callback is held in a static,
-## the way `GameSave` holds its own, because a callback GDScript lets go of stops answering.
+## the tap, so the keyboard keeps steering in a desktop browser. The callback is held on the
+## recorder, because a callback GDScript lets go of stops answering: it answers for as long as the
+## recorder lives, and the button is hidden as the recorder leaves the tree, before it is let go.
 func _add_page_button() -> void:
 	JavaScriptBridge.eval(_BUTTON_JS)
 	_save_callback = JavaScriptBridge.create_callback(_on_page_save)
@@ -372,7 +436,7 @@ static func _bucket_notes() -> Dictionary:
 			+ "preparations included, and the tile map work and first draws its jobs left to the "
 			+ "deferred flush (also counted as scenery_deferred_usec); the renderer's own work on "
 			+ "the new pictures is draw's",
-		"crowd": "the crowd's pathing: Crowd._physics_process() and every CrowdAgent._process()",
+		"crowd": "the crowd's tick: Crowd._physics_process(), every agent's step inside it (LaneMover.step())",
 		"influence": "the baby's influence sweep: Baby._physics_process()",
 		"events": "event updates: EventManager._physics_process() and every "
 			+ "EventInstance._process()",

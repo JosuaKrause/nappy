@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## The measure is `tests/seal_reach_rig.gd`'s. A day's seals are `SealPlanner.plan_day()`'s, on
 ## `RouteTree.for_day()`'s tree and the rng `tests/test_seals.gd` seeds them with; the escape's are
-## every placement `FinalePlanner.plan()` makes, built the way `tests/test_finale.gd` builds it.
+## every placement `DayPlanner.plan_the_escape_city()` makes, built the way `tests/test_finale.gd` builds it.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const FIRST_SEED := 1
@@ -19,26 +19,27 @@ func run(t) -> void:
 	var escape_rows := {}
 	for seed_value in range(FIRST_SEED, LAST_SEED + 1):
 		var map := CityGenerator.generate(seed_value)
-		var ground := EventScheduler.EscapeGround.new(map, [], [])
+		var ground := WalkGround.new(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			for plan in SealPlanner.plan_day(map, day, RouteTree.for_day(map, day), rng):
+			for plan in SealPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day), rng):
 				_count(day_rows, map, ground, plan)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for plan in FinalePlanner.plan(map, rng).placements:
+		for plan in DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+				_city_spec()):
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)
 	_print("escape", escape_rows)
 	t.check(true, "a probe asserts nothing")
 
-static func _count(rows: Dictionary, map: CityMap, ground: EventScheduler.EscapeGround,
+static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
 		plan: EventScheduler.Planned) -> void:
 	var row: Array = rows.get(plan.def.id, [0, 0, 0.0, 0, 0.0])
 	row[0] += 1
@@ -59,3 +60,7 @@ static func _print(where: String, rows: Dictionary) -> void:
 		var row: Array = rows[id]
 		print("SEAL_OVERHANG %s seeds %d-%d | %-20s | %5d pieces | body over a building %5d, deepest %4.1fpx | drawing over a building %5d, deepest %4.1fpx"
 				% [where, FIRST_SEED, LAST_SEED, id, row[0], row[1], row[2], row[3], row[4]])
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

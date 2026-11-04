@@ -20,7 +20,7 @@ var _pit_chunks: Dictionary = {}
 
 const TREE_PIT := &"props/tree_pit"
 
-## The `AtlasLibrary` group the street's decoration is drawn from — the five litter decals and
+## The atlas group the street's decoration is drawn from — the five litter decals and
 ## the tree bed here, and the trees, the bollard, the swing frame, the garbage sack and its pile
 ## that `Prop` draws. One group rather than two, because they are placed and dressed together
 ## and a street shows them together: a sack on the kerb beside a tree over a bed of litter is
@@ -28,6 +28,10 @@ const TREE_PIT := &"props/tree_pit"
 ## lifetime is the city's: `City.build()` acquires it before the first day is drawn and
 ## `City._exit_tree()` releases it.
 const DECORATION_ATLAS := &"decoration"
+
+## The city's library (`AtlasLibrary`), handed by the city before it builds: the city holds the
+## decoration group on it, and the decals draw their regions from it.
+var atlas: AtlasLibrary
 
 func set_placed(placed: Array[Litter.Placed]) -> void:
 	_placed = placed
@@ -90,22 +94,20 @@ func _prepare_chunk(key: Vector2i) -> void:
 	add_child(layer)
 	_resident[key] = layer
 	for entry: Litter.Placed in _litter_chunks.get(key, []):
-		var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
+		var texture := atlas.region(Litter.TEXTURES[entry.texture_index])
 		layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 	for entry: StreetTrees.Planted in _pit_chunks.get(key, []):
 		if not _map.is_tree_pit_emptied(entry.tile):
-			var texture := AtlasLibrary.region(TREE_PIT)
+			var texture := atlas.region(TREE_PIT)
 			layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 
 func _draw() -> void:
-	if FrameRecord.on:
-		FrameRecord.drew(FrameLedger.DRAWS_SCENERY)
 	if streamed:
 		return
 	for entry in _placed:
-		var texture := AtlasLibrary.region(Litter.TEXTURES[entry.texture_index])
+		var texture := atlas.region(Litter.TEXTURES[entry.texture_index])
 		draw_texture(texture, entry.position - texture.get_size() * 0.5)
-	var pit := AtlasLibrary.region(TREE_PIT)
+	var pit := atlas.region(TREE_PIT)
 	for entry in _street_tree_pits:
 		if _map and _map.is_tree_pit_emptied(entry.tile):
 			continue

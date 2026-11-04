@@ -30,7 +30,7 @@ func _process(_delta: float) -> void:
 
 func _run() -> void:
 	GameState.start_run(4242)
-	_city = CITY.instantiate()
+	_city = RunCity.of_the_run(CITY)
 	add_child(_city)
 	_city.build(CityGenerator.generate(4242))
 	_city.scenery.set_process(false)
@@ -94,7 +94,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	get_viewport().canvas_transform = Transform2D(0, Vector2(10000, 10000))
 	for key in keys:
 		var layer := TileMapLayer.new()
-		layer.tile_set = _city._ground.tile_set
+		layer.tile_set = _city.scenery_ground.tile_set
 		layer.rendering_quadrant_size = 4 if mode == "quadrants" else 16
 		owner.add_child(layer)
 		layers.append(layer)
@@ -161,7 +161,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	return result
 
 func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Dictionary:
-	var ground := _city._ground
+	var ground := _city.scenery_ground
 	var at := _city.map.doorstep_world_position()
 	var initial := at
 	var extent := Tuning.VIEW_HALF_EXTENT * 2
@@ -259,7 +259,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 
 func _draw_frame() -> void:
 	if _rendered:
-		_forced_draws += int(await AutoScreenshot.drawn_frame(get_tree()))
+		_forced_draws += int(await DrawnFrame.wait(get_tree()))
 	else:
 		await get_tree().process_frame
 

@@ -5,10 +5,10 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_roadblock_spacing.gd      (prints ESCAPE_SPACING lines)
 ##
-## The plan is `FinalePlanner.plan()` on seeds 1 to 40, built the way `tests/test_finale.gd` builds
+## The plan is the escape's (`DayPlanner.plan_the_escape_city()`) on seeds 1 to 40, built the way `tests/test_finale.gd` builds
 ## it, and each band stands where `EventScheduler._stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
-## (`pursues_within` each), the ground on which both can come for her at once.
+## (`EventDef.notice` each), the ground on which both can come for her at once.
 
 const SEEDS := 40
 
@@ -19,13 +19,14 @@ func run(t) -> void:
 	var nearest_of_all := INF
 	for seed_value in range(1, SEEDS + 1):
 		var map := CityGenerator.generate(seed_value)
-		GameState.city_state.begin_day(map.block_plans, 1)
-		map.repaint(GameState.city_state)
+		GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+		map.repaint(GameState.attempt_spend.city_state)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		var plan := FinalePlanner.plan(map, rng)
+		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
+				_city_spec())
 		var bands: Array[EventScheduler.Planned] = []
-		for placement in plan.placements:
+		for placement in placements:
 			if placement.def.id == "roadblock":
 				bands.append(placement)
 		var nearest := INF
@@ -35,7 +36,7 @@ func run(t) -> void:
 				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
 						EventScheduler._stands_at(map, bands[j]))
 				pairs += 1
-				if gap < bands[i].def.pursues_within + bands[j].def.pursues_within:
+				if gap < bands[i].def.notice_within() + bands[j].def.notice_within():
 					under += 1
 				if gap < nearest:
 					nearest = gap
@@ -48,3 +49,7 @@ func run(t) -> void:
 	print("ESCAPE_SPACING | %d seeds | %d roadblocks | %d pairs, %d nearer than their two notices | nearest %.0fpx"
 			% [SEEDS, total, pairs, under, nearest_of_all])
 	t.check(true, "a probe asserts nothing")
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

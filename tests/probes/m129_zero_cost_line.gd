@@ -58,11 +58,11 @@ extends RefCounted
 ##   having to worry or plan around it"*, PLAYTEST-76. A lethal row keeps its whole radius, a body
 ##   its `obstructs_radius`, and the larger applies where both do. A row that neither charges nor
 ##   obstructs — the `playground` ambient, at intensity 0 — is not something a line has to avoid and
-##   is skipped. `EventScheduler._line_reach_of()` is the one place that arithmetic lives, and this
+##   is skipped. `EventDef.line_reach()` is the one place that arithmetic lives, and this
 ##   probe asks it rather than keeping a second copy: the placement rules refuse what this measures,
 ##   so a probe reading a different disc could not tell whether they had worked.
 ## - **A mast is excluded**: planted once by `MastSites`, off the corridor-aware placement this
-##   guarantee is stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc.
+##   guarantee is stated over — see `EventDef.has_a_line_to_avoid()`'s own doc.
 ## - **Rows with no tile are excluded**: `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` queue rows are sited
 ##   by `EventDirector` out of where the player turns out to walk, so they have no position at plan
 ##   time (`Planned.is_placed()` is false) and no route can be measured against them. They are
@@ -83,9 +83,9 @@ extends RefCounted
 ##   pass and cross back without ever standing in its field, so it is left out of every reading
 ##   rather than read at its dawn position or over its whole route (PLAYTEST-71, *"the player can
 ##   cross the street, wait, then come back without ever getting excited by it"*).
-## - **A pursuer (`EventDef.pursues`) is never a block.** It follows her rather than sitting on a
+## - **A pursuer (`EventDef.pursuit`) is never a block.** It follows her rather than sitting on a
 ##   tile and pays the telegraph contract instead of the placement rules'
-##   (`EventScheduler._a_line_has_to_avoid()`'s own doc: *"a pursuer follows her rather than
+##   (`EventDef.has_a_line_to_avoid()`'s own doc: *"a pursuer follows her rather than
 ##   sitting on a tile, and pays the telegraph contract instead"*), so `alley_robbery` and
 ##   `charging_dog` are left out here the same way a door is — no placement rule ever refuses
 ##   ground on their account, so a line reading their dawn position as something to route around
@@ -93,9 +93,9 @@ extends RefCounted
 ## - **A region door is never a block.** It costs by design (PLAYTEST-71, *"it costs by design"*),
 ##   so `checkpoint_hut` and `checkpoint_gate` are left out of every reading; the region wall's own
 ##   body is not a door and still counts.
-## - **`pigeon_flock` is scenery, not a block.** A row with `EventDef.scenery` set is left out of
+## - **`pigeon_flock` is scenery, not a block.** A row whose role is `EventDef.Role.SCENERY` is left out of
 ##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
-##   don't count it as block"*), matching `EventScheduler._role_for`, where `scenery` answers
+##   don't count it as block"*), matching `EventScheduler._role_for`, where `Role.SCENERY` answers
 ##   `NONE` before the wall/friction cost test ever runs.
 ##
 ## # What a broken route is reported as
@@ -382,7 +382,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 		map.hold_segment(segment.key())
 	for segment in region_plan.doors:
 		map.hold_segment(segment.key())
-	for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 
 	var boundary := {}
@@ -395,7 +395,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	for rect in region_plan.alley_doors:
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, day, tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_segments)
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
@@ -418,7 +418,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	var plans := EventScheduler.build_day(day, _rng(map, day, "events"), map, no_one_shots,
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map, no_one_shots,
 			no_scars, _used if not _used.is_empty() else no_calm, tree, 0, doors, [], standing)
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.
@@ -448,7 +448,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
 ## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
-## stated over — see `EventScheduler._a_line_has_to_avoid()`'s own doc; `scenery` rows
+## stated over — see `EventDef.has_a_line_to_avoid()`'s own doc; `Role.SCENERY` rows
 ## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
@@ -460,11 +460,11 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
-		if def.scenery or def.pursues or def.id.begins_with("checkpoint") \
+		if def.role == EventDef.Role.SCENERY or def.pursuit != null or def.id.begins_with("checkpoint") \
 				or (def.mobile and not def.paces):
 			continue
 		var emits := def.intensity > 0.0
-		var radius := EventScheduler._line_reach_of(def)
+		var radius := def.line_reach()
 		if radius <= 0.0:
 			continue
 		var row := Row.new()
@@ -607,7 +607,7 @@ func _allowed_mask(map: CityMap, route: Array, area_rect: Rect2i,
 	mask.fill(0)
 	for cell: Vector2i in route:
 		var origin: Vector2i = cell * ReachabilityGrid.CELL
-		var segment := StreetNetwork.segment_containing(origin)
+		var segment := map.network.segment_containing(origin)
 		if segment:
 			_add_street(mask, map, segment, with_carriageway)
 			continue
@@ -1028,7 +1028,7 @@ func _rows_covering(owners: Array, frontier: Array[Vector2i], width: int) -> Arr
 func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segment:
 	var counts := {}
 	for tile in frontier:
-		var segment := StreetNetwork.segment_containing(tile)
+		var segment := map.network.segment_containing(tile)
 		if segment:
 			counts[segment.key()] = int(counts.get(segment.key(), 0)) + 1
 	var best := Vector3i.ZERO
@@ -1037,7 +1037,7 @@ func _segment_of(map: CityMap, frontier: Array[Vector2i]) -> StreetNetwork.Segme
 		if int(counts[key]) > most:
 			most = int(counts[key])
 			best = key
-	return StreetNetwork.by_key(best) if most > 0 else null
+	return map.network.by_key(best) if most > 0 else null
 
 func _stretch_of(map: CityMap, frontier: Array[Vector2i]) -> String:
 	var segment := _segment_of(map, frontier)
@@ -1090,7 +1090,7 @@ func _mid_block_crossings_of(map: CityMap, route: Array) -> Array:
 		var after: Vector2i = route[i + 1]
 		if not _is_a_mid_block_road_cell(map, middle):
 			continue
-		var segment := StreetNetwork.segment_containing(middle * ReachabilityGrid.CELL)
+		var segment := map.network.segment_containing(middle * ReachabilityGrid.CELL)
 		if not segment:
 			continue
 		var one := _pavement_band(before * ReachabilityGrid.CELL, segment)
@@ -1119,7 +1119,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 	for cell: Vector2i in route:
 		if not _is_a_mid_block_road_cell(map, cell):
 			continue
-		var segment := StreetNetwork.segment_containing(cell * ReachabilityGrid.CELL)
+		var segment := map.network.segment_containing(cell * ReachabilityGrid.CELL)
 		if segment:
 			found["%s %s" % [segment.key(), GameEnums.StreetKind.keys()[
 					map.street_kind_at(not segment.horizontal, cell * ReachabilityGrid.CELL)]]] = true
@@ -1131,7 +1131,7 @@ func _road_stretches_of(map: CityMap, route: Array) -> String:
 
 func _is_a_mid_block_road_cell(map: CityMap, cell: Vector2i) -> bool:
 	var origin: Vector2i = cell * ReachabilityGrid.CELL
-	var segment := StreetNetwork.segment_containing(origin)
+	var segment := map.network.segment_containing(origin)
 	return segment != null and _is_a_carriageway_tile(map, origin, segment.horizontal)
 
 # ---------------------------------------------------------------------- the report ---
@@ -1183,7 +1183,7 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		var def := EventCatalogue.by_id(id)
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
-				% [def.intensity, def.outer_radius, EventScheduler._line_reach_of(def),
+				% [def.intensity, def.outer_radius, def.line_reach(),
 				def.obstructs_radius, ", paces" if def.paces else ""]
 		print("      %-4d %s%s" % [blame[id], id, reach])
 

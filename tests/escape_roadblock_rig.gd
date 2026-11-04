@@ -4,42 +4,47 @@ extends RefCounted
 ## that a lured-off roadblock is passable and a posted one is not, and
 ## `tests/probes/escape_roadblock_cost.gd`, which prints the table.
 ##
-## **What is real and what is stood in for.** The plan is the finale's own
-## (`FinalePlanner.plan()`), and the roadblocks on a street are `EventInstance`s built on the real
-## map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
+## **What is real and what is stood in for.** The plan is the finale's own (its walk,
+## `FinalePlanner.route()`, and what stands on it, `DayPlanner.plan_the_escape_city()`), and the
+## roadblocks on a street are `EventInstance`s built on the real map from its placements, stepped by hand at 60Hz the way `EventManager` steps them: told where
 ## she is and whether she runs (`_tell_them_where_she_is()`), asked whether one catches her
 ## (`is_lethal_at()`), and the meter fed from the strongest of them — they are
 ## `barrier_structure`, so only the strongest counts (`excitement_sources_at()`) — the way
-## `Baby._update_excitement()` feeds it, with `Tuning.SLEEPING_SENSITIVITY` while asleep and the
+## `Baby._update_excitement()` feeds it, with `Baby.SLEEPING_SENSITIVITY` while asleep and the
 ## wake at `Tuning.EXCITEMENT_WAKE_THRESHOLD`. Her body is a point moved along her line; the decay
 ## is the street's (`Tuning.EXCITEMENT_DECAY_WALKING`, `_RUNNING` and `_IDLE` at a multiplier of
 ## 1). **The roadblocks alone**: nothing else of the plan is live, so the figures are theirs.
 ##
 ## **Her line** is the middle of the open sidewalk: the widest run of offsets across the street
 ## her body fits on at every roadblock's own place along it, past the bands' solid pieces
-## (`EventScheduler.EscapeGround.solids_of()`), from `BEYOND` before the first band to `BEYOND`
+## (`WalkGround.solids_of()`), from `BEYOND` before the first band to `BEYOND`
 ## past the last.
 
 const STEP := 1.0 / 60.0
 const BEYOND := 260.0
 const LANE_SCAN := 4.0
 
-## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it.
+## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it: the map, the walk
+## (`plan`) and what stands on it (`placements`).
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)
-	GameState.city_state.begin_day(map.block_plans, 1)
-	map.repaint(GameState.city_state)
+	GameState.attempt_spend.city_state.begin_day(map.block_plans, 1)
+	map.repaint(GameState.attempt_spend.city_state)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	return {"map": map, "plan": FinalePlanner.plan(map, rng)}
+	var walk := FinalePlanner.route(map)
+	return {"map": map, "plan": walk,
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
 
-## The plan's roadblocks on each open street that carries any, `[segment, Array[Planned]]` pairs.
-static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan) -> Array:
+## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
+## `[segment, Array[Planned]]` pairs.
+static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
+		placements: Array[EventScheduler.Planned]) -> Array:
 	var found: Array = []
 	for segment in plan.open_streets:
 		var rect := map.tile_rect_to_world(segment.tile_rect())
 		var group: Array[EventScheduler.Planned] = []
-		for placement in plan.placements:
+		for placement in placements:
 			if placement.def.id == "roadblock" and rect.grow(1.0).has_point(placement.position):
 				group.append(placement)
 		if not group.is_empty():
@@ -50,12 +55,12 @@ static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan) -> Array:
 ## every band.
 static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
 		group: Array[EventScheduler.Planned]) -> PackedVector2Array:
-	var ground := EventScheduler.EscapeGround.new(map, [], [])
+	var ground := WalkGround.new(map)
 	var along := Vector2.RIGHT if segment.horizontal else Vector2.DOWN
 	var across := Vector2(-along.y, along.x)
 	var rect := map.tile_rect_to_world(segment.tile_rect())
 	var centre := rect.get_center()
-	var solids: Array[EventScheduler.EscapeSolid] = []
+	var solids: Array[WalkGround.Solid] = []
 	var holder := Node2D.new()
 	t.add_child(holder)
 	var places: Array[float] = []
@@ -122,7 +127,7 @@ static func build(t: Node, map: CityMap, group: Array[EventScheduler.Planned]) -
 		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
 		holder.add_child(instance)
 		instance.set_process(false)
-		instance._attach_the_band()
+		instance.look.attach_nodes()
 		made.append(instance)
 	return [holder, made]
 
@@ -140,11 +145,11 @@ class Meter extends RefCounted:
 	func feed(instances: Array[EventInstance], her: Vector2, running: bool, idle: bool) -> void:
 		var strongest := 0.0
 		for instance in instances:
-			strongest = maxf(strongest, instance.contribution_at(her))
-		var incoming := strongest + (Tuning.EXCITEMENT_FROM_RUNNING if running else 0.0)
-		incoming *= Tuning.SLEEPING_SENSITIVITY if asleep else 1.0
-		var decay := Tuning.EXCITEMENT_DECAY_IDLE if idle else (
-				Tuning.EXCITEMENT_DECAY_RUNNING if running else Tuning.EXCITEMENT_DECAY_WALKING)
+			strongest = maxf(strongest, instance.excitement.contribution_at(her))
+		var incoming := strongest + (Baby.EXCITEMENT_FROM_RUNNING if running else 0.0)
+		incoming *= Baby.SLEEPING_SENSITIVITY if asleep else 1.0
+		var decay := Baby.EXCITEMENT_DECAY_IDLE if idle else (
+				Baby.EXCITEMENT_DECAY_RUNNING if running else Tuning.EXCITEMENT_DECAY_WALKING)
 		value = clampf(value + (incoming - decay) * STEP, 0.0, Tuning.METER_MAX)
 		peak = maxf(peak, value)
 		if asleep and value >= Tuning.EXCITEMENT_WAKE_THRESHOLD:
@@ -168,7 +173,7 @@ static func _tick(instances: Array[EventInstance], her: Vector2, running: bool,
 		instance.player_view = view_round(her, heading) if heading != Vector2.ZERO else Rect2()
 		instance.player_running = running
 		instance.baby_awake = false
-		instance._process(STEP)
+		instance.step(STEP)
 	for instance in instances:
 		if instance.is_lethal_at(her):
 			return true
@@ -207,7 +212,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		for instance in instances:
 			if instance.is_chasing():
 				charged[instance] = true
-			strongest = maxf(strongest, instance.contribution_at(her))
+			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
 	made[0].free()
@@ -243,7 +248,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			break
 		meter.feed(instances, her, false, speed == 0.0)
 		for instance in instances:
-			warned = warned or (not instance.is_waiting() and not instance.is_a_spent_guard())
+			warned = warned or (not instance.is_waiting() and not instance.barrier_post.is_spent())
 		speed = move_toward(speed, 0.0 if warned else Tuning.WALK_SPEED, Tuning.ACCELERATION * STEP)
 		her += heading * speed * STEP
 		if warned:
@@ -268,7 +273,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	while not caught and frames < int(30.0 / STEP):
 		var gone := true
 		for instance: EventInstance in lured:
-			gone = gone and instance.is_a_spent_guard() and not instance.is_leaving
+			gone = gone and instance.barrier_post.is_spent() and not instance.is_leaving
 		if gone:
 			break
 		if _tick(instances, her, false, -heading):
@@ -282,3 +287,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		made[0].free()
 		return {"lure": luring, "after": {}}
 	return {"lure": luring, "after": walk(t, map, group, her, to, meter, made)}
+
+## The escape city's section spec, the one the run flow walks the city under.
+static func _city_spec() -> DaySpec:
+	return DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

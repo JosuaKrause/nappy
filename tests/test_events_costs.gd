@@ -109,8 +109,8 @@ func _cost_to_walk_through(def: EventDef) -> float:
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (def.mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_RUNNING
-			+ Tuning.EXCITEMENT_FROM_RUNNING) * seconds
+	return (def.mean_emission_along_the_line() - Baby.EXCITEMENT_DECAY_RUNNING
+			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
 func _signature(planned: Array) -> String:
 	var parts: Array[String] = []
@@ -154,17 +154,17 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 					+ "if that has stopped being true, take it off the list rather than keeping it")
 					% [def.id, _cost_to_run_through(def), _cost_to_walk_through(def)])
 			continue
-		if def.pursues:
+		if def.pursuit != null:
 			pursuers += 1
 			# Walking loses ground and running gains it. Everything else about a pursuit follows
 			# from this one line, including why it is the only place running can be correct.
-			t.check(def.pursue_speed > Tuning.WALK_SPEED,
+			t.check(def.chase_speed() > Tuning.WALK_SPEED,
 					"'%s' catches somebody who walks away from it" % def.id)
-			t.check(def.pursue_speed < Tuning.RUN_SPEED,
+			t.check(def.chase_speed() < Tuning.RUN_SPEED,
 					"'%s' does not catch somebody who runs" % def.id)
 			t.check(def.hard_fail,
 					"'%s' has to be lethal, or running from it is just an expensive walk" % def.id)
-			t.check((Tuning.RUN_SPEED - def.pursue_speed) * def.duration >= def.inner_radius,
+			t.check((Tuning.RUN_SPEED - def.chase_speed()) * def.duration >= def.inner_radius,
 					"'%s' can be outrun by more than the radius that ends the day" % def.id)
 			t.check(def.duration <= Tuning.PURSUIT_TIME,
 					"'%s' gives up before the run costs more than the day it saves" % def.id)
@@ -209,11 +209,11 @@ func _test_the_cyclist_costs_what_he_did(t) -> void:
 func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
 		for def in EventCatalogue.available_on(day):
-			t.check(not def.pursues,
+			t.check(def.pursuit == null,
 					"day %d has nothing that has to be outrun ('%s')" % [day, def.id])
 	var chasers := 0
 	for def in EventCatalogue.available_on(Tuning.RUN_TAUGHT_DAY):
-		chasers += 1 if def.pursues else 0
+		chasers += 1 if def.pursuit != null else 0
 	t.check(chasers > 0, "and the day the run is taught has something to teach it with")
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
@@ -359,7 +359,7 @@ func _test_the_named_decisions_arrive(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
-		for plan in EventScheduler.build_day(1, rng, seeded, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded, consumed):
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 			totals[plan.def.id] = int(totals.get(plan.def.id, 0)) + 1
 		# No day-1 map may be without either of them at all, which is the failure the player
@@ -396,13 +396,13 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 				if b.def.kind == GameEnums.EventKind.AMBIENT:
 					continue
 				var gap := a.position.distance_to(b.position)
-				t.check(gap >= Tuning.EVENT_SPACING_ANY - 0.5,
+				t.check(gap >= EventScheduler.EVENT_SPACING_ANY - 0.5,
 						"day %d: '%s' and '%s' are not drawn inside each other (%.0fpx)"
 						% [day, a.def.id, b.def.id, gap])
 				if a.def.id != b.def.id:
 					continue
 				same_pairs += 1
-				if gap < Tuning.EVENT_SPACING_SAME:
+				if gap < EventScheduler.EVENT_SPACING_SAME:
 					crowded += 1
 		t.check(crowded * 20 <= same_pairs,
 				"day %d: %d of %d same-kind pairs share a stretch of pavement"
@@ -425,7 +425,7 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 ##
 ## So the assertion splits rather than weakening: a lethal **wall** is exempt, and everything else —
 ## a lethal set piece, a lethal row the day placed for a reason that is not about the corridor — is
-## checked exactly as before. `EventScheduler._keeps_its_field_clear` is the one place that decides,
+## checked exactly as before. `Planned.keeps_its_field_clear()` is the one place that decides,
 ## and this asserts its consequence rather than restating it.
 func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 	var lethal_days := 0
@@ -453,33 +453,39 @@ func _test_nothing_happens_inside_a_lethal_field(t) -> void:
 	t.check(exempt > 0, "a run places lethal walls, which are the exempt ones (%d)" % exempt)
 	t.check(lethal_days >= 0, "and the rest are checked (%d)" % lethal_days)
 
-## **The third case of the clearance rule, pinned over `pursues` rather than over either row that
-## carries it today.** A lethal field that follows her is neither on the corridor nor off it, so
-## placement cannot keep it clear of anything — `charging_dog` never reaches `_room_around` at all
-## on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER` and sited with no tile, and
-## `alley_robbery` (and `charging_dog` again, past the teaching day, once `spawn_mode_on()` answers
-## `MAP`) is exempt only because `hard_fail` always classifies a `MAP`-placed `RECURRING`/`SCRIPTED`
-## row `WALL` before `_role_for` ever asks whether it pursues. Forcing the role off `WALL` here is
-## what tells the two reasons apart, and it is why a third pursuer — one a future `_role_for` change
-## routes through `SET_PIECE` or `FRICTION` instead — inherits the exemption without anybody adding
-## a case for it.
+## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
+## either row that carries it today.** A lethal field that follows her is neither on the
+## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
+## reaches `room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
+## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
+## once `spawn_mode_on()` answers `MAP`) is exempt only because `hard_fail` always classifies a
+## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `_role_for` ever asks whether it
+## pursues. Forcing the role off `WALL` here is what tells the two reasons apart, and it is why
+## a third pursuer — one a future `_role_for` change routes through `SET_PIECE` or `FRICTION`
+## instead — inherits the exemption without anybody adding a case for it.
 func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
-	t.check(pursuer.hard_fail and pursuer.pursues, "alley_robbery is lethal and pursues")
+	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
 	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
 	off_wall.role = GameEnums.BlockerRole.FRICTION
-	t.check(not EventScheduler._keeps_its_field_clear(off_wall),
+	t.check(not off_wall.keeps_its_field_clear(),
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
 
 	# The control: an otherwise identical lethal row that does not pursue still owes the rule off
-	# the `WALL` role — the exemption is `pursues`, not "the role happens not to be WALL".
+	# the `WALL` role — the exemption is `EventDef.pursuit`, not "the role happens not to be WALL".
 	var stationary := EventCatalogue.by_id("reversing_lorry")
-	t.check(stationary.hard_fail and not stationary.pursues,
+	t.check(stationary.hard_fail and stationary.pursuit == null,
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
 	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
 	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
-	t.check(EventScheduler._keeps_its_field_clear(off_wall_stationary),
+	t.check(off_wall_stationary.keeps_its_field_clear(),
 			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
+
+	# And the exemption the other way: the same row classified a wall is the one the rule lets off.
+	var walled := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	walled.role = GameEnums.BlockerRole.WALL
+	t.check(not walled.keeps_its_field_clear(),
+			"while a lethal wall is the exemption the rule makes, and keeps nothing clear")
 
 ## Playtest 05, finding 4: *"I was able to go to the same park on day one and two — this
 ## shouldn't be possible."* The complaint is not about repetition, it is that the game's only
@@ -496,12 +502,12 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	var used: Vector2i = map.calm_blocks[0]
 	var used_set: Array[Vector2i] = [used]
 	var lot := map.tile_rect_to_world(_calm_rect(map, used))
-	var allowed := maxf(Tuning.OBSTRUCTION_A_PARK_CAN_HOLD,
+	var allowed := maxf(EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(lot.size.x, lot.size.y) / 16.0)
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_set)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_set)
 
 		var on_her_park := 0
 		var clean_elsewhere := 0
@@ -529,7 +535,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
 		# until M34 made everything that stands still solid, and reading it as the stricter one
 		# would have emptied the pool of loud harmless things and retired this rule by accident.
-		# A busker is 22px of a 704px lot. See `Tuning.OBSTRUCTION_A_PARK_CAN_HOLD`.
+		# A busker is 22px of a 704px lot. See `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD`.
 		#
 		# And the allowance is the lot's, not a constant: `_things_to_put_in_a_park` lets a
 		# bigger park hold a bigger thing, because what matters is the share of the ground it
@@ -550,9 +556,9 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	# And a day that knows nothing about yesterday plans exactly as it always did.
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
-	var a := EventScheduler.build_day(3, _rng(3), map, forgetful)
+	var a := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, forgetful)
 	var nothing: Array[Vector2i] = []
-	var b := EventScheduler.build_day(3, _rng(3), map, remembering, [], nothing)
+	var b := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, remembering, [], nothing)
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
 
@@ -560,7 +566,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	# the next day is planned knowing that. Measured over five seeds while this was built, the
 	# repeat rate goes from 28% of days to 0 — this asserts the claim rather than the number.
 	# Since playtest 12 the memory is the whole **act**, not the night before, so this walks the
-	# run the way `GameState.settled_this_act` does: the used set grows through an act and is
+	# run the way `RunCalendar.settled_this_act` does: the used set grows through an act and is
 	# emptied at the boundary. A day must send her somewhere she has not been this act.
 	var used_this_act: Array[Vector2i] = []
 	var act := 0
@@ -569,7 +575,7 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 			act = Tuning.act_for_day(day)
 			used_this_act = []
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(day, _rng(day), map, consumed, [], used_this_act)
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_this_act)
 		var quietest := _quietest_calm_block(map, planned)
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)

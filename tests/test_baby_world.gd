@@ -10,21 +10,27 @@ extends RefCounted
 ## decay -- about a street it knows nothing of. `main` therefore calls `Baby.set_world()` at every
 ## place it puts her in a world.
 ##
-## **Driven through the real `main.tscn`**, booted on the building at the player's seed
-## (4216201080, `--start-escape`) and walked out through `exit_requested`, the way
-## `tests/test_escape_invisible_wall.gd` does. A data-level `Baby.new()` with no world is also
-## checked: it answers the neutral values rather than failing.
+## **Driven through the real `main.tscn`** (`tests/booted_main.gd`), booted on the building at the
+## player's seed (4216201080, `--start-escape`), its briefs pressed through the viewport and walked
+## out through the building's `exit_requested`, the way `tests/test_escape_invisible_wall.gd` does.
+## Every boot plays a run of the test's own, parked in a sitting it hands the boot
+## (`Boot.home_playing()`, `main.use_sitting_home()`), and freed after it (`_run_on()`).
+## A data-level `Baby.new()` with no world is also checked: it answers the neutral values rather
+## than failing.
 
-const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
+const Boot := preload("res://tests/booted_main.gd")
 const SEED := 4216201080
 const DAY := 1
+## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
+const _SCRATCH_SAVE := "user://test_baby_world_scratch.json"
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_test_a_baby_with_no_world_is_neutral(t)
 	_test_a_baby_answers_for_the_world_she_is_handed(t)
-	_test_the_escape_hands_her_the_building_then_the_city(t)
-	_test_a_boot_straight_onto_the_street_hands_her_the_city(t)
-	_test_an_ordinary_boot_hands_her_the_city(t)
+	await _test_the_escape_hands_her_the_building_then_the_city(t)
+	await _test_a_boot_straight_onto_the_street_hands_her_the_city(t)
+	await _test_an_ordinary_boot_hands_her_the_city(t)
 
 func _test_a_baby_with_no_world_is_neutral(t) -> void:
 	var baby := Baby.new()
@@ -42,46 +48,57 @@ func _test_a_baby_answers_for_the_world_she_is_handed(t) -> void:
 	world.free()
 
 func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
-	var saved_section := GameState.escape_section
-	GameState.start_run(SEED)
-	GameState.day = DAY
-	GameState.escape_section = FinaleController.Section.BUILDING
-	var main: Node2D = MAIN_SCENE.instantiate()
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(main._interior != null, "the boot stands in the building")
-	var baby: Baby = main._baby
-	t.check(baby.world() == main._interior, "in the building she reads the building")
-	main._on_finale_summary_continued()
-	main._interior.exit_requested.emit()
-	main._on_finale_summary_continued()
-	t.check(main._city != null, "the service door has put her in the city")
-	if main._city != null:
-		t.check(main._baby == baby, "and it is the same baby")
-		t.check(baby.world() == main._city, "who now reads the city, not the building (%s)"
+	var run := _run_on(DaySpec.Section.BUILDING)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+			func(main: Node) -> void: main.use_sitting_home(home))
+	var main := booted.main
+	var interior := Boot.interior(main)
+	t.check(interior != null, "the boot stands in the building")
+	var baby := Boot.baby(main)
+	t.check(baby != null and interior != null and baby.world() == interior,
+			"in the building she reads the building")
+	await Boot.press_continue(t, main)
+	if interior:
+		interior.exit_requested.emit()
+	await Boot.press_continue(t, main)
+	var city := Boot.city(main)
+	t.check(city != null, "the service door has put her in the city")
+	if city != null:
+		t.check(Boot.baby(main) == baby, "and it is the same baby")
+		t.check(baby.world() == city, "who now reads the city, not the building (%s)"
 				% baby.world())
-		_test_a_city_event_reaches_her_meter(t, main)
+		await _test_a_city_event_reaches_her_meter(t, main)
 		_test_the_city_ground_gains_sleepiness(t, main)
-	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
-	GameState.escape_section = saved_section
+	booted.free_all()
+	home.free()
+	run.free()
 
-## Stands her on a city event that charges the ground under it, steps her meter once, and reads
-## what the meter was fed -- the city's own answer, not the building's.
+## A fresh run on the player's seed, on `DAY`, in the escape's `section` (`DaySpec.Section.NONE`
+## for an ordinary day): what a boot is handed to play.
+static func _run_on(section: int) -> RunState:
+	var run := RunState.new()
+	run.start_run(SEED)
+	run.header.day = DAY
+	run.facts.escape_section = section
+	return run
+
+## Stands her on a city event that charges the ground under it, lets one physics tick pass, on which
+## the baby's own frame runs her meter, and reads what the meter was fed -- the city's own answer,
+## not the building's.
 func _test_a_city_event_reaches_her_meter(t, main: Node2D) -> void:
-	var city: City = main._city
-	var baby: Baby = main._baby
-	var player: Stroller = main._player
+	var city := Boot.city(main)
+	var baby := Boot.baby(main)
+	var player := Boot.player(main)
 	var spot := Vector2.INF
-	for instance in city.events._instances:
+	for instance in city.events.world.instances:
 		var at: Vector2 = instance.global_position
-		if instance.contribution_at(at) > 0.0 and not city.excitement_sources_at(at).is_empty():
+		if instance.excitement.contribution_at(at) > 0.0 and not city.excitement_sources_at(at).is_empty():
 			spot = at
 			break
 	t.check(spot != Vector2.INF, "the city has an event whose field can be stood in (%d live)"
-			% city.events._instances.size())
+			% city.events.world.instances.size())
 	if spot == Vector2.INF:
 		return
 	player.global_position = spot
@@ -90,14 +107,17 @@ func _test_a_city_event_reaches_her_meter(t, main: Node2D) -> void:
 		want += pair[1]
 	t.check(want > 0.0, "the city charges %.2f/s at that spot" % want)
 	baby.excitement = 0.0
-	baby._update_excitement(0.1, spot, false)
+	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
+	baby.last_incoming = 0.0
+	await main.get_tree().physics_frame
+	await main.get_tree().process_frame
 	t.check(baby.last_incoming > 0.0,
 			"and it reaches her meter (incoming %.2f/s, the city's %.2f/s)" % [baby.last_incoming, want])
 
 ## The calm ground's sleepiness gain is the city's: a park tile gains more than the building's 1.0.
 func _test_the_city_ground_gains_sleepiness(t, main: Node2D) -> void:
-	var city: City = main._city
-	var baby: Baby = main._baby
+	var city := Boot.city(main)
+	var baby := Boot.baby(main)
 	var found := Vector2.INF
 	var map: CityMap = city.map
 	for y in range(0, 200):
@@ -117,24 +137,22 @@ func _test_the_city_ground_gains_sleepiness(t, main: Node2D) -> void:
 
 ## A boot straight into the escape's city (`--start-escape city`) never builds the building.
 func _test_a_boot_straight_onto_the_street_hands_her_the_city(t) -> void:
-	_boot_and_check(t, FinaleController.Section.CITY, "a boot straight onto the escape's street")
+	await _boot_and_check(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
 
 ## An ordinary run's boot: the day's city, no escape.
 func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
-	_boot_and_check(t, FinaleController.Section.NONE, "an ordinary day's boot")
+	await _boot_and_check(t, DaySpec.Section.NONE, "an ordinary day's boot")
 
 func _boot_and_check(t, section: int, what: String) -> void:
-	var saved_section := GameState.escape_section
-	GameState.start_run(SEED)
-	GameState.day = DAY
-	GameState.escape_section = section
-	var main: Node2D = MAIN_SCENE.instantiate()
-	t.add_child(main)
-	t.get_tree().process_frame.emit()
-	t.get_tree().process_frame.emit()
-	t.check(main._city != null and main._baby != null and main._baby.world() == main._city,
+	var run := _run_on(section)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+			func(main: Node) -> void: main.use_sitting_home(home))
+	var city := Boot.city(booted.main)
+	var baby := Boot.baby(booted.main)
+	t.check(city != null and baby != null and baby.world() == city,
 			"%s hands the baby the city" % what)
-	t.get_tree().paused = false
 	Telemetry.end_run()
-	main.free()
-	GameState.escape_section = saved_section
+	booted.free_all()
+	home.free()
+	run.free()

@@ -3,14 +3,6 @@ extends Node
 ##
 ## See docs/MECHANICS.md for the reasoning behind these numbers.
 
-## The catalogue validates itself when it is first asked for; traffic, signals and the return
-## patrols have no catalogue to hang that on, so the three contracts that are not about an event
-## are checked here on boot instead.
-func _ready() -> void:
-	validate_traffic()
-	validate_signals()
-	validate_return_patrols()
-
 # ---------------------------------------------------------------- movement ---
 
 const WALK_SPEED := 92.0
@@ -33,10 +25,6 @@ const METER_MAX := 100.0
 ## `tests/test_meters.gd` holds both halves in terms of `day_length()` rather than in numbers,
 ## so a change to the length of a day cannot quietly make the street sufficient again.
 const SLEEPINESS_GAIN_WALKING := 0.42
-## Standing still has to be strictly worse than walking, or waiting is a strategy. It also
-## has to stay cheaper than a calm zone gives, because stopping is the counterplay to a loud
-## event and pricing it above the park's own rate would take that move away.
-const SLEEPINESS_DRAIN_IDLE := 1.0
 ## How much faster calm ground fills the meter than an ordinary street. A four-block zone is
 ## **11.3s from empty**, against a whole day of clean pavement reaching three quarters of the bar.
 ##
@@ -68,10 +56,6 @@ const SLEEPINESS_CALM_ZONE_MULTIPLIER := 21.0
 func sleepiness_calm_multiplier(blocks: int) -> float:
 	var side := sqrt(float(maxi(blocks, 1)))
 	return SLEEPINESS_CALM_ZONE_MULTIPLIER * float(CALM_ZONE_BLOCKS) / side
-## Sleepiness the baby keeps after being woken up. Half the bar, which is now about twelve
-## seconds of park — a fifth of a well-played day, which is what it was before and should
-## stay whatever the rates are.
-const WAKE_SLEEPINESS_PENALTY := 50.0
 
 ## Sleepiness per second on calm ground, for a lot of `blocks` blocks. The default is the
 ## `CALM_ZONE_BLOCKS`-square zone, which is the size every other constant here is pitched against.
@@ -85,87 +69,7 @@ const EXCITEMENT_CALM_THRESHOLD := 35.0
 ## A sleeping baby woken above this goes back to AWAKE.
 const EXCITEMENT_WAKE_THRESHOLD := 60.0
 
-## The two the *pram* says out loud, stated as **states with an instruction attached** rather than
-## as points on a gauge — which is the whole difference between a cue and the HUD moved over the
-## player's head. The other two states the pram shows need no constant at all, because the game
-## already has them: the calm threshold, where the day stops progressing, and asleep.
-##
-## Nearly crying is the last band before `METER_MAX` ends the day. Far enough up that it is not
-## a second name for "loud street" — a pavement sits under the calm threshold and a bad moment
-## reaches the fifties — and far enough from 100 to be worth acting on: the forty-five points back
-## to the calm threshold are about four seconds of a park, or seven and a half of a quiet street.
-const EXCITEMENT_NEARLY_CRYING := 80.0
-## And how far below the wake threshold a sleeping baby starts to stir. Waking costs
-## `WAKE_SLEEPINESS_PENALTY` — half the bar — so this is the most expensive thing in the return
-## phase, and without a cue at the pram the only warning is a bar climbing in a corner.
-const EXCITEMENT_STIR_MARGIN := 12.0
-## Incoming excitement multiplier while the baby is asleep.
-const SLEEPING_SENSITIVITY := 0.55
 
-## The bar may reach and sit at `METER_MAX`; the day ends crying only once a further mass of
-## excitement this many points has arrived **while she is already sitting at the cap**, within
-## `EXCITEMENT_OVERFLOW_WINDOW`. *(2026-09-23, playtest 126, statement 1: "the bar can reach 100
-## but we need also like 10 over 3s to actually end the day … those numbers are just me
-## spitballing -- we would need to test it".)* That gave 10 over 3s, `docs/DECISIONS.md`'s M96
-## measurement.
-##
-## **Tightened once**, on playtest 128's "we can make the extra push needed to end the day a tiny
-## bit more aggressive/tighter" (M100, `docs/TODO.md`). `tests/probes/m96_crying_at_the_top.gd`
-## swept 9.5/3s, 10/4s and 9.5/4s against one bump at the cap and the loudest stationary rows
-## (`night_raid`, `curfew_announce`, `abduction`), walked past and stood in: widening the window to
-## 4s changed no measured outcome, since every scenario's own mass already clears its threshold
-## well inside 3s once she is actually in a source's field, so only the mass moved. 9.5 still
-## leaves one bump at the cap (8.9 points of overflow, the same measurement M96 made) a real 0.6
-## points short of crying, and shortens every loud row's own time to cry over the shipped 10.
-##
-## **What it counts, and why.** `Baby._update_excitement()` already nets `incoming − decay` every
-## frame; while the bar is below the cap that net is simply added and clamped, same as always.
-## Once she is sitting at `METER_MAX`, a further positive net is what the clamp would otherwise
-## have piled on top of 100 — the bar's own would-be overflow, in the same units the bar itself
-## already uses — and that is what this mass sums, in a sliding window the same shape
-## `Baby.decay_in_window()` already sums the decay side in. **Not the raw incoming**: charging the
-## raw arriving points would make a loud but well-recovering street cry exactly as fast as a
-## source with nothing fighting it, which is the "undeserved failure" the player asked to remove
-## in the first place. One walker's bump barely reaches the cap and leaves almost nothing for the
-## clamp to eat; a sustained source at the top keeps feeding it every frame it stays loud.
-const EXCITEMENT_OVERFLOW_TO_CRY := 9.5
-
-## The window `EXCITEMENT_OVERFLOW_TO_CRY` is summed over, in seconds — the player's own "3s".
-## Long enough that two contacts in quick succession at the top add up to one push; short enough
-## that leaving the source behind lets the mass drain out of the window at close to the pace she
-## walked away in, rather than a push from a minute ago still counting against her.
-##
-## **Left at 3s** measuring playtest 128's "a tiny bit more aggressive/tighter" (M100,
-## `docs/TODO.md`): `tests/probes/m96_crying_at_the_top.gd` swept a 4s window alongside 3s against
-## one bump at the cap and the loudest stationary rows, and it changed no measured outcome — each
-## scenario's mass already clears its own threshold well inside 3s once she is actually in a
-## source's field, so the extra second of history never has anything old enough to matter yet.
-## `EXCITEMENT_OVERFLOW_TO_CRY` carries the tightening instead.
-##
-## **The bar itself is untouched by any of this.** The moment incoming drops under decay, the net
-## rate goes negative and `excitement` falls back from 100 at its ordinary ground-and-motion rate,
-## exactly as it always has — nothing here freezes the bar at the cap or holds it up. The mass is
-## a second, independent quantity read alongside it, and it drains the same way `decay_in_window()`
-## already does: no reset, just entries aging out of the window as `Baby._clock` advances, whether
-## or not she is still at the cap to add to it.
-const EXCITEMENT_OVERFLOW_WINDOW := 3.0
-
-## **What settles a baby is being pushed.** The pram is a rocking chair with wheels on, and
-## rocking it is the only thing that calms her.
-##
-## **Zero and not merely low**, because standing still must *freeze* the excitement rather than
-## clear it: the day then stops moving in both directions at once, which is the honest version of
-## "waiting is not a plan". Any positive idle decay makes standing the strongest move in the game
-## — a full meter cleared for a few points of sleepiness, anywhere, including the middle of a
-## street she has no business being on.
-##
-## The counterplay this removes has a better replacement: **walk somewhere quiet**, which is what
-## `EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER` is for and what the whole route is about.
-##
-## Running still decays, barely — it is motion, and `EXCITEMENT_FROM_RUNNING` is what makes it a
-## bad idea. The ordering is motion-shaped rather than arbitrary: walking calms most, running calms
-## a little, standing calms nothing.
-const EXCITEMENT_DECAY_IDLE := 0.0
 ## **The bar has to be seen falling on ground with nothing on it.** The walking rate is set from a
 ## *net* measurement rather than from taste: the quietest ordinary pavement with the day's own
 ## crowd on it and nothing authored in range loads about 2.5/s, so this is what is left over, and
@@ -179,90 +83,7 @@ const EXCITEMENT_DECAY_IDLE := 0.0
 ## free and the catalogue loses two rows rather than gaining a rate; `tests/test_events.gd` is what
 ## says so out loud.
 const EXCITEMENT_DECAY_WALKING := 6.0
-const EXCITEMENT_DECAY_RUNNING := 0.5
-## What the **ground** does to the decay, best to worst: calm, precinct, ordinary street, alley,
-## main road.
-##
-## This is what makes a route a **recovery rate** rather than only a set of things to walk past,
-## and what makes a precinct worth walking to although it is loud: a retail street is busy, and it
-## is still the best place in the city that is not a park to bring a meter down.
-##
-## **The multipliers are ratios and the absolute rates are the design**, so a change to the walking
-## rate above moves every one of these to keep its own ground where it was put:
-##
-##     calm 12.0/s   precinct 9.0/s   street 6.0/s   alley 3.5/s   main road 0.12/s
-##
-## The park has to read on *both* bars, not just the sleepiness one — half of "this is working" is
-## the excitement visibly falling away as she walks in under the trees. **Its floor is that a park
-## must stay a place rather than a switch**: at 12.0/s a full meter takes eight and a third seconds
-## to clear, which is long enough to be somewhere she walks to and stays in. Much faster and the
-## park is a button she taps.
-##
-## The main road is the same sentence inverted, and nearly all the way there: it is the one ground
-## in the city that gives back next to nothing, at any density, which is most of what "a main road
-## is crossed, not walked" means arithmetically — walking it for any stretch is walking ground that
-## does not recover rather than ground that merely recovers slowly. `tests/probes/m117_decay.gd`'s
-## main-road leg reads +5.69/s net on day 1 and +1.36/s on day 9, three seeds each: even where the
-## spine has thinned to the lightest traffic of the run, it still costs rather than gives anything
-## back.
-##
-## **It is the lever that holds the spine's own price**, because it is the one number exclusive to
-## this corridor — the pedestrian field above only reaches `PEDESTRIAN_OUTER_RADIUS` now, short
-## enough that the arterial's own crowd noise cannot carry that price alone, and a louder car would
-## be loud on every street it also drives down rather than only this one. Crossing the road stays a
-## soft block rather than a wall: `tests/test_crowd.gd`'s worst-of-eight crossing reads 27.76 of a
-## hundred-point meter, comfortably under half, because the same short pedestrian reach that costs
-## the ground its own recovery also lightens what a crossing itself loads.
-##
-## **An alley sits between the two** — pressured ground rather than a shortcut to recovery, which
-## is what keeps `EXCITEMENT_FROM_ALLEY` (3.0/s of constant dread) meaning something: it sits just
-## under the 3.5/s an alley gives back, so an empty alley is very nearly flat and is never quite
-## recovery.
-const EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER := 2.0
-const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5
-const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
-const EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER := 0.02
-## **The meter does not fall in the escape's basement** *(inbox #765 in minty-lemur: "let's not replenish the meter
-## in the basement it's a tense situation")*: walking there earns no decay, awake or asleep, so a
-## blow's 40 to 50 points stay on the meter and the blows add up. It is the ground's
-## multiplier like the others, `InteriorScene.decay_multiplier()`, and it is the only ground inside
-## the building that is not 1.0.
-const EXCITEMENT_DECAY_BASEMENT_MULTIPLIER := 0.0
 
-## The rate a source has to beat before it is counted as denying the calm ground near it —
-## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
-## that stands in a park.
-##
-## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
-## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
-## the pram settling faster is a statement about the pram, and *which events may stand next to a
-## park* is a statement about the parks. Tying the two put the second decision inside the first,
-## where nobody making it would see it.
-const CALM_ZONE_DENIAL_RATE := 7.7
-
-## Layered on top of the ground's own multiplier for the rest of a day once the resistance's
-## package is picked up (`GameState.resistance_carrying_package`) — the one cost in the subquest
-## that is deferred and total rather than local, so it changes the afternoon's routing rather than
-## one minute of it. Chosen on the same severity as a main road's own 0.6, on the harsher side of
-## it: this is a decision she made, not ground she has to cross.
-const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
-
-## Excitement per second at full sprint, scaled by how far above walk speed we are.
-##
-## **The run button is a trap by design**: running is the wrong move against every row that merely
-## emits, and the right move only against the things that follow you. This constant is what keeps
-## that ordering true across the whole catalogue.
-##
-## It is sensitive to the shape of `falloff` and not only to the radii. A fatter field makes
-## time-in-field matter more, so a shoulder that is too generous makes running *out* of the widest
-## rows cheaper than walking — which is not "running works" but "running is a coin flip", the worst
-## of the two. `tests/test_events.gd` asserts the ordering row by row rather than leaving it in a
-## document, because that is how it can break silently.
-const EXCITEMENT_FROM_RUNNING := 14.0
-## Constant dread while standing in an alley, and it is set against the ground it is felt on: an
-## alley gives back 3.5/s, so the trickle sits just under its own decay and an empty alley is very
-## nearly flat rather than a place to recover in. The pressure is that it is never quite recovery.
-const EXCITEMENT_FROM_ALLEY := 3.0
 
 ## What a `chatting_mother` conversation adds over its whole `detain_seconds`, while the baby is
 ## awake — "consumes 25%" in the player's own words (`docs/playtests/PLAYTEST-18.md` finding 4, read as
@@ -282,12 +103,13 @@ const CHAT_EXCITEMENT := 25.0
 ##
 ## The rule is about **expected impact**, not about whether a danger changes over time or what a
 ## row is declared to cost on paper — asking either of those marks a burning building and not the
-## fire engine that made it, or a pedestrian who never does. See `EventInstance.expected_impact_at()`
-## and `wants_a_mark()`.
+## fire engine that made it, or a pedestrian who never does. See
+## `ExcitementSource.expected_impact_at()` and `EventLook.wants_a_mark()`.
 const EXPECTED_IMPACT_POINTS := METER_MAX * 0.4
 
 ## How far forward a source's own motion is projected for the caret, and — the same figure read
-## backward — how wide `ExcitementHalo`'s sliding window of `landed()` points is. *(2026-09-08,
+## backward — how wide every source's sliding window of `landed()` points is
+## (`ExcitementSource.WINDOW`). *(2026-09-08,
 ## the player, confirming both halves of the same figure: "both sound good to me".)* One horizon
 ## serves past and future alike: the halo is red at `EXPECTED_IMPACT_POINTS` landed over the last
 ## five seconds, the caret is amber at the same points expected over the next five.
@@ -295,8 +117,6 @@ const EXPECTED_IMPACT_HORIZON := 5.0
 
 # ---------------------------------------------------------------- telegraph ---
 
-## Fraction of full intensity an event emits while still telegraphing.
-const TELEGRAPH_INTENSITY_FRACTION := 0.15
 const TELEGRAPH_TIME_DEFAULT := 2.5
 ## Hard-fail events must give twice the escape margin of an ordinary event.
 const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
@@ -329,54 +149,13 @@ const CURFEW_DAY_LENGTH_SECONDS := 180.0
 
 ## Five of the eight tasks the calendar carries (`ResistanceSteps._build()`, days 6 to 13), so a
 ## player who skips or fails three still reaches the good ending. The day-14
-## sabotage is a must on top of it: `GameState.earned_good_ending()` asks for both.
+## sabotage is a must on top of it: `RunCalendar.earned_good_ending()` asks for both.
 const RESISTANCE_GOAL := 5
 
-## How long the neighbor's walk home takes on day 10, from the moment her mark is touched: the
-## director starts them this far from her door along the walk (`ResistanceDirector.
-## _send_the_neighbor_home()`), and reaching the door is the deadline — walked home into the
-## vans. Chosen, not measured, and open to overturn once the late days are timed: at
-## `EventCatalogue.NEIGHBOR_WALK_SPEED` (46px/s) it is about eighty tiles of walk, which puts
-## them several blocks out in the city on every city, while she, at twice that pace, can
-## still meet them on their way in from anywhere she found the mark. A curfew day is 180s.
-const NEIGHBOR_WALK_HOME_SECONDS := 55.0
 
-## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
-## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
-##
-## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
-## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
-## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
-const MARKET_GONE_BY := 90.0
-## Day 12's park is cordoned off by the police once she has reached its swing (`ParkCordon`): the
-## last gap in their tape closes at the soonest this long after the touch, however long their walk
-## in took — the taping is paced to it. It closes later where the first officer would come into
-## her view of the swing too late for `PARK_CLOSING_WARNING` (a park larger than the view), or
-## where the taping would go faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Staying in the park
-## until then shuts her in, which ends the day. Open to overturn once the day is played.
-const PARK_CLOSING_SECONDS := 12.0
-## How long, beyond the walk from where she stood at the touch to the cordon's last gap, the first
-## officer is in her view before the gap closes: time to see him and decide, so the officers'
-## arrival is a warning she can act on at a walk on every park (`ParkCordon._time_the_close()`).
-const PARK_CLOSING_WARNING := 2.0
-## The fastest the cordon is taped: a stretch (about a tile of the edge) in no less than this.
-const PARK_CLOSING_STRETCH_MIN := 0.3
-## How fast the cordon's officers walk in and away: a brisk walk, slower than hers
-## (`WALK_SPEED`), so they never read as coming after her.
-const PARK_CLOSING_OFFICER_SPEED := 80.0
-## How many officers come to walk the park's people out; anyone past that many is sent off when
-## the cordon starts.
-const PARK_CLOSING_ESCORTS := 2
-## How fast the park's people walk out once an officer has sent them off: an unhurried walk, under
-## the officers' own pace so the officer walks out behind them.
-const PARK_CLOSING_LEAVE_SPEED := 50.0
 ## Day 13's column: this many army trucks down the main road, one behind the other this far apart.
 const COLUMN_TRUCKS := 3
 const COLUMN_SPACING := 128.0
-## The column comes once she is this close to the main road's middle, across it — about a screen's
-## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
-const COLUMN_WITHIN := 480.0
-const COLUMN_BY := 100.0
 
 # ---------------------------------------------------------------- the heat ---
 # **How much worse the city gets for a player who is doing well at the optional path.** A row says
@@ -387,62 +166,12 @@ const COLUMN_BY := 100.0
 # **All of it is spent between progress 0 and `RESISTANCE_GOAL`**, so the escalation is finished at
 # the moment the subquest qualifies rather than trailing past it.
 
-## What the population of a pressing row is multiplied by at full heat. `police_patrol` is capped at
-## twelve a day cold, so nineteen hot — on an 11x11 lattice that is a patrol on one block in six
-## rather than one in ten.
-##
-## **Population is the axis that changes a route rather than a meter.** The row's own design is that
-## it is not dangerous and the danger is that you start planning around it; more of them is more
-## ground being planned around, and it costs nothing in fairness because each individual patrol is
-## exactly the event it was.
-const HEAT_PRESSES_POPULATION := 1.6
-## What the intensity of a pressing row is multiplied by at full heat: the patrol's 10/s at the
-## centre becomes 13.5/s. Deliberately the smaller of the two multipliers — an intensity rise is the
-## one the player feels without seeing anything change, so it is the seasoning rather than the meal.
-const HEAT_PRESSES_INTENSITY := 1.35
-## The progress at which a pressing row stops merely running its route and starts investigating —
-## stopping near her and letting a pursuer on foot out (`EventDef.investigates`). As close to half
-## way through `RESISTANCE_GOAL` as a whole task lets it land (`roundi(5 / 2.0)`), so the first half
-## of the subquest is the city being *denser* and the second is it being *interested* — two
-## escalations rather than one continuous number nobody can name the moment of.
-const HEAT_INVESTIGATES_LEVEL := 3
-## How close she has to come, along a clear line, before an investigating car stops and its
-## policeman gets out, in px — "close" in the player's "it should stop if close to her" (merry-stork).
-## **Inside the patrol's own 185px outer radius**, so it decides about her only once she can feel it,
-## and wider than the man's stand-off (116px), so he usually gets out with room to hold his ground
-## and the notice he owes her (`EventDef.sets_off_beside_her` covers him when she is nearer).
-const HEAT_INVESTIGATE_WITHIN := 150.0
-## **What it costs when the man an investigating car let out reaches her**, in points of the
-## excitement meter, landed on her standing beside him: he stops her, and his own field charges this
-## over `OFFICER_STOP_SECONDS`, fading, before he walks back to his car (`EventDef.stop_excitement`).
-## *(Inbox #669 in coral-lark, the player on PR #663: "we make it somewhat costly. once the policeman reaches her
-## they stop and walk back to the car" · "it needs to give a substantial cost but not lethal
-## directly" · "well if the excitement meter is already high it can be lethal".)*
-##
-## **Substantial, and never the end of a day on its own** — the stop, and the whole encounter it
-## ends, since the car is quiet from its stop until it has left her
-## (`EventInstance.is_quiet_for_its_man()`): nearly four contacts' worth (eleven points each,
-## `BUMP_INTENSITY`) and well over a conversation's 25 (`CHAT_EXCITEMENT`), so being reached is a
-## thing she pays for rather than a bump; and under `METER_MAX` with the rest of the encounter, so
-## from a calm meter it never ends the day — only on a meter already high enough that it carries
-## her to the cap and past `EXCITEMENT_OVERFLOW_TO_CRY` does it. It is his field, but it is spent in
-## a second at its full width, so walking away the instant he reaches her takes little of it off; a
-## sleeping baby takes `SLEEPING_SENSITIVITY` of it, as of everything. Chosen while building, open
-## to overturn.
-const OFFICER_STOP_EXCITEMENT := 40.0
-## How long the stop lasts: he stands with her while his field lands `OFFICER_STOP_EXCITEMENT`,
+## How long the stop lasts: he stands with her while his field lands `EventCatalogue.OFFICER_STOP_EXCITEMENT`,
 ## fading from twice its mean to nothing, and then walks back to the car. Short and sharp — "a
 ## sharp spike is a short duration at high intensity" (the **events** skill) — so the cost is the
 ## moment he reaches her rather than a field she can stroll out of.
 const OFFICER_STOP_SECONDS := 1.0
 
-## The progress at which a `HUNTS` row stops being a place and starts being a hunter. Its own
-## number rather than the patrol's `HEAT_INVESTIGATES_LEVEL`, deliberately: sharing one would put
-## both rungs of the ladder in the same moment, where neither reads as its own step. *(Player,
-## 2026-09-02, on when the van should start hunting: "after the patrol but still early enough to
-## happen more than just once".)* `RESISTANCE_GOAL - 1` keeps the old ratio's own meaning — one
-## task's worth of progress left before the goal — rather than the fraction that produced it.
-const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## How fast it hunts once it starts — the same 130px/s every other pursuer in the game moves at
 ## (`charging_dog`, `alley_robbery`, the policeman an investigating patrol lets out).
 ## `validate_pursuit` allows the band
@@ -450,11 +179,6 @@ const HEAT_HUNTS_LEVEL := RESISTANCE_GOAL - 1
 ## second speed inside it would be a second answer to "can I outrun this", which is the one
 ## question a pursuit is allowed to ask.
 const HEAT_HUNTS_SPEED := 130.0
-## How close she has to come before it takes an interest, in px. Has to sit strictly between
-## `pursuit_standoff(HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
-## 250px field — under the stand-off the whole notice is spent standing still, over the field it
-## decides about her before she can feel it. 180 leaves room on both sides.
-const HEAT_HUNTS_WITHIN := 180.0
 
 # --------------------------------------------------------------------- city ---
 
@@ -472,7 +196,7 @@ const SIDEWALK_WIDTH := 2
 ## order to have a middle you can get lost in the middle of.
 ##
 ## The size is what lets the two rules about the home both hold. It has to be central, and it has to
-## be `MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
+## be `CityGenerator.MIN_HOME_TO_PARK_TILES` of walking from calm ground — and those pull against each other, so
 ## the lattice has to be wide enough that the centre is still a long walk from the edge of anything.
 ## On a lattice too small for both, the home gets walked outward until it is far enough, landing
 ## against the boundary, where most directions are a wall.
@@ -482,22 +206,6 @@ const SIDEWALK_WIDTH := 2
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
 
-## Alpha of the one-tile shadow every building casts (`BuildingShadows`) — the same black every
-## other shadow in the game draws (`Palette.SHADOW`), at its own alpha rather than that constant's,
-## since a shadow covering a whole tile reads differently than a small contact ellipse. A flat dark
-## rather than a darkened ground colour, so this number is the whole of the look and can be tuned
-## by eye alone.
-const BUILDING_SHADOW_ALPHA := 0.22
-
-## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
-## (`GroundLayers._tint_opaque`/`_tint_matching`, `City._tint_the_route_kerbs()`) — the whole of the
-## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
-## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
-## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
-## is two or three pixels wide (the SVG art's 2px band, the illustrated `curbstone.png`'s 3px one),
-## so the number that read as nothing spread over a whole tile has to run higher to register within
-## its own width.
-const ROUTE_KERB_TINT_ALPHA := 0.45
 
 # ------------------------------------------------------------- street trees ---
 # How rare a street tree is, in four numbers. **Trees read like obstacles** — *(2026-09-12, the
@@ -505,43 +213,6 @@ const ROUTE_KERB_TINT_ALPHA := 0.45
 # harder … trees must be quite rare to be able to still place vans restaurants etc.")* — and a
 # tree and an event never share ground, so every pit here is a tile the day's vans, cafés,
 # yellers and seals may not use. These four are what keeps that bill small.
-
-## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
-## along a single street line, so this is the whole of "how much of the city has trees": at
-## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
-## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
-##
-## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
-## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
-## way a density does.
-const STREET_TREE_RUNS := 6
-
-## The shortest and longest a run may be, in blocks — *(2026-09-11, the player: "it should be
-## continuous segments of 3/4/5 blocks randomly placed on the map in both directions")*. Three is
-## long enough to read as deliberate planting rather than two stray trees; five is short enough
-## that a run still ends somewhere she can see.
-const STREET_TREE_RUN_MIN_BLOCKS := 3
-const STREET_TREE_RUN_MAX_BLOCKS := 5
-
-## Least distance between two pits along one pavement, in px — **two lot-lengths**, a lot-length
-## being one block plus the street beside it, which is the distance from a pit to the same spot
-## on the next block. Measured along the whole run rather than within one street, so a run of
-## four blocks carries about two pits a side rather than two per street.
-##
-## The spacing is what keeps a tree-lined street walkable *and* legible: a yeller or a dog walker
-## standing between two pits is still the only silhouette in a hundred pixels of pavement.
-const STREET_TREE_PIT_SPACING := 2.0 * float((BLOCK_SIZE + STREET_WIDTH) * TILE_SIZE)
-
-## Chance a candidate pit inside a run is actually planted, rolled in scan order. What stops a run
-## from being a perfectly regular colonnade — the first roll to succeed sets the phase and
-## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
-const STREET_TREE_PLANT_CHANCE := 0.55
-
-## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
-## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
-## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
-## street the ordinary case again.
-const STREET_TREE_MAX_LINED_FRACTION := 0.25
 
 # -------------------------------------------------------- the street hierarchy ---
 # Three kinds of street: a main road, two retail precincts, and ordinary streets everywhere else.
@@ -556,18 +227,6 @@ const STREET_TREE_MAX_LINED_FRACTION := 0.25
 ## street you meet every third block is simply what a street is.
 const PRECINCT_BLOCKS := 3
 
-## How busy a precinct's pavement is against an ordinary street's. It is the other end of the same
-## trade the main road is at: nothing on it can kill you, and there is a great deal more of it in
-## your way. A retail street — *"a lot of foot traffic and restaurants"* — so this is the crowd
-## half of that and `EVENT_PRECINCT_WEIGHT` is the other.
-const PRECINCT_BUSYNESS := 3.6
-
-## How many times over a precinct tile is offered to the event scheduler against an ordinary
-## pavement tile. Weighting the candidates rather than adding a rule: a precinct is where the cafés
-## and the market stalls and the buskers are, and the way to say that is to make the ground more
-## likely rather than to give the catalogue a new field.
-const EVENT_PRECINCT_WEIGHT := 4
-
 ## Seconds the **side** street gets, and the amber between the two arms. The main road gets
 ## whatever is left of the cycle, which is most of it.
 ##
@@ -575,7 +234,7 @@ const EVENT_PRECINCT_WEIGHT := 4
 ## main road is red, which is while the side street is green. So it has to be long enough to walk
 ## the carriageway with the doubled hard-fail margin a lethal thing owes — a light that turns
 ## while she is on the paint is the traffic contract broken by the one thing that was supposed to
-## be keeping it. `validate_signals()` states exactly that.
+## be keeping it. `tests/test_tuning_fairness.gd` states exactly that.
 ##
 ## The amber is a clearance period rather than a warning — the crossing arm stays red through it,
 ## and a car too close to stop is treated as already in the box — so it only has to be long
@@ -614,20 +273,7 @@ const SIGNAL_AMBER_SECONDS := 2.0
 ## share stops being long enough to cross on, longer and a red is a wait a player will not spend.
 const SIGNAL_PROGRESSION_BLOCKS := 3
 
-## Calm **areas**, not calm blocks: an area may be a single block or a multi-block zone, and what
-## these count is places to go rather than lots. The name is what `calm_blocks` returns — one entry
-## per area — and renaming it would touch every guarantee stated over it without changing what any
-## of them mean.
-##
-## **The floor is an act's worth plus one.** A day spoils every calm area she has used so far this
-## act, so an act of four days burns four, and the plus one is what stops the last day of an act
-## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
-## authored beside them, because the two would otherwise drift the first time either moved:
-## `calm_areas_needed()`.
-const MIN_CALM_BLOCKS := 5
 const MAX_CALM_BLOCKS := 7
-## Walking distance in tiles, not straight-line: the calm has to be earned.
-const MIN_HOME_TO_PARK_TILES := 30
 
 # ---------------------------------------------------- multi-block calm zones ---
 # A calm area has to be big enough to have a *route* through it. Progress requires motion —
@@ -667,13 +313,6 @@ const CALM_ZONE_SHAPES: Array[Vector2i] = [
 	Vector2i(1, CALM_ZONE_BLOCKS),
 ]
 
-## How many of a city's calm areas are multi-block. At least one, because a city of nothing but
-## single blocks is a city of laps; and the first one placed is always the **square**, so *"every
-## city has a big park"* stays true word for word while the rest may be rectangles. The remainder of
-## the calm stays single-block, which is what keeps *which* calm area to head for a real question —
-## a small quiet square close by against a big park further out is the decision spoiling exists to
-## make matter.
-const MIN_CALM_ZONES := 1
 const MAX_CALM_ZONES := 2
 
 # ------------------------------------------------------------- hard blockers ---
@@ -681,71 +320,12 @@ const MAX_CALM_ZONES := 2
 # big buildings. Soft blockers re-cut the map every morning; these hold still and are therefore the
 # part of the city a player can **learn**. See docs/CITY.md, "Diversions — the design".
 
-## How many streets in a city genuinely stop. A handful of a few hundred: enough that a run has a
-## shape somebody could describe, few enough that the lattice is still a lattice — the number is
-## what separates "this city has dead ends in it" from "this city is a maze", and a maze is the
-## thing the reachability gate exists to prevent.
-##
-## Measured rather than derived, like every other count in this file.
-const MIN_CUL_DE_SACS := 4
 const MAX_CUL_DE_SACS := 8
-
-## How deep the wall across a dead end is, in tiles. Two rather than one: a one-tile slab is a
-## line rather than a building, and what has to read from the far end of the street is *this does
-## not go through* rather than *something is painted here*.
-const CUL_DE_SAC_WALL_TILES := 2
-
-## Big buildings: two neighbouring blocks plus the one street between them, built as a single mass
-## twenty-two tiles long. Every other street around the pair stays — it takes one road out of the
-## lattice, not the ring. One or two per city, because this is a **landmark** — a thing a player
-## says "past the big grey one" about — and a city with five of them has landmarks the way a forest
-## has notable trees. **The count includes the power station**, which every city has and which is
-## one of these: the rest are ordinary landmarks.
-const MIN_BIG_BUILDINGS := 1
-const MAX_BIG_BUILDINGS := 2
-
-## How far the power station's front door stands from the home, as the lattice (Manhattan) distance
-## in blocks from the home block to the block the door is on. A reasonable walk rather than the
-## far edge of the map: her routes need not pass it before the day she is sent there, and the
-## narrative has a region door between the two, which `CityGenerator._place_power_station` checks
-## beside this floor. Set by the orchestrator, open to overturn.
-const POWER_STATION_MIN_BLOCKS_FROM_HOME := 4
 
 ## The day she is sent to the power station's front door, which is the last day of the run. On this
 ## day only, the corridor reaches the door (`RouteTree.for_day`) and the closures may not cut it off
 ## (`ClosurePlanner`); on every other day nothing leads her there.
 const POWER_STATION_DAY := RUN_LENGTH_DAYS
-
-## How far from the power station she has to be, once the sabotage is done, for the city to go dark
-## — measured from the nearest point of the station's lot, in px. *(The player, 2026-09-20: "just
-## wait until a certain distance away -- then everything is off at once".)* Far enough that no part
-## of the station is on screen whichever way she leaves it, so the blackout is something she sees
-## happen to the city around her rather than to the building: the view is 640×360 at the camera's
-## zoom and leads her by `Stroller.CAMERA_LOOK_AHEAD` (46px), and the stacks rise four tiles past
-## the lot's north edge, so leaving past a corner needs the diagonal of (320 + 46) by
-## (180 + 46 + 128), which is 509px. Chosen where the design was silent, open to overturn.
-const BLACKOUT_DISTANCE := 512.0
-
-## Per-purpose chance a block is split by a through-alley.
-const ALLEY_CHANCE := {
-	GameEnums.BlockPurpose.RESIDENTIAL: 0.25,
-	# Commercial blocks already have a plaza carved out; a second hole through the same
-	# lot leaves slivers of building and an alley that opens onto a square.
-	GameEnums.BlockPurpose.COMMERCIAL: 0.0,
-	GameEnums.BlockPurpose.INDUSTRIAL: 0.5,
-	GameEnums.BlockPurpose.CIVIC: 0.0,
-	# A courtyard block has a court cut out of it already, and an alley through that court
-	# would open the one piece of calm that is supposed to be hidden.
-	GameEnums.BlockPurpose.COURTYARD: 0.0,
-	GameEnums.BlockPurpose.PARK: 0.0,
-	GameEnums.BlockPurpose.FOREST: 0.0,
-	GameEnums.BlockPurpose.QUIET_SQUARE: 0.0,
-	# A big building is chosen after the blocks are carved and replaces whatever was cut into
-	# it, so this is never actually read. It is here because the table is a statement about
-	# every purpose, and a purpose missing from it would be a crash rather than a default the
-	# day somebody assigns one earlier.
-	GameEnums.BlockPurpose.BIG_BUILDING: 0.0,
-}
 
 # ---------------------------------------------------- block purposes and arcs ---
 # A city that becomes a different city while you walk around in it. Every block is generated with an
@@ -753,53 +333,11 @@ const ALLEY_CHANCE := {
 # whole run can be checked at generation instead of rescued day by day. See docs/CITY.md, "Block
 # purposes".
 
-## Courtyards are cut into residential blocks rather than taking a block of their own.
-const COURTYARD_CHANCE := 0.35
 const MAX_COURTYARD_BLOCKS := 3
-const COURTYARD_SIZE_TILES := 4
 
-## The **apartment complex**: a courtyard lot four blocks across, with the streets between them
-## built over and frontages all the way round.
-##
-## **It is a calm zone's mechanism with the opposite ground.** A zone absorbs the streets between
-## four blocks and paints park over them; this absorbs them and builds over them, so what comes out
-## is a mass 22 tiles square with a court in the middle and one archway in. That is what makes it calm
-## you have to *find* rather than calm you can see from the street — the courtyard's whole idea, at
-## the size where the block around it is a landmark.
-##
-## The court is ten tiles rather than the four a single-block courtyard gets, because a hole four
-## tiles wide in a mass twenty-two across is a light well rather than somewhere to stand. Ten
-## leaves six tiles of building on every side and crosses in 4.9s against the 5.7s it fills in, so
-## it sits with every other calm area at about one traverse per meter.
-##
-## One per city at most. It is a landmark and a secret, and two of them in a city is neither.
-const APARTMENT_COURT_TILES := 10
 const MAX_APARTMENT_COMPLEXES := 1
 
-## The hard floor: this many blocks must still be calm on the last day. A day can only be
-## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
-## than a hard one. `CityGenerator.validate()` enforces it.
-const MIN_CALM_BLOCKS_AT_END := 2
-
-## Chance a calm block that *may* be taken is scheduled to be, and the earliest day it can
-## happen. Act III, when the vans start: the parks go at the same time the people do.
-const REQUISITION_CHANCE := 0.55
-const REQUISITION_FIRST_DAY := 8
-
-## A commercial block goes dark before anything else happens to it.
-const BOARDING_CHANCE := 0.5
-const BOARDING_FIRST_DAY := 8
-
-## Chance a built block's arc ends in ashes. Event-caused, so it only happens if something
-## actually burns there — most of these never fire, which is the point.
-const BURN_CHANCE := 0.45
-const BURN_FIRST_DAY := 3
 const ALLEY_WIDTH_TILES := 2
-
-## Tiles per side of the plaza carved out of a commercial block.
-const SQUARE_SIZE_TILES := 4
-## The home is a notch in the south edge of a residential block.
-const HOME_SIZE_TILES := Vector2i(2, 2)
 
 # ----------------------------------------------------------- road closures ---
 # The road network is pruned per day, so the route is a real decision — avoidable, but clearly "not
@@ -812,35 +350,6 @@ const HOME_SIZE_TILES := Vector2i(2, 2)
 ## not a city under siege.
 const CLOSURES_PER_ACT: Array[int] = [1, 2, 3, 4]
 
-## How much likelier a closure is to land on a turning off the day's corridor than on a street
-## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
-## `ClosurePlanner._shuffled_candidates` rather than a weight, because a wall across the route is
-## not a worse wall, it is the opposite of one.
-##
-## **The same number pointing the other way is a different design**, and it is the easy mistake:
-## aiming closures **at** the streets the player would have used treats a closure as an obstacle,
-## and an obstacle nobody meets is scenery. A wall's job is to prune the ways that lead nowhere she
-## should go. What survives from the obstacle reading is the reason for the rim: a wall nobody can
-## see from the route prunes nothing, so the far corner of the map is what this weight exists to
-## avoid.
-const CLOSURE_WALL_BIAS := 5.0
-
-## The day-level invariant, and the whole reason the planner is allowed to close anything:
-## **at least this many calm areas are still reachable.** Two areas, because a choice of
-## destination is what makes a choice of route mean anything — and because one of them may be the
-## one she used yesterday, which the day has deliberately spoiled.
-##
-## **It does not demand two *distinct routes* to each of them.** Edge-disjointness is a **stand-in**
-## for winnability, by Menger: two routes means no single street is a cut. That protection comes
-## instead from where a wall is *placed* — off the day's tree, so it cannot cut the tree — and the
-## second route is a niceness the day offers when the map allows one, measured by `RouteTree` (241
-## areas of 241 that the map allowed one to) and gating nothing. Sealing off a section of the map is
-## allowed, and it is the point.
-##
-## What is deliberately **not** weakened is the count. Dropping to one reachable area lets a day
-## arrive where the only calm left is the one it spoiled this morning, which is the unwinnable day
-## this constant exists to prevent.
-const MIN_CALM_AREAS_REACHABLE := 2
 
 ## How deep the barrier across a closed street's mouth is, in pixels. Thin enough to read as
 ## a line drawn across the road, thick enough that nothing walks through it in one frame.
@@ -852,75 +361,9 @@ func closures_for_day(day: int) -> int:
 
 # ------------------------------------------------------------------- the seals ---
 # `SealPlanner` closes the streets off the day's route tree — every one of them before
-# `REGION_WALL_FIRST_DAY`, `GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
+# `REGION_WALL_FIRST_DAY`, `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE` of them from it. See docs/CITY.md, "Sealing the
 # tree".
 
-## The fraction of the day's **soft** seal pairs that lose one body in the final thinning pass, so
-## a wrong turn stays open long enough to be taken and discovered rather than reading as a wall on
-## sight. *(Playtest 22, finding 6: "the guidance is there and properly pushes the player in the
-## right direction but it feels a bit on guardrails… subtlety is key".)*
-##
-## **This is the dial the whole pass is about, and it is started small on purpose.** Too low and
-## the walls stay too visible to ever be walked into by accident; too high and the corridor stops
-## being the way through, which is M64's central claim. `SealPlanner._thin_soft_pairs` is the pass;
-## move this against a played day rather than an argument.
-const SEAL_THINNING_FRACTION := 0.08
-
-## The chance a through-alley disconnected from the day's tree actually gets walled at both mouths,
-## rolled once per qualifying alley. *(Playtest 25, finding 5: "the probability of blocking off
-## alleys should be way lower" — and, on which half of "alley" that covers, "at least for full
-## blockages -- robbers can be frequent".)* Before this it was 1.0 in code rather than in a
-## constant: `SealPlanner._seal_alley_mouths` walled every qualifying alley, every day, with no roll
-## at all.
-##
-## **Started low rather than derived**, the same way `SEAL_THINNING_FRACTION` was: too high and
-## alleys read as closed off wholesale again, which is the complaint; too low and the class doc's
-## own reason for sealing one at all — an alley walled at neither end, with both its streets sealed,
-## is a shortcut between two places the day has already said no to — stops mattering. Move this
-## against a played day rather than an argument. `alley_robbery`'s own frequency is untouched: the
-## player was explicit that the event and the physical blockage are two different things wearing one
-## word.
-const ALLEY_MOUTH_SEAL_CHANCE := 0.15
-
-## What a car crash emits, per second at the middle of its own band — the one seal that makes any
-## noise at all, and the one place *a closure is silent* (`docs/CITY.md`) does not hold.
-## *(2026-09-12: "a car crash right now has a full bounding box even though there are gaps in the
-## sprite. the bounding box should only be the crashed cars but it should emanate an excitement
-## field that prevents the player from walking past it".)* Its body is now the two cars only
-## (`EventCatalogue._car_accident_parts`), so the picture's own gaps are walkable ground and this
-## is what stands in the way instead.
-##
-## **Set by the walk, not derived.** `tests/probes/m118_crash_gap.gd` walks the pavement gap and
-## the gap beside the cars at `WALK_SPEED` across several seeds, and reports the **cheapest** line
-## through them, since a guarantee about a price is a guarantee about the price she can get. At
-## this number that line costs a little over 54 of the hundred-point meter, against the
-## `METER_MAX / 2` line
-## `tests/test_crowd.gd` draws between *expensive* and *fatal* — deliberately on the fatal side, so
-## a meter that is not fresh cannot carry it. `tests/test_seals.gd` asserts that walk rather than
-## this number, so a change to the falloff or the geometry fails where it is felt.
-##
-## **What it buys is the meter, not the day**, which is the recommended reading of the player's
-## *prevents*: the pram's nearly-crying cue is the turn-back signal, and a fresh meter can still
-## force the pass at the price of the rest of the day. `CAR_ACCIDENT_GAPS_ARE_LETHAL` below is the
-## other reading, left switchable rather than argued about.
-const CAR_ACCIDENT_INTENSITY := 50.0
-
-## The other answer to *prevents the player from walking past it*: **off**, and one line from being
-## on. True makes the crash a `hard_fail` row — the mechanism a fire already uses — so the gaps end
-## the day rather than costing more of it than she can carry. It is a design question the player
-## has not answered yet, and the recommendation built is the expensive one, because a wall that
-## kills has no price to weigh and the whole verb of this game is *where do I walk*.
-##
-## Flipping it takes the row's `inner_radius` to `CAR_ACCIDENT_LETHAL_INNER_RADIUS` and its
-## telegraph to the doubled hard-fail margin — see `EventCatalogue._car_accident()`, which is the
-## only reader of either.
-const CAR_ACCIDENT_GAPS_ARE_LETHAL := false
-
-## The radius that would end the day under `CAR_ACCIDENT_GAPS_ARE_LETHAL`, measured from the scene's
-## own centre. Above the cars' own 36.1px reach plus her 14px body, so she can actually reach the
-## thing that kills (`EventDef.validate()` refuses a lethal row whose body holds her outside its own
-## inner radius), and inside the 96px band so the gaps either side of the cars are what it covers.
-const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
 
 # ------------------------------------------------------------------- regions ---
 # `RegionPlanner` partitions the lattice's junctions once at generation and turns that partition
@@ -942,65 +385,6 @@ const REGION_COUNT := 4
 ## gets through.
 const REGION_WALL_FIRST_DAY := 9
 
-## **From the gatehouse day on, fewer hard blockers off the day's route tree** — *(azure-puffin,
-## point 4: "when the guard houses are set up the city gets much harder to navigate let's loosen the
-## density of the hard blocking events in that case"; asked which, "fewer of all three. gatehouses
-## stay and remain on the actual paths".)* The region wall and its doors divide the city into regions
-## from `REGION_WALL_FIRST_DAY`, so the three things that close the ground off the tree are thinned
-## from that day on, each by one share below. Nothing about the tree, the routing or the region plan
-## changes: these only take blockers away, and a blocker taken away only adds ground she can reach
-## (the **city** skill's one monotonic exception), so every reachability guarantee stays true.
-##
-## **How much is a proposal, not something the player asked for** — they said *fewer*, not how many
-## — so each share is a half and each is its own constant, to be moved against a played day.
-##
-## The share of off-tree streets `SealPlanner.plan_day` still seals, rolled once per street that
-## would otherwise carry a seal; the same share multiplies `ALLEY_MOUTH_SEAL_CHANCE` for a
-## through-alley's mouths.
-const GATEHOUSE_DAY_SEAL_SHARE := 0.5
-
-## The share of `closures_for_day()` that `ClosurePlanner` still closes, rounded to the nearest
-## street, a half up (`ClosurePlanner.closures_wanted`).
-const GATEHOUSE_DAY_CLOSURE_SHARE := 0.5
-
-## The share of the **wall**-role rows the day's fill placed that stay standing, rolled once per
-## placement (`EventScheduler._thin_the_walls`). A wall is only ever placed off the tree, so this is
-## the share of the catalogue's own blockers off it that the day keeps.
-const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
-
-## Seconds a `checkpoint_hut`/`checkpoint_post` detention holds her — *(2026-09-10, playtest 55:
-## "the checkpoint itself, 2s should be enough".)* Short rather than heavier than
-## `chatting_mother`'s 5s: a toll paid at every crossing of a region wall has to stay cheap to
-## repeat, where a conversation is spent once. See `EventDef.detain_seconds`.
-const CHECKPOINT_DETAIN_SECONDS := 2.0
-
-## How far past a door body's own solid edge the inspection starts — *(PLAYTEST-57: "the checkpoint
-## should activate when I get close. with the new stroller hitbox I cannot reach the checkpoint
-## entrance".)*
-##
-## **Stated over the hut, never over her, and that is the whole of the fix.** Her centre is stopped
-## `obstructs_radius + PLAYER_BODY_RADIUS` (32 + 14 = 46px) from a door body's centre, and further
-## when the pram's own body is the thing between her and it — so a trigger stated as a radius from
-## the hut's *centre* has to be larger than whatever she happens to be pushing that day, and
-## changing the pram switched the mechanic off without touching it. Measured from the hut's wall,
-## one number covers every pram there has ever been: 48px clears her own body's 14px stand-off and
-## the widest the pram's own body has ever reached ahead of her, with room left over, and it starts
-## the inspection while she is still walking up rather than only once she is pressed against the
-## door. See `EventDef.detain_radius`.
-const CHECKPOINT_DETAIN_REACH := 48.0
-
-## How far past a door body's own solid edge the released side of a detention sets her down, beyond
-## `obstructs_radius + PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so she
-## comes out **where the far side of the door is** and nowhere further.
-##
-## **Deliberately not enough to clear the hold's own trigger**, which reaches further than a body is
-## wide and so cannot be escaped by any release that does not throw her past the door
-## *(2026-09-12, the player: "she just spawns further away now? it should work that she has a flag
-## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
-## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
-## her there. Purely a spatial clearance, so it does not move with `CHECKPOINT_DETAIN_SECONDS`. See
-## `EventManager._release_finished_door_detentions()`.
-const CHECKPOINT_RELEASE_MARGIN := 8.0
 
 ## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
 ## alley post. No event may be sited so that its own field (`EventDef.field_reach()`) reaches inside
@@ -1014,7 +398,7 @@ const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## covers both without either having to be computed at placement.
 ##
 ## **The number is the door's own field plus the clearance the release sets her down at.** She comes
-## out `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
+## out `obstructs_radius + PLAYER_BODY_RADIUS + CheckpointController.CHECKPOINT_RELEASE_MARGIN` (54px) from the body that
 ## let her out, and the widest field a door's own structure carries is the gate's 120px
 ## `outer_radius` — so from either release point she walks the full width of the door's own field,
 ## and then some, before anything else can start charging her. At `WALK_SPEED` that is about a
@@ -1029,29 +413,12 @@ const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## `EventDef.barrier_structure` instead.
 const CHECKPOINT_EVENT_GAP := 176.0
 
-## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
-## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
-## as an ease rather than a slide or a cut; short enough that most of `CHECKPOINT_DETAIN_SECONDS`
-## is spent settled on the hut rather than still travelling to it. See `Stroller.focus_camera_on()`.
-const CAMERA_EASE_SECONDS := 0.5
-
-## Seconds a car has to have been stopped, dead level with a closed checkpoint gate, before it
-## opens for it. *(2026-09-02, the player: "cars need to slow down to a full stop before the gate
-## opens and they can go ahead again.")* See `Crowd._stop_for_gates()`.
-const GATE_STOP_SECONDS := 1.2
 
 ## Below this speed a car counts as actually stopped rather than still easing toward the line —
-## `Crowd._stop_for_gates()`'s own clock for `GATE_STOP_SECONDS` only runs while a car is this
+## `Crowd._stop_for_gates()`'s own clock for `Crowd.GATE_STOP_SECONDS` only runs while a car is this
 ## slow, or a car that merely eased off on its approach would bank wait time it never spent
 ## waiting.
 const CAR_STOPPED_SPEED := 5.0
-
-## How far to either side of a checkpoint gate's own line a car may sit and still count as *in its
-## lane*, so `Crowd._stop_for_gates()` can tell a car on the gate's own street from one on a
-## different, unrelated corridor. Half the carriageway (`STREET_WIDTH - 2*SIDEWALK_WIDTH` tiles,
-## 64px, so 32px each side of the centre line) plus a small margin for the two lanes either side of
-## it.
-const GATE_LANE_TOLERANCE := 40.0
 
 # --------------------------------------------------------------- the crowd ---
 # The crowd is why a street is loud and a park is quiet, and it is the base noise floor a day needs
@@ -1104,65 +471,11 @@ const PEDESTRIAN_SPEED := Vector2(46.0, 74.0)
 ## urgency and starts reading as ordinary traffic.
 const CAR_SPEED := Vector2(130.0, 185.0)
 
-## One person, close enough to brush past. Deliberately above the walking decay: a close
-## pass has to cost something or the crowd is scenery again. Walking wide of them does not
-## — the pavement is two tiles, so how close to pass is a real choice.
-##
-## **The radius is tight because `falloff` has a shoulder on it.** Every source holds three quarters
-## of its intensity at the midpoint of its band, which is right for an **event** — a thing on the map
-## to route around — and wrong for a **body**, which is one of a couple of hundred and is supposed to
-## be inaudible from across the pavement. An event's kind of radius on a body puts the arterial floor
-## several times the walking decay, which is a main road that fills the meter in seconds rather than
-## one that is merely expensive to cross.
-##
-## So the crowd pays the shape back in radius, and what that defends is the measured character of
-## the street: **careless is expensive and careful is free.** A close pass costs 4.2/s, set by the
-## intensity and the inner radius; two tiles away is 0/s. What the tight outer radius removes is a
-## wide middle that would be worth a great deal for walking anywhere near anybody, and the narrower
-## it is, the more of an ordinary sidewalk that wide middle gives back: a quiet act I sidewalk, with
-## the day's own crowd on it and nothing authored in range, nets about −4.7/s against the empty
-## street's own −6.0/s (`tests/probes/m117_decay.gd`, three seeds), close to reading as recovery the
-## way the empty street already does. The main road's own price is untouched by this radius —
-## `EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER` is what holds it, since that number is exclusive to the
-## one corridor it prices and this one is not.
-##
-## **"Two tiles away" is true of one walker and is only reachable if the lanes are spread.** A
-## footway is two tiles, so lanes on their tile centres are 32px apart — and the midline, the only
-## line with no head-on contact on it, is then 16px from two lane centres and inside the
-## **full-intensity core** of both — the careful line for contacts and the careless one for noise,
-## which is why `CrowdLanes.SIDEWALK_LANE_SPREAD` moves the lanes apart instead of narrowing this
-## radius: at 48px apart the midline is **24px from each lane and outside `PEDESTRIAN_INNER_RADIUS`**,
-## worth 56 points per forty seconds against 74 unspread. **That is the one change to make if this
-## stops being true** — the intensity and the radii are pinned by the arterial floor and the shoulder,
-## and the geometry is not. A pass at that 24px still reads as close to full intensity even at the
-## shorter outer radius, which is why `CROWD_YIELD_LATERAL` below widens far enough to send a walker
-## holding that lane out of it rather than leaving the noise floor to the radius alone.
-const PEDESTRIAN_INTENSITY := 4.2
 const PEDESTRIAN_INNER_RADIUS := 22.0
 const PEDESTRIAN_OUTER_RADIUS := 30.0
 
-## A car is louder than a person and passes much faster. No single car outruns the walking
-## decay — the point is not that one car is dangerous, it is that on a main road there is
-## always another one. The floor is the *street*, and it is emergent; the first pass at these
-## numbers put the arterial at +15/s, which filled the meter in seven seconds and made the
-## main road not expensive but impassable.
-##
-## The radius is tight for the same reason the pedestrian's is, and pinned the same way: the
-## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
-## and is the one place the noise floor is pinned to anything.
-##
-## **And 104 is still wider than the street it is on.** A corridor is six tiles — 192px — and a
-## car's field is 208px across, so every tile of both footways is inside it, and the frontage lane,
-## the furthest place from a carriageway there is, sits 64px from the nearer lane centre. Nowhere on
-## an ordinary street is out of the traffic's earshot, which is most of why the noise floor measures
-## flat across a pavement.
-const CAR_INTENSITY := 5.4
 const CAR_INNER_RADIUS := 38.0
 const CAR_OUTER_RADIUS := 104.0
-
-## Chance a walker turns a corner rather than carrying straight on, rolled once per
-## junction. High enough that the crowd churns, low enough that streets still have flow.
-const PEDESTRIAN_TURN_CHANCE := 0.35
 
 # ------------------------------------------------- walkers at a region door ---
 # What a walker does when its street crosses a region wall at a door. *(Playtest 58: "walkers walk
@@ -1171,84 +484,13 @@ const PEDESTRIAN_TURN_CHANCE := 0.35
 # drawn once per walker, when it is placed, so a walker's answer at a door can never change halfway
 # down the street it is walking.
 
-## Of every walker placed, the fraction that walks through a door's hut without stopping — the
-## player's *"a small fraction can do that"*, one in eight. Small enough that walking through reads
-## as the exception rather than as the rule the hold is an exception to.
-const WALKER_DOOR_PASS_FRACTION := 0.125
-
-## And the fraction that turns back at the last junction instead, the way every walker turns away
-## from a wall — the player's *"others can turn back"*, one in four. Larger than the pass fraction
-## on purpose: a door that only ever collects people is a door with a permanent crowd at it, and
-## somebody who decides against the queue and goes another way is the cheapest thing there is to
-## read from a block away. Held is whatever is left, so these two must sum to under 1.0 —
-## `validate_traffic()` says so on boot.
-const WALKER_DOOR_TURN_BACK_FRACTION := 0.25
-
-## Seconds a held walker spends inside the hut, not drawn — the player's *inspection*. Shorter than
-## her own `CHECKPOINT_DETAIN_SECONDS` (2s) on purpose and for the reason that number is itself
-## short: a walker is not the one being looked for, so the guard has less to do. One second is the
-## recommendation rather than a number the player gave, and the relationship is what matters — a
-## walker's hold under hers, so a player watching a door sees the crowd cycle through it faster
-## than she is ever let through it herself.
-const WALKER_DOOR_HOLD_SECONDS := 1.0
-
-## How far short of a hut's own ground point the first walker in the line stops, in px. The hut's
-## solid body is `GroundShape.point(32.0)` and a walker's own is a 7px point, so 40 is the first
-## round number clear of the two of them touching — it stands beside the hut rather than inside its
-## footprint, which is what the frame reads as *waiting to be seen* rather than as *stuck on a
-## building*. It is also where a walker is put back down on the far side when it comes out, so the
-## two sides of a door are symmetric.
-const WALKER_DOOR_STOP_DISTANCE := 40.0
-
-## And how much further back each walker behind the first one stands. Comfortably over
-## `BUMP_RADIUS` (14px, where a crowd contact fires), so a line at a door is people standing near
-## each other rather than people standing inside each other — the separation between crowd bodies
-## is positional everywhere else in this file, and a queue placed at a spacing smaller than a body
-## would be asking a brake to open a gap that is not there.
-const WALKER_DOOR_QUEUE_SPACING := 26.0
-
-## How far a walker has to get from a hut before that hut may take it again, in px. *(Playtest 58,
-## on her own release: "it should work that she has a flag 'just spawned' that only resets once she
-## leaves the area.")* A walker comes out `WALKER_DOOR_STOP_DISTANCE` (40px) along its own lane and
-## some 24px across from the hut's centre line — about 47px away — so anything at or under that
-## would clear the moment it was set and buy nothing. Three tiles is comfortably past the whole
-## door structure, so a walker turned round by the crowd's own steering just past a door walks on
-## instead of being inspected a second time.
-const WALKER_DOOR_COOLDOWN_RADIUS := 96.0
-
-## The longest line a door is allowed to grow behind the walker inside it — the player's *"don't
-## want a queue that is long"*. Two is the recommendation rather than a number they gave, so a door
-## holds three people at the very most: one inside and two waiting. Anybody who first sees the door
-## while it is that busy turns back at the last junction instead of joining, so the line is short
-## **by construction** and never by a walker giving up once it is standing in one.
-const WALKER_DOOR_QUEUE_MAX := 2
-
-## How far to either side of its own line of travel a walker will look for a hut, in px. A tile: a
-## walker's lane sits exactly 24px across from the hut on its own sidewalk (the hut is on the
-## sidewalk band's centre line, the two walker lanes are `CrowdLanes.SIDEWALK_LANE_SPREAD` either
-## side of their tile centres), and the boom over the road is 64px further still — so a tile picks
-## out the hut on the walker's own sidewalk and nothing else. The car's own equivalent is
-## `GATE_LANE_TOLERANCE`, which is wide where this is narrow, because a carriageway is one lane of
-## traffic and a sidewalk has a door structure standing across it.
-const WALKER_DOOR_LANE_TOLERANCE := 32.0
-
 # ------------------------------------------------- walkers round a solid body ---
 # What a walker does about a stationary solid body standing on its own lane — a café's tables, a
 # construction band, a kerbed van, a stall. *("yes every solid body should do that -- not
 # necessarily force a turn around but at least avoid the solid".)* It steps into the other lane of
 # its own footway and steps back after; only a body that takes **every** lane of that footway turns
-# it at the last junction, the way a seal does. See `CrowdAgent._step_around_a_body()` and
+# it at the last junction, the way a seal does. See `WalkerStrategy._step_around_a_body()` and
 # `CityMap.obstructed_tiles`.
-
-## How far ahead a walker begins going round a body, in tiles. Four tiles is 128px, a second and
-## three quarters at the fastest a walker goes — long enough to read as *going round that* rather
-## than as a lane change taken a street early, and comfortably over what the crossing itself costs.
-##
-## **The floor under it is the crossing time, and `validate_traffic()` states it**: the two lanes of
-## one footway are `TILE_SIZE + 2 * CrowdLanes.SIDEWALK_LANE_SPREAD` (48px) apart and a walker
-## closes on its lane at `CrowdAgent.STEER_SPEED`, so a walker that starts too late arrives beside
-## the body still halfway across — which is a walker clipping a café rather than avoiding one.
-const WALKER_BODY_SIDESTEP_TILES := 4
 
 # ------------------------------------------------------- bodies on the street ---
 # A crowd you can walk through is a field with a picture attached: every pavement is identical, none
@@ -1259,7 +501,7 @@ const WALKER_BODY_SIDESTEP_TILES := 4
 ## the copy the rules that reason *about* it can read, and `tests/test_events.gd` asserts the two
 ## agree, because a duplicated number that nothing checks is a lie waiting to happen.
 ##
-## It is the same 14 as `BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
+## It is the same 14 as `Crowd.BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
 ## when a *crowd contact* fires and is stated against the lane spacing, this one is how much room
 ## she physically takes up. Either may move without the other.
 const PLAYER_BODY_RADIUS := 14.0
@@ -1286,30 +528,13 @@ const WALL_SHIELD_DEPTH := float(TILE_SIZE)
 ## `tests/test_wall_shield.gd` holds both.
 const THIN_WALL_SHIELD_DEPTH := TILE_SIZE * 0.5
 
-## Centre-to-centre distance at which the player and a pedestrian are touching.
-##
-## It has to be **under half a lane spacing**, and that is the whole of why it is 14 rather than a
-## body's width. The only line with no contact on it is the midline between two lanes; at 18 there
-## is no such line anywhere on a two-tile pavement, and walking the arterial costs eleven bumps in
-## forty seconds however carefully it is done. At 14, holding that line takes the same walk down to
-## two, which is the difference between a toll and a decision.
-##
-## **How *wide* that clear line is matters as much as whether it exists**, and it is the half that
-## is easy to leave unchecked. With lanes a tile apart it is `32 - 2 × 14` — four pixels, something
-## a player is occasionally on rather than something she can aim at, worth 15.3 contacts down an
-## arterial lane centre against the midline's none. The fix belongs in
-## `CrowdLanes.SIDEWALK_LANE_SPREAD`, which moves the lanes apart, and deliberately **not** here:
-## this number is what makes a contact mean *walking into somebody*, and buying the line by
-## shrinking it would make one require a near-perfect overlap.
-const BUMP_RADIUS := 14.0
-
 ## How far apart a contact is pushed, and how far apart it has to get before it counts as over.
 ##
 ## **The two numbers that make a bump end**, and they have to be two.
 ##
-## Resolving the separation to exactly `BUMP_RADIUS` — the distance at which `touching` flips back
+## Resolving the separation to exactly `Crowd.BUMP_RADIUS` — the distance at which `touching` flips back
 ## to false — parks a resolved contact precisely on its own release threshold, where it flickers
-## across it and fires a fresh `BUMP_INTENSITY` jolt every couple of frames for as long as the pair
+## across it and fires a fresh `Crowd.BUMP_INTENSITY` jolt every couple of frames for as long as the pair
 ## are near each other. A contact that costs its jolt once is a decision; one that costs it ten
 ## times in two seconds is being stuck to somebody, and three of those in half a minute is a lost
 ## day.
@@ -1319,12 +544,8 @@ const BUMP_RADIUS := 14.0
 ## genuine second approach.
 ##
 ## Deliberately a small band. Widening it would widen the corridor she has to thread down a
-## pavement, and the note on `BUMP_RADIUS` is what happens when that number grows.
+## pavement, and the note on `Crowd.BUMP_RADIUS` is what happens when that number grows.
 const BUMP_CLEAR_RADIUS := 19.0
-
-## How much of the separation the player takes; the pedestrian takes the rest. She is pushing
-## a pram and they are not, and being shoved by strangers must never take the verb away.
-const BUMP_PLAYER_SHARE := 0.3
 
 ## How far across their own pavement somebody she walked into steps, and for how long.
 ##
@@ -1359,41 +580,9 @@ const BUMP_STEP_ASIDE_TIME := 2.5
 ## careful line is a **behaviour**: somebody who sees a pram coming moves over. It prices the right
 ## thing, a contact being what carelessness costs rather than what walking costs, and it stays
 ## honest three ways: they only move a lane, they cannot move into the carriageway
-## (`CrowdAgent._pavement_band`), and at `RUN_SPEED` she covers the notice distance in 0.57s against
+## (`WalkerStrategy._pavement_band`), and at `RUN_SPEED` she covers the notice distance in 0.57s against
 ## the 0.36s they need to clear a lane, so **running still hits people**.
 const CROWD_YIELD_DISTANCE := 96.0
-## How near they have to come to her — at their **closest approach**, not right now — to bother
-## getting out of the way. Wider than the lane-to-midline gap on an ordinary two-lane footway
-## (24px, half the 48px `CrowdLanes.SIDEWALK_LANE_SPREAD` puts between the footway's own two lanes),
-## so a walker holding an ordinary lane on an ordinary head-on pass steps aside instead of brushing
-## past at close to full intensity the whole way. Short of that 48px itself, so only the lane she is
-## actually closing on empties and a pavement does not part like the Red Sea in front of her.
-const CROWD_YIELD_LATERAL := 30.0
-## How far ahead that approach is predicted. Long enough to be worth acting on — a walker needs
-## 0.36s to clear a lane — and short enough that somebody two seconds away carries on as normal.
-const CROWD_YIELD_LEAD := 1.4
-## Speed of the deflection a contact gives the player. Well under `WALK_SPEED`, so a bump
-## knocks her off her line without steering her.
-const BUMP_SHOVE_SPEED := 55.0
-
-## A contact is not a write to `Baby.excitement` — it agitates the *person* she walked into, and
-## the crowd sums them like any other body. Excitement stays a pure query; a bump startles the
-## agent, never the meter — the invariant the **events** skill and `docs/MECHANICS.md` hold.
-##
-## **A contact is about eleven points of a hundred-point meter**, so four or five of them lose a day
-## on the crowd alone. It is the single most expensive instant on a pavement and it must not be the
-## only thing in the game with an opinion: at sixteen points the crowd supplies nearly all of the
-## excitement in a lost day and the authored content is decoration.
-##
-## Read it with `CROWD_YIELD_DISTANCE`: people get out of her way, so a contact is what
-## carelessness costs, and it costs less when it happens because it is not the whole game.
-const BUMP_INTENSITY := 18.0
-const BUMP_DURATION := 1.2
-const BUMP_INNER_RADIUS := 30.0
-## Tight, for the reason every crowd radius is tight: the jolt is a body's own source, so it takes
-## the same shoulder from `falloff` as everything else, and a wide one charges a bump she is walking
-## away from for most of its tail. The cost at the moment of contact is set by the intensity.
-const BUMP_OUTER_RADIUS := 62.0
 
 ## The car's body, as a box rather than a circle: a car is two tiles long and one wide, and a
 ## radius that covered its length would kill people standing beside it. The body is symmetric about
@@ -1405,29 +594,12 @@ const CAR_STRIKE_HALF_WIDTH := 14.0
 ## Below this a car cannot run anybody over, however close they stand to it. A car halted at a
 ## zebra is scenery, and walking into one must not end the day.
 const CAR_STRIKE_MIN_SPEED := 20.0
-## How far past the touch a patrol car's strike reaches ahead of its nose, in seconds of its own
-## travel (`EventDef.drives`): a tenth of a second, 7px at the patrol's 74px/s. The strike has to
-## reach past the point where the car's body would first touch her, because the car never moves its
-## body into her — a step that would is refused — and a strike stated over the touch alone could
-## then never fire: a lethal reach a body stops her short of, which `EventDef.validate()` refuses for
-## a standing thing for the same reason. Seconds rather than pixels so a frame's step at any speed
-## the car drives at, down to ten frames a second, lands inside it.
-const PATROL_STRIKE_LEAD := 0.1
 
 ## Seconds of travel at which a car sounds its horn at somebody standing in its lane. This is
-## the traffic fairness contract, and `validate_traffic()` checks it: the warning has to be
+## the traffic fairness contract, and `tests/test_tuning_fairness.gd` checks it: the warning has to be
 ## long enough to walk out of the carriageway before the car arrives, with the same doubled
 ## margin every other hard fail gets.
 const CAR_HORN_TIME := 1.6
-## How far out the crowd watches a car so it can sound this horn — separate from
-## `CAR_ZEBRA_SIGHT`, which stays the strike's own reach and the give-way scan's. The horn's
-## warning has to reach as far as the car's own travel at `CAR_HORN_TIME`, so this has to be at
-## least `CAR_SPEED.y * CAR_HORN_TIME` (296px) for the fastest car in the city — below that the
-## watch clips the warning short of `CAR_HORN_TIME` rather than the car's speed doing it.
-## `validate_traffic()` checks it against the fastest
-## car at boot, and the crowd-traffic skill's "The traffic fairness contract" states the same
-## thing.
-const CAR_HORN_SIGHT := 296.0
 ## The horn itself, as a jolt on the car that sounded it. A near miss costs something even
 ## when it is only a near miss.
 const CAR_HORN_INTENSITY := 18.0
@@ -1436,22 +608,6 @@ const CAR_HORN_INNER_RADIUS := 45.0
 ## Tight for the same reason as the rest of the crowd's radii, and still a good deal wider than the
 ## car itself: a horn is meant to be heard from further away than an engine.
 const CAR_HORN_OUTER_RADIUS := 132.0
-## How long the exclamation mark stays up over the player after the last horn. Long enough to
-## survive the gap between two cars in the same lane.
-const CAR_WARNING_HOLD := 1.4
-
-## How near the end of the day, in seconds, the doubled mark means *now*.
-##
-## The mark over her head is the one cue in the game that gives an **instruction**, and its second
-## level says *it is bad now and you are in it: one step left*. That is a claim about a moment, so it
-## needs a clock rather than a radius: raised anywhere inside a lethal event's **outer** radius it
-## covers about seven times the area that can end the day for a cyclist (a 90px outer radius against
-## a 33px lethal reach), and stays up while the bike rides away.
-##
-## Read it as the step: at `WALK_SPEED` it is 64px, which is two tiles, which is the width of the
-## pavement she would have to leave. Long enough to be an instruction she can still obey and short
-## enough that it is never up while the answer is "carry on walking".
-const LETHAL_MARK_LEAD := 0.7
 
 ## Traffic that queues instead of driving through itself. A car keeps `CAR_HEADWAY_TIME` seconds of
 ## clear road in front of it and never closes to less than `CAR_GAP_MIN`, which is a car's own
@@ -1459,17 +615,11 @@ const LETHAL_MARK_LEAD := 0.7
 ##
 ## The relationship that matters, and the one `tests/test_crowd.gd` states: the headway has to
 ## be longer than the *braking* time from cruise, or a car physically cannot honour it and the
-## queue resolves by interpenetration again. `CAR_BRAKE` is shared with the zebra, so this is
+## queue resolves by interpenetration again. `CarStrategy.CAR_BRAKE` is shared with the zebra, so this is
 ## free to check and cheap to get wrong.
 const CAR_HEADWAY_TIME := 0.85
 const CAR_GAP_MIN := 66.0
 
-## Deceleration when a car gives way at a crossing, and how far ahead it looks for one. The
-## relationship that matters is `CAR_ZEBRA_SIGHT > braking_distance(CAR_SPEED.y) +
-## CAR_STOP_LINE_SETBACK`: a car always has room to stop **at the line** for a zebra it can see,
-## so giving way is never a screech.
-const CAR_BRAKE := 320.0
-const CAR_ACCELERATE := 150.0
 const CAR_ZEBRA_SIGHT := 200.0
 ## How far before the paint a car giving way comes to rest, measured to the car's centre. Its
 ## nose is `CAR_STRIKE_HALF_LENGTH` in front of that, so it stops a few pixels short of the
@@ -1486,41 +636,15 @@ const CAR_ZEBRA_SIGHT := 200.0
 ## `CAR_STRIKE_MIN_SPEED` and cannot hurt anybody — but it is *unreadable* scenery sitting on the
 ## one place the game has told the player is the safe way across.
 const CAR_STOP_LINE_SETBACK := 34.0
-## The deceleration a car *aims* at when it eases up to a stop line, as opposed to `CAR_BRAKE`,
-## which is the hardest it can push. Giving way has to be **visible from the kerb**, which is why
-## the looking starts at `CAR_ZEBRA_SIGHT` rather than at the line, and why the approach is shaped
-## by a gentle rate with only the emergency using the hard one.
-##
-## The relationship, and the one `tests/test_crowd.gd` states:
-## `sqrt(2 · CAR_ZEBRA_APPROACH_BRAKE · CAR_ZEBRA_SIGHT) >= CAR_SPEED.y` — the fastest car in the
-## city begins easing at the moment the zebra comes into sight, rather than holding speed and
-## then grabbing the brake at the last legal instant.
-##
-## **Getting this wrong in the obvious way makes no car ever stop**: shaping the approach with
-## `CAR_BRAKE` itself puts the onset of braking and the commit point at the *same* moment, so a car
-## glides up to the line at full speed, decides it can no longer stop, and drives through. The test
-## that catches it is the one that says *where* a car stops rather than whether.
-const CAR_ZEBRA_APPROACH_BRAKE := 90.0
-## How close to the crossing the player has to be for the traffic to yield. Roughly "standing
-## at the kerb waiting", which is the gesture the crossing is for.
-const CAR_ZEBRA_WAIT_RADIUS := 56.0
 
 ## How far out a car starts watching the junction it is coming to.
 ##
 ## The relationship, the same one `CAR_ZEBRA_SIGHT` keeps and for the same reason: it has to
-## exceed `braking_distance(CAR_SPEED.y)` by the setback, or a car that has only just seen a box
+## exceed `CarStrategy.braking_distance(CAR_SPEED.y)` by the setback, or a car that has only just seen a box
 ## it must wait at cannot stop before it. Below that the give-way turns into a car standing in the
 ## middle of the junction, which is the failure it exists to prevent rather than a milder version
 ## of it.
 const CAR_JUNCTION_SIGHT := 200.0
-## How close two arrivals have to be for the box to be a *conflict* rather than a queue, and
-## therefore for right-before-left to decide it instead of distance.
-##
-## A car's own length, near enough: closer than that and the second car is behind the first
-## through the box rather than beside it. Wider and a car yields to somebody who was never in its
-## way; narrower and a symmetric arrival is settled by a couple of pixels of float noise, which is
-## right-before-left never actually running.
-const CAR_JUNCTION_TIE := 60.0
 
 ## How fast a car takes a turn, and the tightest arc it will take one on.
 ##
@@ -1537,17 +661,16 @@ const CAR_JUNCTION_TIE := 60.0
 ## road, so 60px/s spends 0.42s in it and the far-side arm 1.25s — both long enough to watch, where
 ## a car taking the same corner at its 130px/s cruise is through it in 0.19s and reads as the swap
 ## this replaced. The relationship under it, which `tests/test_turns.gd` states: `CAR_TURN_SPEED² /
-## CAR_TURN_RADIUS_MIN` is 225px/s² of lateral acceleration, under `CAR_BRAKE`'s 320 — a car is
+## CarTurn.CAR_TURN_RADIUS_MIN` is 225px/s² of lateral acceleration, under `CarStrategy.CAR_BRAKE`'s 320 — a car is
 ## never asked to corner harder than it can brake. It is also well over `CAR_STRIKE_MIN_SPEED`, so a
 ## turning car is still a lethal one and a junction is not a safe place to stand.
 ##
 ## **A car does not always reach it.** The approach eases from the moment the car knows it is
-## turning, at `CAR_ZEBRA_APPROACH_BRAKE`, and what it knows is bounded by `CrowdAgent.LOOKAHEAD` —
+## turning, at `CarStrategy.CAR_ZEBRA_APPROACH_BRAKE`, and what it knows is bounded by `CrowdAgent.LOOKAHEAD` —
 ## about a hundred pixels of warning at an ordinary closure, which from cruise leaves it entering
 ## the arc at around 130px/s and still braking. Lengthening the lookahead would buy the rest, and
 ## would also move which junction a car turns at, which is a route decision rather than a turn.
 const CAR_TURN_SPEED := 60.0
-const CAR_TURN_RADIUS_MIN := 16.0
 
 # ------------------------------------------------------- the world near you ---
 # The world is populated around the player rather than authored across a map she mostly never
@@ -1589,52 +712,17 @@ const AHEAD_LEAD_DISTANCE := 184.0
 ## `SIGHT_AHEAD` (200px) put anything `EventDirector` sited on the horizontal axis 120px inside the
 ## boundary there — on screen the moment it appeared, whatever the vertical arithmetic said —
 ## which is exactly *"bikers / unleashed dogs all pop in in front of the player instead of starting
-## off screen"* (playtest 33, finding 8). `offscreen_boundary()` below asks the real question
-## instead: how far to the edge of this box *along the heading actually in play*.
+## off screen"* (playtest 33, finding 8). `Offscreen.boundary()` asks the real question
+## instead (`Offscreen.boundary()`): how far to the edge of this box *along the heading actually in play*.
 const VIEW_HALF_EXTENT := Vector2(320.0, 180.0)
-
-## Distance from her to the edge of the view along `heading` — a ray to the edge of the
-## `VIEW_HALF_EXTENT` box, the same arithmetic `DangerEdge._distance_to_edge` already draws the
-## screen-edge badge with, from her rather than from the camera. A thing created at once from off
-## screen — a patrol down the road — is at least this far out, so it starts genuinely off screen
-## whichever way she is walking rather than only on the one axis a flat number happened to cover. A
-## thing warned of first is placed by what she can see instead (`VisibleView.clear_of_sight()`),
-## which is the camera's view and the controls' corners.
-func offscreen_boundary(heading: Vector2) -> float:
-	var boundary := INF
-	if not is_zero_approx(heading.x):
-		boundary = minf(boundary, VIEW_HALF_EXTENT.x / absf(heading.x))
-	if not is_zero_approx(heading.y):
-		boundary = minf(boundary, VIEW_HALF_EXTENT.y / absf(heading.y))
-	return boundary
-
-## The least `offscreen_boundary()` can be for any heading — the vertical axis, since 180 is
-## smaller than the 320 the horizontal one gives — and the floor under where anything warned of
-## first is placed (`PendingWarning.least_distance()`), which a covered corner of the joystick scheme
-## would otherwise bring nearer on a shallow way down to one side. What a fairness check needs when it
-## has no particular heading to ask about: `EventDef.validate()` checks a row's own geometry against the
-## worst case the director could ever site it in, not the case a given walk happens to produce.
-func min_offscreen_boundary() -> float:
-	return VIEW_HALF_EXTENT.y
 
 # The page's counter counts encounters (`EncounterWatch`, docs/TELEMETRY.md, "The page counts
 # visits"). None of these four changes anything a player can feel: they decide only what is sent.
 
-## How long an event instance has to have been off screen, in seconds, before coming back counts as
-## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
-## left the screen and encountered again at a later time (eg 5s). this should also apply to seen.")*
-const ENCOUNTER_GAP := 5.0
 ## The share of what is drawn for an instance that has to be inside the view for it to count as
 ## seen: a sliver at the edge does not. *(misty-newt: "(fully; or reasonably) visible on screen
 ## (just a part or too far off the edge doesn't count)".)*
 const ENCOUNTER_SEEN_SHARE := 0.8
-## How much of a full meter an exciting instance has to land on her within one encounter for the
-## encounter to be meaningful — the player's "influence of the event reached a certain threshold".
-const ENCOUNTER_INFLUENCE_POINTS := METER_MAX * 0.1
-## A run that starts again less than this many seconds after she stopped running is the same bout
-## of running. *(misty-newt: "we can count the number of running excluding gaps smaller than
-## 10s".)*
-const RUN_BOUT_GAP := 10.0
 
 ## The default seconds of notice a row gives from off screen (`EventDef.offscreen_notice`): for a
 ## row created at once — a patrol sent down the road — the seconds it still has to be off screen
@@ -1649,97 +737,10 @@ const RUN_BOUT_GAP := 10.0
 ## as the default every row gets unless it overrides.
 const OFFSCREEN_NOTICE := 0.2
 
-## How far out along `heading` something that travels toward her and is created at once starts — a
-## patrol the director sends down the road: outside the view (`offscreen_boundary()`) and `notice`
-## seconds further still, at `closing_speed`. Something warned of before it exists is placed just
-## out of sight instead (`PendingWarning.just_out_of_sight()`).
-##
-## **`closing_speed` is the row's own speed plus `WALK_SPEED`, not the row's speed alone** — she is
-## usually walking into it, so the gap between the siting and the boundary closes at both speeds
-## together. At the default 200ms of `notice`, that is 51px of margin for `cyclist` (165px/s) and
-## 44px for `charging_dog` (130px/s pursuing) — neither number is authored anywhere else, this
-## function is where a row's own notice turns into pixels, per heading.
-func offscreen_lead(heading: Vector2, closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
-	return offscreen_boundary(heading) + closing_speed * notice
-
-## The least `offscreen_lead()` can be for a row closing at `closing_speed` and giving `notice`
-## seconds of it, whichever way she is heading — `min_offscreen_boundary()` plus the same margin.
-## What `EventDef.validate()` needs for the same reason `min_offscreen_boundary()` does: a per-row
-## floor that does not depend on a heading nothing at validation time has chosen yet.
-func min_offscreen_lead(closing_speed: float, notice: float = OFFSCREEN_NOTICE) -> float:
-	return min_offscreen_boundary() + closing_speed * notice
-
 ## She has to actually be going somewhere for something to happen in front of her. Below this
 ## there is no "in front".
 const AHEAD_MIN_SPEED := 40.0
-## Seconds between two `AHEAD` events, so the day's allowance is spread over the walk rather
-## than spent in the first ten seconds. The director rolls within this band.
-const AHEAD_INTERVAL := Vector2(11.0, 26.0)
 
-## Marbles per unit of `EventDef.weight` in the bag the director draws her route's events from
-## (`EventDirector`, `MarbleBag.in_proportion()`), rounded, at least one a row. *(olive-koala,
-## statement 2: "events should use the marble bag approach as well. that way we can control what
-## the player sees on their route".)* The bag is the stretch over which the mix is exact, so it is
-## sized to about a day's worth of what she meets: at 2 the rows' weights (2.5, 1.5 and 3.0) make a
-## bag of 14 — 16 on day 3, with `ROUTE_BAG_MARBLES_OF`'s dogs — against the ten or so a whole day
-## of walking at `AHEAD_INTERVAL` hands out (`tests/probes/olive_badger_route_mix.gd` counts them),
-## and every weight comes out whole.
-const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
-
-## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
-## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
-## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
-## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
-## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
-## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
-## and takes none of these, so with the lesson and these two `max_per_day`'s 3 rarely binds.
-const ROUTE_BAG_MARBLES_OF := {"charging_dog": 2}
-
-## How many of the events handed out on her route after day 6's mark a man shouting's marble is one
-## of: the route's bag is rigged (`MarbleBag.rig()`) with a bag of this many marbles, one
-## `homeless_yeller` and the rest drawn from the bag she was drawing from, and he is put on her route
-## once her walk finds him a site (`EventDirector._place_on_her_route()`). *(olive-koala, statement 2: "after touching
-## the mark a marble bag with 1/3 chance of yeller should be put in so the yeller is guaranteed to
-## encounter a yeller in the next three events" · inbox #561 in coral-bunny, on the size of a rigged bag: "x
-## defines how soon we want to get the guaranteed event", and, told how sparse the route's events
-## are: "maybe let's make the other rigged bags smaller, too".)* The second of the next two: at
-## `AHEAD_INTERVAL`, within a minute of walking.
-const TASK_CONTACT_WITHIN_THE_NEXT := 2
-
-## The same for day 11: once she has read its mark, a second loudspeaker mast's marble is one of
-## the next this many events, and the mast is put on her route once her walk finds it a site, beside
-## the one near the mark the task points at first. *(inbox #561 in coral-bunny:
-## "day 11 is going to be a x=3", then "let's make the other rigged bags smaller".)*
-const MAST_WITHIN_THE_NEXT := 2
-
-## The same for day 7: once she has read its mark, a second `delivery_van`'s marble is one of the
-## next this many events, and the van is put on her route once her walk finds it a site, besides the
-## one near the mark the task points at. *(inbox #586 in olive-hedgehog: "each olive badger rigged
-## bag should be 2 or 3. use your own judgement on how soon the events should happen"; inbox #650 in
-## mossy-beaver, of which forced cases get one: "I guess that leaves only the van?")* Two is the
-## filer's proposal inside the player's "2 or 3", the size day 6's and day 11's rigs have.
-const VAN_WITHIN_THE_NEXT := 2
-
-## The same for each of the return leg's patrols (`RETURN_PATROLS_PER_ACT`): rigged into a bag of
-## this many as the one before it is handed out, so they come one after another inside the leg.
-## *(inbox #561 in coral-bunny, of the return patrols: "they will need rigged bags".)* Two, with
-## `RETURN_PATROL_INTERVAL` between handouts, is a patrol every 18-32s of walking, which lands one or
-## two inside a return leg rather than all of them.
-const RETURN_PATROL_WITHIN_THE_NEXT := 2
-
-## Extra `police_patrol` rows the return leg owes in acts III and IV, one entry per act —
-## `Tuning.act_for_day()` is 1-based, so `RETURN_PATROLS_PER_ACT[act - 1]`. Acts I and II carry
-## none, so the teaching days and the return she learns the mechanic on stay exactly as they were
-## measured. Sized against the return leg's own length (`docs/DECISIONS.md`, M98: a return leg
-## measured at 32.9s in act III and 47.3s in act IV) and the row's own cost — non-lethal, 74px/s,
-## a 185px outer radius — so a leg meets one or two of them rather than four: an amount the
-## sleeping baby can take, not a gauntlet.
-const RETURN_PATROLS_PER_ACT: Array[int] = [0, 0, 2, 3]
-
-## How far apart the return leg's own patrols land, once `EventDirector.owe_the_return()` has
-## fired for the day. Tighter than `AHEAD_INTERVAL` on purpose, so the rows it owes land inside
-## the 33-47s return leg they were sized against rather than arriving after she is already home.
-const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
 
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
@@ -1750,20 +751,6 @@ const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
 # What lives here is what the density needs in order to be legible. Placement is a uniform random
 # tile, so a low per-type cap is the only thing keeping two of the same event off one pavement —
 # which is a coincidence, not a rule. At this density it has to be a rule.
-
-## Two events of the same kind never land closer than this. A block is 256px across, so this
-## is "not on the same stretch of pavement" — the objection was never to seeing a second dog
-## walker, it is to seeing it thirty pixels from the first, which reads as a duplicate rather
-## than as a second incident.
-const EVENT_SPACING_SAME := 256.0
-## And nothing of any kind lands inside this of anything else, which is about two tiles: close
-## enough that a café and a shouting man can share a corner, far enough that neither is drawn
-## inside the other.
-const EVENT_SPACING_ANY := 64.0
-## Candidate tiles tried per placement before taking the roomiest one that was offered. A
-## fallback rather than a failure: a scripted event has to happen, and on a full map the honest
-## answer is the best spot left, not no event.
-const EVENT_PLACEMENT_TRIES := 24
 
 # --------------------------------------------------------- placement by role ---
 # docs/CITY.md, "The words for it" and "Diversions — the design". A day is planned against a
@@ -1784,162 +771,12 @@ const EVENT_PLACEMENT_TRIES := 24
 # ground; the weights below are still read off the street's depth, so the rim is still where a wall
 # is pulled.
 
-## How many times over a tile on the day's routes is offered to a **friction** placement.
-##
-## *"Benign blockers go on the route… to make it more challenging / force the player to think their
-## route through better."* About a quarter of the lattice is on the tree, so at 4 rather better
-## than half of the costly rows land on the corridor and the rest of the city keeps a scatter — a
-## city where every street off the route is empty would read as a set rather than as a place, and
-## nothing in the design asks for that.
-const EVENT_CORRIDOR_WEIGHT := 4
-
-## How many times over the **rim** is offered to a **wall** placement, against ground further out.
-##
-## A wall bounds the corridor, so it has to be somewhere the corridor can see; a lethal thing four
-## streets away bounds nothing. That is the preference. What is not a preference is the exclusion
-## beside it — the same reasoning as `CLOSURE_WALL_BIAS`, which is this number's twin one system
-## over and deliberately the same value.
-##
-## **The rim is two kinds of ground, not one.** A turning off the corridor is the first: one street
-## out, seen from the junction where the wrong choice is made. The **far side of a route's own
-## street** is the second, and it is the nearer of the two — she reads it without leaving her line,
-## and a café or a stall standing there is what a street with a route down one side looks like.
-## *(2026-09-19: asked whether a wall across the street should be rare or common, "often".)*
-##
-## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
-## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
-## it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
-const EVENT_WALL_RIM_WEIGHT := 4
-
-## How many times over ground two or more turnings off the corridor is offered to a **lethal** wall,
-## against the rim.
-##
-## The ground off the paths *"ranges from very costly to deadly"*, and the range is over distance
-## from the routes — so its two ends pull in opposite directions and this is the far one.
-## Deliberately the same strength as the rim weight it mirrors: the design is a gradient
-## rather than a preference for one band, and giving deadly a stronger pull than very costly would
-## make the rim the quiet part of the off-corridor city, which inverts the sentence.
-const WALL_DEEP_WEIGHT := 4
-
-## How many times over the street **between two adjacent strands of the day's corridor** is offered
-## to a wall, against the rest of the band it is in.
-##
-## Two strands running down neighbouring streets with a free step between them are one wide region
-## rather than two routes. `RouteTree.gaps()` is what a gap is; the placement is
-## `EventScheduler._copies_of`, where this multiplies the band weight rather than replacing it.
-##
-## **Set to leave about half of them open, which is the instruction rather than a compromise.** What
-## is asked for is *variety in what a gap is worth*, so a number that closed every gap would be as
-## wrong as one that closed none: it would turn the corridor into a set of separate corridors, which
-## is the star shape `RouteTree` deliberately does not grow.
-##
-## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
-## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
-## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
-## afford*.
-const EVENT_WALL_GAP_WEIGHT := 6
-
-## How much likelier a closure is to land in a gap between two adjacent strands than on the rest of
-## the rim it is already biased toward.
-##
-## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
-## switching strands expensive and a closure makes it impossible, which is why having both is
-## variety rather than two names for the same thing. A day closes a handful of streets at most
-## (`ClosurePlanner.closures_wanted()`: `CLOSURES_PER_ACT`, and from `REGION_WALL_FIRST_DAY` on
-## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
-## is the limit.
-const CLOSURE_GAP_BIAS := 4.0
-
-## Where the line between *friction* and a *very costly* wall falls, in points of the meter it costs
-## to walk through the middle of a row.
-##
-## Below it a row is friction and is weighted **onto** the routes; at or above it the row is what
-## closes the ground **off** them. Stated over `EventDef.walk_through_cost()` — the same integral
-## the caret is ordered by — rather than over a field somebody sets per row, because a second answer
-## to *how expensive is this* is how two tables of the same fact drift apart.
-##
-## **Setting it to a row's own `walk_through_cost()` line for the caret is the mistake with the
-## good argument.** The caret's own threshold, `EXPECTED_IMPACT_POINTS`, is a near neighbour of
-## this one and is not the same question: the caret is read off a **projected position** and this
-## is read off a row's own **static integral**, so the two move independently and have. It is where
-## the game raises a caret — *this is worth going round* — so sharing the
-## question, not merely the value, would make the cue and the placement say one sentence. What
-## sharing the question did instead was empty the routes: at 25 points, the caret's line before
-## this milestone raised it, **two thirds of every day becomes a wall**, and day 1's corridor drops
-## from 69.6 placements to 27.8 of 113. The ground off the paths is what was asked to be closed;
-## nobody asked for the paths to be cleared.
-##
-## The line is set by two rows instead, and by the right two. **`dog_walker` costs 42.7 and has to
-## stay friction**: the dog-walker decision arriving twice on day one is the route decision this
-## game is made of, and a dog walker that is never on her route is that decision deleted. **And
-## `leaf_blower` at 52.9 has to stay a wall**, because without it the non-lethal half of the range
-## is act III and later rows only, and *"very costly to deadly"* stops being a range anybody meets
-## — `tests/test_events.gd` samples five days and counts both kinds. The line goes between them,
-## same as it always has — what moved is where the two rows themselves sit.
-##
-## **It is in points of the meter, so it moves when the meter's own arithmetic does, and it moved
-## again for a different reason than the walking decay this time.** *(2026-09-20: "restore fully
-## now, raising leaf_blower by what the decay took from it and moving the line to sit between the
-## two again".)* `homeless_yeller` and `dog_walker` both lost the net gain a real pass past them
-## used to land once M117 raised the walking decay from 3.5 to 6.0/s, and restoring either of them
-## fully pushes its own `walk_through_cost()` past where the line used to sit — the intensity a
-## full restoration needs costs more than a dog walker used to, on its own numbers, before this
-## row is even touched. Raising the two rows without moving the line would have made one of them a
-## wall; raising the line without also raising `leaf_blower` would have let the non-lethal half of
-## the range go empty again. Both moved together, `leaf_blower`'s own core answering the same
-## walking-decay loss the other two rows answer, at `Tuning.EXCITEMENT_DECAY_WALKING`'s current
-## rate — this reading is not itself a re-derivation for the decay's own sake, only for the two
-## rows either side of it.
-##
-## **Raising the walking decay still lowers every row's cost unevenly**, the netting-off-over-time
-## effect this line's own history already carries: that is why `protest` (269px of 15/s) fell from
-## 42.3 to 27.6 and crossed under `dog_walker`'s **old** number (105px of 26/s), which no threshold
-## can undo — a protest now genuinely costs less to walk through than a dog walker's old field did,
-## so it is on the routes with the rest of the ordinary expensive city regardless of where this
-## line sits.
-##
-## What that leaves on the corridor is `cafe_tables`, `market_stall`, `homeless_yeller`,
-## `delivery_van`, `protest` and the dog walker, and what it puts off it is `leaf_blower`,
-## `burning_building`, `pigeon_flock`, `loose_dog`, `military_convoy`, `night_raid`, `fire_truck`
-## and every lethal row — the same two lists as before this line moved, checked catalogue-wide
-## rather than assumed: nothing else crosses it either way. Re-measure with
-## `tests/probes/m117_decay.gd` if the cost table moves; do not re-derive it.
-const WALL_WORTH_OF_COST := METER_MAX * 0.48
 
 # ----------------------------------------------------- solid things are solid ---
 # The rule is in `EventDef.obstructs_radius`: **anything that stands still is solid at the width it
 # is drawn**, derived rather than set per row — a field only ever *reached for* leaves large,
 # visibly solid objects with no body at all. What lives here is the one number that rule needs from
 # outside itself.
-
-## The widest body an event may have and still be allowed to stand on calm ground.
-##
-## A spoiler has to make the park loud rather than take the ground away. **Refusing *anything* with
-## a body is the reading to avoid**: once every stationary row is solid, a person is 18px across and
-## that rule empties the pool, so nothing can be put in a park at all.
-##
-## So it is stated as what it means. A body you can walk around does not close a 704px lot; one you
-## have to route around does. Sized to sit above a person and well under `construction`, which is
-## exactly the thing it is there to keep out.
-const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
-
-## The most things the day will put in the park she used yesterday.
-##
-## **One spoiler is three percent of a four-block calm zone** — see `EventScheduler._denial_radius`
-## for the arithmetic — so a single event does not spoil a park, it stands in one. A cap rather than
-## a target: the grid asks for as many as it takes to cover the ground and this is where it stops
-## asking, because the events come from the day's own pool and a park with a dozen things in it is
-## not a spoiled park, it is a different kind of city.
-##
-## Nine is a 3x3 grid, and it is measured: over twenty lots and five seeds it denies **99%** of a
-## four-block calm zone and 91% of a one-block courtyard, against 8-12% for the same lot on an
-## ordinary day. A 3x2 grid leaves 15% of the biggest zones standing, which is a hundred tiles of
-## usable park — enough to settle in, so the spoiling would not have happened.
-##
-## A small lot never asks for nine: the grid is sized from what one of them actually denies, so a
-## 46-tile courtyard takes one or two and this cap is never reached. What it costs is a day with
-## nine more events in it, all of them inside the one lot she is being asked not to use.
-const SPOILERS_TO_DENY_A_PARK := 9
 
 # ------------------------------------------------------ running that matters ---
 # Running is the wrong move against everything you route around, so there has to be one kind of
@@ -1955,22 +792,6 @@ const SPOILERS_TO_DENY_A_PARK := 9
 ## is expensive, which is what makes being *made* to run land as a change of rules rather than as
 ## the rules finally being explained.
 const RUN_TAUGHT_DAY := 3
-
-## Chance, rolled once a day past `RUN_TAUGHT_DAY`, that `EventDirector` sends `charging_dog` in
-## its day-3 shape again — off her heading, already noticing her, no tip and no guarantee. See
-## `EventDirector._owe_the_sprinkled_dog()`.
-##
-## **Measured with `tests/probes/m96_dog_sprinkle.gd`, not derived**, the same way `Tuning.
-## CROWD_PEDESTRIANS_PER_ACT` and every other density number in this file is: eight seeds, every
-## day past the teaching day, a whole day of continuous walking. Pushed to the front of the
-## director's own queue rather than appended — `tests/probes/m99_caps.gd` already found that a busy
-## day's own `AHEAD_OF_PLAYER` pool is oversubscribed by design (dozens queued, a handful drained
-## before the day ends), so an appended roll was met **zero times in 88 sampled days** before this
-## was pushed to the front instead; pushed, every roll that lands is met. **0.15 measured a mean of
-## 1.00 met encounters per run** (one seed of eight rolled none, one rolled two); **0.25** — the
-## value kept — **measured 1.75** (one seed rolled none, one rolled three). "A few per run, not per
-## day" reads as a mean nearer two than one, so 0.25 is the choice.
-const CHARGING_DOG_SPRINKLE_CHANCE := 0.25
 
 ## How long a pursuer keeps coming once it turns lethal, before it gives up on her: **a long cap,
 ## not an end she can walk out of**. *(Amendment 8 of M226, the player: "pursuers should never (or a
@@ -1994,7 +815,7 @@ const PURSUIT_TIME := 30.0
 const PURSUIT_MIN_MARGIN := 20.0
 
 ## And the least notice one has to give: its telegraph, during which it is visibly coming and
-## emitting `TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
+## emitting `EventInstance.TELEGRAPH_INTENSITY_FRACTION`, but cannot yet end the day.
 ##
 ## The least warning anything that arrives from off screen is owed, from its screen-edge badge to
 ## the earliest it can reach her — flat, and not worked out from its field or its speed: a second,
@@ -2033,40 +854,15 @@ const WARNING_ALONE_MAX := 1.0
 ## (the man a vehicle lets out) is the badge's kind too: it exists only to charge her, and what she
 ## is owed is the indicator that it is about to, for at least the off-screen charger's
 ## `OFFSCREEN_WARNING_MIN` (inbox #764 in minty-lemur). A checkpoint's guard owes none of his own: his warning came
-## before he was set on her, a hut's guard's raised hand from her crossing for `CROSSING_WARNING`
-## (`EventDef.charges_at_once`). A pursuer that waited for her warns on its own clock inside its one
-## radius (`EventDef.warns_for`), so this floor bounds nothing it does.
+## before he was set on her, a hut's guard's raised hand from her crossing for `CheckpointController.CROSSING_WARNING`
+## (`PursuitSpec.Start.CHARGES_AT_ONCE`). A pursuer that waited for her warns on its own clock
+## inside its one radius (`PursuitSpec.warns_for`), so this floor bounds nothing it does.
 const PURSUIT_MIN_NOTICE := 1.5
-
-## How long she is allowed to take to answer the lunge, at the speed the gap is actually closing.
-##
-## **A notice stated as a duration is not a notice**, because it says nothing about where the
-## pursuer spends it. Buying telegraph time alone gives a dog sited a couple of hundred pixels
-## across her line that closes the gap in three quarters of a second and then stands inside its own
-## lethal radius for the rest of a telegraph it is not allowed to kill her during. The instant it
-## ends, it does — from a standing start, with nothing she could have done after the first second.
-##
-## So the telegraph is spent **closing to a stand-off and holding there**, which is
-## `pursuit_standoff()` below, and this is the number that sets it: far enough out that the lunge
-## itself can be answered rather than merely watched.
-##
-## **This number is the one thing about the day-3 dog a player has said is right** — *"it was enough
-## time to react properly"* — so it is the wrong lever to reach for. The arithmetic that says the
-## real window is two tenths of a second once her walking speed and the about-turn are counted is
-## correct and answers a different complaint: *the dog kept following for too long* is the
-## **break-off**. See `PURSUIT_SHAKEN_OFF`.
-##
-## What boxes it in, in both directions: **walking must still lose** and **running must still win**
-## inside `PURSUIT_TIME`, both at 38px/s of authority against the day-3 dog, and the stand-off has to
-## be **on screen** — the visible world is 640x360 at zoom 2, so a dog standing much past 180px in
-## front of her telegraphs off the top of the screen when she walks north or south, and the sight of
-## it is the whole cue.
-const PURSUIT_REACTION := 0.6
 
 ## How long she has to be **running** before it gives up, in seconds.
 ##
 ## The half that makes running **payable**, and the whole of what the chase costs when it is
-## answered. Running is `EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
+## answered. Running is `Baby.EXCITEMENT_FROM_RUNNING` a second, so a chase priced by its own clock costs
 ## the same whether she reacted on the first frame or the last — a toll rather than a lesson.
 ##
 ## **Stated over the player, not over the gap**, and the two are not the same rule in a real street.
@@ -2086,45 +882,6 @@ const PURSUIT_REACTION := 0.6
 ## of what the whole answer costs her.
 const PURSUIT_SHAKEN_OFF := 0.35
 
-## How close a pursuer comes while it is still only telegraphing.
-##
-## Derived rather than authored, because it is the fairness contract in geometric form: between the
-## moment it is allowed to end her day and the moment it can, she is owed `PURSUIT_REACTION` seconds
-## of the thing's own approach. Anything nearer and the telegraph is a formality; anything much
-## further and it is off the screen, which is worse — the sight of it closing is the whole cue.
-##
-## **The edge case it does not price, and it is a known gap.** At the instant of the lunge she is
-## usually walking *into* it — a pursuer is sited in front of her, forward is where she was going,
-## and it is her walking into the stand-off that fires the lunge rather than her stopping — so the gap closes
-## at `pursue_speed + WALK_SPEED` and the notice is worth about a third of what this buys. Reversing
-## a walk into a run costs another `(WALK_SPEED + RUN_SPEED) / ACCELERATION` seconds on top, during
-## which the thing keeps coming. Measured against the day-3 dog the real window is about **two tenths
-## of a second**.
-##
-## **Both terms belong outside this function**, and folding them in is the tempting fix. The
-## stand-off they produce is 70px wider, and the extra ground is spent *reversing away from her*
-## through the telegraph, which reads as a dog that has changed its mind — a wider window bought on
-## the one part of the encounter a player has said was already right. What the answer costs is
-## priced by `PURSUIT_SHAKEN_OFF` instead.
-func pursuit_standoff(pursue_speed: float, inner: float) -> float:
-	return inner + pursue_speed * PURSUIT_REACTION
-
-## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
-## inside his one radius (`EventDef.warns_for`, `EventInstance.warns_by_radius()`). *(Inbox #788 in minty-lemur, the
-## player: "We should do one radius and warn inside it for 2s. If the player leaves the radius
-## nothing happens and the warning stops. If they stay within the charge starts.")* The row reads it
-## as its own `warns_for`, and the measurement that keeps it fair is per row
-## (`tests/probes/charger_warning.gd`): a walker who turns back the moment his warning starts is out
-## of his radius before it runs out, and one who stands in it is caught.
-const CHARGER_WARNING := 2.0
-
-## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
-## alley copy, `EventManager._watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the player: "The actual crossing
-## will start the timer and if the player goes back no charge happens but if they stay crossed the
-## charge will start. Warning starts when the player is crossing".)* Measured the same way as
-## `CHARGER_WARNING` (`tests/test_checkpoints.gd`).
-const CROSSING_WARNING := 2.0
-
 ## The pursuit fairness contract, and the one place it is stated.
 ##
 ## `validate_event`'s escape-distance rule is about walking out of a *field*, and a pursuer has no
@@ -2143,24 +900,26 @@ const CROSSING_WARNING := 2.0
 ## - **Running has to open more than the radius that ends the day**, over the whole chase. Otherwise
 ##   running is the correct answer and still not enough.
 ## - **An ordinary pursuer's notice is the sight of it coming**, at least `PURSUIT_MIN_NOTICE`.
-##   A sent pursuer (`arrives_chasing`) has its badge alone, checked by `EventDef.validate()`,
-##   and running may shake it off while it is still offscreen. One that sets off beside her
-##   (`sets_off_beside_her`) stands with its warning up for its notice and is owed the badge's
-##   heads-up, `OFFSCREEN_WARNING_MIN`, rather than an approach she never sees.
-## - **A pursuer that waited for her warns inside its one radius for its `warns_for` and charges if
-##   she is still inside once that has run** (`EventInstance.warns_by_radius()`; inbox #788 in minty-lemur). Leaving
-##   the radius first is never charged, and once charged walking loses and running wins by the speed
-##   clauses above. `tests/test_events_pursuit.gd` walks it.
+##   A sent pursuer (`PursuitSpec.Start.ARRIVES_CHASING`) has its badge alone, checked by
+##   `EventDef.validate()`, and running may shake it off while it is still offscreen. One that
+##   sets off beside her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`) stands with its warning up
+##   for its notice and is owed the badge's heads-up, `OFFSCREEN_WARNING_MIN`, rather than an
+##   approach she never sees.
+## - **A pursuer that waited for her warns inside its one radius for its `PursuitSpec.warns_for`
+##   and charges if she is still inside once that has run** (`EventInstance.warns_by_radius()`;
+##   inbox #788 in minty-lemur). Leaving the radius first is never charged, and once charged
+##   walking loses and running wins by the speed clauses above. `tests/test_events_pursuit.gd`
+##   walks it.
 ## - **It stands off inside its own field.** A pursuer holding a stand-off outside `outer_radius`
 ##   emits nothing at her for the whole of the phase that is supposed to *be* the warning: no meter,
 ##   no `!` over her head, and a telemetry entry that cannot say what raised the mark. This one was
 ##   found by walking a rig rather than by reading it.
 ## - **It notices her from outside its own stand-off**, or the notice is spent somewhere it was
-##   never going to move from and the telegraph is a formality. (`pursues_within` only.)
+##   never going to move from and the telegraph is a formality. (`EventDef.notice` only.)
 ## - **It cannot notice her from outside its own field.** What she is owed before a lethal thing
 ##   starts making decisions about her is the chance to have felt it: the meter is the only thing
 ##   that says a stranger in an alley is worth crossing the road for, and it says nothing at all
-##   past `outer_radius`. (`pursues_within` only.)
+##   past `outer_radius`. (`EventDef.notice` only.)
 ##
 ## **Two clauses that used to be here are gone, and their absence is the design.** The chase used to
 ## end at a *distance*, so the contract needed "walking cannot reach it inside the chase" and
@@ -2173,7 +932,7 @@ const CROSSING_WARNING := 2.0
 ## **What this contract still cannot see**, and it is why the rig exists: every clause is about the
 ## pursuer, and none is about *her*. She is usually walking into the thing when it lunges, and
 ## turning round costs ground before the run gains any — so a row can satisfy every line below and
-## still leave a two-tenths-of-a-second window. See `pursuit_standoff()`. The rig in
+## still leave a two-tenths-of-a-second window. See `PursuitSpec.standoff()`. The rig in
 ## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0,
@@ -2211,14 +970,14 @@ func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		return false
 	# A pursuer that holds its stand-off outside its own forward reach emits nothing at her for the
 	# whole of the phase that is supposed to be the warning — no meter, no `!` over her head, and a
-	# telemetry entry that cannot say what raised the mark. Stated over `outer · field_scale(e)`
+	# telemetry entry that cannot say what raised the mark. Stated over `outer · Field.scale(e)`
 	# rather than the catalogued `outer` alone, since a pursuer's own approach is the one direction
-	# `field_scale` was built for — the check can only get easier to satisfy as the field grows
+	# `Field.scale` was built for — the check can only get easier to satisfy as the field grows
 	# forward, never harder.
-	var forward_reach := outer * field_scale(field_eccentricity(speed))
+	var forward_reach := outer * Field.scale(Field.eccentricity(speed))
 	# `standoff_from` is `EventDef.standoff_reach()`: the lunge is measured from the catch unless a row
 	# keeps it somewhere else, and 0 here means the catch.
-	var standoff := pursuit_standoff(speed, standoff_from if standoff_from > 0.0 else inner)
+	var standoff := PursuitSpec.standoff(speed, standoff_from if standoff_from > 0.0 else inner)
 	if standoff > forward_reach and outer > 0.0:
 		push_error("Unfair pursuit '%s': it stands off at %.0fpx and reaches %.0fpx, so its whole "
 				% [id, standoff, forward_reach] + "notice is spent outside its own field")
@@ -2255,114 +1014,15 @@ func signal_cycle_seconds() -> float:
 func signal_main_green_seconds() -> float:
 	return signal_cycle_seconds() - SIGNAL_SIDE_GREEN_SECONDS - SIGNAL_AMBER_SECONDS * 2.0
 
-## The signalled half of the traffic contract.
-##
-## A zebra on an ordinary street is kept by the drivers: traffic gives way to somebody standing
-## at the kerb, and `CAR_ZEBRA_SIGHT` is what makes that visible before she steps off. On a main
-## road nobody gives way, and the only thing standing between her and a hard fail is the length
-## of the light — so the side street's green has to be long enough to cross the carriageway with
-## the **same doubled margin** every other lethal thing in the game owes.
-##
-## Stated over the crossing she is making rather than over the light she is watching: it is the
-## side street that is green while the main road is stopped.
-##
-## **And with the power out there is no light at all** (`TrafficSignals.powered`, the last night's
-## blackout), so the spine's own contract has to stand without one. A dark junction is negotiated
-## the way a side street's is, and the spine's traffic does not give way at its zebras lit or dark,
-## so what is left between her and a hard fail is the side street's contract: the painted
-## carriageway and the horn. The spine's carriageway is `carriageway_width()`, the same as every
-## street's, and the horn is stated in seconds of the car's own travel, so `validate_traffic()`'s
-## own check — the horn covers that width with the same doubled margin — is the dark junction's
-## check as well.
-func validate_signals() -> bool:
-	var required := required_horn_time()
-	if SIGNAL_SIDE_GREEN_SECONDS + 0.001 < required:
-		push_error("Unfair signal: side green %.2fs < %.2fs needed to cross %.0fpx of carriageway"
-				% [SIGNAL_SIDE_GREEN_SECONDS, required, carriageway_width()])
-		return false
-	return true
-
-## The traffic fairness contract, and the one place it is stated.
-##
-## A car is not an event, so `validate_event()` never sees it: it has no telegraph, it is not
-## in the catalogue, and it is lethal. What stands in for the telegraph is the road itself —
-## the carriageway is painted, permanent and learnable, and stepping off the kerb is a choice
-## the player makes. On top of that, a car that is actually going to hit somebody sounds its
-## horn `CAR_HORN_TIME` out, and that warning must be long enough to walk the whole width of
-## the carriageway with the doubled margin a hard fail is owed.
-##
-## Returns true if the geometry is fair; pushes an error and returns false if it is not.
-func validate_traffic() -> bool:
-	var required := required_horn_time()
-	if CAR_HORN_TIME + 0.001 < required:
-		push_error("Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
-				% [CAR_HORN_TIME, required, carriageway_width()])
-		return false
-	# The duration above is only true if the crowd watches far enough to let a car sound it —
-	# see `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
-	var required_sight := required_horn_sight()
-	if CAR_HORN_SIGHT + 0.001 < required_sight:
-		push_error(("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
-				+ "(%.0fpx/s x %.2fs CAR_HORN_TIME)")
-				% [CAR_HORN_SIGHT, required_sight, CAR_SPEED.y, CAR_HORN_TIME])
-		return false
-	# The three answers a walker may be given at a door are one draw of one number, so the two
-	# fractions have to leave something over — held is the remainder, and a remainder of nothing is
-	# a door nobody is ever held at with no error anywhere to say so.
-	if WALKER_DOOR_PASS_FRACTION + WALKER_DOOR_TURN_BACK_FRACTION >= 1.0:
-		push_error("No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
-				% [WALKER_DOOR_PASS_FRACTION, WALKER_DOOR_TURN_BACK_FRACTION])
-		return false
-	# A walker going round a solid body has to have finished crossing to the other lane of its own
-	# footway by the time it gets there. Stated over the distance rather than the time, because what
-	# it is really about is where the walker is when it reaches the body.
-	var lane_gap := float(TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
-	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * PEDESTRIAN_SPEED.y
-	if float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE) < crossing_run:
-		push_error("A walker cannot get round a body: it starts %.0fpx out and needs %.0fpx to "
-				% [float(WALKER_BODY_SIDESTEP_TILES * TILE_SIZE), crossing_run]
-				+ "cross the %.0fpx to the other lane of its footway" % lane_gap)
-		return false
-	return true
-
-## Shortest horn a lethal car may fairly give. Kept separate from `validate_traffic()` so a
-## test can check the contract without tripping the error it raises.
+## Shortest horn a lethal car may fairly give. What `tests/test_tuning_fairness.gd` holds `CAR_HORN_TIME` to, and
+## what the lethal vehicles' tests hold their warning to.
 func required_horn_time() -> float:
 	return carriageway_width() * TELEGRAPH_HARD_FAIL_MARGIN / WALK_SPEED
 
 ## Shortest reach the crowd's horn watch may fairly have: enough for the fastest car to sound
-## the whole of `CAR_HORN_TIME` before it arrives. Kept separate from `validate_traffic()` for
-## the same reason as `required_horn_time()`.
+## the whole of `CAR_HORN_TIME` before it arrives. What `tests/test_tuning_fairness.gd` holds `Crowd.CAR_HORN_SIGHT` to.
 func required_horn_sight() -> float:
 	return CAR_SPEED.y * CAR_HORN_TIME
-
-## The return leg's own pacing is fair by construction as long as its shape holds: one entry per
-## act, none of them negative, and an interval that is ordered and strictly shorter than
-## `AHEAD_INTERVAL`'s on both ends — the rows this owes have to be able to land inside the return
-## leg they were sized against, not merely inside "the day" the ordinary pacing still covers.
-func validate_return_patrols() -> bool:
-	if RETURN_PATROLS_PER_ACT.size() != 4:
-		push_error("RETURN_PATROLS_PER_ACT has %d entries, not one per act"
-				% RETURN_PATROLS_PER_ACT.size())
-		return false
-	for count in RETURN_PATROLS_PER_ACT:
-		if count < 0:
-			push_error("RETURN_PATROLS_PER_ACT carries a negative count: %s" % [RETURN_PATROLS_PER_ACT])
-			return false
-	if RETURN_PATROL_INTERVAL.x > RETURN_PATROL_INTERVAL.y:
-		push_error("RETURN_PATROL_INTERVAL is not ordered: %s" % RETURN_PATROL_INTERVAL)
-		return false
-	if RETURN_PATROL_INTERVAL.x >= AHEAD_INTERVAL.x or RETURN_PATROL_INTERVAL.y >= AHEAD_INTERVAL.y:
-		push_error(("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
-				% [RETURN_PATROL_INTERVAL, AHEAD_INTERVAL])
-				+ "would owe patrols no faster than an ordinary walk already gets")
-		return false
-	return true
-
-## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
-## against `CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
-func braking_distance(speed: float) -> float:
-	return speed * speed / (2.0 * CAR_BRAKE)
 
 ## People on the streets in a given act.
 func crowd_pedestrians(act: int) -> int:
@@ -2387,7 +1047,7 @@ func longest_act_days() -> int:
 	return longest
 
 ## How many calm areas a city has to have: one per day of the longest act, plus one in reserve.
-## See `MIN_CALM_BLOCKS`, which this is asserted against on boot.
+## See `CityGenerator.MIN_CALM_BLOCKS`, which this is asserted against on boot.
 func calm_areas_needed() -> int:
 	return longest_act_days() + 1
 
@@ -2471,17 +1131,17 @@ func validate_warning(id: String, warning: float, minimum: float) -> bool:
 ## escape distance is the full radius. An event slower than walking pace (a dog walker)
 ## can simply be walked away from, so it uses the stationary rule.
 ##
-## **Both distances are stated over the row's own forward reach, `outer_radius · field_scale(e)`,
+## **Both distances are stated over the row's own forward reach, `outer_radius · Field.scale(e)`,
 ## not the catalogued `outer_radius` alone** — a moving field now reaches further ahead of itself
-## than it is wide (see `field_scale()`), and the escape she is owed is the ground she actually has
+## than it is wide (see `Field.scale()`), and the escape she is owed is the ground she actually has
 ## to clear, not the number the row was authored with. The band case scales the same way:
-## `(outer_radius − inner_radius) · field_scale(e)` is the band's own width stretched forward, since
+## `(outer_radius − inner_radius) · Field.scale(e)` is the band's own width stretched forward, since
 ## the near edge of an approaching field arrives sooner too. `e` is zero for a stationary row, where
-## `field_scale(0)` is 1.0 and both escapes are exactly what they always were.
+## `Field.scale(0)` is 1.0 and both escapes are exactly what they always were.
 func required_telegraph_time(inner_radius: float, outer_radius: float,
 		hard_fail: bool, speed: float = 0.0) -> float:
 	var margin := TELEGRAPH_HARD_FAIL_MARGIN if hard_fail else 1.0
-	var scale := field_scale(field_eccentricity(speed))
+	var scale := Field.scale(Field.eccentricity(speed))
 	var escape := outer_radius * scale if speed > WALK_SPEED \
 			else (outer_radius - inner_radius) * scale
 	return escape * margin / WALK_SPEED
@@ -2492,17 +1152,18 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## orthogonal. the entity itself lives in one of the focus points."* Zero at a standstill, which is
 ## the plain disc every field always was; rises with speed and is capped at
 ## `FIELD_ECCENTRICITY_MAX` so nothing ever flattens to a line. Fed to
-## `GroundShape.eccentric_distance()` and `field_scale()`, the polar conic and its own forward reach.
+## `Field.eccentricity()` and `Field.scale()`, the polar conic and its own forward reach
+## (`GroundShape.eccentric_distance()` draws it).
 ##
-## **The cap is stated over `field_scale()`, not over `e` on its own.** A moving field's forward
-## reach is `R · field_scale(e)` (see that function), so the cap has to be read as "how far past its
+## **The cap is stated over `Field.scale()`, not over `e` on its own.** A moving field's forward
+## reach is `R · Field.scale(e)` (see that function), so the cap has to be read as "how far past its
 ## own resting radius may a field reach" rather than as a shape of the ellipse in isolation — at
-## `FIELD_ECCENTRICITY_MAX` 0.5, `field_scale` is exactly 2.0, so nothing in the game reaches more
+## `FIELD_ECCENTRICITY_MAX` 0.5, `Field.scale` is exactly 2.0, so nothing in the game reaches more
 ## than twice its catalogued `outer_radius` ahead of itself. Nothing in the catalogue is fast enough
 ## to reach it — the ceiling is a safety bound for a future row, not a number any current one sits
 ## against.
 ##
-## **`FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
+## **`Field.FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
 ## reach growing past what its telegraph already priced is a fairness question; growing far enough
 ## to touch an unvisited calm area it used to clear is a different one — `EventScheduler` refuses
 ## that placement outright (`_calm_to_leave_alone`, `_reaches_any`), so a row whose whole path is
@@ -2517,67 +1178,6 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## (`PEDESTRIAN_SPEED`, 46-74px/s) at 0.09-0.15; the cyclist (165px/s) at 0.33; the cat (240px/s) at
 ## 0.48, just under the cap.
 const FIELD_ECCENTRICITY_MAX := 0.5
-const FIELD_ECCENTRICITY_SPEED := 500.0
-
-func field_eccentricity(speed: float) -> float:
-	return minf(FIELD_ECCENTRICITY_MAX, speed / FIELD_ECCENTRICITY_SPEED)
-
-## The moving field's growth over its resting disc: `L(e) = R / (1 − e)`, so a field at the
-## catalogued radius `R` reaches `R · field_scale(e)` dead ahead once it moves — the width the
-## player asked to keep. *(2026-09-10, overturning M61's field record: "the stretching should
-## retain the area so an unstretched car field should be the same width with shorter height" …
-## "if anything the moving size should be bigger than the rest size since moving causes more
-## excitement.")* `field_scale(0)` is 1.0, the plain disc M61 always gave a standing emitter.
-##
-## The one place this conic's own scale is computed — `GroundShape.eccentric_distance()` and
-## `GroundShape._eccentric_field_outline()` both go through it, so a future change to the growth
-## curve cannot update one and miss the other.
-func field_scale(e: float) -> float:
-	return 1.0 / (1.0 - e)
-
-## Excitement contribution of a source of `intensity` at distance `d` — `d` is
-## `GroundShape.field_distance()`/`eccentric_distance()` now, distance to a body's spine or to a
-## moving emitter's own elliptical kernel rather than always the plain distance to a centre, but
-## the arithmetic below is unchanged: whatever shape a field's `d` came from, `inner_radius` and
-## `outer_radius` still mean *that* distance's own near and far edge.
-##
-## **The shape has a shoulder on it**, because the meter has to go substantially up from some way
-## off rather than waiting for contact.
-##
-## `1 − t²`: full strength at the inner edge, three quarters of it at the midpoint, and zero only at
-## the outer edge, where the contract says it must be. **The whole catalogue gets its teeth from the
-## shape rather than from its radii** — thirty rows of hand-widened radii would be thirty chances to
-## break the fairness contract.
-##
-## **`power` is the exponent on `t` and a row may carry its own** (`EventDef.falloff_power`), for
-## the case a row's two radii cannot express: under 1 it drops fast and tails long, over 2 it holds
-## near full and then falls off a cliff. **Every row in the catalogue is at the 2.0 default**, which
-## is the curve above and the curve every number in `docs/EVENTS.md` was measured against — the knob
-## exists so that a shape is a row's decision rather than a change to this function.
-##
-## **`(1−t)²` is the shape that looks equally reasonable and inverts the game.** It puts a quarter of
-## the intensity at the midpoint of the band and six percent three quarters of the way out, so a café
-## at 12/s sits under the 6.0/s walking decay across the whole outer 70% of its own field — and a
-## `near` entry written at an event's outer radius reads `events 0.0`. An event you are not charged
-## for until you touch it is not a thing to route around, it is a thing to bump into.
-##
-## **The contract is untouched and this is why.** `required_telegraph_time` is stated over
-## *distance* — how far she has to walk to be outside the radius — and neither radius moved. What
-## changed is what she pays while she is inside one, which the contract has never had an opinion
-## about. `tests/test_events.gd` re-checks the whole catalogue either way.
-##
-## See docs/MECHANICS.md.
-func falloff(d: float, intensity: float, inner_radius: float, outer_radius: float,
-		power: float = 2.0) -> float:
-	if d <= inner_radius:
-		return intensity
-	if d >= outer_radius:
-		return 0.0
-	var t := (d - inner_radius) / (outer_radius - inner_radius)
-	# The default is written out rather than raised, so the curve every measured number in the
-	# catalogue was taken against is the same expression it has always been, bit for bit.
-	var drop := t * t if is_equal_approx(power, 2.0) else pow(t, power)
-	return intensity * (1.0 - drop)
 
 # ----------------------------------------------------------------- the finale ---
 # The fifteenth and sixteenth walks, which are not an ordinary day: escaping the building, then
@@ -2587,163 +1187,14 @@ func falloff(d: float, intensity: float, inner_radius: float, outer_radius: floa
 # one exception: it is chosen on its own rather than reused from the ordinary day, because the
 # escape is asked to stay exactly as hard as it always was while the ordinary day grows around it.
 
-## How long one section of the escape runs, on top of a real `DayController`'s own clock — each
-## section is its own day with a brief and a restart checkpoint of its own, and the player's
-## answer was *"180s per section"*. Stated on its own rather than reused from the ordinary day's
-## length: the player asked that *"the escape shouldn't be easy!"* (`docs/playtests/PLAYTEST-121.md`),
-## so the escape does not grow when the ordinary day does. Asked alongside the ordinary day's
-## length and not yet answered whether it should grow too — open to overturn.
-const FINALE_LENGTH_SECONDS := 180.0
 
-## How many calm blocks each chain runs through between the service exit and its edge — *"a single
-## path through the city that crosses three parks"*. The chains are built one street-walk at a
-## time between consecutive stops, so this is also how many intermediate stops each chain has.
-const FINALE_PARKS_PER_CHAIN := 3
-
-## How close her own centre has to come to the last walkable tile of the spine, at either end of
-## the map, for the sequence to be over. One tile and a half — comfortably past her own body
-## (`PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
-## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
-## own doors hold her with.
-const FINALE_EXIT_REACH := TILE_SIZE * 1.5
-
-## Seconds between two off-screen explosions inside the building. Section one is *"relatively
-## minimal"* and an explosion is its only city-wide beat, so it is spaced like the director's own
-## `AHEAD_INTERVAL` band rather than more often: four of them over a 180s clock is enough for the
-## hallway windows to flash more than once without the basement becoming a drum.
-const FINALE_EXPLOSION_INTERVAL := 22.0
-
-## How long **every** hallway window holds its lit picture when something goes off outside — *"one
-## or two frames"* at 60fps, taken as a span in seconds so it does not depend on the frame rate.
-## The same length for the near bang and the far ones, and they light and go dark together:
-## *(2026-09-19: "all windows always need to flash together. a single window cannot flash by
-## itself.")*
-const FINALE_WINDOW_FLASH_SECONDS := 0.12
-
-## The wait between two **distant** flashes in the hallway windows, as a bounded distribution
-## rather than a period. *(2026-09-19: "the flashing lights in the window are too rare"; and, on
-## how often: "do a biased random distribution between 100ms and 5s between flashes where the mean
-## is 1.3s and the rest of the curve is smooth.")*
-##
-## **Light without noise, and that is the whole of why these exist.** A flash was only ever the
-## near bang's own cue, one every `FINALE_EXPLOSION_INTERVAL` (22s), which is about four over the
-## whole clock — and an explosion is loud: shortening that interval would have made the windows
-## flash more often and made the building cost more in the same stroke, which the player did not
-## ask for. A distant flash is a picture and nothing else: no instance, no field, nothing on the
-## meter. So the night outside reads as a city being shelled, while what she is *charged* for is
-## still only the bangs close enough to shake the building.
-##
-## **A scaled Kumaraswamy draw**, because it is the short-biased smooth curve on a closed interval
-## whose inverse CDF is one line — no rejection loop, no table, and a draw that cannot fall outside
-## the bounds. With `u` uniform in `[0, 1)` from the section's own seeded stream:
-##
-##     t = MIN + (MAX − MIN) · sqrt(1 − (1 − u)^(1 / B))
-##
-## The `sqrt` is the first shape parameter fixed at 2, which is what makes the density zero at both
-## ends rather than piling up against them; **`FINALE_DISTANT_FLASH_SHAPE_B` is the only thing that
-## sets the mean**, solved numerically so that the mean lands on
-## `FINALE_DISTANT_FLASH_MEAN_SECONDS` — so moving the mean means solving `B` again, not editing it
-## by feel. At `B = 12.343` the curve measures out at a mean of 1.298s, a median of 1.24s, a mode
-## near 1.1s and a 95th percentile of 2.37s: mostly quick double-taps with the occasional long
-## dark gap, and no step anywhere in it.
-##
-## **The interval runs start to start**, so a 0.1s draw against a
-## `FINALE_WINDOW_FLASH_SECONDS` (0.12s) flash means two of them overlap. That is wanted — it reads
-## as a double flash — and the lit state is a single countdown that the second flash simply
-## restarts, so an overlap never blinks dark for a frame and never leaves a window lit.
-##
-## **How often is the only thing that separates a far flash from a near one.** Both light every
-## window in the building together (`InteriorScene.flash_windows()`); what a bang adds is the
-## charge on the meter.
-const FINALE_DISTANT_FLASH_MIN_SECONDS := 0.1
-const FINALE_DISTANT_FLASH_MAX_SECONDS := 5.0
 const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
-const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
 
-## How long after the masked man has finished his run before another one comes up the same shaft,
-## in seconds. *(2026-09-19: "then the pursuing guy should respawn forcing to switch the side
-## again.")*
-##
-## **Stated against what one run costs her rather than against a feeling.** A shaft is three floors
-## of eight tiles (768px) and he runs it at `HEAT_HUNTS_SPEED` (130px/s), so a run is about six
-## seconds, and before it he stands at the foot with his hand raised until she comes within
-## `masked_pursuer.charges_within` of him. Six seconds of nothing between his runs is long enough
-## that stepping out of a door and straight back in is a real answer, short enough that waiting one
-## out and strolling down is not. It is a first number and the one to move if the
-## shaft reads as either a corridor with a man in it or a corridor with a man near it.
-const FINALE_PURSUER_RESPAWN_SECONDS := 6.0
-
-## The basement's steam vents, one entry per vent: how often each one blows, in seconds.
-##
-## *"Have multiple fixed locations with steam that fully block the path and have them turn off an
-## on in different intervals so it becomes a timing puzzle."* **The count is the length of this
-## list rather than a second constant**, so a vent without a period of its own is not a thing that
-## can be written down.
-##
-## **Three, and no two periods share a factor with each other**, which is the whole of what makes
-## the corridor a puzzle instead of a rhythm: 8, 9 and 11 half-seconds are pairwise coprime, so the
-## pattern the three of them make together only repeats after their product — 396s, more than twice
-## the whole sequence's own clock — and she never walks the same corridor twice. Three rather than
-## more because the basement's corridor is about forty tiles end to end and a vent closes it
-## outright: a fourth would make the walk a queue of gates rather than a route with waits in it.
-##
-## **The floor under all three is what one crossing costs, not taste.** *(2026-09-19: "the steam
-## frequencies are too slow.")* A vent stands on a one-tile cell and holds her centre
-## `EventCatalogue.STEAM_VENT_BODY` + `PLAYER_BODY_RADIUS` (16 + 14 = 30px) out, so clearing it
-## means covering 60px — 0.65s at `WALK_SPEED` (92px/s). A vent's corridor is shut for
-## `FINALE_STEAM_BLOWS_FOR` and open for the rest of its period, so the shortest period leaves
-## `4.0 − 2.0 = 2.0s` of open corridor against that 0.65s: a second and a third of margin, which is
-## the "at least a second" a gate owes somebody who started walking a moment too late. Anything
-## under 3.7s would stop owing it.
-const FINALE_STEAM_PERIODS: Array[float] = [4.0, 4.5, 5.5]
-
-## How long one vent blows, in seconds, once its notice is over — the *on* half of the on/off
-## split, against the periods above.
-##
-## **Short against every period**, so a vent's corridor is open for longer than it is shut: this is
-## the whole of the shut half, and the shortest period leaves twice as long open again. A gap she
-## can walk through is the thing she is waiting for, and `FINALE_STEAM_PERIODS` states the floor
-## under that gap. Short in its own right too, because a vent closes a corridor with no way round
-## it: the pocket between two of them is only ever shut at both ends for as long as the shorter of
-## the two overlaps, which is bounded by this.
-const FINALE_STEAM_BLOWS_FOR := 2.0
-
-## How many slots each open street of the escape's walk has, each filled by one draw from the
-## escape's marble bag below (`EventScheduler.build_finale()`, `escape_bag()`). **One keeps the
-## section the climax and every walk out of it walkable**, measured by walking the shortest walk
-## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
-## (`tests/probes/escape_winnable.gd`; its output under `docs/evidence/winnable-escape-2026-10-19/`):
-## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
-## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
-## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
-## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
-## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
-## enough to make the obstacle survivable")*, which the notice spacing
-## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
-## long enough for two bands' notices.
-const FINALE_SLOTS_PER_STREET := 1
-## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
-## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
-## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
-## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
-## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
-## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
-## what the probe's walks that cried had landed. With these a walk to an exit meets about three
-## trucks, three explosions, one van and one roadblock; the order's smallest bag, 5, 4, 3, 2 and 1,
-## meets a van and a roadblock more often and gets out on 44 walks of 48. A fill is 24 marbles and
-## a plan has about 31 open streets, so an escape draws one whole fill and about seven marbles of
-## the next. About a third of the streets stand nothing all the same, since a danger the placement
-## rules refuse is spent unmet.
-const FINALE_BAG_TRUCKS := 10
-const FINALE_BAG_EXPLOSIONS := 8
-const FINALE_BAG_VANS := 3
-const FINALE_BAG_ROADBLOCKS := 2
-const FINALE_BAG_EMPTY := 1
 
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a
 # street with a field, not a floor under the whole city. See `MastSites`, `EventScheduler.
-# _place_masts()` and `EventManager`'s own broadcast clock.
+# place_masts()` and `EventManager`'s own broadcast clock.
 
 ## How many masts a city carries. The orchestrator's own number, open to overturn: enough that one
 ## is never far from a route without turning every street into one.
@@ -2754,19 +1205,3 @@ const MAST_COUNT := 6
 ## old `scripted_day`, which was the day she could first meet one; the mast itself is older than
 ## that by a night.
 const MAST_FIRST_DAY := 5
-
-## The day the masts carry the curfew announcement instead of their ordinary broadcast — the day
-## `_curfew_announce()` used to be `scripted_day` for, kept as a named day rather than re-read off
-## the def so the two rows do not have to agree about which field means "when" any more.
-const CURFEW_ANNOUNCE_DAY := 6
-
-## A candidate site is refused if it is this close to the home's own doorstep, whether or not a
-## mast's field would reach that far — "never on the home street" is a stronger promise than "never
-## in range of it". One full block-and-street period, so a site has to be a street away from home
-## rather than merely outside the field.
-const MAST_HOME_STREET_MARGIN := 1.0
-
-## A candidate site is refused if a mast's own field would reach inside a calm block's interior —
-## measured from the block's lot rect shrunk in by one tile on every side, so a field may still
-## brush a calm area's own pavement edge without being read as *inside* it.
-const MAST_CALM_INTERIOR_MARGIN := 32.0

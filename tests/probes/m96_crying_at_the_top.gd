@@ -7,17 +7,17 @@ extends RefCounted
 ##     tools/test.sh probes/m96_crying_at_the_top.gd
 ##
 ## **The rig mirrors tests/test_meters.gd's own `FakeWorld` and `_one_bump_from`** — a real
-## `CrowdAgent.startle()` or a real `EventInstance` feeds `FakeWorld.noise`, and a bare
+## `CrowdExcitement.startle()` or a real `EventInstance` feeds `FakeWorld.noise`, and a bare
 ## `Baby`/`Stroller` pair is driven by hand at a fixed step, since a headless probe has no crowd to
 ## steer a body through.
 ##
 ## **`Baby._update_excitement()` is called directly rather than `_physics_process()`.** That skips
-## `_update_state()`, so the live `Tuning.EXCITEMENT_OVERFLOW_TO_CRY`/`_WINDOW` never freeze the
+## `_update_state()`, so the live `Baby.EXCITEMENT_OVERFLOW_TO_CRY`/`_WINDOW` never freeze the
 ## rig mid-scenario the way reaching a real `CRYING` state would — which would otherwise stop a
 ## setting *looser* than the shipped one from ever being measured, since the shared rig would have
 ## already latched. What each setting below actually decides is read back afterwards, from
 ## `Baby.overflow_mass(window)`'s own history — see that function's doc for why a window no wider
-## than the shipped `Tuning.EXCITEMENT_OVERFLOW_WINDOW` (3s, the widest swept here) is always a
+## than the shipped `Baby.EXCITEMENT_OVERFLOW_WINDOW` (3s, the widest swept here) is always a
 ## true subset of what is stored, so this sweeps settings without ever touching `Tuning`.
 
 const STEP := 1.0 / 60.0
@@ -44,10 +44,9 @@ class FakeWorld extends WorldContext:
 		return false
 	func total_excitement_at(_world_position: Vector2) -> float:
 		return noise
+	var _noise := ExcitementSource.new(self)
 	func excitement_sources_at(_world_position: Vector2) -> Array:
-		return [[self, noise]] if noise > 0.0 else []
-	func accumulate_landed(_points: float) -> void:
-		pass
+		return [[_noise, noise]] if noise > 0.0 else []
 
 var _world: FakeWorld
 var _stroller: Stroller
@@ -78,7 +77,7 @@ func run(t) -> void:
 	var fall := _fall_from_the_top(t)
 	print("\n-- the fall --")
 	print("  a baby at 100 with nothing near falls under the nearly-crying cue (%.0f) in %.2fs"
-			% [Tuning.EXCITEMENT_NEARLY_CRYING, fall])
+			% [Baby.EXCITEMENT_NEARLY_CRYING, fall])
 
 	t.check(true, "zz_m96 crying-at-the-top probe ran")
 
@@ -176,15 +175,15 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
-	agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-			Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
+	agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+			Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
 	_baby.excitement = at
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
-	var jolt := Tuning.BUMP_DURATION
+	var jolt := Crowd.BUMP_DURATION
 	while jolt > 0.0:
-		agent._jolt = jolt
-		_world.noise = agent.contribution_at(_stroller.global_position)
+		agent.excitement._jolt = jolt
+		_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		jolt -= STEP
@@ -201,15 +200,15 @@ func _two_bumps_at_the_top(t) -> Dictionary:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var gap := 0.3
-	for bump_start in [0.0, Tuning.BUMP_DURATION + gap]:
+	for bump_start in [0.0, Crowd.BUMP_DURATION + gap]:
 		var agent := CrowdAgent.new()
 		agent.global_position = _stroller.global_position
-		agent.startle(Tuning.BUMP_INTENSITY, Tuning.BUMP_DURATION,
-				Tuning.BUMP_INNER_RADIUS, Tuning.BUMP_OUTER_RADIUS)
-		var jolt := Tuning.BUMP_DURATION
+		agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,
+				Crowd.BUMP_INNER_RADIUS, Crowd.BUMP_OUTER_RADIUS)
+		var jolt := Crowd.BUMP_DURATION
 		while jolt > 0.0:
-			agent._jolt = jolt
-			_world.noise = agent.contribution_at(_stroller.global_position)
+			agent.excitement._jolt = jolt
+			_world.noise = agent.excitement.contribution_at(_stroller.global_position)
 			_baby._update_excitement(STEP, _stroller.global_position, false)
 			_track_peaks(peaks)
 			jolt -= STEP
@@ -236,7 +235,7 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	# Past the telegraph, the same warm-up `M174Pass._pass_net()` gives a row met on the map.
 	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
@@ -250,8 +249,8 @@ func _walk_past_row(t, id: String) -> Dictionary:
 	var elapsed := 0.0
 	for _i in steps:
 		_stroller.global_position.x += Tuning.WALK_SPEED * STEP
-		instance._process(STEP)
-		_world.noise = instance.contribution_at(_stroller.global_position)
+		instance.step(STEP)
+		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP
@@ -271,7 +270,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
 	var warm_steps := int(ceil((def.telegraph_time + 0.05) / STEP))
 	for _i in warm_steps:
-		instance._process(STEP)
+		instance.step(STEP)
 
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
@@ -282,8 +281,8 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 	var steps := int(round(seconds / STEP))
 	var elapsed := 0.0
 	for _i in steps:
-		instance._process(STEP)
-		_world.noise = instance.contribution_at(_stroller.global_position)
+		instance.step(STEP)
+		_world.noise = instance.excitement.contribution_at(_stroller.global_position)
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		_track_peaks(peaks)
 		elapsed += STEP
@@ -296,7 +295,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 # ---------------------------------------------------------------------- the fall ---
 
 ## Seconds for a baby at 100 with nothing near, walking ordinary ground, to fall under
-## `Tuning.EXCITEMENT_NEARLY_CRYING` — independent of the two new constants, since nothing is
+## `Baby.EXCITEMENT_NEARLY_CRYING` — independent of the two new constants, since nothing is
 ## adding to the mass once the source is gone.
 func _fall_from_the_top(t) -> float:
 	_build(t)
@@ -304,7 +303,7 @@ func _fall_from_the_top(t) -> float:
 	_world.noise = 0.0
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var elapsed := 0.0
-	while _baby.excitement >= Tuning.EXCITEMENT_NEARLY_CRYING:
+	while _baby.excitement >= Baby.EXCITEMENT_NEARLY_CRYING:
 		_baby._update_excitement(STEP, _stroller.global_position, false)
 		elapsed += STEP
 	_teardown()

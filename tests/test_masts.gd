@@ -5,7 +5,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
-const STEP := 1.0 / 60.0
+const FAST_SCALE := 5.0
 ## A handful of seeds, for the one guarantee that has to hold on more than the seed the rest of
 ## this suite happens to use — `docs/EVENTS.md`'s "checked before it is accepted" — the same reason
 ## a city guarantee is measured across several seeds rather than trusted from one.
@@ -21,7 +21,7 @@ func run(t) -> void:
 	_test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t)
 	_test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t)
 	_build_city(t)
-	_test_they_all_speak_together(t)
+	await _test_they_all_speak_together(t)
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
@@ -34,7 +34,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
-	var planned := EventScheduler.build_day(day, _rng(day), _map, consumed)
+	var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed)
 	var found: Array[EventScheduler.Planned] = []
 	for plan in planned:
 		if plan.mast_id != "":
@@ -54,7 +54,7 @@ func _test_no_row_is_city_wide(t) -> void:
 	t.check(loudspeaker.outer_radius > loudspeaker.inner_radius,
 			"the loudspeaker has an edge a route can go round")
 	t.check(curfew.outer_radius > curfew.inner_radius,
-			"so does the curfew announcement it carries on Tuning.CURFEW_ANNOUNCE_DAY")
+			"so does the curfew announcement it carries on EventScheduler.CURFEW_ANNOUNCE_DAY")
 
 # ------------------------------------------------------------------- sites ---
 
@@ -99,7 +99,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 		var reach := EventCatalogue.by_id("loudspeaker").outer_radius
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
-		var home_margin := Tuning.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
+		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
 		for site in MastSites.compute(map):
 			checked += 1
 			var tile_type := map.tile_at(map.world_to_tile(site.foot))
@@ -119,7 +119,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 					continue
 				seen[anchor] = true
 				var interior := map.tile_rect_to_world(map.lot_rect(block)).grow(
-						-Tuning.MAST_CALM_INTERIOR_MARGIN)
+						-MastSites.MAST_CALM_INTERIOR_MARGIN)
 				if not interior.has_area():
 					continue
 				var closest := Vector2(clampf(site.foot.x, interior.position.x, interior.end.x),
@@ -148,20 +148,30 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> voi
 # -------------------------------------------------------------- the broadcast ---
 
 func _build_city(t) -> void:
-	_city = CITY_SCENE.instantiate()
+	_city = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(_city)
 	_city.build(_map)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`
-	# skips streaming when `_find_player()` fails, the same reason `test_event_manager.gd` gives.
+	# skips streaming while no player is handed in (`EventWorld.has_player()`), the same reason
+	# `test_event_manager.gd` gives.
 	# Streaming below is driven by hand, at whatever real moment each check wants a mast live.
 	_city.events.stream_radius = 10.0
 
 func _sites() -> Array[MastSites.Site]:
 	return MastSites.compute(_map)
 
+## Lets `seconds` of the game's own clock pass in real physics frames, the engine sped up for the
+## stretch (each frame then carries `1 / Engine.physics_ticks_per_second * Engine.time_scale`
+## seconds) and put back after it. The frame in progress when the scale changes keeps the delta it
+## started with, so one frame passes at the normal scale after; the checks that follow read a range.
 func _advance(seconds: float) -> void:
-	for i in int(round(seconds / STEP)):
-		_city.events._physics_process(STEP)
+	var frame := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
+	var clock := Engine.time_scale
+	Engine.time_scale = FAST_SCALE
+	for i in maxi(1, int(round(seconds / frame))):
+		await _city.get_tree().physics_frame
+	Engine.time_scale = clock
+	await _city.get_tree().physics_frame
 
 func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventScheduler.Planned:
 	for plan in _city.events.plans():
@@ -170,11 +180,11 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventSchedule
 	return null
 
 ## Two masts, met minutes apart, still read the same broadcast clock — the mechanism behind "all
-## masts speak at once". `age` is set from `EventManager._broadcast_clock` at the moment each one
-## streams in (`_stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
+## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
+## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
 	if sites.size() < 2:
@@ -182,8 +192,8 @@ func _test_they_all_speak_together(t) -> void:
 	var a := sites[0]
 	var b := sites[1]
 
-	_advance(9.0)
-	var clock_a: float = _city.events._broadcast_clock
+	await _advance(9.0)
+	var clock_a: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(a.foot)
 	var plan_a := _plan_for(a.id)
 	t.check(plan_a != null and plan_a.live != null, "the first mast is live")
@@ -191,8 +201,8 @@ func _test_they_all_speak_together(t) -> void:
 		t.close_to(plan_a.live.age, clock_a,
 				"a mast's age is the broadcast clock at the moment it streams in", 0.05)
 
-	_advance(6.0)
-	var clock_b: float = _city.events._broadcast_clock
+	await _advance(6.0)
+	var clock_b: float = _city.events.streaming.broadcast_clock
 	_city.events.stream_around(b.foot)
 	var plan_b := _plan_for(b.id)
 	t.check(plan_b != null and plan_b.live != null, "the second mast is live")
@@ -207,7 +217,7 @@ func _test_they_all_speak_together(t) -> void:
 				"they were not both stamped the instant they happened to stream in")
 
 func _test_mast_foot_answers_a_stable_id(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var site := _sites()[0]
 	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
 			"mast_foot() answers the same point MastSites named for this id")
@@ -217,7 +227,7 @@ func _test_mast_foot_answers_a_stable_id(t) -> void:
 # -------------------------------------------------------------- silencing ---
 
 func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(Tuning.MAST_FIRST_DAY, _rng(Tuning.MAST_FIRST_DAY), [])
+	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var target := _sites()[0]
 	_city.events.stream_around(target.foot)
 	var plan := _plan_for(target.id)
@@ -229,12 +239,12 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 	# Asked once before silencing, on purpose: `contribution_at()` caches per `(age, position)`,
 	# and silencing does not move `age` — without its own cache invalidation this would go on
 	# answering the pre-silence figure for the rest of the tick, exactly the defect
-	# `EventInstance._invalidate_contribution_cache()`'s own doc warns `_finish()` about.
-	var _primed := plan.live.contribution_at(nearby)
+	# `ExcitementSource.invalidate_contribution()`'s own doc warns `_finish()` about.
+	var _primed := plan.live.excitement.contribution_at(nearby)
 
 	t.check(_city.events.silence_mast(target.id), "silencing a mast by id finds it")
 	t.check(is_zero_approx(plan.live.current_intensity()), "a silenced mast's field is gone")
-	t.check(is_zero_approx(plan.live.contribution_at(nearby)),
+	t.check(is_zero_approx(plan.live.excitement.contribution_at(nearby)),
 			"and contribution_at() answers zero in the same tick, not the pre-silence cache")
 	t.check(not plan.live.is_finished, "but the mast still stands — it has not left")
 
@@ -248,10 +258,10 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
-	_city.events.start_day(Tuning.CURFEW_ANNOUNCE_DAY, _rng(Tuning.CURFEW_ANNOUNCE_DAY), [])
+	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
+	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `place_masts()` skips a
 	# site whose tile is today's own closure, region wall or checkpoint ground rather than
 	# planting on top of it (`tests/test_events.gd`,
 	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.

@@ -1,10 +1,9 @@
 class_name DevRig
 extends RefCounted
-## Everything that acts on a developer flag by reading the live city — see docs/TODO.md, M100,
-## "Small, real, and nobody's": "`DevFlags` took the flag parsing out; what stayed is the code
-## that acts on it". `DevFlags` still does every flag's own parsing; this is where the half of
-## that surface which needs the live `City`, `ResistanceDirector` or `Baby` — rather than just
-## the raw argv — turns a flag's value into camera positions, meters and a compressed clock.
+## Everything that acts on a developer flag by reading the live city: the half of the dev-flag
+## surface that needs the live `City`, `ResistanceDirector` or `Baby` turns a flag's value — handed
+## in by `main` from the run's configuration — into camera positions and meters. `DevFlags` does
+## the parsing; nothing here reads a flag itself.
 ##
 ## A `RefCounted`, not a `Node`. The only state that has to survive between calls is the follow
 ## camera and the event id it tracks, and neither needs this object to have a place of its own in
@@ -17,22 +16,20 @@ extends RefCounted
 ## The follow camera, once `setup_follow_camera()` has built one — `null` until `--follow` asks
 ## for one, and for the rest of a run that never does.
 var _follow_camera: Camera2D
-## The event id `--follow` named, so `update_follow_camera()` knows which live instance to chase
-## without re-reading the command line every frame.
+## The event id `--follow` named, so `update_follow_camera()` knows which live instance to chase.
 var _follow_id := ""
 
-## `--follow <event id>` parks a camera on an event wherever it is. Needed for anything that does
-## not exist when the day starts — a mobile event mid-route, or the fire a fire engine leaves
-## behind when it stops. `parent` is whatever node the camera should live under — `main` for an
-## ordinary run.
+## `--follow <event id>` (`follow_id`, "" for none) parks a camera on an event wherever it is.
+## Needed for anything that does not exist when the day starts — a mobile event mid-route, or the
+## fire a fire engine leaves behind when it stops. `parent` is whatever node the camera should live
+## under — `main` for an ordinary run.
 ##
-## **It is also where `--zoom` is applied**, because this is the one dev-rig call `main` makes once
-## the day's camera is current: whichever camera that is — hers, `--overview`'s, or the one built
-## here for `--follow` — has its own zoom scaled by the factor. See `apply_zoom()`.
-func setup_follow_camera(parent: Node) -> void:
-	_setup_follow(parent)
-	apply_zoom(parent.get_viewport().get_camera_2d() if parent.is_inside_tree() else null,
-			DevFlags.zoom_override())
+## **It is also where `--zoom` (`zoom`) is applied**, because this is the one dev-rig call `main`
+## makes once the day's camera is current: whichever camera that is — hers, `--overview`'s, or the
+## one built here for `--follow` — has its own zoom scaled by the factor. See `apply_zoom()`.
+func setup_follow_camera(parent: Node, follow_id: String, zoom: float) -> void:
+	_setup_follow(parent, follow_id)
+	apply_zoom(parent.get_viewport().get_camera_2d() if parent.is_inside_tree() else null, zoom)
 
 ## Scales `camera`'s own zoom by `factor` — relative to whatever zoom the camera is authored with, so
 ## `0.5` on her camera is half her normal zoom whatever that is. A no-op for a factor of one or no
@@ -42,8 +39,8 @@ static func apply_zoom(camera: Camera2D, factor: float) -> void:
 		return
 	camera.zoom *= factor
 
-func _setup_follow(parent: Node) -> void:
-	_follow_id = DevFlags.follow_target()
+func _setup_follow(parent: Node, follow_id: String) -> void:
+	_follow_id = follow_id
 	if _follow_id == "":
 		return
 	_follow_camera = Camera2D.new()
@@ -62,26 +59,14 @@ func update_follow_camera(city: City) -> void:
 			_follow_camera.position = instance.global_position
 			return
 
-## `--day-length N` compresses the day, so dusk and the timeout loss can be looked at without
-## sitting through the whole three minutes.
-static func day_length(day: int) -> float:
-	var override := DevFlags.day_length_override()
-	return override if override > 0.0 else Tuning.day_length(day)
-
 ## `--spawn <target>` drops the player onto a tile type or next to something live, so the
 ## WorldContext answers can be checked without walking across the city to find one. The targets are
 ## `park`, `alley`, `square`, `playground`, `arterial`, `closure[:n]`, `zone[:n]`, `landmark`,
 ## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact`,
-## `door[:n]` and `event[:id]`; anything else warns and starts her on the doorstep —
-## `for_spawn_target` below is the one list, one branch per target.
-static func spawn_position(city: City, resistance: ResistanceDirector) -> Vector2:
-	return for_spawn_target(DevFlags.spawn_target(), city, resistance)
-
-## The lookup half of `spawn_position()`, split out so a test can drive every named target
-## directly against a real `City` without a command line to read `--spawn` off — the same reason
-## `first_event_position()` below already takes its id as a plain argument rather than asking
-## `DevFlags` a second time.
-static func for_spawn_target(target: String, city: City, resistance: ResistanceDirector) -> Vector2:
+## `door[:n]` and `event[:id]`; "" is the doorstep, and anything else warns and starts her there —
+## this is the one list, one branch per target. `header` is the run's, whose day a warning names.
+static func for_spawn_target(target: String, city: City, resistance: ResistanceDirector,
+		header: RunHeader) -> Vector2:
 	if target == "":
 		return city.map.doorstep_world_position()
 
@@ -100,7 +85,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	if target.begins_with("closure"):
 		var closures := city.closures()
 		if closures.is_empty():
-			push_warning("no streets are closed on day %d" % GameState.day)
+			push_warning("no streets are closed on day %d" % header.day)
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
@@ -219,7 +204,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# answers wherever it currently is, not wherever this call found it.
 		var contact := resistance.contact_position()
 		if contact == Vector2.INF:
-			push_warning("no resistance contact on day %d" % GameState.day)
+			push_warning("no resistance contact on day %d" % header.day)
 			return city.map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
@@ -238,7 +223,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 					huts.append(body)
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
-					% [GameState.day, Tuning.REGION_WALL_FIRST_DAY])
+					% [header.day, Tuning.REGION_WALL_FIRST_DAY])
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]
@@ -269,7 +254,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day budgets and sites from her walk (`EventDef.sited_on_her_way`) — so `event:<id>` cannot
+## the day budgets and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
 ## **refuses by name**: the row and the reason are written to the run log
 ## (`Telemetry.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
@@ -279,9 +264,9 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## neighbouring unrecognised-target case already carries. `--follow <id>` tracks such a row once
 ## it exists.
 ##
-## **A row that waits for her** (`pursues_within` — a `pigeon_flock`, an `alley_robbery`) is stood
+## **A row that waits for her** (`EventDef.notice` — a `pigeon_flock`, an `alley_robbery`) is stood
 ## just *outside* its own trigger rather than inside it: the offset below is measured against
-## whichever is larger of `outer_radius` and `pursues_within`, plus a tile's width of clearance,
+## whichever is larger of `outer_radius` and `EventDef.notice`, plus a tile's width of clearance,
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
@@ -295,8 +280,8 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 				continue
 		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
-		if plan.def.pursues_within > 0.0:
-			var clearance := maxf(plan.def.outer_radius, plan.def.pursues_within) + Tuning.TILE_SIZE
+		if plan.def.notice_within() > 0.0:
+			var clearance := maxf(plan.def.outer_radius, plan.def.notice_within()) + Tuning.TILE_SIZE
 			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
 			return nearest_walkable(city.map, plan.position + stand_off)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
@@ -317,13 +302,13 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 ## north-south corridor's width is measured across (`CityMap.corridor_offset(tile.x)`) — and only
 ## happens to clear the road on an east-west one, whose width runs the other way. `_spread_is_vertical`
 ## is the one place that already answers which axis a street's *width* is on — it is the same
-## question `EventInstance._spread_at()` asks to lay an obstruction across the carriageway it blocks
+## question `EventInstance.spread_at()` asks to lay an obstruction across the carriageway it blocks
 ## — so reusing it here is the same answer applied to the opposite side of the same obstruction,
 ## rather than a second guess about the street's orientation.
 ##
 ## `scale` defaults to 0.6 — comfortably clear of an ordinary event's own `radius` without
 ## wandering off toward the next thing down the street. `first_event_position()` passes `1.0` for
-## a row that waits (`pursues_within`), where `radius` already carries its own margin and the step
+## a row that waits (`EventDef.notice`), where `radius` already carries its own margin and the step
 ## has to reach the full distance rather than a fraction of it.
 static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: float = 0.6) -> Vector2:
 	var vertical := EventInstance._spread_is_vertical(map, at)
@@ -358,13 +343,11 @@ static func make_overview_camera(parent: Node, city: City, viewport_size: Vector
 	parent.add_child(camera)
 	camera.make_current()
 
-## `--meters <sleepiness> <excitement>` seeds the bars, so a UI state can be screenshotted
-## without having to play all the way to it. Applied before the HUD is created, which reads the
-## starting values.
-static func apply_meter_override(baby: Baby) -> void:
+## `--meters <sleepiness> <excitement>` (`override`, negative for "not given") seeds the bars, so a
+## UI state can be screenshotted without having to play all the way to it.
+static func apply_meter_override(baby: Baby, override: Vector2) -> void:
 	if not baby:
 		return
-	var override := DevFlags.meters_override()
 	if override.x < 0.0:
 		return
 	baby.sleepiness = override.x

@@ -66,7 +66,7 @@ func _busker_never_fills_the_day(t) -> void:
 		return
 	var map: CityMap = found["map"]
 	var block: Vector2i = found["block"]
-	var city: City = CITY_SCENE.instantiate()
+	var city: City = RunCity.of_the_run(CITY_SCENE)
 	t.add_child(city)
 	city.build(map)
 
@@ -135,18 +135,19 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	instance.setup(def, busker_at)
 	t.add_child(instance)
 	instance.set_process(false)
-	city.events._instances.append(instance)
+	city.events.world.instances.append(instance)
 
 	var step := 1.0 / 60.0
 	var warm_up := int(ceil((def.telegraph_time + 0.1) / step))
 	for i in warm_up:
-		instance._process(step)
+		instance.step(step)
 
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	stroller.add_child(camera)
 	t.add_child(stroller)
+	city.events.use_player(stroller)
 	stroller.set_physics_process(false)
 	stroller.global_position = standing_at
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -160,14 +161,14 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	var result := -1.0
 	var elapsed := 0.0
 	while elapsed < _SLEEP_CAP_SECONDS:
-		instance._process(step)
+		instance.step(step)
 		baby._physics_process(step)
 		elapsed += step
 		if baby.sleepiness >= Tuning.METER_MAX:
 			result = elapsed
 			break
 
-	city.events._instances.erase(instance)
+	city.events.world.instances.erase(instance)
 	stroller.free()
 	instance.free()
 	return result
@@ -204,8 +205,8 @@ func _busker_denial_and_inner_floor(t) -> void:
 	var before_denial := _denial_radius(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER)
 	var after_denial := EventScheduler._denial_radius(def)
 
-	print("\n== busker denial radius (Tuning.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
-			% Tuning.CALM_ZONE_DENIAL_RATE)
+	print("\n== busker denial radius (EventScheduler.CALM_ZONE_DENIAL_RATE = %.1f/s) =="
+			% EventScheduler.CALM_ZONE_DENIAL_RATE)
 	print("before: intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
 			% [OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER, before_denial])
 	print("after:  intensity %.1f, inner %.0fpx, outer %.0fpx -> %.1fpx"
@@ -216,7 +217,7 @@ func _busker_denial_and_inner_floor(t) -> void:
 	# pulse shape) is what a peak-only floor missed — a row cleared only at the top of its beat
 	# still nets negative on average, because the beat spends more of its seven seconds below the
 	# peak than at it.
-	var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * Tuning.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
+	var calm_decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 	var mean_multiplier := _pulse_mean_multiplier()
 	print("\n== net rate at inner_radius on grass, over a whole beat (must not trend down) ==")
 	print("calm ground gives back %.2f/s; the beat's own mean multiplier is %.4f"
@@ -234,7 +235,7 @@ func _busker_denial_and_inner_floor(t) -> void:
 	t.check(true, "beat-mean and denial radius measured (see above and _busker_never_fills_the_day)")
 
 func _denial_radius(intensity: float, inner: float, outer: float) -> float:
-	var decay := Tuning.CALM_ZONE_DENIAL_RATE
+	var decay := EventScheduler.CALM_ZONE_DENIAL_RATE
 	if intensity <= decay:
 		return inner
 	var frac := sqrt(1.0 - decay / intensity)
@@ -266,7 +267,7 @@ func _busker_street_side(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m128:%d" % city_seed)
 		var no_one_shots: Array[String] = []
-		var planned := EventScheduler.build_day(BUSKER_DAY, rng, map, no_one_shots)
+		var planned := EventScheduler.build_day(DaySpec.for_day(BUSKER_DAY), rng, map, no_one_shots)
 		for plan in planned:
 			if plan.def.id != "busker":
 				continue
@@ -314,11 +315,11 @@ func _playground_settles(t) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))
 		var consumed: Array[String] = []
-		city.events.start_day(1, _rng(city_seed), consumed)
+		city.events.start_day(DaySpec.for_day(1), _rng(city_seed), consumed)
 		for rect in city.map.playgrounds:
 			var at: Vector2 = city.map.tile_rect_to_world(rect).get_center()
 			city.events.stream_around(at)
@@ -328,6 +329,7 @@ func _playground_settles(t) -> void:
 			camera.name = "Camera2D"
 			stroller.add_child(camera)
 			t.add_child(stroller)
+			city.events.use_player(stroller)
 			stroller.set_physics_process(false)
 			stroller.global_position = at
 			stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -341,7 +343,7 @@ func _playground_settles(t) -> void:
 				city.crowd.step(step)
 				for instance in city.events.instances():
 					if not instance.is_finished:
-						instance._process(step)
+						instance.step(step)
 				baby._physics_process(step)
 				if baby.state == GameEnums.BabyState.ASLEEP:
 					settled = i * step

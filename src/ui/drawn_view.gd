@@ -9,7 +9,7 @@ extends RefCounted
 ## costs her, its timing — and only its picture is left as it was last drawn. A retained canvas item
 ## keeps its last draw list and moving its node still moves it, so a thing that comes back into the
 ## box redraws once from its current state on that frame, before the margin has let any of it onto
-## the screen. `CrowdAgent` and `EventInstance` are the two callers.
+## the screen. `CrowdView` (for the crowd's agents) and `EventInstance` are the two callers.
 ##
 ## **Not `VisibleView`, and the two are not to be merged.** That one answers "has she seen it", with
 ## the controls' covered corners taken out; this one answers "can any of it be on the screen", and a
@@ -25,9 +25,10 @@ extends RefCounted
 ## the frame drawn from it, so nothing visibly starts or stops at the edge.
 const MARGIN := 64.0
 
-static var _frame := -1
-static var _viewport_id := 0
-static var _box := Rect2()
+## What a viewport keeps its box under: the process frame it was worked out in and the box, held
+## on the viewport itself (its own meta) because the box is a property of that viewport's camera, so
+## two viewports each keep their own and neither asks the other's frame to be recomputed.
+const MEMO_META := &"drawn_view_box"
 
 ## Whether any of `reach` — a rectangle relative to `item`'s own position, everything its drawing
 ## can cover — is inside the box. True for an item that is not in a tree: a hand-built rig has no
@@ -41,14 +42,16 @@ static func shows(item: Node2D, reach: Rect2) -> bool:
 ## The box for `viewport` this process frame.
 static func box_of(viewport: Viewport) -> Rect2:
 	var frame := Engine.get_process_frames()
-	var id := viewport.get_instance_id()
-	if frame != _frame or id != _viewport_id:
-		_frame = frame
-		_viewport_id = id
-		var shown := viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
-		_box = shown.grow(MARGIN)
-	return _box
+	if viewport.has_meta(MEMO_META):
+		var kept: Array = viewport.get_meta(MEMO_META)
+		if kept[0] == frame:
+			return kept[1]
+	var shown := viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
+	var box := shown.grow(MARGIN)
+	viewport.set_meta(MEMO_META, [frame, box])
+	return box
 
-## Drops this frame's box, for a test that moves the view between two asks in one frame.
-static func forget() -> void:
-	_frame = -1
+## Drops `viewport`'s box for this frame, for a test that moves the view between two asks in one
+## frame.
+static func forget(viewport: Viewport) -> void:
+	viewport.remove_meta(MEMO_META)

@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/bouncy_egret_day11_mast.gd
 ##     PROBE_SEEDS=4242,314159 tools/test.sh probes/bouncy_egret_day11_mast.gd
 ##
-## Each city runs `tests/test_resistance.gd`'s own rig: day 11 planned in the real day order and its
+## Each city runs `tests/test_resistance_arrow.gd`'s own rig: day 11 planned in the real day order and its
 ## mark read, which rigs the mast onto her route (`ResistanceDirector._rig_her_route_for()`).
 ##
 ## Every mast is exempt from the three line rules (inbox #684 in coral-lark), so the "junction" and "sidewalk"
@@ -24,9 +24,7 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 		909, 1001, 2002]
 
 func run(t) -> void:
-	var suite: Variant = load("res://tests/test_resistance.gd").new()
-	var saved_scars := GameState.scars.duplicate()
-	var saved_state := GameState.city_state
+	var suite: Variant = load("res://tests/test_resistance_arrow.gd").new()
 	var seeds: Array[int] = SEEDS
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds = []
@@ -35,43 +33,37 @@ func run(t) -> void:
 	var put_down := 0
 	print("\n== day 11's rigged mast, %d seeds ==" % seeds.size())
 	for seed_value in seeds:
-		suite._build_city(t, seed_value)
-		var result := [""]
-		suite._with_clean_run(func() -> void:
-			GameState.scars = []
-			var read: Array = suite._read_the_mark_on(t, 11, seed_value)
-			var director: ResistanceDirector = read[0]
-			var player: Stroller = read[2]
-			var where := _where_a_mast_may_stand(suite._city)
-			var at_the_mark := {}
-			for plan in suite._city.events.plans():
-				if plan.mast_id != "":
-					at_the_mark[plan.mast_id] = true
-			result[0] = suite._walk_until_the_route_mast(at_the_mark, player)
-			var siting: EventScheduler.WalkSiting = suite._city.events._siting
-			var waits: Dictionary = siting.waits if siting else {}
-			print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
-					"PUT" if result[0] != "" else "never", where[0], where[1]])
-			if result[0] != "":
-				print("      walked %.1fs before it was put down"
-						% suite._seconds_walked_to_the_route_mast)
-			print("      waits %s" % waits)
-			player.free()
-			director.free())
-		if result[0] != "":
+		# A run of its own, so the steps done and the scars start clear whatever ran before.
+		suite._build_city_in_a_new_run(t, seed_value)
+		var read: Array = suite._read_the_mark_on(t, 11, seed_value)
+		var director: ResistanceDirector = read[0]
+		var player: Stroller = read[2]
+		var where := _where_a_mast_may_stand(suite._city)
+		var at_the_mark := {}
+		for plan in suite._city.events.plans():
+			if plan.mast_id != "":
+				at_the_mark[plan.mast_id] = true
+		var result: String = suite._walk_until_the_route_mast(at_the_mark, player)
+		var siting: EventScheduler.WalkSiting = suite._city.events.ahead._siting
+		var waits: Dictionary = siting.waits if siting else {}
+		print("  seed %10d  %-6s  tree tiles %s  passing %s" % [seed_value,
+				"PUT" if result != "" else "never", where[0], where[1]])
+		if result != "":
+			print("      walked %.1fs before it was put down"
+					% suite._seconds_walked_to_the_route_mast)
 			put_down += 1
+		print("      waits %s" % waits)
+		player.free()
+		director.free()
 	print("  put down on %d of %d" % [put_down, seeds.size()])
-	GameState.scars = saved_scars
-	GameState.city_state = saved_state
-	if suite._city:
-		suite._city.free()
+	suite._free_city()
 
 ## `[counts by the first rule that refuses a tile, the tiles no rule refuses]`, over every tile of
 ## the routed mast's ground on the day's route tree. See the file's own doc.
 static func _where_a_mast_may_stand(city: City) -> Array:
 	var events: EventManager = city.events
-	var siting: EventScheduler.WalkSiting = events._siting
-	var def: EventDef = events._director.route_row(ResistanceDirector.MAST_ROW)
+	var siting: EventScheduler.WalkSiting = events.ahead._siting
+	var def: EventDef = events.ahead._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map
 	var plans: Array[EventScheduler.Planned] = events.plans()
 	var none: Array[EventScheduler.Planned] = []
@@ -88,16 +80,16 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 		elif not candidate:
 			why = "no placement"
 		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
-				siting._ground, none):
+				siting.scenery_ground, none):
 			why = "junction, the mast alone"
 		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor,
-				siting._ground, none):
+				siting.scenery_ground, none):
 			why = "sidewalk, the mast alone"
 		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
-				siting._ground, plans):
+				siting.scenery_ground, plans):
 			why = "junction, with the day"
 		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor,
-				siting._ground, plans):
+				siting.scenery_ground, plans):
 			why = "sidewalk, with the day"
 		elif EventScheduler._reaches_any(candidate, siting._leave_alone):
 			why = "calm she has not used"

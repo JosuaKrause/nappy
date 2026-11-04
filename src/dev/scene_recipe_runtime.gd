@@ -1,7 +1,8 @@
 class_name SceneRecipeRuntime
-extends Node
+extends AuthoredScene
 ## One saved setup feeds free play, headless assertions and frame-locked recording. Playback
 ## starts only after construction and scenery preparation; observations use the game's physics ticks.
+## The authored scene `RunFlow` is configured with when the boot was handed `--recipe`.
 
 const DIRECTIONS := {"north": Vector2.UP, "south": Vector2.DOWN,
 		"east": Vector2.RIGHT, "west": Vector2.LEFT}
@@ -11,11 +12,19 @@ const OWNED_FLAGS := ["--seed", "--day", "--spawn", "--parent", "--meters", "--w
 		"--press", "--tap", "--ending", "--quit-when-still", "--skip", "--smooth-walk"]
 
 var data: Dictionary = {}
+## The walk the scene was installed into (`install()`), handed in by the run flow.
+var _walk_spec: DaySpec = null
 var built: Dictionary = {}
 var manifest: Dictionary = {}
 var named: Dictionary = {}
 var scripted := false
 var tick := 0
+## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
+## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
+var _config: RunConfig
+## The run the scene is staged in — its day, its streams, its resistance and its walls — handed in
+## by `configure()`.
+var _run: RunState
 var _player: Stroller
 var _city: City
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -126,6 +135,9 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 	elif progression.has("escape_part"):
 		errors.append("setup.progression.escape_part requires kind escape")
 	_number(setup.get("signal_time", 0), "setup.signal_time", 0, 86400, errors)
+	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
+	# every city's map holds (`CityMap.network`).
+	var lattice := StreetNetwork.new()
 	var structure_streets := {}
 	for collection in ["seals", "gates", "barriers"]:
 		if not setup.get(collection, []) is Array:
@@ -144,7 +156,7 @@ static func validate_runtime(recipe: Dictionary) -> Array[String]:
 				errors.append("setup.%s requires segment [x,y,axis]" % collection)
 				continue
 			var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-			if not StreetNetwork.by_key(key) or seen.has(key):
+			if not lattice.by_key(key) or seen.has(key):
 				errors.append("setup.%s has an unknown or duplicate street" % collection)
 			seen[key] = true
 			if structure_streets.has(key):
@@ -457,14 +469,16 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
 
-func configure(result: Dictionary, scripted_mode: bool) -> void:
+func configure(result: Dictionary, config: RunConfig, run: RunState) -> void:
+	_config = config
+	_run = run
 	data = result.data
 	_written = result.get("written", result.data)
 	built = result
-	if "--recipe-draft" in DevFlags.active_args():
+	if config.recipe_draft_path != "":
 		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
-	scripted = scripted_mode
+	scripted = config.recipe_scripted
 	manifest["recipe"] = data.get("name", "")
 	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
@@ -480,8 +494,8 @@ func configure(result: Dictionary, scripted_mode: bool) -> void:
 			Engine.physics_ticks_per_second, bool(data.get("playback", {}).get("smooth", false)))
 	_observations = data.get("playback", {}).get("observations", [])
 	_duration_ticks = roundi(float(data.get("playback", {}).get("duration", 5)) * Engine.physics_ticks_per_second)
-	if "--screenshot" in DevFlags.active_args():
-		_capture_tick = ceili(DevFlags._word_after("--after").to_float() * Engine.physics_ticks_per_second - 0.00001)
+	if config.screenshot_path != "":
+		_capture_tick = ceili(maxf(config.rig_after, 0.0) * Engine.physics_ticks_per_second - 0.00001)
 	# begin() supplies the first input; subsequent inputs are queued after the world's tick.
 	# Observations and completion therefore see the tick they name, including the final one.
 	process_physics_priority = 100
@@ -502,10 +516,32 @@ func start_position() -> Vector2:
 	var errors: Array[String] = []
 	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
 
+## The map the recipe's city section is built to (`built.map`).
+func city_map() -> CityMap:
+	return built.map
+
+## `setup.tutorial_complete`: a mid-game scene starts after the ordinary control lessons.
+func lessons_learned() -> bool:
+	return bool(data.get("setup", {}).get("tutorial_complete", false))
+
+func plays_by_script() -> bool:
+	return scripted
+
 ## Installs the fixed day before the world gets a simulation frame. Geometry eligibility reads
-## the declared construction context, never the exterior's unbuilt walkable floor.
-func install(city: City, player: Stroller, baby: Baby,
+## the declared construction context, never the exterior's unbuilt walkable floor. `spec` is the walk
+## the run flow started for the scene — the same object its clock and HUD run on — and the scene's
+## events run under its settings (`EventManager.start_recipe()`). A setup that does not stand is
+## recorded as failed in the manifest (`setup_failed`) as well as returned.
+func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		resistance: ResistanceDirector = null) -> Array[String]:
+	var errors := _install(city, player, baby, spec, resistance)
+	if not errors.is_empty():
+		manifest["setup_failed"] = true
+	return errors
+
+func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
+		resistance: ResistanceDirector) -> Array[String]:
+	_walk_spec = spec
 	_city = city
 	_player = player
 	_resistance = resistance
@@ -530,14 +566,14 @@ func install(city: City, player: Stroller, baby: Baby,
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
 	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, GameState.day, at, data.get("kind", "city") == "escape")
+	city.events.start_recipe(plans, spec, _run.header.day, at)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
 		return errors
 	_start_the_route(setup)
 	for entry: Dictionary in setup.get("events", []):
-		for plan in city.events._plans:
+		for plan in city.events.plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
 				if not plan.live:
 					errors.append("event %s is not live at its required initial position" % entry.name)
@@ -553,13 +589,13 @@ func install(city: City, player: Stroller, baby: Baby,
 						_held.append(plan.live)
 						# Never streamed out either, however far she runs from it.
 						plan.kept_live = true
-	city.crowd.start_day(GameState.day, GameState.day_rng(GameState.day, "crowd"), at,
+	city.crowd.start_day(_run.header.day, _run.calendar.day_rng(_run.header.day, "crowd"), at,
 			bool(background.get("crowd", false)), background.get("crowd_scope", "player") == "city",
 			bool(background.get("uniform_walkers", false)), float(background.get("walker_multiplier", 1)))
 	if background.get("uniform_walkers", false):
 		var area_scale := map.world_size().x * map.world_size().y / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) \
 				if background.get("crowd_scope", "player") == "city" else 1.0
-		var act := Tuning.act_for_day(GameState.day)
+		var act := Tuning.act_for_day(_run.header.day)
 		var expected := roundi(Tuning.crowd_pedestrians(act) * area_scale * float(background.get("walker_multiplier", 1))) \
 				+ roundi(Tuning.crowd_cars(act) * area_scale)
 		if city.crowd.agent_count() != expected:
@@ -599,7 +635,7 @@ func install(city: City, player: Stroller, baby: Baby,
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = snapshot()
 	manifest["installed_events"] = []
-	for plan in city.events._plans:
+	for plan in city.events.plans():
 		manifest.installed_events.append({"row": plan.def.id,
 				"position": [plan.position.x, plan.position.y], "facing": [plan.facing.x, plan.facing.y]})
 	return errors
@@ -623,15 +659,15 @@ func _start_the_task() -> bool:
 		var camera := get_viewport().get_camera_2d()
 		if camera:
 			camera.force_update_scroll()
-		if GameState.is_final_day():
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL
+		if _run.calendar.is_final_day():
+			_run.resistance.progress = Tuning.RESISTANCE_GOAL
 		# The day's task is planned over the whole witness, as a played day plans it: the mark's
 		# "reachable from home" and the guard's place are questions about the city, and a stretch's
 		# void would answer every one of them no.
 		var edges := _city.map.witness_only()
-		errors = _resistance.start_recipe_task(GameState.day,
-				GameState.day_rng(GameState.day, "resistance"), DevRig.day_length(GameState.day),
-				mark, neighbor)
+		errors = _resistance.start_recipe_task(_run.header.day,
+				_run.calendar.day_rng(_run.header.day, "resistance"),
+				_config.day_length_for(_run.header.day), mark, neighbor)
 		_city.map.restore_edges(edges)
 	if not errors.is_empty():
 		manifest["setup_failed"] = true
@@ -663,9 +699,9 @@ var _task_from := Vector2.INF
 func _bind_task_names() -> void:
 	if not _resistance or not data.get("setup", {}).has("task") or manifest.get("setup_failed", false):
 		return
-	var contact: ContactPoint = _resistance._contact
-	if _resistance._read_mark:
-		named["mark"] = _resistance._read_mark
+	var contact: ContactPoint = _resistance.contact()
+	if _resistance.read_mark():
+		named["mark"] = _resistance.read_mark()
 	elif contact and contact.step.is_pickup and not contact.is_done:
 		named["mark"] = contact
 		return
@@ -689,8 +725,8 @@ func _bind_task_names() -> void:
 	if named.get("task") == contact:
 		return
 	named["task"] = contact
-	if _resistance._rider:
-		named["rider"] = _resistance._rider
+	if _resistance.rider():
+		named["rider"] = _resistance.rider()
 	var step := _resistance.current_step()
 	var target := _resistance.contact_position()
 	var arrow := _resistance.red_arrow_target()
@@ -714,8 +750,9 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 		errors.append("setup.column.at must fit the actual main-road lane and whole formation")
 		return
 	var happening := ResistanceHappenings.new()
+	happening.trace = _city.trace
 	happening.setup(_city, map)
-	happening.start_day(GameState.day)
+	happening.start_day(_run.header.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
 			lane, going, top, bottom)
 	for i in happening.column.size():
@@ -736,7 +773,7 @@ func _install_posters(entries: Array, errors: Array[String]) -> void:
 			continue
 		used[tile] = true
 		var kind: int = PosterArt.Kind[str(entry.kind).to_upper()]
-		GameState.posters.paste(tile, kind, false, 1)
+		_run.posters.paste(tile, kind, false, 1)
 		recorded.append({"at": [at.x, at.y], "kind": entry.kind})
 	_city.poster_walls().refresh()
 	manifest["authored_posters"] = recorded
@@ -770,39 +807,34 @@ func _select_structures(errors: Array[String]) -> void:
 	var selected := RegionPlanner.RegionPlan.new()
 	for entry: Dictionary in setup.get("gates", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := StreetNetwork.by_key(key)
+		var segment := _city.map.network.by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+		if _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
 		if not region.doors.any(func(door): return door.key() == key):
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.doors.map(func(door): return door.key())])
 			continue
-		selected.doors.append(segment)
-		RegionPlanner._add_door_bodies(_city.map, segment, selected)
+		RegionPlanner.stand_door(_city.map, segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := StreetNetwork.by_key(key)
+		var segment := _city.map.network.by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
 		if not _city.map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
-				or GameState.day < Tuning.REGION_WALL_FIRST_DAY:
+				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
 		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
 				"roadblock", entry.end == "a"))
-	region.doors = selected.doors
-	region.door_bodies = selected.door_bodies
-	region.gates = selected.gates
-	region.walls = selected.walls
-	region.wall_bodies = selected.wall_bodies
-	region.alley_doors.clear()
-	region.alley_walls.clear()
+	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
+	# wall, and the siting's region is built from the plan it is handed.
+	_city.set_region_plan(selected)
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 	if _city.map.has_stretch():
@@ -819,31 +851,29 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
+	var route := _city.route_tree()
 	for entry: Dictionary in data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
-		var segment := StreetNetwork.by_key(key)
+		var segment := _city.map.network.by_key(key)
 		if not _segment_inside_extent(segment):
 			errors.append("setup.seals: selected street leaves the authored extent")
 			continue
-		var home := ClosurePlanner.home_street(map)
-		if not map.has_street(key) or _city.route_tree().is_on_the_tree(key) \
-				or (home and key == home.key()) or SealPlanner._is_the_main_road(map, segment):
+		if not SealPlanner.may_seal(map, _walk_spec, route, segment):
 			errors.append("setup.seals: requires a production off-route, non-home, non-spine street")
 			continue
 		for candidate in SealPlanner.candidates():
 			if candidate.id != entry.candidate:
 				continue
-			if not SealPlanner._eligible(candidate, GameState.day) \
-					or (candidate.id == SealPlanner.FALLEN_TREE_SEAL_ID and not lined.has(key)):
+			if not SealPlanner.offers(candidate, _run.header.day, lined.has(key)):
 				errors.append("setup.seals: candidate is unavailable on this day or street")
 				continue
-			var along := SealPlanner._seal_along_tile(map, segment, candidate, trees, emptied)
-			plans.append_array(SealPlanner._place(map, segment, candidate, along))
+			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
+			plans.append_array(sited.bodies)
 			if candidate.strength == SealPlanner.Strength.HARD:
 				map.hold_segment(key)
 			else:
-				for side in [true, false]:
-					SealPlanner._mark_soft_sealed(map, SealPlanner._sidewalk_band_tiles(segment, side, along))
+				sited.shut_the_sidewalk(map, true)
+				sited.shut_the_sidewalk(map, false)
 	map.set_seal_tree_pits(emptied)
 	return plans
 
@@ -857,7 +887,11 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
-		finale = FinalePlanner.plan(map, GameState.day_rng(GameState.day, "finale"), false)
+		finale = FinalePlanner.route(map)
+		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
+		# seal empties, the soft seals cleared); what they place is not the scene's.
+		DayPlanner.plan_the_escape_city(map, finale,
+				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")
@@ -873,7 +907,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 				plans.append(body)
 	if not finale:
 		plans.append_array(_authored_seals(errors))
-	for segment in StreetNetwork.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 	var counts := {}
 	for entry: Dictionary in setup.get("events", []):
@@ -889,23 +923,23 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			plan = _mast_placement(def, at, plans, doors)
 		elif finale:
 			plan = _finale_placement(def, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
-		elif def.spawn_mode_on(GameState.day) != EventDef.SpawnMode.MAP:
+		elif def.spawn_mode_on(_run.header.day) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
 			var heading: Vector2 = DIRECTIONS[setup.get("player", {}).get("facing", "south")]
 			var route := director._crossing_ahead_of(player_at, heading, def)
-			if not def.available_on(GameState.day) or not def.pursues or route.is_empty() \
+			if not def.available_on(_run.header.day) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
 					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, GameState.day, map, at,
+			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
@@ -938,7 +972,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			errors.append("event %s.relentless is refused: row %s %s"
 					% [entry.name, plan.def.id, relentless_refusal(plan.def)])
 		plan.set_meta("recipe_relentless", bool(entry.get("relentless", false)))
-		if def.id == EventScheduler.WalkSiting.MAST_ROW:
+		if def.role == EventDef.Role.MAST:
 			# Every mast the game stands has an id, and the director's lists and the blackout
 			# find a mast by it: a recipe's own, or the one a mast added for day 11 is named by.
 			plan.mast_id = str(entry.mast_id) if entry.has("mast_id") \
@@ -946,43 +980,38 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 		plans.append(plan)
 	return plans
 
-## An authored mast stands where the day's masts may, by the checks `EventScheduler._place_masts()`
+## An authored mast stands where the day's masts may, by the checks `EventScheduler.place_masts()`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
-## sidewalk or square tile `MastSites._is_eligible()` would offer (off the home street, its field
+## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand); it is not closed, not on a
 ## held street and not on the home block; the mast's field is clear of the day's own doors
 ## (`EventScheduler.clear_of_the_doors()`); and no body placed before it is too near
-## (`EventScheduler._room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
+## (`EventScheduler.room_around()`). It does not ask what `EventManager.queue_a_mast()`'s
 ## `WalkSiting` asks beyond those: the calm she has not used. The loudspeaker is a scripted row no catalogue roll places, so the ordinary
 ## placement refuses it.
 func _mast_placement(def: EventDef, at: Vector2, prior: Array[EventScheduler.Planned],
 		doors: PackedVector2Array) -> EventScheduler.Planned:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
-	if GameState.day < Tuning.MAST_FIRST_DAY \
+	if _run.header.day < Tuning.MAST_FIRST_DAY \
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
-			or not MastSites._is_eligible(at, map) \
+			or not MastSites.is_eligible(at, map) \
 			or not EventScheduler.clear_of_the_doors(at, PackedVector2Array(), doors,
 					def.field_reach()):
 		return null
-	var candidate := EventScheduler._build_placement(def, map, tile, RandomNumberGenerator.new())
-	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
-		return null
-	return candidate
+	return EventScheduler.place_at(def, map, tile, RandomNumberGenerator.new(), prior)
 
-## The escape's exact actors use its own row variants, open streets, tree exclusion, spawn
-## clearance and body spacing. No ordinary-day corridor or offscreen director stands in for it.
+## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
+## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
+## director stands in for it.
 func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
 		route_seed: int) -> EventScheduler.Planned:
-	if not def.id in ["military_convoy", "abduction", "roadblock", "finale_explosion"]:
+	if not _walk_spec.bag_rows.has(def.id):
 		return null
-	if def.id == "roadblock":
-		def = EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL)
-	elif def.id == "military_convoy":
-		def = EventScheduler._without_its_aftermath(def)
+	def = _walk_spec.bag_rows[def.id]
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
@@ -990,17 +1019,15 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	var ground_ok := false
 	var trees := StreetTrees.footprint_tiles(map)
 	for segment in finale.open_streets:
-		if tile in EventScheduler._finale_ground(map, segment, def, trees, player_at):
+		if tile in EventScheduler.street_ground(map, segment, def, trees, player_at, {},
+				_walk_spec.holds_the_home_streets):
 			ground_ok = true
 			break
 	if not ground_ok:
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	var candidate := EventScheduler._build_placement(def, map, tile, rng)
-	if not candidate or EventScheduler._room_around(candidate, prior) == -INF:
-		return null
-	return candidate
+	return EventScheduler.place_at(def, map, tile, rng, prior)
 
 func begin() -> void:
 	if not _start_the_task():
@@ -1009,7 +1036,7 @@ func begin() -> void:
 	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
-	if "--recipe-validate" in DevFlags.active_args():
+	if _config.recipe_validate:
 		get_tree().quit(0)
 		return
 	if not scripted:
@@ -1047,12 +1074,17 @@ func _settle_starting_camera() -> void:
 	var starting_camera := get_viewport().get_camera_2d()
 	if not starting_camera or not _player:
 		return
-	starting_camera.offset = Vector2(_player.facing.x,
-			_player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
-	starting_camera.force_update_scroll()
-	starting_camera.reset_smoothing()
-	starting_camera.reset_physics_interpolation()
-	starting_camera.force_update_scroll()
+	settle_camera_on(starting_camera, _player)
+
+## Puts `camera` on `player` with her facing lead, at once and with no smoothing left to arrive: the
+## first view of a scripted scene is the player, not a camera travelling to her.
+static func settle_camera_on(camera: Camera2D, player: Stroller) -> void:
+	camera.offset = Vector2(player.facing.x,
+			player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	camera.force_update_scroll()
+	camera.reset_smoothing()
+	camera.reset_physics_interpolation()
+	camera.force_update_scroll()
 
 ## Holds a scripted scene on the exact view it begins with. A camera of its own leaves the
 ## stroller's ordinary follow untouched, so free play and every recipe without `camera.fixed`
@@ -1078,29 +1110,30 @@ func _install_fixed_camera(offset := Vector2.ZERO) -> void:
 ## walk straight away from her that a pursuer on foot leaves by, so every row whose departure is
 ## anything else is refused, each with its own reason.
 static func hold_refusal(def: EventDef) -> String:
-	if not def.pursues:
+	if def.pursuit == null:
 		return "does not pursue her, so it has no straight walk away to hold"
-	if def.drives:
+	if def.vehicle != null:
 		return "drives, and a car leaves by its own rules"
-	if def.investigates:
+	if def.investigates():
 		return "lets men out, who walk back to it"
 	if def.stops_where_it_arrives:
 		return "parks where it arrives"
-	if def.spawns_on_finish != "":
+	if def.aftermath.on_finish != "":
 		return "hands on to another event when it finishes"
-	if def.body_stays_behind:
+	if def.leaves_its_body():
 		return "leaves a barrier standing as a guard walks off"
 	return ""
 
 ## Why `charging` is refused for a row, or "" when it may charge from the first frame. `charging: true`
-## has a pursuer that waits for her (`pursues_within`) start the scene already set on her, as the guard
-## a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording shows the charge
-## rather than waiting for her to walk into its radius. A row that does not wait has no radius to skip,
-## and one that sets off beside her or runs its own line does not charge by that rule.
+## has a pursuer that waits for her (`EventDef.notice`) start the scene already set on her, as
+## the guard a task sends is (`EventInstance.notice_her_at()`), its notice spent: the recording
+## shows the charge rather than waiting for her to walk into its radius. A row that does not
+## wait has no radius to skip, and one that sets off beside her or runs its own line does not
+## charge by that rule.
 static func charging_refusal(def: EventDef) -> String:
-	if not def.pursues or def.pursues_within <= 0.0:
+	if def.pursuit == null or def.notice_within() <= 0.0:
 		return "does not wait for her, so it has no radius to skip"
-	if def.sets_off_beside_her:
+	if def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER):
 		return "sets off beside her, on its own clock"
 	return ""
 
@@ -1108,7 +1141,7 @@ static func charging_refusal(def: EventDef) -> String:
 ## pursuer from giving up because she ran (`_keep_the_pursuers_coming()`), so a row that does not
 ## pursue her has nothing to keep.
 static func relentless_refusal(def: EventDef) -> String:
-	if not def.pursues:
+	if def.pursuit == null:
 		return "does not pursue her, so it has no chase to keep going"
 	return ""
 
@@ -1120,14 +1153,15 @@ static func hold_refusal_message(event_name: String, def: EventDef) -> String:
 var _relentless: Array[EventInstance] = []
 
 ## **A relentless pursuer never gives up because she ran.** A pursuer that has seen her run for
-## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventInstance._chase()`'s `_outrun_for`), right for a played
+## `Tuning.PURSUIT_SHAKEN_OFF` gives up (`EventPursuit.outrun_for`), right for a played
 ## day, and a guard who stops coming half a second into a mother's run in a trailer shot. Each physics
 ## tick this clears that running clock, so it never gets near the limit; nothing else about the
 ## chase changes, and the game's rule is untouched.
 func _keep_the_pursuers_coming() -> void:
 	for instance in _relentless:
-		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving:
-			instance._outrun_for = 0.0
+		if is_instance_valid(instance) and not instance.is_finished and not instance.is_leaving \
+				and instance.pursuit != null:
+			instance.pursuit.outrun_for = 0.0
 
 ## The events the recipe asked to keep (`hold`), so a recording never loses one to the game's own
 ## despawn: see `_process()`.
@@ -1135,10 +1169,10 @@ var _held: Array[EventInstance] = []
 
 ## **A held event is never removed while the scene runs.** A pursuer that gave up the chase walks
 ## away and is removed once she is more than `Tuning.OUT_OF_SIGHT` from it, which is well inside the
-## picture on a wide frame, or after `EventInstance.LEAVING_GIVES_UP` seconds: right for a played
+## picture on a wide frame, or after `EventDeparture.LEAVING_GIVES_UP` seconds: right for a played
 ## day, and a dog vanishing in the middle of a trailer shot. Once a held event is leaving, its own
 ## process is switched off and this walks it on instead, the same straight departure away from her
-## at the row's own departure speed and gait (`EventInstance._leave()`'s plain branch), with the
+## at the row's own departure speed and gait (`EventDeparture.leave()`'s plain branch), with the
 ## removal left out, and only for a row whose departure is that plain walk (`hold` on any other row
 ## fails the recipe, `hold_refusal()`), and the scene fails if a held event is sent along a set path
 ## or otherwise stops leaving in a straight line mid-scene (day 12's park cordon does that).
@@ -1149,8 +1183,9 @@ func _process(delta: float) -> void:
 	for instance in _held:
 		if not is_instance_valid(instance) or instance.is_finished or not instance.is_leaving:
 			continue
-		if instance._walks_a_way or not instance._trail.is_empty() \
-				or instance._is_a_guard_leaving_his_barrier():
+		if instance.departure.walks_a_way() \
+				or (instance.on_foot != null and instance.on_foot.walks_back()) \
+				or (instance.barrier_post and instance.barrier_post.has_left_its_body()):
 			manifest["playback_error"] = "held event %s no longer leaves in a straight line" \
 					% instance.def.id
 			manifest["stopped_tick"] = tick
@@ -1160,13 +1195,11 @@ func _process(delta: float) -> void:
 				_active = false
 				get_tree().quit(1)
 			return
-		instance.set_process(false)
-		var before := instance._path_travelled
-		var step := instance._leaving_speed() * delta
-		instance.position += instance._heading * step
-		instance._path_travelled += step
-		instance._advance_gait(instance._path_travelled - before)
-		instance._redraw_if_the_picture_changed()
+		# Walked here, once a drawn frame, so its manager does not step it and it is drawn where this
+		# puts it rather than interpolated between physics ticks; its look still redraws it.
+		instance.held_by_hand = true
+		instance.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		instance.walk_on_by_hand(delta)
 
 func _physics_process(_delta: float) -> void:
 	_keep_the_pursuers_coming()
@@ -1273,8 +1306,8 @@ func activity_snapshot() -> Dictionary:
 	return result
 
 func _release_input() -> void:
-	TouchControls._set_axis(&"move_left", &"move_right", 0)
-	TouchControls._set_axis(&"move_up", &"move_down", 0)
+	TouchControls.set_axis(&"move_left", &"move_right", 0)
+	TouchControls.set_axis(&"move_up", &"move_down", 0)
 	Input.action_release("run")
 
 func _exit_tree() -> void:
@@ -1293,13 +1326,13 @@ func snapshot() -> Dictionary:
 		if actor is Stroller:
 			result[label]["carrying"] = actor.carrying
 			result[label]["speed"] = snappedf(actor.current_speed(), 0.0001)
-			result[label]["gait_frame"] = actor._mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
+			result[label]["gait_frame"] = actor.mother_gait_frame(actor.current_speed() / Tuning.WALK_SPEED)
 		elif actor is ContactPoint:
 			result[label]["done"] = actor.is_done
 		elif actor is EventInstance:
 			result[label]["row"] = actor.def.id
 			result[label]["telegraphing"] = actor.is_telegraphing()
-			result[label]["pursuing"] = actor.def.pursues and not actor.is_waiting() \
+			result[label]["pursuing"] = actor.def.pursuit != null and not actor.is_waiting() \
 					and not actor.is_telegraphing() and not actor.is_finished and not actor.is_leaving
 	return result
 
@@ -1340,7 +1373,7 @@ func _observe() -> void:
 					passed = baby != null and (baby.state == GameEnums.BabyState.ASLEEP) \
 							== (check.condition == "asleep")
 				"pursuing":
-					passed = actor is EventInstance and actor.def.pursues \
+					passed = actor is EventInstance and actor.def.pursuit != null \
 							and not actor.is_telegraphing() and not actor.is_waiting() \
 							and not actor.is_finished and not actor.is_leaving
 				"near_player":
@@ -1361,10 +1394,10 @@ func _observe() -> void:
 							Vector2(float(check.half[0]), float(check.half[1])))
 				"offered":
 					passed = actor is ContactPoint and not actor.is_done and _resistance != null \
-							and _resistance._contact == actor
+							and _resistance.contact() == actor
 				"done":
 					passed = actor is ContactPoint and actor.is_done \
-							and actor.step.index in GameState.completed_resistance_steps
+							and actor.step.index in _run.resistance.completed_steps
 				"arrowed":
 					passed = _resistance != null and _resistance.red_arrow_target() != Vector2.INF \
 							and _resistance.red_arrow_target().is_equal_approx(actor.global_position)
@@ -1413,16 +1446,16 @@ func _in_the_picture(at: Vector2) -> bool:
 
 ## Whether any of the actor's drawing is visible (a tile-sized box for other named actors):
 ## the actual viewport transformed back through the current camera, less the corners the joystick
-## scheme's controls cover. Taking all four corners follows zoom and the quarter-turn used for a
+## scheme's controls cover (the cover `main` handed the city's events, the one every other
+## "can she see it" reads). Taking all four corners follows zoom and the quarter-turn used for a
 ## portrait presentation; using the actor's drawn box keeps this the same overlap question the
 ## page's encounter counter asks of what she meets.
 func _she_can_see(actor: Node2D) -> bool:
 	var at := actor.global_position
-	var controls := get_tree().get_first_node_in_group(HelpText.CONTROLS_GROUP) as TouchControls
-	var joystick := controls != null and controls.controls_mode() == ControlsMode.Mode.JOYSTICK
+	var covering := _city.events.world.visible.controls if _city else null
 	var box: Rect2 = actor.drawn_box() if actor is EventInstance else Rect2(-Vector2.ONE * 16, Vector2.ONE * 32)
 	box.position += at
-	return VisibleView.visible_share(box, _camera_world_rect(), joystick) > 0.0
+	return VisibleView.visible_share(box, _camera_world_rect(), covering) > 0.0
 
 ## The axis-aligned world rectangle the camera currently draws. The game's presentation is either
 ## unturned or a quarter-turn, so the inverse-transformed viewport corners still bound the exact
@@ -1460,7 +1493,7 @@ func subject_of(label: String) -> Node2D:
 	return null
 
 ## Whether any part of a box `half` either side of `centre` is in the picture: its centre or a
-## corner, the test `ResistanceDirector._box_shows()` puts a task's target through as it is placed.
+## corner, the test `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW` puts a task's target through as it is placed.
 func _box_on_screen(centre: Vector2, half: Vector2) -> bool:
 	var view := get_viewport().get_visible_rect()
 	var transform := get_viewport().get_canvas_transform()
@@ -1543,10 +1576,10 @@ func _write_the_draft() -> int:
 	var errors: Array[String] = []
 	for field: String in data.get("setup", {}).get("task", {}):
 		pinned.append(position_of(data.setup.task[field], errors))
-	var drafted := _draft.compose(_written, _city, start_position(), pinned, problems)
+	var drafted := _draft.compose(_written, _run, _city, start_position(), pinned, problems)
 	for problem in problems:
 		print("[SceneRecipe] draft: " + problem)
-	var path := DevFlags._word_after("--recipe-draft")
+	var path := _config.recipe_draft_path
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		print("[SceneRecipe] cannot write the draft: " + path)
@@ -1564,8 +1597,20 @@ func _write_the_draft() -> int:
 			drafted.setup.actors.size()])
 	return 0
 
+## An escape section of this recipe was lost and is about to start again. A scripted recipe has
+## failed — the manifest says so and the run quits non-zero — and answers `true`; a free one
+## answers `false`, for `main` to reload the authored scene rather than retry the section.
+func lose_the_attempt() -> bool:
+	if not scripted:
+		return false
+	manifest["playback_error"] = "the authored escape attempt was lost"
+	write_manifest()
+	_active = false
+	get_tree().quit(1)
+	return true
+
 func write_manifest() -> void:
-	var path := DevFlags._word_after("--recipe-manifest")
+	var path := _config.recipe_manifest_path
 	if path.is_empty():
 		return
 	var file := FileAccess.open(path, FileAccess.WRITE)

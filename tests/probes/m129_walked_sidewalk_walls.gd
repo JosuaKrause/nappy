@@ -13,7 +13,7 @@ extends RefCounted
 ## # What this measures
 ##
 ## `EventScheduler._leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
-## a **cost** one (`_line_reach_of` against `_THE_FAR_LANE`, "what does this row bill a passer-by")
+## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
 ## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, and only in
@@ -50,7 +50,7 @@ extends RefCounted
 ## combined physics radius for the whole rig"*), and the pram's own body
 ## (`Stroller.PRAM_BODY_RADIUS`, 8px) sits ahead of her **on the circumference of that circle, in
 ## the direction of travel** — never beside it — so nothing about pushing it widens her sideways.
-## `EventScheduler._THE_FAR_LANE`'s own doc comment states the width a lane needs in those terms: *"a
+## `EventDef.reaches_the_far_lane()`'s own doc comment states the width a lane needs in those terms: *"a
 ## free tile is a line because a tile is wider than the 28px stroller (2 * PLAYER_BODY_RADIUS)"*, and
 ## `tests/test_events.gd`'s `_walkable_lane_beside(...) >= 2.0 * Tuning.PLAYER_BODY_RADIUS` is the
 ## same figure checked directly against a placed body. 46px is a different, narrower fact:
@@ -65,7 +65,7 @@ extends RefCounted
 ## # What counts as a solid body
 ##
 ## Every placed row with `obstructs_radius > 0.0`, minus the two exemptions the production rule
-## and its own probe already make and for the same reasons: `scenery` (`pigeon_flock` —
+## and its own probe already make and for the same reasons: `Role.SCENERY` (`pigeon_flock` —
 ## *"basically free already"*), and a `checkpoint_hut`/
 ## `checkpoint_gate` door body (*"a region door is never a block... it costs by design"*,
 ## `docs/DECISIONS.md`; the region **wall**'s own body is not a door and still counts). A pacing
@@ -274,7 +274,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 
 ## Every solid body the day stands, tagged with the pass that placed it. Reimplements
 ## `EventScheduler.build_day`'s own phase order by calling its private phase functions directly —
-## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `_line_reach_of`,
+## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `EventDef.line_reach()`,
 ## `_role_for` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
@@ -289,7 +289,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		map.hold_segment(segment.key())
 	for segment: StreetNetwork.Segment in region_plan.doors:
 		map.hold_segment(segment.key())
-	for segment: StreetNetwork.Segment in StreetNetwork.around_blocks(
+	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key())
 
@@ -303,7 +303,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for rect: Rect2i in region_plan.alley_doors:
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, day, tree, _rng(map, day, "seals"), boundary,
+	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_segments)
 
 	var corridor := Corridor.of(tree)
@@ -370,7 +370,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		if not plan.is_placed():
 			continue
 		var def := plan.def
-		if def.obstructs_radius <= 0.0 or def.scenery:
+		if def.obstructs_radius <= 0.0 or def.role == EventDef.Role.SCENERY:
 			continue
 		if def.id.begins_with(_DOOR_ID_PREFIX):
 			continue
@@ -399,7 +399,7 @@ func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, be
 func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 		position: Vector2) -> bool:
 	var tile := map.world_to_tile(position)
-	var segment := StreetNetwork.segment_containing(tile)
+	var segment := map.network.segment_containing(tile)
 	if not segment or corridor.depth(segment.tile_rect().position) != 0:
 		return false
 	for band: Rect2i in EventScheduler._sidewalk_bands(segment.tile_rect(), segment.horizontal):
@@ -409,7 +409,7 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 	return false
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
-## before the tile work, the same shape as `EventScheduler._reach_touches`.
+## before the tile work, the same shape as `Planned.reach_touches()`.
 func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 	var found: Array = []   # Array[Body]
 	for body: Body in bodies:

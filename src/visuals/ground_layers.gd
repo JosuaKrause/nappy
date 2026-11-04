@@ -3,10 +3,11 @@ extends RefCounted
 ## Builds the ground's presentation TileSet out of the baked `ground` page, once per repaint.
 ##
 ## **Every picture comes out of one image, and one image goes back to the GPU.**
-## `AtlasLibrary.page_image(ATLAS_GROUP)` is read once per build; each base, overlay, damage
-## stencil, grass feature and whole authored tile is a `get_region()` of it, addressed by the
-## region name `assets/ground_tileset.tres` carries on each source. Nothing here loads a picture
-## from disk and nothing reads a texture back from the GPU per picture.
+## `AtlasLibrary.page_image(ATLAS_GROUP)`, on the library the city hands in, is read once per
+## build; each base, overlay, damage stencil, grass feature and whole authored tile is a
+## `get_region()` of it, addressed by the region name `assets/ground_tileset.tres` carries on each
+## source. Nothing here loads a picture from disk and nothing reads a texture back from the GPU
+## per picture.
 ##
 ## **The page holds what its own bake mode draws.** A default bake's page carries the layers and
 ## the twelve whole tiles whose source the recipe composes nothing for; the 46 whole tiles of
@@ -27,13 +28,16 @@ extends RefCounted
 ## stone's own fill colour. There is no runtime switch between the two: the pixels on the page are
 ## the ones the build chose.
 
-## The composition recipe: which shared base and which transparent overlays each source id wants,
-## which severity pool each damage source draws from, and the grass features. **A data file the
-## game reads at runtime, so it lives under `assets/` and is named in the Web preset's
-## `include_filter`** — a `.json` is not a resource and would otherwise not be exported at all.
-## Its filenames are the illustrated PNGs' own; `_layer_image()` turns each one into a region name
-## and the pixels come off the page.
-const MANIFEST_PATH := "res://assets/ground_layers.json"
+## How far a route curbstone's own pixels are blended toward `Palette.ROUTE_KERB_TINT`
+## (`GroundLayers._tint_opaque`/`_tint_matching`, `City.tint_the_route()`) — the whole of the
+## M145 trial's own dial. The player sets it by eye against a still, not this comment: raise it
+## while the cast reads as invisible, lower it while it reads as a drawn hint rather than a cast,
+## and zero is the trial's off switch, with nothing else to change. The strip the blend applies to
+## is two or three pixels wide (the SVG art's 2px band, the illustrated `curbstone.png`'s 3px one),
+## so the number that read as nothing spread over a whole tile has to run higher to register within
+## its own width.
+const ROUTE_KERB_TINT_ALPHA := 0.45
+
 ## The region prefix the manifest's component filenames sit under: a manifest naming
 ## `curbstone.png` means the region `tiles/layers/curbstone`.
 const LAYER_REGION_ROOT := "tiles/layers/"
@@ -74,22 +78,22 @@ const _COLOR_MATCH_TOLERANCE := 0.03
 ##
 ## A source the recipe composes nothing for draws its whole tile off the page, in either bake, and
 ## a name the bake does not carry is the same kind of error one level down.
-static func build_tile_set(authored: TileSet) -> TileSet:
+static func build_tile_set(authored: TileSet, recipe: GroundRecipe, atlas: AtlasLibrary) -> TileSet:
 	if authored == null:
 		return null
 	var started := Time.get_ticks_usec()
-	var page := AtlasLibrary.page_image(ATLAS_GROUP)
+	var page := atlas.page_image(ATLAS_GROUP)
 	if page == null:
 		push_error("The baked '%s' page did not read back; the ground cannot be composed"
 				% ATLAS_GROUP)
 		return null
-	var manifest := _layer_recipe()
-	if manifest.is_empty() and AtlasLibrary.bake_mode() != "svg":
+	var manifest := _layer_recipe(recipe)
+	if manifest.is_empty() and AtlasTable.baked().bake_mode() != "svg":
 		# The recipe said what a default bake's page holds, so without it nothing can be composed
 		# and nothing whole is on the page to draw instead. Stopping here says that once;
 		# continuing would say it again for each of the 46 sources and bury the reason.
 		push_error("The ground composition recipe %s did not load; a default bake's page carries "
-				% MANIFEST_PATH + "no whole tile to draw instead, so the ground cannot be composed")
+				% GroundRecipe.PATH + "no whole tile to draw instead, so the ground cannot be composed")
 		return null
 	var result := authored.duplicate(true) as TileSet
 	# Water belongs to its animated surface. Keep its baked region available to that owner,
@@ -144,13 +148,13 @@ static func build_tile_set(authored: TileSet) -> TileSet:
 ## it, markings included, so composing a kerb over a paving base there would draw the kerb twice.
 ## In a default bake the recipe is what the page was baked around, so a missing or unusable one is
 ## an error rather than a quiet `{}` — the whole tiles it composes are not on that page.
-static func _layer_recipe() -> Dictionary:
-	if AtlasLibrary.bake_mode() == "svg":
+static func _layer_recipe(recipe: GroundRecipe) -> Dictionary:
+	if AtlasTable.baked().bake_mode() == "svg":
 		return {}
-	var manifest := _load_manifest()
+	var manifest := recipe.manifest()
 	if manifest.is_empty() or int(manifest.get("tile_size", 0)) != TILE_SIZE.x:
 		push_error("The ground composition recipe %s is missing, unreadable or not a version 1 "
-				% MANIFEST_PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
+				% GroundRecipe.PATH + "recipe at %dpx tiles" % TILE_SIZE.x)
 		return {}
 	return manifest
 
@@ -272,42 +276,6 @@ static func rotate_clockwise(image: Image, degrees: int) -> Image:
 			return null
 	return result
 
-## The recipe, read from disk once and held for the life of the process, like the `ground` page
-## it composes from. The ground is repainted at the start of every day, and a repaint that went
-## back to the disk would make each day's ground depend on what the file system holds at that
-## moment — a file moved under a running game would leave that day with no recipe and no ground.
-## The first build is the city's own, before the first day is drawn.
-static var _manifest: Dictionary = {}
-static var _manifest_read := false
-static var _manifest_reads := 0
-
-static func _load_manifest() -> Dictionary:
-	if not _manifest_read:
-		_manifest_read = true
-		_manifest = _read_manifest()
-	return _manifest
-
-static func _read_manifest() -> Dictionary:
-	_manifest_reads += 1
-	if not FileAccess.file_exists(MANIFEST_PATH):
-		return {}
-	var parser := JSON.new()
-	if parser.parse(FileAccess.get_file_as_string(MANIFEST_PATH)) != OK:
-		push_warning("Ignoring invalid ground layer manifest: %s" % MANIFEST_PATH)
-		return {}
-	var data: Variant = parser.data
-	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
-
-## How many times the recipe has been read from disk. A suite asks that it stays at one.
-static func manifest_reads() -> int:
-	return _manifest_reads
-
-## Forgets the held recipe, so a suite can watch the one read happen.
-static func reset_for_tests() -> void:
-	_manifest = {}
-	_manifest_read = false
-	_manifest_reads = 0
-
 ## Composes `source_id`'s base and rotated components, tinting the `curbstone` component first
 ## when `tint_curbstone` asks for it — which is the route's own cast (M145's trial): the paving,
 ## and on a main-road kerb the `main_edge_red` clearway line, are untouched and only the stone
@@ -363,7 +331,7 @@ static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
 ## component tinted; where the page carries the whole authored tile (an SVG bake) there is no
 ## separate stone to tint, so the stone is found by its own fill colour instead. A source with no
 ## registered twin id is left without one — that is `GroundTiles`' own decision about which kerbs
-## the route casts on, and `City._tint_the_route_kerbs()` walks the same list. A twin that
+## the route casts on, and `City.tint_the_route()` walks the same list. A twin that
 ## **cannot be built** is an error naming what was missing, like the plain source's own.
 static func _register_route_kerb_twins(tile_set: TileSet, manifest: Dictionary, page: Image,
 		pictures: Dictionary) -> void:
@@ -493,9 +461,9 @@ static func _source_image(page: Image, source: TileSetAtlasSource) -> Image:
 
 ## One region of the page as its own image, or null where the bake does not carry that name.
 static func _region_image(page: Image, name: StringName) -> Image:
-	if name.is_empty() or not AtlasLibrary.has_region(name):
+	if name.is_empty() or not AtlasTable.baked().has_region(name):
 		return null
-	var rect := AtlasLibrary.region_rect(name)
+	var rect := AtlasTable.baked().region_rect(name)
 	if not rect.has_area() or not Rect2i(Vector2i.ZERO, page.get_size()).encloses(rect):
 		return null
 	return page.get_region(rect)
@@ -522,7 +490,7 @@ static func _layer_image(filename: String, page: Image) -> Image:
 # ----------------------------------------------------------------- the tinting ---
 
 ## Blends every opaque pixel of `image` toward `Palette.ROUTE_KERB_TINT` by
-## `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
+## `ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha. Used for the curbstone
 ## component, whose opaque pixels are the whole of the drawing.
 static func _tint_opaque(image: Image) -> Image:
 	var result := image.duplicate()
@@ -535,7 +503,7 @@ static func _tint_opaque(image: Image) -> Image:
 	return result
 
 ## Blends every pixel of `image` within `_COLOR_MATCH_TOLERANCE` of `target` toward
-## `Palette.ROUTE_KERB_TINT` by `Tuning.ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha.
+## `Palette.ROUTE_KERB_TINT` by `ROUTE_KERB_TINT_ALPHA`, keeping each pixel's own alpha.
 ## Used for an SVG bake's kerb tile, where the stone is identified by its own authored fill colour
 ## rather than by a separate component picture.
 static func _tint_matching(image: Image, target: Color) -> Image:
@@ -554,6 +522,6 @@ static func _close_enough(pixel: Color, target: Color) -> bool:
 			and absf(pixel.b - target.b) < _COLOR_MATCH_TOLERANCE
 
 static func _tinted_pixel(pixel: Color) -> Color:
-	var blended := pixel.lerp(Palette.ROUTE_KERB_TINT, Tuning.ROUTE_KERB_TINT_ALPHA)
+	var blended := pixel.lerp(Palette.ROUTE_KERB_TINT, ROUTE_KERB_TINT_ALPHA)
 	blended.a = pixel.a
 	return blended

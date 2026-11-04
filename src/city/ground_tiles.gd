@@ -94,7 +94,7 @@ const _ALLEY_CRACKS := [[ALLEY_CRACKED_HAIRLINE_A, ALLEY_CRACKED_HAIRLINE_B],
 	[ALLEY_CRACKED_BROKEN_A, ALLEY_CRACKED_BROKEN_B]]
 
 ## The eight kerb sources a route may run along — ordinary and main-road, all four directions.
-## `City._tint_the_route_kerbs()` walks this list rather than a range, and `GroundLayers.
+## `City.tint_the_route()` walks this list rather than a range, and `GroundLayers.
 ## build_tile_set()` registers this list's twins (`ROUTE_KERB_TWIN`), so the painter and the
 ## builder cannot come to disagree about which sources the route tint applies to. A route never
 ## runs alongside the main road (`RouteTree`, "the main road"), so in practice only the ordinary
@@ -106,7 +106,7 @@ const ROUTE_KERB_SOURCES := [
 ]
 
 ## Each kerb source's tinted twin (M145's route cast — see `GroundLayers.build_tile_set()`, which
-## composites the twin's texture, and `City._tint_the_route_kerbs()`, which paints it). The ids are
+## composites the twin's texture, and `City.tint_the_route()`, which paints it). The ids are
 ## the first free of everything else `build_tile_set` assigns a source id: 58 is one past the last
 ## damage source, `ALLEY_CRACKED_BROKEN_B` (57).
 const ROUTE_KERB_TWIN := {
@@ -285,7 +285,7 @@ static func _road_variant(map: CityMap, tile: Vector2i) -> int:
 ##
 ## **On the main road it is not a zebra**, and that is a rule rather than a decoration. A zebra
 ## means *the traffic gives way to you*, and on the spine it does not — what stops it is the light,
-## which is `Tuning.validate_signals`' whole contract. Zebra paint there contradicts the rule at
+## which is the whole contract of the signals check in `tests/test_tuning_fairness.gd`. Zebra paint there contradicts the rule at
 ## every junction of the one street where getting it wrong ends the day.
 ##
 ## What stands in its place is **two dotted lines** and not nothing: paint the crossing away and a

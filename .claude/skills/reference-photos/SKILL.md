@@ -164,7 +164,7 @@ furniture, that is what to keep in frame.
 The script exits non-zero and names every file it could not handle — a missing input, an
 unreadable source, an ffmpeg that is not installed, an output that did not appear or came out
 empty, a name already taken without `--force`. **A pass that silently converted nothing looks
-exactly like a pass that worked** (CLAUDE.md, "Editing files"). Read the output; a partial run is
+exactly like a pass that worked**. Read the output; a partial run is
 a failure.
 
 **Videos need `ffmpeg` on `PATH`.** Stills need only the locked Python environment, which

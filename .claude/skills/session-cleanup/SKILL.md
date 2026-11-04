@@ -175,13 +175,14 @@ python tools/inbox.py list`), then read `CLAUDE.md` and `docs/TODO.md`, run `too
 read the named work-item sources before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
-checkpoint, exact next action, remaining gate and verification already completed. **List the
-open inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the
-handover, so the next session knows what the player has written and nobody has filed yet
-(**inbox**). Restate the scope fences that matter. If delegation should continue, say to start fresh agents with
-self-contained briefs rather than resuming the session's agents. Keep the prompt self-contained and
-current at the moment of handover; the final report may summarize it, but the file must stand on
-its own.
+checkpoint, exact next action, remaining gate and verification already completed. **List the open
+inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the handover, so
+the next session knows what the player has written and nobody has filed yet (**inbox**). Give the
+Nappy board's last read `rev` and last comment `seq` for each of its two tabs, Main and Review, so
+the next session reads only what changed since (**board**). Restate the scope fences that matter. If
+delegation should continue, say to start fresh agents with self-contained briefs rather than
+resuming the session's agents. Keep the prompt self-contained and current at the moment of handover;
+the final report may summarize it, but the file must stand on its own.
 
 **The restart prompt never records a merge or release permission** (polite-marten). Permission is
 given in a session and ends with it (**committing**, "Merging"), so a sentence carrying it forward

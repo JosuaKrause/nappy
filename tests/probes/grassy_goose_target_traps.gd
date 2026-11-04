@@ -16,27 +16,25 @@ extends RefCounted
 ## - for a door on a facade, on the sidewalk tile straight below it, inside its reach;
 ## - for day 9's district door, where an inspection lets her out: the gatehouse the arrow names,
 ##   `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
-##   along the street, once on each side (`EventManager._release_finished_door_detentions()`), so
+##   along the street, once on each side (`CheckpointController.release_finished_holds()`), so
 ##   day 9 counts two cases a city.
 ##
 ## From there `ResistanceDirector._draw_arrival_position()` — the same call `_set_the_trap_on_her()`
-## makes, told whether the target is a front door — is asked with the director's own `_rng` and a
-## `_sight` answering the unrotated 640x360 screen round her. Counted per case: a start from across
-## the street, above or below her with a clear run, beside her along her street with one, a legal
+## makes, told whether the target is a front door — is asked with the director's own `_rng` and the
+## day's view looked through about her, the unrotated 640x360 screen round her. Counted per case: a
+## start from across the street, above or below her with a clear run, beside her along her street
+## with one, a legal
 ## start with no clear run at all, and no legal start; and, independently of the director, whether
 ## his straight run at her passes through a district door's line
-## (`EventManager.where_she_crossed()` over each door body).
+## (`CheckpointController.where_she_crossed()` over each door body).
 ##
 ## **Walking away.** From each start a `robber_giving_chase` is walked against her for his whole
-## notice and chase (`EventInstance._process()` at 60 frames a second): once with her standing still,
+## notice and chase (`EventInstance.step()` at 60 steps a second): once with her standing still,
 ## and once walking at `Tuning.WALK_SPEED` in each of the four street directions, sliding along
 ## walls the way a body does. "A walk escapes" counts the cases where at least one of the four walks
 ## outlasts him — the trap a player beats without running. Each such case is printed with the
 ## headings that escape and his start relative to her.
 ##
-## Written to run against the code before the front-door start too, for a before-and-after: it
-## passes the front-door flag only when `_draw_arrival_position()` takes one.
-
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS_TO_SWEEP := 30
 const DAYS: Array[int] = [8, 9, 11, 12, 14]
@@ -58,19 +56,19 @@ const A_WALK_ESCAPES := 3
 
 func run(t) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
-	var saved_completed := GameState.completed_resistance_steps.duplicate()
-	var saved_progress := GameState.resistance_progress
-	var saved_tiles := GameState.completed_resistance_alley_tiles.duplicate()
-	var saved_scars := GameState.scars.duplicate(true)
-	var saved_day := GameState.day
-	var saved_state := GameState.city_state
+	var saved_completed := GameState.resistance.completed_steps.duplicate()
+	var saved_progress := GameState.resistance.progress
+	var saved_tiles := GameState.facts.completed_resistance_alley_tiles.duplicate()
+	var saved_scars := GameState.attempt_spend.scars.duplicate(true)
+	var saved_day := GameState.header.day
+	var saved_state := GameState.attempt_spend.city_state
 	var starts := {}
 	var walks := {}
 	for day in DAYS:
 		starts[day] = [0, 0, 0, 0, 0, 0]
 		walks[day] = [0, 0, 0, 0]
 	for seed_value in range(1, SEEDS_TO_SWEEP + 1):
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		for day in DAYS:
@@ -81,16 +79,16 @@ func run(t) -> void:
 			for step in ResistanceSteps.all():
 				if (finale and not step.needs_goal) or (not finale and step.index <= 2 * (day - 6)):
 					done.append(step.index)
-			GameState.completed_resistance_steps = done
-			GameState.resistance_progress = Tuning.RESISTANCE_GOAL if finale else 0
-			GameState.completed_resistance_alley_tiles = []
-			GameState.scars.clear()
-			GameState.day = day
+			GameState.resistance.completed_steps = done
+			GameState.resistance.progress = Tuning.RESISTANCE_GOAL if finale else 0
+			GameState.facts.completed_resistance_alley_tiles = []
+			GameState.attempt_spend.scars.clear()
+			GameState.header.day = day
 			var state := CityState.new()
-			GameState.city_state = state
+			GameState.attempt_spend.city_state = state
 			state.begin_day(city.map.block_plans, day)
 			city.start_day(state, day, _rng(seed_value, day, "closures"))
-			city.events.start_day(day, _rng(seed_value, day, "events"), [],
+			city.events.start_day(DaySpec.for_day(day), _rng(seed_value, day, "events"), [],
 					city.map.doorstep_world_position())
 			var director := ResistanceDirector.new()
 			t.add_child(director)
@@ -108,17 +106,16 @@ func run(t) -> void:
 			var front_door := task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR \
 					or task.task_event_id == "burnt_shell"
 			for her: Vector2 in _where_she_stands(city, director, day):
-				var at := _draw(director, her, def, front_door)
-				var result: Array = at[1]
-				var start: Vector2 = result[0]
+				var result := _draw(director, her, def, front_door)
+				var start := result.at
 				if start == Vector2.INF:
 					tally[NO_START] += 1
 					continue
-				if result.size() > 3 and result[3]:
+				if result.across:
 					tally[ACROSS] += 1
-				elif result[2]:
+				elif result.beside:
 					tally[BESIDE] += 1
-				elif result[1]:
+				elif result.clear:
 					tally[ABOVE_BELOW] += 1
 				else:
 					tally[NO_CLEAR_RUN] += 1
@@ -139,12 +136,12 @@ func run(t) -> void:
 							% [seed_value, day, ", ".join(escaped), start - her])
 			director.free()
 		city.free()
-	GameState.completed_resistance_steps = saved_completed
-	GameState.resistance_progress = saved_progress
-	GameState.completed_resistance_alley_tiles = saved_tiles
-	GameState.scars = saved_scars
-	GameState.day = saved_day
-	GameState.city_state = saved_state
+	GameState.resistance.completed_steps = saved_completed
+	GameState.resistance.progress = saved_progress
+	GameState.facts.completed_resistance_alley_tiles = saved_tiles
+	GameState.attempt_spend.scars = saved_scars
+	GameState.header.day = saved_day
+	GameState.attempt_spend.city_state = saved_state
 	print("\n== grassy-goose: where a touched target's robber starts, %d seeds ==" % SEEDS_TO_SWEEP)
 	print("| day | across the street | above/below, clear run | beside, clear run | no clear run at all | no legal start | no task |")
 	print("|---|---|---|---|---|---|---|")
@@ -176,30 +173,25 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 	if hut == null:
 		return [her]
 	var out := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
-			+ Tuning.CHECKPOINT_RELEASE_MARGIN
+			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	return [hut.position + hut.facing * out, hut.position - hut.facing * out]
 
-## `_draw_arrival_position()` asked with `_sight` set to the screen round `her`; returns
-## `[her, result]`.
-func _draw(director: ResistanceDirector, her: Vector2, def: EventDef, front_door: bool) -> Array:
-	var screen := func(p: Vector2) -> bool:
-		return absf(p.x - her.x) <= Tuning.VIEW_HALF_EXTENT.x \
-				and absf(p.y - her.y) <= Tuning.VIEW_HALF_EXTENT.y
-	director.set_sight(screen, screen)
-	var args: Array = [director._rng, her, def]
-	if director.get_method_argument_count("_draw_arrival_position") >= 4:
-		args.append(front_door)
-	var result: Array = director.callv("_draw_arrival_position", args)
-	return [her, result]
+## `_draw_arrival_position()` asked with the day's view looked through about `her`, the
+## unrotated 640x360 screen round her.
+func _draw(director: ResistanceDirector, her: Vector2, def: EventDef,
+		front_door: bool) -> SpawnSiting.Start:
+	director._city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0), null)
+	return director._draw_arrival_position(director._rng, her, def, front_door)
 
 ## Whether the straight run from `start` to `her` crosses the line of any of today's district-door
-## bodies, the question `EventManager._watch_the_door_lines()` asks of her own steps.
+## bodies, the question `CheckpointController.watch_the_door_lines()` asks of her own steps.
 func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	var plan := city.region_plan()
 	if not plan:
 		return false
 	for body in plan.door_bodies:
-		if EventManager.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
+		if CheckpointController.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
 				start, her) != Vector2.INF:
 			return true
 	return false
@@ -220,7 +212,7 @@ func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, headi
 		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
 		chaser.player_at = her
 		chaser.player_running = false
-		chaser._process(STEP)
+		chaser.step(STEP)
 		elapsed += STEP
 		if chaser.is_lethal_at(her):
 			caught = true

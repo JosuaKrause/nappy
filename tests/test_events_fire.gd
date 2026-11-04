@@ -67,6 +67,7 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 ## that an unseen fire follows the branch she actually took.
 func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 	var tree := RouteTree.for_day(_map(), day)
+	var siting := _fire_siting(day)
 	var carries := tree.branches_on(_map().world_to_tile(unlike))
 	for branch in tree.branches:
 		for route: Array in branch.routes:
@@ -79,8 +80,7 @@ func _another_branch(day: int, unlike: Vector2) -> PackedVector2Array:
 				continue
 			var points := PackedVector2Array()
 			for i in route.size():
-				points.append(EventScheduler.WalkSiting._cell_centre(_map(),
-						route[route.size() - 1 - i]))
+				points.append(siting.cell_centre(route[route.size() - 1 - i]))
 			return points
 	return PackedVector2Array()
 
@@ -95,9 +95,10 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
+	var siting := _fire_siting(day)
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(EventScheduler.WalkSiting._cell_centre(_map(), cell))
+		points.append(siting.cell_centre(cell))
 	return points
 
 ## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
@@ -105,7 +106,7 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 ## suite on the understanding that nothing writes to it.
 func _fire_day_plans() -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
-	return EventScheduler.build_day(Tuning.RUN_TAUGHT_DAY, _rng(Tuning.RUN_TAUGHT_DAY), _map(),
+	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _rng(Tuning.RUN_TAUGHT_DAY), _map(),
 			consumed)
 
 ## The placement context the director above is started on, built the way `EventManager.start_day`
@@ -142,7 +143,7 @@ func _instance(t, def: EventDef, at := Vector2.ZERO,
 
 func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
-		instance._process(STEP)
+		instance.step(STEP)
 
 ## Playtest 04: *"the cat is ineffective since it happens when it spawns — the cat should get
 ## spawned in in front of the player while they walk, so it happens directly in front of them
@@ -183,7 +184,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 
 	# Walking does.
 	var due: Array = []
-	for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+	for i in int(round(EventDirector.AHEAD_INTERVAL.y * 2.0 / STEP)):
 		due = director.due(STEP, at, north)
 		if not due.is_empty():
 			break
@@ -201,7 +202,10 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 	t.check(lead > Tuning.AHEAD_LEAD_DISTANCE,
 			"the cat's own lead (%.0fpx) accounts for its held crouch, not just a flat reaction "
 			% lead + "window (%.0fpx)" % Tuning.AHEAD_LEAD_DISTANCE)
-	var crossing := (path[0] + path[1]) * 0.5
+	# Where the run crosses her line: the middle of a run open both ways, and off it where a solid
+	# beside her pavement leaves the run coming from the open side
+	# (`EventDirector._crossing_ahead_of()`).
+	var crossing: Vector2 = Geometry2D.line_intersects_line(path[0], path[1] - path[0], at, north)
 	t.close_to(crossing.distance_to(at), lead,
 			"it crosses where she is about to be, not where she is", 1.0)
 	t.check((crossing - at).normalized().dot(north.normalized()) > 0.99,
@@ -224,7 +228,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 ## **It is sited from her walk, it may be moved while it is nobody's memory yet, and it is fixed the
 ## moment it is real.**
 ##
-## The third of those is the one with teeth. `EventManager._stream_in` records the scar and moves the
+## The third of those is the one with teeth. `EventStreaming.stream_in` records the scar and moves the
 ## block along its arc the first time a plan enters the world, so the city already remembers this
 ## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
 ## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
@@ -345,7 +349,7 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 	t.close_to(instance.travel_velocity().length(), 0.0,
 			"and it answers zero for how fast it is travelling, so nothing reads it as closing",
 			0.001)
-	t.check(instance.contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
+	t.check(instance.excitement.contribution_at(kerb + Vector2(def.inner_radius * 0.5, 0.0)) > 0.0,
 			"it is still emitting where it stands, which is the cost the pair is made of")
 	var travelled := instance.path_travelled()
 	_advance(instance, 6.0)
@@ -380,11 +384,11 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 	var at: Vector2 = route[route.size() / 2]
 
 	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
-	t.check(siting._still_leaves_a_park_reachable(nothing_else, far_off, at),
+	t.check(siting.leaves_her_a_way(nothing_else, far_off, at),
 			"a fire at the far end of the branch she is walking leaves the day working around it")
 
 	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
-	t.check(not siting._still_leaves_a_park_reachable(nothing_else, on_the_doorstep, at),
+	t.check(not siting.leaves_her_a_way(nothing_else, on_the_doorstep, at),
 			"and a fire whose field swallows the doorstep is refused, because the way home is what "
 			+ "she would have no way round")
 
@@ -398,7 +402,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var crews := 0
 	for day in range(1, 15):
 		for plan in _planned(day):
-			if not plan.def.sited_on_her_way:
+			if plan.def.on_her_way == null:
 				continue
 			t.check(not plan.is_placed(), "day %d: '%s' is planned with no position"
 					% [day, plan.def.id])
@@ -406,7 +410,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 					"day %d: and it is a place that stands still, not a director's moment" % day)
 			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				crews += 1
-				t.check(plan.def.id == "poster_crew" and plan.def.pastes_a_front,
+				t.check(plan.def.id == "poster_crew" and plan.def.on_her_way.at_a_front,
 						"day %d: the only recurring row left for her walk is the poster crew, not '%s'"
 						% [day, plan.def.id])
 				continue
@@ -425,12 +429,13 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
+	var crew_way := crew.on_her_way
 	for day in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
-		var handed := EventScheduler.build_day(day, _rng(day), map, [], [], [], tree)
-		crew.sited_on_her_way = false
-		var kept := EventScheduler.build_day(day, _rng(day), map, [], [], [], tree)
-		crew.sited_on_her_way = true
+		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, [], [], [], tree)
+		crew.on_her_way = null
+		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, [], [], [], tree)
+		crew.on_her_way = crew_way
 		var same := handed.size() == kept.size()
 		var crews := 0
 		for i in mini(handed.size(), kept.size()):
@@ -470,7 +475,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		var north := Vector2(0.0, -Tuning.WALK_SPEED)
 
 		var due: Array = []
-		for i in int(round(Tuning.AHEAD_INTERVAL.y * 2.0 / STEP)):
+		for i in int(round(EventDirector.AHEAD_INTERVAL.y * 2.0 / STEP)):
 			due = director.due(STEP, at, north)
 			at += north * STEP
 			if not due.is_empty():
@@ -481,9 +486,9 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 
 		var path := due[1] as PackedVector2Array
 		# A row that comes down her line is created just out of sight down it, its telegraph spent —
-		# after its warning when it telegraphs (she walks on through the badge: `EventManager`'s
-		# `_warn_down_her_line()` and `spawn_warned()`), at once when it does not
-		# (`_send_down_her_line()`, the loose dog).
+		# after its warning when it telegraphs (she walks on through the badge: `EventsAhead`'s
+		# `_warn_down_her_line()` and `EventSpawner.spawn_warned()`), at once when it does not
+		# (`EventsAhead._send_down_her_line()`, the loose dog).
 		if def.comes_down_her_line():
 			var direction := (path[0] - path[1]).normalized()
 			if def.warns_before_it_exists():
@@ -494,7 +499,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		var instance := EventInstance.new()
 		instance.setup(def, path[0], path)
 		if def.comes_down_her_line():
-			instance.resume(EventManager.age_when_warned(def), 0.0)
+			instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		t.add_child(instance)
 		instance.set_process(false)
 
@@ -502,7 +507,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		for i in int(round(15.0 / STEP)):
 			at += north * STEP
 			instance.player_at = at
-			instance._process(STEP)
+			instance.step(STEP)
 			closest = minf(closest, instance.global_position.distance_to(at))
 			if instance.is_finished:
 				break
@@ -514,6 +519,8 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 func _test_hard_fail_only_when_active(t) -> void:
 	var def := EventDef.new()
 	def.id = "test_hard_fail"
+	def.stands_as = EventDef.StandsAs.SOMETHING
+	def.when_it_stops = EventDef.WhenItStops.GOES_ON
 	def.intensity = 20.0
 	def.inner_radius = 40.0
 	def.outer_radius = 120.0

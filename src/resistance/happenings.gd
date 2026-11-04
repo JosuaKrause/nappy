@@ -14,8 +14,20 @@ extends RefCounted
 ## main road on her way**, and the barricade it stops at stays for the rest of the run.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
-## (`GameState.day_rng(day, "happenings")`), so nothing here moves a draw the director or the
-## scheduler makes.
+## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director
+## or the scheduler makes.
+
+const COLUMN_BY := 100.0
+## The column comes once she is this close to the main road's middle, across it — about a screen's
+## half-width and a block — or at `COLUMN_BY` into the day whatever she is doing.
+const COLUMN_WITHIN := 480.0
+## **The once-only happenings of days 11 to 13** (`ResistanceHappenings`), each arriving a different
+## way. Chosen, not measured, and open to overturn once the late days are timed (M184).
+##
+## Day 11's market is sited ahead of her on her route once she has walked as long as day 3's fire
+## waits (`EventDirector.ON_HER_WAY_AFTER`); if nothing on her way has qualified by this far into
+## the day, it goes where she is not looking, so the city has lost it whichever way she walked.
+const MARKET_GONE_BY := 90.0
 
 ## The day the neighbor is out in the city rather than leaving at dawn, and the day of the raid.
 ## Named here rather than read off `ResistanceSteps` because the neighbor's mornings are the story
@@ -41,6 +53,8 @@ const COLUMN_DAY := 13
 
 var _city: City
 var _map: CityMap
+## The map's navigator, handed in by `setup()`: what day 12's cordon officers walk by.
+var _navigator: Navigator
 var _day := 0
 var _rng: RandomNumberGenerator
 ## The neighbor's morning figure, or null on a day that has none. Kept for the tests.
@@ -52,6 +66,17 @@ var raid: Array[EventInstance] = []
 ## distance and a screen test a frame: the vans' points, and the patrol's beat.
 var _raid_vans := PackedVector2Array()
 var _raid_beat := PackedVector2Array()
+
+## Where the raid stands, or will stand once it has come, on day 10: the points of its two vans,
+## one either side of her door across her street, and empty on every other day or where the street
+## has no room for them.
+func raid_vans() -> PackedVector2Array:
+	return _raid_vans
+
+## Where the raid's patrol car paces: the two ends of its beat along the carriageway in front of
+## her door, or empty on every other day and where the street has no room for it.
+func raid_beat() -> PackedVector2Array:
+	return _raid_beat
 
 ## How long today has run, and how much of it she has spent walking rather than standing — a
 ## happening sited on her way waits for her to have chosen a way, as day 3's fire does, on the same
@@ -70,13 +95,39 @@ var market_block := Vector2i(-1, -1)
 ## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
 ## the day, or null. Kept for the tests.
 var cordon: ParkCordon = null
+
+## Where these happenings write their own account for the run log, handed on to the park's cordon;
+## the director's, set before `setup()`.
+var trace := RunTrace.new()
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false
 var column: Array[EventInstance] = []
 
-func setup(city: City, map: CityMap) -> void:
+## Where the raid may put what it brings (`SpawnSiting`), or null.
+var _spawn_siting: SpawnSiting
+
+## The run the happenings belong to (`RunState`): the day's stream they draw from, the scars they
+## leave and the blocks they change. The city's (`City.run`), handed in with it.
+var _run: RunState
+
+## Hands the happenings their city, the map they place on, the navigator what they send walks by —
+## the director's own, or the map's (`WorldMap.navigator()`) for a rig that hands none — and the run
+## they belong to: `run`, or the city's (`City.run`) — and the siting the raid is held to
+## (`spawn_siting`), or the city's (`City.spawn_siting`) over the same map, or none for a rig with
+## neither, where nothing the raid puts down or the cordon's officers walk in as is ever held back
+## for being in view.
+func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
+		spawn_siting: SpawnSiting = null) -> void:
 	_city = city
+	_run = run if run else (city.run if city else null)
 	_map = map
+	_navigator = navigator if navigator else (map.navigator() if map else null)
+	if spawn_siting:
+		_spawn_siting = spawn_siting
+	elif city and city.spawn_siting and city.spawn_siting.map() == map:
+		_spawn_siting = city.spawn_siting
+	else:
+		_spawn_siting = null
 
 ## Starts the day's happenings: on the mornings before `NEIGHBOR_DAY` the neighbor walks out of
 ## her building beside her and off along her street.
@@ -87,7 +138,7 @@ func setup(city: City, map: CityMap) -> void:
 ## 12's park is taken when its swing is reached (`take_the_park()`).
 func start_day(day: int, with_its_events := true) -> void:
 	_day = day
-	_rng = GameState.day_rng(day, "happenings")
+	_rng = _run.calendar.day_rng(day, "happenings")
 	morning_neighbor = null
 	raid.clear()
 	_raid_vans = PackedVector2Array()
@@ -116,22 +167,20 @@ func start_day(day: int, with_its_events := true) -> void:
 	if day >= MARKET_DAY and _city:
 		_city.board_neighbor_window()
 
-## Once a frame, from the director: brings in whatever the day is waiting to bring in. `her` is her
-## position, `Vector2.INF` with no player, and `velocity` hers; `shows(row, feet)` is whether any
-## of what `row` draws, standing at `feet`, would be in the camera's whole view, covered corners
-## included (the director's `_drawing_shows()`, since what it decides is where something appears),
-## which a rig may leave unset.
-func tick(delta: float, her: Vector2, velocity: Vector2, shows: Callable) -> void:
+## Once a tick the walk stepped, from the director (`ResistanceDirector.tick()`): brings in
+## whatever the day is waiting to bring in. `her` is her
+## position, `Vector2.INF` with no player, and `velocity` hers.
+func tick(delta: float, her: Vector2, velocity: Vector2) -> void:
 	_elapsed += delta
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
 		_heading = velocity.normalized()
 		_walked += delta
 	if not _raid_vans.is_empty() and raid.is_empty():
-		_maybe_raid(her, shows)
+		_maybe_raid(her)
 	if _market_owed:
 		_maybe_the_market(delta, her)
 	if cordon:
-		cordon.tick(delta, her, shows)
+		cordon.tick(delta, her)
 	if _column_owed:
 		_maybe_the_column(her)
 
@@ -162,12 +211,13 @@ func _plan_the_raid() -> void:
 
 ## **What she comes home to**: the raid arrives once she has left, is `Tuning.OUT_OF_SIGHT` from
 ## her door and none of it would be on screen — each van's and the patrol car's whole drawing, at
-## both ends of the car's beat, asked through `shows` — *nothing is seen to appear* — so it is
+## both ends of the car's beat (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`) — *nothing is seen to
+## appear* — so it is
 ## waiting at home rather than arriving in front of her. Cold, whatever the run's heat: a heated
-## `night_raid` lets its men out after her at `Tuning.HEAT_HUNTS_LEVEL` (`EventDef.hunts_on_foot`),
+## `night_raid` lets its men out after her at `EventDef.HEAT_HUNTS_LEVEL` (`EventDef.hunts`),
 ## and men sent after her from her own door would make the doorstep the one place she is hunted,
 ## which is the opposite of what the raid was decided as.
-func _maybe_raid(her: Vector2, shows: Callable) -> void:
+func _maybe_raid(her: Vector2) -> void:
 	if not _city or not _city.events or her == Vector2.INF:
 		return
 	var door := _map.doorstep_world_position()
@@ -175,19 +225,21 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 		return
 	var van := EventCatalogue.by_id("night_raid")
 	var row := EventCatalogue.by_id("police_patrol")
-	if shows.is_valid():
+	if _spawn_siting:
+		var van_box := _spawn_siting.ask_of_drawing(EventFootprints.footprint_of(van))
 		for at in _raid_vans:
-			if shows.call(van, at):
+			if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, van_box, at):
 				return
+		var car_box := _spawn_siting.ask_of_drawing(EventFootprints.footprint_of(row))
 		for at in _raid_beat:
-			if shows.call(row, at):
+			if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, car_box, at):
 				return
 	for at in _raid_vans:
 		raid.append(_city.events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
 		var patrol: EventDef = row.duplicate()
 		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
-		# `EventScheduler._without_its_aftermath()`); dropped, the car draws and charges nothing.
+		# `EventCatalogue.without_its_aftermath()`); dropped, the car draws and charges nothing.
 		patrol.shape = row.shape
 		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
@@ -197,8 +249,8 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 	# texture should also have changed. and then the change stays"). Live today; the scar is
 	# what every later day and a reloaded save read it from (`City._sync_home_door()`).
 	_city.seal_home_door()
-	GameState.add_scar(City.SEALED_DOOR_SCAR, door)
-	Telemetry.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
+	_run.add_scar(City.SEALED_DOOR_SCAR, door)
+	trace.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
 
 # ---------------------------------------------------------- day 11: the market ---
 
@@ -214,26 +266,26 @@ func _maybe_raid(her: Vector2, shows: Callable) -> void:
 ## **Permanent because it is the block's own arc.** Only a block whose arc is waiting to board up
 ## is a candidate, and it takes that step today rather than on its own later day
 ## (`CityState.advance_now()`), so it is boarded for the rest of the run and a lost day gives it
-## back with the dawn's photograph. If nothing on her way has qualified by `Tuning.MARKET_GONE_BY`,
+## back with the dawn's photograph. If nothing on her way has qualified by `MARKET_GONE_BY`,
 ## the candidate nearest her that she cannot see goes instead: the city loses its market whichever
 ## way she walked. A city whose arcs board nothing after day 11 has no market to lose, and says so
 ## in the run log.
 func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _map:
 		return
-	if _walked < EventDirector.ON_HER_WAY_AFTER and _elapsed < Tuning.MARKET_GONE_BY:
+	if _walked < EventDirector.ON_HER_WAY_AFTER and _elapsed < MARKET_GONE_BY:
 		return
 	_look_in -= delta
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := market_candidates(_map, GameState.city_state)
+	var candidates := market_candidates(_map, _run.attempt_spend.city_state)
 	if candidates.is_empty():
 		_market_owed = false
-		Telemetry.note("contact", "no block is waiting to board up, so there is no market to lose")
+		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
 		return
 	var block := _market_ahead_of(her, candidates)
-	if block.x < 0 and _elapsed >= Tuning.MARKET_GONE_BY:
+	if block.x < 0 and _elapsed >= MARKET_GONE_BY:
 		block = _market_out_of_her_sight(her, candidates)
 	if block.x >= 0:
 		board_up(block)
@@ -260,12 +312,12 @@ static func market_candidates(map: CityMap, state: CityState) -> Array[Vector2i]
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				GameState.settled_this_act(), PackedVector2Array())
+				_run.calendar.settled_this_act(), PackedVector2Array())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var lot := _frontage_of(block)
+		var lot := frontage_of(block)
 		if _distance_to_rect(her, lot) < Tuning.OUT_OF_SIGHT:
 			continue
 		for cell: Vector2i in ahead:
@@ -280,7 +332,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var distance := _distance_to_rect(her, _frontage_of(block))
+		var distance := _distance_to_rect(her, frontage_of(block))
 		if distance >= Tuning.OUT_OF_SIGHT and distance < nearest:
 			nearest = distance
 			best = block
@@ -289,7 +341,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## Boards `block` up now and takes its market away: the arc's own next step, taken today, the
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
-	var state := GameState.city_state
+	var state := _run.attempt_spend.city_state
 	if not state or not state.advance_now(_map.block_plans, block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
@@ -299,13 +351,13 @@ func board_up(block: Vector2i) -> bool:
 		_city.present_block(block, state)
 	var stalls := 0
 	if _city and _city.events:
-		stalls = _city.events.take_away_within(_frontage_of(block), ["market_stall"] as Array[String])
-	Telemetry.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
+		stalls = _city.events.take_away_within(frontage_of(block), ["market_stall"] as Array[String])
+	trace.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
 			% [block, stalls])
 	return true
 
 ## A block's lot and the sidewalk round it, in world space: what a market on it stands in.
-func _frontage_of(block: Vector2i) -> Rect2:
+func frontage_of(block: Vector2i) -> Rect2:
 	return _map.tile_rect_to_world(_map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 
 static func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
@@ -332,14 +384,16 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
-	var state := GameState.city_state
+	var state := _run.attempt_spend.city_state
 	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
 		return false
 	_map.recompute_calm(state)
 	if cordon:
 		cordon.clear()
-	cordon = ParkCordon.new(_map, _city, park, blocked)
-	Telemetry.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
+	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
+	cordon = ParkCordon.new(_map, _navigator, _city, park, siting, blocked)
+	cordon.trace = trace
+	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true
 
@@ -352,8 +406,8 @@ func is_closing() -> bool:
 ## **Day 13: a column on the main road, coming on her way** — the morning the army arrives, when
 ## the convoys start (`military_convoy`'s `first_day`). `Tuning.COLUMN_TRUCKS` army trucks, one
 ## behind the other `Tuning.COLUMN_SPACING` apart in one lane of the spine, sent down it toward the
-## point level with her once she comes within `Tuning.COLUMN_WITHIN` of the main road — or at
-## `Tuning.COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
+## point level with her once she comes within `COLUMN_WITHIN` of the main road — or at
+## `COLUMN_BY` into the day wherever she is, when it passes out of her sight. Each truck is
 ## the catalogue's own row with its own telegraph contract, and the column arrives the way
 ## everything from off screen does (`EventManager.warn_first()`): its badge goes up first, alone for
 ## at most `Tuning.WARNING_ALONE_MAX`, pointing up the main road, and the trucks are then created in
@@ -362,7 +416,7 @@ func is_closing() -> bool:
 ##
 ## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
 ## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
-## row's own `spawns_on_finish`, so it is a scar and stands for the rest of the run, but only where
+## row's own `aftermath.on_finish`, so it is a scar and stands for the rest of the run, but only where
 ## she can still reach home and a calm area with it standing
 ## (`EventScheduler.WalkSiting.leaves_her_a_way()`), checked before the stop is accepted, a block
 ## further on at a time, from where she is standing when the trucks arrive. The trucks ahead of it
@@ -370,15 +424,15 @@ func is_closing() -> bool:
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _city.events or _map.main_road < 0:
 		return
-	var near := absf(her.x - _spine_x()) <= Tuning.COLUMN_WITHIN
-	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < Tuning.COLUMN_BY:
+	var near := absf(her.x - spine_x()) <= COLUMN_WITHIN
+	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < COLUMN_BY:
 		return
 	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
 	# asked again as she moves.
 	_column_owed = send_the_column(her) == null
 
 ## The main road's middle, across it.
-func _spine_x() -> float:
+func spine_x() -> float:
 	return (float(_map.main_road * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 
@@ -392,9 +446,8 @@ func send_the_column(her: Vector2) -> PendingWarning:
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
-	# About as far up the lane as the front truck is created, just out of sight: the view's half
-	# height and the truck's own picture.
-	var lead := PendingWarning.least_distance() + EventInstance.box_of(def).size.y
+	# About as far up the lane as the front truck is created, just out of sight.
+	var lead := SpawnSiting.lead_up_a_lane(EventFootprints.box_of(def))
 	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
 	# From the end with room for its place behind her and a stop beyond her, when only one end has
 	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel
@@ -419,7 +472,7 @@ func send_the_column(her: Vector2) -> PendingWarning:
 		return true
 	var warning := _city.events.warn_first(def, her, where, arrive)
 	if warning:
-		Telemetry.note("contact", "a column of %d trucks is coming down the main road %s" % [
+		trace.note("contact", "a column of %d trucks is coming down the main road %s" % [
 			Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 	return warning
 
@@ -437,7 +490,7 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 		stop = _where_the_column_stops(her, lane_x, her.y - going * past, -going,
 				absf(start_y - her.y), def)
 	var far_y := bottom if going > 0.0 else top
-	var trailing := EventScheduler._without_its_aftermath(def)
+	var trailing := EventCatalogue.without_its_aftermath(def)
 	for i in Tuning.COLUMN_TRUCKS:
 		var back := -going * Tuning.COLUMN_SPACING * i
 		var from := Vector2(lane_x, clampf(start_y + back, top, bottom))
@@ -445,9 +498,9 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 		var to := Vector2(lane_x, stop.y if rear and stop != Vector2.INF else far_y)
 		var truck := def if rear and stop != Vector2.INF else trailing
 		column.append(_city.events.spawn_warned(truck, PackedVector2Array([from, to])))
-	Telemetry.note("contact", "a column of %d trucks comes down the main road %s%s" % [
+	trace.note("contact", "a column of %d trucks comes down the main road %s%s" % [
 		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north",
-		", and stops at %s" % TelemetryLog.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
+		", and stops at %s" % RunTrace.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
 				else ", with nowhere to stop"])
 
 ## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road in the
@@ -456,12 +509,12 @@ func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: floa
 ## and to a calm area — or `Vector2.INF`.
 func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going: float,
 		limit: float, def: EventDef) -> Vector2:
-	var barricade := EventCatalogue.by_id(def.spawns_on_finish)
+	var barricade := EventCatalogue.by_id(def.aftermath.on_finish)
 	if not barricade:
 		return Vector2.INF
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				GameState.settled_this_act(), PackedVector2Array())
+				_run.calendar.settled_this_act(), PackedVector2Array())
 	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
 	var step := Vector2i(0, 1 if going > 0.0 else -1)
 	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.
@@ -470,7 +523,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 		var at := Vector2(lane_x, _map.tile_to_world(tile).y)
 		if absf(at.y - her.y) > limit:
 			return Vector2.INF
-		if StreetNetwork.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
+		if _map.network.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
 			tile += step
 			continue
 		if _siting.leaves_her_a_way(_city.events.plans(),
@@ -486,8 +539,9 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 ## no field, no line of text — so the neighbor is a figure she may notice and never a task.
 ##
 ## The way is a coin flip between the two directions along her street, each taken as far as
-## `EventScheduler._room_along()` allows and stopped short of a closed tile, the same shape every
-## route along a street is given; the longer one when only one fits a block. A figure walking half
+## `EventScheduler._room_along()` allows and stopped short of anything that stops a figure on foot
+## (`CityMap.passable()`: a closure, a seal, a body), the same shape every route along a street is
+## given; the longer one when only one fits a block. A figure walking half
 ## her pace down her own street is out of sight long before the route runs out, whichever way she
 ## goes, so the departure at its end is one nobody sees.
 func _send_the_neighbor_to_work() -> EventInstance:
@@ -505,8 +559,9 @@ func _send_the_neighbor_to_work() -> EventInstance:
 		along = -along
 	var room := maxi(east, west)
 	var length := 0
+	var mover := EventInstance.mover_for(def)
 	for step in range(1, room + 1):
-		if _map.is_closed(tile + along * step) or not _map.is_walkable(tile + along * step):
+		if not _map.passable(tile + along * step, mover):
 			break
 		length = step
 	if length < 2:
@@ -515,6 +570,6 @@ func _send_the_neighbor_to_work() -> EventInstance:
 	var finish := _map.tile_to_world(tile + along * length)
 	finish.y = start.y
 	var path := PackedVector2Array([start, finish])
-	Telemetry.note("contact", "the neighbor leaves for work, %s along her street"
+	trace.note("contact", "the neighbor leaves for work, %s along her street"
 			% ("east" if along.x > 0 else "west"))
 	return _city.events.spawn_extra(def, start, path)

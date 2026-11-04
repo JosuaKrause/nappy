@@ -18,7 +18,7 @@ extends RefCounted
 ## **An encounter is one instance's time on screen.** It opens the first frame any of what is drawn
 ## for the instance is visible (`EventInstance.drawn_box()`), or the instance
 ## lands something on her from off screen; it stays open while either goes on; and it is over once
-## the instance has been neither for `Tuning.ENCOUNTER_GAP` — so coming back sooner is the same
+## the instance has been neither for `ENCOUNTER_GAP` — so coming back sooner is the same
 ## encounter, and later a new one. Every instance is its own: a different yeller is a different
 ## encounter. A planned event streamed out and back in is a new instance, which changes nothing,
 ## because it streams out only past `Tuning.EVENT_STREAM_RADIUS`, far longer than the gap away.
@@ -28,17 +28,17 @@ extends RefCounted
 ## - **seen** at most once, the first frame `Tuning.ENCOUNTER_SEEN_SHARE` of its drawn box is
 ##   visible. A row that draws nothing of its own has nothing to be seen and is never seen.
 ## - **influenced** at most once, the first frame the encounter is meaningful, for every row alike:
-##   `Tuning.ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
-##   (`EventInstance.landed_ever`, since `landed()` keeps only the halo's window), or it chasing her
-##   (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
+##   `ENCOUNTER_INFLUENCE_POINTS` landed on her within the encounter
+##   (`ExcitementSource.landed_ever`, since `landed()` keeps only the halo's window), or it chasing
+##   her (`EventInstance.is_chasing()`), or it catching her or beginning a hold of her, whichever comes
 ##   first. **A catch and a hold are the game's own tests, called and not copied** *(inbox #586 in olive-hedgehog, the
 ##   player: "use the real catch code")*: `EventInstance.is_lethal_at()` for the catch, so a cyclist
 ##   still only warned or waiting, a row already finished, or a pursuer within reach through a wall
-##   is no catch; and `EventManager._hold_that_would_begin()` for the hold, handed in as a callable.
-##   Both are pure reads, which start nothing and roll nothing. A pursuer chases from the moment it
-##   comes for her (`EventBus.pursuit_began`), which is before she is within its reach, so one with
-##   a wall between them still counts, through the chase. A catch on the frame a door sets her down
-##   within reach, after this frame's tick, is told by `caught_by()`.
+##   is no catch; and `CheckpointController.hold_that_would_begin()` for the hold, handed in as
+##   a callable. Both are pure reads, which start nothing and roll nothing. A pursuer chases
+##   from the moment it comes for her (`EventBus.pursuit_began`), which is before she is within
+##   its reach, so one with a wall between them still counts, through the chase. A catch on the
+##   frame a door sets her down within reach, after this frame's tick, is told by `caught_by()`.
 ##   *(Inbox #577, the player: "let's count chases and catches as influenced always".)* A row that
 ##   can do none of the three — a fallen tree, a skip — is seen and never influenced.
 ##   An influence before the encounter is seen waits: it goes out as influenced the moment the
@@ -46,7 +46,7 @@ extends RefCounted
 ##   ÷ seen counts only what she could see.
 ##
 ## **A bout of running** begins the first frame she runs (`Stroller.run_excess_ratio()` above 0, the
-## test `EventManager` already makes) after `Tuning.RUN_BOUT_GAP` or more without running, or the
+## test `EventManager` already makes) after `RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
 ##
 ## **Cheap by construction**, since it runs every physics frame for every player: one pass over
@@ -55,6 +55,18 @@ extends RefCounted
 ## (`VisibleView.look()`), not once an instance; a record made once per instance the first time it
 ## is present, and nothing allocated on a frame otherwise. The open encounters are a short list of their own, so an encounter can be closed after
 ## its instance has gone.
+
+## How long an event instance has to have been off screen, in seconds, before coming back counts as
+## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
+## left the screen and encountered again at a later time (eg 5s). this should also apply to seen.")*
+const ENCOUNTER_GAP := 5.0
+## How much of a full meter an exciting instance has to land on her within one encounter for the
+## encounter to be meaningful — the player's "influence of the event reached a certain threshold".
+const ENCOUNTER_INFLUENCE_POINTS := Tuning.METER_MAX * 0.1
+## A run that starts again less than this many seconds after she stopped running is the same bout
+## of running. *(misty-newt: "we can count the number of running excluding gaps smaller than
+## 10s".)*
+const RUN_BOUT_GAP := 10.0
 
 ## One instance's encounters. Kept on the instance (`EventInstance.encounter`) so finding it costs
 ## nothing, and on `_open` while an encounter is open, so it can be closed after the instance is gone.
@@ -68,7 +80,7 @@ class Record:
 	## The watch's frame the instance was last looked at — a record not looked at this frame belongs
 	## to an instance that is no longer live.
 	var last_frame := -1
-	## `EventInstance.landed_ever` when the current encounter opened, and the last frame.
+	## `ExcitementSource.landed_ever` when the current encounter opened, and the last frame.
 	var landed_at_open := 0.0
 	var landed_last := 0.0
 	var seen := false
@@ -81,8 +93,9 @@ var _frame := 0
 var _open: Array[Record] = []
 var _running := false
 var _ran_last := -INF
-## `EventManager._hold_that_would_begin()`, or empty when nothing hands one in (a rig without a
-## manager: no hold ever begins). Asked at most once a frame, when an instance first needs the answer.
+## `CheckpointController.hold_that_would_begin()`, or empty when nothing hands one in (a rig
+## without a manager: no hold ever begins). Asked at most once a frame, when an instance first
+## needs the answer.
 var _hold_source := Callable()
 var _hold_frame := -1
 var _hold: EventInstance = null
@@ -106,7 +119,7 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 		var record := instance.encounter
 		if record == null or not record.open:
 			var landed_before := record.landed_last if record != null else 0.0
-			if instance.landed_ever <= landed_before:
+			if instance.excitement.landed_ever <= landed_before:
 				var box := instance.drawn_box()
 				if not Rect2(box.position + instance.global_position, box.size).intersects(view):
 					continue
@@ -141,11 +154,11 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 	var box := instance.drawn_box()
 	var world := Rect2(box.position + instance.global_position, box.size)
 	var record := instance.encounter
-	var landing := instance.landed_ever > (record.landed_last if record != null else 0.0)
+	var landing := instance.excitement.landed_ever > (record.landed_last if record != null else 0.0)
 	var share := visible.share_of(world)
 	var in_view := share > 0.0
 	if record == null:
-		if not in_view and instance.landed_ever <= 0.0:
+		if not in_view and instance.excitement.landed_ever <= 0.0:
 			return
 		record = Record.new()
 		record.instance = instance
@@ -157,7 +170,7 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 			_open_an_encounter(record)
 		record.last_present = _clock
 	if not record.open:
-		record.landed_last = instance.landed_ever
+		record.landed_last = instance.excitement.landed_ever
 		return
 	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
@@ -171,7 +184,7 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 			EventBus.encounter_influenced.emit(day, record.name, true)
 		else:
 			record.influence_waiting = true
-	record.landed_last = instance.landed_ever
+	record.landed_last = instance.excitement.landed_ever
 
 ## Opens a new encounter on `record`: nothing seen or influenced yet, and its landing counted from
 ## what the instance had landed before this frame, so a landing that opens it is part of it.
@@ -186,7 +199,7 @@ func _open_an_encounter(record: Record) -> void:
 ## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
 ## row cannot do (land anything, chase, catch or hold her) simply never happens.
 func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
-	if instance.landed_ever - record.landed_at_open >= Tuning.ENCOUNTER_INFLUENCE_POINTS:
+	if instance.excitement.landed_ever - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
 		return true
 	if instance.is_chasing():
 		return true
@@ -211,7 +224,7 @@ func _close_what_is_over() -> void:
 	while i < _open.size():
 		var record := _open[i]
 		var gone := record.last_frame != _frame or not is_instance_valid(record.instance)
-		if gone or _clock - record.last_present >= Tuning.ENCOUNTER_GAP:
+		if gone or _clock - record.last_present >= ENCOUNTER_GAP:
 			_close(record)
 			_open[i] = _open[_open.size() - 1]
 			_open.pop_back()
@@ -225,7 +238,7 @@ func _close(record: Record) -> void:
 		EventBus.encounter_influenced.emit(day, record.name, false)
 
 func _watch_the_running(running: bool) -> void:
-	if running and not _running and _clock - _ran_last >= Tuning.RUN_BOUT_GAP:
+	if running and not _running and _clock - _ran_last >= RUN_BOUT_GAP:
 		EventBus.run_bout_began.emit(day)
 	_running = running
 	if running:

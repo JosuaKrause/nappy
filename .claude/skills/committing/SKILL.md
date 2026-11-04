@@ -166,6 +166,11 @@ different files passes both gates and lands broken. Watch `main`'s own CI run af
 than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run when it finishes,
 and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
 
+**PRs land without waiting for each other or for `main`'s CI, and when `main` breaks after a
+merge, a fix for it is landed on `main`** (freckled-moose #914). Nothing requires landing
+one at a time or an up-to-date branch; the player asks for tests that are isolated and not flaky
+instead.
+
 ## Releasing
 
 **A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.
@@ -256,15 +261,20 @@ each entry is still the same item until the player has what they asked for. The 
 probe found goes on that PR, whatever name or number the queue gave it; a new PR is for a new
 question.
 
-**A pull request carries every document its own changes make false.** Not a follow-up, not a
-cleanup pass afterwards, not a note for the next session: the doc edit is part of the change and
-lands in the same PR. That covers the queue — the entry's folder under `docs/todo/`, which goes
+**A pull request carries every consequence of its own changes, documents first** (minty-lemur #763).
+Not a follow-up, not a cleanup pass afterwards, not a note for the next session, and not left for
+whoever later merges `main` into another branch: the edit is part of the change and lands in the
+same PR. A doc the change makes false is the commonest case, but a picture it makes stale, a test it
+makes wrong and the text of another open PR it makes untrue (a sentence, a strip picture, a side
+view) are fixed the same way, by the change that made them; the reconciliation when `main` is
+merged into the other PR is not where the omission is meant to be found. That covers the queue — the entry's folder under `docs/todo/`, which goes
 stale fastest because it holds the work the PR just did — and every other governed doc the change
 touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`,
 `CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
-`tools/new-name.sh decision --entry <name> "<title>"`, which takes `-2` and on when the entry
-already has one); **when that was the entry's last item, the entry's folder goes in the same PR**,
+`tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
+`<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca; read as: two branches building at once
+draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR**,
 because the queue holds open work only and the entry stops being open the moment the PR merges.
 Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
 as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an
@@ -284,7 +294,8 @@ their own doc debt is how three files come to carry three different answers to o
 the pass that untangles it is a milestone rather than a review comment.
 
 **The test is the same one the docs rule uses:** if `main` at the squashed commit would hand a fresh
-reader a sentence that is no longer true, the PR is not finished. Read the entry's own folder
+reader a sentence that is no longer true, or a picture, a test or another PR's text that no longer
+matches what the change did, the PR is not finished. Read the entry's own folder
 before proposing, not after.
 
 **And every doc the change owes is in the PR before it merges. This is a hard requirement**
@@ -304,7 +315,8 @@ what is still open, with the built half filed as a decision.
 
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
-takes `-2` and on for a second item from the same entry (woolly-finch 18). The item says what to do,
+names a second item from the same entry `<entry name>-<adjective>-<animal>`, never a number
+(woolly-finch 18, inbox #941 in breezy-alpaca). The item says what to do,
 where to look, and the question a run answers, its steps written as prose rather than numbered; the
 record of what was built stays in the decision. The review items are the list a playtest is asked
 against, so an item missing from them is an item no run will ever be asked to look at.

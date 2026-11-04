@@ -1,6 +1,6 @@
 extends RefCounted
 ## Measurement probe for M180, posters she notices: whether the day's poster crews are met, now that
-## her walk sites them (`EventDef.sited_on_her_way`, `pastes_a_front`), and how much they paste while
+## her walk sites them (`EventDef.on_her_way`, `OnHerWay.at_a_front`), and how much they paste while
 ## she is in sight of them. Not a suite: it prints rather than asserting, so it lives under
 ## `tests/probes/` and runs only by name:
 ##
@@ -19,7 +19,7 @@ const PAST_THE_FORK := 6
 func run(t) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
-		var city: City = CITY_SCENE.instantiate()
+		var city: City = RunCity.of_the_run(CITY_SCENE)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
 		city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -30,7 +30,7 @@ func run(t) -> void:
 	t.check(true, "m180_crews_on_her_way probe ran")
 
 func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> void:
-	GameState.run_seed = seed_value
+	GameState.header.run_seed = seed_value
 	GameState.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
 	city.poster_walls().start_day(day, tree)
@@ -38,7 +38,7 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 	var consumed: Array[String] = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
-	city.events.start_day(day, rng, consumed)
+	city.events.start_day(DaySpec.for_day(day), rng, consumed)
 	var crews: Array[EventScheduler.Planned] = []
 	for plan in city.events.plans():
 		if plan.def.id == "poster_crew":
@@ -48,6 +48,7 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 		print("%-6d %3d %-13s no route or no crews" % [seed_value, day, walk_name])
 		return
 	var rig := _walker(t, route[0])
+	city.events.use_player(rig)
 	var clock := 0.0
 	var first_sited := -1.0
 	for i in range(1, route.size()):
@@ -69,7 +70,7 @@ func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> v
 	for plan in crews:
 		sited += 1 if plan.is_placed() else 0
 		met += 1 if plan.was_live else 0
-	var siting := city.events.walk_siting()
+	var siting := city.events.ahead.walk_siting()
 	print("%-6d %3d %-13s %5d %6d %4d %11.1fs %14d  %s" % [seed_value, day, walk_name, crews.size(),
 			sited, met, first_sited, _pasted_cells() - before,
 			_refusal_summary(siting.waits if siting else {})])
