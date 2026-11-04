@@ -2,7 +2,7 @@ extends DayPlanner
 ## **A planner that hands back the placements a test chose**, as a walk planned whole before she
 ## sets off: the stand-in a test hands the manager (`EventManager.planner`) when it puts exactly the
 ## rows it wants in a walk, and starts the walk the one way every walk starts
-## (`EventManager.start_day()`). Shared by `tests/test_finale.gd` and `tests/test_interior.gd`.
+## (`EventManager.start_day()`). Shared by `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) and `tests/test_interior.gd`.
 
 var _placements: Array[EventScheduler.Planned] = []
 
