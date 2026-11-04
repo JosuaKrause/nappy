@@ -104,6 +104,9 @@ func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime
 	var start := recipe.manifest.initial_actors.get("player", {}).get("position", [0, 0]) as Array
 	t.check(Vector2(start[0], start[1]).is_equal_approx(recipe.start_position()),
 			"%s starts her where the recipe puts her" % label)
+	var authored_day: Variant = recipe.data.get("setup", {}).get("day")
+	t.check(authored_day == null or run.header.day == int(authored_day),
+			"%s starts the run on its authored day (day %d)" % [label, run.header.day])
 	t.check(not FileAccess.file_exists(booted.path) and not t.get_tree().paused,
 			"%s boots with no save written and the game running" % label)
 	for collection in ["events", "actors"]:
@@ -232,13 +235,18 @@ func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
 			return false
 	return await _walk_to(t, player, return_at, label)
 
-## The void round a stretch is a wall: she walks at the nearest of its cut-off streets and never
-## stands on a tile the scene does not have.
+## The void round a stretch is a wall: she walks to the nearest of its cut-off streets by its open
+## ground, then walks at the void for `EDGE_SECONDS` and never stands on a tile the scene does not
+## have, having come to the edge.
 func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void:
-	var edge := nearest_cut_off(map, map.world_to_tile(player.global_position))
-	t.check(edge != Vector2i(-1, -1), "%s: the stretch has a street running into the void" % label)
-	if edge == Vector2i(-1, -1):
+	var path := path_to_the_void(map, map.world_to_tile(player.global_position))
+	t.check(not path.is_empty(), "%s: the stretch has a street running into the void" % label)
+	if path.is_empty():
 		return
+	var edge: Vector2i = path.pop_back()
+	for tile in path:
+		if not await _walk_to(t, player, map.tile_to_world(tile), label):
+			return
 	var stayed := true
 	for _tick in PhysicsTicks.ticks_for(EDGE_SECONDS, WALK_SCALE):
 		_press(player.global_position.direction_to(map.tile_to_world(edge)))
@@ -247,7 +255,8 @@ func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void
 			stayed = false
 			break
 	_press(Vector2.ZERO)
-	t.check(stayed, "%s keeps her on its stretch at the void's edge" % label)
+	t.check(stayed and player.global_position.distance_to(map.tile_to_world(edge)) < 2.0 * Tuning.TILE_SIZE,
+			"%s keeps her on its stretch at the void's edge, which she has walked to" % label)
 
 ## Walks `player` towards `target` on real input until it is within a quarter tile of it. False,
 ## with the check failed, when the walk is blocked, or a step moves her more than a tick can.
@@ -308,20 +317,27 @@ func exterior_path(map: CityMap, start: Vector2i) -> Array[Vector2i]:
 				pending.append(next)
 	return []
 
-## The cut-off tile (`CityMap.is_cut_off()`) nearest `start` through the stretch's own tiles, or
-## `(-1, -1)` when none is reached.
-func nearest_cut_off(map: CityMap, start: Vector2i) -> Vector2i:
+## The open tiles from `start` to the cut-off tile (`CityMap.is_cut_off()`) nearest it through the
+## stretch's own ground, the cut-off tile last; empty when none is reached.
+func path_to_the_void(map: CityMap, start: Vector2i) -> Array[Vector2i]:
 	var pending: Array[Vector2i] = [start]
-	var seen := {start: true}
+	var previous := {start: start}
 	var cursor := 0
 	while cursor < pending.size():
 		var tile := pending[cursor]
 		cursor += 1
 		for offset: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := tile + offset
+			if previous.has(next):
+				continue
 			if map.is_cut_off(next):
-				return next
-			if not seen.has(next) and map.in_stretch(next):
-				seen[next] = true
+				var path: Array[Vector2i] = [tile]
+				while tile != start:
+					tile = previous[tile]
+					path.push_front(tile)
+				path.append(next)
+				return path
+			if map.in_stretch(next) and map.is_open(next):
+				previous[next] = tile
 				pending.append(next)
-	return Vector2i(-1, -1)
+	return []

@@ -409,9 +409,10 @@ func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 	var whole := true
 	for tile in witness.rect_tiles(segment.tile_rect()):
 		whole = whole and (ground.has(tile) or not witness.is_walkable(tile))
-	var box := Rect2i(segment.a * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
-	for tile in witness.rect_tiles(box):
-		whole = whole and (ground.has(tile) or not witness.is_walkable(tile))
+	for end: Vector2i in [segment.a, segment.b]:
+		var box := Rect2i(end * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
+		for tile in witness.rect_tiles(box):
+			whole = whole and (ground.has(tile) or not witness.is_walkable(tile))
 	t.check(whole and not ground.is_empty(),
 			"a step on a street takes the whole street and the junction at each end")
 	# A mark she reads from beside it, pinned by the task: its own corner and not the alley behind
