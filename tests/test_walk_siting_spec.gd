@@ -7,8 +7,12 @@ extends RefCounted
 ## rule is the spec's the manager was handed (`EventManager.start_day()`, `use_the_spec()`), never
 ## the manager's own.
 
-const SEED := 4242
+const Rig := preload("res://tests/event_manager_rig.gd")
+
 const DAY := 1
+## A row that stands on a plain sidewalk and does not shut the home street behind it, so only the
+## rule under test decides whether a tile of the home street is offered it.
+const ROW := "market_stall"
 
 func run(t) -> void:
 	_test_a_siting_offers_the_home_street_only_where_the_walk_does_not_hold_it(t)
@@ -16,29 +20,39 @@ func run(t) -> void:
 	_test_the_siting_the_director_hands_out_carries_the_rule(t)
 	_test_every_place_that_builds_a_siting_copies_the_rule(t)
 
+## Every tile of the street her front door opens onto.
+func _home_street(city: City) -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	tiles.assign(city.map.rect_tiles(ClosurePlanner.home_street(city.map).tile_rect()))
+	return tiles
+
+## A row of `ROW` sited among the home street's tiles by `city`'s director, or null: the home street
+## is the one place the rule changes what is offered, and she stands at her front door.
+func _on_the_home_street(city: City) -> EventInstance:
+	return city.events.queue_a_task_row(EventCatalogue.by_id(ROW), _home_street(city),
+			Rig.rng(DAY), city.map.doorstep_world_position())
+
 func _test_a_siting_offers_the_home_street_only_where_the_walk_does_not_hold_it(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	GameState.attempt_spend.city_state.begin_day(map.block_plans, DAY)
-	map.repaint(GameState.attempt_spend.city_state)
+	var city: City = Rig.build_city(t)
+	var map := city.map
+	var state := city.run.attempt_spend.city_state
+	state.begin_day(map.block_plans, DAY)
+	map.repaint(state)
+	var home_street := _home_street(city)
+	t.check(not home_street.is_empty(), "the city has a street her front door opens onto")
 	var tree := RouteTree.for_day(map, DAY)
-	var def := EventCatalogue.by_id("delivery_van")
-	var home_street := EventScheduler._the_street_she_starts_on(map)
-	t.check(home_street.has_area(), "the city has a street her front door opens onto")
-	var on_the_home_street := {}
+	var sited := {}
 	for holds: bool in [true, false]:
 		var siting := EventScheduler.WalkSiting.new(DAY, map, tree, [] as Array[Vector2i],
 				PackedVector2Array())
 		siting.holds_the_home_streets = holds
-		var offered := 0
-		for tile: Vector2i in siting._ground_as_a_set(def):
-			if home_street.has_point(tile):
-				offered += 1
-		on_the_home_street[holds] = offered
-	t.check(int(on_the_home_street[true]) == 0,
-			"a walk that holds the home's streets is offered none of the home street (%d tiles)"
-			% on_the_home_street[true])
-	t.check(int(on_the_home_street[false]) > 0,
-			"and a walk that does not is offered its ground (%d tiles)" % on_the_home_street[false])
+		sited[holds] = siting.near_her(EventCatalogue.by_id(ROW), Rig.rng(DAY),
+				[] as Array[EventScheduler.Planned], home_street, map.doorstep_world_position())
+	t.check(sited[true] == null,
+			"a walk that holds the home's streets is offered none of the home street")
+	t.check(sited[false] != null and map.world_to_tile(sited[false].position) in home_street,
+			"and a walk that does not is offered its ground, and sites on it")
+	city.free()
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 	var manager := EventManager.new()
@@ -49,25 +63,22 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 			"and the escape city's spec does not, as its dawn placement does not")
 	manager.free()
 
-## The siting `EventsAhead` actually hands out (`_task_siting()`, the one the director's after-dawn
-## placements and a task's rows are sited against) carries the rule of the spec handed in last.
+## The siting the director hands a task's row (`queue_a_task_row()`, the one it sites against once the
+## walk is planned) carries the rule of the walk's spec. The escape city's offers the home street,
+## which its planning holds no segment of; a day's keeps the row off it, and the street is asked of
+## with the day's holds cleared (`CityMap.clear_day_holds()`, which the escape's planning ends with
+## too), so the rule alone decides, not the hold a day puts on the home block's streets as well.
 func _test_the_siting_the_director_hands_out_carries_the_rule(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	GameState.attempt_spend.city_state.begin_day(map.block_plans, DAY)
-	map.repaint(GameState.attempt_spend.city_state)
-	var manager := EventManager.new()
-	manager.use_run(GameState)
-	manager.world.city_map = map
-	manager.world.day = DAY
-	manager.ahead._day_tree = RouteTree.for_day(map, DAY)
-	manager.use_the_spec(DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS))
-	t.check(not manager.ahead._task_siting().holds_the_home_streets,
+	var city: City = Rig.build_city(t)
+	var consumed: Array[String] = []
+	city.events.start_day(DaySpec.for_section(DaySpec.Section.CITY,
+			RunConfig.FINALE_LENGTH_SECONDS), Rig.rng(DAY), consumed)
+	t.check(_on_the_home_street(city) != null,
 			"the escape city's spec reaches the siting the director hands out")
-	manager.ahead._task_siting_cache = null
-	manager.use_the_spec(DaySpec.for_day(DAY))
-	t.check(manager.ahead._task_siting().holds_the_home_streets,
-			"and a day's spec reaches it again")
-	manager.free()
+	Rig.start(city, DAY)
+	city.map.clear_day_holds()
+	t.check(_on_the_home_street(city) == null, "and a day's spec reaches it again")
+	city.free()
 
 ## Four places in `EventsAhead` build a `WalkSiting` (the day's, a mast's, the task's, a rigged
 ## route's), and the first two cannot be observed from outside; each must copy the rule onto what
