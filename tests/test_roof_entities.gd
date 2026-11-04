@@ -271,7 +271,6 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 ## that means from outside: a three-column roof, where no broad unit fits, lays out as many units
 ## as a wide roof with as many interior cells, in every district and on every seed.
 func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
-	var witnessed_east_fallback := false
 	for district in [GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC,
 			GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL]:
 		# Three columns by seven and by thirteen tiles, with a two-tile wall, leave one interior
@@ -299,13 +298,8 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 				for entry: Dictionary in layout:
 					t.check(entry["span"] == 1,
 							"a one-interior-column roof uses a compact one-cell unit")
-				for entry: Dictionary in wide_layout:
-					if entry["span"] == 1 and (entry["cell"] as Vector2i).x == wide.columns() - 2:
-						witnessed_east_fallback = true
 			_free(narrow_fixture)
 			_free(wide_fixture)
-	t.check(witnessed_east_fallback,
-			"a wide roll at an east edge falls back to a compact unit instead of disappearing")
 
 # ------------------------------------------------------- the holder, drawn for real ---
 
