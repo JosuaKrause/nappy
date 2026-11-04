@@ -45,7 +45,7 @@ const CAR_ACCELERATE := 150.0
 ## the looking starts at `Tuning.CAR_ZEBRA_SIGHT` rather than at the line, and why the approach is shaped
 ## by a gentle rate with only the emergency using the hard one.
 ##
-## The relationship, and the one `tests/test_crowd.gd` states:
+## The relationship, and the one `tests/crowd_rig.gd` states:
 ## `sqrt(2 · CAR_ZEBRA_APPROACH_BRAKE · Tuning.CAR_ZEBRA_SIGHT) >= Tuning.CAR_SPEED.y` — the fastest car in the
 ## city begins easing at the moment the zebra comes into sight, rather than holding speed and
 ## then grabbing the brake at the last legal instant.
@@ -109,7 +109,7 @@ const SHADOW_ALONG := 52.0
 const SHADOW_ACROSS := 30.0
 
 ## Distance a car needs to stop from a given speed. Used by the crossing logic and asserted
-## against `Tuning.CAR_ZEBRA_SIGHT` in `tests/test_crowd.gd`.
+## against `Tuning.CAR_ZEBRA_SIGHT` in `tests/crowd_rig.gd`.
 static func braking_distance(speed: float) -> float:
 	return speed * speed / (2.0 * CAR_BRAKE)
 

@@ -8,7 +8,7 @@ extends RefCounted
 ## The question is the one the decay constants are set from: **with the day's own crowd on the
 ## street and nothing authored in range, how fast does the bar fall while she walks?** That is a
 ## *net* rate — what the crowd loads minus what the ground gives back — and it is not derivable
-## from `Tuning` alone, because the crowd half is emergent. `tests/test_crowd.gd`'s floor
+## from `Tuning` alone, because the crowd half is emergent. `tests/crowd_rig.gd`'s floor
 ## machinery is the instrument: a real generated `City`, the crowd focused where she is, stepped a
 ## whole frame at a time.
 ##

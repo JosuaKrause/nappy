@@ -1,6 +1,9 @@
 extends Node2D
 ## Bounded runtime fixture: production drawing nodes, enlarged for review, with real draw counters.
 
+const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const EastWestStreet := preload("res://tests/east_west_street.gd")
+
 var _started := 0
 var _frames: Array = []
 var _counts := {}
@@ -9,6 +12,9 @@ var _finishing := true
 var _recording := false
 var _fixtures: Node2D
 var _building: Building
+## What the fixture's roof was told to stand: the drawer is handed to the building as the city hands
+## its own, and stands each unit for real.
+var _roof := RecordingRoofDrawer.new()
 var _water: SceneryWater
 var _events: Array[EventInstance] = []
 var _output := OS.get_environment("SCENERY_CAPTURE_OUTPUT")
@@ -25,7 +31,10 @@ func _ready() -> void:
 	_fixtures = Node2D.new()
 	_fixtures.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(_fixtures)
+	_roof.real = RoofDrawer.new(_atlas)
 	_building = Building.new()
+	_building.atlas = _atlas
+	_building.roof_drawer = _roof
 	_building.footprint = Vector2(192, 192)
 	_building.height = 64
 	_building.district = GameEnums.BlockPurpose.INDUSTRIAL
@@ -33,14 +42,14 @@ func _ready() -> void:
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
 	for variant in 200:
-		if not _building._rotor_layers.is_empty():
+		if not _rotors().is_empty():
 			break
 		_building.variant = variant + 1
-	assert(not _building._rotor_layers.is_empty())
+	assert(not _rotors().is_empty())
 	_watch(_building, "building_static")
-	for object in _building._roof_objects:
-		_watch(object, "roof_static")
-	for layer in _building._rotor_layers:
+	for entry in _roof.standing():
+		_watch(entry.object, "roof_static")
+	for layer in _rotors():
 		_watch(layer, "roof_rotor")
 	_event("burst_water_main", false, Vector2(670, 235), 2.0)
 	_event("car_accident", false, Vector2(670, 410), 2.0)
@@ -67,22 +76,34 @@ func _exit_tree() -> void:
 	if _fixtures != null:
 		_atlas.release(&"events")
 
+## The turning rotor of every vent the building was told to stand.
+func _rotors() -> Array[SceneryLayer]:
+	var rotors: Array[SceneryLayer] = []
+	for entry in _roof.standing():
+		var object: Building.RoofObject = entry.object
+		if object.rotor != null:
+			rotors.append(object.rotor)
+	return rotors
+
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
 	event.atlas = _atlas
-	event.setup(EventCatalogue.by_id(id), at)
-	event._spread_vertical = vertical
+	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
+			EastWestStreet.new() if vertical else WorldMap.open_ground())
 	event.scale = Vector2.ONE * factor
 	_fixtures.add_child(event)
 	_events.append(event)
 	_watch(event, id + "_owner")
 	# The scene is drawn in slices beside the event, each with its part's scenery.
 	event.look.attach_nodes()
-	for scenery in (event.look as SpreadLook)._sceneries:
-		for layer in scenery.static_layers:
-			_watch(layer, id + "_static")
-		for layer in scenery.moving_layers:
-			_watch(layer, id + "_motion")
+	for slice in (event.look as SpreadLook).slices():
+		for scenery in slice.get_children():
+			if not scenery is EventScenery:
+				continue
+			for layer in (scenery as EventScenery).static_layers:
+				_watch(layer, id + "_static")
+			for layer in (scenery as EventScenery).moving_layers:
+				_watch(layer, id + "_motion")
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0
@@ -118,13 +139,13 @@ func _capture() -> void:
 
 func _finish(duration: float) -> void:
 	_recording = false
-	var before := [_building._vent_timer, _water.elapsed, _events[0]._clock]
+	var before := [_building._vent_timer, _water.elapsed, _events[0].clock()]
 	get_tree().paused = true
 	await get_tree().create_timer(0.25, true).timeout
-	var paused := [_building._vent_timer, _water.elapsed, _events[0]._clock]
+	var paused := [_building._vent_timer, _water.elapsed, _events[0].clock()]
 	get_tree().paused = false
 	await get_tree().create_timer(0.15, true).timeout
-	var resumed := [_building._vent_timer, _water.elapsed, _events[0]._clock]
+	var resumed := [_building._vent_timer, _water.elapsed, _events[0].clock()]
 	var static_held := true
 	for key: String in _counts:
 		if key.ends_with("static") or key.ends_with("owner") or key == "water_surface":

@@ -11,7 +11,7 @@ extends RefCounted
 ## `_physics_process` (`distance <= watch` before `_horn()` is even called), so the first-horn
 ## distance a car actually gets is `min(speed * CAR_HORN_TIME, watch)` and the time is that over
 ## speed. Computing it directly against the two watches is honest about the same formula the code
-## uses rather than a second copy of it; `tests/test_crowd.gd`'s
+## uses rather than a second copy of it; `tests/crowd_rig.gd`'s
 ## `_test_the_horn_watches_further_than_the_strike_does` is the probe for the code path itself,
 ## driving the real `Crowd._physics_process`.
 ##

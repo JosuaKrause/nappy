@@ -55,7 +55,7 @@ const PEDESTRIAN_INTENSITY := 4.2
 ## main road not expensive but impassable.
 ##
 ## The radius is tight for the same reason the pedestrian's is, and pinned the same way: the
-## arterial has to stay between the walking decay and three times it, which is `tests/test_crowd.gd`
+## arterial has to stay between the walking decay and three times it, which is `tests/crowd_rig.gd`
 ## and is the one place the noise floor is pinned to anything.
 ##
 ## **And 104 is still wider than the street it is on.** A corridor is six tiles — 192px — and a

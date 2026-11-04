@@ -1,9 +1,13 @@
 extends RefCounted
+## **The cases behind `test_crowd_traffic.gd`, `test_crowd_field.gd` and `test_crowd_streets.gd`; not
+## a suite itself.** Each part runs the cases it owns in a city of its own, so no suite runs two
+## minutes serial; the three together make every check the one suite made.
+##
 ## The crowd as traffic: population, contact and the street hierarchy's own physics.
 ##
 ## Split from a single `test_crowd.gd` under M125 -- "the test suite is slow again" -- by
-## subject rather than trimmed: this suite is simulation-bound (real `Crowd.step` seconds, not
-## assertion volume), so no seed or day count here buys back time by shrinking. This half keeps
+## subject rather than trimmed: this is simulation-bound (real `Crowd.step` seconds, not
+## assertion volume), so no seed or day count here buys back time by shrinking. It keeps
 ## everything about the crowd as *traffic* -- how many are out, where they walk, what a contact
 ## or a strike costs, and the three-tier street hierarchy (ordinary / main / pedestrianised) that
 ## gives a route its shape. `test_crowd_closures_a.gd`, `_b.gd` and `_c.gd` keeps the other half: what the crowd does
@@ -30,53 +34,65 @@ const FAST_SCALE := 8.0
 var _city: City
 var _rig = RIG.new()
 
-func run(t) -> void:
+## The three parts the suite is split into, each the cases it runs in the order the one suite ran
+## them. Each part stands in a city of its own, built over a run of its own.
+const PARTS := {
+	"traffic": [
+		"_test_population_follows_the_act",
+		"_test_a_walker_draws_its_own_answer_at_a_door",
+		"_test_the_streets_empty_out_after_act_two",
+		"_test_the_same_day_makes_the_same_crowd",
+		"_test_walkers_follow_the_selected_presentation",
+		"_test_walkers_stay_on_foot_and_cars_stay_on_the_road",
+		"_test_a_close_pass_costs_and_a_wide_one_does_not",
+		"_test_a_car_is_louder_and_carries_further_than_a_person",
+		"_test_a_park_is_out_of_earshot_of_the_traffic",
+		"_test_a_busy_street_never_lets_the_meter_fall",
+		"_test_the_arterial_is_the_busiest_street",
+		"_test_the_traffic_contract_is_fair",
+		"_test_a_car_can_always_stop_for_a_zebra_it_can_see",
+		"_test_the_horn_watches_further_than_the_strike_does",
+		"_test_every_car_drives_on_its_own_right",
+		"_test_the_strike_box_never_crosses_the_kerb",
+		"_test_the_car_picture_agrees_with_its_strike_box",
+		"_test_a_bump_costs_and_one_of_them_is_survivable",
+		"_test_walking_into_somebody_displaces_and_startles_them",
+		"_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else",
+		"_test_traffic_gives_way_at_a_crossing",
+	],
+	"field": [
+		"_test_the_crowd_stays_in_the_field",
+		"_test_the_crowd_does_not_bunch_against_the_wall",
+		"_test_the_field_is_wider_than_the_screen",
+		"_test_cars_do_not_drive_through_each_other",
+		"_test_the_morning_is_unpacked_before_the_first_frame",
+		"_test_the_morning_is_indexed_before_the_first_frame",
+		"_test_a_car_can_honour_the_headway_it_keeps",
+		"_test_a_car_looks_before_it_turns",
+		"_test_a_body_finds_what_stands_across_a_bucket_edge",
+		"_test_the_traffic_index_is_emptied_every_frame",
+		"_test_the_motion_skip_stops_an_agent_in_its_tracks",
+		"_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not",
+		"_test_the_morning_resolve_is_not_drawn_as_a_slide",
+		"_test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out",
+	],
+	"streets": [
+		"_test_a_main_road_is_kept_by_its_lights",
+		"_test_a_signal_gives_her_time_to_cross",
+		"_test_a_precinct_has_no_cars_in_it",
+		"_test_a_precinct_stops_the_street_that_crosses_it",
+		"_test_cars_do_not_enter_a_junction_they_cannot_leave",
+		"_test_nothing_walks_into_a_hard_blocker",
+	],
+}
+
+## Runs one part of `PARTS` in a city of its own and frees it.
+func run_part(t, part: String) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
-
-	_test_population_follows_the_act(t)
-	_test_a_walker_draws_its_own_answer_at_a_door(t)
-	_test_the_streets_empty_out_after_act_two(t)
-	_test_the_same_day_makes_the_same_crowd(t)
-	_test_walkers_follow_the_selected_presentation(t)
-	_test_walkers_stay_on_foot_and_cars_stay_on_the_road(t)
-	_test_a_close_pass_costs_and_a_wide_one_does_not(t)
-	_test_a_car_is_louder_and_carries_further_than_a_person(t)
-	_test_a_park_is_out_of_earshot_of_the_traffic(t)
-	_test_a_busy_street_never_lets_the_meter_fall(t)
-	_test_the_arterial_is_the_busiest_street(t)
-	_test_the_traffic_contract_is_fair(t)
-	_test_a_car_can_always_stop_for_a_zebra_it_can_see(t)
-	await _test_the_horn_watches_further_than_the_strike_does(t)
-	_test_every_car_drives_on_its_own_right(t)
-	_test_the_strike_box_never_crosses_the_kerb(t)
-	_test_the_car_picture_agrees_with_its_strike_box(t)
-	_test_a_bump_costs_and_one_of_them_is_survivable(t)
-	await _test_walking_into_somebody_displaces_and_startles_them(t)
-	_test_a_car_strikes_what_is_in_front_of_it_and_nothing_else(t)
-	_test_traffic_gives_way_at_a_crossing(t)
-	_test_the_crowd_stays_in_the_field(t)
-	_test_the_crowd_does_not_bunch_against_the_wall(t)
-	_test_the_field_is_wider_than_the_screen(t)
-	_test_cars_do_not_drive_through_each_other(t)
-	_test_the_morning_is_unpacked_before_the_first_frame(t)
-	_test_the_morning_is_indexed_before_the_first_frame(t)
-	_test_a_car_can_honour_the_headway_it_keeps(t)
-	_test_a_car_looks_before_it_turns(t)
-	_test_a_body_finds_what_stands_across_a_bucket_edge(t)
-	_test_the_traffic_index_is_emptied_every_frame(t)
-	_test_a_main_road_is_kept_by_its_lights(t)
-	_test_a_signal_gives_her_time_to_cross(t)
-	_test_a_precinct_has_no_cars_in_it(t)
-	_test_a_precinct_stops_the_street_that_crosses_it(t)
-	_test_cars_do_not_enter_a_junction_they_cannot_leave(t)
-	_test_nothing_walks_into_a_hard_blocker(t)
-	await _test_the_motion_skip_stops_an_agent_in_its_tracks(t)
-	_test_the_crowd_is_drawn_between_ticks_and_a_jump_is_not(t)
-	_test_the_morning_resolve_is_not_drawn_as_a_slide(t)
-	_test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t)
-
+	for case_name: String in PARTS[part]:
+		await Callable(self, case_name).call(t)
 	_city.free()
 
 func _rng(day: int) -> RandomNumberGenerator:
