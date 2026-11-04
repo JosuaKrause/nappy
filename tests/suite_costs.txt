@@ -174,7 +174,7 @@ test_scene_recipe_lifecycle_scenes.gd 31000
 test_scene_recipe_lifecycle_tasks.gd 40800
 test_scene_recipe_lifecycle_trailers.gd 43600
 test_scene_recipe_runtime.gd 15500
-test_scene_recipe_stretch.gd 8800
+test_scene_recipe_stretch.gd 7500
 test_scene_recipe_stretch_crowd.gd 63271
 test_scene_recipe_task.gd 5877
 test_scenery_animation.gd 499

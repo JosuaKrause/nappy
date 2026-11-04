@@ -9,43 +9,8 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 
-## A scripted scene begun in a game of its own: one camera at `--zoom`, one named actor standing
-## `--where`, and an observation that the actor `appeared` by the fifth tick. The scene ends the
-## game itself, on success when its duration is up and on failure when the observation is unmet.
-const PROBE := """extends Node
-func _ready() -> void:
-	var words := OS.get_cmdline_user_args()
-	var zoom := float(words[words.find("--zoom") + 1])
-	var where: String = words[words.find("--where") + 1]
-	# The zoom is fixed before the camera enters the tree: a Camera2D applies a zoom it is changed to
-	# on its next process step, and `appeared` is asked of every tick from the first.
-	var camera := Camera2D.new()
-	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
-	camera.zoom = Vector2.ONE * zoom
-	add_child(camera)
-	camera.make_current()
-	var half_view := get_viewport().get_visible_rect().size / zoom / 2.0
-	var actor := Node2D.new()
-	add_child(actor)
-	match where:
-		"far":
-			actor.position = Vector2(10000, 10000)
-		"just_outside":
-			actor.position = Vector2(half_view.x + 16.0 + 40.0, 0.0)
-		"just_inside":
-			actor.position = Vector2(half_view.x - 16.0 - 40.0, 0.0)
-	var runtime := SceneRecipeRuntime.new()
-	var config := RunConfig.parse(PackedStringArray(["--recipe", "sight.json", "--recipe-mode",
-			"scripted"]), "", true)
-	var data := {"name": "sight", "playback": {"duration": 0.5,
-			"observations": [{"tick": 5, "subject": "actor", "condition": "appeared"}]}}
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, config, RunState.new())
-	add_child(runtime)
-	runtime.named.actor = actor
-	runtime.begin()
-"""
-
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
 	t.check(built.errors.is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
@@ -63,57 +28,91 @@ func run(t) -> void:
 	_test_the_route_bag(t, map, data)
 	_test_the_city_draws_the_stretch_alone(t, map)
 	_test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t)
-	_test_appeared_requires_sight(t)
+	await _test_appeared_requires_sight(t)
 
 ## `appeared` asks that a subject has been in the picture the camera draws, by the tick the
 ## observation names: the camera's real view at its zoom, not a constant half-extent. A scripted
-## recipe begun in a game of its own (`PROBE`: a camera, one named actor, `SceneRecipeRuntime.begin()`
-## and its own physics ticks) ends in success when the observation holds and in failure, the
-## observation unmet and the game quit non-zero, when it does not. An actor wholly outside the view
+## recipe installed on a city in a viewport of its own, an actor named by its `setup.actors`, begun
+## and left to its own physics ticks, ends the game (what `configure()` was handed, as `main` hands its
+## own) with status 0 when the observation holds and 1 when it does not. An actor wholly outside the view
 ## fails whether it is far off or only just outside the real half-width at a close zoom (the stale
 ## `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes at the
 ## default zoom and zoomed out.
 func _test_appeared_requires_sight(t) -> void:
-	var seen := _sight(t, 1.0, "centre")
-	t.check(seen.status == 0 and not seen.output.contains("unmet observation"),
-			"at the default camera zoom, an actor in view counts once it enters view: %s" % seen.output)
-	var far := _sight(t, 1.0, "far")
-	t.check(far.status == 1 and far.output.contains("unmet observation"),
-			"an existing event that never enters the camera does not satisfy appeared: %s" % far.output)
-	# At zoom 4 the real half-width is 160px of a 1280px window; 216px out is wholly outside it
-	# although inside `Tuning.VIEW_HALF_EXTENT.x` (320px), the stale constant this regression replaces.
-	var close := _sight(t, 4.0, "just_outside")
-	t.check(close.status == 1 and close.output.contains("unmet observation"),
-			"at zoom 4, an actor wholly outside the actual camera half-width does not count: %s"
-			% close.output)
-	var wide := _sight(t, 0.5, "just_inside")
-	t.check(wide.status == 0 and not wide.output.contains("unmet observation"),
-			"zoomed out, an actor the actual camera includes counts: %s" % wide.output)
+	var seen := await _sight(t, 1.0, 2)
+	t.check(seen == [0], "at the default camera zoom, an actor in view counts once it enters view: %s" % [seen])
+	var far := await _sight(t, 1.0, 36)
+	t.check(far == [1], "an existing actor that never enters the camera does not satisfy appeared: %s" % [far])
+	# At zoom 4 the real half-width is 160px of a 1280px window; an actor 7 tiles (224px) out has its
+	# body (32px) wholly outside it although inside `Tuning.VIEW_HALF_EXTENT.x` (320px), the stale
+	# constant this regression replaces.
+	var close := await _sight(t, 4.0, 7)
+	t.check(close == [1], "at zoom 4, an actor wholly outside the actual camera half-width does not count: %s"
+			% [close])
+	# At zoom 0.5 the half-width is 1280px; 36 tiles (1152px) out the body is wholly inside it.
+	var wide := await _sight(t, 0.5, 36)
+	t.check(wide == [0], "zoomed out, an actor the actual camera includes counts: %s" % [wide])
 
-## One run of `PROBE` in a child process: `zoom` the camera is begun at and where the actor stands
-## ("centre" of the view, "far" away, "just_outside" or "just_inside" the real half-width, a body
-## 32px across). `{"status": exit status, "output": what it printed}`.
-func _sight(t, zoom: float, where: String) -> Dictionary:
-	var stem := "user://scene_recipe_sight_%d" % OS.get_process_id()
-	var script_path := stem + ".gd"
-	var scene_path := stem + ".tscn"
-	var script := FileAccess.open(script_path, FileAccess.WRITE)
-	script.store_string(PROBE)
-	script.close()
-	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
-	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
-	scene.close()
-	var output: Array = []
-	var status := OS.execute(OS.get_executable_path(), PackedStringArray([
-			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "300",
-			scene_path, "--", "--zoom", str(zoom), "--where", where]), output, true)
-	DirAccess.remove_absolute(scene_path)
-	DirAccess.remove_absolute(script_path)
-	DirAccess.remove_absolute(script_path + ".uid")
-	var text := "\n".join(output)
-	t.check(not text.contains("SCRIPT ERROR"), "the sight probe at zoom %s, %s, runs without script errors: %s"
-			% [zoom, where, text])
-	return {"status": status, "output": text}
+## The exit statuses a scripted scene ends its game with: a free-standing walker (`setup.actors`) `tiles`
+## tiles east of her on a sidewalk, a camera at `zoom` on her in a 1280x720 viewport, and the observation
+## that the walker `appeared` by the fifth tick, left to its own ticks past the scene's half second.
+func _sight(t, zoom: float, tiles: int) -> Array[int]:
+	var own_run := RunState.new()
+	own_run.start_run(4242)
+	own_run.header.day = 3
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	t.add_child(viewport)
+	var city: City = RunCity.of_the_run(CITY_SCENE)
+	city.run = own_run
+	viewport.add_child(city)
+	city.build(CityGenerator.generate(4242))
+	var state := CityState.new()
+	own_run.attempt_spend.city_state = state
+	state.begin_day(city.map.block_plans, 3)
+	city.start_recipe_day(state, 3, own_run.calendar.day_rng(3, "closures"))
+	var from := Vector2i.ZERO
+	var found := false
+	for tile in city.map.tiles_of_type(GameEnums.TileType.SIDEWALK):
+		var along := tile + Vector2i(tiles, 0)
+		if city.map.tile_at(along) == GameEnums.TileType.SIDEWALK and city.map.is_open(tile) \
+				and city.map.is_open(along) and CityMap.corridor_offset(along.y) in CrowdLanes.SIDEWALK_OFFSETS:
+			from = tile
+			found = true
+			break
+	t.check(found, "a sidewalk tile with a sidewalk %d tiles east of it" % tiles)
+	var her := city.map.tile_to_world(from)
+	var there := city.map.tile_to_world(from + Vector2i(tiles, 0))
+	# A walker pinned on a sidewalk stands exactly on its lane (`SceneRecipeRuntime` never snaps it).
+	there.y = CrowdLanes.walker_lane_centre(CrowdLanes.corridor_at(there.y),
+			CityMap.corridor_offset(from.y), CrowdLanes.SIDEWALK_OFFSETS)
+	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	# The zoom is fixed before her camera enters the tree: a Camera2D applies a zoom it is changed to
+	# on its next process step, and `appeared` is asked of every tick from the first.
+	(player.get_node("Camera2D") as Camera2D).zoom = Vector2.ONE * zoom
+	viewport.add_child(player)
+	(player.get_node("Camera2D") as Camera2D).make_current()
+	var ended: Array[int] = []
+	var runtime := SceneRecipeRuntime.new()
+	runtime.configure({"data": {"name": "sight", "setup": {"day": 3, "player": {"at": [her.x, her.y]},
+			"actors": [{"name": "actor", "kind": "walker", "at": [there.x, there.y],
+			"direction": "east"}]},
+			"playback": {"duration": 0.5, "settled_camera": true,
+			"observations": [{"tick": 5, "subject": "actor", "condition": "appeared"}]}},
+			"manifest": {}, "anchors": {}, "map": city.map},
+			RunConfig.parse(PackedStringArray(["--recipe", "sight.json", "--recipe-mode", "scripted"]),
+					"", true),
+			own_run, func(code: int) -> void: ended.append(code))
+	viewport.add_child(runtime)
+	var errors := runtime.install(city, player, player.get_node("Baby"),
+			DaySpec.for_day(3, Tuning.DAY_LENGTH_SECONDS))
+	t.check(errors.is_empty(), "the sight scene is installed: %s" % [errors])
+	if errors.is_empty():
+		runtime.begin()
+		await PhysicsTicks.pass_ticks(t, 20)
+	viewport.free()
+	own_run.free()
+	return ended
 
 ## The live map against the recipe's own lists, never against a generated city *(mossy-marmot,
 ## inbox #618, the player's choice: "Finish fully handcrafted layouts now")*: each stretch tile

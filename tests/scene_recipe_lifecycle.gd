@@ -16,9 +16,14 @@ extends RefCounted
 ## reloading through the hook `main.use_reload()` hands it, and the boot that follows, taking the
 ## sitting the one before parked, restores the authored day and actors.
 ##
-## **The meters a scene starts at are not compared across the two boots**: the baby's meters move
-## with the ticks the boot lets pass before a suite can read them, which is not the same number in
-## two boots; `install()` sets them from `setup.player` and no boot hands a suite the moment it does.
+## **A scene that does not stand fails as a check, not as the runner's end**: every boot is handed
+## `main.use_quit()` a recorder (`_quits`), which `main` also hands the scene to end the game with
+## (`SceneRecipeRuntime.configure()`), and a boot that ends its game is a failed check.
+##
+## **The meters a scene starts at** are checked per boot against `setup.player`'s values, within the
+## most they can have moved in the ticks the scene has counted (`_meters_hold()`), not compared across
+## the two modes: the scripted boot presses its walk from tick 0, so the two boots' meters differ
+## by what that walk did.
 
 const Boot := preload("res://tests/booted_main.gd")
 
@@ -34,6 +39,9 @@ const MOVE_SECONDS := 0.4
 ## How many times real time the walks run (`Engine.time_scale`, `PhysicsTicks.pass_ticks()`): at her
 ## walking pace a tick still moves her a fifth of a tile at most, so no wall is stepped over.
 const WALK_SCALE := 2.0
+
+## The exit statuses of every game the boots ended, which `main.use_quit()` is handed to record.
+var _quits: Array[int] = []
 
 ## Whether `filename` belongs to the part named by `prefix`.
 static func belongs(filename: String, prefix: String) -> bool:
@@ -74,16 +82,21 @@ func lifecycle(t, prefix: String) -> void:
 ## at a scratch path, which `Boot.Booted.free_all()` removes.
 func _boot(t, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
 	var scratch := "user://scene_recipe_lifecycle_%s_%d.json" % [mode, OS.get_process_id()]
-	var config := Boot.config(["--recipe", path, "--recipe-mode", mode, "--no-focus-pause"])
+	# Parsed for a window and without `--no-save`, so the save is refused by the recipe flags' own
+	# policy (`GameSave.uses_save()`) and not by the headless gate: a scratch save written is a failure.
+	var config := RunConfig.parse(PackedStringArray(["--no-telemetry", "--recipe", path,
+			"--recipe-mode", mode, "--no-focus-pause"]), "", true, false, {}, false)
 	return await Boot.boot(t, scratch, config, func(main: Node) -> void:
 			main.use_sitting_home(home)
-			main.use_reload(func() -> void: reloads.append(1)))
+			main.use_reload(func() -> void: reloads.append(1))
+			main.use_quit(func() -> void: _quits.append(1)))
 
 ## The scripted boot of `path`: its start, read at `begin()`, or an empty dictionary when it did not
 ## stand. Freed at once, before the walk it plays can reach its end.
 func _scripted_boot(t, path: String, label: String) -> Dictionary:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
+	_quits.clear()
 	var reloads: Array[int] = []
 	var booted := await _boot(t, path, "scripted", home, reloads)
 	var recipe := scene_of(booted.main)
@@ -107,14 +120,38 @@ func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime
 	var authored_day: Variant = recipe.data.get("setup", {}).get("day")
 	t.check(authored_day == null or run.header.day == int(authored_day),
 			"%s starts the run on its authored day (day %d)" % [label, run.header.day])
-	t.check(not FileAccess.file_exists(booted.path) and not t.get_tree().paused,
-			"%s boots with no save written and the game running" % label)
+	t.check(_quits.is_empty() and not t.get_tree().paused,
+			"%s boots without ending the game, running" % label)
+	_meters_hold(t, booted.main, recipe, label)
 	for collection in ["events", "actors"]:
 		for entry: Dictionary in recipe.data.get("setup", {}).get(collection, []):
 			t.check(recipe.named.has(entry.name), "%s installs the authored %s %s"
 					% [label, collection, entry.name])
 	return {"actors": recipe.manifest.initial_actors, "day": run.header.day,
 			"events": recipe.manifest.get("installed_events", []), "seed": run.header.run_seed}
+
+## Her meters are what `setup.player` says, moved by no more than the ticks the scene has counted can
+## move them: sleepiness at the fastest it fills (a one-block calm area, `Tuning.sleepiness_gain_calm()`)
+## or drains; excitement at the most it falls (`Tuning.EXCITEMENT_DECAY_WALKING` and a ground multiplier of at most
+## eight), and no more than the meter holds: what raises it (the crowd and every event near her) is not
+## bounded by what the scene installs, so a rise is not checked. An escape and a
+## full sleep meter start her asleep (`Baby.force_sleep()`).
+func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
+	var baby := Boot.baby(main)
+	if baby == null:
+		return
+	var authored: Dictionary = recipe.data.get("setup", {}).get("player", {})
+	var asleep: bool = recipe.data.get("kind", "city") == "escape" \
+			or float(authored.get("sleep", 0)) >= Tuning.METER_MAX
+	var seconds := float(recipe.tick) / Engine.physics_ticks_per_second
+	var sleep_rate := maxf(Tuning.sleepiness_gain_calm(1), Baby.SLEEPINESS_DRAIN_IDLE)
+	var sleep_from := Tuning.METER_MAX if asleep else float(authored.get("sleep", 0))
+	var excite_from := float(authored.get("excitement", 0))
+	t.check(absf(baby.sleepiness - sleep_from) <= sleep_rate * seconds + 0.01
+			and baby.excitement <= Tuning.METER_MAX
+			and baby.excitement >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * 8.0 * seconds - 0.01,
+			"%s: her meters are %.2f sleep and %.2f excitement after %d ticks, from %.1f and %.1f"
+			% [label, baby.sleepiness, baby.excitement, recipe.tick, sleep_from, excite_from])
 
 ## The free-play boot of `path`, played the ways a player plays a scene and left the ways one is
 ## left. Returns `{"initial": <its start>, "bounded_returned": <she went out of a bounded scene
@@ -123,6 +160,7 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	var result := {"initial": {}, "bounded_returned": false}
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
+	_quits.clear()
 	var reloads: Array[int] = []
 	var booted := await _boot(t, path, "free", home, reloads)
 	var main := booted.main
@@ -139,14 +177,12 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 		return result
 	result.initial = initial
 	var map: CityMap = recipe.built.map
-	# Free play has no capture deadline: the scene keeps counting past its duration, and nothing
-	# ends it (a scripted one that reached its duration would quit the game).
-	var duration := float(recipe.data.get("playback", {}).get("duration", 0))
-	var past := ceili((duration + 1) * Engine.physics_ticks_per_second)
-	recipe.tick = past
-	await PhysicsTicks.pass_ticks(t, 1)
+	# Free play has no capture deadline: the scene keeps counting ticks and nothing ends it (a scripted
+	# one that reached its duration would end the game).
+	var counted := recipe.tick
+	await PhysicsTicks.pass_ticks(t, 3)
 	var rig_lock := main.get_node_or_null("RigLock") as RigLock
-	t.check(recipe.tick > past and not recipe.manifest.get("playback_complete", false)
+	t.check(recipe.tick > counted and not recipe.manifest.get("playback_complete", false)
 			and (rig_lock == null or not rig_lock.has_a_deadline()),
 			"%s free play has no capture deadline" % label)
 	var start := player.global_position
@@ -169,6 +205,8 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 		await _lose_the_escape(t, recipe, reloads, label)
 	else:
 		await _win_the_day(t, main, run, reloads, label)
+	t.check(_quits.is_empty() and not FileAccess.file_exists(booted.path),
+			"%s: played and left without ending the game or writing a save" % label)
 	if reloads.size() == 1:
 		var again := await _boot(t, path, "free", home, reloads)
 		var again_initial := _start_of(t, again, run, scene_of(again.main), label)
@@ -270,7 +308,7 @@ func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
 			return true
 		_press(before.direction_to(target))
 		await _tick_of_walking(t)
-		if player.global_position.distance_to(before) > Tuning.TILE_SIZE:
+		if player.global_position.distance_to(before) > _run_step() + 2.0:
 			_press(Vector2.ZERO)
 			t.check(false, "%s: bounded travel reset or teleported the player" % label)
 			return false
@@ -278,6 +316,10 @@ func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
 	t.check(false, "%s: physical walk was blocked before %s, stopped at %s"
 			% [label, target, player.global_position])
 	return false
+
+## The most a tick of `_tick_of_walking()` can move her: a run step at the scale the walks run at.
+func _run_step() -> float:
+	return Tuning.RUN_SPEED * WALK_SCALE / Engine.physics_ticks_per_second
 
 func _tick_of_walking(t) -> void:
 	await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)

@@ -1816,7 +1816,7 @@ func _author_the_scene() -> bool:
 		return false
 	configure(config.with_recipe(result.data))
 	var scene := SceneRecipeRuntime.new()
-	scene.configure(result, config, _run)
+	scene.configure(result, config, _run, _end_with)
 	add_child(scene)
 	_flow.author(scene)
 	return true
@@ -1845,7 +1845,7 @@ func _begin_the_scene(walks_a_day: bool) -> bool:
 func _scene_failed(errors: Array) -> void:
 	for problem: Variant in errors:
 		print("[SceneRecipe] " + str(problem))
-	get_tree().quit(1)
+	_end_with(1)
 
 ## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
 ## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
@@ -2352,6 +2352,15 @@ func _raise_save_indicator() -> void:
 ## first — a callback bound here would be dropped and leave the symbol shown for good.
 func _save_now(day_under_way: bool) -> void:
 	_save.write(_run, day_under_way)
+
+## Ends the game with exit status `code`: a failed authored scene's, and the scene's own ending of
+## the game (`SceneRecipeRuntime`, handed this in `_author_the_scene()`). Goes to what `use_quit()` was
+## handed when a test handed one, which is told only that the game ended.
+func _end_with(code: int) -> void:
+	if _quit_override.is_valid():
+		_quit_override.call()
+		return
+	get_tree().quit(code)
 
 func _quit() -> void:
 	if _session:

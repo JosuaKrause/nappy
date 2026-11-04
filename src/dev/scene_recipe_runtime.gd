@@ -25,6 +25,9 @@ var _config: RunConfig
 ## The run the scene is staged in — its day, its streams, its resistance and its walls — handed in
 ## by `configure()`.
 var _run: RunState
+## What the scene ends the game with, handed in by `configure()`, called with the exit status: `main`'s
+## own way of ending it (`Main._end_with()`). Empty, the scene quits the tree itself.
+var _end_game := Callable()
 var _player: Stroller
 var _city: City
 ## The recipe's `playback.walk`, pressed tick by tick (`playback.smooth` smooths its turns).
@@ -469,9 +472,11 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 	_number(value[0], where + "[0]", -1000000, 1000000, errors)
 	_number(value[1], where + "[1]", -1000000, 1000000, errors)
 
-func configure(result: Dictionary, config: RunConfig, run: RunState) -> void:
+func configure(result: Dictionary, config: RunConfig, run: RunState,
+		end_game := Callable()) -> void:
 	_config = config
 	_run = run
+	_end_game = end_game
 	data = result.data
 	_written = result.get("written", result.data)
 	built = result
@@ -674,7 +679,7 @@ func _start_the_task() -> bool:
 		for problem in errors:
 			print("[SceneRecipe] " + problem)
 		write_manifest()
-		get_tree().quit(1)
+		_end_the_game(1)
 		return false
 	_task_from = mark if mark != Vector2.INF else _player.global_position
 	manifest["task"] = {"mark": [mark.x, mark.y] if mark != Vector2.INF else null}
@@ -720,7 +725,7 @@ func _bind_task_names() -> void:
 		write_manifest()
 		if scripted:
 			_active = false
-			get_tree().quit(1)
+			_end_the_game(1)
 		return
 	if named.get("task") == contact:
 		return
@@ -985,7 +990,9 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 ## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand, which holds the doors this
 ## scene stands: each is a street door of the day's plan, at a point `MastSites.possible_door_points()`
-## lists); it is not closed, not on a held street and not on the home block; and no body placed
+## lists, measured at the reach of `EventCatalogue.mast()`, which is the authored row's own only while
+## `loudspeaker` is the one mast row and has no heat response: a later one needs the door rule back
+## here); it is not closed, not on a held street and not on the home block; and no body placed
 ## before it is too near (`EventScheduler.room_around()`). It does not ask what
 ## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
@@ -1035,7 +1042,7 @@ func begin() -> void:
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
 	if _config.recipe_validate:
-		get_tree().quit(0)
+		_end_the_game(0)
 		return
 	if not scripted:
 		_hand_played = true
@@ -1191,7 +1198,7 @@ func _process(delta: float) -> void:
 			if _active:
 				write_manifest()
 				_active = false
-				get_tree().quit(1)
+				_end_the_game(1)
 			return
 		# Walked here, once a drawn frame, so its manager does not step it and it is drawn where this
 		# puts it rather than interpolated between physics ticks; its look still redraws it.
@@ -1214,7 +1221,7 @@ func _physics_process(_delta: float) -> void:
 		print("[SceneRecipe] playback stopped: " + JSON.stringify(manifest))
 		write_manifest()
 		_active = false
-		get_tree().quit(1)
+		_end_the_game(1)
 		return
 	tick += 1
 	_observe()
@@ -1238,9 +1245,9 @@ func _physics_process(_delta: float) -> void:
 		_record_crowd("final_crowd")
 		write_manifest()
 		if _draft:
-			get_tree().quit(_write_the_draft())
+			_end_the_game(_write_the_draft())
 			return
-		get_tree().quit(0)
+		_end_the_game(0)
 		return
 	_apply_input()
 
@@ -1419,7 +1426,7 @@ func _observe() -> void:
 			print("[SceneRecipe] unmet observation: " + JSON.stringify(record))
 			write_manifest()
 			_active = false
-			get_tree().quit(1)
+			_end_the_game(1)
 	for label: String in named:
 		if is_instance_valid(named[label]):
 			_last_positions[label] = (named[label] as Node2D).global_position
@@ -1604,8 +1611,15 @@ func lose_the_attempt() -> bool:
 	manifest["playback_error"] = "the authored escape attempt was lost"
 	write_manifest()
 	_active = false
-	get_tree().quit(1)
+	_end_the_game(1)
 	return true
+
+## Ends the game with exit status `code`: through what `configure()` was handed, else by quitting the tree.
+func _end_the_game(code: int) -> void:
+	if _end_game.is_valid():
+		_end_game.call(code)
+		return
+	get_tree().quit(code)
 
 func write_manifest() -> void:
 	var path := _config.recipe_manifest_path
@@ -1614,6 +1628,6 @@ func write_manifest() -> void:
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		print("[SceneRecipe] cannot write manifest: " + path)
-		get_tree().quit(1)
+		_end_the_game(1)
 		return
 	file.store_string(JSON.stringify(manifest, "\t", true) + "\n")
