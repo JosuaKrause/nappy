@@ -8,8 +8,8 @@ extends Node2D
 ## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery
 ## child and every streamed instance; a standalone fixture acquires that page around this node.
 
-## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed by the look that
-## builds this scenery before it is configured.
+## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed by the drawer
+## that builds this scenery for the look (`EventDrawer.scenery()`) before it is configured.
 var atlas: AtlasLibrary
 var moving_layers: Array[SceneryLayer] = []
 var static_layers: Array[SceneryLayer] = []
