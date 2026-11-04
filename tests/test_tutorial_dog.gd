@@ -213,6 +213,8 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY + 1
+	var at := CrowdLanes.arterial_pavement(map)
+	at.y = map.world_size().y * 0.5
 	var offered := 0
 	var not_offered := 0
 	for seed in range(200):
@@ -222,8 +224,13 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 		director.start_day(day, [], rng)
 		if director.owed() > 0:
 			offered += 1
-			for queued: EventDef in director._owed:
-				t.check(queued.id == "charging_dog" and queued.notice_within() <= 0.0,
+			var owed := director.owed()
+			var handed := _handed_out_rows(director, at, Vector2.UP,
+					EventDirector.AHEAD_INTERVAL.y * owed + 1.0)
+			t.check(handed.size() == owed, "seed %d: all %d the day owes are handed out (%d)"
+					% [seed, owed, handed.size()])
+			for row: EventDef in handed:
+				t.check(row.id == "charging_dog" and row.notice_within() <= 0.0,
 						("seed %d: the sprinkle is charging_dog itself, with no notice " +
 								"— day 3's own shape, not the waiting one a MAP placement " +
 								"past the switch would carry") % seed)
@@ -252,19 +259,27 @@ func _test_the_sprinkle_never_runs_on_the_teaching_day(t) -> void:
 ## day's clock: what `due()` returns, in order.
 func _handed_out(director: EventDirector, at: Vector2, heading: Vector2, seconds: float) -> Array[String]:
 	var ids: Array[String] = []
+	for row in _handed_out_rows(director, at, heading, seconds):
+		ids.append(row.id)
+	return ids
+
+## The same, as the rows themselves.
+func _handed_out_rows(director: EventDirector, at: Vector2, heading: Vector2,
+		seconds: float) -> Array[EventDef]:
+	var rows: Array[EventDef] = []
 	for i in int(round(seconds / STEP)):
 		var due := director.due(STEP, at, heading * Tuning.WALK_SPEED)
 		if not due.is_empty():
-			ids.append((due[0] as EventDef).id)
-	return ids
+			rows.append(due[0] as EventDef)
+	return rows
 
 ## **On the teaching day only the first dog the director hands out is the lesson's row**
 ## (`EventDirector._teach_the_run()` marks it, and `due()` hands that one out as
 ## `EventCatalogue.lesson_of()`'s `charging_dog_tutorial` and forgets it): a second dog owed the
 ## same day is the ordinary `charging_dog`. Its GoatCounter names follow the row's id, so a lesson
-## that stayed set would move every later dog's counts into the lesson's. The second dog is put on
-## the director's queue by hand, as the sprinkle puts one there, since the day's route bag draws
-## its marbles by chance.
+## that stayed set would move every later dog's counts into the lesson's. The second dog is rigged
+## into the front of her route's bag (`EventDirector.rig_her_route()`, as a task rigs one), since the
+## day's route bag draws its marbles by chance.
 func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 	var map := _map()
 	var dog := EventCatalogue.by_id("charging_dog")
@@ -278,7 +293,7 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 	var first := _handed_out(director, at, Vector2.UP, EventDirector.LESSON_DELAY + 1.0)
 	t.check(first == ["charging_dog_tutorial"],
 			"day %d hands out the lesson's dog first (%s)" % [Tuning.RUN_TAUGHT_DAY, first])
-	director._owed.push_front(dog)
+	director.rig_her_route(["charging_dog"], 1)
 	var second := _handed_out(director, at, Vector2.UP, EventDirector.AHEAD_INTERVAL.y + 1.0)
 	t.check(not second.is_empty() and second[0] == "charging_dog",
 			"and a second dog owed that day is the ordinary dog (%s)" % [second])

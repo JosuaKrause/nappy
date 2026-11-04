@@ -510,7 +510,7 @@ func route_row(id: String) -> EventDef:
 ## A place whose own row names no ground — a loudspeaker mast, whose sites are the city's
 ## (`MastSites`) — is offered the sidewalk and the square when a marble puts it on her route, the
 ## ground `ResistanceDirector._add_a_mast_near()` offers a mast near a mark, and on it only what a
-## mast site may be (`MastSites._is_eligible()`, asked by `EventScheduler.WalkSiting`). A copy, never
+## mast site may be (`MastSites.is_eligible()`, asked by `EventScheduler.WalkSiting`). A copy, never
 ## the shared heated row every dawn placement of it reads (`EventCatalogue.heated()`).
 static func _with_ground(def: EventDef) -> EventDef:
 	if not def.placement.is_empty() or def.spawn_mode != EventDef.SpawnMode.MAP:

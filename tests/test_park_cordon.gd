@@ -16,18 +16,14 @@ const PATIENCE := 40.0
 ## officers and decide, on top of the walk itself.
 const REACTION := 2.0
 
+## The city the running test stands in, made fresh by `_at_the_swing()` and freed by `_end()`.
 var _city: City
-## The run the suite's city stands in, made fresh for the suite and handed to the city (`City.run`).
+## The run that city stands in, made fresh with it and handed to the city (`City.run`).
 var _run: RunState
 ## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
 var _swing_now := Vector2.ZERO
 
 func run(t) -> void:
-	_run = RunState.new()
-	_run.start_run(SEED)
-	_city = RunCity.in_run(CITY_SCENE, _run)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
 	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)
@@ -41,15 +37,18 @@ func run(t) -> void:
 	_test_someone_already_leaving_is_walked_out_through_the_gap(t)
 	_test_an_escort_sent_back_alone_holds_the_gap(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
-	_city.free()
-	_run.free()
 
 # ------------------------------------------------------------------ fixture ---
 
 ## Day 12 on the suite's city with the mark read and the swing's task offered; `before_the_touch`
 ## runs before she reaches the swing. Answers the director, its happenings, the park, the swing and
-## the city state; `_end()` frees the director.
+## the city state; `_end()` frees the director, the city and the run.
 func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
+	_run = RunState.new()
+	_run.start_run(SEED)
+	_city = RunCity.in_run(CITY_SCENE, _run)
+	t.add_child(_city)
+	_city.build(CityGenerator.generate(SEED))
 	_run.resistance.completed_steps = []
 	_run.resistance.failed_steps = []
 	_run.resistance.progress = 0
@@ -81,6 +80,8 @@ func _at_the_swing(t, before_the_touch := Callable()) -> Dictionary:
 
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
+	_city.free()
+	_run.free()
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -335,7 +336,7 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 		if was_inside and not cordon.line.has_point(next) and crossed[0] < 0.0:
 			crossed[0] = clock[0]
 			for stretch in cordon.stretches:
-				if stretch.taped and ParkCordon._body_on(stretch, next):
+				if stretch.taped and _body_on(stretch, next):
 					crossed[1] = true
 	_run_until_closed(happenings, her, _camera_on(her), step_her)
 	t.check(cordon.is_closed() and not cordon.trapped,
@@ -450,6 +451,13 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 	t.check(held == cases, "the gap she stands at stays open while she is there (%d of %d)"
 			% [held, cases])
 	_end(fixture)
+
+## Whether a body centred at `at`, reaching `ParkCordon.HER_REACH` from its centre, overlaps where
+## `stretch`'s tape stands — asked of the tape's two ends, which the stretch holds, and not of the
+## cordon's own test.
+static func _body_on(stretch: ParkCordon.Stretch, at: Vector2) -> bool:
+	var on := Geometry2D.get_closest_point_to_segment(at, stretch.a, stretch.b)
+	return on.distance_to(at) < ParkCordon.HER_REACH
 
 ## Whether a tape body's rect overlaps her body's circle or the pram's, with her facing `facing`.
 func _overlaps_her(box: Rect2, her: Vector2, facing: Vector2) -> bool:

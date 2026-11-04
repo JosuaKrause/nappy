@@ -2182,7 +2182,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 ## - passing every refusal a contact's ground passes (`SpawnSiting.CONTACT_GROUND`, no body on
 ##   it, reachable
 ##   from home);
-## - ground a site would be offered on (`MastSites._is_eligible()`: off the home street, its field
+## - ground a site would be offered on (`MastSites.is_eligible()`: off the home street, its field
 ##   off a calm interior and off every place a region door could stand).
 func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
@@ -2198,7 +2198,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 					SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, world):
 				continue
 			if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, world) \
-					or not _reachable_from_home(tile) or not MastSites._is_eligible(world, _map):
+					or not _reachable_from_home(tile) or not MastSites.is_eligible(world, _map):
 				continue
 			for side: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 				var next := tile + side
