@@ -40,7 +40,8 @@ const MOVE_SECONDS := 0.4
 ## walking pace a tick still moves her a fifth of a tile at most, so no wall is stepped over.
 const WALK_SCALE := 2.0
 
-## The exit statuses of every game the boots ended, which `main.use_quit()` is handed to record.
+## One entry for every game the boots ended, which `main.use_quit()` is handed to record (it is told
+## that the game ended, not with what status).
 var _quits: Array[int] = []
 
 ## Whether `filename` belongs to the part named by `prefix`.
@@ -132,8 +133,8 @@ func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime
 
 ## Her meters are what `setup.player` says, moved by no more than the ticks the scene has counted can
 ## move them: sleepiness at the fastest it fills (a one-block calm area, `Tuning.sleepiness_gain_calm()`)
-## or drains; excitement at the most it falls (`Tuning.EXCITEMENT_DECAY_WALKING` and a ground multiplier of at most
-## eight), and no more than the meter holds: what raises it (the crowd and every event near her) is not
+## or drains; excitement at the most it falls (`Tuning.EXCITEMENT_DECAY_WALKING` times the calm zone's multiplier, the largest ground
+## multiplier, `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER`), and no more than the meter holds: what raises it (the crowd and every event near her) is not
 ## bounded by what the scene installs, so a rise is not checked. An escape and a
 ## full sleep meter start her asleep (`Baby.force_sleep()`).
 func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
@@ -149,7 +150,7 @@ func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> v
 	var excite_from := float(authored.get("excitement", 0))
 	t.check(absf(baby.sleepiness - sleep_from) <= sleep_rate * seconds + 0.01
 			and baby.excitement <= Tuning.METER_MAX
-			and baby.excitement >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * 8.0 * seconds - 0.01,
+			and baby.excitement >= excite_from - Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER * seconds - 0.01,
 			"%s: her meters are %.2f sleep and %.2f excitement after %d ticks, from %.1f and %.1f"
 			% [label, baby.sleepiness, baby.excitement, recipe.tick, sleep_from, excite_from])
 

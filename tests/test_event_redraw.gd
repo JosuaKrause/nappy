@@ -19,16 +19,17 @@ extends RefCounted
 ## `tests/test_event_views.gd` both follow.
 
 const STEP := 1.0 / 60.0
+const DrawnEvent := preload("res://tests/drawn_event.gd")
 
 func run(t) -> void:
 	_test_a_standing_seal_holds_one_key_for_its_whole_life(t)
 	await _test_the_gate_stores_the_key_it_compared(t)
 	_test_a_striding_event_moves_its_key(t)
 	_test_a_bobbing_event_moves_its_key(t)
-	_test_the_normal_dogs_opposite_step_moves_its_key(t)
+	await _test_the_normal_dogs_opposite_step_moves_its_key(t)
 	_test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t)
-	_test_the_marks_flash_is_in_the_key(t)
-	_test_the_caret_strength_is_in_the_key(t)
+	await _test_the_marks_flash_is_in_the_key(t)
+	await _test_the_caret_strength_is_in_the_key(t)
 	_test_asking_for_the_key_does_not_freeze_the_caret(t)
 	_test_the_buskers_strum_moves_the_key_without_him_moving(t)
 	_test_the_cafe_sitters_lean_moves_the_key(t)
@@ -161,24 +162,60 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 ## bob, so the half of the stride is its own term in the key (`EventPictures.dog_picture()`): two
 ## states that differ in nothing else still draw different pictures and must not share a key. The
 ## charging dog has one stepping picture per view, so the same two states are one key for it.
+##
+## **The two states are reached by walking the event on by hand** (`walk_on_by_hand()`, as a scene
+## recipe walks a held event), to the ground a half-stride apart whose bobs are the same: the bob is
+## `|sin|` of the ground covered over 34px, so a walk that ends at the top of the bob (17px) and one
+## that goes on a half-turn of the stride further (`PI / GAIT_RATE`, 34.9px) both lift the body the
+## same, to the eighth of a pixel the key reads it. The engine's own count of times it drew the event
+## (its `draw` signal) is what is counted, and the pictures the dog was told to stand are read off
+## the recording drawer.
 func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
-	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
+	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
+	var half_a_turn := PI / EventInstance.GAIT_RATE
 	for id in ["dog_walker", "loose_dog", "charging_dog"]:
-		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, route, Vector2.RIGHT)
-		instance._gait_moving = true
-		instance._gait_phase = PI * 0.25
-		_asks(instance)
-		instance._gait_phase = PI * 1.25
-		var opposite_moves_it := _asks(instance)
-		t.check(instance.look.gait_is_stepping(), "%s is on a step in both states" % id)
+		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id(id), false)
+		var drawn := [0]
+		instance.draw.connect(func() -> void: drawn[0] += 1)
+		instance.held_by_hand = true
+		var speed := instance.departure.speed()
+		t.check(speed > 0.0, "%s walks on by hand" % id)
+		if speed <= 0.0:
+			instance.free()
+			continue
+		instance.walk_on_by_hand(to_the_top_of_the_bob / speed)
+		await DrawnEvent.frames(t)
+		var first := _the_dog_drawn(instance)
+		var bob := instance.look.current_bob()
+		var first_half := instance.look.gait_is_second_half()
+		var stepping := instance.look.gait_is_stepping()
+		var before: int = drawn[0]
+		instance.walk_on_by_hand(half_a_turn / speed)
+		await DrawnEvent.frames(t)
+		var opposite := _the_dog_drawn(instance)
+		var moved_it: bool = drawn[0] > before
+		t.check(stepping and instance.look.gait_is_stepping()
+				and instance.look.gait_is_second_half() != first_half,
+				"%s is on a step in both states, in the two halves of the stride" % id)
+		t.check(roundi(instance.look.current_bob() * EventLook.BOB_STEPS_PER_PX)
+				== roundi(bob * EventLook.BOB_STEPS_PER_PX),
+				"%s's two states lift the body the same" % id)
 		if id == "charging_dog":
-			t.check(not opposite_moves_it,
+			t.check(not moved_it and opposite == first,
 					"the charging dog's two halves of a stride are one picture and one key")
 		else:
-			t.check(opposite_moves_it,
-					"%s's first step and opposite step are two keys" % id)
+			t.check(moved_it and opposite != first,
+					"%s's first step and opposite step are two keys, and two pictures (%s, %s)"
+							% [id, first, opposite])
 		instance.free()
+
+## The pictures of the dog (`events/dog…`) that `instance` was last drawn with.
+func _the_dog_drawn(instance: EventInstance) -> Array[String]:
+	var pictures: Array[String] = []
+	for entry in DrawnEvent.shown(instance):
+		if entry.picture.begins_with("events/dog") or entry.picture.begins_with("events/charging_dog"):
+			pictures.append(entry.picture)
+	return pictures
 
 ## The crouch *is* the telegraph (`_draw_cat` swaps the whole family at `is_telegraphing()`), so the
 ## tick the dash starts has to move the key even though nothing about the cat has moved yet.
@@ -209,44 +246,73 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 ## of the mark's size, and the key has to carry it or a caret would freeze on whichever half of the
 ## beat it was last drawn in.
 ##
-## The strength is written straight into the per-frame cache `caret_strength()` keeps against
-## `age`, the same way `tests/test_event_strides.gd` writes `_gait_phase` to reach a state a rig
-## cannot otherwise stand in: what is under test is the key, not the projection that feeds it.
+## A cyclist with her standing on it carries the doubled red caret for as long as it telegraphs, at
+## a swell its telegraph holds constant, so the flash is the only thing that can move its key across
+## a beat; the engine's own count of draws (`draw`) is what is counted, one tick and one frame at a
+## time. The same cyclist with nobody to aim at carries no caret, and is drawn on none of them.
 func _test_the_marks_flash_is_in_the_key(t) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
-	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	var def := EventCatalogue.by_id("cyclist")
+	var marked: EventInstance = await DrawnEvent.stand(t, def, false)
+	var unmarked: EventInstance = await DrawnEvent.stand(t, def, false)
+	marked.excitement.set_player_at(marked.global_position)
+	t.check(marked.excitement.caret_strength() == 2 and unmarked.excitement.caret_strength() == 0,
+			"the cyclist she stands on is marked, the one nobody is near carries nothing")
+	var drawn := {marked: [0], unmarked: [0]}
+	for instance: EventInstance in drawn:
+		var count: Array = drawn[instance]
+		instance.draw.connect(func() -> void: count[0] += 1)
+	# The frames that put the caret up are the change from no caret, not the flash.
+	await DrawnEvent.frames(t)
+	var settled: int = drawn[marked][0]
+	var ticks := int(ceil(1.0 / EventPictures.MARK_FLASHES_PER_SECOND / STEP)) + 2
 	var changes := 0
-	instance.step(STEP)
-	_force_the_caret(instance, 1)
-	_asks(instance)
-	# One whole flash beat, sampled tick by tick.
-	for i in int(ceil(1.0 / EventPictures.MARK_FLASHES_PER_SECOND / STEP)) + 2:
-		instance.step(STEP)
-		if not instance.is_telegraphing():
+	for i in ticks:
+		var before: int = drawn[marked][0]
+		marked.step(STEP)
+		unmarked.step(STEP)
+		await t.get_tree().process_frame
+		await t.get_tree().process_frame
+		if not marked.is_telegraphing():
 			break
-		_force_the_caret(instance, 1)
-		if _asks(instance):
+		if drawn[marked][0] > before:
 			changes += 1
-	t.check(changes >= 1,
-			"a marked, telegraphing event takes more than one key across one flash beat (%d changes)"
+	t.check(changes >= 2,
+			"a marked, telegraphing event is drawn again for the flash going off and on across one beat (%d changes)"
 					% changes)
-	instance.free()
+	t.check(drawn[unmarked][0] == 0 and settled > 0,
+			"and an unmarked one is drawn on none of those ticks (%d)" % drawn[unmarked][0])
+	marked.free()
+	unmarked.free()
 
 ## The caret's own 0/1/2 strength is a picture — no mark, one mark, a doubled mark — so the same
-## instance in the same state reads three different keys for the three strengths.
+## instance in the same state reads three different keys for the three strengths. A loose dog that
+## ends the day on contact (a copy of its row with `hard_fail` set) is amber when she is far off and
+## closing on it, doubled red with her on it, and nothing with her away and still, and each change
+## of her state is drawn on the next frame.
 func _test_the_caret_strength_is_in_the_key(t) -> void:
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("barricade"), Vector2.ZERO)
-	instance.step(STEP)
+	var def := _copy_of(EventCatalogue.by_id("loose_dog"))
+	def.hard_fail = true
+	var instance: EventInstance = await DrawnEvent.stand(t, def, false)
+	var drawn := [0]
+	instance.draw.connect(func() -> void: drawn[0] += 1)
+	var here := instance.global_position
+	var states := [
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+		[Vector2(150.0, 0.0), Vector2(-100.0, 0.0), 1],
+		[Vector2.ZERO, Vector2.ZERO, 2],
+		[Vector2(400.0, 0.0), Vector2.ZERO, 0],
+	]
 	var moved := []
-	for strength in [0, 1, 2]:
-		_force_the_caret(instance, strength)
-		moved.append(_asks(instance))
-	_force_the_caret(instance, 0)
-	moved.append(_asks(instance))
-	t.check(moved == [true, true, true, true],
-			"no caret, a caret, a doubled caret and no caret again each move the key")
+	var strengths := []
+	for state in states:
+		var before: int = drawn[0]
+		instance.excitement.set_player_at(here + state[0], state[1])
+		await DrawnEvent.frames(t)
+		moved.append(drawn[0] > before)
+		strengths.append(instance.excitement.caret_strength())
+	t.check(strengths == [0, 1, 2, 0], "she is far off, closing, on it and far off again (%s)" % [strengths])
+	t.check(moved == [false, true, true, true],
+			"no caret, a caret, a doubled caret and no caret again each draw it again (%s)" % [moved])
 	instance.free()
 
 ## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
@@ -538,9 +604,12 @@ static func _never_settles(instance: EventInstance) -> bool:
 	_asks(instance)
 	return _asks(instance)
 
-## Makes `instance`'s source answer `strength` for its caret this frame, as if it had worked it out.
-static func _force_the_caret(instance: EventInstance, strength: int) -> void:
-	var source := instance.excitement
-	source._caret_known = true
-	source._caret_key_was = source._caret_key()
-	source._caret = strength
+## A copy of `def` to change without changing the catalogue's own row, which every suite shares: every
+## variable the row's script declares, shallowly (`Resource.duplicate()` leaves the ones that are
+## not saved out).
+static func _copy_of(def: EventDef) -> EventDef:
+	var copy := EventDef.new()
+	for property in def.get_property_list():
+		if property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			copy.set(property.name, def.get(property.name))
+	return copy

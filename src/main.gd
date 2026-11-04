@@ -166,7 +166,8 @@ var _sitting_home: Node
 ## What `_reload_the_scene()` calls in place of reloading the scene, set only by `use_reload()`. An
 ## empty `Callable`, the default, reloads normally.
 var _reload_override := Callable()
-## What `_quit()` calls in place of quitting the tree, set only by `use_quit()`. An empty
+## What `_quit()` and `_end_with()` (a scene recipe's ending of the game) call in place of quitting the
+## tree, set only by `use_quit()`. An empty
 ## `Callable`, the default, quits normally.
 var _quit_override := Callable()
 
@@ -230,7 +231,8 @@ func configure(run_config: RunConfig) -> void:
 func use_reload(reload: Callable) -> void:
 	_reload_override = reload
 
-## Hands this boot what it calls instead of quitting the game (the pause screen's quit). Set before
+## Hands this boot what it calls instead of quitting the game (the pause screen's quit, and a scene
+## recipe's ending of the game, `_end_with()`). Set before
 ## the boot runs; a boot never handed one quits normally.
 func use_quit(quit: Callable) -> void:
 	_quit_override = quit
