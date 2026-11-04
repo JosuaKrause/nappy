@@ -27,9 +27,12 @@ extends RefCounted
 ##
 ## **The booted game is driven the way a player and the engine drive it** (`tests/booted_main.gd`):
 ## the title's joystick button pressed through the viewport, her marks read through the contact's
-## own completion (`ContactPoint.complete_now()`), and the walk's tick that `main` runs each physics
-## frame made of the same two public ticks it calls, the resistance's (`ResistanceDirector.tick()`)
-## and the day's (`DayController.tick()`).
+## own completion (`ContactPoint.complete_now()`), and every tick a real physics tick of the booted
+## game (`tests/physics_ticks.gd`): `main` ticks the resistance and the day, and the engine ticks the
+## events and the crowd, in the order the game runs them. Run at twice real time, so a tick is the
+## 1/30 s the walk always took. The move a mover stands is read off the list the game's own passes
+## read (`WorldMap.moves`), and the movers' poses off the nodes the game draws: an event's and a
+## crowd body's position, and the cordon's officers' figures (`CordonOfficer`).
 ##
 ## `run()` snapshots the whole save first and puts it back last, and every boot is handed a save at
 ## a scratch path (`main.use_save()`), so nothing here leaks into the next suite or reaches the
@@ -39,7 +42,8 @@ const Boot := preload("res://tests/booted_main.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_move_poses_scratch.json"
 const SEEDS: Array[int] = [4242, 1]
-const STEP := 1.0 / 30.0
+## How many times real time the walk runs, so a physics tick carries 1/30 s.
+const SCALE := 2.0
 ## How long she walks the day before the swing, in seconds.
 const BEFORE_THE_SWING := 25.0
 ## How long the walk goes on once the swing is touched, in seconds: the cordon's whole close.
@@ -54,6 +58,7 @@ const SHOWN := 8
 var _bumps := 0
 
 func run(t) -> void:
+	await PhysicsTicks.settle(t)
 	t.gives_back_observers()
 	var baseline := GameSave.file_data(GameState, false)
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
@@ -84,44 +89,26 @@ func _walk_the_day(t, seed_value: int) -> void:
 	var booted: Boot.Booted = await _day_twelve(t, seed_value)
 	var main := booted.main
 	var city := Boot.city(main)
-	var director := Boot.resistance(main)
 	var day := Boot.day(main)
-	var player := Boot.player(main)
-	var swing := director.contact_position()
+	var swing := Boot.resistance(main).contact_position()
 	var seen := {}
 	for instance in city.events.instances():
 		seen[instance.get_instance_id()] = true
 	var last := {}
 	var counts := {"wrong": 0, "by_kind": {}, "turns": 0, "recycled": 0, "came": 0, "officers": 0, "ticks": 0}
 	_bumps = 0
-	var ticks := int((BEFORE_THE_SWING + AFTER_THE_SWING) / STEP)
-	var swing_tick := int(BEFORE_THE_SWING / STEP)
+	var ticks := PhysicsTicks.ticks_for(BEFORE_THE_SWING + AFTER_THE_SWING, SCALE)
+	var swing_tick := PhysicsTicks.ticks_for(BEFORE_THE_SWING, SCALE)
 	# At dawn, before any mover has stepped: each joined where it stands.
 	_check_the_tick(t, main, seed_value, -1, counts, seen, last)
-	for tick in ticks:
-		if tick == swing_tick:
-			t.check(day.is_running(), "seed %d: the day still runs when the swing is touched"
-					% seed_value)
-			player.global_position = swing
-			var task := director.contact()
-			if task:
-				task.complete_now()
-			# The cordon's officers set out, none of them stepped yet: each joined where he stands.
-			_check_the_tick(t, main, seed_value, tick, counts, seen, last)
-		elif tick < swing_tick and tick % BUMP_EVERY == BUMP_EVERY - 1:
-			_stand_against_a_walker(main)
-		else:
-			var here: Vector2 = player.global_position
-			player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * STEP)
-		# Not `main`'s own gate (ticks only while walking and unpaused, and counts `play_ticks`):
-		# every pass ticks, so this loop does not stop at the day's end. Under `--invincible` the
-		# day never leaves walking, so the two read the same here.
-		director.tick(STEP)
-		day.tick(STEP)
-		city.events._physics_process(STEP)
-		city.crowd._physics_process(STEP)
+	_before_the_tick(t, main, seed_value, 0, swing_tick, swing, counts, seen, last)
+	var after_each := func(ran: int) -> void:
 		counts["ticks"] += 1
-		_check_the_tick(t, main, seed_value, tick, counts, seen, last)
+		_check_the_tick(t, main, seed_value, ran - 1, counts, seen, last)
+		if ran < ticks:
+			_before_the_tick(t, main, seed_value, ran, swing_tick, swing, counts, seen, last)
+	await PhysicsTicks.pass_ticks(t, ticks, after_each, SCALE)
+	t.check(day.is_running(), "seed %d: the day still runs at the walk's end" % seed_value)
 	t.check(counts["wrong"] == 0, "seed %d: every live mover's move stands at its pose at the end "
 			% seed_value + "of every one of %d ticks (%d wrong: %s)"
 			% [counts["ticks"], counts["wrong"], counts["by_kind"]])
@@ -136,6 +123,27 @@ func _walk_the_day(t, seed_value: int) -> void:
 			% [seed_value, counts["officers"]])
 	Telemetry.end_run()
 	booted.free_all()
+
+## What happens to her before the physics tick `tick` runs: the walk toward the swing, stood against
+## a walker now and then, and the swing touched when the tick comes.
+func _before_the_tick(t, main: Node2D, seed_value: int, tick: int, swing_tick: int,
+		swing: Vector2, counts: Dictionary, seen: Dictionary, last: Dictionary) -> void:
+	var player := Boot.player(main)
+	if tick == swing_tick:
+		t.check(Boot.day(main).is_running(), "seed %d: the day still runs when the swing is touched"
+				% seed_value)
+		player.global_position = swing
+		var task := Boot.resistance(main).contact()
+		if task:
+			task.complete_now()
+		# The cordon's officers set out on the tick that follows, none of them stepped yet.
+		_check_the_tick(t, main, seed_value, tick, counts, seen, last)
+	elif tick < swing_tick and tick % BUMP_EVERY == BUMP_EVERY - 1:
+		_stand_against_a_walker(main)
+	else:
+		var here: Vector2 = player.global_position
+		player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * SCALE
+				/ Engine.physics_ticks_per_second)
 
 ## Stands her a few pixels off the nearest walker, inside his bump radius, so his bump pushes him.
 func _stand_against_a_walker(main: Node2D) -> void:
@@ -154,7 +162,8 @@ func _stand_against_a_walker(main: Node2D) -> void:
 func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictionary,
 		seen: Dictionary, last: Dictionary) -> void:
 	var city := Boot.city(main)
-	var listed := city.map.moves.all()
+	# What each mover stands at, by what it is.
+	var poses: Array[Array] = []
 	for instance in city.events.instances():
 		if not instance.is_inside_tree():
 			continue
@@ -162,36 +171,56 @@ func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictio
 		if not seen.has(id):
 			seen[id] = true
 			counts["came"] += 1
-		_check_one(t, seed_value, tick, "event %s" % instance.def.id, instance._move,
-				instance.position, listed, counts)
+		poses.append(["event %s" % instance.def.id, instance.position])
 	for agent in city.crowd.agents():
 		if not agent.is_inside_tree():
 			continue
 		var id := agent.get_instance_id()
-		if agent._turn != null:
+		if agent.is_turning():
 			counts["turns"] += 1
 		if last.has(id) and (last[id] as Vector2).distance_to(agent.position) > RECYCLE_JUMP:
 			counts["recycled"] += 1
 		last[id] = agent.position
-		_check_one(t, seed_value, tick, "crowd %s" % CrowdAgent.Kind.keys()[agent.kind],
-				agent._move, agent.position, listed, counts)
-	var cordon: ParkCordon = Boot.resistance(main)._happenings.cordon
-	if cordon == null:
-		return
-	for officer in cordon.officers:
-		if officer.phase == ParkCordon.Officer.Phase.GONE:
-			continue
-		counts["officers"] += 1
-		_check_one(t, seed_value, tick, "cordon officer", officer.move, officer.at, listed, counts)
+		poses.append(["crowd %s" % CrowdAgent.Kind.keys()[agent.kind], agent.position])
+	for figure in city.get_node("Entities").get_children():
+		if figure is CordonOfficer and not figure.is_queued_for_deletion():
+			counts["officers"] += 1
+			poses.append(["cordon officer", figure.position])
+	_check_the_moves(t, seed_value, tick, poses, city.map.moves.all(), counts)
 
-func _check_one(t, seed_value: int, tick: int, what: String, move: MoveProposal, at: Vector2,
+## Every mover's pose has a move on the list standing there and closed, and every move on the list
+## is some mover's: a move left behind, or one still open, would show a body where nobody is.
+func _check_the_moves(t, seed_value: int, tick: int, poses: Array[Array],
 		listed: Array[MoveProposal], counts: Dictionary) -> void:
-	if move.from == at and move.to == at and not move.open and listed.has(move):
-		return
+	var standing := {}
+	var open := 0
+	for move in listed:
+		if move.open:
+			open += 1
+		elif move.from == move.to:
+			standing[move.from] = int(standing.get(move.from, 0)) + 1
+		else:
+			open += 1
+	for pose in poses:
+		var at: Vector2 = pose[1]
+		if int(standing.get(at, 0)) > 0:
+			standing[at] = int(standing[at]) - 1
+			continue
+		_count_one_wrong(t, seed_value, tick, pose[0], "no closed move on the list stands at %s" % at,
+				counts)
+	for at: Vector2 in standing:
+		for i in int(standing[at]):
+			_count_one_wrong(t, seed_value, tick, "a listed move",
+					"it stands at %s, where no mover does" % at, counts)
+	for i in open:
+		_count_one_wrong(t, seed_value, tick, "a listed move", "it is open or between two poses",
+				counts)
+
+func _count_one_wrong(t, seed_value: int, tick: int, what: String, why: String,
+		counts: Dictionary) -> void:
 	counts["wrong"] += 1
 	var kinds: Dictionary = counts["by_kind"]
 	var kind := what.get_slice(" ", 0) if what.begins_with("event") else what
 	kinds[kind] = int(kinds.get(kind, 0)) + 1
 	if counts["wrong"] <= SHOWN:
-		t.check(false, "seed %d tick %d: %s stands at %s, its move from %s to %s (open %s, listed %s)"
-				% [seed_value, tick, what, at, move.from, move.to, move.open, listed.has(move)])
+		t.check(false, "seed %d tick %d: %s: %s" % [seed_value, tick, what, why])
