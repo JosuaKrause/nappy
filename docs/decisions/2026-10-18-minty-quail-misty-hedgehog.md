@@ -5,11 +5,12 @@ minty-quail's `run-state-handed-in.md`: `tests/test_destination_drawing.gd`, `te
 `test_event_parts.gd` and `test_day_controller.gd`. Tests only.
 
 **Built.** Each suite hands a fresh `RunState` to what it tests: a city on a run of its own through
-`RunCity.with_own_run()`, where a check depends on the run's seed on the seed the runner used to
-reset the global to, named; an event world its own run and the manager one through `use_run()`; the
+`RunCity.with_own_run()`, the day 7 van and dev rig suites on the seed the runner used to reset the
+global to, named, since their checks depend on the day's streams it seeds, the day 6 and pause
+suites on a named seed only so a walk repeats, the destination drawing and burnt door suites on the
+city's own seed; an event world its own run and the manager one through `use_run()`; the
 day's controller one through `DayController.setup()`; the pause and title screens one through
 `use_run()`, and the summary models one each. The saved and restored fields are gone. The one check
 about the global itself, that the pelican's bag drew none from the game's own run, goes with it, and
 the scar test checks instead that its run starts with none; the burnt door suite resets its own
-run's resistance before each front, since reading a mark completes a step of that run. Eight
-mutation runs fail them.
+run's resistance before each front, since reading a mark completes a step of that run.
