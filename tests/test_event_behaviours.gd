@@ -313,7 +313,7 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	manager.world.map.world = world
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(def, at)
-	manager.streaming._plans = [plan] as Array[EventScheduler.Planned]
+	manager.streaming.add(plan)
 	manager.stream_around(at)
 	var robber := plan.live
 	t.check(robber != null, "he is streamed in where the day planned him")
