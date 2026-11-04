@@ -597,7 +597,8 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day), rolled
 ## once per `WALL`-role placement the fill made, from `filled_from` on. *(azure-puffin, point 4:
 ## "when the guard houses are set up the city gets much harder to navigate let's loosen the density
-## of the hard blocking events in that case"; "fewer of all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
+## of the hard blocking events in that case"; "fewer of all three".)* A wall is one of the three
+## hard blockers off the tree, with the seals and the
 ## closures, and the region wall dividing the city from `Tuning.REGION_WALL_FIRST_DAY` is what made
 ## the three together too much.
 ##

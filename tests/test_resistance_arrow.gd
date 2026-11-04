@@ -389,10 +389,10 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 func _a_mast_can_be_sited_along_her_route() -> bool:
 	var siting: EventScheduler.WalkSiting = _city.events.ahead.walk_siting()
 	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
-	# The band the director sites the walk's events in: from the streaming radius out to
-	# `EventDirector.ON_HER_WAY_SIGHT` seconds of walking beyond it.
-	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
-	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
+	# The band the director sites the walk's events in.
+	var band := EventDirector.siting_band()
+	var near := band.x
+	var far := band.y
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	var path := _longest_route_points()

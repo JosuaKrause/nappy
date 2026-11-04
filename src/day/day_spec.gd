@@ -157,8 +157,9 @@ var caps_per_day := true
 ## The share of the **wall**-role placements the day's fill made that stay standing, rolled once per
 ## placement (`EventScheduler.build_day()`, which thins the fill after planning it). A wall is only
 ## ever placed off the tree, so this is the share of the catalogue's own blockers off it that the
-## day keeps. `1.0` keeps every wall: every day before `Tuning.REGION_WALL_FIRST_DAY`, the gatehouse
-## day, and every section of the escape; from that day on `for_day()` hands `GATEHOUSE_DAY_WALL_ROW_SHARE`.
+## day keeps. `1.0` keeps every wall: every day before `Tuning.REGION_WALL_FIRST_DAY` and every
+## section of the escape. From the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) on, `for_day()`
+## hands `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
 var wall_row_share := 1.0
 ## The share `wall_row_share` is from `Tuning.REGION_WALL_FIRST_DAY` on, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5

@@ -173,9 +173,10 @@ func _test_a_held_notice_comes_back_as_far_run(t) -> void:
 			"the second he waited is counted into the start a stream-out carries", 0.0001)
 	var second := EventInstance.new()
 	second.setup(def, Vector2.ZERO)
-	second.resume(first.age, 0.0, first.noticed_at())
-	t.close_to(second.chase_age(), first.chase_age(), "streamed back in, it is as far into its notice", 0.0001)
-	t.check(second.phase == EventInstance.Phase.WARNING, "and still warning")
+	# Put back two seconds later: the notice has run those two seconds, and the second he waited held
+	# is not counted as run. Started at the age it was put back at instead, it would have run none.
+	second.resume(first.age + 2.0, 0.0, first.noticed_at())
+	t.close_to(second.chase_age(), 2.0, "streamed back in, it has run the two seconds since and not the held one", 0.0001)
 	first.free()
 	second.free()
 
