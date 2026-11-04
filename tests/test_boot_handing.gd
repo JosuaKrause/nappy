@@ -16,6 +16,7 @@ extends RefCounted
 ## from the doorstep to tell the two apart, since the patch stands on her at the doorstep either way.
 
 const Boot := preload("res://tests/booted_main.gd")
+const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_boot_handing_scratch.json"
 ## Real frames let pass behind the title, for the crowd to tick in.
@@ -31,30 +32,25 @@ func run(t) -> void:
 	await _test_the_crowd_does_not_meet_her_behind_the_title(t)
 	await _test_the_escapes_city_is_handed_the_controls_cover(t)
 
-## A boot of a run made for it: `run` is what the game plays and `home` the node its sitting is
-## parked in. Freed by `_end()`.
-class Seat:
-	var run := RunState.new()
-	var home: Node
+## A boot of a run made for it (`tests/seat.gd`): the seat holds the run the game plays and the node
+## its sitting is parked in, and `booted` is the boot over it. Freed by `end()`.
+class Played:
+	var seat: Seat
 	var booted: Boot.Booted
 
 	func end() -> void:
 		booted.free_all()
-		home.free()
-		run.free()
+		seat.end()
 
-func _boot(t, run_for_it: Callable, words: Array) -> Seat:
-	var seat := Seat.new()
-	if run_for_it.is_valid():
-		run_for_it.call(seat.run)
-	seat.home = Boot.home_playing(t, seat.run)
-	seat.booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(unbooted: Node) -> void: unbooted.use_sitting_home(seat.home))
-	return seat
+func _boot(t, run_for_it: Callable, words: Array) -> Played:
+	var played := Played.new()
+	played.seat = Seat.new(t, run_for_it)
+	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words)
+	return played
 
 func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:
-	var seat := await _boot(t, Callable(), ["--seed", str(SEED)])
-	var main := seat.booted.main
+	var played := await _boot(t, Callable(), ["--seed", str(SEED)])
+	var main := played.booted.main
 	var city := Boot.city(main)
 	var player := Boot.player(main)
 	var field := city.crowd.field()
@@ -72,14 +68,14 @@ func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:
 	await PhysicsTicks.pass_ticks(t, BEHIND_THE_TITLE_TICKS)
 	t.check(field.centre.distance_to(player.global_position) < 1.0,
 			"the day's start hands the crowd her: its patch stands on her wherever she is")
-	seat.end()
+	played.end()
 
 func _test_the_escapes_city_is_handed_the_controls_cover(t) -> void:
-	var seat := await _boot(t, func(run: RunState) -> void:
+	var played := await _boot(t, func(run: RunState) -> void:
 				run.start_run(SEED)
 				run.header.day = Tuning.RUN_LENGTH_DAYS
 				run.facts.escape_section = DaySpec.Section.CITY, [])
-	var main := seat.booted.main
+	var main := played.booted.main
 	var city := Boot.city(main)
 	t.check(city != null and city.is_ancestor_of(Boot.player(main)),
 			"the escape's city is built, and she stands in it")
@@ -97,4 +93,4 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t) -> void:
 	visible.look_through(Boot.player(main))
 	t.check(not visible.joystick and visible.sees(corner),
 			"and in the tap scheme it is")
-	seat.end()
+	played.end()
