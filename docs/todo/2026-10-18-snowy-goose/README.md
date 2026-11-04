@@ -18,7 +18,10 @@ order is the filer's proposal.
 - **Off screen, with a badge.** Every escape explosion goes off out of her view, announced by the
   screen-edge badge pointing at it, drawn as an explosion ("mushroom or whatever indicates an
   explosion"). A new badge picture is SVG, drawn by Opus under **svg-art** and **cues**; its first
-  attempt comes back to the player early.
+  attempt comes back to the player early. The picture exists: `art/events/explosion.svg`, a
+  mushroom cloud, with its atlas line, which the player likes: "btw I like the explosion badge
+  design" (inbox #1026). Nothing draws it yet; what is left of this item is the explosions going
+  off out of her view and the badge pointing at them showing this picture in place of the star burst.
 - **Craters already there.** A crater she walks toward is already standing: since an explosion never
   goes off in view, no crater appears in front of her. **Read as:** craters of explosions earlier in
   the walk are placed before she can see them; whether some craters stand from the section's start is
