@@ -14,7 +14,7 @@ marked cyclist with an unmarked twin; the caret's 0, 1, 2, 0 run uses a copy of 
 `hard_fail` set, built in the test since catalogue rows are shared across suites. That the gate
 works out no caret off screen is probed by moving her far off after the gate's frame and asking for
 the caret, since nothing else observes it. `tests/drawn_event.gd` gained a map and siting for
-`stand()` and `build()`, `frames()` and `shown()`. Ten mutation runs; one, flames squeezed to the
+`stand()` and `build()`, `frames()` and `shown()`. Every drawn column of a burning facade is checked at its middle and one pixel in from each edge, so a run that loses its last flame fails; the standing dog's rest pose is checked in every view; the off-screen caret probe has an on-screen control that answers true. Of the mutation runs the PR lists, one, flames squeezed to the
 run's width, is caught neither before nor now, and matters only for runs under 22 px, which the
 city does not make.
 
