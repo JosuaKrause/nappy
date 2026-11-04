@@ -199,7 +199,7 @@ test_tutorial_dog.gd 44663
 test_visible_view.gd 396
 test_visit_counter.gd 151
 test_visuals.gd 136
-test_walk_plan.gd 75
+test_walk_plan.gd 50759
 test_walk_siting_spec.gd 1480
 test_walker_views.gd 498
 test_wall_shield.gd 7895
