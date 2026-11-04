@@ -1,6 +1,9 @@
 extends RefCounted
 ## Synchronous headless preparation and geometric coverage experiment. No rendered-frame claims.
 ## Run with tools/test.sh probes/lazy_scenery_measure.gd; external timeout belongs to the caller.
+## Every ground region is made resident before it measures, so its `LAZY_BOOT` figures
+## (`ground_prepared`, `visible_ground_*`) describe the whole map held at once, not the real boot,
+## which holds only the view's regions.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
