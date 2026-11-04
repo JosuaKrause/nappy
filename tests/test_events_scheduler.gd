@@ -195,21 +195,30 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 
 ## Not the ordinary placement check — `_test_scheduler_respects_placement_and_caps` already holds
 ## `alley_mouse` to landing on an `ALLEY` tile, the same as every other `MAP` row. What nothing else
-## checks is `EventInstance._alley_crossing_path()`'s own reason for existing: that the two-point
-## dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
+## checks is the alley dash's own reason for existing (`EventInstance.path` of the mouse): that the
+## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
 ## off `CityMap.alley_rects` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
 func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 	var checked := 0
+	var solid := 0
 	for run_seed in [4242, 2102613802, 90210]:
 		var map := CityGenerator.generate(run_seed)
 		for rect: Rect2i in map.alley_rects:
+			# An alley the generator has made solid stays in `alley_rects` (see `SealPlanner`'s
+			# note on `_make_the_pair_solid`) and has no ground to stand on, so a mouse is never
+			# placed in it and the dash it is given there is cut to nothing.
+			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+				solid += 1
+				continue
 			checked += 1
 			var vertical := rect.size.y > rect.size.x
 			var at := map.tile_to_world(rect.position + Vector2i(rect.size.x / 2, rect.size.y / 2))
-			var path := EventInstance._alley_crossing_path(map, at)
+			var path := _dash_of_the_mouse_at(map, at)
 			t.check(path.size() == 2,
 					"seed %d alley %s: the crossing path has exactly two points" % [run_seed, rect])
+			if path.size() < 2:
+				continue
 			var delta: Vector2 = path[1] - path[0]
 			t.check(not is_zero_approx(delta.x) or not is_zero_approx(delta.y),
 					"seed %d alley %s: the crossing path actually moves" % [run_seed, rect])
@@ -230,6 +239,17 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 						and point.y >= world_rect.position.y and point.y <= world_rect.end.y,
 						"seed %d alley %s: the dash stays inside the alley it crosses" % [run_seed, rect])
 	t.check(checked > 0, "some seed generated an alley to check (%d)" % checked)
+	t.check(checked > 10 * solid,
+			"and the alleys passed over as solid are a few (%d of %d)" % [solid, checked + solid])
+
+## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.path`, which the
+## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
+func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
+	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("alley_mouse"), at, PackedVector2Array(), Vector2.RIGHT, map)
+	var path := instance.path
+	instance.free()
+	return path
 
 ## The review finding on M100, a mouse in the alley: `alley_mouse` is `MAP`-placed at dawn,
 ## `Tuning.EVENT_STREAM_RADIUS` (900px) outside the view and far past `Tuning.VIEW_HALF_EXTENT`, so
