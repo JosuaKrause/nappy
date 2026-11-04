@@ -13,7 +13,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
-	_test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t)
+	await _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t)
 	_test_a_shaken_off_guard_leaves_the_barrier_standing(t)
 	_test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
 	_test_a_guard_who_is_gone_does_not_come_back(t)
@@ -28,9 +28,11 @@ func _hot_roadblock() -> EventDef:
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
 ## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`).
-func _chasing(t, post: Vector2) -> Array:
+func _chasing(t, post: Vector2, atlas: AtlasLibrary = null) -> Array:
 	var hot := _hot_roadblock()
 	var guard := EventInstance.new()
+	if atlas != null:
+		guard.atlas = atlas
 	guard.setup(hot, post)
 	t.add_child(guard)
 	guard.set_process(false)
@@ -52,21 +54,47 @@ func _charge(guard: EventInstance) -> Vector2:
 		frames += 1
 	return her
 
+## The solid body that stops her, found as the debug view's walk of the physics tree finds it: the
+## `StaticBody2D` standing under the instance, or null.
+func _its_body(guard: EventInstance) -> StaticBody2D:
+	for child in guard.get_children():
+		if child is StaticBody2D and not child.is_queued_for_deletion():
+			return child
+	return null
+
+## The rim lit round the barrier's band while its guard walks away: the `EntityHalo` standing behind
+## the band's picture (`RoadblockLook.band_rim_holder()`, where the instance builds it), or null.
+func _band_halo(guard: EventInstance) -> EntityHalo:
+	var holder := (guard.look as RoadblockLook).band_rim_holder()
+	if holder == null:
+		return null
+	for child in holder.get_children():
+		if child is EntityHalo:
+			return child
+	return null
+
+## The picture is moved on the drawn frame, not the tick (`EventInstance._process()`), so the guard
+## is stepped as his manager steps him and a real frame passes after each step.
 func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	# The pictures a drawn frame redraws come from the atlas the manager hands every event.
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"events")
+	var made := _chasing(t, post, atlas)
 	var guard: EventInstance = made[0]
 	var her: Vector2 = made[1]
 	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
 	var worst := 0.0
 	var lifted := false
-	var band: Node2D = (guard.look as RoadblockLook)._band
+	guard.set_process(true)
+	var band: Node2D = guard.look.band_node()
 	t.check(band != null and band.is_inside_tree() and band.get_parent() == guard.get_parent(),
 			"the band is its own node beside the guard, so it sorts at its own feet")
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
 		guard.player_at = her
 		guard.step(STEP)
+		await t.get_tree().process_frame
 		lifted = lifted or absf(guard.look.current_bob()) > 0.1
 		worst = maxf(worst, band.global_position.distance_to(post))
 		if guard.is_finished:
@@ -75,6 +103,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	t.check(guard.global_position.distance_to(post) > 20.0, "and he has walked away from the post")
 	t.check(worst < 0.001, "the band stays on its body on every frame (off by %.3fpx)" % worst)
 	guard.free()
+	atlas.release(&"events")
 
 func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var post := Vector2(400.0, 0.0)
@@ -97,8 +126,9 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 		guard.player_at = stood # she stands still; he walks out of her sight
 		guard.step(STEP)
 		walked += 1
-		body_held = body_held and guard.is_solid() \
-				and guard._obstruction.global_position.is_equal_approx(post)
+		var body := _its_body(guard)
+		body_held = body_held and guard.is_solid() and body != null \
+				and body.global_position.is_equal_approx(post)
 		barrier_held = barrier_held and guard.body_position().is_equal_approx(post)
 	t.check(body_held and barrier_held, "the barrier's body does not go with him as he leaves")
 	t.check(not guard.is_leaving and not guard.is_finished,
@@ -209,8 +239,10 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := _chasing(t, post)
 	var guard: EventInstance = made[0]
-	guard._rim.set_strength(0.8, Color.RED) # the chase's own rim, on the man
-	t.check(guard._rim.entity_halo() != null, "the man holds a rim while he chases")
+	# What `ExcitementHalo` does to a source it picks: the strength it lights the source's rim with.
+	var source := guard.excitement.rim
+	source.set_strength(0.8, Color.RED) # the chase's own rim, on the man
+	t.check(guard.rim() != null, "the man holds a rim while he chases")
 	guard.give_up_the_chase()
 	var beside := post + Vector2(0.0, 40.0)
 	var rim: EntityHalo = null
@@ -220,14 +252,15 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var frames := 0
 	while guard.is_leaving and frames < int(30.0 / STEP):
 		guard.player_at = beside
-		guard._rim.set_strength(0.8, Color.RED)
+		source.set_strength(0.8, Color.RED)
+		var banded := _band_halo(guard)
 		if rim == null:
-			rim = guard._rim.band.entity_halo()
-		same = same and rim != null and guard._rim.band.entity_halo() == rim
-		lit = lit and guard._rim.band.entity_halo() != null and guard._rim.band.entity_halo()._target_alpha > 0.0
-		man_free = man_free and guard._rim.entity_halo() == null
+			rim = banded
+		same = same and rim != null and banded == rim
+		lit = lit and banded != null and not banded.is_faded_out()
+		man_free = man_free and guard.rim() == null
 		# What `ExcitementHalo` does to an unpicked source in between.
-		guard._rim.set_strength(0.8, Color.RED)
+		source.set_strength(0.8, Color.RED)
 		frames += 1
 		guard.step(STEP)
 	t.check(frames > 60, "the departure lasts (%d frames)" % frames)
