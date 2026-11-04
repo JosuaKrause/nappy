@@ -521,7 +521,7 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 		picture_b: String = "") -> void:
 	_draw_body_shadow(canvas)
 	var drawn := picture_b if not picture_b.is_empty() and gait_is_stepping() else picture
-	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, drawn), Vector2.ZERO, Vector2.ZERO,
+	event.drawer.stand(canvas, drawn, Vector2.ZERO, Vector2.ZERO,
 			_heading_is_west())
 
 ## Where a car's picture is anchored for `Sprites.draw_standing`, which bottom-centres it — a car
@@ -567,10 +567,10 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 	var wheels: String = wheels_by_view.get(view, "")
 	var behind := wheels in EventPictures.WHEELS_BEHIND_THE_BODY
 	if not wheels.is_empty() and behind:
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, wheels), grounded, Vector2.ZERO, mirror)
-	Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, picture), at, Vector2.ZERO, mirror)
+		event.drawer.stand(canvas, wheels, grounded, Vector2.ZERO, mirror)
+	event.drawer.stand(canvas, picture, at, Vector2.ZERO, mirror)
 	if not wheels.is_empty() and not behind:
-		Sprites.draw_standing(canvas, EventPictures.drawn(event.atlas, wheels), grounded, Vector2.ZERO, mirror)
+		event.drawer.stand(canvas, wheels, grounded, Vector2.ZERO, mirror)
 
 ## Which way the waiting posture faces: her, whenever a caller has told the event where she is
 ## (`set_player_at()`) and **nothing built stands between them** (`clear_line_to()`, the test his
@@ -637,8 +637,7 @@ func is_mirrored() -> bool:
 ## `Sprites.draw_standing` — nothing in the kit that draws this way ever needs to flip.
 func _draw_at_anchor(canvas: CanvasItem, picture: String, anchor: Vector2,
 		at: Vector2 = Vector2.ZERO) -> void:
-	canvas.draw_texture_rect(EventPictures.drawn(event.atlas, picture), Rect2(at - anchor,
-			EventPictures.native_size(picture)), false)
+	event.drawer.paint(canvas, picture, Rect2(at - anchor, EventPictures.native_size(picture)))
 
 # ------------------------------------------------------------- the drawing nodes ---
 # A long picture is drawn in slices that sort against her one by one, and a roadblock's band stands

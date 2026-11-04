@@ -164,7 +164,9 @@ src/
 	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
 	                       rank, the roadblock, a fire, the checkpoint kit, the flock), which
 	                       holds the redraw gate, the caret and the slices a long picture is
-	                       drawn in
+	                       drawn in; every picture a look draws goes through one `EventDrawer`
+	                       (`views/event_drawer.gd`), which the manager builds over its atlas
+	                       and its spawner hands every instance (`EventInstance.drawer`)
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

@@ -42,6 +42,10 @@ var timing := FrameTiming.new()
 ## The baked atlas pages every instance made here draws from (`AtlasLibrary`): the manager's,
 ## which holds the events' group on it; none until the manager is handed or makes one.
 var atlas: AtlasLibrary
+## What every instance made here paints its pictures through (`EventDrawer`): the manager's, built
+## over its atlas; none until the manager is handed or makes one, and an instance handed none draws
+## through one of its own.
+var drawer: EventDrawer
 ## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
 ## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`). Unset where there is no
 ## resistance, and a protest then points at nothing.

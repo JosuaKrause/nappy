@@ -6,16 +6,20 @@ extends RefCounted
 ## heading source, and — for the vehicle families at the bottom — `_draw_eight_view()`'s
 ## `side_faces_west` parameter, the one bit a family's own art rather than its geometry decides.
 ##
-## Consistent with every other suite in this file, nothing here calls a `_draw_*` function
-## directly — `Sprites.draw_standing()` and the raw `canvas.draw_*` calls inside them are only
-## valid from an actual draw pass, which is why `protester_texture()` and `_cap_offset()` are the
-## existing model: a `_draw_*` function reads a small, directly testable query, and this suite pins
-## the query rather than the drawing. The rendered evidence sheets under
+## Nothing here calls a `_draw_*` function directly — `Sprites.draw_standing()` and the raw
+## `canvas.draw_*` calls inside them are only valid from an actual draw pass. A check about where a
+## picture stands or which way it faces hands the instance a recording drawer
+## (`tests/recording_event_drawer.gd`) through `EventInstance.drawer`, the member its manager's
+## spawner assigns, lets real frames draw it, and reads what the look told the drawer to draw; one
+## about a selector asks the selector the look asks (`select_view()`, the `_BY_VIEW` tables). The
+## rendered evidence sheets under
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
 ## are what a screenshot answers that a test cannot — see the **verify** skill, "test what a
 ## screenshot cannot see, screenshot what a test cannot judge."
 
 const STEP := 1.0 / 60.0
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 ## `EightDirection`'s own sector order (0 E .. 7 NE), and the view/mirror `docs/GRAPHICS.md`'s
 ## mirror convention says each one draws — identical to `WalkerLook.VIEW_BY_SECTOR` and
@@ -122,11 +126,11 @@ func run(t) -> void:
 	_test_eight_view_by_sector_matches_convention(t)
 	_test_select_view_holds_and_mirrors(t)
 	_test_select_view_zero_heading_holds(t)
-	_test_cafe_sitters_face_their_own_tables(t)
+	await _test_cafe_sitters_face_their_own_tables(t)
 	_test_roadwork_barrier_has_an_upright_vertical_source(t)
 	_test_roadblock_barrier_is_end_on_down_a_column(t)
-	_test_roadblock_guard_stands_clear_of_the_band(t)
-	_test_a_spread_covers_the_ground_its_body_closes(t)
+	await _test_roadblock_guard_stands_clear_of_the_band(t)
+	await _test_a_spread_covers_the_ground_its_body_closes(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
 	_test_animal_side_view_reuses_the_canonical_source(t)
@@ -204,29 +208,64 @@ func _test_select_view_zero_heading_holds(t) -> void:
 	instance.free()
 
 ## Café sitters use their alternating chair offset to face their own table. The fixed -7px
-## screen-depth lift used by `_draw_cafe()` is not part of this bearing: horizontal frontages use
-## the two side facings, and vertical frontages use the two upright front/back facings.
+## screen-depth lift `_draw_cafe()` stands a sitter by is not part of this bearing: horizontal
+## frontages use the two side facings, and vertical frontages use the two upright front/back
+## facings. A café drawn on either axis with a recording drawer handed in says which picture each
+## table's sitter was drawn in and whether it was mirrored, and where the sitter and the table
+## stand.
 func _test_cafe_sitters_face_their_own_tables(t) -> void:
 	var expected := {
 		false: [[Vector2.RIGHT, "side", false], [Vector2.LEFT, "side", true]],
 		true: [[Vector2.DOWN, "front", false], [Vector2.UP, "back", false]],
 	}
-	for spread_vertical in [false, true]:
-		for alternate in [false, true]:
-			var heading: Vector2 = RankLook._cafe_seat_heading(spread_vertical, alternate)
-			var sector := EightDirection.nearest(heading)
+	var sitters := {}
+	for picture in EventPictures.CAFE_SITTER_BY_VIEW.values():
+		sitters[picture] = true
+	for picture in EventPictures.CAFE_SITTER_BY_VIEW_B.values():
+		sitters[picture] = true
+	for spread_vertical: bool in [false, true]:
+		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cafe_tables"),
+				spread_vertical)
+		var drawer: RecordingEventDrawer = instance.drawer
+		var axis := Vector2.DOWN if spread_vertical else Vector2.RIGHT
+		# Each table's slice draws its own sitter and table; the first two tables are a pair, the
+		# second the mirrored chair.
+		var tables: Array = []
+		for canvas in drawer.canvases():
+			var sitter := {}
+			var table := {}
+			for entry in drawer.shown_on(canvas):
+				if sitters.has(entry.picture):
+					sitter = entry
+				elif entry.picture == EventPictures.CAFE_TABLE:
+					table = entry
+			if not sitter.is_empty() and not table.is_empty():
+				tables.append([sitter, table])
+		tables.sort_custom(func(a: Array, b: Array) -> bool:
+			return RecordingEventDrawer.foot_about(a[1], instance).dot(axis) \
+					< RecordingEventDrawer.foot_about(b[1], instance).dot(axis))
+		for alternate: bool in [false, true]:
+			var what := "%s café chair %s" % ["vertical" if spread_vertical else "horizontal",
+					"right" if alternate else "left"]
 			var expectation: Array = expected[spread_vertical][int(alternate)]
-			t.check(heading == expectation[0],
-					"%s café chair %s points toward its table" % ["vertical" if spread_vertical else "horizontal",
-						"right" if alternate else "left"])
-			t.check(EventPictures.EIGHT_VIEW_BY_SECTOR[sector] == expectation[1],
-					"%s café chair %s uses the %s view"
-					% ["vertical" if spread_vertical else "horizontal",
-						"right" if alternate else "left", expectation[1]])
-			t.check(EightDirection.is_mirrored(sector) == expectation[2],
-					"%s café chair %s mirrors only its west-facing side view"
-					% ["vertical" if spread_vertical else "horizontal",
-						"right" if alternate else "left"])
+			var pair: Array = tables[int(alternate)] if tables.size() > int(alternate) else [{}, {}]
+			var sitter: Dictionary = pair[0]
+			var table: Dictionary = pair[1]
+			if sitter.is_empty():
+				t.check(false, "%s: a sitter and a table were drawn at it" % what)
+				continue
+			# The chair is where the sitter stands before the lift up the screen.
+			var chair := RecordingEventDrawer.foot_about(sitter, instance) - Vector2(0.0, -7.0)
+			var toward := RecordingEventDrawer.foot_about(table, instance) - chair
+			t.check((expectation[0] as Vector2).dot(toward) > 0.0,
+					"%s points toward its table (the table %s from the chair)" % [what, toward])
+			var view: String = expectation[1]
+			t.check(sitter.picture == EventPictures.CAFE_SITTER_BY_VIEW[view]
+					or sitter.picture == EventPictures.CAFE_SITTER_BY_VIEW_B[view],
+					"%s uses the %s view (drew %s)" % [what, view, sitter.picture.get_file()])
+			t.check(sitter.mirrored == expectation[2],
+					"%s mirrors only its west-facing side view" % what)
+		instance.free()
 
 ## A roadworks panel stays upright when an east-west street lays the spread down local Y. The
 ## directional source carries the red event-barrier palette in that projection; the closure's
@@ -269,28 +308,48 @@ func _test_roadblock_barrier_is_end_on_down_a_column(t) -> void:
 ## The guards stand beside their barrier, never over it *(2026-09-25: "also the guards are on top
 ## of the barrier?")*, one on each side (*"have one guard on each side?"*): on both street axes,
 ## each one's whole standing picture is outside the whole of the barrier's drawn picture, on his
-## own side of it, facing out from it towards where she would come from.
+## own side of it, facing out from it towards where she would come from. A roadblock drawn on
+## either axis with a recording drawer handed in gives both: the band's segments and end posts on
+## its slices, and the posted guards on its band.
 func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 	var def := EventCatalogue.by_id("roadblock")
-	var half := maxf(11.0, def.obstructs_radius)
-	var guard_size := EventPictures.native_size(EventPictures.GUARD_STANDING_BY_VIEW["front"])
 	for vertical: bool in [false, true]:
 		var axis := "end-on" if vertical else "broadside"
-		var band := _roadblock_band_rect(vertical, half)
+		var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
+		var band := _drawn_band(instance)
 		t.check(band.size.x > 0.0 and band.size.y > 0.0,
 				"%s, the barrier has a picture to stand clear of (%s)" % [axis, band])
+		var guards: Array[Dictionary] = []
+		for entry in (instance.drawer as RecordingEventDrawer).shown():
+			if EventPictures.GUARD_STANDING_BY_VIEW.values().has(entry.picture):
+				guards.append(entry)
 		for side: int in [-1, 1]:
-			var feet := EventFootprints.guard_post_offset(vertical, side)
-			var guard := Rect2(feet - Vector2(guard_size.x * 0.5, guard_size.y), guard_size)
+			var on_his_side: Array[Dictionary] = []
+			for entry in guards:
+				var foot := RecordingEventDrawer.foot_about(entry, instance)
+				if signf(foot.x if vertical else foot.y) == signf(side):
+					on_his_side.append(entry)
+			t.check(on_his_side.size() == 1,
+					"%s, side %d: one guard is drawn standing on that side of the band (%d)"
+					% [axis, side, on_his_side.size()])
+			if on_his_side.size() != 1:
+				continue
+			var guard := RecordingEventDrawer.rect_about(on_his_side[0], instance)
 			t.check(not guard.intersects(band),
 					"%s, side %d: the guard's picture %s is clear of the barrier's %s"
 					% [axis, side, guard, band])
-			var across := feet.x if vertical else feet.y
-			t.check(signf(across) == signf(side),
-					"%s, side %d: he stands on that side of the band (%s)" % [axis, side, feet])
+			# Facing out from it: the view and the mirror a heading pointing away from the band
+			# picks for him.
+			var feet := RecordingEventDrawer.foot_about(on_his_side[0], instance)
 			var heading := EventFootprints.guard_post_heading(vertical, side)
-			t.check(heading.dot(feet) > 0.0,
-					"%s, side %d: facing out from it (%s)" % [axis, side, heading])
+			var sector := EightDirection.nearest(heading)
+			var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sector]
+			t.check(heading.dot(feet) > 0.0
+					and on_his_side[0].picture == EventPictures.GUARD_STANDING_BY_VIEW[view]
+					and on_his_side[0].mirrored == EightDirection.is_mirrored(sector),
+					"%s, side %d: facing out from it (%s, drawn %s%s)" % [axis, side, heading,
+						on_his_side[0].picture.get_file(), " mirrored" if on_his_side[0].mirrored else ""])
+		instance.free()
 	# The one who gives chase is the one on her side, across the band; level with its line, south.
 	t.check(EventFootprints.guard_side_toward(false, Vector2(30.0, -200.0)) == -1
 			and EventFootprints.guard_side_toward(false, Vector2(-30.0, 200.0)) == 1
@@ -306,76 +365,69 @@ func _test_roadblock_guard_stands_clear_of_the_band(t) -> void:
 ## other — the body's own reach along its spine, `obstructs_radius` — broadside across the picture
 ## and end-on up it, where a segment standing on its middle would put the whole column half a
 ## segment up the screen from its own ground. Asked of the roadblock and of the roadworks barrier,
-## the two rows that draw a capped band through `_draw_spread()`.
+## the two rows that draw a capped band through `_draw_spread()`, each drawn with a recording
+## drawer handed in.
 func _test_a_spread_covers_the_ground_its_body_closes(t) -> void:
 	for id: String in ["roadblock", "construction"]:
 		var def := EventCatalogue.by_id(id)
-		var half := maxf(11.0, def.obstructs_radius)
 		for vertical: bool in [false, true]:
 			var what := "%s %s" % [id, "end-on" if vertical else "broadside"]
 			var picture := EventPictures.roadblock_segment_texture(vertical) if id == "roadblock" \
 					else EventPictures.roadwork_segment_texture(vertical)
+			var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
 			var span := Rect2()
 			var first := true
-			for rect in _spread_segment_rects(picture, vertical, half):
+			for entry in (instance.drawer as RecordingEventDrawer).shown():
+				if entry.picture != picture:
+					continue
+				var rect := RecordingEventDrawer.rect_about(entry, instance)
 				span = rect if first else span.merge(rect)
 				first = false
+			instance.free()
 			var from := span.position.y if vertical else span.position.x
 			var to := span.end.y if vertical else span.end.x
-			t.check(is_equal_approx(from, -def.obstructs_radius)
+			t.check(not first and is_equal_approx(from, -def.obstructs_radius)
 					and is_equal_approx(to, def.obstructs_radius),
 					"%s: the segments run %.1f..%.1f along the run, the body's own %.0f..%.0f"
 					% [what, from, to, -def.obstructs_radius, def.obstructs_radius])
 
-## The union of every rect `SpreadLook._draw_spread()` draws a roadblock's band into, segments
-## and end posts, in the band's own local space — the same slice and cap arithmetic that function
-## uses, through the same `DrawLayer.slice_along()`, `_cap_offset()` and `_cap_along()` it calls.
-func _roadblock_band_rect(vertical: bool, half: float) -> Rect2:
-	return _spread_rect(EventPictures.roadblock_segment_texture(vertical),
-			EventPictures.ROADBLOCK_END, vertical, half)
-
-## The union of every rect `SpreadLook._draw_spread()` draws `segment_picture` into, capped by
-## `cap_picture` at both ends unless it is empty, over a run of `-half` to `half`.
-func _spread_rect(segment_picture: String, cap_picture: String, vertical: bool,
-		half: float) -> Rect2:
-	var rects := _spread_segment_rects(segment_picture, vertical, half)
-	if not cap_picture.is_empty():
-		var cap := EventPictures.native_size(cap_picture)
-		for side: float in [-1.0, 1.0]:
-			var along := SpreadLook._cap_offset(half, SpreadLook._cap_along(cap), side)
-			var feet := Vector2(0.0, along) if vertical else Vector2(along, 0.0)
-			rects.append(Rect2(feet - Vector2(cap.x * 0.5, cap.y), cap))
-	var union := rects[0]
-	for rect in rects:
-		union = union.merge(rect)
+## The union of every picture a drawn roadblock's band was drawn in, segments and end posts, about
+## the event's origin.
+static func _drawn_band(instance: EventInstance) -> Rect2:
+	var vertical := instance.runs_vertically()
+	var band_pictures := [EventPictures.roadblock_segment_texture(vertical),
+			EventPictures.ROADBLOCK_END]
+	var union := Rect2()
+	var first := true
+	for entry in (instance.drawer as RecordingEventDrawer).shown():
+		if not band_pictures.has(entry.picture):
+			continue
+		var rect := RecordingEventDrawer.rect_about(entry, instance)
+		union = rect if first else union.merge(rect)
+		first = false
 	return union
 
-## The rect each repeated segment of a spread is drawn into, the way `_draw_spread()` draws them.
-func _spread_segment_rects(segment_picture: String, vertical: bool, half: float) -> Array[Rect2]:
-	var segment := EventPictures.native_size(segment_picture)
-	var along_natural := segment.y if vertical else segment.x
-	var thickness := segment.x if vertical else segment.y
-	var segments := maxi(1, ceili(half * 2.0 / along_natural))
-	var width := half * 2.0 / segments
-	var rects: Array[Rect2] = []
-	for i in segments:
-		var along := DrawLayer.slice_along(-half, half, segments, i, vertical)
-		var feet := Vector2(0.0, along) if vertical else Vector2(along, 0.0)
-		var size := Vector2(thickness, width) if vertical else Vector2(width, thickness)
-		rects.append(Rect2(feet - Vector2(size.x * 0.5, size.y), size))
-	return rects
-
-## Alley mouths have no corridor band for `_spread_is_vertical()` to read. Their own rectangle
-## supplies the axis instead: a horizontal alley is sealed by a vertical spread across its short
-## side, while a vertical alley keeps the default horizontal spread.
+## Alley mouths have no corridor band for an instance to read its spread's axis off. Their own
+## rectangle supplies the axis instead: a horizontal alley is sealed by a vertical spread across its
+## short side, while a vertical alley keeps the default horizontal spread. A roadworks barrier set
+## up in each, on a map handed only the two alleys, says which way it runs.
 func _test_roadwork_barrier_follows_alley_axis(t) -> void:
 	var map := CityMap.new()
 	map.alley_rects.append(Rect2i(Vector2i(10, 10), Vector2i(6, 2)))
 	map.alley_rects.append(Rect2i(Vector2i(20, 20), Vector2i(2, 6)))
-	t.check(EventInstance._spread_is_vertical(map, map.tile_to_world(Vector2i(12, 11))),
+	var barrier := EventCatalogue.by_id("construction")
+	var across_a_horizontal := EventInstance.new()
+	across_a_horizontal.setup(barrier, map.tile_to_world(Vector2i(12, 11)), PackedVector2Array(),
+			Vector2.RIGHT, map)
+	t.check(across_a_horizontal.runs_vertically(),
 			"a horizontal alley gets a vertical barrier spread across its mouth")
-	t.check(not EventInstance._spread_is_vertical(map, map.tile_to_world(Vector2i(20, 22))),
+	across_a_horizontal.free()
+	var across_a_vertical := EventInstance.new()
+	across_a_vertical.setup(barrier, map.tile_to_world(Vector2i(20, 22)), PackedVector2Array(),
+			Vector2.RIGHT, map)
+	t.check(not across_a_vertical.runs_vertically(),
 			"a vertical alley keeps a horizontal barrier spread across its mouth")
+	across_a_vertical.free()
 
 # ------------------------------------------------------------------- the tables ---
 
@@ -1063,8 +1115,15 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t) -
 	t.check(lowest > -WheelBob.HEIGHT - 0.001,
 			"a rise of about a pixel, not the walkers' own stride bob (%.3f)" % lowest)
 	t.check(keys.size() > 2, "the redraw key moved with the body (%d heights)" % keys.size())
-	instance._gait_moving = false
-	t.check(instance.look.current_bob() == 0.0, "a vehicle that covered no ground sits on its wheels")
+	# She steps in front of its nose, so its next step is taken back and it covers no ground
+	# (`EventCarDriving`).
+	t.check(instance.gait_is_moving(), "it was rolling the tick before she stepped in front of it")
+	var stood_at := instance.position
+	instance.player_at = instance.global_position + Vector2(30.0, 0.0)
+	instance.step(STEP)
+	t.check(instance.position == stood_at and not instance.gait_is_moving()
+			and instance.look.current_bob() == 0.0,
+			"a vehicle that covered no ground sits on its wheels")
 	instance.free()
 
 ## **Only the vehicles changed.** A dog walker has no wheels, and its bob is still the stride's own
