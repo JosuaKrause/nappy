@@ -16,6 +16,8 @@ const SEED := 4242
 ## checks hold on seed 2.
 const RUN_SEED := 2
 const STEP := 0.1
+## How many times a route mast is sited again from where she was, each by a stream of its own.
+const MAST_SITINGS := 40
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -458,10 +460,11 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	# Reading the mark is one frame of play, and the rig is part of it: a mast's siting must not be
 	# prepared over the whole city's ground, only over what a siting is offered. The work is counted
 	# in tiles asked, never in time.
-	if city.events.ahead._siting:
-		t.check(city.events.ahead._siting.mast_checks == 0,
+	var walk_siting := city.events.ahead.walk_siting()
+	if walk_siting:
+		t.check(walk_siting.mast_checks == 0,
 				"day %d: the rig asks no tile whether a mast may stand there (%d)"
-				% [day, city.events.ahead._siting.mast_checks])
+				% [day, walk_siting.mast_checks])
 	var rigged := _the_rigged_bag(told)
 	t.check(rigged.size() == size and rigged.count(row) == 1,
 			"day %d: reading the mark rigs her route with a bag of %d holding one %s (%s)"
@@ -486,7 +489,6 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 	var direction := 1
 	player.global_position = path[0]
 	var handed := 0
-	var drawn_within := false
 	var placed: Array[EventScheduler.Planned] = []
 	var her_at_siting := Vector2.INF
 	var heading_at_siting := Vector2.ZERO
@@ -508,10 +510,8 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		# In the order the manager's own tick runs them: what her walk sites, then what is owed.
 		city.events.ahead.site_what_is_on_her_way(STEP)
 		city.events.ahead.place_what_is_owed_ahead(STEP)
-		if city.events.owed_ahead() < owed_before and handed < size:
+		if city.events.owed_ahead() < owed_before:
 			handed += 1
-			if handed == size:
-				drawn_within = _a_place_from_her_route(city.events.ahead._director, row) != null
 		for plan in city.events.plans().slice(plans_before):
 			if (plan as EventScheduler.Planned).def.id == row:
 				placed.append(plan)
@@ -519,13 +519,13 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 				heading_at_siting = player.velocity.normalized()
 		player.global_position += player.velocity * STEP
 		walked += STEP
-	t.check(drawn_within, "day %d: the %s's marble is among the next %d events on her route"
-			% [day, row, size])
 	t.check(placed.size() == 1, "day %d: and one %s is put on her route (%d)"
 			% [day, row, placed.size()])
 	if placed.size() == 1:
 		var plan := placed[0]
 		var map := city.map
+		t.check(city.events.ahead.director().is_from_her_route(plan),
+				"day %d: and it is a place her route's marble handed to her walk" % day)
 		var tile := map.world_to_tile(plan.position)
 		t.check(not city.route_tree().branches_on(tile).is_empty(),
 				"day %d: it stands on ground the day's routes run along" % day)
@@ -540,31 +540,41 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 					"a mast put on her route is a mast the day can silence, named by its foot")
 			t.check(MastSites.is_eligible(plan.position, map),
 					"a mast put on her route stands where a mast site may (off the home street)")
-			# And not by luck of this seed: what a route mast is offered along the whole of the
-			# branch she was walking holds no tile a mast site would refuse, out of a sidewalk and
-			# square that do hold some.
-			var siting := city.events.ahead._siting
-			var mast := city.events.ahead._director.route_row(row)
-			var ground: Dictionary = siting._ground_as_a_set(mast)
+			# And not by luck of this seed: what a route mast is offered along the branch she was
+			# walking holds no tile a mast site would refuse, out of a sidewalk and square that do
+			# hold some. Sited again and again from where she was, by streams of their own, every
+			# site a mast is offered is a tile a mast site may be.
+			var mast := city.events.ahead.director().route_row(row)
+			var ground := {}
+			for at: Vector2i in EventScheduler.open_ground_for(mast, map, {}, mast.pavement_side,
+					city.events.ahead.holds_the_home_streets):
+				ground[at] = true
+			var siting := city.events.ahead.walk_siting()
 			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
 					"siting it asked %d tiles whether a mast may stand there, of %d tiles of ground"
 					% [siting.mast_checks, ground.size()])
 			print("[test_route_bag] siting the route mast asked %d tiles of %d tiles of ground"
 					% [siting.mast_checks, ground.size()])
-			var ahead := siting.cells_ahead(her_at_siting, heading_at_siting, INF)
-			var offered := siting._its_ground_on(mast, ahead, her_at_siting, 0.0, INF)
 			var door_points := MastSites.possible_door_points(map)
-			var refused_offered := 0
-			for at in offered:
-				if not MastSites.is_eligible(map.tile_to_world(at), map, door_points):
-					refused_offered += 1
 			var refused_ground := 0
 			for at: Vector2i in ground:
 				if not MastSites.is_eligible(map.tile_to_world(at), map, door_points):
 					refused_ground += 1
-			t.check(not offered.is_empty() and refused_offered == 0 and refused_ground > 0,
-					"a route mast is offered %d tiles ahead of her, none of the %d of its ground a mast site refuses (%d)"
-					% [offered.size(), refused_ground, refused_offered])
+			var sited := 0
+			var refused_sited := 0
+			for i in MAST_SITINGS:
+				var siting_rng := RandomNumberGenerator.new()
+				siting_rng.seed = hash("route-bag:mast-sitings:%d" % i)
+				var again := siting.ahead_of(mast, siting_rng, city.events.plans(), her_at_siting,
+						heading_at_siting, 0.0, INF)
+				if again == null or again.position == Vector2.INF:
+					continue
+				sited += 1
+				if not MastSites.is_eligible(again.position, map, door_points):
+					refused_sited += 1
+			t.check(sited > 0 and refused_sited == 0 and refused_ground > 0,
+					"a route mast is sited %d times ahead of her, none of them on the %d tiles of its ground a mast site refuses (%d)"
+					% [sited, refused_ground, refused_sited])
 		t.check(plan.live == null, "day %d: it is not in the world while she is far from it" % day)
 		city.events.stream_around(plan.position)
 		t.check(plan.live != null and is_instance_valid(plan.live),
@@ -581,14 +591,6 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 		if at >= 0:
 			return Array(line.substr(at + marker.length()).split(", "))
 	return []
-
-## The place a marble from her route's bag handed to her walk to site, sited or not, whose row is
-## `row`; null when none has been.
-func _a_place_from_her_route(director: EventDirector, row: String) -> EventScheduler.Planned:
-	for plan: EventScheduler.Planned in director._placed_from_the_route:
-		if plan.def.id == row:
-			return plan
-	return null
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:

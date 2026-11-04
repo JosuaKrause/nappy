@@ -35,11 +35,11 @@ func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawn
 	_spawner = spawner
 	_warnings = warnings
 
-## Makes the director that sites rows ahead of her over the city's `map`, its figures moving by
-## `navigator`, handed the forced row a director made before it had, and keeps `spawn_siting`, where
-## the pursuer a torn poster sends may start.
-func use_director(map: CityMap, navigator: Navigator, spawn_siting: SpawnSiting) -> void:
-	_director = EventDirector.new(map, navigator)
+## Takes the director that sites rows ahead of her (`EventManager.setup()` makes it over the city's
+## map, its figures moving by the world's navigator), handed the forced row a director made before it
+## had, and keeps `spawn_siting`, where the pursuer a torn poster sends may start.
+func use_director(director: EventDirector, spawn_siting: SpawnSiting) -> void:
+	_director = director
 	_director.force(_forced_row, _forced_interval)
 	_spawn_siting = spawn_siting
 
