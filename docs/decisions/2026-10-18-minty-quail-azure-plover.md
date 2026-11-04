@@ -18,7 +18,9 @@ answer to drawn-art-tests (inbox #1018 in brisk-ferret).
   (`tests/drawn_event.gd`).
 - `test_events_catalogue.gd`, `test_event_views.gd`, `test_heat.gd`, `test_protest.gd` and
   `test_draw_layers.gd` (private-read lines 7, 5, 2, 2 and 1 to 0; `test_protest.gd`'s `GameState`
-  lines 12 to 0; `test_heat.gd`'s hand-called frame 1 to 0). Twenty-one mutation runs. Before and
+  lines 12 to 0; `test_heat.gd`'s hand-called frame 1 to 0). The recording drawer answers only a canvas's
+  current pass, so a part dropped on a redraw shows, and the protest suite checks a spawned instance
+  draws through its manager's drawer. Twenty-two mutation runs. Before and
   after stills of days 9 and 4 (`docs/evidence/event-drawer-2026-11-04/`) show the roadblock, the
   checkpoint, the café, a barricade, both burst mains and the stall unchanged pixel for pixel.
 
