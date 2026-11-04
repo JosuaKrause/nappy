@@ -728,45 +728,69 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 ## past it.
 ##
 ## Asked of the game's own path on a real city, every `TOWARD_PLAYER` row on foot: for one that
-## telegraphs, the director's warning (`EventsAhead._warn_down_her_line()`), run frame by frame with
-## her standing on the arterial's sidewalk (`WarningBoard.run()`), and the instance it creates
-## (`EventSpawner.spawn_warned()`); for one that does not (`loose_dog`), the instance created at
-## once with no warning (`EventsAhead._send_down_her_line()`). On its first frame it is not telegraphing, its field is
-## undamped, and a lethal row is lethal at its own centre.
+## telegraphs, the director's warning, which the manager's own ticks put up when she walks up the
+## arterial's sidewalk with the row owed her, and the instance it creates once its warning is over;
+## for one that does not (`loose_dog`), the instance created at once with no warning. On its first
+## frame it is not telegraphing, its field is undamped, and a lethal row is lethal at its own centre.
 func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
-	_start(Tuning.RUN_TAUGHT_DAY + 2)
 	var map := _city.map
 	var checked: Array[String] = []
+	var events := _city.events
+	var rig: Stroller = null
 	for def in EventCatalogue.all():
 		if not def.comes_down_her_line():
 			continue
 		checked.append(def.id)
+		# Nothing planned and nothing sited ahead of her, then the one row owed her from a route bag
+		# holding nothing else, as a scene's recipe hands it (`EventManager.start_recipe_route()`),
+		# due as soon as she is walking.
+		var nothing: Array[EventScheduler.Planned] = []
+		events.start_recipe(nothing, DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2),
+				Tuning.RUN_TAUGHT_DAY + 2, Vector2.ZERO)
+		var owed := events.start_recipe_route([def.id], [def.id], 1, 0.0)
+		t.check(owed == 1, "the director owes her '%s' (%d)" % [def.id, owed])
 		var her := CrowdLanes.arterial_pavement(map)
 		for _tile in map.size.y / 2:
 			if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 				break
 			her.y += Tuning.TILE_SIZE
-		var before := _city.events.instances().duplicate()
-		var warnings_before := _city.events.pending_warnings().size()
-		if def.warns_before_it_exists():
-			_city.events.ahead._warn_down_her_line(def, her, Vector2.UP)
-		else:
-			_city.events.ahead._send_down_her_line(def, her, Vector2.UP)
-			t.check(_city.events.pending_warnings().size() == warnings_before,
-					"'%s' does not telegraph: no warning goes up for it" % def.id)
-		var arrived: EventInstance = null
-		var waited := 0.0
-		for instance in _city.events.instances():
-			if instance.def.id == def.id and not before.has(instance):
-				arrived = instance
-		t.check(def.warns_before_it_exists() or arrived != null,
-				"'%s' is created at once, the frame it is sent" % def.id)
-		while arrived == null and waited < def.telegraph_time + 5.0:
-			_city.events.warnings.run(WALK_STEP, her)
-			waited += WALK_STEP
-			for instance in _city.events.instances():
+		if rig == null:
+			rig = _walker(t, her)
+		rig.global_position = her
+		rig.velocity = Vector2.ZERO
+		events.use_player(rig)
+		var before := events.instances().duplicate()
+		var warnings_before := events.pending_warnings().size()
+		# She walks up the sidewalk by hand, one tick a frame, until the manager's own tick has sent
+		# the row: its warning is up, or, for a row that does not telegraph, it is in the world.
+		# (`_walker_node` is idle: the rig is moved here, in the tick's `each`.)
+		var seen := {"arrived": null, "warned": false, "warnings_at_arrival": -1}
+		var each := func(_n: int) -> void:
+			if seen["arrived"] != null:
+				return
+			for instance in events.instances():
 				if instance.def.id == def.id and not before.has(instance):
-					arrived = instance
+					seen["arrived"] = instance
+					seen["warnings_at_arrival"] = events.pending_warnings().size()
+			if events.pending_warnings().size() > warnings_before:
+				seen["warned"] = true
+			if seen["arrived"] == null and not seen["warned"]:
+				rig.velocity = Vector2.UP * Tuning.WALK_SPEED
+				rig.global_position += rig.velocity * WALK_STEP
+			else:
+				rig.velocity = Vector2.ZERO
+		var ticks := 0
+		var limit := PhysicsTicks.ticks_for(def.telegraph_time + 10.0, WALK_SCALE)
+		while seen["arrived"] == null and ticks < limit:
+			await PhysicsTicks.pass_ticks(t, 1, each, WALK_SCALE)
+			ticks += 1
+		if not def.telegraphs:
+			t.check(not seen["warned"] and seen["arrived"] != null
+					and seen["warnings_at_arrival"] == warnings_before,
+					"'%s' does not telegraph: no warning goes up for it, it is created at once" % def.id)
+		else:
+			t.check(seen["warned"], "'%s' is warned of down her line before it exists" % def.id)
+		var arrived: EventInstance = seen["arrived"]
 		t.check(arrived != null, "'%s' is sent down her line and created" % def.id)
 		if not arrived:
 			continue
@@ -776,7 +800,10 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
 		if def.hard_fail:
 			t.check(arrived.is_lethal_at(arrived.global_position),
 					"and '%s', declared hard_fail, is lethal from its first frame" % def.id)
-		_city.events.retire(arrived)
+		events.retire(arrived)
+	if rig:
+		events.use_player(null)
+		rig.free()
 	for id in ["cyclist", "loose_dog"]:
 		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])
