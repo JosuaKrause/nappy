@@ -79,10 +79,6 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
 ## it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
 const EVENT_WALL_RIM_WEIGHT := 4
-## The share of the **wall**-role rows the day's fill placed that stay standing, rolled once per
-## placement (`EventScheduler._thin_the_walls`). A wall is only ever placed off the tree, so this is
-## the share of the catalogue's own blockers off it that the day keeps.
-const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## The widest body an event may have and still be allowed to stand on calm ground.
 ##
 ## A spoiler has to make the park loud rather than take the ground away. **Refusing *anything* with
@@ -544,7 +540,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 	var base := rng.seed
 	var filled_from := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, used_calm,
 			route, heat, doors, standing, planned, trace, spec)
-	_thin_the_walls(day, _stream(base, WALL_THINNING_SALT), planned, filled_from)
+	_thin_the_walls(spec.wall_row_share, _stream(base, WALL_THINNING_SALT), planned, filled_from)
 	_ensure_the_run_is_taught(day, planned, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
@@ -561,8 +557,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 ## `build_day` up to and including the fill, appended to `planned`: the ambient rows, the scars,
 ## the masts, the scripted rows, the one-shots, the spoilers in a park she used and the recurring
 ## fill, each phase on its own stream off `base` (`_stream`). Answers the index the fill's own
-## placements start at, which is what `_thin_the_walls` asks about. A function of its own so a test
-## can hold the day before the thinning beside the day after it (`tests/test_events_scheduler.gd`).
+## placements start at, which is what `_thin_the_walls` asks about.
 ## `spec` is the day's placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
 static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], used_calm: Array[Vector2i],
@@ -599,10 +594,10 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 	return filled_from
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
-## `GATEHOUSE_DAY_WALL_ROW_SHARE`, rolled once per `WALL`-role placement the fill made, from
-## `filled_from` on. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
-## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
-## all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
+## `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day), rolled
+## once per `WALL`-role placement the fill made, from `filled_from` on. *(azure-puffin, point 4:
+## "when the guard houses are set up the city gets much harder to navigate let's loosen the density
+## of the hard blocking events in that case"; "fewer of all three".)* A wall is one of the three hard blockers off the tree, with the seals and the
 ## closures, and the region wall dividing the city from `Tuning.REGION_WALL_FIRST_DAY` is what made
 ## the three together too much.
 ##
@@ -621,15 +616,15 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## ground only adds ground she can reach — the **city** skill's monotonic exception. Before
 ## `_ensure_one_usable_park` and `_ensure_the_city_is_still_walkable`, so those two judge the day
 ## that actually stands.
-static func _thin_the_walls(day: int, rng: RandomNumberGenerator, planned: Array[Planned],
+static func _thin_the_walls(share: float, rng: RandomNumberGenerator, planned: Array[Planned],
 		filled_from: int) -> void:
-	if day < Tuning.REGION_WALL_FIRST_DAY:
+	if share >= 1.0:
 		return
 	for i in range(planned.size() - 1, filled_from - 1, -1):
 		var plan := planned[i]
 		if plan.role != GameEnums.BlockerRole.WALL or not plan.is_placed():
 			continue
-		if rng.randf() >= GATEHOUSE_DAY_WALL_ROW_SHARE:
+		if rng.randf() >= share:
 			planned.remove_at(i)
 
 ## The phase salt `_thin_the_walls` draws its stream from — after `build_day`'s own three phases and
