@@ -82,7 +82,7 @@ test_events_scheduler.gd 92149
 test_events_solid.gd 34450
 test_excitement_source.gd 40
 test_finale_a.gd 68997
-test_finale_b.gd 52029
+test_finale_b.gd 84000
 test_finale_c.gd 42508
 test_fire_truck_body.gd 772
 test_frame_graph.gd 21
