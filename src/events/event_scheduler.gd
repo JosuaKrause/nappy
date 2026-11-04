@@ -722,7 +722,7 @@ class Rules extends RefCounted:
 ## `bag` is drawn on its own stream (`street_bag_seed()`, off `rng`'s seed), so drawing it takes
 ## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
 ## restart after a loss — draws the same walk again. Handed in rather than made here so a caller that
-## draws another bag (`tests/test_finale.gd`'s bags of one marble) hands its own.
+## draws another bag (`tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`)'s bags of one marble) hands its own.
 static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 		route: RouteSource, bag: MarbleBag, used_calm: Array[Vector2i] = [],
 		doors := PackedVector2Array(), standing: Array[Planned] = [],

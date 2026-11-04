@@ -353,6 +353,15 @@ colliding with the excitement meter or an icon squashed by a square box.
 
 Test what a screenshot cannot see, and screenshot what a test cannot judge.
 
+**A test is designed around one isolated component**, as guidance rather than a hard rule (inbox #1018
+in brisk-ferret). Break the problem into components that can be tested apart, and test each on its
+own. Do not retest a component another suite already tests: the general drawing code is tested once,
+not again by everything that draws through it. Confirm a component's correctness by injecting its
+dependencies through the paths the game itself uses, a fake or a recording mock handed in where the
+game hands the real one. A test that reads a private member or opens an escape hatch is a sign to
+look again: it is a sign of testing too much at once, of not injecting as intended, or of testing
+internals where the outside behaviour is what matters, and those are examples, not the only reasons.
+
 - **Always tested:** meter arithmetic, falloff and the fairness contract, generator guarantees
   across many seeds, scheduler determinism, day outcomes, ending selection. These are the places
   where a bug is invisible until it ruins somebody's run.

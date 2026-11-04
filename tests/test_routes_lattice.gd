@@ -10,7 +10,7 @@ extends RefCounted
 ## `ClosurePlanner` to plan a day.
 
 ## Enough seeds to catch a layout that only goes wrong in one arrangement. See
-## `test_routes_closures.gd`'s own docstring for why twelve, and why it does not shrink.
+## `tests/routes_closures_rig.gd`'s own docstring for why twelve, and why it does not shrink.
 const SEEDS := 12
 const BASE_SEED := 5150
 

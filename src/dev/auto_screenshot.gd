@@ -181,7 +181,7 @@ static func from_config(config: RunConfig) -> AutoScreenshot:
 		if _DIRECTIONS.has(word):
 			node._holding = String(_DIRECTIONS[word])
 		else:
-			node._script = _parse_script(word)
+			node._script = parse_script(word)
 			if node._script.is_empty():
 				push_warning("unknown --walk direction '%s'" % word)
 	if "--smooth-walk" in args:
@@ -248,7 +248,7 @@ const KEY_PREFIX := "key:"
 ## duration all fail the whole script rather than skipping the one bad step: a script that
 ## silently drops a step walks a different route than the one asked for, which is the exact
 ## failure determinism exists to rule out.
-static func _parse_script(word: String) -> Array[Dictionary]:
+static func parse_script(word: String) -> Array[Dictionary]:
 	var steps: Array[Dictionary] = []
 	var i := 0
 	while i < word.length():

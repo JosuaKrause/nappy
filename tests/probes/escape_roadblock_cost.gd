@@ -6,7 +6,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/escape_roadblock_cost.gd      (prints ESCAPE_ROADBLOCK lines)
 ##
-## The rig is `tests/escape_roadblock_rig.gd`; `tests/test_finale.gd` pins what this prints.
+## The rig is `tests/escape_roadblock_rig.gd`; `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) pins what this prints.
 ## Every crossing is walked in both directions, twice: from 0 asleep, which is what every attempt
 ## at the city section starts on (`main._start_section()`: `Baby.reset()` then `force_sleep()`),
 ## and from `Tuning.EXCITEMENT_WAKE_THRESHOLD` awake, the baby a bang earlier on

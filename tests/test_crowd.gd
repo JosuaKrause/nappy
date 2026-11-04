@@ -6,7 +6,7 @@ extends RefCounted
 ## assertion volume), so no seed or day count here buys back time by shrinking. This half keeps
 ## everything about the crowd as *traffic* -- how many are out, where they walk, what a contact
 ## or a strike costs, and the three-tier street hierarchy (ordinary / main / pedestrianised) that
-## gives a route its shape. `test_crowd_closures.gd` keeps the other half: what the crowd does
+## gives a route its shape. `test_crowd_closures_a.gd`, `_b.gd` and `_c.gd` keeps the other half: what the crowd does
 ## once a street is sealed, walled, bridged or tunnelled rather than plain open lattice.
 ##
 ## This runs against a real generated City, like `test_event_manager.gd`, because the

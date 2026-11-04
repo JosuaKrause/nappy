@@ -1,6 +1,6 @@
 extends RefCounted
 ## A rig that walks past the roadblocks on one of the escape's streets and answers what the walk
-## did to the meter and whether a guard caught her. Shared by `tests/test_finale.gd`, which pins
+## did to the meter and whether a guard caught her. Shared by `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`), which pins
 ## that a lured-off roadblock is passable and a posted one is not, and
 ## `tests/probes/escape_roadblock_cost.gd`, which prints the table.
 ##
@@ -24,7 +24,7 @@ const STEP := 1.0 / 60.0
 const BEYOND := 260.0
 const LANE_SCAN := 4.0
 
-## The finale's plan for a seed, built the way `tests/test_finale.gd` builds it: the map, the walk
+## The finale's plan for a seed, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds it: the map, the walk
 ## (`plan`) and what stands on it (`placements`).
 static func plan_for(seed_value: int) -> Dictionary:
 	var map := CityGenerator.generate(seed_value)

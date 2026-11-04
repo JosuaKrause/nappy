@@ -53,7 +53,7 @@ that names any other issue.
 **`inbox` marks a note, and `queue_<band>` sets the band its work is filed in** (dotted-quail 2):
 `queue_now`, `queue_next`, `queue_later`, `queue_parked`, and `queue_bug`, a band above `now`
 (mossy-ferret #710). A note is never filed `bug` unless the player says so (mossy-ferret #710), and
-"up next" is not a label: it is an `upnext: true` line in the entry's opening block. A label outside
+"up next" is not a label: it is an `upnext: true` line in the entry's opening block. When the player asks for an entry to be done immediately, that is up next, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). A label outside
 that pattern is never taken for a band. The entry filed from a note opens with its band; a note with
 no band label is filed as **playtest-feedback** says, `now` for a note from playing and otherwise a
 band the filer proposes and names in its report; a note with two band labels is filed under neither

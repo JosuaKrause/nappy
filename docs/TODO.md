@@ -46,7 +46,7 @@ indicate what to work on next?" · "like "immediately after the current items ar
 band next".)* An entry's opening block may carry `upnext: true` beside `priority:`; the entry keeps
 its band, and `tools/queue.sh` prints every marked entry first, under an `up next` heading ahead of
 `bug`, unless its `after:` names an open entry: it then stays behind that entry, in its band, as
-every entry does. Every marked line ends in `[up next]`. The queue move that starts the work drops
+every entry does. Every marked line ends in `[up next]`. When the player asks for an entry to be done immediately, that is this marker, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). The queue move that starts the work drops
 the line, and the end-of-session pass drops it from an entry an open pull request is building. `bug` is the band above `now`, for what
 the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
