@@ -403,36 +403,62 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		robber.free()
 
 ## A car's own equivalent, over the strike box `Crowd._strike()` actually collides against rather
-## than a def's `inner_radius`.
+## than a def's `inner_radius`. The car is one the crowd's own entry places on a straight stretch of
+## a real city (`Crowd.add_recipe_actor()`), driving down its lane at the slowest speed a car is
+## generated at.
 func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
-	var ahead := CrowdAgent.new()
-	ahead.kind = CrowdAgent.Kind.CAR
-	ahead._speed = 100.0
-	ahead.excitement.set_player_at(Vector2(60.0, 0.0))
-	t.check(ahead.excitement.will_be_lethal(ahead.excitement.player_at),
+	var street := _a_street(t)
+	if street.is_empty():
+		return
+	var city: City = street.city
+	var car: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.CAR, street.corridor,
+			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
+			Tuning.CAR_SPEED.x)
+	car.excitement.set_player_at(car.global_position + Vector2(0.0, 60.0))
+	t.check(car.excitement.will_be_lethal(car.excitement.player_at),
 			"a car whose strike box reaches the lane she is standing in front of is red")
-	ahead.free()
-
-	var beside := CrowdAgent.new()
-	beside.kind = CrowdAgent.Kind.CAR
-	beside._speed = 100.0
-	beside.excitement.set_player_at(Vector2(60.0, 50.0))
-	t.check(not beside.excitement.will_be_lethal(beside.excitement.player_at),
+	car.excitement.set_player_at(car.global_position + Vector2(50.0, 60.0))
+	t.check(not car.excitement.will_be_lethal(car.excitement.player_at),
 			"the same car passing beside her — she would have to step into it herself — is not")
-	beside.free()
+	city.free()
 
 ## `PEDESTRIAN_INTENSITY` (4.2/s) times `Tuning.EXPECTED_IMPACT_HORIZON` (5s) is 21, under
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40) by construction, so no ordinary walker can ever earn a
 ## caret on its own field — only a jolt (a bump, a horn) could add enough, and this one carries
 ## none.
 func _test_a_walker_brushing_past_is_unmarked(t) -> void:
-	var walker := CrowdAgent.new()
-	walker.kind = CrowdAgent.Kind.WALKER
-	walker._speed = 60.0
-	walker.excitement.set_player_at(Vector2(20.0, 25.0))
+	var street := _a_street(t)
+	if street.is_empty():
+		return
+	var city: City = street.city
+	var walker: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.WALKER, street.corridor,
+			0, street.along, 1.0)
+	walker.excitement.set_player_at(walker.global_position + Vector2(20.0, 25.0))
 	t.check(walker.excitement.caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
-	walker.free()
+	city.free()
+
+## A real generated city in a run of its own, its crowd emptied, with a straight stretch of ordinary
+## street to place a body on: `{city, corridor, along}`, or an empty dictionary (and a failed check)
+## when the city has none.
+func _a_street(t) -> Dictionary:
+	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), STREET_SEED)
+	t.add_child(city)
+	city.build(CityGenerator.generate(STREET_SEED))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("test_danger:street")
+	city.crowd.start_day(1, rng, Vector2.ZERO)
+	city.crowd.clear()
+	var run: Vector2i = _street_rig.a_straight_run(city.map, Tuning.BLOCK_SIZE)
+	t.check(run.x >= 0, "this city has a straight stretch of street to place a body on")
+	if run.x < 0:
+		city.free()
+		return {}
+	return {"city": city, "corridor": run.x, "along": float(run.y + 2) * Tuning.TILE_SIZE}
+
+const STREET_SEED := 4242
+## The street rig (`tests/crowd_street_rig.gd`): places a car or a walker through the crowd's own entry.
+var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
 
 ## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
 ## measurement rather than an argument: "the answer has to be none at ordinary density, or the
@@ -443,7 +469,7 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 ## one amber caret over the whole of it.
 func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = RunCity.of_the_run(city_scene)
+	var city: City = RunCity.with_own_run(city_scene, 9137)
 	t.add_child(city)
 	city.build(CityGenerator.generate(9137))
 	var standing_at := CrowdLanes.arterial_pavement(city.map)

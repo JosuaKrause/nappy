@@ -11,6 +11,9 @@ extends RefCounted
 
 const BuildingEvents := preload("res://tests/building_events.gd")
 const _SIZE := float(Tuning.TILE_SIZE)
+## How much faster than real time a long stretch of real physics ticks runs (`Engine.time_scale`, put
+## back by `PhysicsTicks`).
+const FAST_SCALE := 8.0
 
 ## Lines whose two directions answered differently, checked once every hand-built case has run.
 var _asymmetric := 0
@@ -29,9 +32,10 @@ func run(t) -> void:
 	_test_an_event_is_silent_behind_a_wall(t)
 	_test_a_crowd_body_is_silent_behind_a_wall(t)
 	_test_the_caret_asks_the_wall_where_the_bodies_will_be(t)
-	_test_the_building_inside_stops_it_at_its_own_walls(t)
+	await _test_the_building_inside_stops_it_at_its_own_walls(t)
 	_test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t)
-	_test_the_fields_layer_skips_only_where_no_wall_can_block(t)
+	_test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t)
+	_test_the_fields_layer_asks_no_wall_where_none_can_block(t)
 	_test_the_fields_layer_follows_the_wall_along_the_whole_outline(t)
 	_test_the_fields_layer_cuts_a_moved_source_again(t)
 	_test_the_fields_layer_never_culls_an_outline_on_screen(t)
@@ -305,12 +309,11 @@ func _test_an_event_is_silent_behind_a_wall(t) -> void:
 	behind.free()
 	beside.free()
 
-## A row's instance standing at `at` past its telegraph, asking `map` about the ground — set after
-## `setup()` so both copies stand exactly where they were put.
+## A row's instance standing at `at` past its telegraph, asking `map` about the ground — handed to
+## `setup()` as the spawner hands it the world's, so both copies stand exactly where they were put.
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at)
-	instance._map = map
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
 	instance.age = def.telegraph_time + 1.0
 	return instance
 
@@ -319,18 +322,30 @@ func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 func _test_a_crowd_body_is_silent_behind_a_wall(t) -> void:
 	var walled := _map_with(_rect_tiles(Rect2i(0, 4, 12, 2)))
 	var her := Vector2(176.0, 208.0)
-	var car := CrowdAgent.new()
-	car.kind = CrowdAgent.Kind.CAR
-	car.position = Vector2(176.0, 112.0)
-	car._map = walled
-	t.check(car.excitement._field(her) > 0.0, "the car's field reaches her distance (%.2f/s)"
-			% car.excitement._field(her))
+	var open := _map_with([])
+	var in_the_open := _a_car(t, open, Vector2(176.0, 112.0))
+	t.check(in_the_open.excitement.contribution_at(her) > 0.0,
+			"on open ground the car is heard at her distance (%.2f/s)"
+			% in_the_open.excitement.contribution_at(her))
+	var car := _a_car(t, walled, Vector2(176.0, 112.0))
 	t.check(car.excitement.contribution_at(her) == 0.0, "but not through the building between them")
 	car.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
 	t.check(car.excitement.contribution_at(her) == 0.0, "nor does its horn")
-	car._map = _map_with([])
-	t.check(car.excitement.contribution_at(her) > 0.0, "and on open ground the same car is heard")
+	in_the_open.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	t.check(in_the_open.excitement.contribution_at(her) > 0.0,
+			"while on open ground the same horn is heard")
 	car.free()
+	in_the_open.free()
+
+## A car on the lane of `map` through `at`, driving east at the slowest speed a car is generated at:
+## placed through `CrowdAgent.setup_at()`, the entry `Crowd.add_recipe_actor()` takes, in a box of its
+## own over `map` (`CrowdField`), the way the crowd hands both to everything it places.
+func _a_car(t, map: CityMap, at: Vector2) -> CrowdAgent:
+	var car := CrowdAgent.new()
+	var problem := car.setup_at(CrowdAgent.Kind.CAR, map, CrowdField.new(map, at), 1, at,
+			Vector2.RIGHT, Tuning.CAR_SPEED.x)
+	t.check(problem.is_empty(), "the car is placed on the map's street: %s" % problem)
+	return car
 
 ## The caret projects both bodies forward. The wall is asked where they will be, not at the
 ## translated point: her walking down a street with a long building between her and a musician
@@ -344,12 +359,7 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 	var walled := _map_with(_rect_tiles(Rect2i(0, 4, 24, 2)), 24, 12)
 	var open := _map_with([], 24, 12)
 	var ending := _map_with(_rect_tiles(Rect2i(0, 4, 10, 2)), 24, 12)
-	var coming_out := CrowdAgent.new()
-	coming_out.kind = CrowdAgent.Kind.CAR
-	coming_out.position = Vector2(80.0, 112.0)
-	coming_out._speed = 140.0
-	coming_out._direction = 1.0
-	coming_out._map = ending
+	var coming_out := _a_car(t, ending, Vector2(80.0, 112.0))
 	coming_out.excitement.set_player_at(Vector2(400.0, 200.0))
 	t.check(coming_out.excitement.contribution_at(Vector2(400.0, 200.0)) == 0.0
 			and coming_out.excitement.expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
@@ -371,12 +381,7 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t) -> void:
 					% expected)
 		musician.free()
 	for map: CityMap in [walled, open]:
-		var car := CrowdAgent.new()
-		car.kind = CrowdAgent.Kind.CAR
-		car.position = Vector2(80.0, 112.0)
-		car._speed = 140.0
-		car._direction = 1.0
-		car._map = map
+		var car := _a_car(t, map, Vector2(80.0, 112.0))
 		car.excitement.set_player_at(Vector2(400.0, 200.0))
 		var expected := car.excitement.expected_gross_at(Vector2(400.0, 200.0))
 		if map == walled:
@@ -401,7 +406,9 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng)
+	var run := RunState.new()
+	run.start_run(4242)
+	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var grid := scene.map
 
 	var man: EventInstance = null
@@ -422,14 +429,13 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 		var stopped := 0
 		var wrong := 0
 		for tile in scene.map.stairwell_walk("stairwell_right"):
-			man.global_position = scene.map.tile_to_world(tile)
+			# Moved as the manager moves an event it stands elsewhere (`EventInstance.move_to()`).
+			man.move_to(scene.map.tile_to_world(tile))
 			for her in shaft:
 				var field := man.field_at(her, -1.0, Vector2.INF)
 				if field <= 0.0:
 					continue
-				# Uncached: the man is moved under a fixed `age`, which the present rate's own
-				# cache is keyed on, so the public call would answer for where he last stood.
-				var landed := man.excitement._contribution_uncached(her)
+				var landed := man.excitement.contribution_at(her)
 				var walled := grid.wall_between(man.global_position, her)
 				if walled:
 					stopped += 1
@@ -461,14 +467,15 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	events.use_player(player)
 	t.add_child(player)
 	player.global_position = stands
-	# Ticked at the game's rate until the next bang comes: one tick of the whole interval would also
-	# step the bang through its whole life on the tick that makes it.
-	const TICK := 1.0 / 30.0
+	# The manager's own physics ticks, one a frame (`PhysicsTicks`), at `FAST_SCALE` times real time
+	# so the interval does not take its length of the suite, until the next bang comes: a tick count,
+	# not a clock, bounds the wait, and the bang is judged on the tick it appears.
 	var burst: EventInstance = null
-	var waited := 0.0
-	while burst == null and waited <= EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0:
-		events._physics_process(TICK)
-		waited += TICK
+	var ticks_left: int = PhysicsTicks.ticks_for(EventCatalogue.FINALE_EXPLOSION_INTERVAL + 1.0,
+			FAST_SCALE)
+	while burst == null and ticks_left > 0:
+		await PhysicsTicks.pass_ticks(t, 1, Callable(), FAST_SCALE)
+		ticks_left -= 1
 		for instance in events.instances():
 			if instance.def.id == "finale_explosion":
 				burst = instance
@@ -488,6 +495,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	player.free()
 	events.free()
 	scene.free()
+	run.free()
 
 ## The debug view's fields layer draws an outline only where the meter would read it: a musician
 ## beside a building two tiles thick has the part of his outline past the building's middle cut
@@ -508,7 +516,7 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	var runs := DebugLayers.open_runs(outline, at, behind.excitement.wall_grid())
 	var kept := 0
 	for point in outline:
-		if not behind.excitement._walled_off(at, point):
+		if not behind.excitement.wall_grid().wall_between(at, point):
 			kept += 1
 	t.check(kept > 0 and kept < outline.size(),
 			"the musician's outline runs both sides of the building (%d of %d points open)"
@@ -523,12 +531,13 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	for run in runs:
 		for i in run.size() - 1:
 			for step in 5:
-				if behind.excitement._walled_off(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
+				if behind.excitement.wall_grid().wall_between(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
 					through += 1
 		var past_end := run[run.size() - 1] \
 				+ (run[run.size() - 1] - run[run.size() - 2]).normalized()
 		var past_start := run[0] + (run[0] - run[1]).normalized()
-		if not behind.excitement._walled_off(at, past_end) or not behind.excitement._walled_off(at, past_start):
+		var grid := behind.excitement.wall_grid()
+		if not grid.wall_between(at, past_end) or not grid.wall_between(at, past_start):
 			loose += 1
 	t.check(runs.size() == 1, "behind one building it is one open stretch (%d)" % runs.size())
 	t.check(corners == kept, "carrying every open corner of the outline (%d of %d)" % [corners, kept])
@@ -537,13 +546,13 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 	behind.free()
 	beside.free()
 
-## The layer skips the wall questions for an outline when nothing within its bounds is deep enough in
-## a building to wall a line (`DebugLayers._deep_ground_meets()`), which is only right if every line
-## a wall does block crosses such ground. Asked of seeded lines from open ground, up to the widest
+## `DebugLayers.open_runs()` cuts an outline from a source by the grid's walls, and a line a wall blocks
+## must leave nothing of the outline open. Asked of seeded lines from open ground, up to the widest
 ## field's reach, on a real city and on hand-built maps of scattered buildings, where one-tile walls,
-## bends and corners open only diagonally are common: every blocked line has deep ground in its
-## bounds, and the guards count both that some were blocked and that the skip is taken for others.
-func _test_the_fields_layer_skips_only_where_no_wall_can_block(t) -> void:
+## bends and corners open only diagonally are common: the outline is the one point the line ends at,
+## so a blocked line leaves no run and an open one exactly one. The guards count both that some were
+## blocked and that some were open.
+func _test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t) -> void:
 	var maps: Array[CityMap] = [CityGenerator.generate(4242)]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1004
@@ -560,22 +569,63 @@ func _test_the_fields_layer_skips_only_where_no_wall_can_block(t) -> void:
 				open.append(tile)
 		var reach := 260.0 if map.size.x > 16 else 120.0
 		var blocked := 0
-		var skipped := 0
+		var open_lines := 0
 		var missed := 0
 		for i in 1500:
 			var from := map.tile_to_world(open[rng.randi_range(0, open.size() - 1)]) \
 					+ Vector2(rng.randf_range(-15.0, 15.0), rng.randf_range(-15.0, 15.0))
 			var to := from + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(10.0, reach)
-			var deep := DebugLayers._deep_ground_meets(map, Rect2(from, Vector2.ZERO).expand(to))
+			# The line as the layer is asked it: the outline is the one point `to`, cut from `from`.
+			# A line a wall blocks leaves nothing of it open; a skip taken for it draws the point.
+			var runs := DebugLayers.open_runs(PackedVector2Array([to, to]), from, map)
 			if map.wall_between(from, to):
 				blocked += 1
-				if not deep:
+				if not runs.is_empty():
 					missed += 1
-			elif not deep:
-				skipped += 1
-		t.check(blocked > 50 and skipped > 20 and missed == 0,
-				"on a %dx%d map the skip is taken (%d lines) and never for one a wall blocks (%d of %d)"
-				% [map.size.x, map.size.y, skipped, missed, blocked])
+			else:
+				open_lines += 1
+				if runs.size() != 1:
+					missed += 1
+		t.check(blocked > 50 and open_lines > 20 and missed == 0,
+				"on a %dx%d map a line a wall blocks is cut away whole and one it does not is drawn (%d of %d blocked, %d open, %d wrong)"
+				% [map.size.x, map.size.y, blocked, blocked + open_lines, open_lines, missed])
+
+## **The layer asks the grid nothing where no wall can block**: a source on open ground, or a building
+## too far from the outline to wall a line, costs no wall question, which is what keeps most of a
+## day's outlines cheap. The grid is handed to `open_runs()` as the game hands it (the emitter's
+## `wall_grid()`), one that counts the questions it is asked; beside a thick building the same
+## outline does ask, so the count is not zero for want of looking.
+func _test_the_fields_layer_asks_no_wall_where_none_can_block(t) -> void:
+	var source := Vector2(304.0, 384.0)
+	var outline := GroundShape.field_outline_at(source, Vector2.ZERO, 90.0)
+	var open := _CountingMap.of(_map_with([], 24, 24))
+	DebugLayers.open_runs(outline, source, open)
+	t.check(open.asked == 0, "on open ground the outline is cut with no wall question (%d)" % open.asked)
+	var far := _CountingMap.of(_map_with(_rect_tiles(Rect2i(21, 0, 2, 24)), 24, 24))
+	DebugLayers.open_runs(outline, source, far)
+	t.check(far.asked == 0,
+			"nor with a building too far away to reach a line of it (%d)" % far.asked)
+	var near := _CountingMap.of(_map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
+	DebugLayers.open_runs(outline, source, near)
+	t.check(near.asked > 0, "while beside a thick building the same outline asks (%d)" % near.asked)
+
+## A map that counts the wall questions it is asked.
+class _CountingMap extends CityMap:
+	var asked := 0
+
+	static func of(map: CityMap) -> _CountingMap:
+		var counting := _CountingMap.new(map.size)
+		counting.fill_rect(Rect2i(Vector2i.ZERO, map.size), GameEnums.TileType.SIDEWALK)
+		for y in map.size.y:
+			for x in map.size.x:
+				if not map.is_walkable(Vector2i(x, y)):
+					counting.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
+		return counting
+
+	func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
+			thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
+		asked += 1
+		return super(from, to, depth, thin_depth)
 
 ## **The whole outline, not only its corners.** A wall can fall between two corners of an outline —
 ## the widest rows' outlines have edges of a hundred pixels and more — so on a real city, at the
