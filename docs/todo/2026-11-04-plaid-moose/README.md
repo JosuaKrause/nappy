@@ -21,7 +21,7 @@ situation that I don't mention" (inbox #1018 in brisk-ferret).
 **Read as:** a testing guideline for the whole project, not a hard rule. Break the problem into
 isolated components and test each on its own. Do not retest a component already tested elsewhere.
 Confirm a component's correctness by injecting its dependencies through the paths the game uses. A
-private read or an escape hatch in a test is a warning sign, not a ban: it usually means testing too
+private read or an escape hatch in a test is a warning sign, not a ban: it is a sign of testing too
 much at once, not injecting as intended, or testing internals where outside behaviour matters, and
 those reasons are examples, not the only ones. The drawn-art case itself is filed in minty-quail's
 item tests-public-seams, not here.

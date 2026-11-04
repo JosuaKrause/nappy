@@ -69,3 +69,17 @@
 6. **Read as:** (the assistant's interpretation, not the player's words)
 
    "immediate" is the up-next marker: the entry keeps band now, carries upnext: true, and prints first, ahead of bug.
+
+## #1025
+
+1. **Context** (the assistant's):
+
+   Said after the orchestrator read the player's "let's do immediate instead" (inbox #1024, about the band of the testing-guidance entry plaid-moose) as the up-next marker, upnext: true, rather than as a band of its own or as bug.
+
+2. **The note.**
+
+   > make sure immediate is understood as up-next
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   From now on the player's word "immediate" for an entry means the up-next marker (upnext: true beside its band), in the queue's docs and in the inbox skill, so no later session reads it as a band.

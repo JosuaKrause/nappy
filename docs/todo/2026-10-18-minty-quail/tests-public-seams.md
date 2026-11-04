@@ -37,6 +37,6 @@ that all elements are properly drawn" (inbox #1018 in brisk-ferret).
 
 **Read as:** placement is tested on its own through the random draws, as a function of the seed; the
 general drawing code is not retested; the holder (a building's roof, an event's picture) is tested with
-an injected mock drawer that confirms every element is drawn. This governs the roof art and the event
-picture suites; the roof drawer pilot is under way.
+an injected mock drawer that confirms every element is drawn. It is read as applying to the roof art
+and the event picture suites, whose reads of what a look draws it answers with the injected drawer.
 
