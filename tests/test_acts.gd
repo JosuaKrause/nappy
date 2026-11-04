@@ -255,16 +255,22 @@ func _contains(planned: Array, id: String) -> bool:
 ## accumulate permanent barricades. Any combination that seals the home off from every park
 ## makes the day unwinnable in a way the player cannot see coming.
 func _test_a_park_stays_reachable_every_day(t) -> void:
-	# Stack the deck: pretend several convoys have already left barricades around.
+	# Stack the deck: pretend several convoys have already left barricades around, in rings of
+	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
+	# ones cannot), and plan the days after the one that left them.
 	var run := RunState.new()
 	run.start_run(SEED)
-	for tile in [Vector2i(20, 45), Vector2i(45, 20), Vector2i(70, 45), Vector2i(45, 70)]:
-		run.attempt_spend.scars.append({
-			"id": "barricade", "position": _map.tile_to_world(tile), "since_day": 1,
-		})
+	var home := _map.home_rect.position
+	for radius in [3, 5, 7]:
+		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+			run.attempt_spend.scars.append({
+				"id": "barricade", "position": _map.tile_to_world(home + step * radius),
+				"since_day": 1,
+			})
 
 	var grid := ReachabilityGrid.build(_map)
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+	for day in range(2, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
 		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed, run.attempt_spend.scars)
 		# Typed deliberately: passing a bare `Array` here makes GDScript coerce it at the

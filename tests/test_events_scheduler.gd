@@ -201,6 +201,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 ## seed generates rather than only the ones a roll happens to use that day.
 func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 	var checked := 0
+	var solid := 0
 	for run_seed in [4242, 2102613802, 90210]:
 		var map := CityGenerator.generate(run_seed)
 		for rect: Rect2i in map.alley_rects:
@@ -208,6 +209,7 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 			# note on `_make_the_pair_solid`) and has no ground to stand on, so a mouse is never
 			# placed in it and the dash it is given there is cut to nothing.
 			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+				solid += 1
 				continue
 			checked += 1
 			var vertical := rect.size.y > rect.size.x
@@ -237,6 +239,8 @@ func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
 						and point.y >= world_rect.position.y and point.y <= world_rect.end.y,
 						"seed %d alley %s: the dash stays inside the alley it crosses" % [run_seed, rect])
 	t.check(checked > 0, "some seed generated an alley to check (%d)" % checked)
+	t.check(checked > 10 * solid,
+			"and the alleys passed over as solid are a few (%d of %d)" % [solid, checked + solid])
 
 ## The dash `alley_mouse` is given when it is set up at `at` (`EventInstance.path`, which the
 ## event's own stepping walks): built from the alley it stands in and cut to the ground it fits on.
