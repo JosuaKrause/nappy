@@ -15,6 +15,8 @@ const STEP := 1.0 / 60.0
 
 var _run: RunState
 var _city: City
+## How many car samples the last `_spine_traffic()` took.
+var _sampled_cars := 0
 
 func run(t) -> void:
 	# The run the cities stand in is this suite's own, handed to each as `City.run`.
@@ -260,10 +262,13 @@ func _test_the_dark_spine_is_crossed_on_the_horn(t) -> void:
 ## is no car park by comparison.
 func _test_the_dark_spine_keeps_moving(t) -> void:
 	var lit := _spine_traffic(true)
+	var lit_samples := _sampled_cars
 	var dark := _spine_traffic(false)
+	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_blackout] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "
 			% [lit.x, lit.y * 100.0] + "dark: mean %.0f px/s, %.0f%% stopped"
 			% [dark.x, dark.y * 100.0])
+	t.check(_sampled_cars > 0, "there were cars on the spine to sample (%d samples)" % _sampled_cars)
 	t.check(dark.x >= lit.x * 0.8,
 			"the dark spine carries its traffic about as fast as the lit one (%.0f vs %.0f px/s)"
 			% [dark.x, lit.x])
@@ -287,13 +292,14 @@ func _spine_traffic(powered: bool) -> Vector2:
 		if i % 30 != 0:
 			continue
 		for agent in _city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR or not agent._vertical \
-					or not _city.map.is_main_road(true, agent._corridor):
+			if agent.kind != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
+					or not _city.map.is_main_road(true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
 			samples += 1
 			speed_sum += agent.speed()
 			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
 				stopped += 1
+	_sampled_cars = samples
 	return Vector2(speed_sum / maxf(1.0, samples), float(stopped) / maxf(1.0, samples))
 
 ## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
