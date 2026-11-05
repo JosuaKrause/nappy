@@ -86,14 +86,15 @@ class _CountingBoard extends WarningBoard:
 		return super(def, her, where, arrive)
 
 func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
+	# An empty city map: the director owes its retry the same way with nothing on the ground.
+	var map := CityMap.new()
 	var manager := EventManager.new()
-	manager.world.city_map = CityMap.new()
+	manager.setup(null, map)
 	var told: Array[String] = []
-	manager.world.trace = RunTrace.recording(told)
+	manager.trace = RunTrace.recording(told)
 	var board := _CountingBoard.new(manager.world)
 	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board)
-	# An empty city map: the director owes its retry the same way with nothing on the ground.
-	var director := _RetryDirector.new(manager.world.city_map)
+	var director := _RetryDirector.new(map)
 	lesson.use_director(director, null)
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
@@ -546,12 +547,22 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 			break
 		her.y += Tuning.TILE_SIZE
+	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no city,
+	# `use_run()`), as a rig that builds no city hands them.
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	map.world = holder
+	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.setup(null, map)
+	manager.use_run(run)
 	var player := Node2D.new()
 	t.add_child(player)
 	player.global_position = her
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
+	# The page every event made here is drawn from, as `main` hands the manager its library.
+	manager.atlas = atlas
 	var edge := DangerEdge.new()
 	edge.atlas = atlas
 	edge.size = Vector2(1280.0, 720.0)
@@ -563,18 +574,16 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 		return PendingWarning.down_her_line(map, def, at, Vector2.UP, VisibleView.around(at, null))
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := PendingWarning.route_down_her_line(map, place, at, Vector2.UP)
-		var instance := EventInstance.new()
-		instance.setup(def, path[0], path)
-		instance.came_under_a_warning = true
-		instance.resume(EventSpawner.age_when_warned(def), 0.0)
-		created.append(instance)
-		# In the manager's own list, so the edge measures him as the game's own badge does.
-		manager.world.instances.append(instance)
+		# Created as the game's own arrival creates him (`EventSpawner.spawn_warned()`), so he is
+		# in the manager's own list and the edge measures him as it does the game's own badge.
+		created.append(manager.spawn_warned(def, path))
 		return true
 	var warning := manager.warn_first(def, her, where, arrive)
 	t.check(warning != null, "the cyclist's warning goes up on the sidewalk she is walking")
 	if not warning:
 		manager.free()
+		holder.free()
+		run.free()
 		edge.free()
 		atlas.release(&"events")
 		return
@@ -651,11 +660,11 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 				% further + "just out of sight (%.2fs after he exists)" % into_sight)
 		t.check(gone <= into_sight + 0.2,
 				"and the badge goes down as he comes into sight (%.2fs, in sight at %.2fs)" % [gone, into_sight])
-	for instance in created:
-		instance.free()
 	edge.free()
 	player.free()
 	manager.free()
+	holder.free()
+	run.free()
 	atlas.release(&"events")
 
 	var walked := 0
