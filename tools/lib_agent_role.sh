@@ -1,9 +1,8 @@
 # Shared by the scripts that write to GitHub over a run that can outlive one installation
 # token: tools/release.sh, tools/prune-merged.sh, tools/land-prs.sh and tools/update-pr.sh. An
-# installation token lives one hour; tools/land-prs.sh alone can run 90 minutes per PR and take a
-# list, so wrapping the whole script once (`run <role> -- tools/land-prs.sh ...`) can leave its
-# later reads (its own wait loop's `gh pr view`/`gh pr checks`, a `git fetch`/`git pull`) and
-# writes (`gh pr merge`, tools/prune-merged.sh's own branch delete) running on an expired token.
+# installation token lives one hour; tools/land-prs.sh takes a list of PRs, so wrapping the whole
+# script once (`run <role> -- tools/land-prs.sh ...`) can leave its later reads (a `gh pr view`/
+# `gh pr checks`, a `git fetch`) and writes (`gh pr merge`, tools/prune-merged.sh's own branch delete) running on an expired token.
 # Each of these scripts routes every one of its own GitHub calls, reads included, through
 # `tools/agent-identity.py run "$NAPPY_AGENT_ROLE" --` instead, through this file's `agent_run`,
 # so each one mints a fresh token of its own rather than living on the one the whole script may

@@ -414,8 +414,7 @@ assert_exit "land-prs.sh --bogus"    nonzero ./tools/land-prs.sh --bogus 1
 # both are rejected before any gh call, same as a real PR number would trigger one.
 assert_exit "land-prs.sh (no PR)"        nonzero ./tools/land-prs.sh
 assert_exit "land-prs.sh (bad PR number)" nonzero ./tools/land-prs.sh abc
-assert_exit "land-prs.sh --timeout (missing value)" nonzero ./tools/land-prs.sh --timeout
-assert_exit "land-prs.sh --timeout (not a number)"  nonzero ./tools/land-prs.sh --timeout foo 1
+assert_exit "land-prs.sh --timeout (no longer a flag)" nonzero ./tools/land-prs.sh --timeout 5 1
 assert_exit "new-name.sh --bogus" nonzero ./tools/new-name.sh --bogus todo "x"
 # A name with no kind or no title would write an empty or an unfindable thing, so it writes none.
 assert_exit "new-name.sh (no title)" nonzero ./tools/new-name.sh todo

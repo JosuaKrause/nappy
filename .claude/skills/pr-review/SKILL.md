@@ -18,7 +18,9 @@ fix for a finding, a merge of `main` that needed resolving) gets a review of the
 reviewed head before the PR merges. The one exception is a merge of `main` whose result is Git's
 own, with nothing resolved or edited by hand (`git show --remerge-diff <merge>` prints nothing):
 nothing the branch says changed, and the merger's own semantic reconciliation under
-**merging-main** covers what `main` brought.
+**merging-main** covers what `main` brought. The ruleset may still dismiss the approval on such a
+merge; the PR then needs a re-approval against the new head, not a review of new content
+(**committing** says what the ruleset dismisses).
 
 **A merged PR can be reviewed after the fact** the same way. Its summary names both the head
 commit and the merge commit, the verdict it would have had, and for each finding the follow-up it
