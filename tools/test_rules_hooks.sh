@@ -1228,6 +1228,10 @@ assert_write_guard "tools/release.sh with no push argument is a dry run -> allow
     'tools/release.sh patch'
 assert_write_guard "tools/land-prs.sh --dry-run -> allow, no GitHub write happens" allow \
     'tools/land-prs.sh --dry-run'
+assert_write_guard "tools/await-merge.sh only reads GitHub -> allow bare" allow \
+    'tools/await-merge.sh 391'
+assert_write_guard "tools/await-merge.sh --estimate-only -> allow" allow \
+    'tools/await-merge.sh --estimate-only 391 392'
 assert_write_guard "tools/update-pr.sh --dry-run -> allow, no GitHub write happens" allow \
     'tools/update-pr.sh --dry-run 315'
 

@@ -22,7 +22,11 @@ The player asked that CI read the previous run's timings and balance from them o
 - The committed `tests/suite_costs.txt` stays: it plans local runs and is CI's fallback.
 
 **Choices.**
-- The player agreed to these choices (inbox #1068 in gentle-walrus).
+- The player answered "averaging sounds reasonable and also the other decision" (inbox #1068 in
+  gentle-walrus): the player agreed to the half-and-half blend, and "the other decision" is read as the
+  one the orchestrator named beside it, that the cache is saved only when every shard succeeded
+  (the reading is the recorder's, not the player's). The builder's other choices stand as the
+  builder's, open to overturn.
 - A measured row is blended half and half with the frozen row, rounded: one slow shared runner
   moves a row halfway, and a lasting change is followed within a few runs. A suite with no old row
   takes its measurement.

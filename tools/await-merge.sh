@@ -9,23 +9,27 @@
 #   tools/await-merge.sh --max-poll <minutes> <pr-number>...
 #
 # Where it fits: tools/land-prs.sh turns auto-merge on and stops; this is the check that the merge
-# happened (inbox #1070 in gentle-walrus: a fixed 25-minute timer outlasted the CI, so estimate
-# better, undershoot a little, then poll the rest with a script, not an agent). The orchestrating
-# session runs it with the Bash tool's run_in_background, which re-invokes the session when it
-# exits; no timer and no agent holds the wait.
+# happened (inbox #1070 in gentle-walrus: estimate when CI ends, undershoot a
+# little, then poll the rest with a script, not an agent). The orchestrating session runs it
+# with the Bash tool's run_in_background, which re-invokes the session when it exits; no agent
+# holds the wait.
 #
 # The estimate (estimate_finish_epoch, one function so it can change in one place): for each
 # unfinished job of the PR's latest `ci.yml` run, its start time (now, for a queued one) plus the
 # duration the same-named job took in the recent successful `ci.yml` runs on main, the shortest of
 # the last three so the estimate undershoots; the latest of those over all jobs, minus one minute.
-# A job with no match takes the shortest matched duration; no estimate at all means polling from
+# A job with no match takes the shortest duration among the run's jobs that do match; no estimate at all means polling from
 # now. A job GitHub has not created yet (a matrix that waits on `plan`) is not counted, which only
 # undershoots further. A batch waits for the latest PR's estimate. The numbers (three runs, one
 # minute, 20 seconds, 30 minutes) are the filer's proposal, not the player's.
 #
-# Exits 0 when every PR is MERGED (a PR already merged at the start is reported at once), and
-# non-zero, naming the PR and the reason, when one has a red check, a conflict with main, was
-# closed unmerged, or the cap ran out. For each merged PR it prints the prune command.
+# Quiet by default (inbox #1072 in gentle-walrus): the estimate on one line, then one result line
+# per PR and main's CI run; --verbose keeps the per-event lines. Every PR is confirmed: one failing PR does not end the script. A PR that cannot merge on its own
+# (auto-merge off, or not approved) or was closed is reported at once and not polled. Exits 0 when
+# every PR is MERGED (a PR already merged at the start is reported at once), and non-zero, naming
+# each failed PR and its reason (a red check, a conflict with main, closed unmerged, auto-merge
+# off, not approved, or the cap ran out). For each merged PR it prints the prune command, and once
+# they are done, main's CI run on the last merge commit (or how to find it).
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
 set -uo pipefail
@@ -37,6 +41,10 @@ DEFAULT_MAX_POLL_MINUTES=30
 WORKFLOW_PATH=".github/workflows/ci.yml"
 REPO="JosuaKrause/nappy"
 
+# Per-poll and per-event progress lines: printed only with --verbose, so a run that is read costs
+# little (inbox #1072 in gentle-walrus). The result lines at the end are always printed.
+note() { if [[ "$verbose" -eq 1 ]]; then echo "$@"; fi; }
+
 usage() {
     cat <<'EOF'
 usage: tools/await-merge.sh [--help|-h] [--estimate-only] [--max-poll <minutes>] <pr-number> [<pr-number>...]
@@ -47,11 +55,17 @@ shortest duration in the last three successful ci.yml runs on main; the latest o
 one minute), sleeps until then, and polls every 20 seconds until every PR is MERGED. A batch waits
 for the latest PR's estimate. Only reads GitHub.
 
-Exits 0 when every PR is MERGED, printing the tools/prune-merged.sh command for each; a PR already
-merged at the start is reported at once. Exits non-zero, naming the PR and the reason, when a PR
-has a red check, a conflict with main, was closed unmerged, or the cap ran out.
+Quiet by default, so reading its output costs little: one line for the estimate at the start,
+then at the end one line per PR (merged with its prune command, or why it failed) and main's CI run
+line; nothing per poll. Every PR is confirmed; one failing PR does not end the script. Exits 0 when every PR is MERGED,
+printing the tools/prune-merged.sh command for each and then main's CI run on the last merge commit
+(the check that PRs touching different files are not wrong together); a PR already merged at the
+start is reported at once. A PR with auto-merge off, or not approved, is reported at once and not
+polled. Exits non-zero, naming each failed PR and the reason (a red check, a conflict with main,
+closed unmerged, auto-merge off, not approved, the cap ran out).
 
   --estimate-only     Print each PR's estimate and the time the wait would end, and exit.
+  --verbose           Also print every event as it happens (per-poll lines), for debugging.
   --max-poll <min>    The cap past the estimate (or past now, with no estimate): default 30.
 
   tools/await-merge.sh 1069
@@ -60,12 +74,14 @@ EOF
 }
 
 estimate_only=0
+verbose=0
 max_poll_minutes="$DEFAULT_MAX_POLL_MINUTES"
 prs=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --estimate-only) estimate_only=1; shift ;;
+        --verbose) verbose=1; shift ;;
         --max-poll)
             if [[ $# -lt 2 || ! "$2" =~ ^[0-9]+$ ]]; then
                 echo "--max-poll needs a whole number of minutes" >&2
@@ -131,7 +147,7 @@ estimate_finish_epoch() {
     [[ -n "$run_id" ]] || return 0
     jobs="$(gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" 2>/dev/null)" || return 0
     jq -r --argjson h "$history" --argjson now "$now" --argjson margin "$MARGIN_SECONDS" '
-        ([$h[]] | min) as $fallback
+        ([.jobs[] | $h[.name] | select(. != null)] | min) as $fallback
         | [.jobs[] | select(.status != "completed")
             | ((if .status == "in_progress" and .started_at != null
                 then (.started_at | fromdateiso8601) else $now end) as $start
@@ -148,39 +164,96 @@ red_checks() {
         | jq -r '.[]? | select(.bucket == "fail" or .bucket == "cancel") | .name'
 }
 
+# Why PR $1 cannot merge on its own, from its `gh pr view` JSON $2; nothing when it can.
+cannot_merge_reason() {
+    local info="$2"
+    if [[ "$(jq -r '.autoMergeRequest == null' <<<"$info")" == true ]]; then
+        echo "auto-merge is off (turn it on with tools/land-prs.sh $1)"
+    elif [[ "$(jq -r '.reviewDecision // ""' <<<"$info")" != APPROVED ]]; then
+        echo "not approved (review decision: $(jq -r '.reviewDecision // "none"' <<<"$info")); it waits for a person, not for CI"
+    fi
+}
+
+est_line() { if [[ "$verbose" -eq 1 || "$estimate_only" -eq 1 ]]; then echo "$@"; fi; }
+
+VIEW_FIELDS="state,headRefName,url,mergeable,mergeStateStatus,autoMergeRequest,reviewDecision"
+
 now="$(date +%s)"
 pending=()
 branches=()
-merged_report=()
+merged=()
+merged_branches=()
+failures=()
 history="$(history_durations)"
 latest=""
 for n in "${prs[@]}"; do
-    info="$(gh pr view "$n" --json state,headRefName,url 2>&1)" || { echo "gh pr view $n failed: $info" >&2; exit 1; }
+    info="$(gh pr view "$n" --json "$VIEW_FIELDS" 2>&1)" || { echo "gh pr view $n failed: $info" >&2; exit 1; }
     state="$(jq -r .state <<<"$info")"
     branch="$(jq -r .headRefName <<<"$info")"
     if [[ "$state" == MERGED ]]; then
-        echo "PR #$n is already merged: tools/prune-merged.sh $branch"
-        merged_report+=("$n")
+        note "PR #$n is already merged: tools/prune-merged.sh $branch"
+        merged+=("$n")
+        merged_branches+=("$branch")
         continue
     fi
     if [[ "$state" == CLOSED ]]; then
-        echo "PR #$n was closed without merging: $(jq -r .url <<<"$info")" >&2
-        exit 1
+        note "PR #$n was closed without merging: $(jq -r .url <<<"$info")" >&2
+        failures+=("#$n closed without merging")
+        continue
+    fi
+    reason="$(cannot_merge_reason "$n" "$info")"
+    if [[ -n "$reason" ]]; then
+        note "PR #$n cannot merge on its own: $reason ($(jq -r .url <<<"$info"))" >&2
+        failures+=("#$n $reason")
+        continue
     fi
     est="$(estimate_finish_epoch "$n" "$history" "$now")"
     if [[ -n "$est" ]]; then
-        echo "PR #$n: CI should end about $(iso "$((est + MARGIN_SECONDS))"); estimate $(iso "$est")"
+        est_line "PR #$n: CI should end about $(iso "$((est + MARGIN_SECONDS))"); estimate $(iso "$est")"
         if [[ -z "$latest" || "$est" -gt "$latest" ]]; then latest="$est"; fi
     else
-        echo "PR #$n: no estimate; polling from now"
+        est_line "PR #$n: no estimate; polling from now"
     fi
     pending+=("$n")
     branches+=("$branch")
 done
 
+# main's CI run on the last merge commit among the merged PRs: the check that PRs which touch
+# different files are not wrong together, since each one's own CI ran before the others merged.
+report_main_run() {
+    [[ ${#merged[@]} -gt 0 ]] || return 0
+    local n sha at best_at="" best_sha="" run_url
+    for n in "${merged[@]}"; do
+        sha="$(gh pr view "$n" --json mergeCommit -q '.mergeCommit.oid // empty' 2>/dev/null)"
+        at="$(gh pr view "$n" --json mergedAt -q '.mergedAt // empty' 2>/dev/null)"
+        if [[ -n "$sha" && ( -z "$best_at" || "$at" > "$best_at" ) ]]; then best_at="$at"; best_sha="$sha"; fi
+    done
+    [[ -n "$best_sha" ]] || return 0
+    run_url="$(gh api "repos/$REPO/actions/runs?head_sha=$best_sha" \
+        -q "[.workflow_runs[] | select(.path == \"$WORKFLOW_PATH\")][0].html_url // empty" 2>/dev/null)"
+    if [[ -n "$run_url" ]]; then
+        echo "main's CI run on the last merge commit ${best_sha:0:9}, the check that these PRs are not wrong together: $run_url"
+    else
+        echo "main's CI run on the last merge commit ${best_sha:0:9} has not started yet; find it with:" \
+            "gh run list --branch main --limit 3"
+    fi
+}
+
+finish() {
+    local i
+    for ((i = 0; i < ${#merged[@]}; i++)); do
+        echo "merged #${merged[$i]}: tools/prune-merged.sh ${merged_branches[$i]}"
+    done
+    for ((i = 0; i < ${#failures[@]}; i++)); do echo "failed ${failures[$i]}"; done
+    report_main_run
+    if [[ ${#failures[@]} -eq 0 ]]; then
+        exit 0
+    fi
+    exit 1
+}
+
 if [[ ${#pending[@]} -eq 0 ]]; then
-    echo "every PR is merged"
-    exit 0
+    finish
 fi
 
 if [[ -n "$latest" && "$latest" -gt "$now" ]]; then
@@ -205,39 +278,52 @@ while true; do
     for n in "${pending[@]}"; do
         branch="${branches[$i]}"
         i=$((i + 1))
-        info="$(gh pr view "$n" --json state,mergeable,mergeStateStatus,url 2>/dev/null)" || {
+        info="$(gh pr view "$n" --json "$VIEW_FIELDS" 2>/dev/null)" || {
             still+=("$n"); still_branches+=("$branch"); continue
         }
         state="$(jq -r .state <<<"$info")"
+        url="$(jq -r .url <<<"$info")"
         if [[ "$state" == MERGED ]]; then
-            echo "PR #$n merged: tools/prune-merged.sh $branch"
-            merged_report+=("$n")
+            note "PR #$n merged: tools/prune-merged.sh $branch"
+            merged+=("$n")
+            merged_branches+=("$branch")
             continue
         fi
         if [[ "$state" == CLOSED ]]; then
-            echo "PR #$n was closed without merging: $(jq -r .url <<<"$info")" >&2
-            exit 1
+            note "PR #$n was closed without merging: $url" >&2
+            failures+=("#$n closed without merging")
+            continue
         fi
         if [[ "$(jq -r .mergeable <<<"$info")" == CONFLICTING || "$(jq -r .mergeStateStatus <<<"$info")" == DIRTY ]]; then
-            echo "PR #$n conflicts with main: resolve it with tools/update-pr.sh $n ($(jq -r .url <<<"$info"))" >&2
-            exit 1
+            note "PR #$n conflicts with main: resolve it with tools/update-pr.sh $n ($url)" >&2
+            failures+=("#$n conflicts with main")
+            continue
         fi
         failing="$(red_checks "$n")"
         if [[ -n "$failing" ]]; then
-            echo "PR #$n has a red check: $(tr '\n' ' ' <<<"$failing")($(jq -r .url <<<"$info"))" >&2
-            exit 1
+            note "PR #$n has a red check: $(tr '\n' ' ' <<<"$failing")($url)" >&2
+            failures+=("#$n red check: $(tr '\n' ' ' <<<"$failing")")
+            continue
+        fi
+        reason="$(cannot_merge_reason "$n" "$info")"
+        if [[ -n "$reason" ]]; then
+            note "PR #$n cannot merge on its own: $reason ($url)" >&2
+            failures+=("#$n $reason")
+            continue
         fi
         still+=("$n"); still_branches+=("$branch")
     done
-    if [[ ${#still[@]} -eq 0 ]]; then
-        echo "every PR is merged"
-        exit 0
+    pending=(${still[@]+"${still[@]}"})
+    branches=(${still_branches[@]+"${still_branches[@]}"})
+    if [[ ${#pending[@]} -eq 0 ]]; then
+        finish
     fi
-    pending=("${still[@]}")
-    branches=("${still_branches[@]}")
     if [[ "$(date +%s)" -ge "$deadline" ]]; then
-        echo "PR #${pending[0]} still not merged after the cap (${max_poll_minutes} min past the estimate); pending: ${pending[*]}" >&2
-        exit 1
+        for n in "${pending[@]}"; do
+            note "PR #$n still not merged after the cap (${max_poll_minutes} min past the estimate)" >&2
+            failures+=("#$n not merged within the cap")
+        done
+        finish
     fi
     sleep "$POLL_SECONDS"
 done

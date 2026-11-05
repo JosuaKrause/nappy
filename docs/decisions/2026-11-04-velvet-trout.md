@@ -27,5 +27,7 @@ gentle-walrus).
 
 **Open to overturn:** the numbers are the filer's proposal, not the player's: the estimate is the
 shortest of the last three green runs on main per job, the latest unfinished job's end minus one
-minute, then 20 seconds between polls and a cap of 30 minutes past the estimate. The player set the
-rule itself, a script in the background in place of a fixed timer, in inbox #1070 in gentle-walrus.
+minute, then 20 seconds between polls and a cap of 30 minutes past the estimate. The player's rule is that
+the wait and reading its result cost no tokens; a timer or a script is the orchestrator's choice
+(inbox #1072 in gentle-walrus), and the script, quiet by default with `--verbose` for per-poll
+lines, is how that is met now.

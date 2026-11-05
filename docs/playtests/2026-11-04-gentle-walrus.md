@@ -79,3 +79,13 @@
 4. **The player's words.**
 
    > try a better estimate. undershoot a little bit and then poll the rest (a script that is polling; not an agent)
+
+## #1072
+
+1. **The note.**
+
+   > I don't care if you use a timer or a script as long as you don't use up tokens during or when reading the output
+
+2. **Context** (the assistant's):
+
+   Said while PR #1069 was being fixed after review: the reviewer had found that committing's text about tools/await-merge.sh (sleep to an undershot CI estimate, then poll every 20 seconds, run in the background) said "not by a timer", going past the player's words in inbox #1070.

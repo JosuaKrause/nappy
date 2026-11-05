@@ -169,24 +169,29 @@ directly a PR GitHub already calls clean) and move on to the next thing. **No po
 no background wait just to trigger the merge** (inbox #1068 in gentle-walrus): GitHub merges the PR when its checks
 are green and its approval is in, and nothing needs to be held open for that.
 
-**Auto-merge is confirmed by a script run in the background, not by a timer, an agent or a
-monitor** (inbox #1070 in gentle-walrus, which overturns inbox #1068 in gentle-walrus's "no
-polling" for this tail only: that note was about not holding a monitor open just to trigger the
-merge, and this one asks for a script that polls the rest). The player said to check back later that it went through (inbox #1068 in
-gentle-walrus), that a fixed 25-minute timer was overly safe, and to estimate better, undershoot a
-little and poll the rest with a script (inbox #1070 in gentle-walrus). Right after turning
-auto-merge on, run `tools/await-merge.sh <the PRs>` with the Bash tool's `run_in_background`, which
-re-invokes the session when it exits. It estimates when the PR's CI ends from the unfinished jobs
-of its latest run and how long the same jobs took in recent green runs on `main`, sleeps until
-then, and polls every 20 seconds until every PR is MERGED. **The numbers are the filer's proposal,
-not the player's**: the shortest of the last three runs per job, the latest job's end minus one
-minute, 20 seconds between polls, and a cap of 30 minutes past the estimate (`--max-poll`). When it
-exits, a PR that shows MERGED is retired (`tools/prune-merged.sh <branch>`, see "Branches"; the
+**Auto-merge is confirmed by a timer or a script, the orchestrator's choice, as long as the wait
+and reading its result cost no tokens** (inbox #1072 in gentle-walrus). The player said to check
+back later that it went through and that a timer is enough (inbox #1068 in gentle-walrus); then
+that a fixed timer was overly safe, and to estimate better, undershoot a little and poll the rest
+with a script, not an agent (inbox #1070 in gentle-walrus). That overturns "you can just set a
+timer, though, no polling needed" for the tail after the estimate only; "no polling monitors just
+to trigger the merge" stands. The script meets the rule now: right after turning auto-merge on, run
+`tools/await-merge.sh <the PRs>` with the Bash tool's `run_in_background`, which re-invokes the
+session when it exits. It estimates when the PR's CI ends from the unfinished jobs of its latest
+run and how long the same jobs took in recent green runs on `main`, sleeps until then, and polls
+every 20 seconds until every PR is MERGED. Its output is quiet by default (one estimate line, then
+one line per PR and `main`'s CI run; `--verbose` keeps per-poll lines), because reading it costs
+tokens. **The numbers are the filer's proposal, not the player's**: the shortest of the last three
+runs per job, the latest job's end minus one minute, 20 seconds between polls, and a cap of 30
+minutes past the estimate (`--max-poll`). When it exits, a PR that shows MERGED is retired (`tools/prune-merged.sh <branch>`, see "Branches"; the
 main checkout pulls `main` first); a red check or a conflict it names is fixed (under
-**merging-main** for a conflict, with the fix reviewed under **pr-review** before auto-merge is
-turned on again); a PR still waiting on an approval when the cap runs out is for the orchestrator
-to look at, not to loop on. A batch runs one script for all of its PRs. No CronCreate timer and no
-agent holds the wait.
+**merging-main** for a conflict, with the fix reviewed under **pr-review**: a push dismisses the
+approval, so auto-merge left on waits for the new approval and cannot land the fix unseen, and
+`tools/land-prs.sh` turns it off on a stop so that the new approval does not fire a merge before it
+is chosen); a PR with auto-merge off or not approved is reported at once, and one still unmerged
+when the cap runs out is for the orchestrator to look at, not to loop on. A batch runs one script
+for all of its PRs, confirms every one and names each failure. When every PR has merged it prints
+`main`'s CI run on the last merge commit. No agent holds the wait.
 
 **Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
 `main` ruleset requires a pull request and the `test` check, run on the merge result — every
@@ -202,7 +207,7 @@ merges after `main` has moved under it as long as the merge is still clean; a co
 it and is resolved on the branch. **What that trades away is real**: the check ran on that branch's
 merge result, not on the one it actually gets, so a semantic conflict between two PRs that touch
 different files passes both gates and lands broken. Watch `main`'s own CI run after a batch rather
-than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run when it finishes,
+than assuming the last green PR spoke for it; `tools/await-merge.sh` names the run on the last merge commit once every PR has merged,
 and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
 
 **PRs land without waiting for each other or for `main`'s CI, and when `main` breaks after a

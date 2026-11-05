@@ -78,8 +78,8 @@ It ends by printing, per PR, what it did and the check that confirms the merge: 
 MERGED, and then tools/prune-merged.sh <branch> retires the worktree and branch. It does not pull
 main or prune; tools/await-merge.sh <the PRs>, run in the background, is that check (the
 committing skill says how).
-It also names main's own CI run as the check for two PRs that are wrong together, with the run's
-URL when one is cheaply available.
+tools/await-merge.sh also names main's CI run on the last merge commit, the check for two PRs that
+are wrong together.
 
 This script enables auto-merge and merges pull requests -- run it only where merging every PR
 named on the command line is already authorized, per the committing skill's permission rule.
@@ -139,7 +139,10 @@ stop() {
 }
 # Stops the run on PR $1 with message $2, first turning the PR's auto-merge off. Any change pushed
 # to a stopped PR -- a conflict resolved, a red check fixed -- is one its review never saw, and the
-# pr-review skill wants it reviewed before it lands; an auto-merge left on would land it unseen.
+# pr-review skill wants it reviewed before it lands. The ruleset "main approvals" already dismisses
+# the approval on a push, so a fix pushed to a PR left on auto-merge would wait for a new approval
+# rather than land unseen; this is kept so that a stopped PR holds no pending merge that the new
+# approval would fire before the orchestrator has chosen to land it again.
 # Fails closed: unless GitHub confirms auto-merge is off, the message says it could not be.
 stop_with_auto_merge_off() {
     local n="$1" msg="$2" off
@@ -305,13 +308,6 @@ done
 echo
 echo "next: run tools/await-merge.sh ${prs[*]} in the background (run_in_background). It sleeps" \
     "until CI should end, polls until each PR shows MERGED, and prints the" \
-    "tools/prune-merged.sh <branch> command that retires each from the main checkout; a red" \
+    "tools/prune-merged.sh <branch> command that retires each from the main checkout, then" \
+    "main's CI run on the last merge commit; a red" \
     "check or a conflict it reports is fixed. Nothing here polls."
-echo
-echo "main's own CI run on the last merge is the check that these PRs are not wrong together --" \
-    "a semantic conflict between two that touch different files passes each one's own gate and" \
-    "only shows up there."
-run_url="$(agent_run gh run list --branch main --limit 1 --json url -q '.[0].url' 2>/dev/null)"
-if [[ -n "$run_url" ]]; then
-    echo "  $run_url"
-fi

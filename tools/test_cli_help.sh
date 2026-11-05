@@ -417,6 +417,7 @@ assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
 # than guessing a target.
 assert_exit "update-pr.sh (no target)" nonzero ./tools/update-pr.sh
 assert_exit "update-pr.sh (two targets)" nonzero ./tools/update-pr.sh 1 2
+assert_exit "await-merge.sh --verbose (no PR)" nonzero ./tools/await-merge.sh --verbose
 assert_exit "await-merge.sh --bogus"       nonzero ./tools/await-merge.sh --bogus 1
 assert_exit "await-merge.sh (no PR)"       nonzero ./tools/await-merge.sh
 assert_exit "await-merge.sh (bad PR)"      nonzero ./tools/await-merge.sh abc

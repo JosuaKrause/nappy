@@ -326,19 +326,20 @@ worktrees — merging is what collides — so parallelism is planned at the file
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
   its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
   it lands — the ruleset's checks are not strict, so a PR merely
-  behind `main` needs nothing. The semantic gate is `main`'s own CI run after the batch, which the
-  orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
+  behind `main` needs nothing. The semantic gate is `main`'s own CI run on the last merge commit of the batch
+  (`tools/await-merge.sh` prints it once every PR has merged), which the orchestrator watches: a conflict between two PRs that touch different files passes both PRs'
   own gates and only shows up there. Then retire the branch with `uv run python
   tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>` from the main
   checkout, or `run claude-orchestrator --` for a docs-only PR (see **committing**, which also says
   why it is spelled exactly so), which removes the worktree and deletes the branch only once GitHub
   vouches for it. `uv run python tools/agent-identity.py run claude-coder -- tools/land-prs.sh
   <pr-number>...` turns on auto-merge (or merges a PR that is already clean) for several
-  already-authorized, reviewed PRs in one call and stops, printing `main`'s own CI run at the end
-  as the check to watch; it does not wait, and `tools/await-merge.sh`, run in the background,
-  confirms the merges and names the prune (**committing**). It runs every PR it is given as one role, so docs-only
+  already-authorized, reviewed PRs in one call and stops; it does not wait, and `tools/await-merge.sh`, run in the background,
+  confirms every merge, names each prune and prints `main`'s CI run on the last merge commit as the
+  check to watch (**committing**). It runs every PR it is given as one role, so docs-only
   PRs go in a call of their own under `run claude-orchestrator --`. A PR that an earlier merge
-  left conflicting stops the run, since its resolution needs a review before it lands.
+  left conflicting shows at `tools/await-merge.sh`, which reports it; its resolution is reviewed
+  before it lands.
 - **The harness's own branches go with the same script.** Each spawn also leaves a
   `worktree-agent-*` branch pointing at the worktree's base. `tools/prune-merged.sh` deletes the
   ones whose worktree is gone, with `git branch -d`, and keeps a live agent's: that worktree has
