@@ -249,7 +249,8 @@ func _test_the_ground_a_contact_stands_on(t) -> void:
 			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(open)),
 			"a soft-sealed tile is legal ground and closed to her")
 	var body := Vector2i(31, 30)
-	map.obstructed_tiles[body] = 1
+	var covered: Array[Vector2i] = [body]
+	map.obstruct_tiles(1, covered)
 	t.check(siting.allows(SpawnSiting.Rule.LEGAL_GROUND, ground, _centre(body))
 			and not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, ground, _centre(body)),
 			"so is a tile with a body on it")

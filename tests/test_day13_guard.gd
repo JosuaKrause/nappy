@@ -397,25 +397,27 @@ func _test_the_move_reads_the_soft_seals_and_bodies_round_her(t) -> void:
 	if her == Vector2.INF:
 		_tear_down(player, director, city)
 		return
+	var ring_body := 1
 	var ring: Array[Vector2i] = []
 	for dy in range(-2, 3):
 		for dx in range(-2, 3):
 			if maxi(absi(dx), absi(dy)) == 2:
 				ring.append(her_tile + Vector2i(dx, dy))
+	var day_seals := map.soft_sealed_tiles.duplicate()
 	for tile in ring:
 		map.seal_soft_tile(tile)
 	var sealed := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
 	t.check(sealed == Vector2.INF,
 			"soft-sealed all round her, no spot leaves her a way past the guard (got %s)" % sealed)
-	for tile in ring:
-		map.soft_sealed_tiles.erase(tile)
-	for tile in ring:
-		map.obstructed_tiles[tile] = 1
+	# Taking the ring's seals off is the map's own clear, then the day's seals back.
+	map.clear_day_soft_seals()
+	for tile: Vector2i in day_seals:
+		map.seal_soft_tile(tile)
+	map.obstruct_tiles(ring_body, ring)
 	var bodies := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
 	t.check(bodies == Vector2.INF,
 			"bodies standing all round her, no spot leaves her a way past the guard (got %s)" % bodies)
-	for tile in ring:
-		map.obstructed_tiles.erase(tile)
+	map.release_obstruction(ring_body)
 	var freed := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
 	t.check(freed == open_spot, "with the ring taken away the spot comes back (%s, was %s)"
 			% [freed, open_spot])

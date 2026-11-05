@@ -765,14 +765,15 @@ func _test_task_target_steps_off_obstructed_ground(t) -> void:
 			"the tile this test obstructs starts out open, or the test proves nothing")
 	t.check(planner.resolve("task") == contact,
 			"open ground is returned unchanged rather than nudged to a neighbour")
-	map.obstructed_tiles[contact_tile] = 1
+	var covered: Array[Vector2i] = [contact_tile]
+	map.obstruct_tiles(1, covered)
 	var reachable := planner.resolve("task")
 	var reachable_tile := map.world_to_tile(reachable)
 	t.check(reachable != Vector2.INF and reachable_tile != contact_tile,
 			"an obstructed centre is never handed back as the reachable point")
 	t.check(map.is_open(reachable_tile) and not map.is_obstructed(reachable_tile),
 			"the point found near an obstructed centre is itself open, unobstructed ground")
-	map.obstructed_tiles.erase(contact_tile)
+	map.release_obstruction(1)
 	_free_fixture(fixture)
 
 ## Day 11, silence a mast: `TargetKind.MAST` sits beside a live mast's own foot, a bare point the
