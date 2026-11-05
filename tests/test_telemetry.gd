@@ -108,13 +108,45 @@ func run(t) -> void:
 	Telemetry.begin_memory_log()
 	Telemetry.end_run()
 
-## The run's shots, the one thing in this suite read off `Telemetry` privately: a headless process
-## takes no pictures (`snapshot()` and `snapshot_now()` return before a shot is counted or named),
-## so nothing public shows that a section's restart cleared the schedule, or that `Telemetry`'s own
-## day boundaries leave the run's picture counter alone. A seam that would end it is a screen
-## `Telemetry` is handed and asks, instead of `DisplayServer.get_name() == "headless"`.
-func _the_runs_shots() -> TelemetryShots:
-	return Telemetry._shots
+## A screen that can draw, which a headless process has none of: every frame is ready the moment it
+## is asked for, and the picture is a small image. Handed to `Telemetry.use_screen()` it makes
+## `snapshot()` and `snapshot_now()` write the pictures a window would.
+class DrawingScreen extends TelemetryScreen:
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+
+	func can_draw() -> bool:
+		return true
+
+	func drawn() -> void:
+		pass
+
+	func picture() -> Image:
+		return image
+
+var _game_screen: TelemetryScreen
+
+## Opens a real run in a scratch folder of its own, photographing a screen that can draw, and
+## returns that folder (the run's own is below it). `_close_the_scratch_run()` hands the game's
+## screen, which `use_screen()` returned, back.
+func _open_a_scratch_run(name: String) -> String:
+	var scratch := "user://telemetry-test-%s-%d" % [name, Time.get_ticks_usec()]
+	_game_screen = Telemetry.use_screen(DrawingScreen.new())
+	Telemetry.begin_run(778812400, false, scratch)
+	return scratch
+
+func _close_the_scratch_run(scratch: String) -> void:
+	Telemetry.end_run()
+	Telemetry.use_screen(_game_screen)
+	_delete_recursive(scratch)
+
+## The file names in one of the open run's picture folders (`auto`, `asked`), sorted.
+func _pictures(kind: String) -> PackedStringArray:
+	var dir := DirAccess.open("%s/%s" % [Telemetry.current_log().path.get_base_dir(), kind])
+	if dir == null:
+		return PackedStringArray()
+	var names := dir.get_files()
+	names.sort()
+	return names
 
 # ------------------------------------------------------------------ dormancy ---
 
@@ -435,17 +467,19 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 ## own reading — here, 45s in, well past the retried walk's fresh `0.0`, which is exactly the state
 ## `snapshot()`'s spacing gate (the clock less the last shot's time under `SHOT_SPACING`) reads as
 ## "a shot just happened". `start_section()` goes through `Telemetry.restart_section_clock()`, which clears the
-## schedule the way `begin_section()` and `begin_day()` do.
+## schedule the way `begin_section()` and `begin_day()` do. Asked through the pictures that land in
+## the run's `auto/` folder, on a screen that can draw.
 func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
-	Telemetry.begin_memory_log()
+	var scratch := _open_a_scratch_run("retry")
 	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	Telemetry.set_clock(45.0)
 	# The state a real run is in right before a loss: a shot already taken this attempt, with the
 	# day's whole allowance not yet spent.
-	var shots := _the_runs_shots()
-	shots.take(Telemetry.clock())
-	t.check(not shots.allows(Telemetry.clock()),
-			"a shot taken now leaves the spacing running")
+	Telemetry.snapshot("first")
+	t.check(_pictures("auto").size() == 1, "a shot is taken on a screen that can draw")
+	Telemetry.snapshot("again")
+	t.check(_pictures("auto").size() == 1,
+			"a shot taken now leaves the spacing running, so a second at once is held back")
 
 	var player := Stroller.new()
 	var baby := Baby.new()
@@ -455,20 +489,26 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 	observer.start_section(true)
 
 	t.check(Telemetry.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
-	t.check(shots.allows(Telemetry.clock()),
+	Telemetry.snapshot("retry")
+	t.check(_pictures("auto").size() == 2,
 			"and the snapshot schedule starts over with it, not stuck at the lost attempt's clock")
-	var whole := true
-	for i in TelemetryShots.PER_DAY:
-		var at := Telemetry.clock() + TelemetryShots.SPACING * i
-		whole = whole and shots.allows(at)
-		shots.take(at)
-	t.check(whole, "so the retried walk has its whole allowance again, not what the lost attempt spent")
+	# The retried walk's whole allowance: the section opened with one picture already taken in the
+	# retry (above), so `PER_DAY - 1` more fit, one `SPACING` apart, and the next is refused.
+	for i in range(1, TelemetryShots.PER_DAY):
+		Telemetry.set_clock(TelemetryShots.SPACING * i)
+		Telemetry.snapshot("walk")
+	t.check(_pictures("auto").size() == 1 + TelemetryShots.PER_DAY,
+			"so the retried walk has its whole allowance again, not what the lost attempt spent")
+	Telemetry.set_clock(TelemetryShots.SPACING * TelemetryShots.PER_DAY)
+	Telemetry.snapshot("over")
+	t.check(_pictures("auto").size() == 1 + TelemetryShots.PER_DAY,
+			"and no more than that allowance")
 
 	observer.free()
 	clock.free()
 	baby.free()
 	player.free()
-	Telemetry.end_run()
+	_close_the_scratch_run(scratch)
 
 # --------------------------------------------------------------- being stuck ---
 # *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the
@@ -1154,22 +1194,26 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 			"a new run's names start over")
 
 	# The same walk on the run's own counter, with `Telemetry`'s own day boundaries between the
-	# names: a new log is a new run, a new day and a retried day are not.
-	Telemetry.begin_memory_log()
-	var runs := _the_runs_shots()
+	# names: a new log is a new run, a new day and a retried day are not. The names are the files
+	# that land in the run's `asked/` folder.
+	var scratch := _open_a_scratch_run("counter")
 	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	t.check(runs.next_name("asked", "-attempt1") == "001-attempt1-asked.png",
-			"a new log's first picture is 001")
+	Telemetry.snapshot_now("one")
+	t.check(_pictures("asked") == PackedStringArray(["001-attempt1-asked.png"]),
+			"a new log's first picture is 001 (got %s)" % _pictures("asked"))
 	Telemetry.begin_day(2, 1, 1, 1, 180.0)
-	t.check(runs.next_name("asked", "-attempt1") == "002-attempt1-asked.png",
-			"Telemetry's own new day does not reset the run's counter")
+	Telemetry.snapshot_now("two")
+	t.check(_pictures("asked").has("002-attempt1-asked.png"),
+			"Telemetry's own new day does not reset the run's counter (got %s)" % _pictures("asked"))
 	Telemetry.begin_day(2, 1, 1, 1, 180.0)
-	t.check(runs.next_name("asked", "-attempt2") == "003-attempt2-asked.png",
-			"nor does Telemetry's own retry of the same day")
+	Telemetry.snapshot_now("three")
+	t.check(_pictures("asked").has("003-attempt2-asked.png"),
+			"nor does Telemetry's own retry of the same day (got %s)" % _pictures("asked"))
 	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 1, 180.0)
-	t.check(runs.next_name("asked", "-attempt1") == "004-attempt1-asked.png",
-			"nor an escape section opening")
-	Telemetry.end_run()
+	Telemetry.snapshot_now("four")
+	t.check(_pictures("asked").has("004-attempt1-asked.png"),
+			"nor an escape section opening (got %s)" % _pictures("asked"))
+	_close_the_scratch_run(scratch)
 
 ## `--invincible` clamps the countdown to exactly zero once a day runs out rather than ending it
 ## (`DayController.tick()`), which holds the elapsed day clock at the day's own length for as
@@ -1178,19 +1222,18 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 ## counter cannot repeat this way at all, which this checks directly by holding the clock at zero
 ## across two names and confirming the day clock genuinely never moved between them.
 func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t) -> void:
-	Telemetry.begin_memory_log()
+	var scratch := _open_a_scratch_run("held-clock")
 	Telemetry.begin_day(1, 1, 1, 1, 180.0)
 	Telemetry.set_clock(0.0)
-	var shots := _the_runs_shots()
-	var first := shots.next_name("asked", "-attempt1")
-	var second := shots.next_name("asked", "-attempt1")
+	Telemetry.snapshot_now("first")
+	Telemetry.snapshot_now("second")
 	t.check(Telemetry.clock() == 0.0,
 			"the day clock genuinely never moved between the two — the same way --invincible " +
 			"holds it at the day's length once the countdown clamps at zero")
-	t.check(first != second,
-			"two pictures asked for at the same held day clock still get two distinct names " +
-			"(got '%s' and '%s')" % [first, second])
-	Telemetry.end_run()
+	var found := _pictures("asked")
+	t.check(found.size() == 2,
+			"two pictures asked for at the same held day clock land as two files (got %s)" % found)
+	_close_the_scratch_run(scratch)
 
 # ---------------------------------------------------------------- one folder ---
 # *(docs/DECISIONS.md, M70 "A run is a folder": the run identity moved from
@@ -1222,9 +1265,13 @@ func _delete_recursive(path: String) -> void:
 ## write `rig-`.
 func _test_a_runs_files_share_one_folder(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812345, false)
+	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812345, false, scratch)
 	var log_path := Telemetry.current_log().path
 	t.check(log_path != "", "a real run opens a file")
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 	t.check(log_path.get_file() == "run.log",
 			"the log is named plainly — the folder is what says which run it belongs to (got '%s')"
 			% log_path.get_file())
@@ -1249,15 +1296,19 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 			"a first attempt is named like every other attempt (got %s)" % found)
 
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 ## Every filename that can repeat within a run asks for its attempt's suffix, the first attempt
 ## included. Driven through a real run's `maps/` folder, where `write_map()` names the picture: a
 ## question about the attempts counted per day, answered by the files that land.
 func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812347, false)
+	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812347, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
 	Telemetry.write_map(map, 6)
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
@@ -1279,7 +1330,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	t.check(found.has("day06-attempt3.png"),
 			"day 6 keeps its own count across whatever happened to other days in between")
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 ## The run's calendar (`RunCalendar.finish_day()`) retries a lost day by starting it again with the
 ## same day number — `begin_day()` sees the same day twice — and `write_map()` is called
@@ -1287,8 +1338,12 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812346, false)
+	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812346, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 
 	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
 	Telemetry.write_map(map, 6)
@@ -1309,7 +1364,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 			"and a second dusk picture (got %s)" % found)
 
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 # -------------------------------------------------------------- the web override ---
 

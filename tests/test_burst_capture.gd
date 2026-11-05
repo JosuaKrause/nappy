@@ -364,13 +364,12 @@ func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 	bench.close()
 
 ## `Telemetry.end_day()` and `end_run()` each cut the active sequence short, with their own reason.
-## The one private write of the suite: `Telemetry._bursts` is swapped for a recorder on this bench's
-## screen, clock and scratch folder (the game's own is on the viewport, which draws nothing here)
-## and put back, since `Telemetry` hands its recorder to no caller and takes none.
+## `Telemetry` is handed a recorder on this bench's screen, clock and scratch folder
+## (`use_bursts()`, the way `main` hands it the game's own, which is on the viewport and draws
+## nothing here) and handed the game's back afterwards (`use_bursts()` returns the one it had).
 func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
 	var bench := Bench.new("day-and-run")
-	var game_recorder = Telemetry._bursts
-	Telemetry._bursts = bench.recorder
+	var game_recorder := Telemetry.use_bursts(bench.recorder)
 	Telemetry.begin_memory_log()
 	var day := bench.start("cut by the day")
 	bench.draw()
@@ -386,7 +385,7 @@ func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
 	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
 				and not bench.busy(),
 			"ending the run cuts its active burst short")
-	Telemetry._bursts = game_recorder
+	Telemetry.use_bursts(game_recorder)
 	bench.close()
 
 ## A manifest that can no longer be written ends the sequence, and the log never calls it a
