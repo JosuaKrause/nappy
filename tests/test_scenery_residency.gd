@@ -13,27 +13,34 @@ var _drawers := {}
 
 func run(t) -> void:
 	for seed_value in [4242, 3265820891]:
-		await _test_city(t, seed_value)
+		await _test_all_mode(t, seed_value)
+		await _test_all_mode_budget(t, seed_value)
+		await _test_one_mode(t, seed_value)
+		await _test_frame_record(t, seed_value)
+		await _test_pending(t, seed_value)
+		await _test_residency_follows_the_view(t, seed_value)
+		await _test_roof_phase(t, seed_value)
 
 func _view(at: Vector2) -> Rect2:
 	return Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2)
 
-func _test_city(t, seed_value: int) -> void:
-	var run := RunState.new()
-	run.start_run(seed_value)
-	var city: City = CITY.instantiate()
-	city.run = run
+## A city built over a run of its own (freed with the city) from `seed_value`, every building
+## handed a recording roof drawer. Every test builds its own, so none reads what another left.
+func _city_for(t, seed_value: int) -> City:
+	var city: City = RunCity.with_own_run(CITY, seed_value)
 	t.add_child(city)
-	var map := CityGenerator.generate(seed_value)
-	city.build(map)
+	city.build(CityGenerator.generate(seed_value))
 	_record_the_roofs(city)
-	await _test_all_mode(t, city)
-	await _test_all_mode_budget(t, city)
-	await _test_one_mode(t, city)
-	_test_frame_record(t, city)
-	_use_mode(city, SceneryGround.Mode.STEPPED)
-	await _test_pending(t, city)
-	_use_mode(city, DevFlags.GROUND_MODE_DEFAULT as SceneryGround.Mode)
+	return city
+
+func _free(city: City) -> void:
+	_drawers.clear()
+	city.free()
+
+func _test_residency_follows_the_view(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
+	var map := city.map
+	var run := city.run
 	var home := _view(map.doorstep_world_position())
 	var initial := city.scenery_ground.get_used_cells().size()
 	t.check(initial > 0 and initial < map.size.x * map.size.y / 8,
@@ -147,11 +154,10 @@ func _test_city(t, seed_value: int) -> void:
 				t.check(child.elapsed == city.scenery_ground.elapsed and not child.is_processing(),
 						"new water chunks share one pausable city phase")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
-	await _test_roof_phase(t, city)
-	city.free()
-	run.free()
+	_free(city)
 
-func _test_roof_phase(t, city: City) -> void:
+func _test_roof_phase(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
 	var observed := 0
 	for building in city.buildings():
 		if building.district != GameEnums.BlockPurpose.INDUSTRIAL:
@@ -180,6 +186,7 @@ func _test_roof_phase(t, city: City) -> void:
 			_check_roof_ownership(t, city)
 		break
 	t.check(observed > 0, "phase reconstruction checks actual generated city fan rotors")
+	_free(city)
 
 func _check_roof_ownership(t, city: City) -> void:
 	var owned := {}
@@ -320,7 +327,8 @@ func _check_whole_layout(t, city: City, key: Vector2i) -> void:
 	t.check(layer.rendering_quadrant_size >= SceneryGround.CHUNK_TILES and surfaces <= 1,
 			"a whole-region mode builds one renderer quadrant and at most one water surface")
 
-func _test_all_mode(t, city: City) -> void:
+func _test_all_mode(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
 	var view := city.scenery.camera_view()
@@ -350,12 +358,14 @@ func _test_all_mode(t, city: City) -> void:
 	for key in keys:
 		_check_chunk(t, city, key)
 		_check_whole_layout(t, city, key)
+	_free(city)
 
 ## Mode 1 keeps the soft budget, and what does not fit is budgeted again in each following
 ## frame rather than prepared all at once in the next. *(2026-10-03: "if we keep the 2ms budget then
 ## it also should apply to the next frame and so on".)* A budget one microsecond long makes every
 ## update one job, so the spill-over is countable without timing anything.
-func _test_all_mode_budget(t, city: City) -> void:
+func _test_all_mode_budget(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
 	var scenery := city.scenery
@@ -386,8 +396,10 @@ func _test_all_mode_budget(t, city: City) -> void:
 	t.check(counts.size() == keys.size() and counts.all(func(n: int) -> bool: return n == 1),
 			"each frame's update prepares only what its own budget allows, frame after frame "
 			+ "(regions per update: %s)" % [counts])
+	_free(city)
 
-func _test_one_mode(t, city: City) -> void:
+func _test_one_mode(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ONE)
 	var ground := city.scenery_ground
 	var scenery := city.scenery
@@ -439,10 +451,12 @@ func _test_one_mode(t, city: City) -> void:
 	for key in ground.keys_in(away.grow(SceneryResidency.LOAD_MARGIN)):
 		covered = covered and ground.chunks.has(key)
 	t.check(covered, "a relocation in mode 2 prepares the whole destination before returning")
+	_free(city)
 
 ## Under the frame record the scenery queue's update is charged to `scenery`, counts the jobs it
 ## ran by kind and the guard's preparations apart, and keeps what it spent past its budget.
-func _test_frame_record(t, city: City) -> void:
+func _test_frame_record(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var scenery := city.scenery
 	var view := city.scenery.camera_view()
@@ -480,8 +494,11 @@ func _test_frame_record(t, city: City) -> void:
 	t.check(scenery_usec > 0 and scenery_usec >= counter.call(FrameLedger.SCENERY_OVER_BUDGET),
 			"the update's time is charged to scenery, and covers its spill-over")
 	scenery.update(view)
+	_free(city)
 
-func _test_pending(t, city: City) -> void:
+func _test_pending(t, seed_value: int) -> void:
+	var city := _city_for(t, seed_value)
+	_use_mode(city, SceneryGround.Mode.STEPPED)
 	var ground := city.scenery_ground
 	var key := SceneryGround.key_for(city.map.size - Vector2i(8, 8))
 	if ground.chunks.has(key):
@@ -560,6 +577,7 @@ func _test_pending(t, city: City) -> void:
 	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
 	city.scenery.update(city.scenery.camera_view(), true)
+	_free(city)
 
 func _check_chunk(t, city: City, key: Vector2i) -> void:
 	for y in range(key.y * SceneryGround.CHUNK_TILES, (key.y + 1) * SceneryGround.CHUNK_TILES):
