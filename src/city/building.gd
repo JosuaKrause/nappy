@@ -1750,9 +1750,13 @@ class RoofObject extends Node2D:
 			draw_texture_rect_region(texture, Rect2(-6, -9, 12, 9), Rect2(52, 55, 12, 9))
 
 	## Adds the independently redrawn rotor over the stationary generated housing. The building
-	## owns phase and timing, so rebuilding this child never resets the motion.
-	func add_rotor(frame_b: bool) -> SceneryLayer:
+	## owns phase and timing, so rebuilding this child never resets the motion. The rotor's two
+	## frames are laid through `drawer`, handed on by the roof drawer that stands this unit
+	## (`RoofDrawer`); a rotor nobody handed one (a developer's preview rig) lays them through one of
+	## its own.
+	func add_rotor(frame_b: bool, drawer: SceneryDrawer = null) -> SceneryLayer:
 		var layer := SceneryLayer.new()
+		layer.drawer = drawer if drawer != null else SceneryDrawer.new()
 		layer.frame_b = frame_b
 		var size := AtlasTable.baked().native_size(texture_key)
 		var top_left := -Vector2(size.x * 0.5, size.y)

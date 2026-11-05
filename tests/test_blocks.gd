@@ -14,6 +14,7 @@ extends RefCounted
 const SEEDS := 24
 const BASE_SEED := 90210
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 
 ## Generated once and shared. Each of these tests wants the same sweep, and generating a
 ## city is the expensive part of this suite by a wide margin.
@@ -37,7 +38,8 @@ func run(t) -> void:
 	_test_pits_keep_their_spacing_across_a_whole_run(t)
 	_test_a_pit_is_never_on_a_junction_or_a_mouth(t)
 	_test_the_planner_and_the_prop_agree_on_a_tree_footprint(t)
-	_test_street_tree_beds_are_ground_decals(t)
+	await _test_street_tree_beds_are_ground_decals(t)
+	await _test_unstreamed_decals_draw_every_bed(t)
 
 func _map(index: int = 0) -> CityMap:
 	return _maps[index]
@@ -386,6 +388,13 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 ## A street tree keeps its upright art in the y-sorted entity layer, while the bed it stands in is
 ## owned by the flat decal layer. This is the rendering boundary that keeps a one-tile bed from
 ## covering the stroller while preserving the tree's ordinary sorting behavior.
+##
+## The beds are read off a recording drawer handed to the city's decals through the member the city
+## hands its own through (`CityDecals.drawer`), the decals' streamed chunks prepared again with it
+## (`refresh_street_tree_pits()`, which the city calls on a day's closures) and every chunk of the
+## city prepared (`update_view()`, which the residency calls). The residency is first brought to the
+## view the camera gives, where it stands while the camera does, so its own frame neither prepares
+## nor releases a chunk while the beds are read.
 func _test_street_tree_beds_are_ground_decals(t) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
@@ -393,6 +402,15 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 	city.build(map)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
+	t.check(decals.drawer != null, "the city hands its decals the drawer they lay their beds through")
+	var recorder := RecordingSceneryDrawer.new()
+	decals.drawer = recorder
+	city.scenery.update(city.scenery.camera_view(), true)
+	decals.refresh_street_tree_pits()
+	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
+			SceneryGround.CHUNK_TILES * Tuning.TILE_SIZE)
+	decals.update_view(whole, whole)
+	await t.get_tree().process_frame
 	var tree_count := 0
 	for prop in city.props():
 		if prop.kind == Prop.Kind.STREET_TREE:
@@ -400,8 +418,13 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")
 	t.check(tree_count == planted.size() and tree_count > 0,
 			"each planted street tree keeps one upright entity")
-	t.check(decals._street_tree_pits.size() == planted.size() and not decals._street_tree_pits.is_empty(),
-			"each planted street tree has one ground-layer bed")
+	var bed := city.atlas.region(CityDecals.TREE_PIT)
+	_check_one_bed_for_each_tree(t, _beds_drawn(recorder.shown(), bed), bed, planted, map,
+			"the city's streamed decals")
+	t.check(not recorder.shown().is_empty()
+			and recorder.shown().all(func(entry: Dictionary) -> bool:
+				return (entry.canvas as Node).get_parent() == decals),
+			"the beds are drawn by the decal layer's own chunks")
 	var entities: Node2D = city.get_node("Entities")
 	t.check(decals.get_parent() == city and entities.get_parent() == city,
 			"beds and upright trees share the city but use separate layers")
@@ -409,7 +432,51 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 			"beds draw below upright trees and the stroller")
 	city.free()
 
+## The decals drawn whole on their own canvas, the way they draw when they are not streamed: every
+## bed of a planted tree drawn once, through the drawer they are handed.
+func _test_unstreamed_decals_draw_every_bed(t) -> void:
+	var map := CityGenerator.generate(BASE_SEED)
+	var planted := StreetTrees.planted(map)
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(CityDecals.DECORATION_ATLAS)
+	var recorder := RecordingSceneryDrawer.new()
+	var decals := CityDecals.new()
+	decals.atlas = atlas
+	decals.drawer = recorder
+	decals.set_street_tree_pits(planted, map)
+	t.add_child(decals)
+	await t.get_tree().process_frame
+	t.check(recorder.shown().all(func(entry: Dictionary) -> bool: return entry.canvas == decals),
+			"unstreamed decals draw on their own canvas")
+	var bed := atlas.region(CityDecals.TREE_PIT)
+	_check_one_bed_for_each_tree(t, _beds_drawn(recorder.shown(), bed), bed, planted, map,
+			"unstreamed decals")
+	decals.free()
+	atlas.release(CityDecals.DECORATION_ATLAS)
+
 # ------------------------------------------------------------------ helpers ---
+
+## Where each bed in `shown` was drawn, by its rectangle, counted: `bed` is the bed's picture.
+func _beds_drawn(shown: Array[Dictionary], bed: Texture2D) -> Dictionary:
+	var beds := {}
+	for entry in shown:
+		if entry.texture == bed:
+			beds[entry.rect] = beds.get(entry.rect, 0) + 1
+	return beds
+
+## Every planted tree whose pit the map has not emptied has one bed (`bed`, the picture) drawn
+## centred on its position at the picture's own size, and nothing else is drawn as a bed.
+func _check_one_bed_for_each_tree(t, beds: Dictionary, bed: Texture2D,
+		planted: Array[StreetTrees.Planted], map: CityMap, what: String) -> void:
+	var expected := {}
+	for entry in planted:
+		if not map.is_tree_pit_emptied(entry.tile):
+			var rect := Rect2(entry.position - bed.get_size() * 0.5, bed.get_size())
+			expected[rect] = expected.get(rect, 0) + 1
+	t.check(not expected.is_empty(), "%s: there are beds to draw (%d)" % [what, expected.size()])
+	t.check(beds == expected,
+			"%s: each planted street tree has one ground-layer bed (%d beds drawn for %d trees)"
+			% [what, beds.size(), expected.size()])
 
 ## The end of the run with everything that could happen having happened: every scheduled
 ## step taken and every event-caused step forced.

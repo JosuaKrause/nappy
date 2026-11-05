@@ -259,6 +259,9 @@ var poster_art := PosterArt.new()
 ## exits, lights, markers, ground, decals, crowd and events. A city nobody handed one (a suite's)
 ## makes its own in `build()`.
 var atlas: AtlasLibrary = null
+## What the decals and every vent's turning rotor lay their pictures through (`SceneryDrawer`):
+## the one drawer, handed to the decals and, inside the roof drawer, to every building.
+var _scenery_drawer := SceneryDrawer.new()
 ## Fixed for the run, from `StreetTrees.planted()` — unlike `_props`, never rebuilt daily: a
 ## street tree is frontage, not a block's own purpose, so it stands whatever the block behind it
 ## becomes.
@@ -337,8 +340,10 @@ func build(city_map: CityMap) -> void:
 	scenery_ground.mode = ground_mode
 	scenery_ground.atlas = atlas
 	_decals.atlas = atlas
+	_decals.drawer = _scenery_drawer
 	_decals.streamed = true
 	_building_shadows.streamed = true
+	_building_shadows.drawer = ShadowDrawer.new()
 	_building_shadows.skip_draw = skip_shadows
 	# The street's decoration, acquired before the first day is drawn. The baked "decoration" page
 	# loads synchronously on `acquire()`, so every draw below already has a region to ask for —
@@ -787,8 +792,9 @@ func _spawn_buildings() -> void:
 	var edges := map.witness_only()
 	var door_x_range := _door_world_x_range()
 	# One drawer for every roof and one for every front: each holds nothing but the atlas the
-	# buildings draw from.
-	var roof_drawer := RoofDrawer.new(atlas)
+	# buildings draw from, and the roof's also the scenery drawer its vents' rotors lay their frames
+	# through.
+	var roof_drawer := RoofDrawer.new(atlas, _scenery_drawer)
 	var front_drawer := FrontDrawer.new(atlas)
 	var buildings: Array[Building] = []
 	for rect in map.building_rects:

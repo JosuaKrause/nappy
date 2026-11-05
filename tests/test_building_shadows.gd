@@ -3,29 +3,73 @@ extends RefCounted
 ## `CityMap.building_rects`, so this suite asserts the tile sets directly rather than through a
 ## built `City` scene — see the **verify** skill, "test what a screenshot cannot see."
 
+const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
+
 func run(t) -> void:
 	_test_a_single_rectangle_casts_the_read_shape(t)
 	_test_two_edge_joined_buildings_shade_as_one_with_no_seam(t)
 	_test_a_disjoint_building_is_unaffected_by_a_neighbour(t)
 	_test_the_chunks_are_a_partition_of_the_tile_sets(t)
 	_test_a_chunk_holds_only_its_own_tiles(t)
-	_test_resident_geometry_matches_the_complete_union(t)
+	await _test_resident_geometry_matches_the_complete_union(t)
 
+## Streamed shadows, each chunk's tiles worked out from the footprints near it alone, shade what the
+## whole city's union shades, across every chunk seam. What each chunk shades is read off a
+## recording drawer handed through the member the city hands its own through
+## (`BuildingShadows.drawer`), once every chunk of the city is prepared (`update_view()`, which the
+## residency calls) and drawn.
+##
+## Which tiles a shadow may fall on is asked through `BuildingShadows.falls_on`, the filter the city
+## hands in for a task scene's stretch; here it lets every tile through and counts the tiles it is
+## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
+## handed their footprints ask about none until a view prepares a chunk.
 func _test_resident_geometry_matches_the_complete_union(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var expected := BuildingShadows.split(BuildingShadows.compute(map.building_rects))
+	var drawer := RecordingShadowDrawer.new()
+	var asked := [0]
 	var shadows := BuildingShadows.new()
+	shadows.drawer = drawer
+	shadows.falls_on = func(_tile: Vector2i) -> bool:
+		asked[0] += 1
+		return true
 	shadows.streamed = true
 	shadows.set_buildings(map.building_rects)
+	t.check(shadows.get_child_count() == 0 and asked[0] == 0,
+			"streaming keeps footprint facts without working out or preparing distant shadows"
+					+ " (%d tiles asked about)" % asked[0])
+	t.add_child(shadows)
+	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
+			BuildingShadows.CHUNK_TILES * BuildingShadows.TILE)
+	shadows.update_view(whole, whole)
+	await t.get_tree().process_frame
+	# Each drawn chunk's tiles, filed under the chunk the first of them falls in; a chunk with
+	# nothing to shade is drawn with nothing.
+	var drawn := {}
+	var shading := 0
+	for entry in drawer.shown():
+		var tiles: Array[Vector2i] = []
+		tiles.append_array(entry.full)
+		tiles.append_array(entry.triangles)
+		if tiles.is_empty():
+			continue
+		shading += 1
+		var size := BuildingShadows.CHUNK_TILES
+		var key := Vector2i(floori(float(tiles[0].x) / size), floori(float(tiles[0].y) / size))
+		drawn[key] = entry
+	t.check(shading == expected.size() and drawn.size() == expected.size(),
+			"every chunk the union shades is drawn once (%d drawn, %d expected)"
+					% [shading, expected.size()])
 	for key: Vector2i in expected:
-		var actual := shadows._tiles_for_chunk(key)
-		var whole: BuildingShadows.Tiles = expected[key]
-		t.check(_to_set(actual.full) == _to_set(whole.full),
+		var whole_tiles: BuildingShadows.Tiles = expected[key]
+		t.check(drawn.has(key), "the chunk %s the union shades is drawn" % key)
+		if not drawn.has(key):
+			continue
+		var actual: Dictionary = drawn[key]
+		t.check(_to_set(actual.full) == _to_set(whole_tiles.full),
 				"streamed full shadows match the complete footprint union across chunk seams")
-		t.check(_to_set(actual.triangles) == _to_set(whole.triangles),
+		t.check(_to_set(actual.triangles) == _to_set(whole_tiles.triangles),
 				"streamed corner shadows match the complete footprint union across chunk seams")
-	t.check(shadows._tiles.full.is_empty() and shadows.get_child_count() == 0,
-			"streaming keeps footprint facts without preparing distant shadow drawing")
 	shadows.free()
 
 ## The exact reading of the shape the entry gives: a band along the bottom edge one tile past the

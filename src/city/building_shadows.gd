@@ -57,6 +57,10 @@ var _rects: Array[Rect2i] = []
 ## into its void (`City.build()`): a shadow is ground darkened, and the void has no ground.
 var falls_on := Callable()
 
+## What every chunk's shaded tiles are drawn through (`ShadowDrawer`), handed in by the city before
+## it builds.
+var drawer: ShadowDrawer
+
 ## `--skip shadows`, handed in by the city before it builds. It controls drawing only: shadow
 ## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
 var skip_draw := false
@@ -127,7 +131,7 @@ func _chunk_bounds(key: Vector2i) -> Rect2:
 ## A chunk is a plain `Node2D` with its `draw` signal connected to a closure over its own two tile
 ## lists — the shape `EntityHalo` already uses to give a node a `_draw()` without a script of its
 ## own. The tiles keep their world coordinates and every chunk sits at the origin, so the drawing
-## below is the same arithmetic it was when one item held all of it.
+## (`ShadowDrawer`) is the same arithmetic it was when one item held all of it.
 func _rebuild_chunks() -> void:
 	for child in get_children():
 		remove_child(child)
@@ -206,17 +210,4 @@ func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
 	if skip_draw:
 		return
-	var colour := Color(Palette.SHADOW.r, Palette.SHADOW.g, Palette.SHADOW.b,
-			BUILDING_SHADOW_ALPHA)
-	for tile in tiles.full:
-		canvas.draw_rect(Rect2(Vector2(tile) * TILE, Vector2.ONE * TILE), colour)
-	for tile in tiles.triangles:
-		var origin := Vector2(tile) * TILE
-		# North-west, north-east, south-west: the half of the tile on the building's own side of
-		# the north-east-to-south-west cut, which is why the whole top edge — the edge shared with
-		# the building to the north — is one side of this triangle rather than split by it.
-		canvas.draw_colored_polygon(PackedVector2Array([
-			origin,
-			origin + Vector2(TILE, 0.0),
-			origin + Vector2(0.0, TILE),
-		]), colour)
+	drawer.draw(canvas, tiles)
