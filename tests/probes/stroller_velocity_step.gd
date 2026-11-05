@@ -1,5 +1,5 @@
 extends RefCounted
-## Runs a rig's own `_physics_process` for the velocity it computes and leaves her body where it
+## **Used by `escape_stairwell_guard_trigger.gd` alone**, the probe that still steps her by hand. Runs a rig's own `_physics_process` for the velocity it computes and leaves her body where it
 ## stood, for the suites that make the displacement themselves (`move_and_collide()`, or the
 ## velocity added by hand).
 ##

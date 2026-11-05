@@ -4,7 +4,6 @@ extends RefCounted
 ## parts, all headless: nothing here needs a scene tree except the suites that build
 ## `InteriorScene` itself.
 
-const StrollerSteer := preload("res://tests/stroller_steer.gd")
 const BuildingEvents := preload("res://tests/building_events.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
 
@@ -37,7 +36,7 @@ func run(t) -> void:
 	await _test_she_has_to_run_to_the_first_floor_door(t)
 	await _test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
-	_test_another_masked_man_comes_up_the_same_shaft(t)
+	await _test_another_masked_man_comes_up_the_same_shaft(t)
 	await _test_his_catch_ends_the_section_with_what_struck_her(t)
 	_test_his_run_stops_at_the_building_walls(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
@@ -769,23 +768,6 @@ static func _absolute_z(item: CanvasItem) -> int:
 			break
 		node = node.get_parent()
 	return z
-
-## The explicit displacement these walks make themselves, in place of `move_and_slide()`'s, which
-## `StrollerSteer.velocity_step` keeps out of them. The real body's sweep supplies
-## every collision normal and remainder; up to `max_slides` applies the same bounded sliding shape
-## as the runtime.
-func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:
-	var collision := player.move_and_collide(motion)
-	var slides := 0
-	var contacts := 0
-	while collision != null and slides < player.max_slides:
-		contacts += 1
-		motion = collision.get_remainder().slide(collision.get_normal())
-		if motion.is_zero_approx():
-			return contacts
-		collision = player.move_and_collide(motion)
-		slides += 1
-	return contacts
 
 ## Drives a rig from her own door on the top hallway through a stair door, down the whole shaft by
 ## the left flights and again by the right, into the lobby, down to the basement and out — the walk
@@ -1605,8 +1587,7 @@ func _hold_keys(actions: Array, running: bool) -> void:
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##
-## Driven through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two
-## calls the running game makes every frame, with her standing on the lobby's door at the shaft's
+## Driven by the building's `EventManager` on real physics ticks, with her standing on the lobby's door at the shaft's
 ## foot for the whole run — off his line, clear of his reach, and inside
 ## `masked_pursuer.notice.runs_within` of where each man appears, so every man that appears
 ## notices her, warns her and runs rather than waiting at the bottom for ever.
@@ -1622,7 +1603,7 @@ func _hold_keys(actions: Array, running: bool) -> void:
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
 ##   appearing at the foot, rather than read off the constant.
 func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
-	const STEP := 1.0 / 60.0
+	const STEP := 1.0 / 30.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
@@ -1631,6 +1612,12 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
 	var plan := InteriorMap.build()
 	var her := scene.map.tile_to_world((plan.doors["%s:landing_lobby" % part] as InteriorMapPlan.Door).tile)
+	# A stand-in for her: the manager is handed where she stands and tells every instance each tick.
+	var player := Node2D.new()
+	player.add_to_group("player")
+	t.add_child(player)
+	player.global_position = her
+	events.use_player(player)
 
 	var appeared: Array[float] = []
 	var left: Array[float] = []
@@ -1639,17 +1626,12 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	var first_step_age: Array[float] = []
 	# The age each man stopped waiting at: his warning's own start, since his notice clock is held.
 	var warned_at: Array[float] = []
-	var at := 0.0
-	while at < RunConfig.FINALE_LENGTH_SECONDS:
-		# Told where she is before the manager's tick steps them, and where each stood going in.
-		var stood := {}
-		var was_leaving_by_id := {}
-		for instance in events.instances():
-			instance.player_at = her
-			instance.baby_awake = true
-			stood[instance.get_instance_id()] = instance.global_position
-			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
-		events._physics_process(STEP)
+	# After each real tick of the manager (the game's 30Hz, taken eight times as often as the
+	# engine would): where each stood going in is where it stood when the last tick ended.
+	var stood := {}
+	var was_leaving_by_id := {}
+	var after_the_tick := func(ticks: int) -> bool:
+		var at := (ticks - 1) * STEP
 		for instance in events.instances():
 			if instance.def.id != "masked_pursuer":
 				continue
@@ -1673,8 +1655,15 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 					first_step_age[which] = instance.age - warned_at[which]
 			if instance.is_leaving and not was_leaving:
 				left.append(at)
-		at += STEP
-
+		stood.clear()
+		was_leaving_by_id.clear()
+		for instance in events.instances():
+			stood[instance.get_instance_id()] = instance.global_position
+			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
+		return false
+	await PhysicsTicks.pass_ticks_faster(t, ceili(RunConfig.FINALE_LENGTH_SECONDS / STEP), 8,
+			after_the_tick)
+	player.free()
 	t.check(appeared.size() >= 3,
 			"more than one masked man comes up the shaft over a section (%d)" % appeared.size())
 	t.check(moved_while_telegraphing == 0,
