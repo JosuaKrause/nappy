@@ -532,7 +532,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		return _fill_the_walk_from_the_bag(spec, rng, map, route,
 				street_bag(spec.bag, street_bag_seed(rng)), used_calm, doors, standing,
-				kept_ground)
+				kept_ground, trace)
 	var day := spec.number
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
@@ -718,11 +718,15 @@ class Rules extends RefCounted:
 ## `bag` is drawn on its own stream (`street_bag_seed()`, off `rng`'s seed), so drawing it takes
 ## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
 ## restart after a loss — draws the same walk again. Handed in rather than made here so a caller that
-## draws another bag (`tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`)'s bags of one marble) hands its own.
+## draws another bag hands its own.
+##
+## `trace` is told how many marbles the walk drew (`bag.drawn`, read after the last slot), which
+## is the plan's own account of how many slots met the bag and the one count a reader of the plan
+## cannot recompute from what stands. It is read once at the end and changes nothing placed.
 static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 		route: RouteSource, bag: MarbleBag, used_calm: Array[Vector2i] = [],
 		doors := PackedVector2Array(), standing: Array[Planned] = [],
-		kept_ground: KeptGround = null) -> Array[Planned]:
+		kept_ground: KeptGround = null, trace: RunTrace = null) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if not route:
 		return planned
@@ -752,6 +756,7 @@ static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerato
 			if placement:
 				planned.append(placement)
 				placed[def.id] = int(placed.get(def.id, 0)) + 1
+	_note(trace, "plan", "the escape's bag drew %d marbles for %d rows" % [bag.drawn, planned.size()])
 	return planned
 
 ## **A marble bag of `counts`**: `counts` marbles of each key, a row's marble or
@@ -2529,7 +2534,7 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 	# actually walked along rather than of the street: the far side of a street answers a van,
 	# and nothing answers a van on the side the route is drawn down. See
 	# `_leaves_the_routes_sidewalk_open`.
-	if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, ground, reach_context):
+	if not _leaves_the_routes_sidewalk_open(candidate, map, corridor, reach_context):
 		return -INF
 	# And the opening a pacing row's beat leaves is ground in its own right: the rows reaching
 	# one route street are asked together whether a walk along it survives, so nothing stands in
@@ -3304,49 +3309,6 @@ static func _arm_tiles(origin: Vector2i, junction: Vector2i,
 
 const _NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
-## The sidewalks the day's routes are actually walked along, with the geometry the width rule asks
-## about: `[segment, the band's tile rect, the same rect in world space]`. Worked out once per day
-## and kept in the `ground` dictionary every other day-lifetime answer in this file lives in.
-const _ROUTE_SIDEWALKS_KEY := "route sidewalks"
-
-static func _route_sidewalks(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
-	if not ground.has(_ROUTE_SIDEWALKS_KEY):
-		var found: Array = []
-		for segment in map.network.segments():
-			var rect := segment.tile_rect()
-			if corridor.depth(rect.position) != 0:
-				continue
-			var walked := 0
-			for band in _sidewalk_bands(rect, segment.horizontal):
-				if not _a_route_walks(corridor, band):
-					continue
-				walked += 1
-				found.append([segment, band, map.tile_rect_to_world(band)])
-			# A street on the corridor whose tree cells are neither of its sidewalks: the whole
-			# street is the honest question there, and it is the question the rule asked before.
-			# The growth graph has no mid-block carriageway cell in it, so this is unreachable
-			# today rather than merely rare — it is here so the guarantee cannot quietly lapse if
-			# that ever changes.
-			if walked == 0:
-				found.append([segment, rect, map.tile_rect_to_world(rect)])
-		ground[_ROUTE_SIDEWALKS_KEY] = found
-	return ground[_ROUTE_SIDEWALKS_KEY]
-
-## The two sidewalk bands of a street's own tile rect, in the order the corridor runs across it.
-static func _sidewalk_bands(rect: Rect2i, horizontal: bool) -> Array[Rect2i]:
-	var across := Vector2i.DOWN if horizontal else Vector2i.RIGHT
-	var size := Vector2i(rect.size.x, Tuning.SIDEWALK_WIDTH) if horizontal \
-			else Vector2i(Tuning.SIDEWALK_WIDTH, rect.size.y)
-	var far := across * (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
-	return [Rect2i(rect.position, size), Rect2i(rect.position + far, size)]
-
-static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
-	for y in range(band.position.y, band.end.y):
-		for x in range(band.position.x, band.end.x):
-			if corridor.carries_a_route(Vector2i(x, y)):
-				return true
-	return false
-
 ## **Nothing takes the sidewalk a route is walked along.** *"All obstacles should be routable around
 ## by eg crossing to the other side of the street, which in turn means the other side of the street
 ## must be open enough so we can walk on it unimpeded"* (PLAYTEST-69), and *"on the side of the
@@ -3396,11 +3358,11 @@ static func _a_route_walks(corridor: Corridor, band: Rect2i) -> bool:
 ## checking. `closes_a_walked_sidewalk_band` is the physical reading asked here for exactly that
 ## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: Planned, map: CityMap, corridor: Corridor,
-		ground: Dictionary, already: Array[Planned]) -> bool:
+		already: Array[Planned]) -> bool:
 	if not corridor or candidate.def.paces or not candidate.counts_against_the_line():
 		return true
 	var reach := _cumulative_lane_reach_of(candidate.def)
-	for entry: Array in _route_sidewalks(map, ground, corridor):
+	for entry: Array in corridor.walked_sidewalks(map):
 		var world: Rect2 = entry[2]
 		if not candidate.reach_touches(world, reach):
 			continue

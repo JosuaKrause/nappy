@@ -392,8 +392,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				_add_a_physical_body(bodies, plan)
 
 			var corridor := Corridor.of(tree)
-			var ground := {}
-			for entry: Array in EventScheduler._route_sidewalks(map, ground, corridor):
+			for entry: Array in corridor.walked_sidewalks(map):
 				var segment: StreetNetwork.Segment = entry[0]
 				var band: Rect2i = entry[1]
 				bands_checked += 1

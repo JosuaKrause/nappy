@@ -1314,11 +1314,16 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
 		for slots in [1, 2]:
-			var bag := EventScheduler.street_bag(_city_spec().bag, seed_value)
-			var placed := _escape_rows_on(map, bare, bag, slots)
-			t.check(bag.drawn == streets.size() * slots,
+			var lines: Array[String] = []
+			var placed := _escape_rows_traced(map, bare, _city_spec().bag, slots,
+					RunTrace.recording(lines))
+			var untraced := _escape_rows_from(map, bare, _city_spec().bag, slots)
+			t.check(_same_rows(placed, untraced),
+					"seed %d, %d a street: the note changes nothing placed" % [seed_value, slots])
+			var drew := _marbles_drawn_in(lines)
+			t.check(drew == streets.size() * slots,
 					"seed %d, %d a street: every slot drew one marble (%d of %d)"
-					% [seed_value, slots, bag.drawn, streets.size() * slots])
+					% [seed_value, slots, drew, streets.size() * slots])
 			var most := 0
 			for segment in streets:
 				var rect := map.tile_rect_to_world(segment.tile_rect()).grow(1.0)
@@ -1329,13 +1334,14 @@ func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 				most = maxi(most, here)
 			t.check(most <= slots, "seed %d: no street stands more than its %d slots (%d)"
 					% [seed_value, slots, most])
-		var empty := EventScheduler.street_bag({DaySpec.EMPTY_MARBLE: 1}, seed_value)
-		t.check(_escape_rows_on(map, bare, empty, 1).is_empty(),
+		t.check(_escape_rows_from(map, bare, {DaySpec.EMPTY_MARBLE: 1}, 1).is_empty(),
 				"seed %d: a bag of empty marbles stands nothing" % seed_value)
-		var bands := EventScheduler.street_bag({"roadblock": 1}, seed_value)
-		var stood := _escape_rows_on(map, bare, bands, 1)
-		t.check(bands.drawn == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
-				% [seed_value, bands.drawn])
+		var band_lines: Array[String] = []
+		var stood := _escape_rows_traced(map, bare, {"roadblock": 1}, 1,
+				RunTrace.recording(band_lines))
+		var band_draws := _marbles_drawn_in(band_lines)
+		t.check(band_draws == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
+				% [seed_value, band_draws])
 		unmet += streets.size() - stood.size()
 	t.check(unmet > 0, "and some roadblock marbles were spent unmet (%d)" % unmet)
 
@@ -1394,19 +1400,36 @@ static func _escape_rows_from(map: CityMap, bare: Dictionary, counts: Dictionary
 	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
 			PackedVector2Array(), [], seals)
 
-## The same draw from a bag the test holds, to read how many marbles it drew (`MarbleBag.drawn`):
-## the one place the game's private bag draw (`EventScheduler._fill_the_walk_from_the_bag()`) is
-## still called, since `build_day()` makes its own bag and reports no count. The rng is put back
-## as `_escape_rows_from()` does.
-static func _escape_rows_on(map: CityMap, bare: Dictionary, bag: MarbleBag,
-		slots: int) -> Array[EventScheduler.Planned]:
+## Whether two plans stand the same rows in the same places.
+static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
+	if a.size() != b.size():
+		return false
+	for i in a.size():
+		if a[i].def.id != b[i].def.id or a[i].position != b[i].position:
+			return false
+	return true
+
+## The marbles a plan drew, as the plan reports them to the run log: `build_day()` is handed a
+## trace that keeps every line, and the bag path notes `the escape's bag drew N marbles for M rows`.
+## `-1` when no such line was written. The note's wording is the contract between the bag path and
+## this reader: a change to one is a change to the other.
+static func _marbles_drawn_in(lines: Array[String]) -> int:
+	for line in lines:
+		if line.begins_with("plan the escape's bag drew "):
+			return int(line.trim_prefix("plan the escape's bag drew ").split(" ")[0])
+	return -1
+
+## `_escape_rows_from()` with a trace handed to `build_day()`, for the count of marbles drawn.
+static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictionary,
+		slots: int, trace: RunTrace) -> Array[EventScheduler.Planned]:
 	var rng: RandomNumberGenerator = bare["rng"]
 	rng.state = bare["state"]
 	var seals: Array[EventScheduler.Planned] = bare["seals"]
 	var spec := _city_spec()
+	spec.bag = counts
 	spec.slots_per_street = slots
-	return EventScheduler._fill_the_walk_from_the_bag(spec, rng, map, bare["plan"], bag, [],
-			PackedVector2Array(), seals)
+	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
+			PackedVector2Array(), [], seals, trace)
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

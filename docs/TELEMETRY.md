@@ -628,7 +628,7 @@ is made as the warning goes up, so the first line already knows.
 
 | Kind | Written by | Answers |
 | --- | --- | --- |
-| `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm |
+| `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner`, `EventScheduler` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm; and, on the escape's city, how many marbles its bag drew for how many rows |
 | `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
