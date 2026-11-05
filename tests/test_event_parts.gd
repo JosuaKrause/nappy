@@ -1,6 +1,7 @@
 extends RefCounted
-## The parts a day's events are handed to, each driven on its own through the one `EventWorld` it
-## is handed rather than through `EventManager`: `EventStreaming` bringing a plan in and out with its
+## The parts a day's events are handed to, each driven on its own, as the `EventManager` that owns
+## it holds it (`streaming`, `spawner`, `warnings`) over the one `EventWorld` the manager hands every
+## part, rather than through the manager's tick: `EventStreaming` bringing a plan in and out with its
 ## state, `WarningBoard` creating what a warning was for once its time is up or withdrawing it,
 ## `EventSpawner` recording a scar once and drawing the pelican bag of the run it is handed, and
 ## `CheckpointController` saying what a door does to her as intents rather than moving her. And the
@@ -17,16 +18,19 @@ func run(t) -> void:
 	_test_a_door_says_what_it_does_to_her_and_moves_nobody(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 
-## An `EventWorld` on fresh open ground drawn in `holder`, belonging to a run of its own, which
-## `_free_world()` frees.
-func _world(t) -> EventWorld:
+## A manager handed a map drawn in a world node and a run of its own (`EventManager.setup_world()`,
+## the entry the escape's building is handed its world through), out of the tree so that nothing
+## ticks it: the parts under test are its own (`streaming`, `spawner`, `warnings`) and its `world`
+## is the one every part is handed. `_free_manager()` frees it with the node and the run.
+func _manager(t) -> EventManager:
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var world := EventWorld.new()
-	world.map = CityMap.new()
-	world.map.world = holder
-	world.run = RunState.new()
-	return world
+	var map := CityMap.new()
+	map.world = holder
+	var run := RunState.new()
+	var manager := EventManager.new()
+	manager.setup_world(map, run)
+	return manager
 
 ## A Stroller with the camera it looks up by path, in the tree, its physics stepped by nobody.
 func _her(t) -> Stroller:
@@ -40,30 +44,26 @@ func _her(t) -> Stroller:
 	her.set_physics_process(false)
 	return her
 
-func _free_world(world: EventWorld) -> void:
-	if world.run != null:
-		world.run.free()
-	for instance in world.instances:
-		if is_instance_valid(instance):
-			instance.free()
-	world.instances.clear()
-	if world.map.has_world():
-		world.map.world.free()
+func _free_manager(manager: EventManager) -> void:
+	var run := manager.world.run
+	var holder := manager.world.map.world
+	manager.free()
+	holder.free()
+	run.free()
 
 func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
-	var world := _world(t)
-	var spawner := EventSpawner.new(world, WarningBoard.new(world))
-	var streaming := EventStreaming.new(world, spawner)
+	var manager := _manager(t)
+	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var plan := EventScheduler.Planned.new(def, at)
 	var plans: Array[EventScheduler.Planned] = [plan]
 	streaming.take(plans)
 	streaming.stream_around(at)
-	t.check(plan.live != null and world.instances.has(plan.live),
+	t.check(plan.live != null and manager.instances().has(plan.live),
 			"within reach, the plan is streamed in and joins the world's live instances")
 	if plan.live == null:
-		_free_world(world)
+		_free_manager(manager)
 		return
 	plan.live.player_at = at + Vector2(def.notice.within - 10.0, 0.0)
 	for _i in 3:
@@ -73,7 +73,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	var leaving := plan.live
 	streaming.stream_around(far)
-	t.check(plan.live == null and not world.instances.has(leaving),
+	t.check(plan.live == null and not manager.instances().has(leaving),
 			"out of reach, it is streamed out and leaves the live instances")
 	t.close_to(plan.age, age, "its plan keeps how far it had run")
 	t.check(plan.behaviours.has(&"EventPursuit"), "and its pursuit's state")
@@ -83,13 +83,11 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 		t.close_to(plan.live.age, age, "picking up where it left off")
 	streaming.clear()
 	t.check(plan.live == null and streaming.plans().is_empty(), "cleared, the day's plan is gone")
-	if is_instance_valid(leaving):
-		leaving.free()
-	_free_world(world)
+	_free_manager(manager)
 
 func _test_a_warning_creates_its_row_once_its_time_is_up(t) -> void:
-	var world := _world(t)
-	var board := WarningBoard.new(world)
+	var manager := _manager(t)
+	var board := manager.warnings
 	var def := EventCatalogue.by_id("cyclist")
 	var place := Vector2(800.0, 0.0)
 	var arrived: Array = []
@@ -109,11 +107,11 @@ func _test_a_warning_creates_its_row_once_its_time_is_up(t) -> void:
 	t.check(shown >= EventSpawner.as_warned(def).warned_for() - 0.001,
 			"and not before its badge has been up for the row's own warning (%.2fs)" % shown)
 	t.check(board.pending_warnings().is_empty(), "and the warning is taken down")
-	_free_world(world)
+	_free_manager(manager)
 
 func _test_a_warning_with_nowhere_to_put_it_is_withdrawn(t) -> void:
-	var world := _world(t)
-	var board := WarningBoard.new(world)
+	var manager := _manager(t)
+	var board := manager.warnings
 	var def := EventCatalogue.by_id("cyclist")
 	var asked := [0]
 	var where := func(_her: Vector2) -> Vector2:
@@ -131,15 +129,14 @@ func _test_a_warning_with_nowhere_to_put_it_is_withdrawn(t) -> void:
 	t.check(board.warn_first(def, Vector2.ZERO, func(_her: Vector2) -> Vector2: return Vector2.INF,
 			arrive) == null and board.pending_warnings().is_empty(),
 			"and one with no place at all is never put up")
-	_free_world(world)
+	_free_manager(manager)
 
 func _test_a_scar_is_recorded_once_however_often_it_streams_in(t) -> void:
-	var world := _world(t)
-	var spawner := EventSpawner.new(world, WarningBoard.new(world))
-	var streaming := EventStreaming.new(world, spawner)
+	var manager := _manager(t)
+	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def.aftermath.scar != "", "the fire leaves a scar")
-	t.check(world.run.attempt_spend.scars.is_empty(), "and the run starts with none")
+	t.check(manager.world.run.attempt_spend.scars.is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventScheduler.Planned.new(def, at)
 	var plans: Array[EventScheduler.Planned] = [plan]
@@ -149,39 +146,41 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t) -> void:
 	for _i in 3:
 		streaming.stream_around(at)
 		streaming.stream_around(far)
-	var added := world.run.attempt_spend.scars.size()
+	var added := manager.world.run.attempt_spend.scars.size()
 	t.check(added == 1, "three times in and out records the fire's scar once (%d)" % added)
-	_free_world(world)
+	_free_manager(manager)
 
 func _test_the_pelican_bag_is_the_handed_runs(t) -> void:
-	var world := EventWorld.new()
+	var manager := EventManager.new()
 	var run := RunState.new()
 	run.header.run_seed = 4242
-	world.run = run
-	var spawner := EventSpawner.new(world, WarningBoard.new(world))
+	manager.use_run(run)
+	var spawner := manager.spawner
 	var cyclist := EventCatalogue.by_id("cyclist")
 	for _i in 5:
 		spawner.rolls_a_pelican(cyclist)
 	t.check(run.pelican.draws == 5, "five cyclists draw five marbles from the handed run's bag")
 	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
 	t.check(run.pelican.draws == 5, "a dog draws nothing")
+	manager.free()
 	run.free()
 
 func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t) -> void:
-	var world := _world(t)
+	var manager := _manager(t)
 	var made: Array = []
 	var spawn := func(def: EventDef, at: Vector2) -> EventInstance:
 		made.append([def, at])
 		return null
-	var doors := CheckpointController.new(world, spawn, EventBus, EventCatalogue.door_guard())
-	var hut := EventInstance.new()
-	hut.setup(EventCatalogue.by_id("checkpoint_post"), Vector2(3000.0, 3000.0), PackedVector2Array(),
-			Vector2.RIGHT, world.map)
-	world.map.add_entity(hut)
-	world.instances.append(hut)
+	var doors := CheckpointController.new(manager.world, spawn, EventBus, EventCatalogue.door_guard())
+	# A post is a plan the day's streaming brings in once she is near (`EventStreaming.add()`).
+	var post_at := Vector2(3000.0, 3000.0)
+	var post_plan := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_post"), post_at)
+	manager.streaming.add(post_plan)
+	manager.streaming.stream_around(post_at)
+	var hut := post_plan.live
 	var her := _her(t)
 	her.global_position = hut.global_position + Vector2(0.0, 4.0)
-	world.player = her
+	manager.use_player(her)
 	var said: Array = []
 	doors.takes_her_in.connect(func(at: Vector2) -> void: said.append(["in", at]))
 	doors.holds_her.connect(func(seconds: float) -> void: said.append(["hold", seconds]))
@@ -204,17 +203,18 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t) -> void:
 			and (said[0][1] as Vector2).distance_to(standing) > 1.0,
 			"once its hold has run it says where she is let out, on the far side: %s" % [said])
 	t.check(her.global_position == standing, "and leaves moving her to whoever carries it out")
+	manager.use_player(null)
 	her.free()
-	_free_world(world)
+	_free_manager(manager)
 
 func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	manager.world.map.world = holder
+	var map := CityMap.new()
+	map.world = holder
 	var run := RunState.new()
-	manager.use_run(run)
+	var manager := EventManager.new()
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
