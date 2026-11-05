@@ -2,7 +2,7 @@
 
 The player asked for "a standing permission to merge PRs when you're the orchestrator", because
 "otherwise I have to give permission manually for every new orchestrator session" and with it they
-can "just say" the session is the orchestrator and to continue (inbox #1063).
+can "just say" the session is the orchestrator and to continue (inbox #1063 in gentle-walrus).
 
 **What it was.** Merging a pull request, enabling auto-merge and delegating a merge required the
 player's explicit permission in the current session, and a permission given in another session did
@@ -18,7 +18,7 @@ session only, by the player. **committing**, **orchestrating**, **session-cleanu
 **merging-main**, **pr-review** and the comment in the write guard hook say the same.
 
 **What still holds.** Any other session (an implementation agent, a Codex session) merges only a
-PR the orchestrating session hands it, under the standing permission (inbox #1063), or one the
+PR the orchestrating session hands it, under the standing permission (inbox #1063 in gentle-walrus), or one the
 player authorizes in that session; a review agent never merges. A release still needs its own
 explicit go-ahead in the session, and the restart prompt still never records one (polite-marten).
 The write guard still denies a direct merge command, since a merge goes through a wrapped identity.

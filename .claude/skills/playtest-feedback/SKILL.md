@@ -128,7 +128,9 @@ question before it is briefed; a small one is briefed with its first pictures du
 player can turn it down before it is built everywhere.
 
 **An answer that can be read two ways is read back before it is filed.** One line in the same turn —
-"I read this as X, not Y" — costs the player a word; filing the wrong reading costs a milestone, as
+"I read this as X, not Y" — costs the player a word; and when it is not certain what the words
+refer to, the question is asked and no reading is filed until it is answered, a marked guess
+included (inbox #1074 in gentle-walrus). Filing the wrong reading costs a milestone, as
 when the spent park's ask, which was about routing, was filed as a park she cannot enter
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). And **an item
 that replaces something already built quotes the decision that built it**: search the records
