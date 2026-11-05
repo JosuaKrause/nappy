@@ -1,6 +1,6 @@
 extends RefCounted
-## `GameSave`, and the two functions on `RunState` it reads and writes through
-## (`save_snapshot()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The
+## `GameSave`, and the functions on `RunState` and its registry it reads and writes through
+## (`run_parts.state_data()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The
 ## checks that go through `main` (the title, the resume gate, the focus loss and the day-14
 ## hand-over) are in `tests/test_save_wiring.gd`.
 ##
@@ -307,7 +307,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	run.resistance.carrying_package = true
 	run.settled.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
 
-	var written := run.save_snapshot()
+	var written := run.run_parts.state_data()
 	t.check(_saved(run, true), "the write reports success")
 	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way", false) == true, "day_under_way round-trips as true")
@@ -332,7 +332,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	t.check(run.settled.settled_in.get(5) == Vector2i(-2, 7)
 			and run.settled.settled_in.get(6) == Vector2i(9, 9),
 			"settled_in survives with its Vector2i values and integer day keys intact")
-	t.check(run.save_snapshot() == written,
+	t.check(run.run_parts.state_data() == written,
 			"and the whole snapshot taken before the write matches the one read back after it")
 	# The dawn snapshot, read through what it is for: a lost day gives it back.
 	run.resistance.give_back()
@@ -383,32 +383,32 @@ func _test_missing_file_is_dropped(t) -> void:
 
 func _test_garbled_text_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.save_snapshot()
+	var before := run.run_parts.state_data()
 	_write_raw("not valid json at all {{{")
 	t.check(_save.try_resume(run).is_empty(), "text that is not valid JSON resumes nothing")
-	t.check(run.save_snapshot() == before, "and the run is left exactly as it was")
+	t.check(run.run_parts.state_data() == before, "and the run is left exactly as it was")
 	run.free()
 
 
 func _test_wrong_format_version_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.save_snapshot()
+	var before := run.run_parts.state_data()
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION + 1,
 		"build": "some other build",
 		"day_under_way": true,
-		"state": run.save_snapshot(),
+		"state": run.run_parts.state_data(),
 	}))
 	t.check(_save.try_resume(run).is_empty(),
 			"a save this build's own format version does not match resumes nothing")
-	t.check(run.save_snapshot() == before, "and the run is untouched by trying")
+	t.check(run.run_parts.state_data() == before, "and the run is untouched by trying")
 	run.free()
 
 
 func _test_incomplete_state_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.save_snapshot()
-	var state := run.save_snapshot()
+	var before := run.run_parts.state_data()
+	var state := run.run_parts.state_data()
 	state.erase("nerves")
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
@@ -418,7 +418,7 @@ func _test_incomplete_state_is_dropped(t) -> void:
 	}))
 	t.check(_save.try_resume(run).is_empty(),
 			"a state missing a field this build writes resumes nothing rather than half-loading")
-	t.check(run.save_snapshot() == before, "and the run is untouched by trying")
+	t.check(run.run_parts.state_data() == before, "and the run is untouched by trying")
 	run.free()
 
 
@@ -489,7 +489,7 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the escape",
 		"day_under_way": true,
-		"state": run.save_snapshot(),
+		"state": run.run_parts.state_data(),
 	})
 	t.check(not old_shape.contains("escape_section"),
 			"the payload really is one with no escape section in it")
@@ -559,7 +559,7 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 		"build": "a build from before this field",
 		"day_under_way": true,
 		"escape_section": run.facts.escape_section,
-		"state": run.save_snapshot(),
+		"state": run.run_parts.state_data(),
 	})
 	t.check(not old_shape.contains("completed_resistance_alley_tiles"),
 			"the payload really is one with no alley tiles recorded in it")
@@ -601,7 +601,7 @@ func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
 		"build": "a build from before this field",
 		"day_under_way": true,
 		"escape_section": run.facts.escape_section,
-		"state": run.save_snapshot(),
+		"state": run.run_parts.state_data(),
 	})
 	t.check(not old_shape.contains("fenced_park"),
 			"the payload really is one with no fenced park recorded in it")
@@ -658,7 +658,7 @@ func _test_the_posters_survive_a_round_trip(t) -> void:
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the posters",
 		"day_under_way": false,
-		"state": run.save_snapshot(),
+		"state": run.run_parts.state_data(),
 	})
 	_write_raw(old_shape)
 	_save.try_resume(run)
@@ -683,7 +683,7 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
 	run.header.nerves = 4
 	run.resistance.completed_steps = [1, 2, 3]
 	run.resistance.progress = 1
-	var snapshot := run.save_snapshot()
+	var snapshot := run.run_parts.state_data()
 	snapshot["pending_resistance_brief"] = "meet at the fountain"
 	snapshot["_dawn_brief"] = "an earlier brief"
 	var old_shape := JSON.stringify({
@@ -1081,44 +1081,44 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 	# clamped steps leave it one short of the timeout, and the next one reaches it.
 	var hour := GameSave.Flushes.new()
 	var hour_answers := _Answers.new()
-	var hour_token := hour.register(_next_operation(), hour_answers.take)
+	hour.register(_next_operation(), hour_answers.take)
 	hour.advance(3600.0)
 	for i in steps - 2:
 		hour.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
-	t.check(hour.waits_for(hour_token) and hour_answers.results.is_empty(),
+	t.check(not hour.is_empty() and hour_answers.results.is_empty(),
 			"an hour between two frames counts as one clamped step")
 	hour.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
 	t.check(hour_answers.results == [GameSave.Result.FAILED], "and not as more than one")
 	# An ordinary frame counts as itself: an eighth of a second, forty times, is the timeout.
 	var ordinary := GameSave.Flushes.new()
-	var ordinary_token := ordinary.register(_next_operation(), Callable())
+	ordinary.register(_next_operation(), Callable())
 	var frame := 0.125
 	var frames := int(GameSave.FLUSH_TIMEOUT_SECONDS / frame)
 	for i in frames - 1:
 		ordinary.advance(frame)
-	t.check(ordinary.waits_for(ordinary_token), "an ordinary frame counts as itself: one short, it waits")
+	t.check(not ordinary.is_empty(), "an ordinary frame counts as itself: one short, it waits")
 	ordinary.advance(frame)
-	t.check(not ordinary.waits_for(ordinary_token), "and the last one reaches the timeout")
+	t.check(ordinary.is_empty(), "and the last one reaches the timeout")
 	# A clock that went backwards counts as nothing.
 	var backwards := GameSave.Flushes.new()
-	var backwards_token := backwards.register(_next_operation(), Callable())
+	backwards.register(_next_operation(), Callable())
 	for i in 100:
 		backwards.advance(-1.0)
 	for i in steps - 1:
 		backwards.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
-	t.check(backwards.waits_for(backwards_token),
+	t.check(not backwards.is_empty(),
 			"a clock that went backwards counts as nothing: it neither adds nor takes back time")
 	backwards.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
-	t.check(not backwards.waits_for(backwards_token), "so the timeout comes on the step it always did")
+	t.check(backwards.is_empty(), "so the timeout comes on the step it always did")
 	var flushes := GameSave.Flushes.new()
 	var write_answers := _Answers.new()
 	var delete_answers := _Answers.new()
 	var write_token := flushes.register(_next_operation(), write_answers.take)
 	var delete_token := flushes.register(_next_operation(), delete_answers.take, true)
 	flushes.advance(3600.0)
-	t.check(flushes.waits_for(write_token) and write_answers.results.is_empty(),
+	t.check(not flushes.is_empty() and write_answers.results.is_empty(),
 			"a write's flush is still waiting after the huge frame")
-	t.check(flushes.waits_for(delete_token) and delete_answers.results.is_empty(),
+	t.check(not flushes.is_empty() and delete_answers.results.is_empty(),
 			"and so is a deletion's")
 	flushes.answer([float(write_token), ""])
 	flushes.answer([float(delete_token), ""])
@@ -1134,7 +1134,7 @@ func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 	var steps := int(GameSave.FLUSH_TIMEOUT_SECONDS / GameSave.MAX_FLUSH_STEP_SECONDS)
 	for i in steps - 1:
 		flushes.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
-	t.check(flushes.waits_for(token), "one frame short of the timeout it still waits")
+	t.check(not flushes.is_empty(), "one frame short of the timeout it still waits")
 	flushes.advance(GameSave.MAX_FLUSH_STEP_SECONDS)
 	t.check(answers.results == [GameSave.Result.FAILED], "the frame that reaches it fails the flush")
 	flushes.answer([float(token), ""])
@@ -1155,7 +1155,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 		t.check(_save.clear() == GameSave.Result.CONFIRMED, "the deletion is kept")
 		t.check(indicator.is_showing() and timeline.pending == 0,
 				"the symbol is up and the deletion is already answered")
-		t.check(not indicator.shows_struck(), "plain, since it was kept")
+		t.check(not _drawn_struck(indicator), "plain, since it was kept")
 		indicator.free()
 
 		var waiting_timeline := SaveIndicator.Showing.new()
@@ -1180,7 +1180,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var immediate := SaveIndicator.new(immediate_timeline)
 	t.add_child(immediate)
 	EventBus.save_deleted.emit(_next_operation(), int(GameSave.Result.FAILED))
-	t.check(immediate.shows_struck() and immediate_timeline.pending == 0,
+	t.check(_drawn_struck(immediate) and immediate_timeline.pending == 0,
 			"a deletion that failed at once shows the struck picture")
 	immediate_timeline.advance(9.9)
 	t.check(immediate_timeline.alpha() == 1.0, "fully for ten seconds")
@@ -1192,7 +1192,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var deletion := _next_operation()
 	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
 	EventBus.save_deletion_settled.emit(deletion, false)
-	t.check(later.shows_struck() and later_timeline.pending == 0,
+	t.check(_drawn_struck(later) and later_timeline.pending == 0,
 			"a deletion the browser did not keep shows the struck picture")
 	later.free()
 
@@ -1216,7 +1216,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(run.header.ending != GameEnums.Ending.NONE, "the final day ends the run")
 		t.check(not _save.has_save(), "which deletes the save")
-		t.check(indicator.is_showing() and not indicator.shows_struck(),
+		t.check(indicator.is_showing() and not _drawn_struck(indicator),
 				"and the symbol shows the deletion, kept")
 		indicator.free()
 	)
@@ -1284,7 +1284,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 	t.check(timeline.pending == 1 and indicator.is_showing(), "still showing the pending deletion")
 
 	EventBus.save_deletion_settled.emit(deletion, false)
-	t.check(indicator.shows_struck() and timeline.pending == 0,
+	t.check(_drawn_struck(indicator) and timeline.pending == 0,
 			"the browser's answer arrives after the reload and settles it, struck")
 	indicator.free()
 	t.check(SaveIndicator.carried(sitting) == null, "nothing is left on the sitting")
@@ -1388,7 +1388,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	old_main_scene.free()
 
 	flushes.answer([float(token), ""])
-	t.check(timeline.pending == 0 and not indicator.shows_struck(),
+	t.check(timeline.pending == 0 and not _drawn_struck(indicator),
 			"the answer reaches the symbol with the main that saved gone, and it is kept")
 	timeline.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
 	t.check(timeline.is_idle(), "so the symbol fades out instead of staying up for good")
@@ -1397,7 +1397,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
 	token = flushes.register(save, Callable())
 	flushes.answer([float(token), "Connection to Indexed Database server lost"])
-	t.check(indicator.shows_struck() and timeline.pending == 0,
+	t.check(_drawn_struck(indicator) and timeline.pending == 0,
 			"and a save the browser did not keep strikes it the same way")
 	indicator.free()
 	sitting.free()
@@ -1414,10 +1414,10 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 	EventBus.save_written.emit(its_own, int(GameSave.Result.PENDING))
 	EventBus.save_write_settled.emit(before_it, true)
 	EventBus.save_deletion_settled.emit(before_it, false)
-	t.check(timeline.pending == 1 and not indicator.shows_struck(),
+	t.check(timeline.pending == 1 and not _drawn_struck(indicator),
 			"an answer to a change announced before it was built neither settles nor strikes it")
 	EventBus.save_write_settled.emit(its_own, false)
-	t.check(indicator.shows_struck() and timeline.pending == 0,
+	t.check(_drawn_struck(indicator) and timeline.pending == 0,
 			"and its own change's answer still does")
 	indicator.free()
 
@@ -1766,7 +1766,7 @@ func _test_a_desktop_save_shows_the_symbol_confirmed_at_once(t) -> void:
 		_save.write(run, true)
 		t.check(timeline.pending == 0 and not timeline.is_idle(),
 				"a desktop save is answered at once and the symbol is already showing")
-		t.check(not timeline.struck and not indicator.shows_struck(), "showing the plain picture")
+		t.check(not timeline.struck and not _drawn_struck(indicator), "showing the plain picture")
 		indicator.free()
 	)
 	run.free()
@@ -1784,10 +1784,19 @@ func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
 	var struck := icon.texture
 	t.check(plain != null and struck != null and struck != plain,
 			"the plain and the struck pictures are both on the atlas, and different")
-	t.check(indicator.shows_struck(), "a save not kept shows the struck picture")
+	t.check(_drawn_struck(indicator), "a save not kept shows the struck picture")
 	indicator.begin(2)
-	t.check(indicator.shows_struck(), "a new save still unanswered does not hide the failure")
+	t.check(_drawn_struck(indicator), "a new save still unanswered does not hide the failure")
 	indicator.settle(2, true)
-	t.check(not indicator.shows_struck() and icon.texture == plain,
+	t.check(not _drawn_struck(indicator) and icon.texture == plain,
 			"and a kept answer swaps back to the plain one")
 	indicator.free()
+
+## Whether the symbol on screen is the struck-through picture: the `Icon` rect's drawn texture
+## against the struck region of the `ui` atlas the symbol draws from, by rectangle: a symbol
+## that changed parents has re-acquired its page and holds a new texture object for the same region.
+static func _drawn_struck(indicator: SaveIndicator) -> bool:
+	var icon := indicator.find_child("Icon", true, false) as TextureRect
+	var struck := indicator.atlas.region(&"ui/save_unavailable")
+	return icon != null and icon.texture is AtlasTexture \
+			and (icon.texture as AtlasTexture).region == struck.region

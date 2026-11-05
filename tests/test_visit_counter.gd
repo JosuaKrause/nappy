@@ -263,7 +263,7 @@ func _test_is_pickup_step(t) -> void:
 
 ## Drives every signal handler the counter connects to and checks that none of it moved anything
 ## the run it counts owns. This process is never on the web (`OS.get_name() != "Web"`), so
-## `should_send()` refuses every one of these and `_send_event()` never reaches
+## `_send_event()` refuses every one of these and never reaches
 ## `JavaScriptBridge` at all — the point of the check is that the *listening* itself is inert, the
 ## same "telemetry must not touch gameplay" invariant `tests/test_telemetry.gd` pins for the run
 ## log, adapted for a listener with no per-frame watch of its own.
@@ -272,12 +272,13 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	var run := RunState.new()
 	run.start_run(1)
+	var scripts: Array[String] = []
+	counter.send_through(GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script)))
 	counter.listen(bus)
-	t.check(not counter.should_send(),
+	bus.day_started.emit(1)
+	t.check(scripts.is_empty(),
 		"a counter handed no configuration sends nothing")
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
-	t.check(not counter.should_send(),
-		"a headless test process is never the web, so nothing below can reach a real page")
 	var before := _run_snapshot(run)
 	bus.run_begun.emit(1, false)
 	bus.day_started.emit(1)
@@ -318,6 +319,8 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 	var after := _run_snapshot(run)
 	t.check(before == after,
 		"answering every signal the counter connects to leaves the run it counts untouched")
+	t.check(scripts.is_empty(),
+		"a headless test process is never the web, so nothing above reached a real page")
 	bus.free()
 	counter.free()
 	run.free()
