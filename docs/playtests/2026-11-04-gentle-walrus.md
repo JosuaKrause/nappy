@@ -61,3 +61,21 @@
 8. **The player's words.**
 
    > you can just set a timer, though, no polling needed
+
+## #1070
+
+1. **The note.**
+
+   > your timers are overly safe. the PR already merged but your timer would still wait 18min
+
+2. **Context** (the assistant's):
+
+   Said after the orchestrator set a one-shot 25-minute timer (the "about 25 minutes" in committing's auto-merge step, from inbox #1068) to confirm PR #1064's auto-merge, while its CI had five jobs left whose sibling shards had taken 7-10 minutes. The PR merged at 02:03 UTC, two minutes after the timer was set for 02:27 UTC.
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   The confirm timer is sized to what is left of the PR's CI (the remaining jobs' expected time from the run's own finished jobs or the shard plan, plus a small margin), not a fixed 25 minutes.
+
+4. **The player's words.**
+
+   > try a better estimate. undershoot a little bit and then poll the rest (a script that is polling; not an agent)

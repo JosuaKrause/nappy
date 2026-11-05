@@ -305,6 +305,8 @@ assert_exit "agent-status.sh --help" zero ./tools/agent-status.sh --help
 assert_exit "agent-status.sh -h"     zero ./tools/agent-status.sh -h
 assert_exit "update-pr.sh --help" zero ./tools/update-pr.sh --help
 assert_exit "update-pr.sh -h"     zero ./tools/update-pr.sh -h
+assert_exit "await-merge.sh --help" zero ./tools/await-merge.sh --help
+assert_exit "await-merge.sh -h"     zero ./tools/await-merge.sh -h
 assert_exit "land-prs.sh --help" zero ./tools/land-prs.sh --help
 assert_exit "land-prs.sh -h"     zero ./tools/land-prs.sh -h
 assert_exit "new-name.sh --help" zero ./tools/new-name.sh --help
@@ -415,6 +417,11 @@ assert_exit "update-pr.sh --bogus" nonzero ./tools/update-pr.sh --bogus
 # than guessing a target.
 assert_exit "update-pr.sh (no target)" nonzero ./tools/update-pr.sh
 assert_exit "update-pr.sh (two targets)" nonzero ./tools/update-pr.sh 1 2
+assert_exit "await-merge.sh --bogus"       nonzero ./tools/await-merge.sh --bogus 1
+assert_exit "await-merge.sh (no PR)"       nonzero ./tools/await-merge.sh
+assert_exit "await-merge.sh (bad PR)"      nonzero ./tools/await-merge.sh abc
+assert_exit "await-merge.sh --max-poll (no value)" nonzero ./tools/await-merge.sh --max-poll
+assert_exit "await-merge.sh --max-poll (not a number)" nonzero ./tools/await-merge.sh --max-poll x 1
 assert_exit "land-prs.sh --bogus"    nonzero ./tools/land-prs.sh --bogus 1
 # With no PR number there is nothing to land, and a non-numeric argument is not a PR number --
 # both are rejected before any gh call, same as a real PR number would trigger one.

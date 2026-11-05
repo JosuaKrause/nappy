@@ -335,8 +335,8 @@ worktrees — merging is what collides — so parallelism is planned at the file
   vouches for it. `uv run python tools/agent-identity.py run claude-coder -- tools/land-prs.sh
   <pr-number>...` turns on auto-merge (or merges a PR that is already clean) for several
   already-authorized, reviewed PRs in one call and stops, printing `main`'s own CI run at the end
-  as the check to watch; it does not wait, and one timer confirms the merges and prunes
-  (**committing**). It runs every PR it is given as one role, so docs-only
+  as the check to watch; it does not wait, and `tools/await-merge.sh`, run in the background,
+  confirms the merges and names the prune (**committing**). It runs every PR it is given as one role, so docs-only
   PRs go in a call of their own under `run claude-orchestrator --`. A PR that an earlier merge
   left conflicting stops the run, since its resolution needs a review before it lands.
 - **The harness's own branches go with the same script.** Each spawn also leaves a

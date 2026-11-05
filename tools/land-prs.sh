@@ -15,9 +15,9 @@
 #      is the fallback if auto-merge is attempted anyway and fails with that error
 #   3. print, for every PR, what happened and the check that confirms it: the PR shows MERGED, and
 #      then tools/prune-merged.sh <branch> retires the worktree and branch. This script neither
-#      polls for the merge nor pulls main nor prunes; the caller sets one timer for the
-#      confirmation (the committing skill says how) rather than holding a process open until
-#      GitHub is done.
+#      polls for the merge nor pulls main nor prunes; the caller runs tools/await-merge.sh <the
+#      PRs> in the background for the confirmation (the committing skill says how, inbox #1070 in gentle-walrus)
+#      rather than this script holding a process open until GitHub is done.
 #
 #   tools/land-prs.sh <pr-number> [<pr-number>...]
 #   tools/land-prs.sh --dry-run <pr-number> [<pr-number>...]
@@ -76,7 +76,8 @@ A PR that is merely behind main needs nothing, since the ruleset's checks are no
 
 It ends by printing, per PR, what it did and the check that confirms the merge: the PR shows
 MERGED, and then tools/prune-merged.sh <branch> retires the worktree and branch. It does not pull
-main or prune; set one timer for that check (the committing skill says how) instead of polling.
+main or prune; tools/await-merge.sh <the PRs>, run in the background, is that check (the
+committing skill says how).
 It also names main's own CI run as the check for two PRs that are wrong together, with the run's
 URL when one is cheaply available.
 
@@ -222,6 +223,7 @@ if [[ "$dry_run" -eq 1 ]]; then
     done
     echo
     echo "dry run: nothing changed -- no gh pr merge, no waiting, no pull, no tools/prune-merged.sh"
+    echo "a real run ends by naming the next command: tools/await-merge.sh ${prs[*]} (in the background)"
     exit 0
 fi
 
@@ -301,9 +303,10 @@ for line in "${report[@]}"; do
     echo "  #$n ($branch): $what"
 done
 echo
-echo "to confirm: each PR shows MERGED (gh pr view <n> --json state), then retire its branch with" \
-    "tools/prune-merged.sh <branch> from the main checkout. Set one timer for that check;" \
-    "a red check or a conflict found then is fixed, and nothing here polls."
+echo "next: run tools/await-merge.sh ${prs[*]} in the background (run_in_background). It sleeps" \
+    "until CI should end, polls until each PR shows MERGED, and prints the" \
+    "tools/prune-merged.sh <branch> command that retires each from the main checkout; a red" \
+    "check or a conflict it reports is fixed. Nothing here polls."
 echo
 echo "main's own CI run on the last merge is the check that these PRs are not wrong together --" \
     "a semantic conflict between two that touch different files passes each one's own gate and" \

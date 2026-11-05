@@ -22,6 +22,7 @@ The player asked that CI read the previous run's timings and balance from them o
 - The committed `tests/suite_costs.txt` stays: it plans local runs and is CI's fallback.
 
 **Choices.**
+- The player agreed to these choices (inbox #1068 in gentle-walrus).
 - A measured row is blended half and half with the frozen row, rounded: one slow shared runner
   moves a row halfway, and a lasting change is followed within a few runs. A suite with no old row
   takes its measurement.
