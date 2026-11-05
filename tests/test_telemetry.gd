@@ -1265,7 +1265,8 @@ func _delete_recursive(path: String) -> void:
 ## write `rig-`.
 func _test_a_runs_files_share_one_folder(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812345, false)
+	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812345, false, scratch)
 	var log_path := Telemetry.current_log().path
 	t.check(log_path != "", "a real run opens a file")
 	t.check(log_path.get_file() == "run.log",
@@ -1292,14 +1293,15 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 			"a first attempt is named like every other attempt (got %s)" % found)
 
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 ## Every filename that can repeat within a run asks for its attempt's suffix, the first attempt
 ## included. Driven through a real run's `maps/` folder, where `write_map()` names the picture: a
 ## question about the attempts counted per day, answered by the files that land.
 func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812347, false)
+	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812347, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
 	Telemetry.write_map(map, 6)
@@ -1322,7 +1324,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	t.check(found.has("day06-attempt3.png"),
 			"day 6 keeps its own count across whatever happened to other days in between")
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 ## The run's calendar (`RunCalendar.finish_day()`) retries a lost day by starting it again with the
 ## same day number — `begin_day()` sees the same day twice — and `write_map()` is called
@@ -1330,7 +1332,8 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
 	var map := CityGenerator.generate(4242)
-	Telemetry.begin_run(778812346, false)
+	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
+	Telemetry.begin_run(778812346, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
 
 	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
@@ -1352,7 +1355,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 			"and a second dusk picture (got %s)" % found)
 
 	Telemetry.end_run()
-	_delete_recursive(run_dir)
+	_delete_recursive(scratch)
 
 # -------------------------------------------------------------- the web override ---
 

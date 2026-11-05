@@ -123,8 +123,8 @@ func _web_override_requested() -> bool:
 ## on the one platform where nobody would ever read or clear it without also reintroducing the one
 ## way to override that. See `_web_override_requested()` for what turns it back on.
 ##
-## **`directory` is where the day folders go**, `DIRECTORY` for every caller the game has; a suite
-## that opens a real run hands a scratch one so it writes nothing under the player's own.
+## **`directory` is where the day folders go.** `RunSession.open()` hands `DIRECTORY` explicitly; a
+## suite that opens a real run hands a scratch one so it writes nothing under the player's own.
 func begin_run(run_seed: int, played := true, directory := DIRECTORY) -> void:
 	end_run()
 	if OS.has_feature("web") and not _web_override_requested():
