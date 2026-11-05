@@ -11,9 +11,10 @@ failure with its pass. `tools/test.sh` passes both through on every path; which 
 shard is unchanged, only the order within a shard. Every CI shard runs shuffled with the run's id as
 the seed and prints the local command that replays its order. Cost recording reads the measured rows
 as a set, so order does not reach it, and refuses `--repeat`. One full local run, shuffled, found no
-order-dependent check.
+order-dependent check. The item no longer names the telemetry suite's run-folder tests among what
+writes a real folder, since they are handed a scratch one.
 
 **Choices, open to overturn.** Every CI run is a shuffled run, so an order dependence shows on any
 pull request rather than only when two land together on `main` (the orchestrator's proposal); the
-seed is the run's id, so re-running a run replays its order; the runner rejects an unknown option
-rather than treating it as a filter that matches nothing (the builder's calls).
+seed is the run's id, so re-running a run replays its order (the builder's call). Any other argument
+still reaches the test scene, which reads its own flags, and filters the suites as before.
