@@ -135,7 +135,7 @@ func case_a_closed_street_is_out_of_the_network(t) -> void:
 				t.check(not map.is_open(tile), "and is not open, though it is still walkable")
 			t.check(map.is_walkable(tile),
 					"a closure never moves a walkable tile — it only shuts it")
-	map.closed_tiles.clear()
+	map.close_streets([])
 
 ## How much of a closed street's own ground stays genuinely unreachable, on one (map, day) rather
 ## than the sweep below: a single street can go either way, since which of its cells sit beside an
@@ -160,7 +160,7 @@ func case_most_of_a_closed_streets_ground_stays_closed(t) -> void:
 					sum_total += 1
 					if map.is_closed(tile):
 						sum_closed += 1
-			map.closed_tiles.clear()
+			map.close_streets([])
 	t.check(float(sum_closed) / maxf(1.0, float(sum_total)) > 0.75,
 			"most of a closed street's own ground is still closed, aggregated (%d of %d tiles)"
 			% [sum_closed, sum_total])
@@ -241,7 +241,7 @@ func case_calm_ground_is_still_walkable_to(t) -> void:
 					break
 			t.check(found, "seed %d day %d: calm ground can still be walked to"
 					% [map.seed_used, day])
-			map.closed_tiles.clear()
+			map.close_streets([])
 
 ## A closure is a **wall**, so it is placed off the day's corridor and preferentially on a turning
 ## off it. *(M50 step 2: "a road block becomes guidance and is not a hindrance. It flips its

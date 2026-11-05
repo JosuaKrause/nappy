@@ -54,16 +54,29 @@ static func _yard(size := Vector2i(12, 12)) -> CityMap:
 	map.fill_rect(Rect2i(Vector2i.ZERO, size), GameEnums.TileType.SIDEWALK)
 	return map
 
+## A yard big enough for the street lattice, with the vertical street at the origin walled in on
+## its east side by a column of building and shut by `close_streets()`: the map's own closure, which
+## closes the ground the street's two barriers cut off from the doorstep.
+static func _yard_with_a_street_shut() -> CityMap:
+	var map := _yard(Vector2i.ONE * CityMap.period() * 2)
+	var street := map.network.by_key(Vector3i(0, 0, 1))
+	var wall := street.tile_rect()
+	map.fill_rect(Rect2i(Vector2i(Tuning.STREET_WIDTH, wall.position.y), Vector2i(1, wall.size.y)),
+			GameEnums.TileType.BUILDING)
+	var shut: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS, street)]
+	map.close_streets(shut)
+	return map
+
 static func _centre(tile: Vector2i) -> Vector2:
 	return (Vector2(tile) + Vector2(0.5, 0.5)) * TILE
 
 ## One tile of each solid in a row, and a park beside them: what each mover is stopped by is the
 ## layers it names, and nothing else.
 func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
-	var map := _yard()
+	var map := _yard_with_a_street_shut()
 	var building := Vector2i(1, 1)
 	var post := Vector2i(2, 1)
-	var closed := Vector2i(3, 1)
+	var closed := Vector2i(3, CityMap.period() / 2)
 	var soft := Vector2i(4, 1)
 	var body := Vector2i(5, 1)
 	var open := Vector2i(6, 1)
@@ -71,8 +84,8 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 	map.set_tile(building, GameEnums.TileType.BUILDING)
 	map.set_tile(park, GameEnums.TileType.PARK)
 	map.blocked.posts[post] = true
-	map.closed_tiles[closed] = true
-	map.soft_sealed_tiles[soft] = true
+	t.check(map.is_closed(closed), "fixture: the shut street holds the closed tile")
+	map.seal_soft_tile(soft)
 	var covered: Array[Vector2i] = [body]
 	map.obstruct_tiles(1, covered)
 	var on_foot := Mover.on_foot()

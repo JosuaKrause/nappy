@@ -784,12 +784,22 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 ## nobody: he never notices her or charges again, so it raises nothing, or the walk past a band
 ## that costs nothing would be made under a warning of a catch that cannot come.
 func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
+	# A manager handed open ground drawn in a node of its own and a run (`EventManager.setup_world()`,
+	# as the building is handed its world), with the band a plan the escape would have planned
+	# (`EventStreaming.add()`), streamed in by the streaming the day runs.
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	var open_ground := WorldMap.open_ground()
+	open_ground.world = holder
+	var run := RunState.new()
 	var manager := EventManager.new()
+	manager.setup_world(open_ground, run)
 	t.add_child(manager)
-	var band := EventInstance.new()
-	band.setup(EventCatalogue.escape_roadblock(), Vector2(1000.0, 1000.0))
-	manager.add_child(band)
-	manager.world.instances.append(band)
+	var band_plan := EventScheduler.Planned.new(EventCatalogue.escape_roadblock(),
+			Vector2(1000.0, 1000.0))
+	manager.streaming.add(band_plan)
+	manager.streaming.stream_around(band_plan.position)
+	var band := band_plan.live
 	var at: Vector2 = band.global_position + Vector2(0.0, band.def.outer_radius - 20.0)
 	var first := _stand_her_at(t, manager, at)
 	manager.warnings.warn_about_the_ground_she_is_on()
@@ -805,7 +815,10 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	for her in [first, second]:
 		her.remove_from_group("player")
 		her.free()
+	manager.use_player(null)
 	manager.free()
+	holder.free()
+	run.free()
 
 ## A stroller at `at` that `manager` watches (`EventManager.use_player()`), its own physics off.
 func _stand_her_at(t, manager: EventManager, at: Vector2) -> Stroller:
@@ -1267,7 +1280,8 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	t.check(is_same(kept[0], kept[1]), "and reads the ground the first plan kept")
 	var tile := map.world_to_tile(map.tile_rect_to_world(
 			walks[0].open_streets[0].tile_rect()).get_center())
-	map.closed_tiles[tile] = true
+	var shut: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS, walks[0].open_streets[0])]
+	map.close_streets(shut)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEEDS[0]
 	DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(), true, ground)
@@ -1852,9 +1866,9 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 ## real physics frame; the charge is a masked pursuer put on the city's street as a streamed-in row
 ## comes back (`EventInstance.resume()`, which the streaming calls: a row brought back after it had
 ## noticed her is still chasing), and she is put at the tunnel, where the day's own clock finds her
-## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is given
-## the atlas the city's events draw from (`EventInstance.atlas`, which the spawner hands every
-## event it makes), so a real frame can draw it.
+## on its next tick (`DayController.tick()`, which `main`'s physics tick calls). The charge is
+## spawned by the city's manager (`EventManager.spawn_extra()`), which gives it the atlas the city's
+## events draw from, so a real frame can draw it.
 func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
@@ -1875,13 +1889,9 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 	EventBus.day_ended.connect(on_ended)
 	var her := Boot.player(main)
 	var city := Boot.city(main)
-	var guard := EventInstance.new()
-	guard.setup(EventCatalogue.by_id("masked_pursuer"), her.global_position,
+	var guard := city.events.spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position,
 			PackedVector2Array([her.global_position, her.global_position + Vector2(0.0, -400.0)]))
-	guard.atlas = city.events.world.atlas
-	city.add_child(guard)
 	guard.set_process(false)
-	city.events.world.instances.append(guard)
 	guard.resume(0.01, 0.0, 0.0)
 	her.global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
 	await t.get_tree().physics_frame

@@ -75,28 +75,13 @@ legacy save key, not a member). No `get_indexed`, `callv`, `set_deferred`, `"_" 
 
 ## 2. Hand-edited game collections and state, by owner
 
-### 2.1 `EventManager.world.instances` (the live-event list) -- the big one, 11 suites
-Game paths that add/remove: `EventSpawner.spawn()` (`event_spawner.gd:112`, reached through `EventManager.spawn_extra()`,
-`EventManager.spawn_warned()`), `EventStreaming.add()` + `stream_in()` (`event_streaming.gd:36,119`; `Planned` carries
-`facing` and `gate_state`, so a hut/gate is a plan), `EventManager.retire()` (`:689`, `EventStreaming` erase at `:216`)
-and `EventManager.clear()` (`:357`, throws all away).
+### 2.1 `EventManager.world.instances` (the live-event list)
 
-| file:lines | expression | notes |
-|---|---|---|
-| `test_encounters.gd` 352, 422-423, 457, 467 (+ `clear()` 361, 430, 503) | append mothers, posts, hut, cyclist; `world.instances.clear()` | SEAM: `spawn_extra()` for a mover with a path (`:601,651` already do); `EventManager.clear()` for the clears. |
-| `test_events_chat.gd` 94, 155, 207, 221, 245 | append `mother`/`far_lane` | SEAM: `spawn_extra()`. |
-| `test_halo.gd` 313, 321, 553, 562, 940, 1020, 1054, 1422 (+ `erase` 1048, 1446) | `manager.add_child(x); manager.world.instances.append(x)`; `world.instances.erase(retired)` | SEAM: `spawn_extra()` / `retire()`. (`events.list.append(source)` at `:1148..1444` is `ChurnEvents`, the suite's own fake list: not a game collection.) |
-| `test_danger.gd` 565, 574, 757, 804 (+ `erase` 816) | append `ordinary`/`lethal`/`engine` | SEAM: `spawn_extra()` / `retire()`. |
-| `test_drawn_view.gd` 376 (+ `erase` 391) | append `engine` | SEAM as above. |
-| `test_event_parts.gd` 181 (+ `clear` 49, in `_free_world`) | append hut; clear | SEAM: `streaming.add(Planned)`; teardown through `EventManager.clear()`. |
-| `test_events_pursuit.gd` 572 | append inside the `arrive` callback handed to `manager.warn_first(def, her, where, arrive)` | SEAM: `manager.spawn_warned(def, path, pelican)` (`event_manager.gd:680`) is what the game's `arrive` does. |
-| `test_day_director.gd` 78-90 | `director.events.world.instances.assign([kid, pelican])`, `.clear()` | SEAM: `spawn_extra()` of two cyclists, then read `landed_by_group()`; excitement set through `excitement.accumulate_landed()` stays. |
-| `test_resistance_arrow.gd` 271 | `_city.events.world.instances.erase(near)` | SEAM: `_city.events.retire(near)`. |
-| `finale_rig.gd` 792 (lured-off band), 1884 (charge test) | named in the item. 792: `EventManager.new()` with no `setup_world`, `EventInstance.new(); setup(escape_roadblock, (1000,1000)); manager.add_child(band); manager.world.instances.append(band)`. 1884: in a booted escape: `guard.atlas = city.events.world.atlas; city.add_child(guard); guard.set_process(false); city.events.world.instances.append(guard); guard.resume(...)` | 1884: SEAM `city.events.spawn_extra(EventCatalogue.by_id("masked_pursuer"), her.global_position, path)` (builds through `spawner.create()`, gives atlas/drawer/signals); `guard.set_process(false)`/`resume()` stay as the test's own stepping. 792: needs `manager.setup_world(map, run)` first (otherwise `spawn_extra` has no `world.map`); then `spawn_extra(EventCatalogue.escape_roadblock(), at)`, or best, `streaming.add(Planned.new(...))` so the band is a plan the escape would have planned (the manager's warning code at `:793` reads plans). |
-
-Also in the family: `finale_rig.gd:706,948,1253` and `test_checkpoints.gd:1308` build `Planned.new(...)` by hand into
-local arrays handed to `RoadblockRig.build` / `EventScheduler` helpers (not the manager's list); they hand a plan in through a seam
-the scheduler reads, so not a bypass of a collection (`EventStreaming.take(plans)` is how the manager receives a day's plans).
+No test writes the live-event list: events come into play through `EventManager.spawn_extra()`,
+`spawn_warned()` or a `Planned` handed to `EventStreaming.add()` and streamed in, and leave through
+`retire()` or `clear()`. The finale rig, the escape roadblock rig and the scheduler suites build
+`Planned` lists by hand and hand them to the scheduler or a rig, which is how a day's plans reach the
+manager (`EventStreaming.take(plans)`), not a bypass of the list.
 
 ### 2.2 `EventWorld` / `EventManager` fields written to skip `setup_world()` / `start_day()`
 
@@ -106,12 +91,23 @@ through the manager's own `trace` setter. Two writes of the baby's `WorldContext
 `test_invincible.gd` sets `noise` on its own fake world, a test double's state no game path sets, and
 `test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and `City` make.
 
-### 2.3 `CityMap` tile state written by hand (the game uses `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()`, `obstruct_tiles(id, tiles)` and its release)
-- `closed_tiles[tile] = true / erase / clear`: `finale_rig.gd:1270`, `test_scene_recipe_task.gd:367,369`, `test_world_passability.gd:74`, `test_turns.gd:180,240,265,294,348,360,378,391`, `routes_closures_rig.gd:138,163,244`. SEAM: `map.close_streets(Array[RoadClosure])` (`city_map.gd:862`, the only game writer); un-close via building a fresh map or `clear_day_holds()`.
-- `soft_sealed_tiles[soft] = true` (`test_world_passability.gd:75`) / `.erase` (`test_day13_guard.gd:411`): SEAM `map.seal_soft_tile()` and `clear_day_soft_seals()`.
-- `obstructed_tiles[tile] = 1 / erase`: `test_day13_guard.gd:413,418`, `test_route_rig.gd:768,775`, `test_spawn_siting.gd:252`. SEAM `obstruct_tiles(owner_id, tiles)` and its release (`park_cordon.gd:1317` calls it).
-- `alley_rects.append(rect)`: `test_event_views.gd:416-417`, `test_resistance_alley_siting.gd:425`. The game writes it only in `CityGenerator` (`city_generator.gd:1050`): GAP for a standalone map; use a generated map or `CityGenerator`'s block layout, or hand in a one-block generated city.
-- `map.building_rects = rects` (`test_ground_floor.gd:1052`), `map.main_road = i` (`test_still_watch.gd:268`), `map.stretch_active = true` (`test_scene_recipe_stretch.gd:195`): fixtures on a bare map; `recipe_city_builder.gd:171` writes `building_rects`, so the stretch/recipe path is the SEAM.
+### 2.3 `CityMap` tile state written by hand
+
+The game writes a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
+`obstruct_tiles(owner_id, tiles)` with `release_obstruction()`, and the tests do too, apart from five fixtures on a
+bare or hand-made map that no game writer can make:
+- `test_turns.gd` closes a junction box's lane tiles, a two-tile plug in an arm and lane stubs four tiles apart by
+  writing `closed_tiles`. `close_streets()` closes only the ground a street segment's two mouths cut off, so it makes
+  none of these, and closing the segment beyond the box instead changes what each check asserts. Open: re-author the
+  scenarios around a real segment closure, or a map-level hand-in for lane stubs, which only tests would call.
+- `test_resistance_alley_siting.gd` appends a 16-tile alley to `alley_rects`; no generated alley is longer than 8
+  tiles.
+- `test_ground_floor.gd` writes `building_rects` for hand-placed buildings; the recipe path writes it only from a
+  full saved scene context.
+- `test_still_watch.gd` writes `main_road = 0`, which the generator never picks (it picks among the middle
+  corridors) and only a recipe context can set.
+- `test_scene_recipe_stretch.gd` writes `stretch_active` on a 5x5 U-shaped map made as a counterexample; the test
+  is already handed the real scene's map (unused) as `_map`.
 
 ### 2.4 Run and city state written by hand
 `run.attempt_spend.scars.append({...})` (`test_acts.gd:292`), `run.attempt_spend.consumed_one_shots.append(...)` (`test_day_loop.gd:807,823`),
@@ -185,15 +181,14 @@ The line numbers in the blackout and scenery residency suites are from before th
 
 Files in a build are those in the tables above. Builds with disjoint file sets can run in parallel; a shared helper (`finale_rig.gd`, `crowd_rig.gd`, `resistance_rig.gd`, `event_manager_rig.gd`) belongs to exactly one build.
 
-1. **Instances through the manager** (`world.instances.append/erase/clear/assign` -> `spawn_extra`/`spawn_warned`/`streaming.add`+`stream_around`/`retire`/`clear`, section 2.1). Files: `test_encounters.gd`, `test_events_chat.gd`, `test_halo.gd`, `test_danger.gd`, `test_drawn_view.gd`, `test_event_parts.gd`, `test_events_pursuit.gd`, `test_day_director.gd`, `test_resistance_arrow.gd` (one line), `finale_rig.gd` (lines 792 and 1884 only; the rest of the finale rig belongs to build 4).
-3. **Map tile state through the map's own writers** (section 2.3). Files: `test_turns.gd`, `test_world_passability.gd`, `test_scene_recipe_task.gd`, `test_day13_guard.gd`, `test_route_rig.gd`, `test_spawn_siting.gd`, `routes_closures_rig.gd`, `test_event_views.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`, `finale_rig.gd` line 1270 (assign to build 4's owner). Disjoint from 1 (except `finale_rig.gd`) and from 4-6.
-4. **Escape rigs** (the finale rig's hand-built `Planned`/guard/bands, `RoadblockRig`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, the `far_guard_node`/`layer_of`/`attach_nodes` reads): `finale_rig.gd`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, `test_barrier_stays.gd`. Takes the finale lines build 1 and 3 leave.
+3. **Map tile state through the map's own writers** (section 2.3): the five fixtures it lists, each open as it says. Files: `test_turns.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`.
+4. **Escape rigs** (the finale rig's hand-built `Planned`/guard/bands, `RoadblockRig`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, the `far_guard_node`/`layer_of`/`attach_nodes` reads): `finale_rig.gd`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, `test_barrier_stays.gd`.
 5. **Private-member routes the count misses** (section 1: `Crowd._LINE_BUCKET`, the `_ICON` constants, `Building._Furniture`, the by-name property copies). Files: `crowd_rig.gd` (1522), `test_atlas_leaf_consumers.gd`, `test_atlas_loading.gd`, `test_scene_recipe_activity.gd`, `test_event_redraw.gd`, `test_resistance_placement_kinds.gd`, `test_main.gd` (701), `test_touch.gd` (813). Small; disjoint from all but build 6/7 on `crowd_rig.gd`, `test_resistance_placement_kinds.gd`: run before them or fold.
 6. **Zero-reader members: resistance and checkpoint owners** (`ResistanceDirector` arrow/door/trap/mark accessors, `CheckpointController`, `Happenings`, `CordonTape`). Files: `test_resistance_arrow.gd`, `test_resistance_crossing.gd`, `test_resistance_alley_siting.gd`, `test_resistance_replacement.gd`, `test_resistance_traps.gd`, `test_resistance_reach_*.gd` (narrow, relocated, contacts), `test_burnt_door.gd`, `test_day13_guard.gd`, `test_park_cordon.gd`, `test_park_return.gd`, `park_cordon_sweep.gd`, `resistance_rig.gd`. Waits for the board question members-no-reader.
-7. **Zero-reader members: events and look owners** (`EventsAhead.walk_siting/sent_pursuer`, behaviour predicates, `RoadblockLook`/`EventLook`/`EventPictures`/`DrawLayer`). Files: `test_event_behaviours.gd`, `test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_route_bag.gd`, `test_event_manager_fire.gd`, `test_halo_behind.gd`, `test_event_views.gd`, `test_draw_layers.gd`, `test_drawn_view.gd`, `test_no_pop_in.gd`, `test_event_strides.gd`, `test_car_driving.gd`, `test_police_car.gd`, `test_fire_truck_body.gd`. Overlaps build 1 on `test_drawn_view.gd`, build 2 on `test_pursuer_on_foot.gd`/`test_patrol_vanish.gd`/`test_event_behaviours.gd`, and build 5 on `test_event_redraw.gd`; sequence after them.
+7. **Zero-reader members: events and look owners** (`EventsAhead.walk_siting/sent_pursuer`, behaviour predicates, `RoadblockLook`/`EventLook`/`EventPictures`/`DrawLayer`). Files: `test_event_behaviours.gd`, `test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_route_bag.gd`, `test_event_manager_fire.gd`, `test_halo_behind.gd`, `test_event_views.gd`, `test_draw_layers.gd`, `test_drawn_view.gd`, `test_no_pop_in.gd`, `test_event_strides.gd`, `test_car_driving.gd`, `test_police_car.gd`, `test_fire_truck_body.gd`. Overlaps build 2 on `test_pursuer_on_foot.gd`/`test_patrol_vanish.gd`/`test_event_behaviours.gd`, and build 5 on `test_event_redraw.gd`; sequence after them.
 8. **Zero-reader members: crowd and RouteTree** (`set_focus`, `signals_for_tests`, `lane_key_parts`, `entry_count`, `jolt_swell`, `quietest_pavement`; `branch_for`, `bundles`, `has_a_choice`, `trunk_used_the_spine`, `junction_distances`). Files: `crowd_rig.gd`, `crowd_closures_rig.gd`, `test_car_front.gd`, `test_crowd_contributions.gd`, `test_turns.gd`, `test_recipe_composition.gd`, `test_recipe_crowd.gd`, `test_route_tree.gd`, `test_seals.gd`, `test_power_station.gd`, `test_routes_lattice.gd`. `set_focus` in `test_blackout.gd` goes with build 9. Overlap with build 3 on `test_turns.gd` and 5 on `crowd_rig.gd`.
 9. **City/Building/scenery** (`close_ground`, `has_water`, `home_door_is_sealed`, `Building` ground-floor family, the hand-built `Building.new()` fixtures with writes to `powered/day/condition`). Files: `test_scenery_residency.gd`, `test_blackout.gd`, `test_city_decay.gd`, `test_ground_floor.gd`, `test_scenery_animation.gd`, `test_main.gd`. `test_ground_floor.gd` overlaps build 3.
 10. **Atlas library accounting** (`is_acquired`, `reference_count`, `is_resident`, `last_load_moment`, `region_name_for`): files `test_atlas_*.gd`, `test_visuals.gd`, `test_interior.gd`. Waits for the board question members-no-reader.
 11. **Save/run/telemetry/UI accessors** (`save_snapshot`, `settled_yesterday`, `penalise_resistance`, `shows_struck`, `mode_name_shown`, `waits_for`, `observer`, `should_send`; the `main.use_*` hand-ins): files `test_save.gd`, `test_save_wiring.gd`, `test_day_loop.gd`, `test_run_state.gd`, `test_run_checkpoints.gd`, `test_pause.gd`, `test_telemetry.gd`, `test_visit_counter.gd`, `test_player_presentation.gd`. Disjoint from 1-9; can run in parallel with anything but needs `save_snapshot`'s game caller confirmed first.
 
-Parallel groups: {1+2 as one, 3, 5, 10, 11} are pairwise file-disjoint except as noted; 4 follows 1 and 3; 6, 7, 8 follow 1, 2, 3 and 5; 6, 7 and 10 wait for the board question members-no-reader; the SELF-only and DEV-only tiers are not scheduled (the first two readings).
+Parallel groups: {2, 3, 5, 10, 11} are pairwise file-disjoint except as noted; 6, 7, 8 follow 2, 3 and 5; 6, 7 and 10 wait for the board question members-no-reader; the SELF-only and DEV-only tiers are not scheduled (the first two readings).
