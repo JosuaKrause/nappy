@@ -2,7 +2,8 @@
 
 minty-quail's `run-state-handed-in.md`, its last wave: `project.godot`, `tests/run_tests.gd`,
 `tests/shared_state.gd`, `tests/fixtures/run_city.gd`, a comment of `src/autoload/game_state.gd`,
-and the sentences of `docs/ARCHITECTURE.md`, the godot skill and the verify skill that described the
+the two null-run guards of `src/autoload/visit_counter.gd`, and the sentences of
+`docs/ARCHITECTURE.md`, the godot skill and the verify skill that described the
 stand-in.
 
 **Built.** The `GameState` autoload is gone from `project.godot`. The test runner no longer hands
@@ -17,8 +18,9 @@ settings, the input map, the pressed actions, the root's nodes and every static 
 `src/`. `RunCity.of_the_run()` is gone. The whole suite list passes with its check count unchanged.
 The probes that fixed seed 2 say it is fixed so every machine measures the same runs.
 
-**Rejected.** `configure(null, null)` without the guards raised thousands of `Invalid access ...
-'header' on Nil` errors, because the counter read the run's day and calendar as a day began. A run
+**Rejected.** `configure(null, null)` without the guards raised thousands of `Invalid access` errors
+on `Nil`: the counter read the run's day (`'header'`) for every task, pursuit, sighting, blackout
+and encounter it heard before any `day_started`, and the run's mode (`'calendar'`) as a day began. A run
 the runner made once for the process (`_counter_run`) and handed to the counter before each suite
 was rejected in review: it carried state from one suite to the next unseen by the leak check (a
 `Node` an autoload holds is compared by identity only), and it leaked at exit when a suite quit the
