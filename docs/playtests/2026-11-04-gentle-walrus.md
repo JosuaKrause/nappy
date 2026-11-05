@@ -123,3 +123,48 @@
 8. **Read as:** (the assistant's interpretation, not the player's words)
 
    Corrects the reading above: the point that immediately followed "averaging" is "Not a failure": a failed cache write prints a warning and does not fail the PR. The player agreed to the blend and to that. "No artifact" and the leftover warning on a re-run stay the builder's, open to overturn.
+
+9. **Context** (the assistant's):
+
+   Answering the orchestrator's message in this session, which listed the builder's four choices on #1064 as the previous session had shown them, numbered:
+
+   1. **Blending:** each new timing is averaged half and half with the old one.
+   2. **Not a failure:** the job that saves the timings doesn't fail the PR when it breaks; it prints a warning instead.
+   3. **No artifact:** nothing is uploaded, so there's no retention period to set.
+   4. **One leftover warning:** re-running a job tries to save a key that already exists, which prints a warning and fails nothing.
+
+   and said "the other decision" was 2.
+
+10. **The player's words.**
+
+    > it's 2 3 and 4
+
+11. **Read as:** (the assistant's interpretation, not the player's words)
+
+    Supersedes the readings above: with the blend (1, inbox #1068), the player agreed to all four of the builder's choices on #1064: not a failure (2), no artifact (3) and the leftover warning on a re-run (4). None stays only the builder's.
+
+## #1074
+
+1. **Context** (the assistant's):
+
+   Said after "the other decision" in inbox #1068 could not be resolved from the note: its context block paraphrased the builder's choices on #1064 in a different order and wording from the message the player had answered, so the player's "the points that immediately followed the averaging bullet point" (#1073) pointed at a list the note did not hold, and the exact message had to be dug out of the previous session's transcript.
+
+2. **The note.**
+
+   > I guess take that as lesson to actually record the context as well when recording responses
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   When a captured note is the player's answer to a message of the agent's, its context block carries the exact text of what was answered (the list or options as shown, in order), not a summary.
+
+4. **Context** (the assistant's):
+
+   Said right after #1074's first words, about the orchestrator having recorded a guessed reading of "the other decision" (first "save only when every shard passed", then "Not a failure" alone) before the player answered "it's 2 3 and 4".
+
+5. **The player's words.**
+
+   > or in lieu of adding the context and still guessing -- just ask if it's not 100% clear
+
+6. **Read as:** (the assistant's interpretation, not the player's words)
+
+   When which thing the player's words refer to is not certain, the agent asks the player before recording a reading, rather than recording a guess, even one marked as a reading.
