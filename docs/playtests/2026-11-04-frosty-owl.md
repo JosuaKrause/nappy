@@ -49,3 +49,17 @@
 2. **The note.**
 
    > maybe put a note in claude md to always look for restart prompt first when you're the orchestrator
+
+## #1065
+
+1. **Context** (the assistant's):
+
+   Said in the session (2026-11-04) right after the orchestrator put a "NOW" section at the top of .claude/restart-prompt.md, above a log of about 300 lines kept since 2026-11-02 (inbox #1062: a fresh session had read only the stale top of that log).
+
+2. **The note.**
+
+   > maybe improve the layout of the restart prompt and routinely remove old entries
+
+3. **The player's words.**
+
+   > or have a systematic way of reading it
