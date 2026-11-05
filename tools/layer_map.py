@@ -327,8 +327,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "DrawnFrame",
-        "telemetry to be handed what it reports",
-        ("src/autoload/telemetry.gd",),
+        "the run log's viewport screen waits for a drawn frame",
+        ("src/telemetry/telemetry_viewport_screen.gd",),
     ),
     Exception_(
         "names",

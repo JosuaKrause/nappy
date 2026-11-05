@@ -67,7 +67,7 @@ func run(t) -> void:
 	t.gives_back_observers()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
-	_test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t)
+	_test_the_move_reads_the_soft_seals_and_bodies_round_her(t)
 	# The probes' days on which a guard drawn with no way asked stood on her only way.
 	_streams = ""
 	for seed_value in [1234567, 314159]:
@@ -347,54 +347,88 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 			% [lunged_at, standoff])
 	guard.free()
 
-## **`_on_her_side()` shuts what `SpawnSiting.is_open_to()` shuts**: a soft-sealed tile or a tile with a body
-## on it, added after the director's reachability first ran (the search for a tile to test with
-## asks her side, which builds it), is not her side, as it is not open to the fill. The one test here
-## still reading a private member: the ground on her side has no reader in the game but the guard's
-## own search for a way past him.
-func _test_her_side_reads_the_soft_seals_and_bodies_the_fill_does(t) -> void:
+## **The ground she walks on shuts what `SpawnSiting.is_open_to()` shuts**: a move of the guard
+## (`guard_position()` with `or_any` false, as `_move_the_task_guard_to_her_target()` asks) is refused
+## when the soft-sealed tiles or the bodies round her leave her no way to the roadblock but through
+## them, as they leave the fill none. She stands far past the detour the director's own fill follows
+## round a roadblock (`GUARD_WAY_DETOUR`), so only her side of the roadblock (`HerSide`, the ground
+## she reaches without coming near it) can give a spot a way past him: open, the spot comes back;
+## with her ringed in by seals or by bodies it does not; with the ring taken away it does again.
+func _test_the_move_reads_the_soft_seals_and_bodies_round_her(t) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
+	_view = Rect2()
+	if director.contact():
+		director.contact().complete_now()
+	var roadblock := director.rider()
+	t.check(roadblock != null, "the task rides a roadblock to move a guard round")
+	if roadblock == null:
+		_tear_down(player, director, city)
+		return
 	var map := city.map
-	var body := director.contact_position()
-	# How far from a roadblock's body any guard round it can notice her: the farthest he stands, his
-	# notice and a tile, as the director counts it.
-	var reach := ResistanceDirector.TASK_GUARD_FARTHEST \
-			+ EventCatalogue.task_guard().notice_within() + Tuning.TILE_SIZE
-	var tile := Vector2i(-1, -1)
-	var her := Vector2.INF
+	var body := roadblock.body_position()
+	var reach := ContactPoint.body_reach(roadblock)
+	# Past the farthest ground any guard round the roadblock notices her from and the detour the
+	# director's fill follows (its `_guard_notice_reach()` and `GUARD_WAY_DETOUR`), and with room
+	# for a ring of tiles about her.
+	var far := ResistanceDirector.TASK_GUARD_FARTHEST + EventCatalogue.task_guard().notice_within() \
+			+ Tuning.TILE_SIZE + ResistanceDirector.GUARD_WAY_DETOUR + 4.0 * Tuning.TILE_SIZE
 	var centre := map.world_to_tile(body)
-	var span := ceili((reach + 3.0 * Tuning.TILE_SIZE) / Tuning.TILE_SIZE)
-	for radius in range(span, span + 12):
+	var her := Vector2.INF
+	var her_tile := Vector2i.ZERO
+	var open_spot := Vector2.INF
+	var span := ceili(far / Tuning.TILE_SIZE)
+	for radius in range(span, span + 24):
 		for dx in range(-radius, radius + 1):
 			var cand := centre + Vector2i(dx, radius)
-			var at := map.tile_to_world(cand)
-			if not SpawnSiting.is_open_to(map, cand, Mover.on_foot()) or not SpawnSiting.is_open_to(map, cand + Vector2i.RIGHT, Mover.on_foot()) \
-					or at.distance_to(body) < reach + 2.0 * Tuning.TILE_SIZE:
+			if not _open_about(map, cand, 2) or map.tile_to_world(cand).distance_to(body) < far:
 				continue
-			var side := ResistanceDirector.HerSide.new(body, at)
-			if director._on_her_side(side, cand + Vector2i.RIGHT):
-				tile = cand + Vector2i.RIGHT
-				her = at
+			var spot := director.guard_position(_rng(SEED, "far"), body, false,
+					map.tile_to_world(cand), false, reach, false)
+			if spot != Vector2.INF:
+				her_tile = cand
+				her = map.tile_to_world(cand)
+				open_spot = spot
 				break
 		if her != Vector2.INF:
 			break
-	t.check(her != Vector2.INF, "there is open ground on her side of a roadblock to test with")
-	if her != Vector2.INF:
+	t.check(her != Vector2.INF, "there is open ground far past the roadblock to stand on, with a spot for the guard")
+	if her == Vector2.INF:
+		_tear_down(player, director, city)
+		return
+	var ring: Array[Vector2i] = []
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			if maxi(absi(dx), absi(dy)) == 2:
+				ring.append(her_tile + Vector2i(dx, dy))
+	for tile in ring:
 		map.seal_soft_tile(tile)
-		t.check(not SpawnSiting.is_open_to(map, tile, Mover.on_foot())
-				and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), tile),
-				"a tile soft-sealed after the reachability was built is not her side")
+	var sealed := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
+	t.check(sealed == Vector2.INF,
+			"soft-sealed all round her, no spot leaves her a way past the guard (got %s)" % sealed)
+	for tile in ring:
 		map.soft_sealed_tiles.erase(tile)
-		var other := tile + Vector2i.RIGHT
-		if director._on_her_side(ResistanceDirector.HerSide.new(body, her), other):
-			map.obstructed_tiles[other] = 1
-			t.check(not SpawnSiting.is_open_to(map, other, Mover.on_foot())
-					and not director._on_her_side(ResistanceDirector.HerSide.new(body, her), other),
-					"a tile with a body on it is not her side")
-			map.obstructed_tiles.erase(other)
+	for tile in ring:
+		map.obstructed_tiles[tile] = 1
+	var bodies := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
+	t.check(bodies == Vector2.INF,
+			"bodies standing all round her, no spot leaves her a way past the guard (got %s)" % bodies)
+	for tile in ring:
+		map.obstructed_tiles.erase(tile)
+	var freed := director.guard_position(_rng(SEED, "far"), body, false, her, false, reach, false)
+	t.check(freed == open_spot, "with the ring taken away the spot comes back (%s, was %s)"
+			% [freed, open_spot])
 	_tear_down(player, director, city)
+
+## Whether every tile within `radius` of `tile` is open ground on foot (`SpawnSiting.is_open_to()`).
+static func _open_about(map: CityMap, tile: Vector2i, radius: int) -> bool:
+	for dy in range(-radius, radius + 1):
+		for dx in range(-radius, radius + 1):
+			var at := tile + Vector2i(dx, dy)
+			if not map.in_bounds(at) or not SpawnSiting.is_open_to(map, at, Mover.on_foot()):
+				return false
+	return true
 
 ## **The done task sets the guard on her, wherever he stands.** With `parked`, she touches another
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has
