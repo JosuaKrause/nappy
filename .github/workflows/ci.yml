@@ -591,12 +591,26 @@ jobs:
       # above, and runs only shard I of it -- one Godot process, filtered to that shard's suites,
       # which is why the runner's own PARTIAL RUN note prints for every shard here and must never
       # be read as a green build on its own.
+      #
+      # **Every shard runs shuffled**, with the run's id as the seed (every leg of a run shares
+      # it, a re-run of the run shares it too), so an order dependence between two suites shows on
+      # any pull request rather than only where two suites happen to meet on main. The plan is
+      # unchanged -- which suites a shard runs is the cost table's decision, and only the order
+      # inside the shard's one process is drawn from the seed. The log carries the runner's own
+      # `ORDER` line (the seed and the order) and `REPLAY` line (a command that runs those suites
+      # in that order, needing no cost table), and the line printed here replays the whole shard
+      # from the plan. The timing step below sorts what it measured and compares it with the plan
+      # as a set, so the order the suites ran in changes nothing it reads.
       - name: Shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
         shell: bash
         env:
           TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
+          SHUFFLE_SEED: ${{ github.run_id }}
         run: |
-          GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} 2>&1 \
+          echo "shuffled with seed $SHUFFLE_SEED; to replay this shard's order locally (the plan table is the one the plan job printed, saved as a file named by TEST_SUITE_COSTS):"
+          echo "  TEST_SUITE_COSTS=<that file> tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} --shuffle $SHUFFLE_SEED"
+          echo "or, without the table, the REPLAY line the runner prints below."
+          GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} --shuffle "$SHUFFLE_SEED" 2>&1 \
             | tee "$RUNNER_TEMP/shard.log"
 
       # This leg's own timing lines, as the runner printed them, handed to `costs` as the output

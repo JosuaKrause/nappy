@@ -11,7 +11,7 @@
 # launches "Godot" anyway on a bad flag is caught even on a runner with no engine installed.
 #
 # tools/test.sh is deliberately not asserted against an unknown flag here in general: it forwards
-# anything that is not --serial/--plan/--record-costs/--shard/--help/-h straight to the test scene
+# anything that is not --serial/--plan/--record-costs/--shard/--shuffle/--repeat/--help/-h straight to the test scene
 # as either a suite-name substring or a flag the scene itself reads off
 # OS.get_cmdline_user_args() -- there is no fixed list to
 # validate that free-text surface against, so only its --help path is checked there. --shard and
@@ -594,6 +594,15 @@ assert_exit "test.sh --shard (not I/N)"       nonzero ./tools/test.sh --shard bo
 assert_exit "test.sh --shard 9/8 (I > N)"     nonzero ./tools/test.sh --shard 9/8
 assert_exit "test.sh --shard 0/8 (I < 1)"     nonzero ./tools/test.sh --shard 0/8
 assert_exit "test.sh --record-costs (with a filter)" nonzero ./tools/test.sh --record-costs bogus
+assert_exit "test.sh --shuffle (missing value)"  nonzero ./tools/test.sh --shuffle
+assert_exit "test.sh --shuffle (not a number)"   nonzero ./tools/test.sh --shuffle bogus
+assert_exit "test.sh --shuffle (negative)"       nonzero ./tools/test.sh --shuffle -3
+assert_exit "test.sh --shuffle (twice)"          nonzero ./tools/test.sh --shuffle 1 --shuffle 2 crowd
+assert_exit "test.sh --repeat (missing value)"   nonzero ./tools/test.sh crowd --repeat
+assert_exit "test.sh --repeat (not a number)"    nonzero ./tools/test.sh --repeat 2.5 crowd
+assert_exit "test.sh --repeat 0"                 nonzero ./tools/test.sh --repeat 0 crowd
+assert_exit "test.sh --repeat (twice)"           nonzero ./tools/test.sh --repeat 1 --repeat 2 crowd
+assert_exit "test.sh --record-costs --repeat"    nonzero ./tools/test.sh --record-costs --repeat 2
 
 if [[ -e "$work_dir/shot-out.png" || -e "$work_dir/shot-out2.png" ]]; then
     echo "FAIL: a rejected shot.sh run wrote its output file anyway" >&2
@@ -804,6 +813,8 @@ wok_out="$(
 )"
 check_that "wait_or_kill refuses a limit that is not whole seconds and leaves the caller's fd 9 alone" \
     '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
+check_that "test.sh --help lists --shuffle and --repeat" \
+    '[[ "$(./tools/test.sh --help 2>&1)" == *"--shuffle SEED"*"--repeat N"* ]]'
 check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
     '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
