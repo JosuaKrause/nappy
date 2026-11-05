@@ -309,8 +309,9 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var manager := EventManager.new()
-	manager.world.map = CityMap.new()
-	manager.world.map.world = world
+	var map := WorldMap.open_ground()
+	map.world = world
+	manager.setup_world(map, RunState.new())
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(def, at)
 	manager.streaming.add(plan)
