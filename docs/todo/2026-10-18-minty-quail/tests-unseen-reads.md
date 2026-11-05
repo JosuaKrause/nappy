@@ -99,16 +99,12 @@ local arrays handed to `RoadblockRig.build` / `EventScheduler` helpers (not the 
 the scheduler reads, so not a bypass of a collection (`EventStreaming.take(plans)` is how the manager receives a day's plans).
 
 ### 2.2 `EventWorld` / `EventManager` fields written to skip `setup_world()` / `start_day()`
-The game sets these in `EventManager.setup_world()` / `setup()` (`event_manager.gd:172-207`) or never. Tests overwrite:
-`world.map = CityMap.new()` (`test_event_parts.gd`, `test_event_behaviours.gd`, `test_events_pursuit.gd`), `world.run = RunState.new()`
-(`test_event_parts.gd`), `world.player = her` (`test_event_parts.gd`), `world.city_map` (`test_events_pursuit.gd`),
-`world.signals = null` (`test_patrol_vanish.gd`), `world.day = day` (`test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_event_manager.gd`),
-`world.excitement_sources = [...]` (`test_excitement_source.gd` x2, `test_events_chat.gd`), `world.trace = ...` (`test_events_pursuit.gd`,
-`test_pursuer_on_foot.gd`; the manager's own `trace` setter at `:69` is the public one: `events.trace =` in `test_pelican.gd` is a SEAM),
-`world.noise = 50.0` (`test_invincible.gd`). `stream_radius =` is a SEAM (`main.gd:895` writes it) and `pelican_rig =` is the manager's
-property (`event_manager.gd:104`). Verdict per field: `map/run/city_map/signals` -> SEAM through `setup_world(map, run)` or `use_run(run)`;
-`day` -> SEAM through `start_day(DaySpec.for_day(day), ...)`; `excitement_sources`, `player`, `noise` -> `EventManager.use_player()` / the sources the world builds
-(`excitement_sources` is a field of the baby's `WorldContext`, which `main.gd` and `City` hand the manager's sources to, so handing it in is a seam; `test_checkpoints.gd` does so); `trace` -> `manager.trace`.
+
+No test writes an `EventWorld` field: suites hand the manager its world through `setup_world()`,
+`setup()`, `use_run()` and `use_player()`, its day through `start_day()` or `start_recipe()`, and its trace
+through the manager's own `trace` setter. Two writes of the baby's `WorldContext` stay:
+`test_invincible.gd` sets `noise` on its own fake world, a test double's state no game path sets, and
+`test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and `City` make.
 
 ### 2.3 `CityMap` tile state written by hand (the game uses `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()`, `obstruct_tiles(id, tiles)` and its release)
 - `closed_tiles[tile] = true / erase / clear`: `finale_rig.gd:1270`, `test_scene_recipe_task.gd:367,369`, `test_world_passability.gd:74`, `test_turns.gd:180,240,265,294,348,360,378,391`, `routes_closures_rig.gd:138,163,244`. SEAM: `map.close_streets(Array[RoadClosure])` (`city_map.gd:862`, the only game writer); un-close via building a fresh map or `clear_day_holds()`.
@@ -190,7 +186,6 @@ The line numbers in the blackout and scenery residency suites are from before th
 Files in a build are those in the tables above. Builds with disjoint file sets can run in parallel; a shared helper (`finale_rig.gd`, `crowd_rig.gd`, `resistance_rig.gd`, `event_manager_rig.gd`) belongs to exactly one build.
 
 1. **Instances through the manager** (`world.instances.append/erase/clear/assign` -> `spawn_extra`/`spawn_warned`/`streaming.add`+`stream_around`/`retire`/`clear`, section 2.1). Files: `test_encounters.gd`, `test_events_chat.gd`, `test_halo.gd`, `test_danger.gd`, `test_drawn_view.gd`, `test_event_parts.gd`, `test_events_pursuit.gd`, `test_day_director.gd`, `test_resistance_arrow.gd` (one line), `finale_rig.gd` (lines 792 and 1884 only; the rest of the finale rig belongs to build 4).
-2. **World/manager fields through `setup_world`/`start_day`/`use_run`** (section 2.2). Files: `test_event_parts.gd`, `test_event_behaviours.gd`, `test_events_pursuit.gd`, `test_patrol_vanish.gd`, `test_pursuer_on_foot.gd`, `test_excitement_source.gd`, `test_events_chat.gd`, `test_event_manager.gd`, `test_invincible.gd`, `test_pelican.gd`. Overlaps build 1 on three files (`test_event_parts.gd`, `test_events_pursuit.gd`, `test_events_chat.gd`): run after build 1 or merge those three files into it.
 3. **Map tile state through the map's own writers** (section 2.3). Files: `test_turns.gd`, `test_world_passability.gd`, `test_scene_recipe_task.gd`, `test_day13_guard.gd`, `test_route_rig.gd`, `test_spawn_siting.gd`, `routes_closures_rig.gd`, `test_event_views.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`, `finale_rig.gd` line 1270 (assign to build 4's owner). Disjoint from 1 (except `finale_rig.gd`) and from 4-6.
 4. **Escape rigs** (the finale rig's hand-built `Planned`/guard/bands, `RoadblockRig`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, the `far_guard_node`/`layer_of`/`attach_nodes` reads): `finale_rig.gd`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, `test_barrier_stays.gd`. Takes the finale lines build 1 and 3 leave.
 5. **Private-member routes the count misses** (section 1: `Crowd._LINE_BUCKET`, the `_ICON` constants, `Building._Furniture`, the by-name property copies). Files: `crowd_rig.gd` (1522), `test_atlas_leaf_consumers.gd`, `test_atlas_loading.gd`, `test_scene_recipe_activity.gd`, `test_event_redraw.gd`, `test_resistance_placement_kinds.gd`, `test_main.gd` (701), `test_touch.gd` (813). Small; disjoint from all but build 6/7 on `crowd_rig.gd`, `test_resistance_placement_kinds.gd`: run before them or fold.
