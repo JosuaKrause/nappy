@@ -19,8 +19,9 @@ settings, the input map, the pressed actions, the root's nodes and every static 
 The probes that fixed seed 2 say it is fixed so every machine measures the same runs.
 
 **Rejected.** `configure(null, null)` without the guards raised thousands of `Invalid access` errors
-on `Nil`: the counter read the run's day (`'header'`) for every task, pursuit, sighting, blackout
-and encounter it heard before any `day_started`, and the run's mode (`'calendar'`) as a day began. A run
+on `Nil`: the counter read the run's day (`'header'`) for everything it counted under the run's own
+day before any `day_started` (handlers whose signal carries their day, such as the encounters, do
+not), and the run's mode (`'calendar'`) as a day began. A run
 the runner made once for the process (`_counter_run`) and handed to the counter before each suite
 was rejected in review: it carried state from one suite to the next unseen by the leak check (a
 `Node` an autoload holds is compared by identity only), and it leaked at exit when a suite quit the
