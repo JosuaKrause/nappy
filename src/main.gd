@@ -272,6 +272,9 @@ func _ready() -> void:
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
 	# what the page counts all read this boot's configuration rather than the command line.
 	Telemetry.configure(config)
+	var screen := TelemetryViewportScreen.new(Telemetry)
+	Telemetry.use_screen(screen)
+	Telemetry.use_bursts(BurstRecorder.new(screen, BurstRecorder.Clock.new(Telemetry), Telemetry.note))
 	_save.configure(config)
 	VisitCounter.configure(config, _run)
 	# The run log's owner, listening on the bus from here on, and the trace everything this boot

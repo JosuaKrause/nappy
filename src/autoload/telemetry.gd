@@ -122,13 +122,16 @@ func _web_override_requested() -> bool:
 ## it. Checked here rather than by the one caller, so a future caller cannot reintroduce a run log
 ## on the one platform where nobody would ever read or clear it without also reintroducing the one
 ## way to override that. See `_web_override_requested()` for what turns it back on.
-func begin_run(run_seed: int, played := true) -> void:
+##
+## **`directory` is where the day folders go.** `RunSession.open()` hands `DIRECTORY` explicitly; a
+## suite that opens a real run hands a scratch one so it writes nothing under the player's own.
+func begin_run(run_seed: int, played := true, directory := DIRECTORY) -> void:
 	end_run()
 	if OS.has_feature("web") and not _web_override_requested():
 		return
-	if not DirAccess.dir_exists_absolute(DIRECTORY) \
-			and DirAccess.make_dir_recursive_absolute(DIRECTORY) != OK:
-		push_warning("telemetry: cannot create %s" % DIRECTORY)
+	if not DirAccess.dir_exists_absolute(directory) \
+			and DirAccess.make_dir_recursive_absolute(directory) != OK:
+		push_warning("telemetry: cannot create %s" % directory)
 		return
 	# "YYYY-MM-DDTHH:MM:SS" — split rather than reformatted, so the date half is exactly what a
 	# person reads as today's date and the time half needs only its colons stripped to be a
@@ -136,7 +139,7 @@ func begin_run(run_seed: int, played := true) -> void:
 	var stamp := Time.get_datetime_string_from_system(false, false)
 	var day_folder := stamp.get_slice("T", 0)
 	var time_part := stamp.get_slice("T", 1).replace(":", "")
-	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [DIRECTORY, day_folder,
+	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [directory, day_folder,
 			"run" if played else "rig", time_part, run_seed, _file_tag()]
 	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
 		push_warning("telemetry: cannot create %s" % _run_dir)
@@ -287,13 +290,36 @@ const SHOT_SPACING := TelemetryShots.SPACING
 ## The day's allowance, the spacing and the run-wide counter that names every picture.
 var _shots := TelemetryShots.new()
 
-## What the run log photographs: the game's own viewport (`_ViewportScreen`, below), asked by every
-## picture, still or burst, whether a frame can be drawn at all.
-var _screen: TelemetryScreen = _ViewportScreen.new(self)
+## What the run log photographs, asked by every still picture whether a frame can be drawn at all.
+## `main` hands in the game's own viewport (`use_screen()`); a path that does not boot `main` (a
+## tool, a probe, a suite that drives `Telemetry` alone) keeps the same viewport screen built here.
+var _screen: TelemetryScreen = TelemetryViewportScreen.new(self)
 
-## The animation bursts a person asks for (`start_burst()`), handed the same screen, the engine's
-## clock and the tree's timers, and this log's `note`. A day or the run ending cuts its sequence short.
-var _bursts := BurstRecorder.new(_screen, BurstRecorder.Clock.new(self), note)
+## The animation bursts a person asks for (`start_burst()`), over the screen, the engine's clock and
+## the tree's timers, and this log's `note`. A day or the run ending cuts its sequence short.
+## `main` hands in the game's recorder (`use_bursts()`); a path that does not boot `main` keeps the
+## one built here over the screen above.
+var _bursts := _default_bursts()
+
+## Hands this log the screen it photographs, and returns the one it had. `main` calls it at boot
+## with the game's viewport; a suite hands one that can draw into a scratch folder and hands the
+## returned one back when it is done. It does not rebuild the bursts, which hold the screen they
+## were built over (`use_bursts()`).
+func use_screen(screen: TelemetryScreen) -> TelemetryScreen:
+	var before := _screen
+	_screen = screen
+	return before
+
+## Hands this log the recorder of the bursts a person asks for, and returns the one it had. `main`
+## calls it at boot with the recorder it builds over the game's screen; a suite hands one over a
+## bench screen and clock and hands the returned one back when it is done.
+func use_bursts(recorder: BurstRecorder) -> BurstRecorder:
+	var before := _bursts
+	_bursts = recorder
+	return before
+
+func _default_bursts() -> BurstRecorder:
+	return BurstRecorder.new(_screen, BurstRecorder.Clock.new(self), note)
 
 ## Writes a PNG of the current frame beside the log, named after the moment that asked for it.
 ##
@@ -435,24 +461,3 @@ func _type_dir(name: String) -> String:
 	if DirAccess.make_dir_recursive_absolute(dir) != OK:
 		push_warning("telemetry: cannot create %s" % dir)
 	return dir
-
-# ------------------------------------------------------------------- the screen ---
-
-## The game's own viewport as the screen the run log photographs: nothing to draw headless, where
-## the null display server draws no frame; otherwise the wait for a drawn frame every capture shares
-## (`DrawnFrame.wait()`) and the viewport's texture once it is drawn.
-class _ViewportScreen extends TelemetryScreen:
-	var _node: Node
-
-	func _init(node: Node) -> void:
-		_node = node
-
-	func can_draw() -> bool:
-		return DisplayServer.get_name() != "headless"
-
-	func drawn() -> void:
-		await DrawnFrame.wait(_node.get_tree())
-
-	func picture() -> Image:
-		var viewport := _node.get_viewport()
-		return viewport.get_texture().get_image() if viewport else null

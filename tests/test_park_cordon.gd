@@ -42,6 +42,7 @@ func run(t) -> void:
 	_test_a_person_walked_out_never_ends_in_her_view(t)
 	_test_someone_already_leaving_is_walked_out_through_the_gap(t)
 	_test_an_escort_sent_back_alone_holds_the_gap(t)
+	_test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t)
 	_test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t)
 
 # ------------------------------------------------------------------ fixture ---
@@ -614,7 +615,7 @@ func _busker_in_the_park() -> EventInstance:
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
 ## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
-## off 4s and then 8s after the touch, and stops where it ends. The busker walked out down it is
+## off 4s and then 8s after he is sent off down it (read off him, `EventInstance.way_left()`, as his escort reads it), and stops where it ends. The busker walked out down it is
 ## seen to go on past her, and is gone only where the camera on her cannot see him. **And he walks
 ## on at his pace while she can see him**, never standing at a wall or the city's edge: once the
 ## way is walked he is in her view no longer than walking out of the view box square to its sides
@@ -629,7 +630,8 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var her := [fixture.swing]
 		var shows := _camera_on(her)
 		_tick(happenings, her[0], shows.is_valid())
-		var way := PackedVector2Array(happenings.cordon._exit)
+		var way := PackedVector2Array()
+		var sent_off_at := -1.0
 		var clock := STEP
 		var last := busker.global_position
 		var ended_in_view := false
@@ -639,7 +641,11 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var through_tape := 0
 		var was_leaving := false
 		while clock < PATIENCE * 2.0 and not busker.is_finished:
-			if clock >= set_off and not way.is_empty():
+			if sent_off_at < 0.0 and not busker.is_finished and busker.way_left().size() >= 2:
+				# A copy: the packed array it answers is the departure's own, shared, and her walk drops its points.
+				way = busker.way_left().duplicate()
+				sent_off_at = clock
+			if sent_off_at >= 0.0 and clock >= sent_off_at + set_off and not way.is_empty():
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
@@ -662,7 +668,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 			was_leaving = was_leaving or busker.is_leaving
 			last = busker.global_position
 		t.check(was_leaving and busker.is_finished,
-				"setting off %.0fs after the touch down the way out: the busker walked out "
+				"setting off %.0fs after he is sent off down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
@@ -724,11 +730,12 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 
 ## Sends `person` off on a departure of their own, straight away from `her`: a copy of their row
 ## with a walking pace, since a busker has none.
-func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
+func _set_off_on_their_own(person: EventInstance, her: Vector2,
+		pace := ParkCordon.PARK_CLOSING_LEAVE_SPEED) -> void:
 	var walking: EventDef = person.def.duplicate()
 	walking.shape = person.def.shape
 	walking.solid_parts = person.def.solid_parts
-	walking.departs_at = ParkCordon.PARK_CLOSING_LEAVE_SPEED
+	walking.departs_at = pace
 	person.def = walking
 	person.player_at = her
 	person.leave_for_a_completed_task()
@@ -757,16 +764,30 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 	t.check(escort != null and cordon.line.has_point(escort.at),
 			"an escort is inside the park on his way to the busker (%.1fs)" % waited)
 	_city.events.retire(busker)
+	# Walking out at a tenth of his pace, so the tapers have the rest of the edge up and owe the gap
+	# its tape while he is still at the line; at his own pace he is out long before they are round.
+	escort.speed = ParkCordon.PARK_CLOSING_OFFICER_SPEED / 10.0
 	_tick(happenings, her[0], shows.is_valid())
-	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and cordon._still_to_come_out(),
+	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and not cordon.is_closed()
+			and not _any_taped(cordon.gap),
 			"with the busker gone, he turns back, and the gap waits for him")
 	var last := escort.at
 	var through_tape := 0
 	var inside_at_the_close := false
+	# The frames he is at the line or inside it while a taper has walked a stretch of the gap and
+	# owes its tape, which is when only he holds it back, and the frames in them it was up or the
+	# cordon closed.
+	var holding := 0
+	var taped_on_him := 0
 	while waited < PATIENCE * 2.0 and not cordon.is_closed():
 		var was_closed := cordon.is_closed()
 		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
+		if cordon.line.grow(ParkCordon.WALKER_REACH).has_point(escort.at) \
+				and _owes_the_gap(cordon):
+			holding += 1
+			if _any_taped(cordon.gap) or cordon.is_closed():
+				taped_on_him += 1
 		for stretch in cordon.stretches:
 			if stretch.taped and Geometry2D.segment_intersects_segment(last, escort.at, stretch.a,
 					stretch.b) != null:
@@ -774,9 +795,76 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 		if not was_closed and cordon.is_closed():
 			inside_at_the_close = cordon.line.has_point(escort.at)
 		last = escort.at
+	t.check(holding > 0 and taped_on_him == 0,
+			"the tape the gap is owed stays down while he is at the line or inside it "
+			+ "(%d frames, %d with it taped or closed)" % [holding, taped_on_him])
 	t.check(cordon.is_closed() and not inside_at_the_close,
 			"the gap closes only once he is out of it")
 	t.check(through_tape == 0, "and he never walks through tape (%d)" % through_tape)
+	_end(fixture)
+
+## Whether any of `stretches` is taped.
+static func _any_taped(stretches: Array) -> bool:
+	for stretch: ParkCordon.Stretch in stretches:
+		if stretch.taped:
+			return true
+	return false
+
+## Whether a taper has walked a stretch of the cordon's gap and has not taped it.
+static func _owes_the_gap(cordon: ParkCordon) -> bool:
+	for officer in cordon.officers:
+		if officer.job == ParkCordon.Officer.Job.TAPE and officer.taped_upto < officer.next:
+			var stretch := officer.stretches[officer.taped_upto]
+			if cordon.gap.has(stretch) and not stretch.taped:
+				return true
+	return false
+
+## **Someone already leaving on their own, with no escort, holds the last gap from across the
+## park.** They walk out at a tenth of the cordon's leaving pace, so the tapers have the rest of the
+## edge up and owe the gap its tape while they are still inside the line and farther from the
+## stretch than a body reaches (`ParkCordon.WALKER_REACH`): nothing else keeps it down then, no
+## escort's walk crosses it and no body is beside it. In those frames the gap stays untaped and the
+## cordon open, and they leave through it without crossing tape.
+func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> void:
+	var person: Array = [null]
+	var fixture := _at_the_swing(t, func() -> void:
+		person[0] = _busker_in_the_park()
+		_set_off_on_their_own(person[0], _swing_now, ParkCordon.PARK_CLOSING_LEAVE_SPEED / 10.0))
+	var happenings: ResistanceHappenings = fixture.happenings
+	var busker: EventInstance = person[0]
+	var her := [fixture.swing]
+	var shows := _camera_on(her)
+	var clock := 0.0
+	var holding := 0
+	var taped_on_them := 0
+	var through_tape := 0
+	var last := busker.global_position
+	var cordon: ParkCordon = null
+	while clock < PATIENCE * 2.0 and is_instance_valid(busker) and not busker.is_finished:
+		busker.player_at = her[0]
+		busker.step(STEP)
+		_tick(happenings, her[0], shows.is_valid())
+		cordon = happenings.cordon
+		clock += STEP
+		var now := busker.global_position
+		if cordon.line.grow(ParkCordon.WALKER_REACH).has_point(now) and _owes_the_gap(cordon):
+			var far := true
+			for stretch in cordon.gap:
+				far = far and Geometry2D.get_closest_point_to_segment(now, stretch.a,
+						stretch.b).distance_to(now) > ParkCordon.WALKER_REACH
+			if far:
+				holding += 1
+				if _any_taped(cordon.gap) or cordon.is_closed():
+					taped_on_them += 1
+		for stretch in cordon.stretches:
+			if stretch.taped and Geometry2D.segment_intersects_segment(last, now, stretch.a,
+					stretch.b) != null:
+				through_tape += 1
+		last = now
+	t.check(holding > 0 and taped_on_them == 0,
+			"the gap stays open while they are inside the line, away from it, and it is owed its "
+			+ "tape (%d frames, %d with it taped or closed)" % [holding, taped_on_them])
+	t.check(through_tape == 0, "and they never walk through tape (%d)" % through_tape)
 	_end(fixture)
 
 ## The park stays requisitioned the next morning, and the cordon's nodes and obstructed tiles go

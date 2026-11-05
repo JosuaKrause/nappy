@@ -32,7 +32,7 @@ const PATIENCE := 60.0
 ## How long after first seeing an officer she sets off walking in the walking check: less than
 ## `ParkCordon.PARK_CLOSING_WARNING`, which is the time the cordon leaves her to see and decide.
 const REACTION := 1.0
-## When she sets off down the way out behind a walked-out busker, and how far past its end, along
+## How long after the busker is sent off down the way out she sets off down it behind him, and how far past its end, along
 ## its last leg, she stops.
 const SET_OFF := 4.0
 const PAST_THE_END := 60.0
@@ -241,7 +241,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	return result
 
 ## A busker standing in the park at `place` (one of `PLACES`) as a fresh cordon starts, walked out
-## by his escort, with her walking the same way out from `SET_OFF` after the start and stopping
+## by his escort, with her walking the same way out from `SET_OFF` after he is sent off and stopping
 ## `PAST_THE_END` beyond its end, played until he is gone and the cordon has closed. Answers whether
 ## he was placed, whether he left the tape's line, the frames he spent back inside it after leaving
 ## it, the steps he took across tape that was up, the stretches taped with any part of him within
@@ -260,10 +260,11 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var her := [swing]
 	var shows := _camera_on(her)
 	_tick(city, cordon, her[0])
-	var way := PackedVector2Array(cordon._exit)
-	if way.size() >= 2:
-		var last_leg := (way[way.size() - 1] - way[way.size() - 2]).normalized()
-		way.append(way[way.size() - 1] + last_leg * PAST_THE_END)
+	# The way out is read off the busker once his escort has sent him down it
+	# (`EventInstance.way_left()`, which the escort reads too), so she sets off `SET_OFF` after he
+	# does, not after the start.
+	var way := PackedVector2Array()
+	var sent_off_at := -1.0
 	var clock := STEP
 	var last := busker.global_position
 	var left := false
@@ -273,7 +274,13 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var taped_at := {}
 	var counts := {"onto_bodies": 0, "stalled": 0}
 	while clock < PATIENCE * 2.0 and not (_gone(busker) and cordon.is_closed()):
-		if clock >= SET_OFF and not way.is_empty():
+		if sent_off_at < 0.0 and not _gone(busker) and busker.way_left().size() >= 2:
+			# A copy: the packed array it answers is the departure's own, shared, and her walk drops its points.
+			way = busker.way_left().duplicate()
+			var last_leg := (way[way.size() - 1] - way[way.size() - 2]).normalized()
+			way.append(way[way.size() - 1] + last_leg * PAST_THE_END)
+			sent_off_at = clock
+		if sent_off_at >= 0.0 and clock >= sent_off_at + SET_OFF and not way.is_empty():
 			her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 			if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 				way.remove_at(0)
