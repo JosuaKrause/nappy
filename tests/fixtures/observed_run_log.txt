@@ -81,6 +81,7 @@ day 16 Escape the city  run seed 4242  length 180.0s
    0.0  arc      block (2,9) commercial -> boarded_up (scheduled)
    0.0  arc      block (1,4) courtyard -> requisitioned (scheduled)
    0.0  arc      block (9,9) courtyard -> requisitioned (scheduled)
+   0.0  plan     the escape's bag drew 34 marbles for 24 rows
    0.0  plan     finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
    0.0  start    entered the city at (75,80), facing 180°
    0.0  home     escaped by the tunnel, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
