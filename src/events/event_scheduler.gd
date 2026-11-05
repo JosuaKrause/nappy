@@ -1587,8 +1587,9 @@ class WalkSiting extends RefCounted:
 	##
 	## `verdicts` is where its placements keep the verdicts of the candidates they judge
 	## (`EventScheduler.Verdicts`), handed in by whoever builds the siting. Every owner in the game
-	## hands each siting a store of its own: the siting drops the store's verdicts before every ask
-	## outside a look, so a store shared between sitings would keep nothing either could use.
+	## hands each siting a store of its own: verdicts are kept under a candidate's key and judged
+	## against one siting's plans and route tree, so a siting asked while another is in a look would
+	## read verdicts judged for the other's plans and place wrongly, not only lose a cache.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
 			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts) -> void:
 		_day = for_day

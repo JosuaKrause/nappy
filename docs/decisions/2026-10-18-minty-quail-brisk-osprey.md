@@ -23,8 +23,10 @@ carry, the ground recipe, the save) one `Sitting` that `main` parks across the r
 configuration `main`; the drawing state what it describes; the atlas library an instance the
 `Sitting` holds over a region table read once per process. The statics left (`rg -n '^\s*static var'
 src` lists them) are constants or pure memos built once and never written by a caller: the `Mover`
-filters and `Mover._shared`, `CityMap`'s tile tables, `EntityHalo._shared_material`, the event
-catalogue's tables and derived rows, `ResistanceSteps._all`, the empty bird list and open walls.
+filters and `Mover._shared`, `CityMap`'s tile tables, `EntityHalo._shared_material`, the baked
+atlas region table `AtlasTable._baked`, the event catalogue's tables and derived rows, the warning
+sizes `EventFootprints` reads off the baked pictures and their guard, `ResistanceSteps._all`, the
+empty bird list and open walls.
 
 **Choices, open to overturn.** A verdict store rather than a bare counter, since a counter alone
 cannot show that a kept verdict answers what judging every try answers without a test-only door; a

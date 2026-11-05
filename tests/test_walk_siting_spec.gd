@@ -84,8 +84,9 @@ func _test_the_siting_the_director_hands_out_carries_the_rule(t) -> void:
 ## route's), and the first two cannot be observed from outside; each must copy the rule onto what
 ## it builds, read off the source so a dropped copy fails here rather than siting on a day's rule.
 ## Each also hands what it builds a verdict store of its own (`EventScheduler.Verdicts.new()` in
-## the call), which no siting's answers show either: a store shared between sitings changes no
-## placement, only what the verdicts kept are worth, so it too is read off the source.
+## the call), which no siting's answers show either: a store shared between sitings would let one
+## asked during the other's look read verdicts judged for the other's plans and place wrongly, so
+## it too is read off the source.
 func _test_every_place_that_builds_a_siting_copies_the_rule(t) -> void:
 	var lines := FileAccess.get_file_as_string("res://src/events/events_ahead.gd").split("\n")
 	var builds := 0
