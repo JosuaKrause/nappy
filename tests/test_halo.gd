@@ -117,6 +117,27 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 	def.telegraph_time = 0.0
 	return def
 
+## A manager over open ground and a run of its own, handed in as the escape's building is handed its
+## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
+## its map is drawn in, a child of the manager. `_free_manager()` frees it with the run.
+func _manager(t) -> EventManager:
+	var run := RunState.new()
+	run.start_run(1)
+	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
+	var map := WorldMap.open_ground()
+	var manager := EventManager.new()
+	var holder := WorldContext.new()
+	manager.add_child(holder)
+	map.world = holder
+	manager.setup_world(map, run)
+	t.add_child(manager)
+	return manager
+
+func _free_manager(manager: EventManager) -> void:
+	var run := manager.world.run
+	manager.free()
+	run.free()
+
 func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at)
@@ -295,8 +316,7 @@ func _test_net_landed_sums_to_the_bars_rise_while_climbing(t) -> void:
 func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	var crowd := Crowd.new()
 	t.add_child(crowd)
 	var player := Node2D.new()
@@ -306,19 +326,11 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 	var halo := ExcitementHalo.new()
 	halo.setup(_sets(manager, crowd), player, baby)
 
-	var strong := EventInstance.new()
-	strong.atlas = _atlas
-	strong.setup(_def("strong_net", 40.0), Vector2.ZERO)
-	manager.add_child(strong)
-	manager.world.instances.append(strong)
+	var strong := manager.spawn_extra(_def("strong_net", 40.0), Vector2.ZERO)
 	strong.excitement.accumulate_landed(30.0)
 	var strong_rim := HaloRig.told(strong)
 
-	var weak := EventInstance.new()
-	weak.atlas = _atlas
-	weak.setup(_def("weak_net", 40.0), Vector2.ZERO)
-	manager.add_child(weak)
-	manager.world.instances.append(weak)
+	var weak := manager.spawn_extra(_def("weak_net", 40.0), Vector2.ZERO)
 	weak.excitement.accumulate_landed(10.0)
 	var weak_rim := HaloRig.told(weak)
 
@@ -339,7 +351,7 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 			"different colour from the net's")
 
 	halo.free()
-	manager.free()
+	_free_manager(manager)
 	crowd.free()
 	player.free()
 	baby.free()
@@ -536,8 +548,7 @@ func _test_select_sources_takes_a_mixed_candidate_set(t) -> void:
 func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	var crowd := Crowd.new()
 	t.add_child(crowd)
 	var player := Node2D.new()
@@ -546,20 +557,12 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 	var baby := DecayedBaby.new()
 	halo.setup(_sets(manager, crowd), player, baby)
 
-	var strong := EventInstance.new()
-	strong.atlas = _atlas
-	strong.setup(_def("strong_halo", 30.0), Vector2.ZERO)
-	manager.add_child(strong)
-	manager.world.instances.append(strong)
+	var strong := manager.spawn_extra(_def("strong_halo", 30.0), Vector2.ZERO)
 	var strong_rim := HaloRig.told(strong)
 	# Out of reach at her position (400px against a 150px outer radius), so it clears neither the
 	# floor nor `select_sources()`'s cap -- the case the old `in` scan and the new lookup both have
 	# to answer "no" to.
-	var weak := EventInstance.new()
-	weak.atlas = _atlas
-	weak.setup(_def("weak_halo", 20.0), Vector2(400.0, 0.0))
-	manager.add_child(weak)
-	manager.world.instances.append(weak)
+	var weak := manager.spawn_extra(_def("weak_halo", 20.0), Vector2(400.0, 0.0))
 
 	t.add_child(halo)
 	await _frames_until(t, clock, func() -> bool: return strong_rim.told > 0, 1.0)
@@ -570,10 +573,10 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 			"a source out of reach is told zero, so it never builds a rim at all -- the same answer " +
 			"the linear `in` scan gave before the picked set became a Dictionary lookup")
 
-	# `manager.free()` frees `strong` and `weak` as its own children, rather than freeing them
-	# directly and leaving `manager` to tick a dangling reference in its list next frame.
+	# Freeing the manager frees `strong` and `weak` with the world node it holds, rather than freeing
+	# them directly and leaving `manager` to tick a dangling reference in its list next frame.
 	halo.free()
-	manager.free()
+	_free_manager(manager)
 	crowd.free()
 	player.free()
 	baby.free()
@@ -924,8 +927,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	var player := Node2D.new()
 	t.add_child(player)
 	var baby := DecayedBaby.new()
@@ -933,11 +935,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 	halo.setup(_sets(manager), player, baby)
 	var count := 40
 	for i in count:
-		var instance := EventInstance.new()
-		instance.atlas = _atlas
-		instance.setup(_def("row_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
-		manager.add_child(instance)
-		manager.world.instances.append(instance)
+		manager.spawn_extra(_def("row_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
 	t.add_child(halo)
 
 	var ever_lit := {}
@@ -981,7 +979,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 			"a picked source waited only while the budget was full (%d waits with room)"
 			% waits_with_room)
 	halo.free()
-	manager.free()
+	_free_manager(manager)
 	probe.stop()
 	player.free()
 	baby.free()
@@ -1003,8 +1001,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	var player := Node2D.new()
 	t.add_child(player)
 	player.global_position = Vector2(-10000.0, 0.0)
@@ -1013,11 +1010,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	halo.setup(_sets(manager), player, baby)
 	var held: Array[EventInstance] = []
 	for i in EntityHalo.RIM_BUDGET:
-		var instance := EventInstance.new()
-		instance.atlas = _atlas
-		instance.setup(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
-		manager.add_child(instance)
-		manager.world.instances.append(instance)
+		var instance := manager.spawn_extra(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
 		(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		held.append(instance)
 	# Lit fully before the halo is in the tree, so each fade is a whole FADE_OUT_SECONDS.
@@ -1032,9 +1025,10 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	t.check(probe.held == EntityHalo.RIM_BUDGET,
 			"the budget is full of fading rims (%d held)" % probe.held)
 
-	# Taken out the way `EventStreaming.retire_finished()` takes an event out -- out of the list,
-	# then `take_out()`, which queues it for deletion -- here between the frame's physics step and
-	# the halo's pass, where nothing deletes it before the pass.
+	# Taken out the way the manager takes a retired event out (`EventManager.retire()` finishes it,
+	# `EventStreaming.retire_finished()` takes it out of the list and `take_out()`s it, which queues
+	# it for deletion) -- here between the frame's physics step and the halo's pass, where nothing
+	# deletes it before the pass.
 	var retired: EventInstance = held[0]
 	var retired_rim := retired.rim().get_instance_id()
 	var retired_id := retired.get_instance_id()
@@ -1045,13 +1039,9 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	retired.tree_exiting.connect(func() -> void:
 		held_as_the_body_left[0] = retired_rim_of.is_held()
 		probe.events.append(["body", retired_id]))
-	manager.world.instances.erase(retired)
-	retired.take_out()
-	var fresh := EventInstance.new()
-	fresh.atlas = _atlas
-	fresh.setup(_def("fresh", 20.0), Vector2(5000.0, 0.0))
-	manager.add_child(fresh)
-	manager.world.instances.append(fresh)
+	manager.retire(retired)
+	manager.streaming.retire_finished()
+	var fresh := manager.spawn_extra(_def("fresh", 20.0), Vector2(5000.0, 0.0))
 	player.global_position = fresh.global_position
 	await _frames_until(t, clock, func() -> bool: return probe.when("body", retired_id) >= 0, 1.0)
 	var fresh_rim := fresh.rim().get_instance_id() if fresh.rim() != null else 0
@@ -1066,7 +1056,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 			"and at most %d rims were held at any moment, within the budget of %d"
 			% [probe.most, EntityHalo.RIM_BUDGET])
 	halo.free()
-	manager.free()
+	_free_manager(manager)
 	probe.stop()
 	player.free()
 	baby.free()
@@ -1404,23 +1394,21 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var manager := EventManager.new()
-	t.add_child(manager)
 	var events := ChurnEvents.new()
 	t.add_child(events)
 	var player := Node2D.new()
 	t.add_child(player)
 	var baby := DecayedBaby.new()
 	var halo := ExcitementHalo.new()
-	var sets := _sets(manager)
-	sets.append_array(events.sets())
-	halo.setup(sets, player, baby)
-	var instance := EventInstance.new()
-	instance.atlas = _atlas
-	instance.setup(_def("dropped", 20.0), Vector2.ZERO)
-	manager.add_child(instance)
-	manager.world.instances.append(instance)
-	var rim := HaloRig.told(instance)
+	halo.setup(events.sets(), player, baby)
+	# The holder dropped is one of the suite's own bodies, kept alive by the test: the game takes
+	# no event out of its list without queueing its body for deletion (`EventInstance.take_out()`),
+	# and the case is a holder that stays after it leaves the candidates.
+	var instance := ChurnSource.new()
+	instance.strength = 20.0
+	events.add_child(instance)
+	events.list.append(instance)
+	var rim := instance.rim
 	var others: Array = []
 	for i in EntityHalo.RIM_BUDGET - 1:
 		var source := ChurnSource.new()
@@ -1443,7 +1431,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 	events.add_child(newcomer)
 	events.list.append(newcomer)
 	newcomer.strength = 30.0
-	manager.world.instances.erase(instance)
+	events.list.erase(instance)
 	await t.get_tree().process_frame
 	t.check(rim.is_held() and is_zero_approx(rim.strength),
 			"no longer a candidate, it is told zero and its rim starts to fade")
@@ -1468,9 +1456,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 			"and that took one fade: %.3f s" % took)
 	t.check(probe.given_back_unfaded == 0,
 			"the rim was given back only after its fade (%d cut short)" % probe.given_back_unfaded)
-	# `manager.free()` frees `instance` too: still its child, though no longer in its list.
 	halo.free()
-	manager.free()
 	events.free()
 	probe.stop()
 	player.free()

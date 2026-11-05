@@ -62,14 +62,22 @@ func _clear() -> void:
 func _manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(SEED)
+	var map := CityMap.new()
+	# The world the map is drawn in, as the city and the building hand theirs: the layer a
+	# spawned event is added to (`WorldMap.add_entity()`).
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	map.world = holder
 	var manager := EventManager.new()
-	manager.setup_world(CityMap.new(), run)
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
 	var run := manager.world.run
+	var holder := manager.world.map.world
 	manager.free()
+	holder.free()
 	run.free()
 
 ## A watch for day `DAY`.
@@ -348,8 +356,8 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
-	var post := _instance(t, "checkpoint_post", Vector2.ZERO)
-	manager.world.instances.append(post)
+	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2.ZERO)
+	post.set_process(false)
 	var hold_reach := post.def.detain_distance()
 	_run(watch, [post] as Array[EventInstance], Vector2(0.0, hold_reach + 40.0), 0.5)
 	t.check(_seen.size() == 1 and _influenced.is_empty(),
@@ -358,8 +366,7 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
 	_stand(watch, [post] as Array[EventInstance], held, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.size() == 1 and post.excitement.landed_ever == 0.0,
 			"checkpoint_post: her inside its hold is, with nothing landed (%d)" % _influenced.size())
-	manager.world.instances.clear()
-	post.free()
+	manager.clear()
 	_free_manager(manager)
 
 ## Three frames with her standing at `at` and the view about her.
@@ -417,19 +424,17 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
-	var mother := _instance(t, "chatting_mother", Vector2.ZERO)
-	var post := _instance(t, "checkpoint_post", Vector2(0.0, 500.0))
-	manager.world.instances.append(mother)
-	manager.world.instances.append(post)
+	var mother := manager.spawn_extra(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO)
+	mother.set_process(false)
+	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2(0.0, 500.0))
+	post.set_process(false)
 	mother.start_chat()
 	var at_post := Vector2(0.0, 500.0 + post.def.detain_distance() - 2.0)
 	var both: Array[EventInstance] = [mother, post]
 	_stand(_watch(), both, at_post, manager.checkpoints.hold_that_would_begin)
 	t.check(_influenced.is_empty(),
 			"inside a post's reach while another hold runs is no hold (%s)" % [_influenced])
-	manager.world.instances.clear()
-	mother.free()
-	post.free()
+	manager.clear()
 	_free_manager(manager)
 
 ## *(calm-pelican.)* A hut inspection sets her down within reach of a cyclist past its warning on
@@ -446,25 +451,15 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
 	manager.use_player(stroller)
-	var atlas := AtlasLibrary.new()
-	atlas.acquire(&"events")
 	var axis := Vector2.RIGHT
 	var centre := Vector2(4000.0, 4000.0)
-	var hut := EventInstance.new()
-	hut.setup(EventCatalogue.by_id("checkpoint_hut"), centre, PackedVector2Array(), axis)
-	hut.atlas = atlas
-	t.add_child(hut)
-	manager.world.instances.append(hut)
+	var hut := manager.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), centre)
 	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
 	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
-	var cyclist := EventInstance.new()
-	cyclist.setup(EventCatalogue.by_id("cyclist"), released)
-	cyclist.atlas = atlas
-	t.add_child(cyclist)
+	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
 	cyclist.set_process(false)
-	manager.world.instances.append(cyclist)
 	cyclist.resume(cyclist.def.telegraph_time + 0.1, 0.0, 0.0)
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
 	cyclist.held_by_hand = true
@@ -500,10 +495,8 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
 			and counted_when_struck[0].has(caught) and cyclist_seen_before_the_strike,
 			"and the catch was counted on that tick, without another watch frame (%s)"
 			% [counted_when_struck])
-	manager.world.instances.clear()
+	manager.clear()
 	manager.use_player(null)
-	hut.free()
-	cyclist.free()
 	stroller.free()
 	_free_manager(manager)
 
