@@ -618,8 +618,9 @@ jobs:
   # The timings this run measured, folded into the file it planned from and saved for the next
   # run's `plan`. Runs only when every shard passed: a failed, hung or cancelled shard did not
   # finish its list, and a failed check can end a suite early, so neither is a measurement worth
-  # keeping. A run that already found its own key (a re-run of the same commit) merges and checks
-  # as usual but does not save: the key exists, and a cache entry is never overwritten.
+  # keeping. A re-run of the same commit never overwrites an entry: if `plan` itself found the key
+  # the save is skipped, and if the key appeared after `plan` ran (a re-run reuses the first
+  # attempt's `plan` output) the save finds it reserved and only warns, which does not fail the job.
   # A cache has no retention setting: GitHub evicts an entry unused for 7 days, and the oldest
   # first past the repository's cache quota; this job adds no artifact.
   costs:
