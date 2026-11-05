@@ -81,8 +81,12 @@ Read the changed code in context at the PR's head, under the skills that govern 
 touches (the path table in `CLAUDE.md`). Look for:
 
 - a correctness bug, with a concrete input that shows it;
-- a test that cannot fail, or does not test what its name says. Where the PR claims a test fails
-  before the fix, check that claim, by reading or by running that one suite on the pre-fix code;
+- a test that cannot fail, or does not test what its name says, or holds nothing in one of the four
+  ways **verify**'s Testing policy names (an unreachable setup, a design decision read back, a check
+  that cannot fail, a duplicate; inbox #1097). `tools/check_test_only_members.py` covers the one a
+  script can see, a test reading a public member nothing else under `src/` reads, and fails CI on a
+  new one; the other three are the reviewer's to find. Where the PR claims a test fails before the
+  fix, check that claim, by reading or by running that one suite on the pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
   docs, names are content);
 - a design that breaks **orchestrating**'s "Code is designed by layer": a dependency pointing up a

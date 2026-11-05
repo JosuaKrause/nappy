@@ -410,6 +410,23 @@ internals where the outside behaviour is what matters, and those are examples, n
   names, which is a defect that has already shipped once.
 - **A test that is true by luck is worse than no test**: if it would pass with the code deleted,
   or passes only on the seed it was written against, it is not holding anything.
+- **A check that asserts back what the test just set holds nothing**: it sets a field, then reads
+  the field; it hands a fake a value, then reads the value off the fake. It can only be true, so
+  it cannot fail (inbox #1097).
+- **A test whose setup the game cannot reach holds nothing the player can meet** (inbox #1097). The
+  shape is a state only the test can create, such as a field set through a method that only that
+  test calls: the check passes on a situation that never happens in play, and the method is dead
+  weight kept alive by the test. The exception is input the game does not control, such as a corrupted
+  save on disk or a browser's answer, which can really happen and is worth testing. The fix is to
+  reach the state the way the game does, or to delete the test and the member with it.
+  `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
+  nothing else under `src/` reads; a member only its own defining file and the tests use is internal,
+  so it gets the underscore and its tests go through what the class does outward (inbox #1098).
+  `tools/test_only_members.txt` lists the ones that stand and only shrinks; the pull request that
+  fixes one deletes its line.
+- **A duplicate test is deleted** (inbox #1097): the same behavior already tested by another suite
+  is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
+  before writing a test, and if a suite holds it, extend that one.
 - **An identity is not the property.** Asserting a relationship that is *true* but is not the
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**
