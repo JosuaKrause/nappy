@@ -393,6 +393,34 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 	director.free()
 	_end_the_day(the_day)
 
+## A copy of `step` to give a deadline without changing the calendar's own row, every public
+## field of `ResistanceSteps.Step` written by name in the source (a field added to `Step` is
+## copied here by adding its line).
+static func _copy_of_step(step: ResistanceSteps.Step) -> ResistanceSteps.Step:
+	var copy := ResistanceSteps.Step.new()
+	copy.index = step.index
+	copy.title = step.title
+	copy.day = step.day
+	copy.is_pickup = step.is_pickup
+	copy.grants_progress = step.grants_progress
+	copy.placement = step.placement
+	copy.task_event_id = step.task_event_id
+	copy.target_kind = step.target_kind
+	copy.is_one_place = step.is_one_place
+	copy.deadline_fraction = step.deadline_fraction
+	copy.needs_goal = step.needs_goal
+	copy.brief = step.brief
+	copy.header = step.header
+	copy.applies_package_weight = step.applies_package_weight
+	copy.completes_at_inner_radius = step.completes_at_inner_radius
+	copy.is_a_guarded_band = step.is_a_guarded_band
+	copy.trap_row = step.trap_row
+	copy.trap_noun = step.trap_noun
+	copy.at_a_front_door = step.at_a_front_door
+	copy.lingers_after_handover = step.lingers_after_handover
+	copy.rigs_within = step.rigs_within
+	return copy
+
 ## M221, "a failed day leaves no chalk mark behind", on a mark whose next step is placed by
 ## `_begin_step()` running a second time in the same `_on_contact_completed()` call (day 9's door,
 ## which every task day shares). The player,
@@ -406,10 +434,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	# No task carries a deadline, so the director is handed a calendar whose door task does
 	# (`use_steps()`): the same step, copied, that must be done by half the day.
 	var mark := ResistanceSteps.by_index(7)
-	var timed := ResistanceSteps.Step.new()
-	for property in ResistanceSteps.by_index(8).get_property_list():
-		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			timed.set(property["name"], ResistanceSteps.by_index(8).get(property["name"]))
+	var timed := _copy_of_step(ResistanceSteps.by_index(8))
 	timed.deadline_fraction = 0.5
 	var calendar: Array[ResistanceSteps.Step] = [mark, timed]
 	var director := _director(t)

@@ -160,11 +160,24 @@ func _test_city_edge_also_holds_ground(t) -> void:
 
 # ------------------------------------------------------------------------ ui ---
 
+## The UI's pictures are the table's whole `ui/` family, swept by name rather than by each node's
+## private constant: a picture a node draws is baked under `ui/` on the `ui` page or it is a bug, and
+## a new one is covered without a line here. The mode button, whose symbol picks its picture, is also
+## asked for each symbol, since `icon` is what it hands to the engine.
 func _test_every_ui_region_is_baked_on_its_group(t) -> void:
-	var names: Array = [ModeButton._RESTART_ICON, ModeButton._CONTINUE_ICON,
-			ModeButton._JOYSTICK_ICON, ModeButton._TAP_ICON, TouchControls._PAUSE_ICON,
-			SaveIndicator._ICON]
+	var names: Array = []
+	for name in AtlasTable.baked().region_names():
+		if String(name).begins_with("ui/"):
+			names.append(name)
 	_check_regions(t, names, &"ui", "the UI")
+	var atlas := AtlasLibrary.new()
+	for symbol in ModeButton.Symbol.values():
+		var button := ModeButton.new()
+		button.atlas = atlas
+		button.symbol = symbol
+		t.add_child(button)
+		t.check(button.icon != null, "the mode button's symbol %d has a picture from the page" % symbol)
+		button.free()
 
 ## `ModeButton`, `TouchControls` and `SaveIndicator` all acquire `ui` — the whole run's own group,
 ## including the title screen where no city exists — from three different files.

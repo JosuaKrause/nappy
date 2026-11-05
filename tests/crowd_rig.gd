@@ -1519,9 +1519,10 @@ func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 ## hut tie going to the later hut, moves no hash the cost probe walks, so they are checked here.
 func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	var crowd := _city.crowd
-	var bucket: float = Crowd._LINE_BUCKET
-	t.check(bucket == float(4 * Tuning.TILE_SIZE),
-			"a bucket is four tiles wide, which the hut test below straddles in whole tiles")
+	# The crowd's line lookup hashes in 128px buckets, four tiles wide. That width is the crowd's own
+	# (private) business, so the test places things by the corridor geometry it knows: a multiple of
+	# four tiles is where the lookup's edge falls, and the placements below straddle it in whole tiles.
+	var bucket := float(4 * Tuning.TILE_SIZE)
 	# **A gate across a bucket edge from a car's line still holds the car** (`Crowd._stop_for_gates()`
 	# looks at the gates on its own line through `_near_a_line()`): on both axes and in both directions,
 	# so a column and a row are each asked from both sides of an edge, with a gate that stands just past

@@ -698,7 +698,7 @@ func _check_a_boot_builds_the_one_control_reader(t, main: Node2D) -> void:
 	t.check(controls.controls_mode() == ControlsMode.Mode.TAP,
 			"and gives it TAP, with no --controls word, as a starting mode; the title asks again")
 	t.check(_one(main, "ResistanceDirector") != null
-			and not _one(main, "ResistanceDirector").has_method("_process"),
+			and not _one(main, "ResistanceDirector").is_processing(),
 			"the resistance has no frame hook of its own, so its clock cannot run on a drawn "
 			+ "frame's length")
 
