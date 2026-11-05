@@ -103,3 +103,23 @@
 3. **Read as:** (the assistant's interpretation, not the player's words)
 
    The player agreed to the cache-saving job being a warning only, not required by the test gate (a failed cache write does not fail the PR). The other two choices (save only when every shard succeeded; no artifact) stay the builder's, open to overturn.
+
+4. **The player's words.**
+
+   > they were the points that immediately followed the "averaging" bullet point
+
+5. **Read as:** (the assistant's interpretation, not the player's words)
+
+   In #1068's context the choices after the blend were, in order: no cache save unless every shard succeeded, then the cache-saving job not required by the test gate (a warning only). Read as: the player agreed to both of those as well; only "no artifact" stays the builder's, open to overturn.
+
+6. **The player's words.**
+
+   > you can find the exact wording in the transcript
+
+7. **Context** (the assistant's):
+
+   The last session's message to the player (session df027914, 2026-11-04) listed the builder's choices on #1064 in this order: "**Blending:** each new timing is averaged half and half with the old one, so one slow runner moves a row only halfway." / "**Not a failure:** the cache-saving job doesn't fail the PR when it breaks. It prints a warning instead, since a failed cache write isn't a test failure." / "**No artifact:** nothing is uploaded, so there's no retention to set." / "**One leftover warning:** re-running a job tries to save a key that already exists. That prints a warning and nothing fails." Saving only when every shard passed was in that message as part of what was built "as we agreed", not as one of the builder's choices.
+
+8. **Read as:** (the assistant's interpretation, not the player's words)
+
+   Corrects the reading above: the point that immediately followed "averaging" is "Not a failure": a failed cache write prints a warning and does not fail the PR. The player agreed to the blend and to that. "No artifact" and the leftover warning on a re-run stay the builder's, open to overturn.
