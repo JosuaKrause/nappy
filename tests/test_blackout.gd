@@ -13,37 +13,46 @@ const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
+## The city and its run the test now running stands in: `_begin()` builds both afresh at the top of
+## every test and `_end()` frees them at its bottom, so no test reads what an earlier one left.
 var _run: RunState
 var _city: City
 ## How many car samples the last `_spine_traffic()` took.
 var _sampled_cars := 0
 
 func run(t) -> void:
-	# The run the cities stand in is this suite's own, handed to each as `City.run`.
-	_run = RunState.new()
-	_run.start_run(SEED)
+	await _test_nothing_goes_dark_without_the_sabotage(t)
+	await _test_nothing_goes_dark_beside_the_station(t)
+	await _test_everything_goes_dark_at_once(t)
+	await _test_it_stays_dark_walking_back(t)
+	await _test_a_retry_gives_the_power_back(t)
+	await _test_the_station_hall_is_lit_only_on_the_last_night(t)
+	await _test_a_dark_junction_is_negotiated(t)
+	await _test_the_dark_spine_is_crossed_on_the_horn(t)
+	await _test_the_dark_spine_keeps_moving(t)
+	await _test_the_escape_is_dark_from_its_first_frame(t)
+	await _test_the_building_is_dark_too(t)
+
+## A city on the last day, over a run of its own (held by the city, so `_end()` frees both), with
+## the sabotage not yet done.
+func _begin(t) -> void:
+	_city = RunCity.with_own_run(CITY_SCENE, SEED)
+	_run = _city.run
 	_run.resistance.sabotage_done = false
 	_run.facts.escape_section = DaySpec.Section.NONE
-	_city = CITY_SCENE.instantiate()
-	_city.run = _run
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_start_the_last_day()
 
-	_test_nothing_goes_dark_without_the_sabotage(t)
-	_test_nothing_goes_dark_beside_the_station(t)
-	await _test_everything_goes_dark_at_once(t)
-	_test_it_stays_dark_walking_back(t)
-	_test_a_retry_gives_the_power_back(t)
-	await _test_the_station_hall_is_lit_only_on_the_last_night(t)
-	_test_a_dark_junction_is_negotiated(t)
-	_test_the_dark_spine_is_crossed_on_the_horn(t)
-	_test_the_dark_spine_keeps_moving(t)
+func _end() -> void:
 	_city.free()
+	_city = null
+	_run = null
 
-	_test_the_escape_is_dark_from_its_first_frame(t)
-	_test_the_building_is_dark_too(t)
-	_run.free()
+## The city after the sabotage is done and she has walked far enough south of the station.
+func _go_dark() -> void:
+	_run.resistance.sabotage_done = true
+	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
 
 func _rng(label: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -90,20 +99,24 @@ func _spine_junction() -> Vector2i:
 # ---------------------------------------------------------------------- tests ---
 
 func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
-	_run.resistance.sabotage_done = false
+	_begin(t)
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "far from the station with no sabotage, the city is lit")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the spine's lights are working")
+	_end()
 
 ## The station must be off screen before it goes, so the moment is the city going dark round her.
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
+	_begin(t)
 	_run.resistance.sabotage_done = true
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(not _city.blackout.is_dark, "at the door she has just touched, nothing is off yet")
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
 	t.check(not _city.blackout.is_dark, "nor just short of the distance")
+	_end()
 
 func _test_everything_goes_dark_at_once(t) -> void:
+	_begin(t)
 	t.check(_mast_plans().size() > 0, "day %d carries masts to stop (%d)"
 			% [Tuning.RUN_LENGTH_DAYS, _mast_plans().size()])
 	var lit_windows := 0
@@ -127,8 +140,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	t.check(lit_head.get("picture") == TrafficLight.HEAD and lit_head.get("lamps", []).size() == 1,
 			"a lit signal head shows its face with one lamp on it (%s)" % [lit_head])
 
-	_run.resistance.sabotage_done = true
-	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
+	_go_dark()
 
 	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
 	var still_lit := 0
@@ -151,6 +163,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 			"a signal head is drawn again with no lamp at all (%s)" % [dark_head])
 	light.free()
 	EventBus.city_went_quiet.disconnect(handler)
+	_end()
 
 ## How many of a building's windows are drawn showing a light: the lit variants of the window
 ## textures `Building.window_texture()` hands the drawing for each wall cell.
@@ -163,11 +176,17 @@ func _lit_windows(building: Building) -> int:
 	return count
 
 func _test_it_stays_dark_walking_back(t) -> void:
+	_begin(t)
+	_go_dark()
 	_city.blackout.update(_city.map.power_station_door_position())
 	t.check(_city.blackout.is_dark, "walking back to the door does not put the lights on")
+	_end()
 
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
 func _test_a_retry_gives_the_power_back(t) -> void:
+	_begin(t)
+	_go_dark()
+	t.check(_city.blackout.is_dark, "the power was off before the retry")
 	_run.resistance.sabotage_done = false
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
@@ -176,14 +195,17 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 	for building in _buildings():
 		lit_windows += _lit_windows(building)
 	t.check(lit_windows > 0, "and the same windows are lit again (%d)" % lit_windows)
+	_end()
 
 ## The hall is dimly lit on the one night it is seen to go out, and drawn as approved on every other.
 ## A station hall dressed as the city dresses its own, handed a drawer that records its front, as the
 ## city hands it the real one; what is checked is the clerestory band the front was drawn with.
 func _test_the_station_hall_is_lit_only_on_the_last_night(t) -> void:
+	_begin(t)
 	var station := _station_building()
 	t.check(station != null, "the city has its station building")
 	if station == null:
+		_end()
 		return
 	var hall := Building.new()
 	var front := RecordingFrontDrawer.new()
@@ -222,6 +244,7 @@ func _test_the_station_hall_is_lit_only_on_the_last_night(t) -> void:
 	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
 			"on any other day the hall is unlit, as it always was (%s)" % [band])
 	hall.free()
+	_end()
 
 ## The pictures the hall's clerestory band shows now, read off what its front was last drawn with.
 ## Empty when the front has not been drawn since `front` was cleared.
@@ -236,6 +259,7 @@ func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
 ## nobody crossing is let through on the spine exactly as on a side street, rather than held
 ## at a red that no longer shows.
 func _test_a_dark_junction_is_negotiated(t) -> void:
+	_begin(t)
 	var signals := _city.signals
 	var junction := _spine_junction()
 	var reds := 0
@@ -249,7 +273,7 @@ func _test_a_dark_junction_is_negotiated(t) -> void:
 	signals.powered = false
 	t.check(not signals.is_signalled(junction),
 			"a dark one is left to the crowd's own give-way, the same as a side street's")
-	signals.powered = true
+	_end()
 
 ## The contract a dark crossing of the spine keeps is the side street's: the painted carriageway
 ## and the horn, since the spine's traffic does not give way at its zebras lit or dark.
@@ -263,6 +287,7 @@ func _test_the_dark_spine_is_crossed_on_the_horn(t) -> void:
 ## lit spine on the same day rather than as a speed, since what is being asked is that the dark one
 ## is no car park by comparison.
 func _test_the_dark_spine_keeps_moving(t) -> void:
+	_begin(t)
 	var lit := _spine_traffic(true)
 	var lit_samples := _sampled_cars
 	var dark := _spine_traffic(false)
@@ -276,7 +301,7 @@ func _test_the_dark_spine_keeps_moving(t) -> void:
 			% [dark.x, lit.x])
 	t.check(dark.y < 0.5, "and most of it is moving at any instant (%.0f%% stopped)"
 			% (dark.y * 100.0))
-	_city.signals.powered = true
+	_end()
 
 ## Mean speed and stopped share of the cars on the spine, sampled over forty seconds of a real
 ## crowd step, with the field on the spine so the cars there are the ones being simulated.
@@ -307,9 +332,9 @@ func _spine_traffic(powered: bool) -> Vector2:
 ## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
 ## dark before its first frame.
 func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
-	_run.resistance.sabotage_done = true
-	var city: City = CITY_SCENE.instantiate()
-	city.run = _run
+	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	city.run.resistance.sabotage_done = true
+	city.run.facts.escape_section = DaySpec.Section.NONE
 	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
