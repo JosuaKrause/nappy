@@ -878,8 +878,8 @@ ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_c
 `city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,
 `controls_chosen`, `run_mode_chosen` and `went_back_to_a_checkpoint` — decides nothing and writes nothing back. Sends only on a released web build
-with `?debug=1` unasked and `window.goatcounter.count` actually present — `GoatCounterOutbox.gate_allows()` is the pure gate, and
-`tests/test_visit_counter.gd` drives its truth table directly and the event names through a bus
+with `?debug=1` unasked and `window.goatcounter.count` actually present — `GoatCounterOutbox.may_ever_send()` and `send()`'s `present` are the gate, and
+`tests/test_visit_counter.gd` drives its truth table through them and the event names through a bus
 the counter is handed with `listen(bus)`, and what reaches the page through the outbox it is handed
 with `send_through(outbox)`.
 

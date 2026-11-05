@@ -76,21 +76,27 @@ func run(t) -> void:
 	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
 
-## `GoatCounterOutbox.gate_allows()` — on the web, released, unasked-for and with a live
-## `window.goatcounter.count` are all four required; missing any one of them refuses. The gate
-## reads the platform, which a test cannot fake, so its truth table is the outbox's own.
+## The gate's truth table: `may_ever_send()` is the three inputs that never change (on the web, a
+## release build, `?debug=1` unasked); the fourth, `window.goatcounter.count` being present, is
+## `send()`'s `present`, which counts at once when true and queues when false. All four are
+## required; missing any one of them sends nothing.
 func _test_should_send_truth_table(t) -> void:
-	t.check(GoatCounterOutbox.gate_allows(true, false, false, true),
-		"web, a release build, no ?debug=1, and goatcounter present sends")
-	t.check(not GoatCounterOutbox.gate_allows(false, false, false, true),
+	var scripts: Array[String] = []
+	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
+	t.check(GoatCounterOutbox.may_ever_send(true, false, false),
+		"web, a release build and no ?debug=1 may send")
+	outbox.send("probe", true)
+	t.check(scripts.size() == 1, "and with goatcounter present it counts (%s)" % [scripts])
+	t.check(not GoatCounterOutbox.may_ever_send(false, false, false),
 		"off the web, nothing is sent no matter what else is true")
-	t.check(not GoatCounterOutbox.gate_allows(true, true, false, true),
+	t.check(not GoatCounterOutbox.may_ever_send(true, true, false),
 		"a debug build sends nothing, on the web or off it")
-	t.check(not GoatCounterOutbox.gate_allows(true, false, true, true),
+	t.check(not GoatCounterOutbox.may_ever_send(true, false, true),
 		"?debug=1 (RunConfig.readout_requested) sends nothing even on a release web build")
-	t.check(not GoatCounterOutbox.gate_allows(true, false, false, false),
-		"a missing or blocked window.goatcounter sends nothing")
-	t.check(not GoatCounterOutbox.gate_allows(false, true, true, false),
+	scripts.clear()
+	outbox.send("early", false)
+	t.check(scripts.is_empty(), "a missing or blocked window.goatcounter sends nothing")
+	t.check(not GoatCounterOutbox.may_ever_send(false, true, true),
 		"every reason to refuse at once still refuses")
 
 ## A day-scoped name is `nappy-day-<day>-<suffix>`, joined the way PLAYTEST-132's own example does.
