@@ -29,14 +29,15 @@ what was tried and rejected, or what a number used to be, that is the records un
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
 ([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
-**Where to pick up is read from the live state, not from a checked-in document.** Fetch
-(`git fetch --prune`), then `gh pr list` for the open pull requests, `tools/agent-status.sh` for
-the agent worktrees and their briefs, `tools/queue.sh` for the queue's order
-([docs/TODO.md](docs/TODO.md) says how an entry's band sets it), and
-`uv run python tools/inbox.py list` for the player's inbox, the notes on GitHub Issues not yet
-filed (**inbox**); the items under `docs/review/` are what waits on a person. A local, git-ignored
-`.claude/restart-prompt.md`, when there is one, is the last session's note to the next
-(**session-cleanup**).
+**Where to pick up is read from the live state, not from a checked-in document.** The
+orchestrating session first reads the local, git-ignored `.claude/restart-prompt.md` when there is
+one (frosty-owl #1062), whole and top to bottom in the fixed layout **session-cleanup** gives it
+(frosty-owl #1065); the live state wins where the two differ. Then fetch (`git fetch --prune`), then
+`gh pr list` for the open pull requests, `tools/agent-status.sh` for the agent worktrees and their
+briefs, `tools/queue.sh` for the queue's order ([docs/TODO.md](docs/TODO.md) says how an entry's
+band sets it), and `uv run python tools/inbox.py list` for the player's inbox, the notes on GitHub
+Issues not yet filed (**inbox**); the items under `docs/review/` are what waits on a person. The
+restart prompt is the last session's note to the next (**session-cleanup**).
 
 ---
 
