@@ -168,7 +168,11 @@ below. `tools/decisions.sh handoff` has the reasons.
 Every session handover ends with a restart prompt the player can use to start the next session with
 a genuinely fresh context. **The prompt goes into `.claude/restart-prompt.md`, a local file that git
 ignores, and never into the chat**: copying long text out of the CLI corrupts it (woolly-finch 31).
-Each handover overwrites the file, and the report in the chat names its path. Do not require the
+Each handover overwrites the file, and the report in the chat names its path. **The file opens with
+the current state** (the open threads and the next action), rewritten at each checkpoint, and an
+append log, if kept, sits below it: the next orchestrating session reads the whole file first
+(**CLAUDE.md**), and a top that still describes finished work reads as work in flight (frosty-owl
+#1062). Do not require the
 next session to have read this conversation or to resume an old agent transcript. The prompt tells
 it to fetch and inspect live PR state (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run
 python tools/inbox.py list`), then read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and
