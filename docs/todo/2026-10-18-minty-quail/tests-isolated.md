@@ -20,8 +20,8 @@ are fixed (the isolated half). The flaky half: a repeat mode and a shuffled orde
 in the runner so that an order-dependent or timing-dependent check shows itself without two suites
 happening to meet on `main`; three green full runs on the head; and making deterministic every check
 whose result changes between runs. The suites that boot `main` declare `t.gives_back_observers()`
-for the observers' count of a run; giving each its own teardown, once `hidden-statics.md` puts the
-state in an owner a suite can hold, removes the declaration.
+for the observers' count of a run; giving each its own teardown, now that an owner a suite can hold keeps
+that state rather than a static, removes the declaration.
 
 **Tests touch nothing real.** A test overwrote the player's desktop save, and asked whether tests
 should be made unable to touch it at all, by a guard in the save that refuses the real path while
