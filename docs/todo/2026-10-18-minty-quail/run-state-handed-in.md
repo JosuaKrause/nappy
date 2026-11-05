@@ -5,8 +5,8 @@
   (`_take_the_run()`) and hands it to every reader it builds (record minty-quail-22); every suite,
   helper and probe makes a fresh `RunState` and hands it in, and the `GameState` autoload is gone,
   so the test runner resets no global run and its shared-state check skips no run field. What is
-  left, *proposed, not asked for* under the entry's rule that no legacy shape is kept
-  (minty-dolphin #852): `RunState` (`src/autoload/game_state.gd`) is a `Node` the sitting holds as its child,
+  left stays queued, proposed under the entry's rule that no legacy shape is kept
+  (minty-dolphin #852) and kept queued with the player's agreement (frosty-owl #1060): `RunState` (`src/autoload/game_state.gd`) is a `Node` the sitting holds as its child,
   where nothing needs a node; a held restart starts a fresh run in the same object
   (`start_run()`) rather than handing the sitting a new one; and the file is still under
   `src/autoload/`, named for the autoload it no longer is.
