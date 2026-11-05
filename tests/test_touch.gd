@@ -810,6 +810,10 @@ func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> voi
 	t.check(is_equal_approx(TouchControls.TAP_STOP_RADIUS * 2.0, TouchControls.DEAD_ZONE_RADIUS),
 			"tap mode's stop circle covers the dead zone on screen at the camera's zoom of 2, "
 			+ "nothing bigger (playtest 34 finding 5): 8 world px, 16 on screen")
+	# **A named exception to the private-member rule** (minty-quail, tests through public seams): the
+	# knob is a `draw_circle()` straight onto the control, with no drawer handed in to record it and no
+	# pixels to read headless (the dummy renderer draws none), and its two numbers have no reader but
+	# that draw, so the behaviour route cannot hold "the running knob stays inside the ring".
 	t.check(TouchControls._FOCUS_KNOB_OFFSET + TouchControls._FOCUS_KNOB_RADIUS * 1.3
 			< TouchControls.RING_RADIUS, "the walking knob, running, stays inside the ring")
 

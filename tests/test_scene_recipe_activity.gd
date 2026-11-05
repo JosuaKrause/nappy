@@ -100,23 +100,30 @@ func run_of(main: Node) -> RunState:
 	if not sitting:
 		sitting = get_tree().root.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	return sitting.run
+## The picture each public fixture kind stands as on the roof: the texture keys `Building` names.
+const ROOF_TEXTURE_OF_KIND := {
+	"VENT": Building.VENT_HOUSING, "HVAC_A": Building.HVAC_A, "HVAC_B": Building.HVAC_B,
+	"DUCT_STRAIGHT": Building.DUCT_RUN, "DUCT_CORNER": Building.DUCT_RUN,
+	"SKYLIGHT_A": Building.SKYLIGHT_A, "SKYLIGHT_B": Building.SKYLIGHT_B,
+	"VENT_STACK": Building.VENT_STACK, "WATER_TANK": Building.WATER_TANK,
+	"SERVICE_BULKHEAD": Building.SERVICE_BULKHEAD, "EXHAUST_FAN": Building.EXHAUST_FAN,
+	"PIPE_MANIFOLD": Building.PIPE_MANIFOLD,
+}
+## Whether the roof the building draws from (`roof_layout()`) stands the authored fixtures: one
+## picture per cell, a duct straight taking its cell and the one east of it.
 func roof_matches(building: Building, fixtures: Array) -> bool:
-	if building.recipe_roof_furniture == null:
-		return false
 	var expected := {}
 	for fixture: Dictionary in fixtures:
 		var cell := Vector2i(fixture.cell[0], fixture.cell[1])
 		var kind := str(fixture.kind).to_upper()
-		if kind in ["DUCT_STRAIGHT", "DUCT_CORNER"]:
-			expected[cell] = Building._Furniture.DUCT_RUN
-			if kind == "DUCT_STRAIGHT":
-				expected[cell + Vector2i.RIGHT] = Building._Furniture.DUCT_RUN
-		else:
-			expected[cell] = Building._Furniture[kind]
-	if expected.size() != building.recipe_roof_furniture.size():
+		expected[cell] = ROOF_TEXTURE_OF_KIND.get(kind, &"")
+		if kind == "DUCT_STRAIGHT":
+			expected[cell + Vector2i.RIGHT] = Building.DUCT_RUN
+	var layout := building.roof_layout()
+	if layout.is_empty() or expected.size() != layout.size():
 		return false
-	for entry: Dictionary in building.recipe_roof_furniture:
-		if expected.get(entry.cell, -1) != entry.kind:
+	for entry: Dictionary in layout:
+		if expected.get(entry.cell, &"") != entry.texture:
 			return false
 	return true
 func fail(message: String) -> void:
