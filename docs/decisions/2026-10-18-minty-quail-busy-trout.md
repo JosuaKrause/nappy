@@ -10,10 +10,12 @@ check that what it guarded is guarded elsewhere or cannot change an answer:
 
 - the generator's even-offset test: its only caller, the alley rectangle, asks for 2 to 4, and the
   alley-width test fails on every seed when the offset is made odd;
-- the grid's cell-flooring test: with the cell made to truncate, every other grid check and the ten
-  suites that use the grid still pass, and a flood with blocked tiles at -1 agrees with one without
-  them, so a wrong cell changes only which cells a query dirties, never its answer; the grid's doc
-  above `_cell_of_tile` now says so;
+- the grid's cell-flooring test: flooring and truncating differ only at negative tiles, which lie
+  outside the map, and there truncating only adds a dirty cell, which changes what a query costs
+  and never its answer; with the cell made to truncate, every other grid check and the suites that
+  use the grid still pass, and a flood with blocked tiles at -1 agrees with one without them. The
+  grid's doc above `_cell_of_tile` says so, and that a cell leaving a blocked tile's own cell out of
+  the dirty set would ignore the block;
 - the route tree's cached-against-uncached growth test: the memo is invisible from outside, and
   growth's result is checked by the suite's walk, determinism and existing-streets tests, all on
   the cached path; no test pins cached growth equal to uncached any more.
