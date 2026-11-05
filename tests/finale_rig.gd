@@ -1411,7 +1411,8 @@ static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler
 
 ## The marbles a plan drew, as the plan reports them to the run log: `build_day()` is handed a
 ## trace that keeps every line, and the bag path notes `the escape's bag drew N marbles for M rows`.
-## `-1` when no such line was written.
+## `-1` when no such line was written. The note's wording is the contract between the bag path and
+## this reader: a change to one is a change to the other.
 static func _marbles_drawn_in(lines: Array[String]) -> int:
 	for line in lines:
 		if line.begins_with("plan the escape's bag drew "):
