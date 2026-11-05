@@ -17,10 +17,11 @@ or monitor are merging and are covered. The per-session rule is overturned for t
 session only, by the player. **committing**, **orchestrating**, **session-cleanup**,
 **merging-main**, **pr-review** and the comment in the write guard hook say the same.
 
-**What still holds.** Every other session (an implementation or review agent, a Codex session)
-merges nothing without the player's word in that session. A release still needs its own explicit
-go-ahead in the session, and the restart prompt still never records one (polite-marten). The
-write guard still denies a direct merge command, since a merge goes through a wrapped identity.
+**What still holds.** Any other session (an implementation agent, a Codex session) merges only a
+PR the orchestrating session hands it, under the standing permission (inbox #1063), or one the
+player authorizes in that session; a review agent never merges. A release still needs its own
+explicit go-ahead in the session, and the restart prompt still never records one (polite-marten).
+The write guard still denies a direct merge command, since a merge goes through a wrapped identity.
 
 **Open to overturn:** whether Claude Code's auto-mode classifier lets the merge command through on
 the strength of `CLAUDE.md` alone; the repository cannot change that.
