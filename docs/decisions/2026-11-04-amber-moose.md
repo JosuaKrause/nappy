@@ -1,4 +1,4 @@
-# amber-moose — The orchestrating session holds a standing permission to merge · 2026-11-04 · not from an entry
+# amber-moose — The orchestrator merges on a standing permission · 2026-11-04 · not from an entry
 
 The player asked for "a standing permission to merge PRs when you're the orchestrator", because
 "otherwise I have to give permission manually for every new orchestrator session" and with it they
@@ -13,9 +13,9 @@ had already given the one before.
 **What it is now.** The orchestrating Claude Code session holds the player's standing permission to
 merge, in `CLAUDE.md`, once **committing**'s merge gates hold: a ready review against the head or a
 delta review of what came after, and green CI. Enabling auto-merge and handing a merge to an agent
-or monitor are merging and are covered. The per-session rule is overturned for that session only,
-by the player. **committing**, **orchestrating**, **session-cleanup**, **merging-main**,
-**pr-review** and the comment in the write guard hook say the same.
+or monitor are merging and are covered. The per-session rule is overturned for the orchestrating
+session only, by the player. **committing**, **orchestrating**, **session-cleanup**,
+**merging-main**, **pr-review** and the comment in the write guard hook say the same.
 
 **What still holds.** Every other session (an implementation or review agent, a Codex session)
 merges nothing without the player's word in that session. A release still needs its own explicit

@@ -129,10 +129,12 @@ which is the tree a fresh clone receives.
 **The orchestrating Claude Code session holds the player's standing permission to merge a PR**
 (`CLAUDE.md`, inbox #1063), once the gates below hold. Merging includes enabling auto-merge,
 merging by hand, and asking an agent or monitor to merge. Every other session (an implementation
-or review agent, a Codex session) merges nothing without the player's word in that session, and
-a permission given in another session does not carry over to it. Finishing implementation,
-opening a PR and green CI do not by themselves make a PR mergeable. Leave the PR open and report
-its link when the session has no permission to merge it.
+agent, a Codex session) merges only a PR the orchestrating session hands it, an agent or monitor
+running its merge (`tools/land-prs.sh` for one) under the orchestrating session's standing
+permission (inbox #1063), or one the player authorizes in that session; a permission given in
+another session does not carry over to it. A review agent never merges (**pr-review**).
+Finishing implementation, opening a PR and green CI do not by themselves make a PR mergeable.
+Leave the PR open and report its link when the session has no permission to merge it.
 
 **A PR merges only after its review**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). A review under
@@ -203,8 +205,8 @@ patch between them, and a major tag is treated the same way. `tools/release.sh`'
 the same notes before anything is tagged.
 
 **Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
-current session**; the standing merge permission is not release permission. Completed work may be pushed
-without asking, since pushing `main` publishes nothing.
+current session**; the standing merge permission is not release permission. Completed work may be
+pushed without asking, since pushing `main` publishes nothing.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag
 and prints what it would do. It acts only when given a second literal `push` argument, and it
