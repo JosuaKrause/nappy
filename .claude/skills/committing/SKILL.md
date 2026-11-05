@@ -173,9 +173,7 @@ are green and its approval is in, and nothing needs to be held open for that.
 and reading its result cost no tokens** (inbox #1072 in gentle-walrus). The player said to check
 back later that it went through and that a timer is enough (inbox #1068 in gentle-walrus); then
 that a fixed timer was overly safe, and to estimate better, undershoot a little and poll the rest
-with a script, not an agent (inbox #1070 in gentle-walrus). That overturns "you can just set a
-timer, though, no polling needed" for the tail after the estimate only; "no polling monitors just
-to trigger the merge" stands. The script meets the rule now: right after turning auto-merge on, run
+with a script, not an agent (inbox #1070 in gentle-walrus). That overturns the player's earlier word that a timer needs no polling (inbox #1068 in gentle-walrus) for the tail after the estimate only; the player's word that no polling monitor is wanted just to trigger the merge (inbox #1068 in gentle-walrus) stands. The script meets the rule now: right after turning auto-merge on, run
 `tools/await-merge.sh <the PRs>` with the Bash tool's `run_in_background`, which re-invokes the
 session when it exits. It estimates when the PR's CI ends from the unfinished jobs of its latest
 run and how long the same jobs took in recent green runs on `main`, sleeps until then, and polls

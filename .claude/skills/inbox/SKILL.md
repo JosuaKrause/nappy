@@ -98,8 +98,8 @@ in the order given:
 
 **When the words answer a message of the agent's, the context block carries the exact text of what
 was answered** (inbox #1074 in gentle-walrus): the list or the options as shown, in their order and
-numbering, not a summary of it, since the player's answer may point at its order or wording ("the
-points that came right after the first one", "2, 3 and 4").
+numbering, not a summary of it, since the player's answer may point at its order or wording (invented examples: "the ones right
+after the first", "2, 3 and 4").
 **And when it is not certain what the player's words refer to, the agent asks before recording any
 reading**, not a guess, even one marked as a reading (inbox #1074 in gentle-walrus). The question
 goes on the note's issue with `tools/inbox.py ask`, or on the board, per the **board** skill.

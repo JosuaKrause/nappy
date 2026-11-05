@@ -7,6 +7,7 @@
 #   tools/await-merge.sh <pr-number> [<pr-number>...]
 #   tools/await-merge.sh --estimate-only <pr-number>...
 #   tools/await-merge.sh --max-poll <minutes> <pr-number>...
+#   tools/await-merge.sh --verbose <pr-number>...
 #
 # Where it fits: tools/land-prs.sh turns auto-merge on and stops; this is the check that the merge
 # happened (inbox #1070 in gentle-walrus: estimate when CI ends, undershoot a
@@ -47,7 +48,7 @@ note() { if [[ "$verbose" -eq 1 ]]; then echo "$@"; fi; }
 
 usage() {
     cat <<'EOF'
-usage: tools/await-merge.sh [--help|-h] [--estimate-only] [--max-poll <minutes>] <pr-number> [<pr-number>...]
+usage: tools/await-merge.sh [--help|-h] [--estimate-only] [--verbose] [--max-poll <minutes>] <pr-number> [<pr-number>...]
 
 Waits for pull requests whose auto-merge is on (tools/land-prs.sh) to merge. It computes when their
 CI should end (for each unfinished job of the PR's latest ci.yml run, its start plus that job's
