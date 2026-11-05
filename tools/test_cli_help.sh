@@ -815,10 +815,24 @@ check_that "wait_or_kill refuses a limit that is not whole seconds and leaves th
     '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
 check_that "test.sh --help lists --shuffle and --repeat" \
     '[[ "$(./tools/test.sh --help 2>&1)" == *"--shuffle SEED"*"--repeat N"* ]]'
-rm -f "$GODOT_ARGS"
-./tools/test.sh probes/calm_pelican_fields_layer_cost.gd --all-events >/dev/null 2>&1
+# A flag test.sh does not know reaches the runner on a filtered run. Run in a scratch project of its
+# own (test.sh finds its project from its own path): a checkout with no baked atlases, as CI's is,
+# makes the real bake fail before any engine launch, and the stub's single argument file is
+# overwritten by every later launch (the import pass). So the scratch project has a no-op bake and
+# a stub that appends one line per launch, and the check is that one launch carried both the test
+# scene and the flag.
+pt_root="$work_dir/passthrough"
+mkdir -p "$pt_root/tools" "$pt_root/tests"
+cp tools/test.sh tools/lib_import_restore.sh tools/lib_suite_costs.sh "$pt_root/tools/"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$pt_root/tools/bake-atlases.sh"
+chmod +x "$pt_root/tools/bake-atlases.sh"
+pt_log="$work_dir/passthrough-launches"
+pt_stub="$work_dir/passthrough-stub.sh"
+printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> %q\nexit 0\n' "$pt_log" > "$pt_stub"
+chmod +x "$pt_stub"
+GODOT="$pt_stub" "$pt_root/tools/test.sh" probes/calm_pelican_fields_layer_cost.gd --all-events >/dev/null 2>&1
 check_that "test.sh passes a flag it does not know through to a filtered run" \
-    'grep -qx -- "--all-events" "$GODOT_ARGS"'
+    'grep -q -- "res://tests/tests.tscn .*probes/calm_pelican_fields_layer_cost.gd.* --all-events" "$pt_log"'
 check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
     '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
