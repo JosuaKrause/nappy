@@ -16,10 +16,10 @@ fails in a shard, likely behind another suite that leaves shared state behind. T
 established: a held `pause` action does not fail `test_touch.gd`'s own checks.
 
 **What is left.** The runner fails a suite that leaves shared state changed, and the leaks it found
-are fixed (the isolated half). The flaky half: a repeat mode and a shuffled order (`--shuffle SEED`)
-in the runner so that an order-dependent or timing-dependent check shows itself without two suites
-happening to meet on `main`; three green full runs on the head; and making deterministic every check
-whose result changes between runs. The suites that boot `main` declare `t.gives_back_observers()`
+are fixed (the isolated half). The runner shuffles and repeats suites (`--shuffle SEED`, `--repeat N`), and every CI shard runs
+in a shuffled order it prints with the command that replays it, so an order dependence shows on any
+pull request. The flaky half left: three green full runs on the head, and making deterministic every
+check whose result changes between runs. The suites that boot `main` declare `t.gives_back_observers()`
 for the observers' count of a run, which the `Telemetry` and `VisitCounter` autoloads hold and no
 suite can hold a copy of; giving each its own teardown, once that count is held by something a
 suite is handed, removes the declaration.
@@ -35,9 +35,7 @@ tests" (inbox #984 in brisk-pelican).
 save, never `user://save.json`), and a test that reaches anything real is a bad test; no runtime
 guard is built. *Proposed, not asked for:* review is where a bad test is stopped, and what is left,
 from the filer's reading of the suites rather than a survey, is that the suites that build a `main`
-or a `GameSave` without handing it a scratch path or a fake get one, and three tests in
-`test_telemetry.gd` that write the player's real `user://telemetry` folder (and delete what they wrote)
-are handed a scratch one; the frame recorder's desktop file name is checked once the records folder is
+or a `GameSave` without handing it a scratch path or a fake get one; the frame recorder's desktop file name is checked once the records folder is
 handed to the recorder rather than named under the player's `user://frame-records/`.
 
 This item sits beside `tests-public-seams.md` (tests drive public seams and real frames), whose
