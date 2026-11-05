@@ -535,13 +535,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         ),
     ),
     Exception_(
-        "static",
-        "EventScheduler",
-        "the scheduler keeps its kept-ground memo and judgement count in statics (hidden-statics)",
-        ("src/events/day_planner.gd",),
-        more=(("src/events/day_planner.gd", 2),),
-    ),
-    Exception_(
         "names",
         "GameSave",
         "the save indicator reads the save's state, rather than being handed it",
