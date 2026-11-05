@@ -21,8 +21,12 @@
 # runs, and the count printed at the end is the sum (locally; in CI the final `test` job stands
 # for the whole matrix). What it must never do is quietly run *fewer* suites than a serial run
 # would, which is why the shards are built from the files on disk rather than from a list
-# somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
-# because both read the same `tests/suite_costs.txt` through `_cost_of`.
+# somebody maintains — see `_plan_the_shards`. The same cost file gives the same split, whoever
+# runs it, because every plan goes through `_cost_of` and `_plan_the_shards`. A local run reads the
+# committed `tests/suite_costs.txt`; CI's `plan` job freezes one table per run (the newest it saved
+# in its cache, else that same committed file) and hands it to every shard through
+# TEST_SUITE_COSTS. So a local `--shard I/8` runs CI's shard I only when TEST_SUITE_COSTS names
+# that run's table: the `plan` job's log prints it whole, and every shard's log prints the split.
 #
 # A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
 # below) and reported by name rather than left to block the run forever -- see
@@ -161,6 +165,8 @@ fi
 # (tools/lib_import_restore.sh).
 # shellcheck source=tools/lib_import_restore.sh
 source "$PROJECT_DIR/tools/lib_import_restore.sh"
+# shellcheck source=tools/lib_suite_costs.sh
+source "$PROJECT_DIR/tools/lib_suite_costs.sh"
 
 # The atlas pages, before the import pass that has to see them; no work when they are current.
 # `--plan` runs nothing, so it needs neither the bake nor the import.
@@ -535,15 +541,7 @@ if [[ $record_costs -eq 1 ]]; then
 	else
 		tmp_costs="$work_dir/suite_costs.new"
 		{
-			printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
-			printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
-			printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
-			printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
-			printf '%s\n' "# default, with a warning, rather than silently dropped."
-			printf '%s\n' "#"
-			printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite and rewrites this"
-			printf '%s\n' "# file from that run's own \"-- suite  N ms\" lines -- never hand-edited, so the numbers come from"
-			printf '%s\n' "# the runner rather than from anybody's memory."
+			costs_header
 			grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$work_dir"/shard-*.log \
 				| sed -E 's/^-- +//; s/ +ms$//' \
 				| awk '{ printf "%s %s\n", $1, $2 }' \

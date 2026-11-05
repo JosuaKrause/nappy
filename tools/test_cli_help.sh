@@ -93,6 +93,8 @@ assert_exit() {
 # --------------------------------------------------------- --help / -h: exit 0, usage, no work ---
 assert_exit "ci-costs.sh --help"   zero ./tools/ci-costs.sh --help
 assert_exit "ci-costs.sh -h"       zero ./tools/ci-costs.sh -h
+assert_exit "ci-costs-merge.sh --help" zero ./tools/ci-costs-merge.sh --help
+assert_exit "ci-costs-merge.sh -h"     zero ./tools/ci-costs-merge.sh -h
 assert_exit "check.sh --help"      zero ./tools/check.sh --help
 assert_exit "check.sh -h"          zero ./tools/check.sh -h
 assert_exit "scene-recipes.sh --help" zero ./tools/scene-recipes.sh --help
@@ -317,6 +319,10 @@ assert_exit "ci-costs.sh --bogus"        nonzero ./tools/ci-costs.sh --bogus
 assert_exit "ci-costs.sh --runs (missing value)" nonzero ./tools/ci-costs.sh --runs
 assert_exit "ci-costs.sh --runs (not a number)"  nonzero ./tools/ci-costs.sh --runs abc
 assert_exit "ci-costs.sh (stray argument)"       nonzero ./tools/ci-costs.sh bogus-suite
+assert_exit "ci-costs-merge.sh --bogus"          nonzero ./tools/ci-costs-merge.sh --bogus
+assert_exit "ci-costs-merge.sh (no flags)"       nonzero ./tools/ci-costs-merge.sh
+assert_exit "ci-costs-merge.sh --out (no value)" nonzero ./tools/ci-costs-merge.sh --frozen a --measured b --out
+assert_exit "ci-costs-merge.sh (stray argument)" nonzero ./tools/ci-costs-merge.sh bogus
 assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
 assert_exit "lint.sh --bogus-flag"    nonzero ./tools/lint.sh --bogus-flag
 assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
@@ -1280,6 +1286,37 @@ for ir_script in check test cost-table bake-atlases export-web scene-draft scene
          && grep -Eq "^[[:space:]]*import_restore_arm " "$root/tools/$ir_script.sh" \
          && grep -Eq "$ir_run" "$root/tools/$ir_script.sh"'
 done
+
+# ------------------- ci-costs-merge.sh blends, and refuses a run that did not measure every suite ---
+cm_dir="$work_dir/ci-costs-merge"
+mkdir -p "$cm_dir"
+cm_first="$(cd "$root/tests" && ls test_*.gd | head -1)"
+cm_second="$(cd "$root/tests" && ls test_*.gd | sed -n 2p)"
+{ for f in "$root"/tests/test_*.gd; do echo "-- $(basename "$f")   1000 ms"; done; } > "$cm_dir/all.txt"
+printf '%s\n' "$cm_first 3000" "test_gone_forever.gd 5000" > "$cm_dir/frozen.txt"
+"$root/tools/ci-costs-merge.sh" --frozen "$cm_dir/frozen.txt" --measured "$cm_dir/all.txt" --out "$cm_dir/next.txt" 2> "$cm_dir/merge.err"
+check_that "the shared row rules drop a frozen row whose suite is no longer under tests/ and name it" \
+    '! grep -q test_gone_forever "$cm_dir/next.txt" && grep -q test_gone_forever "$cm_dir/merge.err"'
+printf '%s\n' "$cm_first 3000" "$cm_second 4000" > "$cm_dir/old_kept.txt"
+printf '%s\n' "$cm_first 1000" > "$cm_dir/new_only.txt"
+cm_kept_err="$work_dir/ci-costs-merge/kept.err"
+(
+    # shellcheck source=tools/lib_suite_costs.sh
+    source "$root/tools/lib_suite_costs.sh"
+    costs_merge "t" "$root" "$cm_dir/old_kept.txt" "$cm_dir/new_only.txt" "$cm_dir/kept.txt" 2> "$cm_kept_err"
+)
+check_that "the shared row rules keep the old row of a suite nothing measured and name it" \
+    'grep -qx "$cm_second 4000" "$cm_dir/kept.txt" && grep -qx "$cm_first 1000" "$cm_dir/kept.txt" && grep -q "$cm_second" "$cm_kept_err"'
+check_that "ci-costs-merge.sh blends a measured row half and half with the frozen one" \
+    'grep -qx "$cm_first 2000" "$cm_dir/next.txt"'
+check_that "ci-costs-merge.sh takes a measurement as it stands where the frozen file has no row" \
+    '[[ "$(grep -cE "^test_.*\.gd [0-9]+$" "$cm_dir/next.txt")" -eq "$(grep -c "^--" "$cm_dir/all.txt")" ]] && grep -v "^#" "$cm_dir/next.txt" | grep -vx "$cm_first 2000" | grep -qx "[a-z_0-9]*.gd 1000"'
+head -1 "$cm_dir/all.txt" > "$cm_dir/partial.txt"
+check_that "ci-costs-merge.sh refuses, writing nothing, when a suite was not measured" \
+    '! "$root/tools/ci-costs-merge.sh" --frozen "$cm_dir/frozen.txt" --measured "$cm_dir/partial.txt" --out "$cm_dir/none.txt" 2>/dev/null && [[ ! -e "$cm_dir/none.txt" ]]'
+cat "$cm_dir/all.txt" "$cm_dir/partial.txt" > "$cm_dir/twice.txt"
+check_that "ci-costs-merge.sh refuses a suite measured twice, writing nothing" \
+    '! "$root/tools/ci-costs-merge.sh" --frozen "$cm_dir/frozen.txt" --measured "$cm_dir/twice.txt" --out "$cm_dir/none.txt" 2>/dev/null && [[ ! -e "$cm_dir/none.txt" ]]'
 
 # ------------------- every tools/*.sh and tools/*.py entry point has a row in using-tools ---
 # The using-tools skill's catalogue is the point of this check -- a tool that is not in it is

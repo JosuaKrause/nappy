@@ -14,14 +14,26 @@
 #               then the two negative fixtures tools/test.sh must fail the gate on rather than hang
 #               or pass -- everything that needs no more than one process, run beside the sharded
 #               suite rather than inside it.
+#   plan        freezes the per-suite timings the shards plan from, once per run, before any shard
+#               starts: the newest `suite-costs-v1-` cache -- this commit's own, else the newest
+#               this pull request's own runs saved, else the newest main saved -- else the
+#               committed tests/suite_costs.txt. Needs no Godot; skipped on a docs-only pull
+#               request.
 #   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
-#               I/8 -- planned from tests/suite_costs.txt exactly as a local sharded run is;
-#               skipped on a docs-only pull request.
+#               I/8 -- planned from plan's frozen copy, so all eight plan the same split; a local
+#               run plans from the committed tests/suite_costs.txt instead (to reproduce a CI
+#               shard, point TEST_SUITE_COSTS at the table plan printed). Skipped on a docs-only
+#               pull request. Each leg hands back its own suites' timings as a job output.
+#   costs       once every shard has passed, folds the eight shards' timings into the frozen file
+#               (tools/ci-costs-merge.sh) and saves it as the cache the next run's plan restores.
+#               A problem in any of its steps is a warning annotation and nothing else
+#               (continue-on-error on each): the job, the run and `test` stay green, since a cache
+#               write is not a test. Only a timeout or a lost runner can still fail the job.
 #   browser     the release Web export booted and played in Chrome, the same steps the deploy runs
 #               before it publishes (.github/actions/web-browser-check); skipped on a docs-only
 #               pull request.
 #   test        what main's ruleset actually requires (a check named exactly `test`): it fails if
-#               any job that ran failed, or if `game`, `shards` or `browser` did not run on
+#               any job that ran failed (`costs` almost cannot: only a timeout or a lost runner fails it), or if `game`, `plan`, `shards` or `browser` did not run on
 #               anything classify did not call docs-only, so the ruleset's own required-check name
 #               still means "everything this pull request owes passed" without the ruleset itself
 #               changing.
@@ -64,11 +76,15 @@ env:
   FFMPEG_RELEASE: autobuild-2026-09-30-13-08
   FFMPEG_BUILD: ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1
   FFMPEG_SHA256: 97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79
-  # tests/suite_costs.txt's longest row alone sets the floor no split can beat,
+  # The longest row of the cost file (see `plan`) alone sets the floor no split can beat,
   # so this is a shard count that brings every other shard down to or under that same floor
   # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
   # the split. Fewer shards each carry more of the suites above that floor; more shards would only
   # wait on the same longest suite while paying for idle runners.
+  # The count is also spelled out in three places below that this value cannot reach: the `shards`
+  # matrix (`shard: [1..8]`), the eight job outputs `costs_1` to `costs_8` and the matching
+  # COSTS_1 to COSTS_8 in `costs`' env. Change all of them together; `costs` refuses to save
+  # and warns if the outputs it reads are not SHARD_COUNT many.
   SHARD_COUNT: 8
 
 jobs:
@@ -433,11 +449,85 @@ jobs:
           fi
           echo "OK: the fixture failed the gate fast, by name, with a summary line"
 
-  shards:
+  # The timings every shard plans from, frozen once per run before any shard starts. Every shard
+  # must plan the same split or a suite runs twice or not at all, so the shards never look the
+  # file up themselves: a lookup per shard could see two different files (a cache saved between
+  # two shards' starts), and a re-run of one failed shard could see a newer one than the first
+  # attempt did. Here it is read once and handed on as this job's output, whatever saves a newer
+  # cache while the run is under way. Re-running only the
+  # failed shards reuses the first attempt's `plan` output, so the split is identical to the one
+  # the other shards ran.
+  #
+  # The source is the newest cache whose key starts `suite-costs-v1-` -- this commit's own if a
+  # re-run finds it, else the newest this pull request's own runs saved, else the newest main saved
+  # (the cache action searches the run's own scope first and falls back to main's only when
+  # nothing there matches) -- else the committed tests/suite_costs.txt, which also plans local
+  # runs. No other cache key starts with that prefix. The file is a few KB; a job output may hold 1 MB.
+  plan:
     needs: classify
     if: needs.classify.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      costs: ${{ steps.freeze.outputs.costs }}
+      exact: ${{ steps.restore.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout: |
+            tests/suite_costs.txt
+
+      - name: Restore the newest saved timings
+        id: restore
+        uses: actions/cache/restore@v4
+        with:
+          path: suite-costs-cache
+          key: suite-costs-v1-${{ github.sha }}
+          restore-keys: suite-costs-v1-
+
+      - name: Freeze the timings the shards plan from
+        id: freeze
+        env:
+          MATCHED_KEY: ${{ steps.restore.outputs.cache-matched-key }}
+        run: |
+          if [[ -s suite-costs-cache/suite_costs.txt ]]; then
+            file=suite-costs-cache/suite_costs.txt
+            echo "plan source: cache key $MATCHED_KEY"
+          else
+            file=tests/suite_costs.txt
+            echo "plan source: the committed tests/suite_costs.txt (no suite-costs-v1- cache to restore)"
+          fi
+          rows="$(grep -cE '^test_.*\.gd [0-9]+$' "$file")"
+          if [[ "$rows" -eq 0 ]]; then
+            echo "FAILED: $file holds no suite rows" >&2
+            exit 1
+          fi
+          echo "$rows suite rows, sha256 $(sha256sum "$file" | cut -d' ' -f1)"
+          cat "$file"
+          {
+            echo "costs<<COSTS_EOF"
+            cat "$file"
+            echo "COSTS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  shards:
+    needs: [classify, plan]
+    if: needs.classify.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      # One output per leg, with distinct names: legs of a matrix share one set of job outputs,
+      # and two legs writing the same name overwrite each other. A leg sets only its own; `costs`
+      # refuses to save, and warns, if any of the eight is missing.
+      costs_1: ${{ steps.timings.outputs.costs_1 }}
+      costs_2: ${{ steps.timings.outputs.costs_2 }}
+      costs_3: ${{ steps.timings.outputs.costs_3 }}
+      costs_4: ${{ steps.timings.outputs.costs_4 }}
+      costs_5: ${{ steps.timings.outputs.costs_5 }}
+      costs_6: ${{ steps.timings.outputs.costs_6 }}
+      costs_7: ${{ steps.timings.outputs.costs_7 }}
+      costs_8: ${{ steps.timings.outputs.costs_8 }}
     strategy:
       # One slow shard should not cancel the rest -- each shard's log is its own evidence, and
       # cancelling the others would throw away timing data from a run that is otherwise fine.
@@ -474,12 +564,145 @@ jobs:
           mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot-bin
           chmod +x ~/godot/godot-bin
 
-      # tools/test.sh --shard I/N plans the full N-way split itself, from the same
-      # tests/suite_costs.txt a local run reads, and runs only shard I of it -- one Godot
-      # process, filtered to that shard's suites, which is why the runner's own PARTIAL RUN note
-      # prints for every shard here and must never be read as a green build on its own.
+      # The frozen timings from `plan`, through env: the text is data and never part of the script.
+      - name: Write the frozen timings
+        env:
+          COSTS: ${{ needs.plan.outputs.costs }}
+        run: |
+          printf '%s\n' "$COSTS" > "$RUNNER_TEMP/suite_costs.txt"
+          if ! grep -qE '^test_.*\.gd [0-9]+$' "$RUNNER_TEMP/suite_costs.txt"; then
+            echo "FAILED: plan handed over no suite timings" >&2
+            exit 1
+          fi
+          echo "timings sha256 $(sha256sum "$RUNNER_TEMP/suite_costs.txt" | cut -d' ' -f1)"
+
+      # The whole split, printed by every leg: eight identical blocks and one hash are the proof
+      # that the shards agree.
+      - name: Split
+        shell: bash
+        env:
+          TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
+          TEST_SHARDS: ${{ env.SHARD_COUNT }}
+        run: |
+          GODOT="$HOME/godot/godot-bin" ./tools/test.sh --plan | tee "$RUNNER_TEMP/plan.txt"
+          echo "split sha256 $(sha256sum "$RUNNER_TEMP/plan.txt" | cut -d' ' -f1)"
+
+      # tools/test.sh --shard I/N plans the full N-way split itself, from the frozen timings
+      # above, and runs only shard I of it -- one Godot process, filtered to that shard's suites,
+      # which is why the runner's own PARTIAL RUN note prints for every shard here and must never
+      # be read as a green build on its own.
       - name: Shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
-        run: GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }}
+        shell: bash
+        env:
+          TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
+        run: |
+          GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} 2>&1 \
+            | tee "$RUNNER_TEMP/shard.log"
+
+      # This leg's own timing lines, as the runner printed them, handed to `costs` as the output
+      # costs_<shard> (tools/ci-costs-merge.sh reads the runner's lines). Only a leg that
+      # ran its whole planned list hands any over: a leg whose measured suites differ from the
+      # suites it was planned fails here, so a partial measurement never reaches the cache.
+      - name: Hand over this shard's timings
+        id: timings
+        env:
+          TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
+          TEST_SHARDS: ${{ env.SHARD_COUNT }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          source tools/lib_suite_costs.sh
+          costs_timing_lines < "$RUNNER_TEMP/shard.log" | sort > "$RUNNER_TEMP/measured.txt"
+          GODOT="$HOME/godot/godot-bin" ./tools/test.sh --plan | grep -E "^shard $((SHARD - 1)) " | grep -oE 'test_[a-zA-Z0-9_]+\.gd' | sort > "$RUNNER_TEMP/planned.txt"
+          if [[ ! -s "$RUNNER_TEMP/planned.txt" ]] \
+              || ! diff <(cut -d' ' -f1 "$RUNNER_TEMP/measured.txt") "$RUNNER_TEMP/planned.txt"; then
+            echo "FAILED: shard $SHARD did not measure exactly the suites it was planned (diff above: measured < > planned)" >&2
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/measured.txt"
+          {
+            echo "costs_${SHARD}<<COSTS_EOF"
+            grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$RUNNER_TEMP/shard.log"
+            echo "COSTS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  # The timings this run measured, folded into the file it planned from and saved for the next
+  # run's `plan`. Runs only when every shard passed: a failed, hung or cancelled shard did not
+  # finish its list, and a failed check can end a suite early, so neither is a measurement worth
+  # keeping. A re-run of the same commit never overwrites an entry: if `plan` itself found the key
+  # the save is skipped, and if the key appeared after `plan` ran (a re-run reuses the first
+  # attempt's `plan` output) the save finds it reserved and only warns, which does not fail the job.
+  # Nothing in this job turns the run red: a cache write is not a test.
+  # A cache has no retention setting: GitHub evicts an entry unused for 7 days, and the oldest
+  # first past the repository's cache quota; this job adds no artifact.
+  costs:
+    needs: [plan, shards]
+    if: needs.shards.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # continue-on-error like the steps after it: a failed checkout leaves the merge step nothing
+      # to run, which it reports and the closing step turns into a warning.
+      - uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /tools/
+            /tests/test_*.gd
+
+      # A cache problem must not turn the run red (a red run counts as a failure to
+      # tools/agent-status.sh and hides the run from tools/ci-costs.sh, which lists only successful
+      # runs): both steps below carry continue-on-error and the last one turns a failure of either
+      # into a warning annotation.
+      - name: Merge the eight shards' timings into the plan's
+        id: merge
+        continue-on-error: true
+        env:
+          FROZEN: ${{ needs.plan.outputs.costs }}
+          COSTS_1: ${{ needs.shards.outputs.costs_1 }}
+          COSTS_2: ${{ needs.shards.outputs.costs_2 }}
+          COSTS_3: ${{ needs.shards.outputs.costs_3 }}
+          COSTS_4: ${{ needs.shards.outputs.costs_4 }}
+          COSTS_5: ${{ needs.shards.outputs.costs_5 }}
+          COSTS_6: ${{ needs.shards.outputs.costs_6 }}
+          COSTS_7: ${{ needs.shards.outputs.costs_7 }}
+          COSTS_8: ${{ needs.shards.outputs.costs_8 }}
+        run: |
+          printf '%s\n' "$FROZEN" > "$RUNNER_TEMP/frozen.txt"
+          : > "$RUNNER_TEMP/measured.txt"
+          read_count="$(compgen -v | grep -cE '^COSTS_[0-9]+$')"
+          if [[ "$read_count" -ne "$SHARD_COUNT" ]]; then
+            echo "FAILED: this step reads $read_count shard outputs but SHARD_COUNT is $SHARD_COUNT -- the outputs and SHARD_COUNT drifted apart" >&2
+            exit 1
+          fi
+          for i in $(seq 1 "$SHARD_COUNT"); do
+            var="COSTS_$i"
+            if [[ -z "${!var}" ]]; then
+              echo "FAILED: shard $i handed over no timings -- not saving a partial file" >&2
+              exit 1
+            fi
+            echo "shard $i: $(printf '%s\n' "${!var}" | wc -l | tr -d ' ') suites"
+            printf '%s\n' "${!var}" >> "$RUNNER_TEMP/measured.txt"
+          done
+          mkdir suite-costs-cache
+          ./tools/ci-costs-merge.sh --frozen "$RUNNER_TEMP/frozen.txt" \
+            --measured "$RUNNER_TEMP/measured.txt" --out suite-costs-cache/suite_costs.txt
+          echo "cache entry to save:"
+          cat suite-costs-cache/suite_costs.txt
+
+      - name: Save them for the next run
+        id: save
+        if: steps.merge.outcome == 'success' && needs.plan.outputs.exact != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: suite-costs-cache
+          key: suite-costs-v1-${{ github.sha }}
+
+      - name: Say so if the timings were not saved
+        if: steps.merge.outcome == 'failure' || steps.save.outcome == 'failure'
+        run: echo "::warning::the suite timings were not saved for the next run's plan (see the merge and save steps above). The tests passed."
 
   # The release Web export, booted in a real Chrome and played through the same checks the deploy
   # runs before it publishes (.github/actions/web-browser-check, shared with deploy.yml and
@@ -525,27 +748,30 @@ jobs:
 
   # main's ruleset requires a check named exactly `test`; this job is that check; renaming the
   # job id would silently detach the ruleset from CI without editing the ruleset itself. It passes
-  # only when every job that ran passed, and `game`, `shards` and `browser` may be skipped only on a
+  # only when every job that ran passed (`costs` fails only on a timeout or a lost runner: its steps are
+  # continue-on-error, so a cache problem is an annotation on a green job), and `game`, `plan`, `shards` and `browser` may be skipped only on a
   # pull request classify called docs-only -- one touching src/ or tests/ never is, so it can never
   # pass here without the game's tests and the browser check. The `version tags` ruleset requires
   # this same check before a `v*` tag, so a commit that fails in the browser cannot be released.
   test:
-    needs: [classify, gates, cost-table, game, shards, browser]
+    needs: [classify, gates, cost-table, game, plan, shards, costs, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Every check that ran passed, and the game's tests ran unless the pull request is docs-only
+      - name: Every check that ran passed (costs warns; only a timeout or a lost runner fails it), and the game's tests ran unless the pull request is docs-only
         env:
           DOCS_ONLY: ${{ needs.classify.outputs.docs_only }}
           CLASSIFY: ${{ needs.classify.result }}
           GATES: ${{ needs.gates.result }}
           COST_TABLE: ${{ needs.cost-table.result }}
           GAME: ${{ needs.game.result }}
+          PLAN: ${{ needs.plan.result }}
           SHARDS: ${{ needs.shards.result }}
+          COSTS: ${{ needs.costs.result }}
           BROWSER: ${{ needs.browser.result }}
         run: |
-          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, shards: $SHARDS, browser: $BROWSER, docs-only: ${DOCS_ONLY:-false}"
+          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, plan: $PLAN, shards: $SHARDS, costs: $COSTS, browser: $BROWSER, docs-only: ${DOCS_ONLY:-false}"
           failed=0
           for pair in "classify=$CLASSIFY" "gates=$GATES" "cost-table=$COST_TABLE"; do
             if [[ "${pair#*=}" != "success" ]]; then
@@ -553,7 +779,7 @@ jobs:
               failed=1
             fi
           done
-          for pair in "game=$GAME" "shards=$SHARDS" "browser=$BROWSER"; do
+          for pair in "game=$GAME" "plan=$PLAN" "shards=$SHARDS" "browser=$BROWSER"; do
             result="${pair#*=}"
             if [[ "$result" == "success" ]]; then
               continue
