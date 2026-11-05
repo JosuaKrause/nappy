@@ -89,7 +89,7 @@ only the deploy target can enter is a branch nobody has seen.
 (`godot --headless --path . res://tests/tests.tscn`) because every test needs `Tuning`.
 
 **An autoload name cannot also be a `class_name`.** That is why shared enums live in
-`src/game_enums.gd` rather than on `GameState`.
+`src/game_enums.gd` rather than on an autoload.
 
 **`SomeNode.new()` does not get the name `SomeNode`.** `Camera2D.new()` is named `@Camera2D@41`, so
 a `@onready var _camera := $Camera2D` in a test rig silently fails. **Set `.name` explicitly when a

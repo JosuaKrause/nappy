@@ -29,8 +29,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 30.0
 const SEEDS: Array[int] = [4242, 90210, 1337]
 const DAYS: Array[int] = [1, 5, 9, 13]
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 ## The three ways of asking, in print order: no wall test, as built, half a tile everywhere.

@@ -18,8 +18,8 @@ extends Node
 ## it builds, so a test hands a reader whichever run it built; the resistance is handed it with
 ## its city (`City.run`) or by `ResistanceDirector.setup()`.
 ##
-## **A `Node` only while the suites not yet moved read it as an autoload**: nothing in the game
-## needs a node, and the sitting holds a run of its own as its child so it is freed with it.
+## **It is a `Node` so the sitting can hold it as a child and free it with itself**; nothing in the
+## game needs a node otherwise, and no autoload registers it.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
