@@ -1584,8 +1584,12 @@ class WalkSiting extends RefCounted:
 	## other. **The tree itself is kept as well as the corridor it makes**: the corridor answers
 	## *how far off the routes is this tile*, and what a siting on her own branch needs is the
 	## ordered chain of cells a route actually runs along.
+	##
+	## `verdicts` is where its placements keep the verdicts of the candidates they judge
+	## (`EventScheduler.Verdicts`): a siting handed none keeps them in one of its own, which is what
+	## every siting the game builds does.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
-			doors: PackedVector2Array) -> void:
+			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts = null) -> void:
 		_day = for_day
 		_map = map
 		_tree = tree if tree else RouteTree.for_day(map, for_day)
@@ -1593,6 +1597,7 @@ class WalkSiting extends RefCounted:
 		_used_calm = used_calm.duplicate()
 		_leave_alone = EventScheduler._calm_to_leave_alone(map, used_calm)
 		_doors = doors
+		_verdicts = verdicts if verdicts else EventScheduler.Verdicts.new()
 
 	## A placement for `def` on a tile of its own ground **on the branch of the day's route tree she
 	## is walking** — whatever `_ground_as_a_set()` offers the row: a building face for day 3's fire
@@ -1649,7 +1654,7 @@ class WalkSiting extends RefCounted:
 				widened += 1
 		var offered: Array[Vector2i] = offer[1]
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors, [], _look_verdicts)
+				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask())
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
@@ -1671,24 +1676,31 @@ class WalkSiting extends RefCounted:
 	## ask counts it. `end_look()` drops them too, so nothing is carried into the next look, by when
 	## the world has moved on.
 	func begin_look() -> void:
-		_look_verdicts = {}
-		looks_begun += 1
-
-	## How many looks have begun. For `tests/test_siting_judges_once.gd`; nothing in the game reads
-	## it.
-	var looks_begun := 0
+		_verdicts.forget()
+		_in_a_look = true
 
 	## The kept verdicts are no longer what a fresh judgement would say. See `begin_look()`.
 	func forget_the_verdicts() -> void:
-		if _look_verdicts != null:
-			_look_verdicts = {}
+		if _in_a_look:
+			_verdicts.forget()
 
 	## Ends a look; `ahead_of()` keeps nothing past its own call again.
 	func end_look() -> void:
-		_look_verdicts = null
+		_verdicts.forget()
+		_in_a_look = false
 
-	## The verdicts kept for the look under way, or null outside one.
-	var _look_verdicts: Variant = null
+	## Where every placement this siting makes keeps its verdicts, handed in when it was built. See
+	## `_init()`.
+	var _verdicts: EventScheduler.Verdicts
+	## Whether a look is under way, and so whether `ahead_of()` keeps its verdicts for the next ask.
+	var _in_a_look := false
+
+	## The verdicts an ask hands `EventScheduler._best_of()`: inside a look, the look's for an ask of
+	## the look (`ahead_of()`); otherwise none kept from an earlier ask, as if the call kept its own.
+	func _verdicts_for_an_ask(of_the_look := true) -> EventScheduler.Verdicts:
+		if not (of_the_look and _in_a_look):
+			_verdicts.forget()
+		return _verdicts
 
 	## What `ahead_of()` is offered, as `[how it was found, the tiles]`: the row's ground in the band
 	## ahead of her on her branch, or, with none there, widened along the same branch — twice the
@@ -1836,7 +1848,7 @@ class WalkSiting extends RefCounted:
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
 			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors, [], _look_verdicts)
+				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask())
 		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
 			return candidate
 		return null
@@ -1852,7 +1864,7 @@ class WalkSiting extends RefCounted:
 		if offered.is_empty():
 			return null
 		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler._role_for(def, _day),
-				already, _ground, _leave_alone, _corridor, _doors)
+				already, _ground, _leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
 
 	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
 	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
@@ -1875,7 +1887,7 @@ class WalkSiting extends RefCounted:
 		if kept.is_empty():
 			return _waited("no ground near her the day would offer the row")
 		var candidate := EventScheduler._best_of(def, rng, _map, kept, role, already, _ground,
-				_leave_alone, _corridor, _doors)
+				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
 		if not candidate:
 			return _waited("every site near her broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
@@ -1922,7 +1934,7 @@ class WalkSiting extends RefCounted:
 			if offered.is_empty():
 				continue
 			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
-					_ground, _leave_alone, _corridor, _doors)
+					_ground, _leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
 			if candidate and _still_leaves_a_park_reachable(already, candidate, doorstep):
 				return candidate
 		return null
@@ -2388,7 +2400,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[Planned] = [], kept: Variant = null, rules: Rules = null) -> Planned:
+		standing: Array[Planned] = [], kept: Verdicts = null, rules: Rules = null) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
 	var walk: WalkGround = rules.walk if rules else null
@@ -2408,10 +2420,10 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# own draws still happen on every try, in the same order, so the stream, and with it every
 	# placement, is what it would be if each try asked again.
 	#
-	# `kept`, when a caller hands one in, is a dictionary of verdicts that outlives the call:
-	# `WalkSiting`'s for one look, shared by every copy the look asks about. It is that caller's to
-	# drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
-	var verdicts: Dictionary = kept if kept != null else {}
+	# `kept`, when a caller hands one in, is where the verdicts are kept, and it may outlive the
+	# call: `WalkSiting`'s keeps them for one look, shared by every copy the look asks about. It is
+	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
+	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	for attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
@@ -2420,12 +2432,12 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		# The row, its role, the tile and the path built on it are the whole of what a candidate
 		# is: its position and facing are the tile's own.
 		var key := [def.get_instance_id(), role, tile, candidate.path]
-		var verdict: Array = verdicts.get(key, [])
+		var verdict := verdicts.of(key)
 		if verdict.is_empty():
 			var room := _judge(candidate, role, map, tile, already, reach_context, ground,
 					leave_alone, corridor, doors, rules)
 			verdict = [candidate.role, room]
-			verdicts[key] = verdict
+			verdicts.keep(key, verdict)
 		candidate.role = verdict[0]
 		var judged: float = verdict[1]
 		if judged == INF:
@@ -2451,9 +2463,29 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# cannot be placed simply does not happen, which is the right failure direction.
 	return best
 
-## How many times `_judge()` has run, over the whole process. Nothing in the game reads it: it is
-## what lets `tests/test_siting_judges_once.gd` hold `_best_of()` to one judgement per candidate.
-static var judgements := 0
+## **Where `_best_of()` keeps the verdicts of the candidates it judges**: for each, what the rule
+## chain (`_judge()`) answered, as `[the role it set, the room it answered]`, under the key
+## `_best_of()` asks by (the row, its role, the tile and the path built on it). `_best_of()` asks
+## it for a candidate's verdict before judging the candidate, and gives it each verdict it judges.
+## A call keeps its own unless it is handed one; a `WalkSiting` hands every call it makes the store
+## it was built with, which keeps verdicts for one ask, or for one look (`WalkSiting.begin_look()`).
+## A kept verdict is the answer only while what it read stands, so whoever holds the store drops
+## them (`forget()`) the moment that stops being true.
+class Verdicts extends RefCounted:
+	var _kept := {}
+
+	## The verdict kept for `key`, or an empty array when there is none and the candidate is to
+	## be judged.
+	func of(key: Array) -> Array:
+		return _kept.get(key, [])
+
+	## Keeps `verdict`, just judged, for `key`.
+	func keep(key: Array, verdict: Array) -> void:
+		_kept[key] = verdict
+
+	## Drops every verdict kept.
+	func forget() -> void:
+		_kept.clear()
 
 ## The rule chain `_best_of()` asks of one candidate: sets its role and answers its room, the
 ## `room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
@@ -2462,7 +2494,6 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 		already: Array[Planned], reach_context: Array[Planned], ground: Dictionary,
 		leave_alone: Array[Rect2], corridor: Corridor, doors: PackedVector2Array,
 		rules: Rules = null) -> float:
-	judgements += 1
 	candidate.role = role
 	# **A pacing row's role is decided here rather than in `_role_for`**, because what makes a
 	# man walking a beat passable is where the beat runs and not what he emits: one that reaches

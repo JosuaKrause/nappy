@@ -45,7 +45,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"event_catalogue._task_guard": "a catalogue row, built on first use",
 	"event_catalogue._task_guard_sent": "a catalogue row, built on first use",
 	"event_catalogue._out_of_the_car": "catalogue rows, built on first use",
-	"event_scheduler.judgements": "a counter that tests read only as a difference",
 	"event_footprints._warning_sizes": "warning sizes, a pure function of the footprint tables",
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",
