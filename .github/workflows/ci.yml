@@ -588,7 +588,8 @@ jobs:
           GODOT="$HOME/godot/godot-bin" ./tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} 2>&1 \
             | tee "$RUNNER_TEMP/shard.log"
 
-      # This leg's own timings, handed to `costs` as the output costs_<shard>. Only a leg that
+      # This leg's own timing lines, as the runner printed them, handed to `costs` as the output
+      # costs_<shard> (tools/ci-costs-merge.sh reads the runner's lines). Only a leg that
       # ran its whole planned list hands any over: a leg whose measured suites differ from the
       # suites it was planned fails here, so a partial measurement never reaches the cache.
       - name: Hand over this shard's timings
@@ -609,7 +610,7 @@ jobs:
           cat "$RUNNER_TEMP/measured.txt"
           {
             echo "costs_${SHARD}<<COSTS_EOF"
-            cat "$RUNNER_TEMP/measured.txt"
+            grep -hE -- '^-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$RUNNER_TEMP/shard.log"
             echo "COSTS_EOF"
           } >> "$GITHUB_OUTPUT"
 
