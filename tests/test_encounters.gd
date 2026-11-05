@@ -433,7 +433,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 	_free_manager(manager)
 
 ## *(calm-pelican.)* A hut inspection sets her down within reach of a cyclist past its warning on
-## the frame `_check_hard_fails()` strikes her, after that frame's watch: the day ends and the game
+## the frame `check_hard_fails()` strikes her, after that frame's watch: the day ends and the game
 ## pauses before the watch looks again. The manager tells the watch of the catch itself. Played as
 ## the game plays it: she walks into a hut and is held (`CheckpointController.check_detentions()`),
 ## the cyclist waits past the hut where its release puts her down, and the manager's own physics
