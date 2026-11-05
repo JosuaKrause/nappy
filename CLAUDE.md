@@ -24,6 +24,10 @@ amber-penguin`).
 The post-edit lint hook does not replace `./tools/lint.sh` before committing a governed doc,
 `CLAUDE.md` included. A request for a PR ends with a reviewable PR.
 
+**The orchestrating Claude Code session has the player's standing permission to merge a pull
+request** once its review is ready against its current head and CI is green; a release still needs
+its own go-ahead (inbox #1063).
+
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
