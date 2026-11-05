@@ -762,16 +762,30 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 	t.check(escort != null and cordon.line.has_point(escort.at),
 			"an escort is inside the park on his way to the busker (%.1fs)" % waited)
 	_city.events.retire(busker)
+	# Walking out at a tenth of his pace, so the tapers have the rest of the edge up and owe the gap
+	# its tape while he is still at the line; at his own pace he is out long before they are round.
+	escort.speed = ParkCordon.PARK_CLOSING_OFFICER_SPEED / 10.0
 	_tick(happenings, her[0], shows.is_valid())
-	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and cordon._still_to_come_out(),
+	t.check(escort.phase == ParkCordon.Officer.Phase.LEAVING and not cordon.is_closed()
+			and not _any_taped(cordon.gap),
 			"with the busker gone, he turns back, and the gap waits for him")
 	var last := escort.at
 	var through_tape := 0
 	var inside_at_the_close := false
+	# The frames he is at the line or inside it while a taper has walked a stretch of the gap and
+	# owes its tape, which is when only he holds it back, and the frames in them it was up or the
+	# cordon closed.
+	var holding := 0
+	var taped_on_him := 0
 	while waited < PATIENCE * 2.0 and not cordon.is_closed():
 		var was_closed := cordon.is_closed()
 		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
+		if cordon.line.grow(ParkCordon.WALKER_REACH).has_point(escort.at) \
+				and _owes_the_gap(cordon):
+			holding += 1
+			if _any_taped(cordon.gap) or cordon.is_closed():
+				taped_on_him += 1
 		for stretch in cordon.stretches:
 			if stretch.taped and Geometry2D.segment_intersects_segment(last, escort.at, stretch.a,
 					stretch.b) != null:
@@ -779,10 +793,29 @@ func _test_an_escort_sent_back_alone_holds_the_gap(t) -> void:
 		if not was_closed and cordon.is_closed():
 			inside_at_the_close = cordon.line.has_point(escort.at)
 		last = escort.at
+	t.check(holding > 0 and taped_on_him == 0,
+			"the tape the gap is owed stays down while he is at the line or inside it "
+			+ "(%d frames, %d with it taped or closed)" % [holding, taped_on_him])
 	t.check(cordon.is_closed() and not inside_at_the_close,
 			"the gap closes only once he is out of it")
 	t.check(through_tape == 0, "and he never walks through tape (%d)" % through_tape)
 	_end(fixture)
+
+## Whether any of `stretches` is taped.
+static func _any_taped(stretches: Array) -> bool:
+	for stretch: ParkCordon.Stretch in stretches:
+		if stretch.taped:
+			return true
+	return false
+
+## Whether a taper has walked a stretch of the cordon's gap and has not taped it.
+static func _owes_the_gap(cordon: ParkCordon) -> bool:
+	for officer in cordon.officers:
+		if officer.job == ParkCordon.Officer.Job.TAPE and officer.taped_upto < officer.next:
+			var stretch := officer.stretches[officer.taped_upto]
+			if cordon.gap.has(stretch) and not stretch.taped:
+				return true
+	return false
 
 ## The park stays requisitioned the next morning, and the cordon's nodes and obstructed tiles go
 ## with the day.
