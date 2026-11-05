@@ -1,4 +1,4 @@
-# Playtest frosty-owl — Inbox filing: run-state leftovers, CI timings cache, restart prompt first
+# Playtest frosty-owl — Inbox filing: run-state leftovers, CI timings cache, restart prompt first, restart prompt layout
 
 2026-11-04.
 
