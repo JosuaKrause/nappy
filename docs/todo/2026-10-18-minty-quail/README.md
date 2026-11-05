@@ -68,7 +68,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 
 1. `shared-components.md`.
 2. `comments.md`: in whichever PR touches the code.
-3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs;
+3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs,
+   with `tests-unseen-reads.md` for what its count cannot see, in that file's build order;
    `tests-isolated.md` beside it.
    `run-state-handed-in.md` beside them too: each wave moves its suites onto a fresh run state
    handed in, after the one PR that moves the run onto the `Sitting` (inbox #985 in round-egret).
