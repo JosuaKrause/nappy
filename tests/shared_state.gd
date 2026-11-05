@@ -53,10 +53,10 @@ const EXEMPT: Dictionary[String, String] = {
 }
 
 ## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
-## configuration, the screen and the burst recorder `main` hands the observers, and the observers' count of the run so far. A suite
-## that does so declares it with `t.gives_back_observers()` as its first line, and the runner puts
-## these back to what they were then once the suite is over; any other suite that changes one
-## fails.
+## configuration, the screen and the burst recorder `main` hands the observers, and the observers'
+## count of the run so far. A suite that does so declares it with `t.gives_back_observers()` as its
+## first line, and the runner puts these back to what they were then once the suite is over; any
+## other suite that changes one fails.
 const OBSERVER_FIELDS: Dictionary[String, Array] = {
 	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt", "_screen", "_bursts"],
 	"VisitCounter": ["_config", "_run", "_day", "_open_tasks", "_reported_run_begun"],

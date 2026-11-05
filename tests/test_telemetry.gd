@@ -1269,6 +1269,9 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	Telemetry.begin_run(778812345, false, scratch)
 	var log_path := Telemetry.current_log().path
 	t.check(log_path != "", "a real run opens a file")
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 	t.check(log_path.get_file() == "run.log",
 			"the log is named plainly — the folder is what says which run it belongs to (got '%s')"
 			% log_path.get_file())
@@ -1303,6 +1306,9 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
 	Telemetry.begin_run(778812347, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 	Telemetry.begin_day(6, 2, 1, 1, 10.0)
 	Telemetry.write_map(map, 6)
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
@@ -1335,6 +1341,9 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
 	Telemetry.begin_run(778812346, false, scratch)
 	var run_dir := Telemetry.current_log().path.get_base_dir()
+	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+			"the run lands under the folder it was handed, not the player's own (got '%s')"
+			% Telemetry.current_log().path)
 
 	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
 	Telemetry.write_map(map, 6)

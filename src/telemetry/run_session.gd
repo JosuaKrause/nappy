@@ -75,6 +75,7 @@ func open(run_seed: int, played: bool, keep_an_open_log: bool) -> void:
 		return
 	if keep_an_open_log and _log.is_active():
 		return
+	# The folder is handed in here, the game's default, so that a test can hand its own.
 	_log.begin_run(run_seed, played, _log.DIRECTORY)
 
 ## Closes the run log: the run is left, by the held restart, a quit or the window closing. Every
