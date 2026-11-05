@@ -82,14 +82,12 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
 				siting.scenery_ground, none):
 			why = "junction, the mast alone"
-		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor,
-				siting.scenery_ground, none):
+		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, none):
 			why = "sidewalk, the mast alone"
 		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
 				siting.scenery_ground, plans):
 			why = "junction, with the day"
-		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor,
-				siting.scenery_ground, plans):
+		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, plans):
 			why = "sidewalk, with the day"
 		elif EventScheduler._reaches_any(candidate, siting._leave_alone):
 			why = "calm she has not used"

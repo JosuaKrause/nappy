@@ -85,6 +85,10 @@ var _gaps := {}
 ## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
 var _junctions: Array[Vector2i] = []
 
+## `walked_sidewalks()`'s answer and the map it was worked out for.
+var _walked_sidewalks: Array = []
+var _walked_for: CityMap = null
+
 ## The corridor of a tree. An empty tree gives a corridor that answers `AWAY` everywhere, which
 ## is the right answer rather than a special case: a day with no reachable calm has no route for
 ## anything to be inside or outside of.
@@ -165,6 +169,52 @@ func carries_a_route(tile: Vector2i) -> bool:
 		return false
 	var node := _grid.node_at(tile)
 	return node >= 0 and _node_depth[node] == 0
+
+## The sidewalks the day's routes are actually walked along, with the geometry the width rule asks
+## about: `[segment, the band's tile rect, the same rect in world space]`
+## (`EventScheduler._leaves_the_routes_sidewalk_open()` asks it of every counted row). Worked out
+## once per map and kept, since the corridor is the day's.
+func walked_sidewalks(map: CityMap) -> Array:
+	if _walked_for != map:
+		var found: Array = []
+		for segment in map.network.segments():
+			var rect := segment.tile_rect()
+			if depth(rect.position) != 0:
+				continue
+			var walked := 0
+			for band in sidewalk_bands(rect, segment.horizontal):
+				if not walks_along(band):
+					continue
+				walked += 1
+				found.append([segment, band, map.tile_rect_to_world(band)])
+			# A street on the corridor whose tree cells are neither of its sidewalks: the whole
+			# street is the honest question there, and it is the question the rule asked before.
+			# The growth graph has no mid-block carriageway cell in it, so this is unreachable
+			# today rather than merely rare -- it is here so the guarantee cannot quietly lapse if
+			# that ever changes.
+			if walked == 0:
+				found.append([segment, rect, map.tile_rect_to_world(rect)])
+		_walked_sidewalks = found
+		_walked_for = map
+	return _walked_sidewalks
+
+## The two sidewalk bands of a street's own tile rect, in the order the corridor runs across it
+## (`walked_sidewalks()` and `WalkGround` ask it of a street).
+static func sidewalk_bands(rect: Rect2i, horizontal: bool) -> Array[Rect2i]:
+	var across := Vector2i.DOWN if horizontal else Vector2i.RIGHT
+	var size := Vector2i(rect.size.x, Tuning.SIDEWALK_WIDTH) if horizontal \
+			else Vector2i(Tuning.SIDEWALK_WIDTH, rect.size.y)
+	var far := across * (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
+	return [Rect2i(rect.position, size), Rect2i(rect.position + far, size)]
+
+## Whether a route's cell stands on any tile of `band` (`walked_sidewalks()` keeps the bands this
+## answers yes for).
+func walks_along(band: Rect2i) -> bool:
+	for y in range(band.position.y, band.end.y):
+		for x in range(band.position.x, band.end.x):
+			if carries_a_route(Vector2i(x, y)):
+				return true
+	return false
 
 ## Whether a tile is on one of the streets that run **between two adjacent strands of the
 ## corridor** — the single street a player switches routes through.

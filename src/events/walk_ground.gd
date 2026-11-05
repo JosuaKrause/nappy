@@ -257,7 +257,7 @@ func leaves_a_sidewalk_open(own: Array[Solid]) -> bool:
 		var near := own.duplicate()
 		near.append_array(_standing_near(world.grow(Tuning.PLAYER_BODY_RADIUS)))
 		var open := false
-		for band in EventScheduler._sidewalk_bands(rect, segment.horizontal):
+		for band in Corridor.sidewalk_bands(rect, segment.horizontal):
 			# Only the discs that reach this band are handed in: the band's own question is
 			# every tile against every disc, and most of a street's bodies stand on the other
 			# side of it.

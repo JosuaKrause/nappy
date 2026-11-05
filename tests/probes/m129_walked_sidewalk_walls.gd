@@ -24,7 +24,7 @@ extends RefCounted
 ##
 ## # Reused rather than re-derived
 ##
-## - **The walked sidewalk.** `EventScheduler._route_sidewalks()` is the rule's own reading of
+## - **The walked sidewalk.** `Corridor.walked_sidewalks()` is the rule's own reading of
 ##   which band is "on the path": every on-corridor street (`Corridor.depth() == 0`), reduced to
 ##   the one sidewalk band of the two that `Corridor.carries_a_route()` says the tree actually
 ##   runs along, or the whole street where neither does. Asked here exactly as the rule asks it,
@@ -86,7 +86,7 @@ extends RefCounted
 ##
 ## # Exemptions this probe does *not* make
 ##
-## **The home doorstep and a route's destination are not exempted**, because `_route_sidewalks`
+## **The home doorstep and a route's destination are not exempted**, because `walked_sidewalks`
 ## does not exempt them: it reads every on-corridor street identically, home street included, and
 ## a destination calm area has no street band of its own to ask about (the band's ground stops at
 ## the calm tiles, the same edge `tests/probes/m129_zero_cost_line.gd`'s flood fill arrives on).
@@ -189,8 +189,7 @@ func _measure() -> void:
 			var corridor: Corridor = gathered["corridor"]
 			days_measured += 1
 
-			var ground := {}
-			for entry: Array in EventScheduler._route_sidewalks(map, ground, corridor):
+			for entry: Array in corridor.walked_sidewalks(map):
 				var segment: StreetNetwork.Segment = entry[0]
 				var band: Rect2i = entry[1]
 				var world: Rect2 = entry[2]
@@ -402,10 +401,10 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 	var segment := map.network.segment_containing(tile)
 	if not segment or corridor.depth(segment.tile_rect().position) != 0:
 		return false
-	for band: Rect2i in EventScheduler._sidewalk_bands(segment.tile_rect(), segment.horizontal):
+	for band: Rect2i in Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal):
 		if not band.has_point(tile):
 			continue
-		return not EventScheduler._a_route_walks(corridor, band)
+		return not corridor.walks_along(band)
 	return false
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
