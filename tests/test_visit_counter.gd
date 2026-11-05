@@ -687,7 +687,7 @@ func _test_every_charger_has_its_own_counter(t) -> void:
 ## **A charge ends in exactly one of caught, shaken off and outlasted, whatever the day does**
 ## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*. The real instance and
 ## signals, for a sent robber, who charges from his first frame: caught (`report_the_catch()`, what
-## `EventManager._check_hard_fails()` and a patrol car's man stopping her call) and then finished
+## `EventManager.check_hard_fails()` and a patrol car's man stopping her call) and then finished
 ## anyway, as a day that goes on under `--invincible` would; run off; and walked away from until his
 ## clock runs out. Each sends `-chased` and then one end, and a catch said twice is counted once.
 func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
