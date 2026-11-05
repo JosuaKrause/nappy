@@ -245,5 +245,5 @@ and then what it could not:
 
 **It is still a review.** Merging needs one approving review (**committing**), and a bot's approval
 is the only one the orchestrator can get without the player. A push after the approval gets the
-same review of its delta. Going first changes the order, not the permission: merging still needs
-the player's go-ahead in the current session.
+same review of its delta. Going first changes the order, not the permission: only the
+orchestrating session merges, under its standing permission (**committing**).

@@ -5,8 +5,9 @@ description: The git workflow for this repo — one branch per work item, one co
 
 # Git workflow
 
-**Manage local branches and commits autonomously. Merging a PR requires explicit permission in
-the current session** — see "Merging".
+**Manage local branches and commits autonomously. Merging a PR is the orchestrating Claude Code
+session's under the player's standing permission, and any other session's only with the player's
+word in that session** — see "Merging".
 
 ## Who a commit and a pull request are from
 
@@ -125,16 +126,19 @@ which is the tree a fresh clone receives.
 
 ## Merging
 
-**Merging a PR requires explicit permission in the current session.** This includes enabling
-auto-merge, manually merging, and asking an agent or monitor to merge. Permission from another
-session does not carry over. Finishing implementation, opening a PR and green CI do not imply
-merge permission. Leave the PR open and report its link when permission has not been given.
+**The orchestrating Claude Code session holds the player's standing permission to merge a PR**
+(`CLAUDE.md`, inbox #1063), once the gates below hold. Merging includes enabling auto-merge,
+merging by hand, and asking an agent or monitor to merge. Every other session (an implementation
+or review agent, a Codex session) merges nothing without the player's word in that session, and
+a permission given in another session does not carry over to it. Finishing implementation,
+opening a PR and green CI do not by themselves make a PR mergeable. Leave the PR open and report
+its link when the session has no permission to merge it.
 
 **A PR merges only after its review**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). A review under
 **pr-review** has posted the verdict *ready* on the PR against its current head, or against a head
 whose later pushes were reviewed too; a merge of `main` whose result is Git's own needs no second
-review (**pr-review**). Merge permission and green CI do not replace it.
+review (**pr-review**). The standing permission and green CI do not replace it.
 
 **Merging needs one approving review, from a reviewer bot or the player, in addition to the green
 `test` check** — the live `main approvals` ruleset exempts the player (a repository admin) from the
@@ -144,7 +148,7 @@ approval rule on *any* PR they merge, not only their own. A reviewer bot's own A
 **A review thread is resolved only by whoever opened it, and that is a convention, not a gate**
 (**pr-review** says who and why): an open thread never blocks an approval or a merge on its own.
 
-When merging is explicitly authorized, check mergeability and let CI gate the merge. Resolve
+When the session may merge, check mergeability and let CI gate the merge. Resolve
 conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
 (`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
 a background agent, not a polling loop in the orchestrating session.
@@ -199,7 +203,7 @@ patch between them, and a major tag is treated the same way. `tools/release.sh`'
 the same notes before anything is tagged.
 
 **Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
-current session**; merge permission is not release permission. Completed work may be pushed
+current session**; the standing merge permission is not release permission. Completed work may be pushed
 without asking, since pushing `main` publishes nothing.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag

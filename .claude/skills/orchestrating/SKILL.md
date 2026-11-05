@@ -321,8 +321,8 @@ worktrees — merging is what collides — so parallelism is planned at the file
 - **Overlapping the event catalogue, `tuning.gd` or a shared test file means sequential.** Those
   are the repo's convergence points; two agents adding rows or checks to the same file will not
   auto-merge.
-- **Merging follows committing** (explicit permission in this session). As each agent lands,
-  push and open its PR. Once merging is authorized, issue the merges in turn, without waiting for `main`'s CI between them; a second PR merges as it
+- **Merging follows committing** (the orchestrating session's standing permission). As each agent
+  lands, push and open its PR. Once a PR meets committing's merge gates, issue the merges in turn, without waiting for `main`'s CI between them; a second PR merges as it
   stands unless the new `main` now conflicts with it, in which case the conflict is resolved on
   its own branch under **merging-main** and the resolution is reviewed under **pr-review** before
   it lands — the ruleset's checks are not strict, so a PR merely
