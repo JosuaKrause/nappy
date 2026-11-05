@@ -33,7 +33,14 @@ func _rig(t, spec := DaySpec.new()) -> Dictionary:
 	t.add_child(clock)
 	clock.start(300.0)
 	clock.time_remaining = 120.0
+	# The events' world: open ground drawn in a node the manager holds, and the run's own state
+	# (`EventManager.setup_world()`, as the escape's building is handed its world).
 	var events := EventManager.new()
+	var map := WorldMap.open_ground()
+	var holder := WorldContext.new()
+	events.add_child(holder)
+	map.world = holder
+	events.setup_world(map, _run)
 	t.add_child(events)
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	director.use_the_world(null, events, null, null, null, clock)
@@ -75,21 +82,19 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var def := EventCatalogue.by_id("cyclist")
-	var kid := EventInstance.new()
-	kid.setup(def, Vector2.ZERO)
-	var pelican := EventInstance.new()
-	pelican.setup(def, Vector2.ZERO)
-	pelican.is_pelican = true
+	var kid := director.events.spawn_extra(def, Vector2.ZERO)
+	# Warned of as the pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
+	# roll its warning made).
+	var pelican := director.events.spawn_warned(def,
+			PackedVector2Array([Vector2.ZERO, Vector2(500.0, 0.0)]), true)
+	t.check(pelican.is_pelican, "the rider warned of as the pelican is the pelican")
 	kid.excitement.accumulate_landed(3.0)
 	pelican.excitement.accumulate_landed(5.0)
-	director.events.world.instances.assign([kid, pelican])
 	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
 			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
 	t.check(director.loss_cause(GameEnums.DayResult.LOST_CRYING) == "pelican",
 			"so a crying day the pelican landed the most on is lost to the pelican")
-	director.events.world.instances.clear()
-	kid.free()
-	pelican.free()
+	director.events.clear()
 	_put_away(rig)
 
 func _test_a_hard_fail_is_named_by_its_reason(t) -> void:
