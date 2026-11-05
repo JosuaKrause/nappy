@@ -8,7 +8,7 @@ const Seat := preload("res://tests/seat.gd")
 const HALF_VIEW := Vector2(320, 180)
 
 var _city: City
-var _ground: TileMapLayer
+var _ground: SceneryGround
 
 ## The save the boot is handed, so the player's own is never touched.
 const SCRATCH_SAVE := "user://lazy_scenery_routes_scratch.json"
@@ -17,7 +17,14 @@ func run(t) -> void:
 	var seat := Seat.new(t)
 	var booted := await seat.boot(t, SCRATCH_SAVE, [])
 	_city = Boot.city(booted.main)
-	_ground = _city.get_node("Ground")
+	_ground = _city.scenery_ground
+	# The ground is prepared lazily, the regions the camera needs; the coverage below counts the
+	# cells a view over any offered tile would find prepared, so every region of the map and its
+	# border is held resident first, which is how the city painted its ground when this was written.
+	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
+	for key in _ground.keys_in(Rect2(Vector2.ONE * -depth,
+			Vector2(_city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)):
+		_ground.prepare(key)
 	var tree := _city.route_tree()
 	t.check(tree != null and not tree.branches.is_empty(), "real daily boot supplies route options")
 	var home_tiles := _tiles_for_nodes(tree, tree._home)
@@ -84,10 +91,13 @@ func _tiles_for_nodes(tree: RouteTree, nodes: Dictionary) -> Dictionary:
 					tiles[tile] = true
 	return tiles
 
+## How many of `tiles` a daily closure has shut. A tile of a node's cell that is no walkable ground
+## at all (a building's tile the cell's node is looked up for) is not a closure and is not counted;
+## `_coverage()` skips such a tile as it skips a closed one.
 func _closed_count(tiles: Dictionary) -> int:
 	var result := 0
 	for tile: Vector2i in tiles:
-		result += int(not _city.map.is_open(tile))
+		result += int(_city.map.is_walkable(tile) and _city.map.closed_tiles.has(tile))
 	return result
 
 ## View unions over offered open tile centers. A square 46px expansion is a conservative

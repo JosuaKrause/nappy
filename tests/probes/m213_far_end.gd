@@ -35,6 +35,7 @@ const RUN_SEED := 2
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
+	t.gives_back_observers()
 	_reachability(t)
 	_on_screen(t)
 	_task_guards(t)
@@ -172,6 +173,9 @@ func _reachability(t) -> void:
 func _on_screen(t) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
+	# Her view is a `VisibleView` of its own, and the siting handed to each director sees it: this
+	# stage builds no city, so no city's events hold the view the siting's screen rule reads.
+	var view := VisibleView.new()
 	var marks_seen := 0
 	var guards_seen := 0
 	var guards_centre_seen := 0
@@ -180,7 +184,8 @@ func _on_screen(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, own_run)
+		director.setup(null, map, null, own_run, SpawnSiting.new(map, map.navigator(),
+				func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
@@ -188,9 +193,9 @@ func _on_screen(t) -> void:
 		var robbery := EventCatalogue.by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
-			city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+			view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			director.set_sight(city.events.sees)
+			director.set_sight(view.sees)
 			var mark := director.nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue

@@ -1,6 +1,9 @@
 extends RefCounted
 ## Synchronous headless preparation and geometric coverage experiment. No rendered-frame claims.
 ## Run with tools/test.sh probes/lazy_scenery_measure.gd; external timeout belongs to the caller.
+## Every ground region is made resident before it measures, so its `LAZY_BOOT` figures
+## (`ground_prepared`, `visible_ground_*`) describe the whole map held at once, not the real boot,
+## which holds only the view's regions.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
@@ -40,6 +43,7 @@ func _measure(t, seed_value: int, trial: int) -> void:
 	# The run is held here: swapping the script drops the one the city was handed.
 	var own_run := city.run
 	city.set_script(TIMED_CITY)
+	city.run = own_run
 	city.atlas = _atlas
 	t.add_child(city)
 	var memory_before := OS.get_static_memory_usage()
@@ -83,7 +87,8 @@ func _coverage(city: City) -> void:
 	var home := map.doorstep_world_position()
 	var view := Rect2(home - HALF_VIEW, HALF_VIEW * 2)
 	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block))
-	var ground: TileMapLayer = city.get_node("Ground")
+	var ground: SceneryGround = city.scenery_ground
+	_prepare_every_region(ground, city)
 	var cells := ground.get_used_cells()
 	var boot_inside := 0
 	var boot_outside := 0
@@ -102,11 +107,17 @@ func _coverage(city: City) -> void:
 		for col in building.columns():
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
 				building.extension_rows(col) * 32.0)
-		for layer: SceneryLayer in building._roof_layers:
+		# The roof furniture each stands feet-anchored on its roof cell (`Building.roof_layout()`,
+		# which `_build_roof_layers()` draws from): its picture rises from the floor line of its row
+		# by the region's height at the equipment's scale, and how far that clears the lot's north
+		# edge (-footprint.y) is the overhang.
+		for unit: Dictionary in building.roof_layout():
 			roof_layers += 1
-			for rect: Rect2 in layer._rects:
-				max_roof_north_overhang = maxf(max_roof_north_overhang,
-					-rect.position.y - building.footprint.y)
+			var picture := _atlas.region(unit["texture"])
+			var rise := picture.get_height() * Building.roof_equipment_scale(unit["texture"])
+			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
+			max_roof_north_overhang = maxf(max_roof_north_overhang,
+					-(foot - rise) - building.footprint.y)
 	print("LAZY_BOOT " + JSON.stringify({"seed": map.seed_used,
 		"viewport_world": str(view), "home_block_world": str(home_rect),
 		"ground_prepared": cells.size(), "visible_ground_inside_home": boot_inside,
@@ -161,6 +172,17 @@ func _coverage(city: City) -> void:
 			"unique_ground_cells": seen_cells.size(), "prepared_ground_cells": cells.size(),
 			"unique_building_lots": seen_buildings.size(), "prepared_buildings": city.buildings().size()}))
 
+## The ground is prepared lazily (`SceneryResidency` asks for the regions a view needs, and a city
+## with no events and no frames asks for none), so this stage holds every region of the map and its
+## border resident, which is what the city painted whole when this experiment was written and what
+## the counterfactual below compares against.
+func _prepare_every_region(ground: SceneryGround, city: City) -> void:
+	var depth := CityMap.OUTSIDE_DEPTH_TILES * 32.0
+	var world := Rect2(Vector2.ONE * -depth,
+			Vector2(city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)
+	for key in ground.keys_in(world):
+		ground.prepare(key)
+
 func _building_count(city: City, rect: Rect2) -> int:
 	var result := 0
 	for building in city.buildings():
@@ -168,7 +190,7 @@ func _building_count(city: City, rect: Rect2) -> int:
 	return result
 
 func _counterfactual(city: City, t) -> void:
-	var source: TileMapLayer = city.get_node("Ground")
+	var source: SceneryGround = city.scenery_ground
 	var expected_count := source.get_used_cells().size()
 	var home := city.map.doorstep_world_position()
 	var nearby := Rect2(home - HALF_VIEW, HALF_VIEW * 2).grow(128)

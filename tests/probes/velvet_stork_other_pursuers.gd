@@ -31,6 +31,7 @@ const POSITIONS := 150
 const STEP := 0.05
 
 func run(t) -> void:
+	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
@@ -113,9 +114,9 @@ static func _route_from(map: CityMap, from: Vector2i,
 
 func _the_sent_robbers_starts(t, seed_value: int) -> void:
 	var suite = SUITE.new()
-	var city: City = RunCity.with_own_run(SUITE.CITY_SCENE, SUITE.RUN_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	# The suite's own city builder: a city in a run of its own, which the suite's `_rig_player()`
+	# reads back as `_city` to hand her to the city's events.
+	var city: City = suite._build_city(t, seed_value)
 	var director: ResistanceDirector = suite._start_the_day(t, city, seed_value)
 	var player: Stroller = suite._rig_player(t, director, director.contact_position())
 	var map := city.map
