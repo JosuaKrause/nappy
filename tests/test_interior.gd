@@ -1320,7 +1320,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
 ## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
 ## catch is checked, is pinned just outside his catch (`_TIGHTEST_RUNNER_CLOSEST` against
-## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 0.3s after he
+## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 16 ticks (a little over half a second) after he
 ## does.**
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
@@ -1350,6 +1350,11 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 ## real `DangerEdge` (`_meet_the_masked_man()` with `badge`): on every drawn frame from his run until
 ## he comes into her view, or she is through the door or caught, the badge for him is up. The badge
 ## is drawn at his own position (`DangerEdge._draw_arrow()`), so up is pointing at him.
+##
+## **The one pin that does not hold with frames lengthened** (`--frame-delay`): `BadgeModel` reads
+## how fast he closes as his step over the frame's own delta, so on a frame several ticks long the
+## first running frame's closing speed is under the badge's threshold and the badge comes up a
+## frame late. The run is therefore taken at the engine's own rate from just before he runs.
 func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
@@ -1397,7 +1402,9 @@ func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts
 ## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
 ## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
 ## pins outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`), measured on the escape as built.
-const _TIGHTEST_RUNNER_CLOSEST := 24.6
+## It is 36.4 on her real `move_and_slide()`, which slides her velocity along the walls she
+## touches; the rig that stepped her by hand applied the unslid velocity, and measured 24.6.
+const _TIGHTEST_RUNNER_CLOSEST := 36.4
 
 ## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
 ## there, whether a walker is caught, and what to call it.
@@ -1411,7 +1418,7 @@ const _SECOND_FLIGHT_TURNS := [
 ## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
 ## down the landing to `walk`'s row, then holding its keys, walking (`pace` "walk"), running all the
 ## way ("run"), walking until he runs and running from then on with the keys she already holds, the
-## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
+## turn coming at its row ("walk-run"), or starting to run 16 ticks after he does ("run-late"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
 func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
@@ -1420,10 +1427,14 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	# a tick's step the same.
 	const MAX_TICKS := 600
 	const WALK_PACE := 8
-	# She starts running this many ticks after he does ("run-late"): a third of a second, the first
-	# whole number of ticks that is past 0.3s with the walk counted in floats (nine ticks are
-	# 0.3s to the last digit, and she gets through on that line).
-	const RUN_LATE_TICKS := 10
+	# She starts running this many ticks after he does ("run-late"), a little over half a second.
+	# On real ticks the line is caught from 13 ticks on, every start to 30 ticks tried; at 11 she
+	# is caught, at 12 she gets through by 1.4px, and below that she gets through. Three ticks past
+	# the first start from which every later one is caught keeps the pin off that ragged edge.
+	const RUN_LATE_TICKS := 16
+	# How far outside the distance he runs from the fast stretch of a badge case ends, px: a few
+	# ticks of the two closing on each other.
+	const BADGE_LEAD := 60.0
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1444,6 +1455,10 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	events.use_player(player)
 	player.global_position = scene.map.tile_to_world(
 			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
+	if badge:
+		# The badge cases start a row on, past the door: he is already warning, and the walk
+		# from the door to here says nothing about the badge.
+		player.global_position += Vector2(0, InteriorScene.TILE)
 	player.velocity = Vector2.ZERO
 	# **With `badge`, the screen-edge badge as the game raises it**: a real `DangerEdge` reading
 	# these events and her, processing on the frames the engine gives it, and her real camera made
@@ -1521,7 +1536,8 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		# closes from his step over the frame's delta, which `Engine.time_scale` stretches, so the
 		# walk up to his warning is taken fast and the run itself at the engine's own rate, where a
 		# frame is shorter than a tick. It ends when his badge has done its job.
-		if badge and state["fast"] and (man.is_telegraphing() or met["ran"]):
+		if badge and state["fast"] and (met["ran"] or man.global_position.distance_to(her)
+				<= man.def.notice.runs_within + BADGE_LEAD):
 			state["fast"] = false
 			return true
 		return badge and badge_log.get("done", false)
@@ -1530,7 +1546,7 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		if badge:
 			await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS, WALK_PACE, after_the_tick)
 			if state["fast"] == false and met["outcome"] == "neither" and not badge_log.get("done", false):
-				await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS - int(state["ticks"]), 3, after_the_tick)
+				await PhysicsTicks.pass_ticks(t, MAX_TICKS - int(state["ticks"]), after_the_tick)
 		else:
 			await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS, WALK_PACE, after_the_tick)
 	_hold_keys([], false)
