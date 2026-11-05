@@ -364,9 +364,13 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 	t.check(beside_a_door != Vector2.INF and not _mast_installs(t, made, beside_a_door),
 			"but not with its field on the ground a door could stand beside")
 	var tile: Vector2i = city.map.world_to_tile(at)
-	city.map.closed_tiles[tile] = true
+	var street := city.map.network.segment_containing(tile)
+	var shut: Array[RoadClosure] = city.closures().duplicate()
+	shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, street))
+	city.map.close_streets(shut)
+	t.check(city.map.is_closed(tile), "fixture: the street's closure shuts the tile")
 	t.check(not _mast_installs(t, made, at), "nor on a closed tile")
-	city.map.closed_tiles.erase(tile)
+	city.map.close_streets(city.closures())
 	city.map.hold_segment(city.map.network.segment_containing(tile).key())
 	t.check(not _mast_installs(t, made, at), "nor on a held street")
 	_free_day(made)

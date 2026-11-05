@@ -1280,7 +1280,8 @@ func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
 	t.check(is_same(kept[0], kept[1]), "and reads the ground the first plan kept")
 	var tile := map.world_to_tile(map.tile_rect_to_world(
 			walks[0].open_streets[0].tile_rect()).get_center())
-	map.closed_tiles[tile] = true
+	var shut: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS, walks[0].open_streets[0])]
+	map.close_streets(shut)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEEDS[0]
 	DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(), true, ground)
