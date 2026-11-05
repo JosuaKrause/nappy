@@ -614,7 +614,7 @@ func _busker_in_the_park() -> EventInstance:
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
 ## she stood at the touch, and it is her way out too: she walks it at `Tuning.WALK_SPEED`, setting
-## off 4s and then 8s after the touch, and stops where it ends. The busker walked out down it is
+## off 4s and then 8s after he is sent off down it (read off him, `EventInstance.way_left()`, as his escort reads it), and stops where it ends. The busker walked out down it is
 ## seen to go on past her, and is gone only where the camera on her cannot see him. **And he walks
 ## on at his pace while she can see him**, never standing at a wall or the city's edge: once the
 ## way is walked he is in her view no longer than walking out of the view box square to its sides
@@ -629,7 +629,8 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var her := [fixture.swing]
 		var shows := _camera_on(her)
 		_tick(happenings, her[0], shows.is_valid())
-		var way := PackedVector2Array(happenings.cordon._exit)
+		var way := PackedVector2Array()
+		var sent_off_at := -1.0
 		var clock := STEP
 		var last := busker.global_position
 		var ended_in_view := false
@@ -639,7 +640,11 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 		var through_tape := 0
 		var was_leaving := false
 		while clock < PATIENCE * 2.0 and not busker.is_finished:
-			if clock >= set_off and not way.is_empty():
+			if sent_off_at < 0.0 and not busker.is_finished and busker.way_left().size() >= 2:
+				# A copy: the packed array it answers is the departure's own, shared, and her walk drops its points.
+				way = busker.way_left().duplicate()
+				sent_off_at = clock
+			if sent_off_at >= 0.0 and clock >= sent_off_at + set_off and not way.is_empty():
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
@@ -662,7 +667,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 			was_leaving = was_leaving or busker.is_leaving
 			last = busker.global_position
 		t.check(was_leaving and busker.is_finished,
-				"setting off %.0fs after the touch down the way out: the busker walked out "
+				"setting off %.0fs after he is sent off down the way out: the busker walked out "
 				% set_off + "ahead of her is gone in the end (%.1fs)" % clock)
 		t.check(not ended_in_view, "and not where she can see him (%.0fpx from her)"
 				% last.distance_to(her[0]))
