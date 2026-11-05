@@ -268,7 +268,10 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near.global_position) < 1.0,
 				"the arrow is on the nearer man")
-		_city.events.world.instances.erase(near)
+		# Retired as the manager retires one, taken out of its list by the sweep, and then freed
+		# at once rather than at the frame's end: the arrow is asked about a freed man.
+		_city.events.retire(near)
+		_city.events.streaming.retire_finished()
 		near.free()
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and asked != Vector2.ZERO,

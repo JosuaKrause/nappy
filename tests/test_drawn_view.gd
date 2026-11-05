@@ -350,7 +350,15 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
+	# Handed open ground drawn in a node it holds and a run of its own (`EventManager.setup_world()`,
+	# as the escape's building is handed its world).
+	var run := RunState.new()
+	var map := WorldMap.open_ground()
+	var holder := WorldContext.new()
 	var manager := EventManager.new()
+	manager.add_child(holder)
+	map.world = holder
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	# After it enters the tree: entering turns on the tick of a node that defines one.
 	manager.set_physics_process(false)
@@ -368,12 +376,8 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	t.check(not await _redraws(t, edge, drawn), "nothing coming, nothing drawn: no redraw")
 
 	var def := EventCatalogue.by_id("fire_truck")
-	var engine := EventInstance.new()
-	engine.atlas = atlas
-	engine.setup(def, Vector2(1200.0, 0.0))
+	var engine := manager.spawn_extra(def, Vector2(1200.0, 0.0))
 	engine.set_process(false)
-	manager.add_child(engine)
-	manager.world.instances.append(engine)
 	var asked_when_up := false
 	var went_up := false
 	for i in 120:
@@ -388,12 +392,14 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	t.check(await _redraws(t, edge, drawn) and not edge.model.coming.is_empty(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
-	manager.world.instances.erase(engine)
+	manager.retire(engine)
+	manager.streaming.retire_finished()
 	t.check(await _redraws(t, edge, drawn), "the frame it comes down redraws once to take it off")
 	t.check(not await _redraws(t, edge, drawn), "and then the empty edge is not redrawn again")
 	edge.free()
 	standing.free()
 	manager.free()
+	run.free()
 	atlas.release(&"events")
 
 ## Lets one real frame pass and answers whether the engine drew `edge` in it (`drawn`, its count of
