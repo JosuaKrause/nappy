@@ -2671,9 +2671,9 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	fire.excitement.accumulate_landed(20.0)
 	# A drawn frame of the halo, as the game runs it.
 	await _frames(t, 3)
-	t.check(fire._rim.is_held() and fire._rim.entity_halo()._target_alpha > 0.0,
+	t.check(fire.excitement.rim.is_held() and not fire.rim().is_faded_out(),
 			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
-	t.check(not man._rim.is_held(),
+	t.check(not man.excitement.rim.is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
@@ -2706,8 +2706,17 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	t.check(bodies > 0, "the building's own bodies are found (%d)" % bodies)
 	t.check(layers.body_outline_count() == bodies + DebugLayers.collision_nodes_under(stroller).size(),
 			"and the layer outlines every one of them, with no crowd to add a strike box")
-	t.check(layers._live().size() == events.instances().size(),
-			"its fields and shadows read the same instances the building's events hold")
+	# Its fields read the building's instances: with nothing else on the map, every one that is not
+	# finished is outlined at its inner and its outer radius (a flock at each bird's).
+	var unfinished := 0
+	for instance in events.instances():
+		if not instance.is_finished:
+			var birds := instance.flock_offsets().size()
+			unfinished += 2 * maxi(birds, 1)
+	var outlined := layers.field_runs(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6)).size()
+	t.check(outlined == unfinished,
+			"its fields outline each of the building's unfinished instances at both radii (%d of %d)"
+			% [outlined, unfinished])
 
 	layers.free()
 	stroller.free()
