@@ -1586,10 +1586,11 @@ class WalkSiting extends RefCounted:
 	## ordered chain of cells a route actually runs along.
 	##
 	## `verdicts` is where its placements keep the verdicts of the candidates they judge
-	## (`EventScheduler.Verdicts`): a siting handed none keeps them in one of its own, which is what
-	## every siting the game builds does.
+	## (`EventScheduler.Verdicts`), handed in by whoever builds the siting. Every owner in the game
+	## hands each siting a store of its own: the siting drops the store's verdicts before every ask
+	## outside a look, so a store shared between sitings would keep nothing either could use.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
-			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts = null) -> void:
+			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts) -> void:
 		_day = for_day
 		_map = map
 		_tree = tree if tree else RouteTree.for_day(map, for_day)
@@ -1597,7 +1598,7 @@ class WalkSiting extends RefCounted:
 		_used_calm = used_calm.duplicate()
 		_leave_alone = EventScheduler._calm_to_leave_alone(map, used_calm)
 		_doors = doors
-		_verdicts = verdicts if verdicts else EventScheduler.Verdicts.new()
+		_verdicts = verdicts
 
 	## A placement for `def` on a tile of its own ground **on the branch of the day's route tree she
 	## is walking** — whatever `_ground_as_a_set()` offers the row: a building face for day 3's fire

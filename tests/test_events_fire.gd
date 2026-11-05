@@ -124,7 +124,8 @@ func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDire
 func _fire_siting(day: int) -> EventScheduler.WalkSiting:
 	if not _shared_fire_siting:
 		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
-				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array())
+				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array(),
+				EventScheduler.Verdicts.new())
 	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
@@ -375,7 +376,7 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var def := EventCatalogue.by_id("burning_building")
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array())
+			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
 	var nothing_else: Array[EventScheduler.Planned] = []
 	var route := _fire_route(day)
 	t.check(route.size() > 8, "the day has a route out of the doorstep to stand on")

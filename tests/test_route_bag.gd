@@ -387,7 +387,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
 	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
 	var no_calm: Array[Vector2i] = []
-	var siting := RefusingSiting.new(day, map, tree, no_calm, PackedVector2Array())
+	var siting := RefusingSiting.new(day, map, tree, no_calm, PackedVector2Array(),
+			EventScheduler.Verdicts.new())
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
@@ -595,7 +596,7 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.route_tree(),
-			[], PackedVector2Array())
+			[], PackedVector2Array(), EventScheduler.Verdicts.new())
 	var longest: Array = []
 	for branch in city.route_tree().branches:
 		for route: Array in branch.routes:
