@@ -24,7 +24,7 @@ func run(t) -> void:
 	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	await _test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	await _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t)
-	_test_her_body_walks_every_flight_at_45_degrees(t)
+	await _test_her_body_walks_every_flight_at_45_degrees(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_every_door_is_drawn_under_her(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
@@ -34,8 +34,8 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
-	_test_she_has_to_run_to_the_first_floor_door(t)
-	_test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
+	await _test_she_has_to_run_to_the_first_floor_door(t)
+	await _test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
 	_test_another_masked_man_comes_up_the_same_shaft(t)
 	await _test_his_catch_ends_the_section_with_what_struck_her(t)
@@ -580,11 +580,10 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 
 ## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
-## on every flight of both shafts, down and up. Each call to the real `_physics_process()` supplies
-## her redirected, accelerated velocity, `StrollerSteer.velocity_step` takes back the displacement
-## `move_and_slide()` would add, and this test applies that frame's displacement itself through
-## `move_and_collide()` against the scene's registered blockers, sliding the collision remainder
-## along the reported normal.
+## on every flight of both shafts, down and up. Her own `_physics_process()` runs on real physics
+## ticks, redirecting and accelerating her velocity and moving her with `move_and_slide()` against the
+## scene's registered blockers; the walk is read after each tick (her position, and
+## `get_slide_collision_count()` for the walls she touched).
 ##
 ## Sampled every tenth of a second, her displacement while she is on flight tiles heads within
 ## `_STAIR_HEADING_TOLERANCE` of the flight's own 45 degrees. A landing leaves her press as it is,
@@ -606,8 +605,9 @@ const _STAIR_WALKS := [
 ]
 
 func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
-	const STEP := 1.0 / 60.0
-	const MAX_STEPS := 360
+	# Six seconds of the game's 30Hz ticks, taken eight times as often as the engine would.
+	const MAX_TICKS := 180
+	const WALK_PACE := 8
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -617,7 +617,6 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 	player.carrying = true
 	player.set_map(scene.map)
 	scene.add_entity(player)
-	player.set_physics_process(false)
 	var body_collision := player.get_node("CollisionShape2D") as CollisionShape2D
 	var body_circle := body_collision.shape as CircleShape2D
 	t.check(not body_collision.disabled and body_circle != null
@@ -640,30 +639,41 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 			Input.action_press(action)
 			player.global_position = scene.map.tile_to_world(start)
 			player.velocity = Vector2.ZERO
-			var steps := 0
-			var sampled := 0
-			var worst := 0.0
-			var flight_contacts := 0
-			var last := player.global_position
-			while steps < MAX_STEPS and not (scene.map.world_to_tile(player.global_position).x == column
-					and scene.map.slope_dir_at(player.global_position) == 0):
-				StrollerSteer.velocity_step(player, STEP)
-				var on_flight := scene.map.slope_dir_at(player.global_position) != 0
-				var contacts := _move_real_body_one_step(player, player.velocity * STEP)
-				if on_flight:
-					flight_contacts += contacts
-				steps += 1
-				if steps % 6 != 0:
-					continue
+			# Her own `_physics_process()` walks her on real ticks with the key held; what the walk
+			# reads is sampled after each tick, where the tick left her.
+			var walk_state := {"ticks": 0, "sampled": 0, "worst": 0.0, "flight_contacts": 0,
+					"last": player.global_position}
+			var read_the_walk := func(ticks: int) -> bool:
+				# Whether she stood on the flight before this tick: the tick's contacts are the
+				# flight's if she did.
+				var was_on_flight := scene.map.slope_dir_at(walk_state["position"]) != 0
+				walk_state["position"] = player.global_position
+				if was_on_flight:
+					walk_state["flight_contacts"] += player.get_slide_collision_count()
+				walk_state["ticks"] = ticks
+				if scene.map.world_to_tile(player.global_position).x == column \
+						and scene.map.slope_dir_at(player.global_position) == 0:
+					return true
+				# Every tenth of a second: three ticks of the game's 30Hz.
+				if ticks % 3 != 0:
+					return false
+				var last: Vector2 = walk_state["last"]
 				var moved := player.global_position - last
 				var along := absf(last.x - scene.map.tile_to_world(start).x)
 				if scene.map.slope_dir_at(last) != 0 and scene.map.slope_dir_at(player.global_position) != 0 \
 						and moved.length() > 1.0 and (not second_row or along >= InteriorScene.TILE * 2.0):
-					sampled += 1
+					walk_state["sampled"] += 1
 					# 45 degrees off the vertical, whichever of the four diagonals.
 					var off_vertical := absf(absf(rad_to_deg(moved.angle())) - 90.0)
-					worst = maxf(worst, absf(off_vertical - 45.0))
-				last = player.global_position
+					walk_state["worst"] = maxf(walk_state["worst"], absf(off_vertical - 45.0))
+				walk_state["last"] = player.global_position
+				return false
+			walk_state["position"] = player.global_position
+			await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS, WALK_PACE, read_the_walk)
+			var steps: int = walk_state["ticks"]
+			var sampled: int = walk_state["sampled"]
+			var worst: float = walk_state["worst"]
+			var flight_contacts: int = walk_state["flight_contacts"]
 			Input.action_release(action)
 			t.check(scene.map.world_to_tile(player.global_position).x == column,
 					"%s: she reaches the next landing (%d steps, ended on %s)"
@@ -1317,7 +1327,7 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 		for pace: String in ["walk", "run", "walk-run", "run-late"]:
 			if pace == "run-late" and walk[0] != 11:
 				continue
-			var met := _meet_the_masked_man(t, walk, pace)
+			var met := await _meet_the_masked_man(t, walk, pace)
 			var expected := "through" if pace != "walk" or not walk[2] else "caught"
 			if pace == "run-late":
 				expected = "caught"
@@ -1343,7 +1353,7 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void:
 	for walk: Array in _SECOND_FLIGHT_TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
-			var met := _meet_the_masked_man(t, walk, pace, true)
+			var met := await _meet_the_masked_man(t, walk, pace, true)
 			t.check(met["ran"] and int(met["unseen_frames"]) > 0,
 					"%s at a %s: he runs while she cannot see him" % [walk[3], pace])
 			t.check(int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0,
@@ -1371,7 +1381,7 @@ func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts
 			OS.delay_msec(pause)
 			await t.get_tree().process_frame
 			seen_fractions[snappedf(Engine.get_physics_interpolation_fraction(), 0.1)] = true
-			var met := _meet_the_masked_man(t, walk, "walk", true, true)
+			var met := await _meet_the_masked_man(t, walk, "walk", true, true)
 			var ok: bool = int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0 \
 					and int(met["unseen_frames"]) > 0
 			if not ok:
@@ -1406,7 +1416,14 @@ const _SECOND_FLIGHT_TURNS := [
 ## "neither") and how near he came.
 func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 		interpolated := false) -> Dictionary:
-	const TICK := 1.0 / 30.0
+	# The game's own 30Hz ticks, taken eight times as often as the engine would (`pass_ticks_faster()`),
+	# a tick's step the same.
+	const MAX_TICKS := 600
+	const WALK_PACE := 8
+	# She starts running this many ticks after he does ("run-late"): a third of a second, the first
+	# whole number of ticks that is past 0.3s with the walk counted in floats (nine ticks are
+	# 0.3s to the last digit, and she gets through on that line).
+	const RUN_LATE_TICKS := 10
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1425,99 +1442,127 @@ func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
 	player.set_map(scene.map)
 	scene.add_entity(player)
 	events.use_player(player)
-	player.set_physics_process(false)
 	player.global_position = scene.map.tile_to_world(
 			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
 	player.velocity = Vector2.ZERO
 	# **With `badge`, the screen-edge badge as the game raises it**: a real `DangerEdge` reading
-	# these events and her, and her real camera made current and stepped on each physics tick
-	# (its own smoothing, `NOTIFICATION_INTERNAL_PHYSICS_PROCESS`, after her `_update_camera()`), so
-	# the view it asks is the one the stairwell is drawn from.
+	# these events and her, processing on the frames the engine gives it, and her real camera made
+	# current and smoothing on the physics ticks, so the view it asks is the one the stairwell is
+	# drawn from.
 	var edge: DangerEdge = null
+	var atlas: AtlasLibrary = null
 	var camera: Camera2D = null
 	if badge:
 		camera = player.get_node("Camera2D") as Camera2D
 		camera.make_current()
 		# **Not interpolated, unless the case asks for the game's own.** With physics interpolation on
 		# (`project.godot`) the camera's view centre is shifted by `Engine.get_physics_interpolation_fraction()`,
-		# a wall-clock value fixed by when in a tick the suite happened to reach this case - up to a
-		# camera step, tens of px - and where the stairwell lies against the view's edge decided the
-		# badge. Stepped by hand as here, the view is a function of the walk alone.
+		# a wall-clock value fixed by when in a tick a frame happens to fall - up to a camera step,
+		# tens of px - and where the stairwell lies against the view's edge decided the badge. Off,
+		# the view is a function of the walk alone.
 		if not interpolated:
 			camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		camera.reset_smoothing()
+		atlas = AtlasLibrary.new()
+		atlas.acquire(&"events")
 		edge = DangerEdge.new()
+		edge.atlas = atlas
+		edge.size = Vector2(1280.0, 720.0)
 		t.add_child(edge)
-		edge.set_process(false)
 		edge.setup(events, player)
 	var badge_log := {"first": -1, "dropped": 0, "unseen": 0}
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
 	var met := {"ran": false, "outcome": "neither", "closest": INF}
-	var turned := false
-	var elapsed := 0.0
-	var ran_at := 0.0
-	while man != null and elapsed < 20.0:
-		StrollerSteer.velocity_step(player, TICK)
-		_move_real_body_one_step(player, player.velocity * TICK)
+	var state := {"turned": false, "ran_at": 0, "running": running, "before": {}, "ticks": 0}
+	# After each tick her step, the building's manager (which tells him where she is, steps him and
+	# checks the catch) and her camera have run, in the tree's order; the edge has processed every
+	# frame up to the one before this.
+	var after_the_tick := func(_ticks: int) -> bool:
+		state["ticks"] += 1
+		var ticks: int = state["ticks"]
 		var her := player.global_position
 		var tile := scene.map.world_to_tile(her)
-		# The manager's tick steps him, told whether she runs off her own pace.
-		events._physics_process(TICK)
 		# The catch is the tick's: where his step put him when the tick ran.
 		var caught := man.is_lethal_at(her)
 		if met["ran"]:
 			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
-		if camera:
-			camera.notification(Node.NOTIFICATION_INTERNAL_PHYSICS_PROCESS)
-		# Two drawn frames to the tick.
-		_count_the_badge(edge, man, badge_log)
-		_count_the_badge(edge, man, badge_log)
-		elapsed += TICK
-		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map.tile_to_world(tile).y:
-			turned = true
-			_hold_keys(walk[1], running)
+		if edge:
+			# The edge's last frame measured the previous tick's state, so that is what it is
+			# counted against.
+			if not (state["before"] as Dictionary).is_empty():
+				_count_the_badge(edge, state["before"], badge_log)
+			state["before"] = {"quiet": man.is_waiting() or man.is_telegraphing(),
+					"shown": _in_sight(edge, man)}
+		if not state["turned"] and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map.tile_to_world(tile).y:
+			state["turned"] = true
+			_hold_keys(walk[1], state["running"])
 		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
 			met["ran"] = true
-			ran_at = elapsed
+			state["ran_at"] = ticks
 			if pace == "walk-run":
 				# Runs with the keys she already holds; the turn comes at its row.
-				running = true
-				_hold_keys(walk[1] if turned else ["move_down"], true)
-		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
-			running = true
-			_hold_keys(walk[1] if turned else ["move_down"], true)
+				state["running"] = true
+				_hold_keys(walk[1] if state["turned"] else ["move_down"], true)
+		if pace == "run-late" and met["ran"] and not state["running"] \
+				and ticks - state["ran_at"] >= RUN_LATE_TICKS:
+			state["running"] = true
+			_hold_keys(walk[1] if state["turned"] else ["move_down"], true)
 		if caught:
 			met["outcome"] = "caught"
-			break
+			return true
 		if tile == door:
 			met["outcome"] = "through"
-			break
+			return true
 		# On the first floor's landing, up into its door.
 		if met["ran"] and tile.x == origin.x + 1 and tile.y - origin.y >= 16:
-			_hold_keys(["move_up"], running)
+			_hold_keys(["move_up"], state["running"])
+		# **The badge is measured on frames of the game's own length.** Its model reads how fast he
+		# closes from his step over the frame's delta, which `Engine.time_scale` stretches, so the
+		# walk up to his warning is taken fast and the run itself at the engine's own rate, where a
+		# frame is shorter than a tick. It ends when his badge has done its job.
+		if badge and state["fast"] and (man.is_telegraphing() or met["ran"]):
+			state["fast"] = false
+			return true
+		return badge and badge_log.get("done", false)
+	if man != null:
+		state["fast"] = badge
+		if badge:
+			await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS, WALK_PACE, after_the_tick)
+			if state["fast"] == false and met["outcome"] == "neither" and not badge_log.get("done", false):
+				await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS - int(state["ticks"]), 3, after_the_tick)
+		else:
+			await PhysicsTicks.pass_ticks_faster(t, MAX_TICKS, WALK_PACE, after_the_tick)
 	_hold_keys([], false)
 	met["badge_first"] = badge_log["first"]
 	met["badge_dropped"] = badge_log["dropped"]
 	met["unseen_frames"] = badge_log["unseen"]
 	if edge:
 		edge.free()
+		atlas.release(&"events")
 	player.free()
 	events.free()
 	scene.free()
 	return met
 
-## One drawn frame of the edge watching him (`_meet_the_masked_man()` with `badge`): the edge
-## measures, and on every frame from the one he is first running on (neither waiting nor warning)
-## while she cannot see him, counts whether his badge is up, the first such frame it is, and the
-## frames it is down after it first went up.
-func _count_the_badge(edge: DangerEdge, man: EventInstance, log: Dictionary) -> void:
-	if not edge:
+## Whether she can see any of `man`: the point he stands at, or any of what he draws, asked of the
+## edge's own view (`DangerEdge.sees()`, and `VisibleView.sees_any()` on the drawn box
+## `EventInstance.drawn_box()`).
+func _in_sight(edge: DangerEdge, man: EventInstance) -> bool:
+	if edge.sees(man.global_position):
+		return true
+	var box := man.drawn_box()
+	return box.has_area() and edge.view().sees_any(Rect2(man.global_position + box.position, box.size))
+
+## One drawn frame of the edge watching him (`_meet_the_masked_man()` with `badge`), counted against
+## `then`, what the tick the frame measured held (`quiet`: he is still waiting or warning; `shown`:
+## she can see him): on every frame from the one he is first running on while she cannot see him,
+## whether his badge is up, the first such frame it is, and the frames it is down after it first
+## went up.
+func _count_the_badge(edge: DangerEdge, then: Dictionary, log: Dictionary) -> void:
+	if then["quiet"]:
 		return
-	edge._process(1.0 / 60.0)
-	if man.is_waiting() or man.is_telegraphing():
-		return
-	if edge._shows(man):
+	if then["shown"]:
 		# His badge has done its job the first time he is in sight after it went up; if he leaves
 		# sight again it is raised anew, past the margin band, and that is not this check.
 		if int(log["first"]) >= 0:
