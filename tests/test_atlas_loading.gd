@@ -91,8 +91,11 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 		var name := StringName(path)
 		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
 		t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % path)
-	t.check(AtlasTable.baked().group_of(SaveIndicator._ICON) == &"ui",
-			"beside the screen furniture it now shares that page with")
+	# The screen furniture the indicators share the page with is swept by
+	# `test_atlas_leaf_consumers.gd`'s `ui/` walk.
+	for name in AtlasTable.baked().region_names():
+		if String(name).begins_with("ui/"):
+			t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % name)
 
 # ----------------------------------------------------------------- the parents ---
 
