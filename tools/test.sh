@@ -88,8 +88,8 @@ the limit of every shard. --serial and --shard I/N are never bounded by it. A
 suite-name-substring argument filters to the suites whose file name contains it and runs
 unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
 itself reads off OS.get_cmdline_user_args(), which is why this script does not
-reject an argument it does not itself recognise (the runner rejects an option it does not
-know) -- only --serial, --plan, --record-costs, --shard, --shuffle, --repeat, --help and -h are
+reject an argument it does not itself recognise (the runner checks only its own options)
+-- only --serial, --plan, --record-costs, --shard, --shuffle, --repeat, --help and -h are
 its own.
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) with each shard's planned
@@ -330,14 +330,14 @@ run_one_process() {
 	# happened to print earlier is not taken for it.
 	local closing_at timing_at
 	closing_at="$(grep -nE '^[0-9]+ checks, [0-9]+ failures$' "$scratch" | tail -n 1 | cut -d: -f1)"
-	timing_at="$(grep -nE '^-- ' "$scratch" | tail -n 1 | cut -d: -f1)"
+	timing_at="$(grep -nE '^(-- |pass [0-9]+/[0-9]+ \| )' "$scratch" | tail -n 1 | cut -d: -f1)"
 	if grep -qE '^QUIT  ' "$scratch" || [[ -z "$closing_at" ]] \
 			|| [[ -n "$timing_at" && "$closing_at" -lt "$timing_at" ]]; then
 		local why quit_line last_suite
 		# The runner names the suite that was running when the tree went away (its QUIT line); the
 		# last timing line is the fallback and names the suite before it.
 		quit_line="$(grep -E '^QUIT  ' "$scratch" | tail -n 1)"
-		last_suite="$(grep -E '^-- test_' "$scratch" | tail -n 1 | awk '{print $2}')"
+		last_suite="$(grep -E '^(-- |pass [0-9]+/[0-9]+ \| )test_' "$scratch" | tail -n 1 | sed -E 's/^(-- |pass [0-9]+\/[0-9]+ \| )//' | awk '{print $1}')"
 		if [[ -n "$killed_marker" && -f "$killed_marker" ]]; then
 			why="the process was killed at the shard timeout (${RUN_TIMEOUT_S}s)"
 		elif [[ -n "$quit_line" ]]; then

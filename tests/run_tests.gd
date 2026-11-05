@@ -229,9 +229,9 @@ func _parse_args(args: PackedStringArray) -> Dictionary:
 					return {"error": "--repeat wants 1 or more, got '%s'" % value}
 			i += 2
 			continue
-		elif arg.begins_with("-"):
-			return {"error": "unknown option '%s'" % arg}
 		else:
+			# Any other argument is a filter, as before: a probe reads its own flags (`--all-events`)
+			# off the same command line, so only this runner's own options are checked here.
 			filters.append(arg)
 		i += 1
 	return {"filters": filters, "seed": shuffle_seed, "repeat": repeat}

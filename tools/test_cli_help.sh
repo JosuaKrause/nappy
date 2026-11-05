@@ -815,6 +815,10 @@ check_that "wait_or_kill refuses a limit that is not whole seconds and leaves th
     '[[ "$wok_out" == *"limit must be whole seconds"*"rc 2"*"fd9 ok" && "$wok_out" != *"still running"* && "$(cat "$wok_fd_file")" == "after" ]]'
 check_that "test.sh --help lists --shuffle and --repeat" \
     '[[ "$(./tools/test.sh --help 2>&1)" == *"--shuffle SEED"*"--repeat N"* ]]'
+rm -f "$GODOT_ARGS"
+./tools/test.sh probes/calm_pelican_fields_layer_cost.gd --all-events >/dev/null 2>&1
+check_that "test.sh passes a flag it does not know through to a filtered run" \
+    'grep -qx -- "--all-events" "$GODOT_ARGS"'
 check_that "test.sh refuses a TEST_SHARD_TIMEOUT_S that is not whole seconds before any work" \
     '[[ "$(GODOT=/nonexistent TEST_SHARD_TIMEOUT_S=1.5 ./tools/test.sh 2>&1; echo "rc $?")" == *"must be whole seconds"*"rc 2" ]]'
 
