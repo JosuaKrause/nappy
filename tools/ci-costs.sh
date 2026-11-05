@@ -5,6 +5,9 @@
 #   tools/ci-costs.sh --runs 5     # average the last 5 instead
 #   tools/ci-costs.sh --dry-run    # print the diff tools/ci-costs.sh would make; write nothing
 #
+# CI's own plan does not come from this file alone: its `plan` job freezes the newest cache saved
+# by tools/ci-costs-merge.sh, falling back to the committed file this tool refreshes.
+#
 # tools/test.sh --record-costs measures from a run on this one machine; this instead reads the
 # same "-- suite  N ms" lines (tests/run_tests.gd's own "-- %-36s %7d ms" line) out of the shard
 # job logs of the last few green `ci` runs on main via `gh`, and averages each suite across
@@ -18,14 +21,14 @@
 # named on stderr, the same "missing row costs more than a stale one" rule tools/test.sh's own
 # _cost_of() states. A row whose suite no longer exists under tests/ -- one deleted or split since
 # -- is dropped, whether the fetched logs measured it or the current file held it, and is named on
-# stderr too. Nothing here ever drops a row silently.
+# stderr too. Nothing here ever drops a row silently. Those row rules live in
+# tools/lib_suite_costs.sh, which tools/ci-costs-merge.sh (CI's own per-run cost file) shares.
 set -uo pipefail
-# Byte order for every sort and join below, so the file's rows come out in one order whatever the
-# shell's locale, the order tools/test.sh --record-costs writes them in.
-export LC_ALL=C
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1
+# shellcheck source=tools/lib_suite_costs.sh
+source "$root/tools/lib_suite_costs.sh"
 
 COST_FILE="$root/tests/suite_costs.txt"
 WORKFLOW="ci.yml"
@@ -144,10 +147,7 @@ while IFS= read -r run_id; do
         fi
         # The same line tests/run_tests.gd prints and tools/test.sh --record-costs reads, just
         # with "<job>\t<step>\t<timestamp> " ahead of it here -- matched from "-- test_" on.
-        grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$log_file" \
-            | sed -E 's/^-- +//; s/ +ms$//' \
-            | awk '{ printf "%s %s\n", $1, $2 }' \
-            >> "$all_lines"
+        costs_timing_lines < "$log_file" >> "$all_lines"
     done < "$job_ids_file"
 done < "$run_ids_file"
 
@@ -167,79 +167,14 @@ averaged="$work_dir/averaged.txt"
 awk '{ sum[$1] += $2; cnt[$1]++ } END { for (n in sum) printf "%s %d\n", n, int(sum[n] / cnt[n] + 0.5) }' \
     "$all_lines" | sort > "$averaged"
 
-# The rows already on disk, same "name ms" shape, so the two files can be compared by name.
-old_rows="$work_dir/old_rows.txt"
-awk '$1 !~ /^#/ && NF { print $1, $2 }' "$COST_FILE" | sort > "$old_rows"
-
-# A row for a suite that is no longer under tests/ (deleted, or split into others) is dropped from
-# both, and named on stderr, so the file holds one row per suite that exists.
-gone_names="$work_dir/gone_names.txt"
-: > "$gone_names"
-for rows in "$averaged" "$old_rows"; do
-    still="$rows.still"
-    : > "$still"
-    while IFS= read -r row; do
-        [[ -z "$row" ]] && continue
-        name="${row%% *}"
-        if [[ -f "$root/tests/$name" ]]; then
-            printf '%s\n' "$row" >> "$still"
-        else
-            printf '%s\n' "$name" >> "$gone_names"
-        fi
-    done < "$rows"
-    mv "$still" "$rows"
-done
-if [[ -s "$gone_names" ]]; then
-    echo "tools/ci-costs.sh: dropping the row of each suite no longer under tests/:" >&2
-    sort -u "$gone_names" | sed 's/^/    /' >&2
-fi
-
-# Old suites the fetched logs never measured keep their row and are named on stderr -- comm -23
-# wants both inputs sorted by the compared field, which both files already are (sort on "name ms"
-# sorts by name first since name has no spaces).
-missing_names="$work_dir/missing_names.txt"
-comm -23 <(cut -d' ' -f1 "$old_rows") <(cut -d' ' -f1 "$averaged") > "$missing_names"
-missing_count=$(wc -l < "$missing_names" | tr -d ' ')
-if [[ "$missing_count" -gt 0 ]]; then
-    echo "tools/ci-costs.sh: $missing_count suite(s) not seen in any fetched run's logs -- keeping their existing row:" >&2
-    sed 's/^/    /' "$missing_names" >&2
-fi
-
-kept_rows="$work_dir/kept_rows.txt"
-: > "$kept_rows"
-while IFS= read -r name; do
-    [[ -z "$name" ]] && continue
-    grep -F -- "$name " "$old_rows" >> "$kept_rows"
-done < "$missing_names"
-
-merged_rows="$work_dir/merged_rows.txt"
-cat "$averaged" "$kept_rows" | sort > "$merged_rows"
-
-merged_count=$(wc -l < "$merged_rows" | tr -d ' ')
-old_count=$(wc -l < "$old_rows" | tr -d ' ')
-new_count=$(wc -l < "$averaged" | tr -d ' ')
-if [[ "$merged_count" -ne $(( new_count + missing_count )) ]]; then
-    echo "tools/ci-costs.sh: internal row-count mismatch ($merged_count merged, $old_count old, $new_count averaged, $missing_count kept) -- not writing anything" >&2
+# The shared row rules: drop what is no longer under tests/, keep what no run measured.
+rendered="$work_dir/suite_costs.new"
+if ! costs_merge "tools/ci-costs.sh" "$root" "$COST_FILE" "$averaged" "$rendered"; then
     exit 1
 fi
-
-# --------------------------------------------------------------- render ---
-
-rendered="$work_dir/suite_costs.new"
-{
-    printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
-    printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
-    printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
-    printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
-    printf '%s\n' "# default, with a warning, rather than silently dropped."
-    printf '%s\n' "#"
-    printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite locally and"
-    printf '%s\n' "# rewrites this file from that run's own \"-- suite  N ms\" lines, or with \`tools/ci-costs.sh\`,"
-    printf '%s\n' "# which reads those same lines out of the last few green CI runs on main and averages them"
-    printf '%s\n' "# instead -- either way never hand-edited, so the numbers come from a runner rather than from"
-    printf '%s\n' "# anybody's memory."
-    cat "$merged_rows"
-} > "$rendered"
+merged_count="$COSTS_TOTAL"
+new_count="$COSTS_MEASURED"
+missing_count="$COSTS_KEPT"
 
 # --------------------------------------------------------------- verify before writing ---
 

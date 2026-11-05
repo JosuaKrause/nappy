@@ -22,7 +22,9 @@
 # for the whole matrix). What it must never do is quietly run *fewer* suites than a serial run
 # would, which is why the shards are built from the files on disk rather than from a list
 # somebody maintains — see `_plan_the_shards`. A local run and a CI shard plan identically,
-# because both read the same `tests/suite_costs.txt` through `_cost_of`.
+# because both read a cost file through `_cost_of`: a local run reads the committed
+# `tests/suite_costs.txt`, and CI's `plan` job freezes one copy per run (the newest it saved in its
+# cache, else that same committed file) and hands it to every shard through TEST_SUITE_COSTS.
 #
 # A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
 # below) and reported by name rather than left to block the run forever -- see
