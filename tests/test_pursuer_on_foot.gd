@@ -498,14 +498,11 @@ func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
 	return []
 
 ## One frame of what `EventManager` does for a vehicle and its men, with her where she
-## stands: tell everything where she is, let out whoever is owed, tick every instance, and look for
-## a day-ending catch.
+## stands: the manager's own encounter step (tell everything where she is, tick every instance, let
+## out whoever is owed), then the look for a day-ending catch.
 func _tick(events: EventManager) -> void:
-	events._tell_them_where_she_is()
-	events.ahead.let_the_officers_out()
-	for instance in events.instances().duplicate():
-		instance.step(STEP)
-	events._check_hard_fails()
+	events.step_the_encounters(STEP)
+	events.check_hard_fails()
 
 ## **The investigating car stops on its road, the man gets out and pursues her, reaches her, stops
 ## her, walks back and gets in, and the car drives on.** On a real city, through the manager's own
