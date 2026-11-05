@@ -217,6 +217,13 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run python tools/check_layers.py
 
+      # The tests hold something the game can reach: no test reads a public member that nothing else
+      # under src/ names, except those tools/test_only_members.txt lists, a list that only shrinks.
+      # Read as text, so it needs no engine and runs on every run, docs-only included.
+      - name: No test reads a member only tests read
+        if: ${{ !cancelled() }}
+        run: uv run python tools/check_test_only_members.py
+
       # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
       # so it needs no engine and runs on a docs-only pull request too.
       # Needs only uv, installed above under the same condition, so it runs after a red step too.
