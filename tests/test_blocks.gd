@@ -402,6 +402,7 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 	city.build(map)
 	var decals: CityDecals = city.get_node("Decals")
 	var planted := StreetTrees.planted(map)
+	t.check(decals.drawer != null, "the city hands its decals the drawer they lay their beds through")
 	var recorder := RecordingSceneryDrawer.new()
 	decals.drawer = recorder
 	city.scenery.update(city.scenery.camera_view(), true)
