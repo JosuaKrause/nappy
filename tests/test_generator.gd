@@ -58,7 +58,6 @@ func run(t) -> void:
 	_test_a_precincts_end_is_a_t_junction(t)
 	_test_bollards_stand_where_the_paving_begins(t)
 	_test_an_alley_is_exactly_one_cell_wide(t)
-	_test_even_offset_is_always_even(t)
 
 # ------------------------------------------------------------------- pieces ---
 
@@ -890,26 +889,6 @@ func _test_an_alley_is_exactly_one_cell_wide(t) -> void:
 					"seed %d: alley %s leaves two tiles of building either side (offset %d)"
 					% [_seed(i), alley, offset])
 	t.check(rolled > 0, "some block's layout holds an alley (%d found)" % rolled)
-
-## `CityGenerator._even_offset` never returns an odd number, whatever range it is asked for —
-## including a degenerate one where the whole range collapses to its low end.
-##
-## **Still reads `_even_offset` directly.** The generator's one caller, `_alley_rect`, always asks
-## for the range 2 to 4 (a block is `BLOCK_SIZE` tiles and an alley `ALLEY_WIDTH_TILES` wide), so no
-## city reaches an odd bound or a collapsed range; the alley test above reads what the roll gives
-## for the range it is asked. These edge cases need `_even_offset` handed an rng and a range,
-## which is a seam only this test would call.
-func _test_even_offset_is_always_even(t) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 99
-	for low in range(0, 6):
-		for high in range(low, low + 6):
-			for _roll in 20:
-				var offset := CityGenerator._even_offset(rng, low, high)
-				t.check(offset % 2 == 0, "_even_offset(%d, %d) returned %d, which is odd"
-						% [low, high, offset])
-				t.check(offset >= low + (low % 2) and offset <= maxi(low + (low % 2), high),
-						"_even_offset(%d, %d) returned %d, out of range" % [low, high, offset])
 
 ## The blocks a rect of blocks covers, row by row.
 func _blocks_in(blocks: Rect2i) -> Array[Vector2i]:

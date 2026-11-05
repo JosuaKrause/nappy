@@ -128,11 +128,11 @@ which is the tree a fresh clone receives.
 ## Merging
 
 **The orchestrating Claude Code session holds the player's standing permission to merge a PR**
-(`CLAUDE.md`, inbox #1063), once the gates below hold. Merging includes enabling auto-merge,
+(`CLAUDE.md`, inbox #1063 in gentle-walrus), once the gates below hold. Merging includes enabling auto-merge,
 merging by hand, and asking an agent or monitor to merge. Every other session (an implementation
 agent, a Codex session) merges only a PR the orchestrating session hands it, an agent or monitor
 running its merge (`tools/land-prs.sh` for one) under the orchestrating session's standing
-permission (inbox #1063), or one the player authorizes in that session; a permission given in
+permission (inbox #1063 in gentle-walrus), or one the player authorizes in that session; a permission given in
 another session does not carry over to it. A review agent never merges (**pr-review**).
 Finishing implementation, opening a PR and green CI do not by themselves make a PR mergeable.
 Leave the PR open and report its link when the session has no permission to merge it.
@@ -148,20 +148,55 @@ review (**pr-review**). The standing permission and green CI do not replace it.
 approval rule on *any* PR they merge, not only their own. A reviewer bot's own APPROVE (posted as
 `claude-reviewer`/`codex-reviewer`, under **pr-review**) counts the same as the player's.
 
+**The `main approvals` ruleset dismisses stale approvals when new commits are pushed** (the player
+set it on 2026-11-04, inbox #1068 in gentle-walrus; `gh api repos/JosuaKrause/nappy/rules/branches/main` shows it as
+`dismiss_stale_reviews_on_push`). A push after an approval therefore blocks the merge until a new
+approval, so auto-merge left on is safe against a later push: it cannot merge what nobody
+approved. **Whether a merge of `main` that is Git's own** (**pr-review**'s exception, which needs
+no review of new content) **keeps the approval is GitHub's to say**: where it dismisses the
+approval, the PR needs a re-approval against the new head, not a review of new content, and the
+reviewer posts it after the one check that `git show --remerge-diff <merge>` prints nothing. The
+exception is about what is reviewed, not about whether the ruleset sees an approval.
+
 **A review thread is resolved only by whoever opened it, and that is a convention, not a gate**
 (**pr-review** says who and why): an open thread never blocks an approval or a merge on its own.
 
 When the session may merge, check mergeability and let CI gate the merge. Resolve
-conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**
-(`gh pr merge <n> --squash`) and retire the branch (see "Branches"). A dependent wait belongs to
-a background agent, not a polling loop in the orchestrating session.
+conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**, and
+**prefer auto-merge** (inbox #1068 in gentle-walrus): once the review is ready, turn auto-merge on
+(`gh pr merge <n> --squash --auto`, or `tools/land-prs.sh`, which does that for a list and merges
+directly a PR GitHub already calls clean) and move on to the next thing. **No polling monitor and
+no background wait just to trigger the merge** (inbox #1068 in gentle-walrus): GitHub merges the PR when its checks
+are green and its approval is in, and nothing needs to be held open for that.
+
+**Auto-merge is confirmed by a timer or a script, the orchestrator's choice, as long as the wait
+and reading its result cost no tokens** (inbox #1072 in gentle-walrus). The player said to check
+back later that it went through and that a timer is enough (inbox #1068 in gentle-walrus); then
+that a fixed timer was overly safe, and to estimate better, undershoot a little and poll the rest
+with a script, not an agent (inbox #1070 in gentle-walrus). That overturns the player's earlier word that a timer needs no polling (inbox #1068 in gentle-walrus) for the tail after the estimate only; the player's word that no polling monitor is wanted just to trigger the merge (inbox #1068 in gentle-walrus) stands. The script meets the rule now: right after turning auto-merge on, run
+`tools/await-merge.sh <the PRs>` with the Bash tool's `run_in_background`, which re-invokes the
+session when it exits. It estimates when the PR's CI ends from the unfinished jobs of its latest
+run and how long the same jobs took in recent green runs on `main`, sleeps until then, and polls
+every 20 seconds until every PR is MERGED. Its output is quiet by default (one estimate line, then
+one line per PR and `main`'s CI run; `--verbose` keeps per-poll lines), because reading it costs
+tokens. **The numbers are the filer's proposal, not the player's**: the shortest of the last three
+runs per job, the latest job's end minus one minute, 20 seconds between polls, and a cap of 30
+minutes past the estimate (`--max-poll`). When it exits, a PR that shows MERGED is retired (`tools/prune-merged.sh <branch>`, see "Branches"; the
+main checkout pulls `main` first); a red check or a conflict it names is fixed (under
+**merging-main** for a conflict, with the fix reviewed under **pr-review**: a push dismisses the
+approval, so auto-merge left on waits for the new approval and cannot land the fix unseen, and
+`tools/land-prs.sh` turns it off on a stop so that the new approval does not fire a merge before it
+is chosen); a PR with auto-merge off or not approved is reported at once, and one still unmerged
+when the cap runs out is for the orchestrator to look at, not to loop on. A batch runs one script
+for all of its PRs, confirms every one and names each failure. When every PR has merged it prints
+`main`'s CI run on the last merge commit. No agent holds the wait.
 
 **Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
 `main` ruleset requires a pull request and the `test` check, run on the merge result — every
 consistency check and every test of the game, except on a docs-only pull request, where the game's
 tests are skipped and every consistency check still runs (**verify** says what each kind of pull
 request gets). The `main approvals` ruleset requires one approving review, from a reviewer bot or
-the player; repository admins (the player) may bypass it on any pull request they merge, not only
+the player, and dismisses it when a commit is pushed afterwards; repository admins (the player) may bypass it on any pull request they merge, not only
 their own, and resolving the review threads is not required (a convention, not a gate — see
 above). So green CI alone is not the gate.
 Neither ruleset requires a branch to be up to date with `main`
@@ -170,7 +205,7 @@ merges after `main` has moved under it as long as the merge is still clean; a co
 it and is resolved on the branch. **What that trades away is real**: the check ran on that branch's
 merge result, not on the one it actually gets, so a semantic conflict between two PRs that touch
 different files passes both gates and lands broken. Watch `main`'s own CI run after a batch rather
-than assuming the last green PR spoke for it; `tools/land-prs.sh` names that run when it finishes,
+than assuming the last green PR spoke for it; `tools/await-merge.sh` names the run on the last merge commit once every PR has merged,
 and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
 
 **PRs land without waiting for each other or for `main`'s CI, and when `main` breaks after a
@@ -431,8 +466,9 @@ role, or anything else in front of `tools/prune-merged.sh` is not covered and go
 classifier. There is no `codex-coder` rule: Codex does not read this file (its approvals are its
 own sandbox's), and Claude Code never runs as `codex-coder`.
 
-**`tools/land-prs.sh` lands every pull request it is given as the one role it runs under**, since
-it merges and retires each branch through that role. So a batch of docs-only pull requests and a
+**`tools/land-prs.sh` handles every pull request it is given as the one role it runs under**, since
+it turns on auto-merge or merges through that role (the prune at the confirming check is its own
+call, under the role that owns the PR). So a batch of docs-only pull requests and a
 batch of code pull requests are two calls, one as `claude-orchestrator` and one as `claude-coder`,
 rather than one mixed call.
 
