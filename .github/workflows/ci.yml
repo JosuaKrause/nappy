@@ -445,7 +445,8 @@ jobs:
   # must plan the same split or a suite runs twice or not at all, so the shards never look the
   # file up themselves: a lookup per shard could see two different files (a cache saved between
   # two shards' starts), and a re-run of one failed shard could see a newer one than the first
-  # attempt did. Here it is read once and handed on as this job's output. Re-running only the
+  # attempt did. Here it is read once and handed on as this job's output, whatever saves a newer
+  # cache while the run is under way. Re-running only the
   # failed shards reuses the first attempt's `plan` output, so the split is identical to the one
   # the other shards ran.
   #
