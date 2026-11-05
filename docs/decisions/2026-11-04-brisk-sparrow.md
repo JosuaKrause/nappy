@@ -28,16 +28,16 @@ The player asked that CI read the previous run's timings and balance from them o
 - The cache is saved only when every shard succeeded. A failed check can end a suite early and
   record a short time, and a hung, crashed or cancelled shard did not finish its list.
 - `costs` is not required by the `test` gate: it is skipped whenever a shard did not pass, and a
-  cache write is not a test failure. Its merge and save steps are `continue-on-error`, and a last
-  step turns a failure of either into a warning annotation, so the job, the run and `test` stay
-  green. A red run would count as a failure to `tools/agent-status.sh` and hide the run from
+  cache write is not a test failure. Its checkout, merge and save steps are `continue-on-error`, and a
+  last step turns a failure of the merge or the save into a warning annotation, so the job, the run
+  and `test` stay green; only a timeout or a lost runner can still fail the job. A red run would count as a failure to `tools/agent-status.sh` and hide the run from
   `tools/ci-costs.sh`, which lists only successful runs on main. `plan` is required.
 - A local `tools/test.sh --shard I/8` plans from the committed `tests/suite_costs.txt`, so it
   reproduces CI's shard I only with `TEST_SUITE_COSTS` pointed at that run's table, which the
   `plan` job's log prints whole. The cost-file header, shared by the committed file and every cache
   entry, says what plans from it and every way it is refreshed.
 - The shard count is spelled in `SHARD_COUNT`, the matrix, the eight outputs and the `costs` env; a
-  comment at `SHARD_COUNT` names them and `costs` fails loudly if the outputs it reads are not
+  comment at `SHARD_COUNT` names them and `costs` refuses to save and warns if the outputs it reads are not
   `SHARD_COUNT` many.
 - No artifact is added, so no retention is set; a cache has no retention setting (GitHub evicts an
   entry unused for 7 days).
