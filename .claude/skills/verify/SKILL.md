@@ -138,6 +138,22 @@ magnitude, and what it buys is an answer minutes before the PR gives the same an
 better tree. **A `PARTIAL RUN` marker is the expected state of a local run**, not a failure to
 apologise for.
 
+**Every CI shard runs in a shuffled order, and a local run can too.** `tools/test.sh --shuffle SEED`
+runs the chosen suites in an order drawn from SEED (a whole number): the same seed and the same
+suites give the same order, and the runner prints `ORDER` (the seed and the order) and `REPLAY`
+(a command that runs those suites in that order) before anything runs. `--repeat N` runs the
+chosen suites N times in one process, each pass in its own order when `--shuffle` is given, and a
+failure names its pass (`[pass 2/3] ...`); a repeated run's timings print as `pass K/N | suite  T ms`,
+which the cost readers do not match, and `--record-costs` refuses `--repeat`. Both go with every
+mode and change no shard plan: which suites a shard runs is the cost table's, only the order inside
+its process is the seed's. CI's shards use the run's id as the seed, so an order dependence between
+two suites shows on any pull request: **a shard that fails in CI is replayed by copying the `REPLAY`
+line out of that shard's log** (it names the suites in the order they ran and needs no cost table),
+or with `TEST_SUITE_COSTS=<the plan job's table> tools/test.sh --shard I/8 --shuffle <run id>`, the
+line the shard's log prints first. An order-dependent failure is fixed in its own pull request, not
+by pinning the order. `--repeat 2 --shuffle N` on a few suites is the cheap way to look for a leak
+between passes (a `static var`, an autoload field) before CI does.
+
 **Two cases where running it locally is still right**, and neither is a gate:
 
 - **You changed the rigs themselves, or something every suite loads**, and want to know the blast

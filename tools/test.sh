@@ -6,6 +6,10 @@
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
 #   tools/test.sh --plan          print the shard split and run nothing
 #   tools/test.sh --shard 3/8     run only shard 3 of 8 -- what one CI matrix leg runs
+#   tools/test.sh --shuffle 7 ... the suites in an order drawn from seed 7 (any mode above takes it);
+#                                  the runner prints the order and a command that replays it
+#   tools/test.sh --repeat 3 ...  the chosen suites three times in one process (any mode but
+#                                  --record-costs); a failure names its pass
 #   tools/test.sh --record-costs  run everything locally, then refresh tests/suite_costs.txt from it
 #                                  (tools/ci-costs.sh refreshes the same file from recent CI runs'
 #                                  own timings instead, with no local run needed)
@@ -27,6 +31,14 @@
 # in its cache, else that same committed file) and hands it to every shard through
 # TEST_SUITE_COSTS. So a local `--shard I/8` runs CI's shard I only when TEST_SUITE_COSTS names
 # that run's table: the `plan` job's log prints it whole, and every shard's log prints the split.
+#
+# **`--shuffle SEED` and `--repeat N` reach the runner unchanged, in every mode, and change nothing
+# about the plan**: which suites land on which shard is decided from the cost table before either
+# is looked at, and only the order within one process is drawn from the seed (every shard of a
+# sharded run gets the same seed, so each shard's order is a function of the seed and its own
+# list). The runner prints each pass's order with a command replaying it, whichever shard it was.
+# A repeated run prints its timings in a shape the cost readers do not match (tests/run_tests.gd),
+# and `--record-costs` refuses `--repeat` besides.
 #
 # A shard that hangs is killed after a limit that follows the plan (see SHARD_TIMEOUT_OVERRIDE_S
 # below) and reported by name rather than left to block the run forever -- see
@@ -66,7 +78,7 @@ DEFAULT_COST_MS=5000
 
 usage() {
     cat <<'EOF'
-usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs|--shard I/N] [suite-name-substring...]
+usage: tools/test.sh [--help|-h] [--serial|--plan|--record-costs|--shard I/N] [--shuffle SEED] [--repeat N] [suite-name-substring...]
 
 Runs the headless test suite (tests/tests.tscn). With no arguments, runs everything, sharded
 across TEST_SHARDS (default 4) Godot processes, planned from tests/suite_costs.txt (or the
@@ -76,8 +88,9 @@ the limit of every shard. --serial and --shard I/N are never bounded by it. A
 suite-name-substring argument filters to the suites whose file name contains it and runs
 unfiltered/unsharded, in one process; that filtered run also accepts any flag the test scene
 itself reads off OS.get_cmdline_user_args(), which is why this script does not
-reject an argument it does not itself recognise -- only --serial, --plan, --record-costs,
---shard, --help and -h are its own.
+reject an argument it does not itself recognise (the runner checks only its own options)
+-- only --serial, --plan, --record-costs, --shard, --shuffle, --repeat, --help and -h are
+its own.
   --serial          everything, in one process (what a shard failure is debugged in)
   --plan            print the shard split (TEST_SHARDS processes) with each shard's planned
                      time and kill limit, and run nothing
@@ -87,11 +100,21 @@ reject an argument it does not itself recognise -- only --serial, --plan, --reco
   --shard I/N       run only shard I of N (1-indexed), planned the same way every other shard
                      is, and let the runner's own PARTIAL RUN note say so -- one shard is never
                      a green build by itself
+  --shuffle SEED    run the suites in an order drawn from SEED (a whole number, 0 or more): the same
+                     seed gives the same order. Combines with every mode; the shard plan is the same,
+                     only the order inside a process shuffles. The runner prints the order and a
+                     command that replays it, which is how a failure found in CI is reproduced
+  --repeat N        run the chosen suites N times in one process (N is 1 or more); with --shuffle
+                     each pass has its own order from a seed derived from SEED, and a failure names
+                     its pass. Not with --record-costs
 
   tools/test.sh
   tools/test.sh crowd balance
   tools/test.sh --serial
   tools/test.sh --shard 3/8
+  tools/test.sh --shuffle 42 crowd balance
+  tools/test.sh --shard 3/8 --shuffle 42
+  tools/test.sh --repeat 3 --shuffle 42 crowd
 EOF
 }
 
@@ -111,6 +134,51 @@ if [[ ! -x "$GODOT" ]]; then
     echo "godot not found at $GODOT (override with GODOT=...)" >&2
     exit 127
 fi
+
+# --shuffle and --repeat, pulled out of the arguments wherever they stand and checked here, before
+# any work; the rest stays in "$@" for the mode and the filters below. Both go to the runner
+# unchanged (it checks them again, for a direct run of the scene).
+runner_flags=()
+rest=()
+seed_given=0
+repeat_given=0
+repeat_value=1
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --shuffle|--repeat)
+            flag="$1"
+            value="${2:-}"
+            if [[ $# -lt 2 ]] || [[ ! "$value" =~ ^[0-9]{1,18}$ ]]; then
+                echo "tools/test.sh: $flag wants a whole number after it, e.g. $flag 7 (got '${value}')" >&2
+                echo >&2
+                usage >&2
+                exit 2
+            fi
+            if [[ "$flag" == "--shuffle" ]]; then
+                if (( seed_given )); then
+                    echo "tools/test.sh: --shuffle is given twice" >&2; echo >&2; usage >&2; exit 2
+                fi
+                seed_given=1
+            else
+                if (( repeat_given )); then
+                    echo "tools/test.sh: --repeat is given twice" >&2; echo >&2; usage >&2; exit 2
+                fi
+                if (( 10#$value < 1 )); then
+                    echo "tools/test.sh: --repeat wants 1 or more (got '$value')" >&2
+                    echo >&2
+                    usage >&2
+                    exit 2
+                fi
+                repeat_given=1
+                repeat_value=$(( 10#$value ))
+            fi
+            runner_flags+=("$flag" "$value")
+            shift 2
+            ;;
+        *) rest+=("$1"); shift ;;
+    esac
+done
+set -- ${rest[@]+"${rest[@]}"}
 
 serial=0
 plan_only=0
@@ -136,6 +204,13 @@ esac
 # takes suite-name filters -- anything left over is a mistake to reject rather than to guess at.
 if [[ ( -n "$shard_arg" || $record_costs -eq 1 ) && $# -gt 0 ]]; then
     echo "tools/test.sh: --shard and --record-costs take no suite-name filters" >&2
+    echo >&2
+    usage >&2
+    exit 2
+fi
+
+if [[ $record_costs -eq 1 && $repeat_given -eq 1 ]]; then
+    echo "tools/test.sh: --record-costs takes no --repeat (a repeated run is not a measurement of one run)" >&2
     echo >&2
     usage >&2
     exit 2
@@ -211,7 +286,7 @@ run_one_process() {
 		# still flushing when the checks below read the file. This path's output goes to a shard
 		# log anyway, so nothing is lost by printing it at the end.
 		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" \
-				> "$scratch" 2>&1 &
+				${runner_flags[@]+"${runner_flags[@]}"} > "$scratch" 2>&1 &
 		local godot_pid=$!
 		killed_marker="$scratch.killed"
 		# TERM first, then KILL after a short grace period for a process that is not merely slow
@@ -242,7 +317,8 @@ run_one_process() {
 		rm -f "$fifo"
 		cat "$scratch"
 	else
-		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" 2>&1 | tee "$scratch"
+		"$GODOT" --headless --path "$PROJECT_DIR" res://tests/tests.tscn -- "$@" \
+				${runner_flags[@]+"${runner_flags[@]}"} 2>&1 | tee "$scratch"
 		status="${PIPESTATUS[0]}"
 	fi
 	if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" "$scratch"; then
@@ -254,14 +330,14 @@ run_one_process() {
 	# happened to print earlier is not taken for it.
 	local closing_at timing_at
 	closing_at="$(grep -nE '^[0-9]+ checks, [0-9]+ failures$' "$scratch" | tail -n 1 | cut -d: -f1)"
-	timing_at="$(grep -nE '^-- ' "$scratch" | tail -n 1 | cut -d: -f1)"
+	timing_at="$(grep -nE '^(-- |pass [0-9]+/[0-9]+ \| )' "$scratch" | tail -n 1 | cut -d: -f1)"
 	if grep -qE '^QUIT  ' "$scratch" || [[ -z "$closing_at" ]] \
 			|| [[ -n "$timing_at" && "$closing_at" -lt "$timing_at" ]]; then
 		local why quit_line last_suite
 		# The runner names the suite that was running when the tree went away (its QUIT line); the
 		# last timing line is the fallback and names the suite before it.
 		quit_line="$(grep -E '^QUIT  ' "$scratch" | tail -n 1)"
-		last_suite="$(grep -E '^-- test_' "$scratch" | tail -n 1 | awk '{print $2}')"
+		last_suite="$(grep -E '^(-- |pass [0-9]+/[0-9]+ \| )test_' "$scratch" | tail -n 1 | sed -E 's/^(-- |pass [0-9]+\/[0-9]+ \| )//' | awk '{print $1}')"
 		if [[ -n "$killed_marker" && -f "$killed_marker" ]]; then
 			why="the process was killed at the shard timeout (${RUN_TIMEOUT_S}s)"
 		elif [[ -n "$quit_line" ]]; then
@@ -494,7 +570,7 @@ for ((i = 0; i < SHARDS; i++)); do
 	# The per-suite timings and any FAIL lines, exactly as a serial run prints them. The runner's
 	# own "PARTIAL RUN" line is dropped here and only here: each shard is genuinely partial, and
 	# the union of them is not, so repeating it would say the opposite of what is true.
-	grep -E '^(-- |FAIL )' "$log"
+	grep -E '^(-- |FAIL |LEAK |ORDER |REPLAY |pass [0-9]+/[0-9]+ \| )' "$log"
 
 	# A shard can print a clean "N checks, 0 failures" line and still have carried an engine
 	# error: `run_tests.gd` only counts failed check()/close_to() into that line, so Godot's own
