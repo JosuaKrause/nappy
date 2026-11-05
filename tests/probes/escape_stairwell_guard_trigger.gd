@@ -39,7 +39,7 @@ const ROUTES := {
 	"turn-9-left": [9, ["move_left"]],
 }
 
-const StrollerSteer := preload("res://tests/stroller_steer.gd")
+const StrollerSteer := preload("res://tests/probes/stroller_velocity_step.gd")
 
 func run(t) -> void:
 	for s: int in SEEDS:

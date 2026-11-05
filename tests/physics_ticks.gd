@@ -14,6 +14,8 @@ extends RefCounted
 ## (`Engine.time_scale`): every tick the engine takes is then `scale` times as long as a tick is, so a
 ## long wait takes fewer of them, and a check made over such a stretch is stated in the seconds it
 ## covers (`ticks_for()` with the same `scale`) and holds at any step. Both engine values are put back.
+## **`each` ends the wait early by returning `true`**: no further tick is let pass, so a walk that
+## stops at an event is not stepped on past it.
 static func pass_ticks(t, ticks: int, each := Callable(), scale := 1.0) -> void:
 	var steps := Engine.max_physics_steps_per_frame
 	var clock := Engine.time_scale
@@ -26,10 +28,22 @@ static func pass_ticks(t, ticks: int, each := Callable(), scale := 1.0) -> void:
 		await t.get_tree().process_frame
 		var passed := Engine.get_physics_frames() - before
 		ran += passed
-		if passed > 0 and each.is_valid():
-			each.call(ran)
+		if passed > 0 and each.is_valid() and each.call(ran) == true:
+			break
 	Engine.max_physics_steps_per_frame = steps
 	Engine.time_scale = clock
+
+## Lets `ticks` physics ticks pass as `pass_ticks()` does, at `factor` times the engine's rate:
+## `Engine.physics_ticks_per_second` and `Engine.time_scale` both multiplied by `factor`, so every
+## tick still steps the game by the same `1 / physics_ticks_per_second` seconds (a tick's delta is
+## `time_scale / physics_ticks_per_second`) and a walk of `ticks` ticks covers the same game time
+## and the same positions, the engine only taking the ticks `factor` times as often in real time.
+## Both settings are put back, and the runner's shared-state check compares both.
+static func pass_ticks_faster(t, ticks: int, factor: int, each := Callable()) -> void:
+	var rate := Engine.physics_ticks_per_second
+	Engine.physics_ticks_per_second = rate * factor
+	await pass_ticks(t, ticks, each, Engine.time_scale * factor)
+	Engine.physics_ticks_per_second = rate
 
 ## **First, in a suite's `run()`**: lets the frame the runner started the suite in end. That frame
 ## may run a backlog of ticks (up to the engine's own limit, planned before any suite set it to one)

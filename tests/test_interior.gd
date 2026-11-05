@@ -4,8 +4,8 @@ extends RefCounted
 ## parts, all headless: nothing here needs a scene tree except the suites that build
 ## `InteriorScene` itself.
 
-const StrollerSteer := preload("res://tests/stroller_steer.gd")
 const BuildingEvents := preload("res://tests/building_events.gd")
+const InteriorRig := preload("res://tests/interior_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
 
 func run(t) -> void:
@@ -24,7 +24,6 @@ func run(t) -> void:
 	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	await _test_a_sideways_press_on_a_flight_walks_its_slope(t)
 	await _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t)
-	_test_her_body_walks_every_flight_at_45_degrees(t)
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_every_door_is_drawn_under_her(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
@@ -34,10 +33,6 @@ func run(t) -> void:
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
 	_test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t)
 	_test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t)
-	_test_she_has_to_run_to_the_first_floor_door(t)
-	_test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
-	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
-	_test_another_masked_man_comes_up_the_same_shaft(t)
 	await _test_his_catch_ends_the_section_with_what_struck_her(t)
 	_test_his_run_stops_at_the_building_walls(t)
 	_test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t)
@@ -51,9 +46,7 @@ func run(t) -> void:
 	await _test_an_explosion_flashes_every_hallway_window(t)
 	await _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 	await _test_the_building_shows_what_the_city_shows(t)
-	for made in _runs:
-		made.free()
-	_runs.clear()
+	_rig.free_all()
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -578,106 +571,6 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 		walker.free()
 	scene.free()
 
-## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
-## rig holds one sideways action from a landing tile's centre until she stands on the next landing,
-## on every flight of both shafts, down and up. Each call to the real `_physics_process()` supplies
-## her redirected, accelerated velocity, `StrollerSteer.velocity_step` takes back the displacement
-## `move_and_slide()` would add, and this test applies that frame's displacement itself through
-## `move_and_collide()` against the scene's registered blockers, sliding the collision remainder
-## along the reported normal.
-##
-## Sampled every tenth of a second, her displacement while she is on flight tiles heads within
-## `_STAIR_HEADING_TOLERANCE` of the flight's own 45 degrees. A landing leaves her press as it is,
-## so her first step is level until she stands on the flight. From a landing tile level with the
-## flight's end tread that step puts her on the flight's line, and she never touches a wall on it.
-## From the row below the flight's end tread (`second_row`) she is a tile under the flight's line,
-## and slides along the stair side onto it, so there the samples are pinned once she is two tiles
-## along. With full-cell blockers beside the flight the same walks zigzag between flat and 80
-## degrees, since the blockers' corners are closer together across the slope than her body is wide.
-const _STAIR_HEADING_TOLERANCE := 2.0
-const _STAIR_WALKS := [
-	# [local start, the next landing's column, action, second_row]
-	[Vector2i(1, 2), 8, "move_right", false], [Vector2i(1, 3), 8, "move_right", true],
-	[Vector2i(8, 8), 1, "move_left", false],
-	[Vector2i(8, 10), 1, "move_left", false], [Vector2i(8, 11), 1, "move_left", true],
-	[Vector2i(1, 16), 8, "move_right", false],
-	[Vector2i(1, 18), 8, "move_right", false], [Vector2i(1, 19), 8, "move_right", true],
-	[Vector2i(8, 24), 1, "move_left", false], [Vector2i(8, 25), 1, "move_left", true],
-]
-
-func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
-	const STEP := 1.0 / 60.0
-	const MAX_STEPS := 360
-	var f := InteriorMap.build()
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	scene.build()
-	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
-	var player: Stroller = packed.instantiate()
-	player.carrying = true
-	player.set_map(scene.map)
-	scene.add_entity(player)
-	player.set_physics_process(false)
-	var body_collision := player.get_node("CollisionShape2D") as CollisionShape2D
-	var body_circle := body_collision.shape as CircleShape2D
-	t.check(not body_collision.disabled and body_circle != null
-			and is_equal_approx(body_circle.radius, Tuning.PLAYER_BODY_RADIUS),
-			"the walks use the enabled real 14px player circle")
-	t.check((player.get_node("PramCollisionShape2D") as CollisionShape2D).disabled,
-			"and the pram body is off while she carries the baby")
-	for side in ["left", "right"]:
-		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-		for walk: Array in _STAIR_WALKS:
-			var start: Vector2i = origin + (walk[0] as Vector2i)
-			var column: int = origin.x + int(walk[1])
-			var action: String = walk[2]
-			var second_row: bool = walk[3]
-			var label := "%s shaft from %s, %s" % [side, walk[0], action]
-			t.check(f.tiles.get(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
-					"%s: starts on a landing tile" % label)
-			for a in ["move_left", "move_right", "move_up", "move_down"]:
-				Input.action_release(a)
-			Input.action_press(action)
-			player.global_position = scene.map.tile_to_world(start)
-			player.velocity = Vector2.ZERO
-			var steps := 0
-			var sampled := 0
-			var worst := 0.0
-			var flight_contacts := 0
-			var last := player.global_position
-			while steps < MAX_STEPS and not (scene.map.world_to_tile(player.global_position).x == column
-					and scene.map.slope_dir_at(player.global_position) == 0):
-				StrollerSteer.velocity_step(player, STEP)
-				var on_flight := scene.map.slope_dir_at(player.global_position) != 0
-				var contacts := _move_real_body_one_step(player, player.velocity * STEP)
-				if on_flight:
-					flight_contacts += contacts
-				steps += 1
-				if steps % 6 != 0:
-					continue
-				var moved := player.global_position - last
-				var along := absf(last.x - scene.map.tile_to_world(start).x)
-				if scene.map.slope_dir_at(last) != 0 and scene.map.slope_dir_at(player.global_position) != 0 \
-						and moved.length() > 1.0 and (not second_row or along >= InteriorScene.TILE * 2.0):
-					sampled += 1
-					# 45 degrees off the vertical, whichever of the four diagonals.
-					var off_vertical := absf(absf(rad_to_deg(moved.angle())) - 90.0)
-					worst = maxf(worst, absf(off_vertical - 45.0))
-				last = player.global_position
-			Input.action_release(action)
-			t.check(scene.map.world_to_tile(player.global_position).x == column,
-					"%s: she reaches the next landing (%d steps, ended on %s)"
-					% [label, steps, scene.map.world_to_tile(player.global_position) - origin])
-			t.check(sampled >= 10, "%s: the walk had samples on the flight to read (%d)" % [label, sampled])
-			t.check(worst <= _STAIR_HEADING_TOLERANCE,
-					"%s: her body heads within %.0f degrees of 45 on the flight (worst %.1f)"
-					% [label, _STAIR_HEADING_TOLERANCE, worst])
-			if not second_row:
-				t.check(flight_contacts == 0,
-						"%s: and touches no wall on it (%d contacts)" % [label, flight_contacts])
-	player.free()
-	scene.free()
-
 ## **Every door in the building is drawn under her** *(the player, 2026-10-18: the escape's door
 ## graphics should always be under her)*: the stairwell doors, the open and the apartments'
 ## thresholds, the emergency exit, the lift door and the entrance. Asked of the canvas the way the
@@ -759,23 +652,6 @@ static func _absolute_z(item: CanvasItem) -> int:
 			break
 		node = node.get_parent()
 	return z
-
-## The explicit displacement these walks make themselves, in place of `move_and_slide()`'s, which
-## `StrollerSteer.velocity_step` keeps out of them. The real body's sweep supplies
-## every collision normal and remainder; up to `max_slides` applies the same bounded sliding shape
-## as the runtime.
-func _move_real_body_one_step(player: CharacterBody2D, motion: Vector2) -> int:
-	var collision := player.move_and_collide(motion)
-	var slides := 0
-	var contacts := 0
-	while collision != null and slides < player.max_slides:
-		contacts += 1
-		motion = collision.get_remainder().slide(collision.get_normal())
-		if motion.is_zero_approx():
-			return contacts
-		collision = player.move_and_collide(motion)
-		slides += 1
-	return contacts
 
 ## Drives a rig from her own door on the top hallway through a stair door, down the whole shaft by
 ## the left flights and again by the right, into the lobby, down to the basement and out — the walk
@@ -1084,7 +960,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 
 	var fire: EventInstance = null
 	for instance in events.instances():
@@ -1149,7 +1025,7 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 		t.add_child(scene)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = run_seed
-		var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+		var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 		var fire: EventInstance = null
 		for instance in events.instances():
 			if instance.def.id == "burning_building":
@@ -1234,7 +1110,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 
 	var man: EventInstance = null
 	for instance in events.instances():
@@ -1292,356 +1168,6 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 	events.free()
 	scene.free()
 
-## **She has to run to the door** *(inbox #764 in minty-lemur, the player: "player should have to run to the
-## door"; inbox #782 in minty-lemur, the player: the radius bigger, not him moved)*. He warns while she is in the
-## stairwell and runs his line once she is within `masked_pursuer.notice.runs_within` of him
-## (`EventNoticeRun`). Stepped at the game's own rhythm: the game's physics
-## ticks at 30Hz (`common/physics_ticks_per_second` in `project.godot`), and on each tick her real
-## carrying body moves with the real stair steering and collision, then the building's
-## `EventManager._physics_process()` tells him where she is, steps him, and checks the catch. She comes in at his shaft's second-floor door and down the
-## landing, and takes the second flight from each line a player turns onto it by. Once he runs she
-## makes for the first floor's door, on along the flight and up the landing into it.
-##
-## **Which lines catch a walker is what is pinned, and not every line does:** a walker is caught
-## from the rows level with and below the flight's head tread, and from the landing tile between
-## the two flights holding down-left; **a walker who holds plain left from the landing tile between
-## the two flights gets through**. A runner gets through on every line, whether she was running all
-## along or starts running the moment he does, with the keys she already holds. **The margins are
-## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
-## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
-## catch is checked, is pinned just outside his catch (`_TIGHTEST_RUNNER_CLOSEST` against
-## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 0.3s after he
-## does.**
-func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
-	for walk: Array in _SECOND_FLIGHT_TURNS:
-		for pace: String in ["walk", "run", "walk-run", "run-late"]:
-			if pace == "run-late" and walk[0] != 11:
-				continue
-			var met := _meet_the_masked_man(t, walk, pace)
-			var expected := "through" if pace != "walk" or not walk[2] else "caught"
-			if pace == "run-late":
-				expected = "caught"
-			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
-			t.check(met["outcome"] == expected,
-					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
-					% [walk[3], pace, expected, met["outcome"], met["closest"]])
-			if walk[0] == 11 and pace == "walk-run":
-				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5
-						and met["closest"] > EventCatalogue.MASKED_PURSUER_CATCH,
-						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned), %s"
-						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST,
-						"outside his %.1fpx catch" % EventCatalogue.MASKED_PURSUER_CATCH])
-			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
-					% [walk[3], pace, met["outcome"], met["closest"]])
-
-## **The screen-edge badge points at the masked man from the frame he starts running** *(inbox
-## #788 in minty-lemur, the player, told that his only heads-up is the badge once he runs: "Let's show that at
-## least")*. On every way down onto the second flight and at each pace, with her real camera and a
-## real `DangerEdge` (`_meet_the_masked_man()` with `badge`): on every drawn frame from his run until
-## he comes into her view, or she is through the door or caught, the badge for him is up. The badge
-## is drawn at his own position (`DangerEdge._draw_arrow()`), so up is pointing at him.
-func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void:
-	for walk: Array in _SECOND_FLIGHT_TURNS:
-		for pace: String in ["walk", "run", "walk-run"]:
-			var met := _meet_the_masked_man(t, walk, pace, true)
-			t.check(met["ran"] and int(met["unseen_frames"]) > 0,
-					"%s at a %s: he runs while she cannot see him" % [walk[3], pace])
-			t.check(int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0,
-					"%s at a %s: the edge badge points at him from the frame he runs, and stays up "
-					% [walk[3], pace] + "until he is in view (first up %d frames in, down on %d of %d)"
-					% [met["badge_first"], met["badge_dropped"], met["unseen_frames"]])
-
-## **The same checks with the camera interpolated, as the game runs it, from many places in the
-## physics tick.** The case starts after a pause of a different length each time (seeded, so the
-## list is the same every run) and a process frame, which fixes the interpolation fraction the
-## camera's view is shifted by: the fraction the game's frames take every value of, and the one a
-## slower machine took when the stairwell checks failed once on identical code. The badge must not
-## depend on it. **A probabilistic extra, not the regression check** (that is `test_badge_model`'s
-## deterministic case of this shape; the interior guard's own sensitivity is probabilistic: with the
-## charger reset taken out, at an earlier head with the old 0.8 s timer, it failed in 2 of 3 review runs):
-## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
-## walking, from inside the out-of-sight margin band).
-func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
-	var pauses_ms := [0, 7, 13, 19, 29, 37, 43, 53, 61, 71, 83]
-	var worst := 0
-	var failures := 0
-	var seen_fractions := {}
-	for walk: Array in _SECOND_FLIGHT_TURNS:
-		for pause: int in pauses_ms:
-			OS.delay_msec(pause)
-			await t.get_tree().process_frame
-			seen_fractions[snappedf(Engine.get_physics_interpolation_fraction(), 0.1)] = true
-			var met := _meet_the_masked_man(t, walk, "walk", true, true)
-			var ok: bool = int(met["badge_first"]) == 0 and int(met["badge_dropped"]) == 0 \
-					and int(met["unseen_frames"]) > 0
-			if not ok:
-				failures += 1
-				worst = maxi(worst, int(met["badge_dropped"]))
-	t.check(failures == 0,
-			"interpolated, from %d starts spread over the tick, the edge badge is up from the frame he runs until he is in view (%d failed, up to %d frames down)"
-			% [pauses_ms.size() * _SECOND_FLIGHT_TURNS.size(), failures, worst])
-	t.check(seen_fractions.size() >= 3,
-			"and those starts really took different interpolation fractions (%d distinct tenths)"
-			% seen_fractions.size())
-
-## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
-## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
-## pins outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`), measured on the escape as built.
-const _TIGHTEST_RUNNER_CLOSEST := 24.6
-
-## The lines onto the second flight, local to the grammar: the row of her turn, what she holds
-## there, whether a walker is caught, and what to call it.
-const _SECOND_FLIGHT_TURNS := [
-	[10, ["move_left"], true, "plain left from row 10 (level with the flight's head tread)"],
-	[11, ["move_left"], true, "plain left from row 11 (the row below it)"],
-	[9, ["move_left", "move_down"], true, "down-left from row 9 (the landing tile between the two flights)"],
-	[9, ["move_left"], false, "plain left from row 9 (the landing tile between the two flights)"],
-]
-
-## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
-## down the landing to `walk`'s row, then holding its keys, walking (`pace` "walk"), running all the
-## way ("run"), walking until he runs and running from then on with the keys she already holds, the
-## turn coming at its row ("walk-run"), or starting to run 0.3s after he does ("run-late"); once he runs she
-## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
-## "neither") and how near he came.
-func _meet_the_masked_man(t: Node, walk: Array, pace: String, badge := false,
-		interpolated := false) -> Dictionary:
-	const TICK := 1.0 / 30.0
-	var f := InteriorMap.build()
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
-			man = instance
-	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-	var door: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
-	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
-	var player: Stroller = packed.instantiate()
-	player.carrying = true
-	player.set_map(scene.map)
-	scene.add_entity(player)
-	events.use_player(player)
-	player.set_physics_process(false)
-	player.global_position = scene.map.tile_to_world(
-			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
-	player.velocity = Vector2.ZERO
-	# **With `badge`, the screen-edge badge as the game raises it**: a real `DangerEdge` reading
-	# these events and her, and her real camera made current and stepped on each physics tick
-	# (its own smoothing, `NOTIFICATION_INTERNAL_PHYSICS_PROCESS`, after her `_update_camera()`), so
-	# the view it asks is the one the stairwell is drawn from.
-	var edge: DangerEdge = null
-	var camera: Camera2D = null
-	if badge:
-		camera = player.get_node("Camera2D") as Camera2D
-		camera.make_current()
-		# **Not interpolated, unless the case asks for the game's own.** With physics interpolation on
-		# (`project.godot`) the camera's view centre is shifted by `Engine.get_physics_interpolation_fraction()`,
-		# a wall-clock value fixed by when in a tick the suite happened to reach this case - up to a
-		# camera step, tens of px - and where the stairwell lies against the view's edge decided the
-		# badge. Stepped by hand as here, the view is a function of the walk alone.
-		if not interpolated:
-			camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
-		camera.reset_smoothing()
-		edge = DangerEdge.new()
-		t.add_child(edge)
-		edge.set_process(false)
-		edge.setup(events, player)
-	var badge_log := {"first": -1, "dropped": 0, "unseen": 0}
-	var running := pace == "run"
-	_hold_keys(["move_down"], running)
-	var met := {"ran": false, "outcome": "neither", "closest": INF}
-	var turned := false
-	var elapsed := 0.0
-	var ran_at := 0.0
-	while man != null and elapsed < 20.0:
-		StrollerSteer.velocity_step(player, TICK)
-		_move_real_body_one_step(player, player.velocity * TICK)
-		var her := player.global_position
-		var tile := scene.map.world_to_tile(her)
-		# The manager's tick steps him, told whether she runs off her own pace.
-		events._physics_process(TICK)
-		# The catch is the tick's: where his step put him when the tick ran.
-		var caught := man.is_lethal_at(her)
-		if met["ran"]:
-			met["closest"] = minf(met["closest"], man.global_position.distance_to(her))
-		if camera:
-			camera.notification(Node.NOTIFICATION_INTERNAL_PHYSICS_PROCESS)
-		# Two drawn frames to the tick.
-		_count_the_badge(edge, man, badge_log)
-		_count_the_badge(edge, man, badge_log)
-		elapsed += TICK
-		if not turned and tile.y - origin.y >= int(walk[0]) and her.y >= scene.map.tile_to_world(tile).y:
-			turned = true
-			_hold_keys(walk[1], running)
-		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
-			met["ran"] = true
-			ran_at = elapsed
-			if pace == "walk-run":
-				# Runs with the keys she already holds; the turn comes at its row.
-				running = true
-				_hold_keys(walk[1] if turned else ["move_down"], true)
-		if pace == "run-late" and met["ran"] and not running and elapsed - ran_at >= 0.3:
-			running = true
-			_hold_keys(walk[1] if turned else ["move_down"], true)
-		if caught:
-			met["outcome"] = "caught"
-			break
-		if tile == door:
-			met["outcome"] = "through"
-			break
-		# On the first floor's landing, up into its door.
-		if met["ran"] and tile.x == origin.x + 1 and tile.y - origin.y >= 16:
-			_hold_keys(["move_up"], running)
-	_hold_keys([], false)
-	met["badge_first"] = badge_log["first"]
-	met["badge_dropped"] = badge_log["dropped"]
-	met["unseen_frames"] = badge_log["unseen"]
-	if edge:
-		edge.free()
-	player.free()
-	events.free()
-	scene.free()
-	return met
-
-## One drawn frame of the edge watching him (`_meet_the_masked_man()` with `badge`): the edge
-## measures, and on every frame from the one he is first running on (neither waiting nor warning)
-## while she cannot see him, counts whether his badge is up, the first such frame it is, and the
-## frames it is down after it first went up.
-func _count_the_badge(edge: DangerEdge, man: EventInstance, log: Dictionary) -> void:
-	if not edge:
-		return
-	edge._process(1.0 / 60.0)
-	if man.is_waiting() or man.is_telegraphing():
-		return
-	if edge._shows(man):
-		# His badge has done its job the first time he is in sight after it went up; if he leaves
-		# sight again it is raised anew, past the margin band, and that is not this check.
-		if int(log["first"]) >= 0:
-			log["done"] = true
-		return
-	if log.get("done", false):
-		return
-	var up := false
-	for b: Dictionary in edge.announcing():
-		up = up or b["id"] == "masked_pursuer"
-	if up and int(log["first"]) < 0:
-		log["first"] = log["unseen"]
-	elif not up and int(log["first"]) >= 0:
-		log["dropped"] = int(log["dropped"]) + 1
-	log["unseen"] = int(log["unseen"]) + 1
-
-func _hold_keys(actions: Array, running: bool) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
-		Input.action_release(a)
-	for a: String in actions:
-		Input.action_press(a)
-	if running:
-		Input.action_press("run")
-
-## *"Then the pursuing guy should respawn forcing to switch the side again."*
-##
-## Driven through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two
-## calls the running game makes every frame, with her standing on the lobby's door at the shaft's
-## foot for the whole run — off his line, clear of his reach, and inside
-## `masked_pursuer.notice.runs_within` of where each man appears, so every man that appears
-## notices her, warns her and runs rather than waiting at the bottom for ever.
-##
-## Three contracts, and the second is what keeps the first fair:
-##
-## - **More than one of him over a section**, or "switch the side again" has nothing behind it.
-## - **Every one of them warns her standing still before he runs.** Appearing with her already
-##   inside his charge distance, he warns for `Tuning.WARNING_ALONE_MAX` first
-##   (`EventNoticeRun`); a respawned pursuer that inherited an old instance's
-##   state would arrive at speed, which is the exact thing `still_while_telegraphing` exists to
-##   prevent, and no screenshot could ever catch it.
-## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
-##   appearing at the foot, rather than read off the constant.
-func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
-	const STEP := 1.0 / 60.0
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
-	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
-	var plan := InteriorMap.build()
-	var her := scene.map.tile_to_world((plan.doors["%s:landing_lobby" % part] as InteriorMapPlan.Door).tile)
-
-	var appeared: Array[float] = []
-	var left: Array[float] = []
-	var known := {}
-	var moved_while_telegraphing := 0
-	var first_step_age: Array[float] = []
-	# The age each man stopped waiting at: his warning's own start, since his notice clock is held.
-	var warned_at: Array[float] = []
-	var at := 0.0
-	while at < RunConfig.FINALE_LENGTH_SECONDS:
-		# Told where she is before the manager's tick steps them, and where each stood going in.
-		var stood := {}
-		var was_leaving_by_id := {}
-		for instance in events.instances():
-			instance.player_at = her
-			instance.baby_awake = true
-			stood[instance.get_instance_id()] = instance.global_position
-			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
-		events._physics_process(STEP)
-		for instance in events.instances():
-			if instance.def.id != "masked_pursuer":
-				continue
-			var id := instance.get_instance_id()
-			if not known.has(id):
-				known[id] = appeared.size()
-				appeared.append(at)
-				first_step_age.append(-1.0)
-				warned_at.append(INF)
-			# One his row's repeat made on this tick, ahead of the step, has taken his first step
-			# from the foot of his line.
-			var before: Vector2 = stood.get(id, instance.path[0])
-			var was_leaving: bool = was_leaving_by_id.get(id, false)
-			var which: int = known[id]
-			if warned_at[which] == INF and not instance.is_waiting():
-				warned_at[which] = instance.age
-			if not before.is_equal_approx(instance.global_position):
-				if instance.is_telegraphing():
-					moved_while_telegraphing += 1
-				if first_step_age[which] < 0.0:
-					first_step_age[which] = instance.age - warned_at[which]
-			if instance.is_leaving and not was_leaving:
-				left.append(at)
-		at += STEP
-
-	t.check(appeared.size() >= 3,
-			"more than one masked man comes up the shaft over a section (%d)" % appeared.size())
-	t.check(moved_while_telegraphing == 0,
-			"and none of them moves while he is giving notice (%d frames)" % moved_while_telegraphing)
-	var notices := 0
-	for i in first_step_age.size():
-		if first_step_age[i] < 0.0:
-			continue
-		notices += 1
-		t.check(first_step_age[i] >= Tuning.WARNING_ALONE_MAX - STEP,
-				"man %d took his first step %.2fs into his warning, after the second it owes"
-				% [i, first_step_age[i]])
-	t.check(notices >= 2, "at least two of them actually ran (%d)" % notices)
-	var gaps := 0
-	for i in range(1, appeared.size()):
-		if i - 1 >= left.size():
-			break
-		gaps += 1
-		var gap: float = appeared[i] - left[i - 1]
-		t.check(absf(gap - EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS) <= STEP * 3.0,
-				"the next man comes %.2fs after the last one ran out of the top, against %.2fs"
-				% [gap, EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS])
-	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
-	print("The masked man came %d times in %.0fs; gaps measured: %d"
-			% [appeared.size(), RunConfig.FINALE_LENGTH_SECONDS, gaps])
-	events.free()
-	scene.free()
-
 ## **A catch in the building is a day's catch** *(minty-lemur #785: "losing an escape should still
 ## state the reason like the rest of the game")*: the building's events are the day's own
 ## `EventManager`, so standing on the masked man's line ends the section through the same
@@ -1655,7 +1181,7 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var man := BuildingEvents.live(events, "masked_pursuer")
 	t.check(man != null, "a masked man is on the stairs")
@@ -1697,7 +1223,7 @@ func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var man := BuildingEvents.live(events, "masked_pursuer")
 	t.check(man != null, "a masked man is on the stairs")
 	if not man:
@@ -1741,7 +1267,7 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var fire: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "burning_building":
@@ -1839,7 +1365,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) ->
 			% walk.size())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var mouse: EventInstance = null
 	for instance in events.instances():
 		if instance.def.id == "alley_mouse":
@@ -1944,7 +1470,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var steam := EventCatalogue.by_id("basement_steam")
 	t.check(steam.telegraph_time
@@ -2015,7 +1541,7 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var steam := EventCatalogue.by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
@@ -2084,7 +1610,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var steam := EventCatalogue.by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
 	var pairs := 0
@@ -2210,7 +1736,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var grates := SteamGrates.lay(BuildingPlan.grates(scene.map), scene.map, events.atlas)
 	var ground := scene.get_node_or_null("Ground") as CanvasItem
@@ -2331,14 +1857,7 @@ func _drawn_z(item: CanvasItem) -> int:
 const FLASH_SCALE := 6.0
 
 ## The runs the suite has made, freed when it ends: each test makes a fresh one of its own.
-var _runs: Array[RunState] = []
-
-## A fresh run of the suite's own, started on a seed, for a building's events to belong to.
-func _fresh_run() -> RunState:
-	var run := RunState.new()
-	run.start_run(4242)
-	_runs.append(run)
-	return run
+var _rig := InteriorRig.new()
 
 ## The hallway windows as drawn: every sprite in the building showing the picture of a window,
 ## dark or lit, read off the scene's tree.
@@ -2371,7 +1890,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	scene.stop_the_night()
 	var windows := _windows(scene)
@@ -2439,7 +1958,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var run := _fresh_run()
+	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var windows := _windows(scene)
 	t.check(not windows.is_empty(), "the building has hallway windows (%d)" % windows.size())
@@ -2480,7 +1999,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	t.add_child(twin_scene)
 	var twin_rng := RandomNumberGenerator.new()
 	twin_rng.seed = 4242
-	var twin_run := _fresh_run()
+	var twin_run := _rig.fresh_run()
 	var twin := BuildingEvents.events_in(t, twin_scene, twin_rng, twin_run)
 	var twin_windows := _windows(twin_scene)
 
@@ -2576,7 +2095,7 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
-	var events := BuildingEvents.events_in(t, scene, rng, _fresh_run())
+	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	# Standing still: the instances stay where the checks put them, and the frames below are the
 	# views' own.
 	events.set_physics_process(false)
@@ -2610,9 +2129,9 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	fire.excitement.accumulate_landed(20.0)
 	# A drawn frame of the halo, as the game runs it.
 	await _frames(t, 3)
-	t.check(fire._rim.is_held() and fire._rim.entity_halo()._target_alpha > 0.0,
+	t.check(fire.excitement.rim.is_held() and not fire.rim().is_faded_out(),
 			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
-	t.check(not man._rim.is_held(),
+	t.check(not man.excitement.rim.is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
@@ -2645,8 +2164,17 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	t.check(bodies > 0, "the building's own bodies are found (%d)" % bodies)
 	t.check(layers.body_outline_count() == bodies + DebugLayers.collision_nodes_under(stroller).size(),
 			"and the layer outlines every one of them, with no crowd to add a strike box")
-	t.check(layers._live().size() == events.instances().size(),
-			"its fields and shadows read the same instances the building's events hold")
+	# Its fields read the building's instances: with nothing else on the map, every one that is not
+	# finished is outlined at its inner and its outer radius (a flock at each bird's).
+	var unfinished := 0
+	for instance in events.instances():
+		if not instance.is_finished:
+			var birds := instance.flock_offsets().size()
+			unfinished += 2 * maxi(birds, 1)
+	var outlined := layers.field_runs(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6)).size()
+	t.check(outlined == unfinished,
+			"its fields outline each of the building's unfinished instances at both radii (%d of %d)"
+			% [outlined, unfinished])
 
 	layers.free()
 	stroller.free()
