@@ -6,8 +6,9 @@ description: The git workflow for this repo — one branch per work item, one co
 # Git workflow
 
 **Manage local branches and commits autonomously. Merging a PR is the orchestrating Claude Code
-session's under the player's standing permission, and any other session's only with the player's
-word in that session** — see "Merging".
+session's under the player's standing permission, and any other session's only when the
+orchestrating session hands it the merge or the player gives their word in that session** — see
+"Merging".
 
 ## Who a commit and a pull request are from
 
