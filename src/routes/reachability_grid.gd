@@ -203,6 +203,11 @@ func neighbours(node: int) -> Array:
 ## shift is an exact floor division for any integer, tied to `CELL` being a power of two the way
 ## every other constant in this file (`_SLOT_OFFSET`'s four entries, the sixteen masks) is already
 ## tied to `CELL == 2`.
+##
+## Flooring and truncating differ only at negative tiles, which lie outside the map. A cell that
+## only adds dirty cells changes what a query costs, never its answer: a dirty cell is answered at
+## tile resolution, which agrees with its node's answer for every tile of it. (A cell that left a
+## blocked tile's own cell out of the dirty set would ignore the block.)
 func _cell_of_tile(tile: Vector2i) -> Vector2i:
 	return Vector2i(tile.x >> 1, tile.y >> 1)
 

@@ -360,24 +360,56 @@ func _test_a_straight_run_on_plain_road_is_never_cut(t) -> void:
 			"a straight run down plain ROAD from %s keeps every tile rather than one cut (%s)"
 			% [top, planned])
 
+## The left end of a straight run of `length` tiles along one row that a cut may cross all the way
+## down, with the row above and the row below it cuttable too (the cut samples a body's width
+## either side of its line), and none of it a crossing already; answers `Vector2i(-1, -1)` if
+## there is none. Scanned rather than hard-coded, like `_find_tile()`.
+func _find_cuttable_row(length: int) -> Vector2i:
+	for y in range(4, _city.map.size.y - 4):
+		for x in range(4, _city.map.size.x - 4 - length):
+			var fits := true
+			for k in length:
+				for dy in range(-1, 2):
+					var tile := Vector2i(x + k, y + dy)
+					if not _cuttable(tile) or _city.map.tile_at(tile) == GameEnums.TileType.CROSSING:
+						fits = false
+						break
+				if not fits:
+					break
+			if fits:
+				return Vector2i(x, y)
+	return Vector2i(-1, -1)
+
 ## A `CROSSING` tile (a zebra) is not refused the way a plain `ROAD` tile is — crossing there is
 ## the legal way over the carriageway, which is the entire point of hugging the kerb rather than
-## simply refusing every carriageway tile outright. **Asked of the planner's private cut
-## (`RouteRigPlanner._line_of_sight()`), since no plan shows it**: every zebra the generator lays is
-## two tiles wide with plain road either side, so a cut of three tiles or more onto one always
-## samples that road beside it and is refused for the road, and a cut of two tiles is never asked.
-## Along the zebra's own row, from its other tile.
+## simply refusing every carriageway tile outright. **Asked through `plan()` on a map the test
+## paints**: the generator's own zebras are two tiles wide with plain road either side, so no plan
+## on a generated city cuts onto one, but a planner handed a city whose map holds a crosswalk three
+## tiles wide (the tiles of an open run, painted over and put back) keeps the straight cut from the
+## run's near end to its far end as two waypoints, and a cut refusing the crossing would keep a
+## waypoint on every tile.
 func _test_a_straight_run_onto_a_crossing_is_cut(t) -> void:
-	var crossing := _find_tile(t, GameEnums.TileType.CROSSING)
-	if crossing == Vector2i(-1, -1):
+	var left := _find_cuttable_row(5)
+	t.check(left != Vector2i(-1, -1), "seed %d day %d has an open run of five tiles to paint a crosswalk on"
+			% [SEED, DAY])
+	if left == Vector2i(-1, -1):
 		return
-	var beside := crossing + Vector2i(1, 0)
-	t.check(_cuttable(beside) and _cuttable(crossing + Vector2i.UP)
-			and _cuttable(crossing + Vector2i.DOWN),
-			"the zebra at %s has its other tile beside it and open ground either side" % crossing)
-	t.check(_planner()._line_of_sight(beside, crossing),
-			"a straight cut onto a CROSSING tile (%s) is not refused the way a ROAD tile is"
-			% crossing)
+	var right := left + Vector2i(4, 0)
+	var plain := _planner().plan(left, right)
+	t.check(plain.size() == 2,
+			"the open run %s to %s is walked as one straight cut before it is painted (%s)"
+			% [left, right, plain])
+	var was := {}
+	for k in range(1, 4):
+		var tile := left + Vector2i(k, 0)
+		was[tile] = _city.map.tile_at(tile)
+		_city.map.set_tile(tile, GameEnums.TileType.CROSSING)
+	var crossed := _planner().plan(left, right)
+	for tile: Vector2i in was:
+		_city.map.set_tile(tile, was[tile])
+	t.check(crossed.size() == 2,
+			"a crosswalk three tiles wide on the run %s to %s is cut straight across, not refused "
+			% [left, right] + "the way a ROAD tile is (%s)" % [crossed])
 
 # ------------------------------------------------------------------- plans ---
 

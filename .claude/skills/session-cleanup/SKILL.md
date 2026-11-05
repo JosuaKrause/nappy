@@ -206,7 +206,7 @@ resuming the session's agents. Keep the prompt self-contained and current at the
 the final report may summarize it, but the file must stand on its own.
 
 **The restart prompt never records a merge or release permission** (polite-marten). The
-orchestrating session's merge permission is standing in `CLAUDE.md` (inbox #1063), so there is
+orchestrating session's merge permission is standing in `CLAUDE.md` (inbox #1063 in gentle-walrus), so there is
 nothing to record; any other permission (a release, or a merge granted to another session) is given
 in a session and ends with it (**committing**, "Merging" and "Releasing"), so a sentence carrying
 it forward is either a grant nobody gave the next session or an invitation to act on one; the next

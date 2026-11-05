@@ -13,8 +13,7 @@
 # one tool) does it. The editor rewriting `project.godot` when it loads the project is the part
 # that is established (the stripped comments); the tab rewrite of `ARCHITECTURE.md` is only
 # observed. The restore is a safeguard, wide because the writer is unknown: a rewrite otherwise
-# lands in whatever commit comes next, or leaves the main checkout dirty so that tools/land-prs.sh
-# refuses to run.
+# lands in whatever commit comes next, or leaves the main checkout dirty.
 #
 # **A file is reverted only when it was clean at `import_restore_arm` and its change at exit is
 # the rewrite described above.** Tools run for minutes, and somebody may edit the same checkout in
