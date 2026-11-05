@@ -3417,7 +3417,9 @@ static func _masked_pursuer() -> EventDef:
 	# tread or the row below it, or down-left from the landing tile between the two flights. **A
 	# walker holding plain left from that landing tile gets through**, the margins are thin against
 	# his 23.5px catch (`MASKED_PURSUER_CATCH`: a runner who walks until he runs, then runs, turning
-	# plain left at row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px;
+	# plain left at row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px in
+	# the hand-stepped probe, and within 36.4px on the real body in `tests/test_interior_masked_man.gd`,
+	# which slides along walls;
 	# the walker down-left from the landing tile comes within 22.7px, 0.8px inside; a runner who runs
 	# the whole way is 33px from him at the closest), and in the stairwell his warning is off screen,
 	# since the view reaches 180px from her and he starts about 400px below; only the edge badge
