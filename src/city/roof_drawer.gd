@@ -12,17 +12,24 @@ extends RefCounted
 ## at its foot, without reading what the building holds.
 
 var _atlas: AtlasLibrary
+## What a vent's turning rotor lays its two frames through (`SceneryDrawer`).
+var _scenery: SceneryDrawer
 
-func _init(atlas: AtlasLibrary) -> void:
+## `scenery` is the drawer every vent's rotor is handed (`RoofObject.add_rotor()`): the city's, which
+## it hands its decals too; a roof drawer handed none (a building's own, a preview rig's) makes its
+## own.
+func _init(atlas: AtlasLibrary, scenery: SceneryDrawer = null) -> void:
 	_atlas = atlas
+	_scenery = scenery if scenery != null else SceneryDrawer.new()
 
 ## Stands one roof unit's picture in `layer` with its foot at `at`, in `layer`'s own space, and
 ## returns it; the building keeps it and frees it when its roof is rebuilt, evicted or leaves the
 ## tree. `duct_links` is the unit's west, east, south and north duct neighbours as bits 0 to 3, or
 ## -1 for a unit that draws its whole picture. The vent housing gets its turning rotor
 ## (`RoofObject.rotor`), shown at `rotor_frame_b`, since the building owns the rotor's phase and
-## timing and a rebuild must not reset it. The object is named after `cell`, and added before
-## the next is drawn, so units at one depth keep the order the building draws them in.
+## timing and a rebuild must not reset it; the rotor lays its frames through this drawer's scenery
+## drawer. The object is named after `cell`, and added before the next is drawn, so units at one
+## depth keep the order the building draws them in.
 func draw(layer: Node2D, cell: Vector2i, texture_key: StringName, at: Vector2, duct_links: int,
 		rotor_frame_b: bool) -> Building.RoofObject:
 	var object := Building.RoofObject.new()
@@ -33,5 +40,5 @@ func draw(layer: Node2D, cell: Vector2i, texture_key: StringName, at: Vector2, d
 	object.position = at
 	layer.add_child(object)
 	if texture_key == Building.VENT_HOUSING:
-		object.add_rotor(rotor_frame_b)
+		object.add_rotor(rotor_frame_b, _scenery)
 	return object

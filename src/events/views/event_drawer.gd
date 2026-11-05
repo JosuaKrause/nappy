@@ -18,6 +18,9 @@ extends RefCounted
 ## by the look itself, as before: a ground shadow, a dog's lead, a muzzle flash, the caret.
 
 var _atlas: AtlasLibrary
+## What the scenery this builds lays its pictures through (`SceneryDrawer`, `EventScenery.drawer`):
+## it holds nothing, so this drawer's own serves every scenery it builds.
+var _scenery := SceneryDrawer.new()
 
 func _init(atlas: AtlasLibrary) -> void:
 	_atlas = atlas
@@ -48,5 +51,6 @@ func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:
 	var built := EventScenery.new()
 	built.atlas = _atlas
+	built.drawer = _scenery
 	built.configure(picture, extent, anchor, shadow, band)
 	return built

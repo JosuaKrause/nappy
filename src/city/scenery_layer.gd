@@ -2,6 +2,14 @@ class_name SceneryLayer
 extends Node2D
 ## A retained batch of registered scenery pictures. Only an alternate-frame change rebuilds
 ## its drawing; callers keep stationary batches separate and order them around moving pieces.
+## Which texture stands where, and which of a picture's two frames shows, is decided here; every
+## picture is laid through the drawer its owner hands it (`SceneryDrawer`).
+
+## What every picture of this batch is laid through, handed by the owner that makes the layer
+## before it enters the tree: the city's decals (`CityDecals`), a vent's rotor
+## (`Building.RoofObject.add_rotor()`) and an event's scenery (`EventScenery`), each handing on the
+## drawer it was handed.
+var drawer: SceneryDrawer
 
 var _textures: Array[Texture2D] = []
 var _alternates: Array[Texture2D] = []
@@ -29,7 +37,4 @@ func append(texture: Texture2D, rect: Rect2, alternate: Texture2D = null,
 func _draw() -> void:
 	for i in _textures.size():
 		var texture := _alternates[i] if frame_b and _alternates[i] != null else _textures[i]
-		if _sources[i].has_area():
-			draw_texture_rect_region(texture, _rects[i], _sources[i])
-		else:
-			draw_texture_rect(texture, _rects[i], false)
+		drawer.draw(self, texture, _rects[i], _sources[i])

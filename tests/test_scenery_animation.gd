@@ -2,6 +2,8 @@ extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const WATER_SEED := 4242
@@ -15,14 +17,16 @@ func run(t) -> void:
 ## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
 ## standing each unit for real so a vent has its rotor), and whose own process frames run in the
 ## tree. Its rotors are read off the units it was told to stand (`RoofObject.rotor`), never off what
-## the building holds. Time is the engine's `time_scale`, which scales the delta the building's
+## the building holds, and the picture each rotor stands off the scenery drawer the real roof drawer
+## hands every rotor (`tests/recording_scenery_drawer.gd`), as the city hands its own. Time is the engine's `time_scale`, which scales the delta the building's
 ## process frame is given: a frame at a hundredth of its length cannot reach the interval, and one at
 ## a hundred thousand times its length always crosses it, so no check depends on how long a frame
 ## takes.
 func _test_roof_rotors(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var drawer := RecordingRoofDrawer.new()
-	drawer.real = RoofDrawer.new(atlas)
+	var scenery := RecordingSceneryDrawer.new()
+	drawer.real = RoofDrawer.new(atlas, scenery)
 	var building := Building.new()
 	building.atlas = atlas
 	building.roof_drawer = drawer
@@ -50,6 +54,9 @@ func _test_roof_rotors(t) -> void:
 		for rotor in _rotors(drawer):
 			t.check(rotor.frame_b == first_phase,
 					"rotor holds its first phase until the existing interval")
+	for rotor in rotors:
+		t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, first_phase),
+				"a rotor stands the picture of its first phase")
 	Engine.time_scale = clock
 	# The frame after this one is given a delta a hundred thousand times its length, so it crosses
 	# the interval once; the scale is back before the frame after that.
@@ -63,7 +70,10 @@ func _test_roof_rotors(t) -> void:
 	var phase: bool = turned[0].frame_b
 	for rotor in turned:
 		t.check(rotor.frame_b == phase, "the small rotors advance together")
-		t.check(rotor._alternates[0] != null, "the moving rotor owns its alternate texture")
+		# One of the two phases is the alternate frame, so between this and the first phase's check
+		# every rotor has stood both its pictures.
+		t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, phase),
+				"the turned rotor stands the picture of its new phase, drawn again on the turn")
 	for object in objects:
 		if object.texture_key != Building.VENT_HOUSING:
 			t.check(object.get_child_count() == 0,
@@ -106,6 +116,16 @@ func _rotors(drawer: RecordingRoofDrawer) -> Array[SceneryLayer]:
 			rotors.append(object.rotor)
 	return rotors
 
+## The one picture `layer` stood the last time it was drawn through `scenery`, or null for none or
+## more than one.
+func _picture_on(scenery: RecordingSceneryDrawer, layer: SceneryLayer) -> Texture2D:
+	var shown := scenery.shown_on(layer)
+	return shown[0].texture if shown.size() == 1 else null
+
+## The rotor's picture at `frame_b`: the alternate frame when it is set.
+func _rotor_picture(atlas: AtlasLibrary, frame_b: bool) -> Texture2D:
+	return atlas.region(Building.VENT_ROTOR_B if frame_b else Building.VENT_ROTOR)
+
 ## The registered rectangle comes from the editable vector sources, whose viewBoxes retain their
 ## coordinates in the complete housing canvas. This compares two files' contract rather than
 ## repeating the same crop literal in a test.
@@ -133,7 +153,9 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
 ## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's. The
 ## axis it spreads on is the street it stands on (`EastWestStreet` is one running east-west), the
-## way the game hands `setup()` a map.
+## way the game hands `setup()` a map. What each layer of the scenery stands is read off a recording
+## scenery drawer, handed to the scenery by the event's drawer (`EventInstance.drawer`, as its
+## manager's spawner hands the real one) the way the real one hands its own.
 func _test_event_parts(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
@@ -141,6 +163,10 @@ func _test_event_parts(t) -> void:
 		for vertical: bool in [false, true]:
 			var instance := EventInstance.new()
 			instance.atlas = atlas
+			var laid := RecordingSceneryDrawer.new()
+			var pictures := RecordingEventDrawer.new(atlas)
+			pictures.scenery_drawer = laid
+			instance.drawer = pictures
 			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
 					Vector2.RIGHT, EastWestStreet.new() if vertical else WorldMap.open_ground())
 			t.add_child(instance)
@@ -163,16 +189,34 @@ func _test_event_parts(t) -> void:
 			var initial: bool = moving[0].frame_b
 			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventPictures.BURST_MAIN_SPLASH_PERIOD
+			# The layers are drawn on the frame after they are made.
+			await t.get_tree().process_frame
+			var before := {}
+			for layer: SceneryLayer in moving + still:
+				before[layer] = _pictures_on(laid, layer)
 			instance.step(period * 0.5)
 			# The look shows the step on the next drawn frame.
 			var asked := instance.look.redraw_if_the_picture_changed()
+			await t.get_tree().process_frame
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
-				for alternate in layer._alternates:
-					t.check(alternate != null, "every moving detail owns an alternate texture")
+				var turned := _pictures_on(laid, layer)
+				t.check(not turned.is_empty() and turned.size() == before[layer].size()
+						and _all_differ(turned, before[layer]),
+						"every moving detail stands its alternate picture once its frame flips")
+			# Nothing flips a stationary layer's frame; flipped here through the member its scenery
+			# flips a moving one's by, it is drawn again with the same pictures.
+			var passes := {}
 			for layer in still:
-				for alternate in layer._alternates:
-					t.check(alternate == null, "stationary surroundings have no alternate texture")
+				passes[layer] = laid.passes_of(layer)
+				layer.frame_b = not layer.frame_b
+			await t.get_tree().process_frame
+			for layer in still:
+				t.check(laid.passes_of(layer) > passes[layer]
+						and not before[layer].is_empty()
+						and _pictures_on(laid, layer) == before[layer],
+						"stationary surroundings have no alternate picture")
+				layer.frame_b = not layer.frame_b
 			t.check(not asked, "animation leaves the static event key alone")
 			t.check(_body_of(instance) == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
@@ -202,6 +246,20 @@ func _test_event_parts(t) -> void:
 					return not is_instance_valid(scenery)),
 					"removing an event releases its scenery")
 	atlas.release(&"events")
+
+## The pictures `layer` stood the last time it was drawn through `scenery`, in order.
+func _pictures_on(scenery: RecordingSceneryDrawer, layer: SceneryLayer) -> Array[Texture2D]:
+	var pictures: Array[Texture2D] = []
+	for entry in scenery.shown_on(layer):
+		pictures.append(entry.texture)
+	return pictures
+
+## Whether every picture of `a` differs from the one at its place in `b`, the two the same length.
+func _all_differ(a: Array[Texture2D], b: Array[Texture2D]) -> bool:
+	for i in a.size():
+		if a[i] == b[i]:
+			return false
+	return true
 
 ## The scenery behind each of `instance`'s slices, in the slices' order.
 func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
