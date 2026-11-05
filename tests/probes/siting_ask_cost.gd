@@ -6,8 +6,7 @@ extends RefCounted
 ## `bodies` count is what the day's region holds, and `same` that two asks in a row are handed the
 ## very same region (what a cache keeps), which is always false before there is one.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const CITY_SEED := 478156010
 const DAYS: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, 10, 14]

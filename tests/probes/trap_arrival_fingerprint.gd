@@ -23,8 +23,7 @@ extends RefCounted
 ##   place.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 77, 90210, 1, 555]
 const DAYS: Array[int] = [6, 7, 8, 9, 10, 11, 12, 13, 14]

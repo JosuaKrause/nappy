@@ -35,8 +35,7 @@ extends RefCounted
 ## two kerbs apart, which is what the horns, the give-way and the strike answer; and `walkers`, at
 ## the nearest walker, which is what the bumps answer. The first `WARMUP` ticks are not counted.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const YIELDS := preload("res://tests/probes/minty_quail_crowd_yields.gd")
 const STEP := 1.0 / 30.0

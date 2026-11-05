@@ -28,8 +28,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
 const TOUCH_SHORT := 34.0
-## The seed each run starts from: the one the runner's reset gave the stand-in this probe used to
-## read, so the probe measures what it did.
+## The seed each run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

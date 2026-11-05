@@ -32,8 +32,7 @@ extends RefCounted
 ##   "only what physically stops it".
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const STEP := 1.0 / 60.0
 const SEEDS := [4242, 24757, 91117]

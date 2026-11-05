@@ -411,13 +411,12 @@ the field and its value before and after (`LEAK` is printed the moment it is fou
 leak by giving back what it took (a released action, a disconnected signal, a freed node, a fake
 injected instead of a static patched); it is never retried and the runner does not clear it.
 Exceptions are fields, never owners: `EXEMPT` in that file names each with its reason (memoised
-statics). The one owner skipped is the `GameState` autoload's parts, as a whole, until the run's
-state is handed in rather than global (minty-quail's `run-state-handed-in.md`); its own variables
-are still compared. A suite that boots `main` or drives a run declares `t.gives_back_observers()`
-first, and
-the runner restores the configuration `main` hands the observers, the remembered controls and the
-observers' count of the run (`SharedState.OBSERVER_FIELDS`) after it; the declaration is only for a
-suite that moves them, since it hides a leak of exactly those fields. A new exemption needs a reason of that kind, not a convenience.
+statics); no owner is skipped, and no autoload is the run (the visit counter holds only the one
+`main` hands it, none between boots), since each test is handed a fresh one. A suite that boots
+`main` or drives a run declares `t.gives_back_observers()` first, and the runner restores the
+configuration `main` hands the observers, the remembered controls and the observers' count of the
+run (`SharedState.OBSERVER_FIELDS`) after it; the declaration is only for a suite that moves them,
+since it hides a leak of exactly those fields. A new exemption needs a reason of that kind, not a convenience.
 
 ## When a suite errors
 

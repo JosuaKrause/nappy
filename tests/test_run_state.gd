@@ -17,8 +17,8 @@ extends RefCounted
 ## would erase what it proves): the comparisons that no longer hold are narrowed to the keys the
 ## fixture holds, and a new fixture is added for the new format with its own provenance line.
 ##
-## Every check makes a fresh `RunState` of its own and hands it to the part it tests; nothing reads
-## the `GameState` autoload, so nothing is put back.
+## Every check makes a fresh `RunState` of its own and hands it to the part it tests; nothing global is
+## read, so nothing is put back.
 
 const SCENARIO := preload("res://tests/fixtures/run_state_scenario.gd")
 const FIXTURE_PATH := "res://tests/fixtures/run_state_saved_by_main.json"

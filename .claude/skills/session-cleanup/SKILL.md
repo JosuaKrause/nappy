@@ -168,14 +168,35 @@ below. `tools/decisions.sh handoff` has the reasons.
 Every session handover ends with a restart prompt the player can use to start the next session with
 a genuinely fresh context. **The prompt goes into `.claude/restart-prompt.md`, a local file that git
 ignores, and never into the chat**: copying long text out of the CLI corrupts it (woolly-finch 31).
-Each handover overwrites the file, and the report in the chat names its path. Do not require the
-next session to have read this conversation or to resume an old agent transcript. The prompt tells
-it to fetch and inspect live PR state (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run
-python tools/inbox.py list`), then read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and
+Each handover overwrites the file, and the report in the chat names its path. The file is
+rewritten whole in a fixed layout, so the next orchestrating session reads it top to bottom the same
+way every time and checks each row against `gh pr list` and `tools/agent-status.sh` (**CLAUDE.md**).
+The player asked for a better layout, old entries removed routinely and a systematic way of reading
+it (frosty-owl #1065); the layout below is the filer's proposal, not asked for and open to the
+player's correction:
+
+1. a header saying the file is rewritten in place and how to read it: whole, then the live-state
+   commands, which win where they differ;
+2. `## Open threads`, a table with the columns Thread | Worktree / branch | Checkpoint | Next action;
+3. `## Waiting on the player`;
+4. `## Open inbox notes`;
+5. `## Board bookmarks`;
+6. `## Next up`;
+7. `## Fences`.
+
+A handover writes one row per open thread, and a thread whose pull request merged or was dropped
+has no row, since the pull request and its record hold it. Nothing is carried over as a log, so the
+file stays short enough to read whole, and a top that still describes finished work would read as
+work in flight. Keeping the file current between handovers is the queued entry sunny-alpaca (work
+survives an interruption), not this step. Do not require the next session to have read this
+conversation or to resume an old agent transcript. The prompt tells it to fetch and inspect live PR
+state (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`),
+then read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and
 read the named work-item sources before acting.
 
 Name every open thread by PR number and short title, branch or worktree when relevant, current
-checkpoint, exact next action, remaining gate and verification already completed. **List the open
+checkpoint, exact next action, remaining gate and verification already completed (the verification
+goes in the Checkpoint column and the remaining gate in the Next action column). **List the open
 inbox notes** by issue number and title, as `tools/inbox.py list` prints them at the handover, so
 the next session knows what the player has written and nobody has filed yet (**inbox**). Give the
 Nappy board's last read `rev` and last comment `seq` for each of its two tabs, Main and Review, so
