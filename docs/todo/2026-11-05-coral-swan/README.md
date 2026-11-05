@@ -3,7 +3,8 @@ priority: later
 # coral-swan — Find out whether a slow frame brings the masked man's screen-edge badge up late · filed 2026-11-05
 
 
-*Filed by the orchestrating session, not from a playtest; open to the player's correction.*
+*Filed by the orchestrating session, not from a playtest; open to the player's correction. Proposed,
+not asked for: the band `later`.*
 
 **Context.** Moving the interior's masked-man walks onto real frames (record
 minty-quail-breezy-pelican) showed that the screen-edge badge's model (`BadgeModel._measure`) reads
@@ -15,9 +16,11 @@ play on a slow device, the badge pointing at him a frame or more after he starts
 established.
 
 **The work.** Measure it: the masked man's run on a lengthened frame (the dev flag that lengthens
-frames, or a phone frame record) and the frame the badge comes up on. If it comes up late, the badge
-reads closing speed per physics tick rather than per frame, so a slow frame cannot delay it; if it
-does not, the item closes with the measurement in its record.
+frames, or a phone frame record) and the frame the badge comes up on. If it does not come up late, the item closes
+with the measurement in its record. If it does, the remedy is chosen after the measurement;
+*proposed, not asked for:* the badge reads closing speed per physics tick rather than per frame, so
+a slow frame cannot delay it.
 
 **Read first:** record minty-quail-breezy-pelican (`tools/decisions.sh minty-quail-breezy-pelican`);
-the **cues** skill; `src/ui/` for `BadgeModel`; `tests/test_interior_masked_man.gd`'s badge cases.
+the **cues** skill; `src/ui/` for `BadgeModel`; the badge cases in `tests/test_interior_masked_man.gd` and
+`tests/test_interior_masked_man_badge.gd`.
