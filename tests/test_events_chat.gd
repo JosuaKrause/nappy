@@ -53,14 +53,23 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 func _chat_manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
+	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
+	var map := WorldMap.open_ground()
+	# The world the map is drawn in, as the city and the building hand theirs: the layer a
+	# spawned event is added to (`WorldMap.add_entity()`).
+	var holder := WorldContext.new()
+	t.add_child(holder)
+	map.world = holder
 	var manager := EventManager.new()
-	manager.setup_world(CityMap.new(), run)
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
 	var run := manager.world.run
+	var holder := manager.world.map.world
 	manager.free()
+	holder.free()
 	run.free()
 
 ## Frees a rig whatever state its checks left it in: the manager first, so that no tick is left to
@@ -88,10 +97,9 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(2000.0, 2000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
-	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager(t)
-	mother.atlas = manager.atlas
-	manager.world.instances.append(mother)
+	var mother := manager.spawn_extra(def, at, path)
+	mother.set_process(false)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 
@@ -149,10 +157,9 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		baby.set_world(world)
 		t.add_child(stroller)
 
-		var mother := _instance(t, def, at, path)
+		var mother := manager.spawn_extra(def, at, path)
+		mother.set_process(false)
 		world.excitement_sources = [manager.sources]
-		mother.atlas = manager.atlas
-		manager.world.instances.append(mother)
 		manager.use_player(stroller)
 		stroller.global_position = at
 
@@ -184,7 +191,6 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 					0.5)
 			t.close_to(baby.sleepiness, 100.0, "and sleepiness stays pinned at 100 asleep", 0.01)
 
-		mother.free()
 		stroller.free()
 		world.free()
 		_free_manager(manager)
@@ -201,24 +207,21 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 	var at := Vector2(4000.0, 4000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
-	var far_lane := _instance(t, def, at, path)
 	var far_manager := _chat_manager(t)
-	far_lane.atlas = far_manager.atlas
-	far_manager.world.instances.append(far_lane)
+	var far_lane := far_manager.spawn_extra(def, at, path)
+	far_lane.set_process(false)
 	var far_stroller := _chat_stroller(t)
 	far_manager.use_player(far_stroller)
 	far_stroller.global_position = at + Vector2(0.0, Tuning.TILE_SIZE)
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(far_stroller.is_detained(),
 			"the far lane of a two-tile pavement now starts a conversation too")
-	far_lane.free()
 	far_stroller.free()
 	_free_manager(far_manager)
 
-	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager(t)
-	mother.atlas = manager.atlas
-	manager.world.instances.append(mother)
+	var mother := manager.spawn_extra(def, at, path)
+	mother.set_process(false)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 
@@ -239,10 +242,9 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
-	var mother := _instance(t, def, at, path)
 	var manager := _chat_manager(t)
-	mother.atlas = manager.atlas
-	manager.world.instances.append(mother)
+	var mother := manager.spawn_extra(def, at, path)
+	mother.set_process(false)
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 	stroller.global_position = at
@@ -274,10 +276,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
-	var world := WorldContext.new()
-	t.add_child(world)
 	var manager := _chat_manager(t)
-	manager.world.map.world = world
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 	stroller.global_position = at
@@ -289,7 +288,6 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 	if not mother:
 		stroller.free()
 		_free_manager(manager)
-		world.free()
 		return
 	t.check(mother.is_chatting(), "the first approach starts the conversation")
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(def.detain_seconds + 0.1, WAIT_SCALE),
@@ -308,7 +306,6 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 			"and walking back past her place brings no second conversation")
 	stroller.free()
 	_free_manager(manager)
-	world.free()
 
 # `abduction` draws its own scripted victim rather than touching a real `CrowdAgent` — see
 # docs/TODO.md, M56. Drawing and telemetry only, so a data-level rig can drive the whole scene by

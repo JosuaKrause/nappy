@@ -548,8 +548,7 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 ## Run through `EventManager` rather than through `Stroller.warn()`, because the thing that was
 ## wrong was *which events call it*, and no test in this suite could see that.
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	# Its own tick off (after it enters the tree, which turns it on): the warning under test is run
 	# through `_warn_through()`, and a bare manager's whole tick wants a director.
 	manager.set_physics_process(false)
@@ -559,19 +558,13 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 
 	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
 	# through the meter; it is not an instruction.
-	var ordinary := _instance(EventCatalogue.by_id("dog_walker"))
-	ordinary.global_position = rig.global_position
-	manager.add_child(ordinary)
-	manager.world.instances.append(ordinary)
+	var ordinary := manager.spawn_extra(EventCatalogue.by_id("dog_walker"), rig.global_position)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"a dog walker whose radius covers her raises nothing over her head")
 
 	# A lethal one, still telegraphing: the contract is now about her and the clock has started.
-	var lethal := _instance(EventCatalogue.by_id("abduction"))
-	lethal.global_position = rig.global_position
-	manager.add_child(lethal)
-	manager.world.instances.append(lethal)
+	var lethal := manager.spawn_extra(EventCatalogue.by_id("abduction"), rig.global_position)
 	_warn_through(manager)
 	t.check(rig.alert_level() == Stroller.Alert.SOON,
 			"an unmarked van telegraphing over her is the flashing mark")
@@ -615,7 +608,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 			"and walking away from the same spot takes it down — the danger has been avoided")
 
 	rig.free()
-	manager.free()
+	_free_manager(manager)
 
 ## The traffic half of the same finding, and the one the vocabulary's first row was not paying
 ## for: *the entity itself carries most of it* — except a car, which carried nothing at all,
@@ -740,8 +733,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	# And the same thing through the real measurement, because the defect was in the plumbing
 	# rather than in the arithmetic: what the two static functions above are *given*. The edge runs
 	# its own frames, and each thing moves by hand at its own speed over the frame's own length.
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
@@ -751,10 +743,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
-	var engine := _instance(def)
-	engine.global_position = Vector2(700.0, 0.0)
-	manager.add_child(engine)
-	manager.world.instances.append(engine)
+	var engine := manager.spawn_extra(def, Vector2(700.0, 0.0))
 
 	# A second of her walking straight at a stopped fire engine.
 	var announced_while_walking := false
@@ -779,7 +768,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 
 	edge.free()
 	standing.free()
-	manager.free()
+	_free_manager(manager)
 
 ## `docs/TODO.md`, M124: `_measure()` used to rebuild `_watch` from scratch every frame — a fresh
 ## outer `Dictionary` plus one per live instance. It now mutates each instance's own entry in place
@@ -787,8 +776,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 ## that promise: an instance still around keeps its own entry (same object, not a look-alike
 ## rebuilt fresh), and one that left is actually gone from `_watch` rather than accumulating.
 func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
-	var manager := EventManager.new()
-	t.add_child(manager)
+	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()
 	t.add_child(standing)
@@ -798,10 +786,7 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 	t.add_child(edge)
 
 	var def := EventCatalogue.by_id("fire_truck")
-	var engine := _instance(def)
-	engine.global_position = Vector2(700.0, 0.0)
-	manager.add_child(engine)
-	manager.world.instances.append(engine)
+	var engine := manager.spawn_extra(def, Vector2(700.0, 0.0))
 	var id := engine.get_instance_id()
 
 	await t.get_tree().process_frame
@@ -813,7 +798,8 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 			"the same instance's entry is the same Dictionary object next frame, mutated in " +
 			"place rather than torn down and rebuilt")
 
-	manager.world.instances.erase(engine)
+	manager.retire(engine)
+	manager.streaming.retire_finished()
 	await t.get_tree().process_frame
 	t.check(not edge.model.watch.has(id),
 			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
@@ -821,7 +807,7 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 
 	edge.free()
 	standing.free()
-	manager.free()
+	_free_manager(manager)
 
 ## The other half of the same shape, and the reason `warn()` is additive. *(Playtest 06, finding
 ## 3: "I get the flashing exclamation marks **after** the fact, at which point they're not
@@ -983,6 +969,26 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 	rig.free()
 
 # ------------------------------------------------------------------- helpers ---
+
+## A manager over open ground and a run of its own, handed in as the escape's building is handed its
+## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
+## its map is drawn in, a child of the manager. `_free_manager()` frees it with the run.
+func _manager(t) -> EventManager:
+	var run := RunState.new()
+	run.start_run(1)
+	var map := WorldMap.open_ground()
+	var manager := EventManager.new()
+	var holder := WorldContext.new()
+	manager.add_child(holder)
+	map.world = holder
+	manager.setup_world(map, run)
+	t.add_child(manager)
+	return manager
+
+func _free_manager(manager: EventManager) -> void:
+	var run := manager.world.run
+	manager.free()
+	run.free()
 
 func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
