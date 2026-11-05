@@ -20,6 +20,7 @@
 # (a row for a suite no longer under tests/ is dropped, named on stderr) are the ones
 # tools/ci-costs.sh uses, from tools/lib_suite_costs.sh.
 set -uo pipefail
+export LC_ALL=C
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=tools/lib_suite_costs.sh

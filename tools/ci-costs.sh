@@ -24,6 +24,7 @@
 # stderr too. Nothing here ever drops a row silently. Those row rules live in
 # tools/lib_suite_costs.sh, which tools/ci-costs-merge.sh (CI's own per-run cost file) shares.
 set -uo pipefail
+export LC_ALL=C
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root" || exit 1

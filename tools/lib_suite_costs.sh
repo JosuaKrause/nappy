@@ -18,9 +18,9 @@
 # is no longer under ROOT/tests/ is dropped from both, and each of the two is named on stderr.
 # Nothing here drops a row silently.
 
-# Byte order for every sort and join, so the rows come out in one order whatever the locale, the
-# order tools/test.sh --record-costs writes them in.
-export LC_ALL=C
+# Every sort and join below runs in byte order (LC_ALL=C, set inside the functions that sort, so
+# sourcing this file leaves the caller's locale alone), so the rows come out in one order whatever
+# the locale, the order tools/test.sh --record-costs writes them in.
 
 # The same line tests/run_tests.gd prints and tools/test.sh --record-costs reads.
 costs_timing_lines() {
@@ -31,20 +31,24 @@ costs_timing_lines() {
 
 costs_header() {
     printf '%s\n' "# Per-suite wall time in milliseconds, one row per tests/test_*.gd. _cost_of() in tools/test.sh"
-    printf '%s\n' "# reads it to bin-pack the shards, locally and in CI's matrix; it is a planning hint, never a"
-    printf '%s\n' "# gate -- every suite still runs wherever it lands, so a stale row costs some balance between"
-    printf '%s\n' "# shards and no correctness. A suite missing a row here is planned at _cost_of()'s stated"
-    printf '%s\n' "# default, with a warning, rather than silently dropped."
+    printf '%s\n' "# reads it to bin-pack the shards; it is a planning hint, never a gate -- every suite still runs"
+    printf '%s\n' "# wherever it lands, so a stale row costs some balance between shards and no correctness. A"
+    printf '%s\n' "# suite missing a row here is planned at _cost_of()'s stated default, with a warning, rather"
+    printf '%s\n' "# than silently dropped."
     printf '%s\n' "#"
-    printf '%s\n' "# Refresh it with \`tools/test.sh --record-costs\`, which runs the full suite locally and"
-    printf '%s\n' "# rewrites this file from that run's own \"-- suite  N ms\" lines, or with \`tools/ci-costs.sh\`,"
-    printf '%s\n' "# which reads those same lines out of the last few green CI runs on main and averages them"
-    printf '%s\n' "# instead -- either way never hand-edited, so the numbers come from a runner rather than from"
+    printf '%s\n' "# The copy committed as tests/suite_costs.txt plans local runs and is the fallback for CI's"
+    printf '%s\n' "# plan job when no cache holds a newer one; CI keeps its own copy in its cache, which the"
+    printf '%s\n' "# plan and costs jobs in .github/workflows/ci.yml read and write through tools/ci-costs-merge.sh."
+    printf '%s\n' "# The committed copy is refreshed with \`tools/test.sh --record-costs\`, which runs the full suite"
+    printf '%s\n' "# locally and rewrites it from that run's own \"-- suite  N ms\" lines, or with"
+    printf '%s\n' "# \`tools/ci-costs.sh\`, which reads those lines out of the last few green CI runs on main and"
+    printf '%s\n' "# averages them -- never hand-edited, so the numbers come from a runner rather than from"
     printf '%s\n' "# anybody's memory."
 }
 
 costs_merge() {
     local tool="$1" root="$2" old="$3" measured="$4" out="$5"
+    local -x LC_ALL=C
     local dir
     dir="$(mktemp -d)" || return 1
 

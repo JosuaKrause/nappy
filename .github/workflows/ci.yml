@@ -15,24 +15,27 @@
 #               or pass -- everything that needs no more than one process, run beside the sharded
 #               suite rather than inside it.
 #   plan        freezes the per-suite timings the shards plan from, once per run, before any shard
-#               starts: the newest `suite-costs-v1-` cache (this commit's own, else the newest
-#               any earlier run saved, a pull request's own or main's), else the committed
-#               tests/suite_costs.txt. Needs no Godot; skipped on a docs-only pull request.
+#               starts: the newest `suite-costs-v1-` cache -- this commit's own, else the newest
+#               this pull request's own runs saved, else the newest main saved -- else the
+#               committed tests/suite_costs.txt. Needs no Godot; skipped on a docs-only pull
+#               request.
 #   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
-#               I/8 -- planned from plan's frozen copy, so all eight plan the same split exactly as
-#               a local sharded run plans from tests/suite_costs.txt; skipped on a docs-only pull
-#               request. Each leg hands back its own suites' timings as a job output.
+#               I/8 -- planned from plan's frozen copy, so all eight plan the same split; a local
+#               run plans from the committed tests/suite_costs.txt instead (to reproduce a CI
+#               shard, point TEST_SUITE_COSTS at the table plan printed). Skipped on a docs-only
+#               pull request. Each leg hands back its own suites' timings as a job output.
 #   costs       once every shard has passed, folds the eight shards' timings into the frozen file
 #               (tools/ci-costs-merge.sh) and saves it as the cache the next run's plan restores.
-#               A problem here is shown but never fails `test`: a cache write is not a test.
+#               A problem here is a warning annotation and nothing else (continue-on-error on its
+#               steps): the job, the run and `test` stay green, since a cache write is not a test.
 #   browser     the release Web export booted and played in Chrome, the same steps the deploy runs
 #               before it publishes (.github/actions/web-browser-check); skipped on a docs-only
 #               pull request.
 #   test        what main's ruleset actually requires (a check named exactly `test`): it fails if
-#               any job that ran failed, or if `game`, `plan`, `shards` or `browser` did not run on
+#               any job that ran failed (`costs` cannot: its steps never fail the job), or if `game`, `plan`, `shards` or `browser` did not run on
 #               anything classify did not call docs-only, so the ruleset's own required-check name
 #               still means "everything this pull request owes passed" without the ruleset itself
-#               changing. `costs` alone is shown, not required.
+#               changing.
 # The Godot tools all honour GODOT=..., which is how CI points them at the downloaded Linux
 # binary instead of the macOS default path. uv is installed in `classify` and `gates`, the jobs
 # that run the Python tooling, and in `browser` for the template compiler; ffmpeg only in `gates`,
@@ -77,6 +80,10 @@ env:
   # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
   # the split. Fewer shards each carry more of the suites above that floor; more shards would only
   # wait on the same longest suite while paying for idle runners.
+  # The count is also spelled out in three places below that this value cannot reach: the `shards`
+  # matrix (`shard: [1..8]`), the eight job outputs `costs_1` to `costs_8` and the matching
+  # COSTS_1 to COSTS_8 in `costs`' env. Change all of them together; `costs` fails loudly if the
+  # outputs it reads are not SHARD_COUNT many.
   SHARD_COUNT: 8
 
 jobs:
@@ -451,9 +458,10 @@ jobs:
   # the other shards ran.
   #
   # The source is the newest cache whose key starts `suite-costs-v1-` -- this commit's own if a
-  # re-run finds it, else the newest any earlier run saved (a pull request sees its own branch's
-  # and main's) -- else the committed tests/suite_costs.txt, which also plans local runs. No other
-  # cache key starts with that prefix. The file is a few KB; a job output may hold 1 MB.
+  # re-run finds it, else the newest this pull request's own runs saved, else the newest main saved
+  # (the cache action searches the run's own scope first and falls back to main's only when
+  # nothing there matches) -- else the committed tests/suite_costs.txt, which also plans local
+  # runs. No other cache key starts with that prefix. The file is a few KB; a job output may hold 1 MB.
   plan:
     needs: classify
     if: needs.classify.outputs.docs_only != 'true'
@@ -570,6 +578,7 @@ jobs:
       # The whole split, printed by every leg: eight identical blocks and one hash are the proof
       # that the shards agree.
       - name: Split
+        shell: bash
         env:
           TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
           TEST_SHARDS: ${{ env.SHARD_COUNT }}
@@ -611,7 +620,7 @@ jobs:
           cat "$RUNNER_TEMP/measured.txt"
           {
             echo "costs_${SHARD}<<COSTS_EOF"
-            grep -hE -- '^-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$RUNNER_TEMP/shard.log"
+            grep -hoE -- '-- test_[a-zA-Z0-9_]+\.gd +[0-9]+ ms' "$RUNNER_TEMP/shard.log"
             echo "COSTS_EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -621,6 +630,7 @@ jobs:
   # keeping. A re-run of the same commit never overwrites an entry: if `plan` itself found the key
   # the save is skipped, and if the key appeared after `plan` ran (a re-run reuses the first
   # attempt's `plan` output) the save finds it reserved and only warns, which does not fail the job.
+  # Nothing in this job turns the run red: a cache write is not a test.
   # A cache has no retention setting: GitHub evicts an entry unused for 7 days, and the oldest
   # first past the repository's cache quota; this job adds no artifact.
   costs:
@@ -637,7 +647,13 @@ jobs:
             /tools/
             /tests/test_*.gd
 
+      # A cache problem must not turn the run red (a red run counts as a failure to
+      # tools/agent-status.sh and hides the run from tools/ci-costs.sh, which lists only successful
+      # runs): both steps below carry continue-on-error and the last one turns a failure of either
+      # into a warning annotation.
       - name: Merge the eight shards' timings into the plan's
+        id: merge
+        continue-on-error: true
         env:
           FROZEN: ${{ needs.plan.outputs.costs }}
           COSTS_1: ${{ needs.shards.outputs.costs_1 }}
@@ -651,7 +667,12 @@ jobs:
         run: |
           printf '%s\n' "$FROZEN" > "$RUNNER_TEMP/frozen.txt"
           : > "$RUNNER_TEMP/measured.txt"
-          for i in 1 2 3 4 5 6 7 8; do
+          read_count="$(compgen -v | grep -cE '^COSTS_[0-9]+$')"
+          if [[ "$read_count" -ne "$SHARD_COUNT" ]]; then
+            echo "FAILED: this step reads $read_count shard outputs but SHARD_COUNT is $SHARD_COUNT -- the outputs and SHARD_COUNT drifted apart" >&2
+            exit 1
+          fi
+          for i in $(seq 1 "$SHARD_COUNT"); do
             var="COSTS_$i"
             if [[ -z "${!var}" ]]; then
               echo "FAILED: shard $i handed over no timings -- not saving a partial file" >&2
@@ -667,11 +688,17 @@ jobs:
           cat suite-costs-cache/suite_costs.txt
 
       - name: Save them for the next run
-        if: needs.plan.outputs.exact != 'true'
+        id: save
+        if: steps.merge.outcome == 'success' && needs.plan.outputs.exact != 'true'
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: suite-costs-cache
           key: suite-costs-v1-${{ github.sha }}
+
+      - name: Say so if the timings were not saved
+        if: steps.merge.outcome == 'failure' || steps.save.outcome == 'failure'
+        run: echo "::warning::the suite timings were not saved for the next run's plan (see the merge and save steps above). The tests passed."
 
   # The release Web export, booted in a real Chrome and played through the same checks the deploy
   # runs before it publishes (.github/actions/web-browser-check, shared with deploy.yml and
@@ -717,7 +744,8 @@ jobs:
 
   # main's ruleset requires a check named exactly `test`; this job is that check; renaming the
   # job id would silently detach the ruleset from CI without editing the ruleset itself. It passes
-  # only when every job that ran passed, and `game`, `plan`, `shards` and `browser` may be skipped only on a
+  # only when every job that ran passed (`costs` cannot fail: its steps are continue-on-error, so
+  # a cache problem is an annotation on a green job), and `game`, `plan`, `shards` and `browser` may be skipped only on a
   # pull request classify called docs-only -- one touching src/ or tests/ never is, so it can never
   # pass here without the game's tests and the browser check. The `version tags` ruleset requires
   # this same check before a `v*` tag, so a commit that fails in the browser cannot be released.
@@ -727,7 +755,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Every check that ran passed, and the game's tests ran unless the pull request is docs-only
+      - name: Every check that ran passed (costs only ever warns), and the game's tests ran unless the pull request is docs-only
         env:
           DOCS_ONLY: ${{ needs.classify.outputs.docs_only }}
           CLASSIFY: ${{ needs.classify.result }}
@@ -759,10 +787,4 @@ jobs:
             echo "FAILED: ${pair%%=*} is $result, and this is not a docs-only pull request" >&2
             failed=1
           done
-          # `costs` saves the timings for the next run and is skipped whenever a shard did not
-          # pass, so it cannot be required; when it ran and broke, that is shown and the pull
-          # request is not blocked, since a cache write is not a test of the game.
-          if [[ "$COSTS" == "failure" ]]; then
-            echo "::warning::costs failed: the timings were not saved for the next run's plan. The tests passed."
-          fi
           exit "$failed"
