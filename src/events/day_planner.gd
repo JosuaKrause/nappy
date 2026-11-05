@@ -187,7 +187,8 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 	var result := Plan.new()
 	var walk := FinalePlanner.route(world.city_map)
 	result.walk = walk
-	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, kept_ground)
+	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, kept_ground,
+			world.trace)
 	result.is_a_day = false
 	world.city_map.clear_day_holds()
 	return result
@@ -208,16 +209,18 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ## walk from where she stands to either exit with the seals already down.
 ##
 ## `kept_ground` is what a replan of the same city reads its ground from again; none reads it afresh.
+## `trace` is where the bag draw writes its count for the run log (`EventScheduler.build_day()`).
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec,
 		populate_events := true,
-		kept_ground: EventScheduler.KeptGround = null) -> Array[EventScheduler.Planned]:
+		kept_ground: EventScheduler.KeptGround = null,
+		trace: RunTrace = null) -> Array[EventScheduler.Planned]:
 	var placements: Array[EventScheduler.Planned] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	placements.append_array(seals)
 	if populate_events:
 		placements.append_array(EventScheduler.build_day(spec, rng, map, [], [], [], walk, 0,
-				PackedVector2Array(), [], seals, null, kept_ground))
+				PackedVector2Array(), [], seals, trace, kept_ground))
 	return placements
 
 # --------------------------------------------------------------- the building ---

@@ -532,7 +532,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		return _fill_the_walk_from_the_bag(spec, rng, map, route,
 				street_bag(spec.bag, street_bag_seed(rng)), used_calm, doors, standing,
-				kept_ground)
+				kept_ground, trace)
 	var day := spec.number
 	var planned: Array[Planned] = []
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
@@ -718,11 +718,15 @@ class Rules extends RefCounted:
 ## `bag` is drawn on its own stream (`street_bag_seed()`, off `rng`'s seed), so drawing it takes
 ## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
 ## restart after a loss — draws the same walk again. Handed in rather than made here so a caller that
-## draws another bag (`tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`)'s bags of one marble) hands its own.
+## draws another bag hands its own.
+##
+## `trace` is told how many marbles the walk drew (`bag.drawn`, read after the last slot), which
+## is the plan's own account of how many slots met the bag and the one count a reader of the plan
+## cannot recompute from what stands. It is read once at the end and changes nothing placed.
 static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 		route: RouteSource, bag: MarbleBag, used_calm: Array[Vector2i] = [],
 		doors := PackedVector2Array(), standing: Array[Planned] = [],
-		kept_ground: KeptGround = null) -> Array[Planned]:
+		kept_ground: KeptGround = null, trace: RunTrace = null) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if not route:
 		return planned
@@ -752,6 +756,7 @@ static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerato
 			if placement:
 				planned.append(placement)
 				placed[def.id] = int(placed.get(def.id, 0)) + 1
+	_note(trace, "plan", "the escape's bag drew %d marbles for %d rows" % [bag.drawn, planned.size()])
 	return planned
 
 ## **A marble bag of `counts`**: `counts` marbles of each key, a row's marble or
