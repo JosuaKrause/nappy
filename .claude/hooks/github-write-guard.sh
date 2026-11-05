@@ -2075,8 +2075,8 @@ fi
 # among its words (`"$TAG"` can be a `v*` tag) or one the guard cannot read to its end, a `git`
 # whose options hold an unquoted command substitution, a `gh pr merge`, any `gh issue` write,
 # any other `gh` write, any `gh api` write, a pushing `tools/` script, a reviewer's push, a command
-# too long to read and one the guard could not parse stay denied: merging and releasing already need the player's go-ahead
-# in conversation, and a prompt is too easy to click through for any of them -- on the mobile app
+# too long to read and one the guard could not parse stay denied: a release needs the player's go-ahead in conversation and a merge is the
+# orchestrating session's under its standing permission (CLAUDE.md), and a prompt is too easy to click through for any of them -- on the mobile app
 # it shows only the command, not this reason. A direct `gh issue` write is never asked about because
 # the player wants an agent's issue writes to go through a script rather than a direct command
 # *(2026-09-27, bouncy-heron statement 14: "if it goes through a script it's safe we just need to

@@ -100,8 +100,8 @@ belong in the repo"). If a skill has grown past what it is about, split it rathe
 ### 6. Commit and propose
 
 Commit each piece as it is settled; a decision that is only in the working tree is only in the
-session. Push the branch and create or update its PR. Merging follows **committing** (explicit
-permission in this session), and so does retiring a merged branch.
+session. Push the branch and create or update its PR. Merging follows **committing** (the
+orchestrating session's standing permission), and so does retiring a merged branch.
 
 ### 6a. Leave the review list true
 
@@ -205,7 +205,9 @@ delegation should continue, say to start fresh agents with self-contained briefs
 resuming the session's agents. Keep the prompt self-contained and current at the moment of handover;
 the final report may summarize it, but the file must stand on its own.
 
-**The restart prompt never records a merge or release permission** (polite-marten). Permission is
-given in a session and ends with it (**committing**, "Merging"), so a sentence carrying it forward
-is either a grant nobody gave the next session or an invitation to act on one; the next session asks
-the player.
+**The restart prompt never records a merge or release permission** (polite-marten). The
+orchestrating session's merge permission is standing in `CLAUDE.md` (inbox #1063), so there is
+nothing to record; any other permission (a release, or a merge granted to another session) is given
+in a session and ends with it (**committing**, "Merging" and "Releasing"), so a sentence carrying
+it forward is either a grant nobody gave the next session or an invitation to act on one; the next
+session asks the player.
