@@ -7,7 +7,7 @@ extends RefCounted
 ## (`game_enums.gd`'s own doc), so a fresh instance is built from a `preload()` of its file rather
 ## than the bare autoload name, which keeps the live singleton out of these tests. Every counter is
 ## handed a `RunState` made fresh for it (`configure()`, as `main` hands the real one the run it
-## plays); nothing here reads or writes the `GameState` autoload.
+## plays); nothing here reads a global run.
 
 const VISIT_COUNTER_SCRIPT = preload("res://src/autoload/visit_counter.gd")
 

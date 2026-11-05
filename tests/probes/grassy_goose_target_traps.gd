@@ -39,8 +39,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS_TO_SWEEP := 30
 const DAYS: Array[int] = [8, 9, 11, 12, 14]
 const STEP := 1.0 / 60.0
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const HEADINGS: Array[Vector2] = [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]
 

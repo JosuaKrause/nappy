@@ -22,8 +22,7 @@ extends RefCounted
 const _SPEEDS: Array[float] = [130.0, 140.0, 150.0, 157.0, 165.0, 175.0, 181.0, 185.0]
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed each city's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const _HORN_CALLS := 200000
 

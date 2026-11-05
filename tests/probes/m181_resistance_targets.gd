@@ -24,8 +24,7 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 const EXTRA_SEEDS := 28
 const BASE_SEED := 181_000
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed the run starts from: the one the runner's reset gave the stand-in this probe used to
-## read, so the probe measures what it did.
+## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 func run(t) -> void:

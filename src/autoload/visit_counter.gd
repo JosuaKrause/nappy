@@ -298,13 +298,15 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 var _day := 0
 
 ## The day what happens now is counted under: the one `day_started` announced, or, before any has
-## been heard on this page — a suite driving the counter by hand — the run's own day.
+## been heard on this page — a suite driving the counter by hand — the run's own day. `0` when
+## there is no run: `main` always configures one, and a counter configured with none (the test
+## runner's, between boots) sends nothing.
 func _counted_day() -> int:
-	return _day if _day > 0 else _run.header.day
+	return _day if _day > 0 or _run == null else _run.header.day
 
 func _on_day_started(day: int) -> void:
 	_day = day
-	for name in _day_began_names(day, _run.calendar.hard_mode):
+	for name in _day_began_names(day, _run != null and _run.calendar.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first

@@ -27,8 +27,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CASES := [[7, "delivery_van"], [6, "homeless_yeller"]]
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
-## The seed each walk's run starts from: the one the runner's reset gave the stand-in this probe
-## used to read, so the probe measures what it did.
+## The seed each walk's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024, 555, 8080, 99, 123456, 271828,
 		314159]

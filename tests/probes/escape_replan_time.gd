@@ -9,8 +9,7 @@ extends RefCounted
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024]
 const RESTARTS := 3
 
-## The seed the run starts from: the one the runner's reset gave the stand-in this probe used to
-## read, so the probe measures what it did.
+## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
 func run(t) -> void:

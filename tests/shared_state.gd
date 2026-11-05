@@ -21,12 +21,11 @@ extends RefCounted
 ## an autoload or a `RefCounted` an autoload holds, as `<autoload>.<field>.<its field>`), arrays and
 ## dictionaries by their contents down to `DEPTH` levels.
 ##
-## Every field is the suite's own to give back, except the memoised ones in `EXEMPT` and the parts
-## of the `GameState` autoload (see `_autoload`).
+## Every field is the suite's own to give back, except the memoised ones in `EXEMPT`.
 
 const DEPTH := 3
 const MAX_ITEMS := 64
-const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "GameState", "VisitCounter"]
+const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "VisitCounter"]
 
 ## The only fields whose change is not a leak, each named with the one-line reason. A field is
 ## exempt by its own name, never its owner: a new field of the same script is checked until it is
@@ -163,12 +162,7 @@ static func _autoload(out: Dictionary[String, String], autoload: String) -> void
 		var name: String = property["name"]
 		var value: Variant = node.get(name)
 		out["%s.%s" % [autoload, name]] = _describe(value, DEPTH)
-		# The parts of the run's state are not compared: the runner's own `start_run()` and
-		# `use_trace()` put them back before every suite, so a suite's change to one cannot be told
-		# from the reset. `docs/todo/2026-10-18-minty-quail/run-state-handed-in.md` makes the run's
-		# state something each test is handed fresh rather than a global, and removes this skip.
-		if autoload != "GameState":
-			_held(out, "%s.%s" % [autoload, name], value)
+		_held(out, "%s.%s" % [autoload, name], value)
 	for info in node.get_signal_list():
 		var signal_name: String = info["name"]
 		var targets: Array[String] = []

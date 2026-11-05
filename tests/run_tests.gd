@@ -5,25 +5,18 @@ extends Node
 ##     tools/test.sh crowd balance   # just the suites whose name contains one of these
 ##     godot --headless --path . res://tests/tests.tscn -- crowd
 ##
-## Runs as a scene rather than via `--script` so that the autoloads (Tuning, EventBus, and the
-## `GameState` stand-in below) actually exist — `--script` replaces the main loop and skips them.
+## Runs as a scene rather than via `--script` so that the autoloads (Tuning, EventBus and the
+## others) actually exist — `--script` replaces the main loop and skips them.
 ##
-## **`GameState` is a stand-in, read by suites only.** The game's run lives on the `Sitting`
-## (`Sitting.run`), which `main` takes it from; no class under `src/` reads the autoload. The
-## suites not yet moved set and read `GameState`, and for a sitting that enters the tree holding
-## no run the stand-in and the run its `main` plays are one object: the sitting is handed the
-## stand-in as it enters (`_hand_the_stand_in()`), before the `main` that built or found it
-## takes its run. A sitting a suite hands a run keeps it. A sitting that never enters the tree
-## (one handed to a `main` with `use_sitting()`) is handed nothing here: its `main` plays the
-## run the suite handed it, or a fresh one of the sitting's own, so a suite that reads
-## `GameState` beside such a `main` hands the sitting the stand-in itself
-## (`sitting.run = GameState`). The stand-in, this hand-off and the reset below are there only
-## for the suites that read `GameState` (minty-quail, the run's state handed in).
+## **No suite reads a global run.** The game's run lives on the `Sitting` (`Sitting.run`), which
+## `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a
+## part directly, a city through `RunCity`, a booted `main` through its sitting), so there is no
+## run to put back between suites and `SharedState` compares every autoload's variables.
 ##
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
-## Before each suite `_reset_globals` puts back the run state and the static test seams, and a
+## Before each suite `_reset_globals` puts back the observers' configuration, and a
 ## physics frame has passed before the first, so every suite meets the same engine state. After
 ## each suite `SharedState` compares the shared state with what it was before, and a suite that
 ## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
@@ -65,7 +58,6 @@ var _observer_hold := {}
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
-	get_tree().node_added.connect(_hand_the_stand_in)
 	# In a process where no physics frame has run, `move_and_slide()` moves a body 0 px, and after
 	# one it moves the full step. A frame passes before the first suite so that no suite, the first
 	# included, runs before the engine has stepped physics once.
@@ -120,6 +112,7 @@ func _ready() -> void:
 	print("%d checks, %d failures" % [checks, failures.size()])
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
+	VisitCounter.configure(null, null)
 	get_tree().quit(1 if not failures.is_empty() else 0)
 
 ## A suite that quits the tree takes effect at the frame the runner lets pass after it, ending the
@@ -129,36 +122,18 @@ func _exit_tree() -> void:
 	if not _finished and _running != "":
 		print("QUIT  the tree went away while %s was running; the run did not finish" % _running)
 
-## A fixed seed rather than a random one, so a suite that reads `GameState.run_rng` meets the same
-## run on every machine and in every order. For determinism only: no suite may rely on it, and one
-## that depends on the run's seed calls `GameState.start_run(<seed>)` itself.
-const RESET_SEED := 2
-
 ## The one place the globals a suite may leave behind are put back, called before each suite so
-## that no suite starts on another's state: the run state and the trace it writes to (a silent
-## one), the run configuration a booted `main` handed the observers (none, as before any boot, with
-## the counter handed the live run, since the bus reaches it in suites that boot no `main`),
-## and the static seams a suite sets by hand (the frame recorder).
-## The run log and `VisitCounter`'s own state and the `EventBus` connections are left alone, and
-## so is everything else: `SharedState` compares
-## the shared state after each suite and fails the suite that left it changed, except the fields
-## it lists with a reason (these resets are the reason for some of them). It covers the tree's
-## `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the runner,
-## `InputMap`, the pressed actions, the autoloads' variables and signal connections and every
-## `static var` under `src/`.
+## that no suite starts on another's state: the run configuration a booted `main` handed the
+## observers (none, as before any boot, and no run for the visit counter, which sends nothing
+## without one). The run log and `VisitCounter`'s own state and the `EventBus` connections are
+## left alone, and so is everything else: `SharedState` compares the shared state after each suite
+## and fails the suite that left it changed, except the fields it lists with a reason. It covers
+## the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the
+## runner, `InputMap`, the pressed actions, the autoloads' variables and signal connections and
+## every `static var` under `src/`.
 func _reset_globals() -> void:
-	GameState.start_run(RESET_SEED)
 	Telemetry.configure(null)
-	GameState.use_trace(RunTrace.new())
-	VisitCounter.configure(null, GameState)
-
-## Hands the `GameState` stand-in to a `Sitting` that enters the tree holding no run — see this
-## file's header. Called as the node enters, so the `main` that adds a sitting of its own, or finds
-## one a suite parked in its home, takes the stand-in as its run.
-func _hand_the_stand_in(node: Node) -> void:
-	var sitting := node as Sitting
-	if sitting and sitting.run == null:
-		sitting.run = GameState
+	VisitCounter.configure(null, null)
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
