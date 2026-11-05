@@ -311,7 +311,8 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	var manager := EventManager.new()
 	var map := WorldMap.open_ground()
 	map.world = world
-	manager.setup_world(map, RunState.new())
+	var run := RunState.new()
+	manager.setup_world(map, run)
 	t.add_child(manager)
 	var plan := EventScheduler.Planned.new(def, at)
 	manager.streaming.add(plan)
@@ -320,6 +321,7 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	t.check(robber != null, "he is streamed in where the day planned him")
 	if robber == null:
 		manager.free()
+		run.free()
 		world.free()
 		return
 	robber.player_at = at + Vector2(def.notice.within - 10.0, 0.0)
@@ -334,6 +336,7 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 	t.check(plan.live != null and plan.live.pursuit.lunge_held,
 			"and streamed back in, his lunge is still held")
 	manager.free()
+	run.free()
 	world.free()
 
 # ---------------------------------------------------------------- barrier post ---
