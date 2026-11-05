@@ -16,7 +16,7 @@ extends Node
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
-## Before each suite `_reset_globals` puts back the observers' configuration and the static test seams, and a
+## Before each suite `_reset_globals` puts back the observers' configuration, and a
 ## physics frame has passed before the first, so every suite meets the same engine state. After
 ## each suite `SharedState` compares the shared state with what it was before, and a suite that
 ## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
@@ -55,10 +55,6 @@ var _running := ""
 var _finished := false
 ## What `gives_back_observers()` recorded for the suite now running, put back once it is over.
 var _observer_hold := {}
-## The run the visit counter is handed before every suite, which only the counter reads: the bus
-## reaches the counter in suites that boot no `main`, and it reads the run's day and mode as a day
-## begins or a task is offered. Made here so it is one no suite touches, and freed with the runner.
-var _counter_run := RunState.new()
 
 func _ready() -> void:
 	var filters := OS.get_cmdline_user_args()
@@ -117,7 +113,6 @@ func _ready() -> void:
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
 	VisitCounter.configure(null, null)
-	_counter_run.free()
 	get_tree().quit(1 if not failures.is_empty() else 0)
 
 ## A suite that quits the tree takes effect at the frame the runner lets pass after it, ending the
@@ -129,16 +124,16 @@ func _exit_tree() -> void:
 
 ## The one place the globals a suite may leave behind are put back, called before each suite so
 ## that no suite starts on another's state: the run configuration a booted `main` handed the
-## observers (none, as before any boot, with the counter handed a run only it reads) and the static seams a suite sets by hand (the frame recorder).
-## The run log and `VisitCounter`'s own state and the `EventBus` connections are left alone, and
-## so is everything else: `SharedState` compares the shared state after each suite and fails the
-## suite that left it changed, except the fields it lists with a reason (these resets are the
-## reason for some of them). It covers the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`,
-## the nodes under the root and the runner, `InputMap`, the pressed actions, the autoloads'
-## variables and signal connections and every `static var` under `src/`.
+## observers (none, as before any boot, and no run for the visit counter, which sends nothing
+## without one). The run log and `VisitCounter`'s own state and the `EventBus` connections are
+## left alone, and so is everything else: `SharedState` compares the shared state after each suite
+## and fails the suite that left it changed, except the fields it lists with a reason. It covers
+## the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the
+## runner, `InputMap`, the pressed actions, the autoloads' variables and signal connections and
+## every `static var` under `src/`.
 func _reset_globals() -> void:
 	Telemetry.configure(null)
-	VisitCounter.configure(null, _counter_run)
+	VisitCounter.configure(null, null)
 
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
