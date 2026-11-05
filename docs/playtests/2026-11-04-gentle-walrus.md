@@ -89,3 +89,17 @@
 2. **Context** (the assistant's):
 
    Said while PR #1069 was being fixed after review: the reviewer had found that committing's text about tools/await-merge.sh (sleep to an undershot CI estimate, then poll every 20 seconds, run in the background) said "not by a timer", going past the player's words in inbox #1070.
+
+## #1073
+
+1. **The note.**
+
+   > the other decisions was the warnings and no failure on cache write
+
+2. **Context** (the assistant's):
+
+   Answering which of PR #1064's choices (CI plans its shards from the previous run's timings, record brisk-sparrow) "the other decision" in inbox #1068 meant. The choices were: a new timing measurement blended half and half with the stored one; no cache save unless every shard succeeded; the cache-saving job not required by the test gate, a failure only a warning; no artifact, so no retention to set.
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   The player agreed to the cache-saving job being a warning only, not required by the test gate (a failed cache write does not fail the PR). The other two choices (save only when every shard succeeded; no artifact) stay the builder's, open to overturn.
