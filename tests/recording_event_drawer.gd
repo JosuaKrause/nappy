@@ -7,7 +7,8 @@ extends EventDrawer
 ##
 ## The scenery of a crash's or a burst main's slices is built for real, since the look stands it
 ## behind its slice as a node: a drawer recording scenery is handed the atlas the scenery is cut
-## from, and one handed none records no scenery and must not be asked to.
+## from, and one handed none records no scenery and must not be asked to. The scenery lays its
+## pictures through the real drawer's own, or through `scenery_drawer` when a test hands one.
 
 ## Every picture the look asked for, in order: `{"canvas", "kind", "picture", "foot", "size",
 ## "rect", "mirrored", "colour", "band", "pass", "frame"}`. `kind` is `&"stand"`, `&"paint"`,
@@ -22,6 +23,10 @@ var draws: Array[Dictionary] = []
 ## How many times each canvas the look has drawn on was drawn again after the first, by instance id:
 ## its `draw` signal, emitted before every `_draw()` but the one it was first seen in, counts them.
 var _passes := {}
+
+## What the scenery this builds lays its pictures through, handed on to it through
+## `EventScenery.drawer` in place of the one the real drawer hands; null to keep that one.
+var scenery_drawer: SceneryDrawer = null
 
 func _init(atlas: AtlasLibrary = null) -> void:
 	super(atlas)
@@ -41,6 +46,8 @@ func paint_band(canvas: CanvasItem, picture: String, whole: Rect2, band: Rect2) 
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:
 	var built := super(picture, extent, anchor, shadow, band)
+	if scenery_drawer != null:
+		built.drawer = scenery_drawer
 	draws.append({"canvas": built, "kind": &"scenery", "picture": picture, "foot": anchor,
 		"size": extent, "rect": Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 		"mirrored": false, "colour": Color.WHITE, "band": band, "pass": 0,

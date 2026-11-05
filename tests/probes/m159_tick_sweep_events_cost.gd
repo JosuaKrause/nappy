@@ -225,7 +225,7 @@ func _split_events(events: EventManager, delta: float) -> Array[int]:
 	if found:
 		events.checkpoints.check_detentions()
 	stamps.append(Time.get_ticks_usec())
-	events._check_hard_fails()
+	events.check_hard_fails()
 	stamps.append(Time.get_ticks_usec())
 	var parts: Array[int] = []
 	for i in range(1, stamps.size()):

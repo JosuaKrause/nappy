@@ -71,6 +71,9 @@ src/
 	roof_drawer.gd        what a building draws its roof units through; the city hands it in
 	front_drawer.gd       what a building paints its front through; the city hands it in
 	scenery_layer.gd      retained static furniture or small alternating scenery parts
+	scenery_drawer.gd     what a scenery layer and the decals lay their pictures through; the city
+	                      hands it in, and an event's drawer its own to the event's scenery
+	shadow_drawer.gd      what the buildings' shadows draw their shaded tiles through; the city hands it in
 	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands

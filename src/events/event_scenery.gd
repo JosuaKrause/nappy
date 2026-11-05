@@ -11,6 +11,10 @@ extends Node2D
 ## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed by the drawer
 ## that builds this scenery for the look (`EventDrawer.scenery()`) before it is configured.
 var atlas: AtlasLibrary
+## What every layer of this scenery lays its pictures through (`SceneryDrawer`), handed by the
+## drawer that builds it (`EventDrawer.scenery()`) before it enters the tree, and handed on to each
+## layer it makes.
+var drawer: SceneryDrawer
 var moving_layers: Array[SceneryLayer] = []
 var static_layers: Array[SceneryLayer] = []
 var _picture: String
@@ -48,6 +52,7 @@ func _build() -> void:
 	var top_left := _anchor - Vector2(_extent.x * 0.5, _extent.y)
 	if not _shadow.is_empty():
 		var contact := SceneryLayer.new()
+		contact.drawer = drawer
 		contact.modulate = Palette.SHADOW
 		contact.append(atlas.region(_shadow), Rect2(top_left, _extent))
 		static_layers.append(contact)
@@ -68,6 +73,7 @@ func _build() -> void:
 			source = Rect2((inside.position - rect.position) * texels, inside.size * texels)
 			rect = inside
 		var layer := SceneryLayer.new()
+		layer.drawer = drawer
 		layer.append(texture, rect, atlas.region(region + "_b") if moving else null, source)
 		if moving:
 			moving_layers.append(layer)

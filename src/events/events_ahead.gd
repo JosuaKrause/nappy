@@ -72,7 +72,7 @@ func start_day(day: int, tree: RouteTree, doors: PackedVector2Array) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree,
-						world.run.calendar.settled_this_act(), doors)
+						world.run.calendar.settled_this_act(), doors, EventScheduler.Verdicts.new())
 				_siting.holds_the_home_streets = holds_the_home_streets
 				# Where a crew may paste: only the city's buildings know their blank walls.
 				if world.city and world.city.poster_walls():
@@ -302,7 +302,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var siting := _siting
 	if not siting:
 		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-				world.run.calendar.settled_this_act(), _day_doors)
+				world.run.calendar.settled_this_act(), _day_doors, EventScheduler.Verdicts.new())
 		siting.holds_the_home_streets = holds_the_home_streets
 	var plan := siting.among(def, rng, _streaming.plans(), offered)
 	if not plan:
@@ -349,7 +349,7 @@ func _task_siting() -> EventScheduler.WalkSiting:
 		return _siting
 	if not _task_siting_cache or _task_siting_tree != _day_tree:
 		_task_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-				world.run.calendar.settled_this_act(), _day_doors)
+				world.run.calendar.settled_this_act(), _day_doors, EventScheduler.Verdicts.new())
 		_task_siting_cache.holds_the_home_streets = holds_the_home_streets
 		_task_siting_tree = _day_tree
 	return _task_siting_cache
@@ -440,7 +440,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
 				else RouteTree.for_day(world.city_map, world.day),
-				world.run.calendar.settled_this_act(), _day_doors)
+				world.run.calendar.settled_this_act(), _day_doors, EventScheduler.Verdicts.new())
 		_siting.holds_the_home_streets = holds_the_home_streets
 		if world.city and world.city.poster_walls():
 			_siting.fronts = world.city.poster_walls().fronts()

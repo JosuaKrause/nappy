@@ -327,8 +327,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "DrawnFrame",
-        "telemetry to be handed what it reports",
-        ("src/autoload/telemetry.gd",),
+        "the run log's viewport screen waits for a drawn frame",
+        ("src/telemetry/telemetry_viewport_screen.gd",),
     ),
     Exception_(
         "names",
@@ -533,13 +533,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/city/blackout.gd",
             "src/city/poster_walls.gd",
         ),
-    ),
-    Exception_(
-        "static",
-        "EventScheduler",
-        "the scheduler keeps its kept-ground memo and judgement count in statics (hidden-statics)",
-        ("src/events/day_planner.gd",),
-        more=(("src/events/day_planner.gd", 2),),
     ),
     Exception_(
         "names",

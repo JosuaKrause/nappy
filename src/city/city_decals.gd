@@ -32,6 +32,9 @@ const DECORATION_ATLAS := &"decoration"
 ## The city's library (`AtlasLibrary`), handed by the city before it builds: the city holds the
 ## decoration group on it, and the decals draw their regions from it.
 var atlas: AtlasLibrary
+## What every decal is laid through (`SceneryDrawer`), handed by the city before it builds: on this
+## node's own canvas when it is not streamed, and handed on to each chunk's layer when it is.
+var drawer: SceneryDrawer
 
 func set_placed(placed: Array[Litter.Placed]) -> void:
 	_placed = placed
@@ -91,6 +94,7 @@ func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> vo
 
 func _prepare_chunk(key: Vector2i) -> void:
 	var layer := SceneryLayer.new()
+	layer.drawer = drawer
 	add_child(layer)
 	_resident[key] = layer
 	for entry: Litter.Placed in _litter_chunks.get(key, []):
@@ -106,9 +110,11 @@ func _draw() -> void:
 		return
 	for entry in _placed:
 		var texture := atlas.region(Litter.TEXTURES[entry.texture_index])
-		draw_texture(texture, entry.position - texture.get_size() * 0.5)
+		drawer.draw(self, texture, Rect2(entry.position - texture.get_size() * 0.5,
+				texture.get_size()), Rect2())
 	var pit := atlas.region(TREE_PIT)
 	for entry in _street_tree_pits:
 		if _map and _map.is_tree_pit_emptied(entry.tile):
 			continue
-		draw_texture(pit, entry.position - pit.get_size() * 0.5)
+		drawer.draw(self, pit, Rect2(entry.position - pit.get_size() * 0.5, pit.get_size()),
+				Rect2())

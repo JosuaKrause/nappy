@@ -3,7 +3,7 @@ extends Node
 ## **A day's events, in whatever world she walks**: the one thing the run flow, the resistance, the
 ## city and the observers talk to about events. It starts a day (`start_day()`), steps its live
 ## instances once a physics tick in a fixed order (`_tick_the_events()`), answers what charges the
-## baby at a point (`sources`), sees what struck her (`_check_hard_fails()`) and
+## baby at a point (`sources`), sees what struck her (`check_hard_fails()`) and
 ## ends the day's charges. The work behind that face is handed to the parts that own it, each handed
 ## the one `EventWorld` they share:
 ##
@@ -423,7 +423,7 @@ func _look_through_the_camera() -> void:
 
 ## What the run log and the page's counter call the event whose lethal reach ended today
 ## (`EventInstance.logged_name()` — `pelican` for a pelican, otherwise its row's id), or "" when no
-## event's reach has (a car, or nothing yet). Set by `_check_hard_fails()` with the
+## event's reach has (a car, or nothing yet). Set by `check_hard_fails()` with the
 ## `hard_fail_triggered` it sends, read by `DayDirector.finish_day()` for `EventBus.day_ended`, and
 ## reset with `_hard_failed` when a day starts. Telemetry only.
 func what_struck_her() -> String:
@@ -488,18 +488,29 @@ func _tick_the_events(delta: float) -> void:
 		spawner.report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
 		warnings.run(delta, world.player.global_position)
-		_tell_them_where_she_is()
-	# Then every live event takes its step, having been told where she is, with or without her.
-	_step_them(delta)
+	step_the_encounters(delta)
 	if she_is_here:
-		ahead.let_the_officers_out()
 		warnings.warn_about_the_ground_she_is_on()
 		checkpoints.warn_at_the_doors()
 		checkpoints.watch_the_door_lines(delta)
 		checkpoints.check_detentions()
 	# Last, on the same tick as the step that caught her, and on every event's committed pose: each
 	# step above has been proposed, checked and committed (`EventInstance.step()`).
-	_check_hard_fails()
+	check_hard_fails()
+
+## **The encounters' own step, in the order the tick takes it**: with her in the world, every
+## instance is told where she is, then every live event takes its step (with or without her), then
+## the officers owed are let out. The tick calls it between the warnings and the doors' watch, and
+## `check_hard_fails()` after them; a caller that wants only the encounters (a test of a vehicle and
+## its men) calls these two and nothing else of the tick.
+func step_the_encounters(delta: float) -> void:
+	var she_is_here := world.has_player()
+	if she_is_here:
+		_tell_them_where_she_is()
+	# Then every live event takes its step, having been told where she is, with or without her.
+	_step_them(delta)
+	if she_is_here:
+		ahead.let_the_officers_out()
 
 ## **Every live event's step, once a physics tick, in the order they live in `world.instances`**
 ## (`EventInstance.step()`). What the tick made before it (a successor, a repeat, a streamed or
@@ -560,7 +571,7 @@ func _tell_them_where_she_is() -> void:
 func walks_under_a_boom() -> int:
 	return checkpoints.walks_under_a_boom()
 
-func _check_hard_fails() -> void:
+func check_hard_fails() -> void:
 	if _hard_failed or not world.has_player():
 		return
 	for instance in world.instances:

@@ -743,36 +743,76 @@ func _test_the_fields_layer_cuts_a_moved_source_again(t) -> void:
 	source.free()
 	musician.free()
 
+## An emitter of a chosen shape, level and velocity, standing where it is put: what the layer asks
+## an event instance (`travel_velocity()`, `field_shape()`, `solid_axis()`), answered with what the
+## test chose, so a speed no event row reaches can be handed to the layer. Moved by `position`.
+class _Emitter extends EventInstance:
+	var chosen_shape: GroundShape
+	var chosen_axis := Vector2.RIGHT
+	var chosen_velocity := Vector2.ZERO
+	func travel_velocity() -> Vector2:
+		return chosen_velocity
+	func field_shape() -> GroundShape:
+		return chosen_shape
+	func solid_axis() -> Vector2:
+		return chosen_axis
+
 ## **No outline that reaches the screen is culled.** The layer decides from the emitter's own point
-## and the level, before it builds the outline (`DebugLayers._may_be_seen()`); over seeded fields —
-## standing points and stadiums, and moving ones at every speed up to past the eccentricity cap —
-## and a screen-sized view placed round each, every outline whose bounds meet the view is kept. The
-## guards count both kinds, so the sweep is not vacuous.
+## and the level, before it builds the outline; over seeded emitters handed to the layer as its
+## events — standing points and stadiums, and moving ones at every speed up to past the eccentricity
+## cap, which no event row reaches — and a screen-sized view round the origin, every outline whose
+## own bounds (computed here over the outline) meet the view comes back from `field_runs()`, and
+## nothing that does not. One emitter is on the ground at a time, so each call answers for it alone.
+## The guards count both kinds, so the sweep is not vacuous.
 func _test_the_fields_layer_never_culls_an_outline_on_screen(t) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 6420
+	var def := EventCatalogue.by_id("busker").duplicate() as EventDef
+	var emitter := _Emitter.new()
+	emitter.setup(def, Vector2.ZERO)
+	var source := _Source.new()
+	source.live.append(emitter)
+	var layers := DebugLayers.new()
+	layers.setup(source, null, null, null)
+	var view := Rect2(Vector2(-320.0, -180.0), Vector2(640.0, 360.0))
 	var seen := 0
 	var unseen := 0
 	var culled_on_screen := 0
+	var drawn_off_screen := 0
 	for i in 4000:
-		var level := rng.randf_range(10.0, 520.0)
 		var spine := rng.randf_range(0.0, 60.0) if rng.randf() < 0.5 else 0.0
-		var shape := GroundShape.segment(spine, 6.0) if spine > 0.0 else GroundShape.point(6.0)
-		var axis := Vector2.from_angle(rng.randf() * TAU)
-		var velocity := Vector2.ZERO if rng.randf() < 0.4 \
+		emitter.chosen_shape = GroundShape.segment(spine, 6.0) if spine > 0.0 \
+				else GroundShape.point(6.0)
+		emitter.chosen_axis = Vector2.from_angle(rng.randf() * TAU)
+		emitter.chosen_velocity = Vector2.ZERO if rng.randf() < 0.4 \
 				else Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(1.0, 600.0)
-		var at := Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
-		var outline := shape.field_outline(at, axis, velocity, level)
-		var view := Rect2(Vector2(-320.0, -180.0), Vector2(640.0, 360.0))
-		var bounds := DebugLayers._bounds_of(outline)
-		var shown := DebugLayers._may_be_seen(view, at, level, spine)
-		if view.intersects(bounds):
+		emitter.position = Vector2(rng.randf_range(-1500.0, 1500.0), rng.randf_range(-1500.0, 1500.0))
+		def.inner_radius = rng.randf_range(10.0, 200.0)
+		def.outer_radius = def.inner_radius + rng.randf_range(0.0, 320.0)
+		var on_screen := 0
+		for level: float in [def.inner_radius, def.outer_radius]:
+			var outline := emitter.chosen_shape.field_outline(emitter.position,
+					emitter.chosen_axis, emitter.chosen_velocity, level)
+			var bounds := Rect2(outline[0], Vector2.ZERO)
+			for point in outline:
+				bounds = bounds.expand(point)
+			if view.intersects(bounds):
+				on_screen += 1
+		var drawn: Array = layers.field_runs(view)
+		if on_screen > 0:
 			seen += 1
-			if not shown:
-				culled_on_screen += 1
-		elif not shown:
+		else:
 			unseen += 1
+		if drawn.size() < on_screen:
+			culled_on_screen += 1
+		elif drawn.size() > on_screen:
+			drawn_off_screen += 1
 	t.check(seen > 200 and unseen > 200,
-			"the sweep met outlines on screen (%d) and culled ones off it (%d)" % [seen, unseen])
-	t.check(culled_on_screen == 0, "and culled none that reach the screen (%d were)"
+			"the sweep met outlines on screen (%d emitters) and off it (%d)" % [seen, unseen])
+	t.check(culled_on_screen == 0, "and culled none that reach the screen (%d emitters lost one)"
 			% culled_on_screen)
+	t.check(drawn_off_screen == 0, "and drew none that does not (%d emitters drew one)"
+			% drawn_off_screen)
+	layers.free()
+	source.free()
+	emitter.free()

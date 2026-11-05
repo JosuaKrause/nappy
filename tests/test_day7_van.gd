@@ -335,7 +335,7 @@ func _a_place_from_her_route(events: EventManager,
 ## constructor the game calls.
 func _siting_of(city: City) -> EventScheduler.WalkSiting:
 	var siting := EventScheduler.WalkSiting.new(DAY, city.map, city.route_tree(),
-			[] as Array[Vector2i], PackedVector2Array())
+			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
 	siting.holds_the_home_streets = DaySpec.for_day(DAY).holds_the_home_streets
 	return siting
 
