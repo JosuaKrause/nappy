@@ -18,16 +18,26 @@ func run(t) -> void:
 ## recording drawer handed through the member the city hands its own through
 ## (`BuildingShadows.drawer`), once every chunk of the city is prepared (`update_view()`, which the
 ## residency calls) and drawn.
+##
+## Which tiles a shadow may fall on is asked through `BuildingShadows.falls_on`, the filter the city
+## hands in for a task scene's stretch; here it lets every tile through and counts the tiles it is
+## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
+## handed their footprints ask about none until a view prepares a chunk.
 func _test_resident_geometry_matches_the_complete_union(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var expected := BuildingShadows.split(BuildingShadows.compute(map.building_rects))
 	var drawer := RecordingShadowDrawer.new()
+	var asked := [0]
 	var shadows := BuildingShadows.new()
 	shadows.drawer = drawer
+	shadows.falls_on = func(_tile: Vector2i) -> bool:
+		asked[0] += 1
+		return true
 	shadows.streamed = true
 	shadows.set_buildings(map.building_rects)
-	t.check(shadows.get_child_count() == 0,
-			"streaming keeps footprint facts without preparing distant shadow drawing")
+	t.check(shadows.get_child_count() == 0 and asked[0] == 0,
+			"streaming keeps footprint facts without working out or preparing distant shadows"
+					+ " (%d tiles asked about)" % asked[0])
 	t.add_child(shadows)
 	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
 			BuildingShadows.CHUNK_TILES * BuildingShadows.TILE)
