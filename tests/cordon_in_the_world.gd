@@ -15,7 +15,7 @@ static func park_ground(map: CityMap, park: Vector2i) -> Rect2:
 	return map.tile_rect_to_world(ClosurePlanner.calm_area_rect(map, park))
 
 ## The rectangle the tape stands on: the park's ground, half a barrier's depth in, where the tape's
-## bodies lie (the suites that read the tape's bodies hold it to them). She is shut in when she is
+## bodies lie (`test_park_cordon.gd` holds it to the tape's bodies). She is shut in when she is
 ## inside it as the last gap is taped.
 static func tape_line(map: CityMap, park: Vector2i) -> Rect2:
 	return park_ground(map, park).grow(-Tuning.CLOSURE_BARRIER_DEPTH * 0.5)
