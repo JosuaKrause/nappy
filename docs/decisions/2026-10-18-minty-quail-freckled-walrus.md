@@ -1,7 +1,6 @@
 # minty-quail — The atlas suites read the library's load and release off the run log, not its accounting (tests through public seams) · 2026-11-05
 
 
-
 minty-quail's `tests-unseen-reads.md`, the atlas build, under the player's rule that a public member
 only tests call is deleted where possible, the tests going through a fake or what the game shows
 (curly-rabbit #1095), and `tests-hold-nothing.md`'s findings in the same suites.
@@ -27,7 +26,7 @@ only tests call is deleted where possible, the tests going through a fake or wha
 `is_acquired()` and `reference_count()`, which three suites outside this build still read
 (the item says which). The interior's one blow of steam costing 40 to 50 points, which the audit
 flagged as a band read back: it measures a blow's outcome against the player's own target
-("steam should be 40 to 50", fluffy-kestrel #741, woolly-penguin #747), not a constant.
+("steam should be 40 to 50", woolly-penguin #747), not a constant.
 
 **Open to overturn:** the run log as the seam (a loader handed to the library would need a `src/`
 hand-in only tests use, and page identity alone fails because the engine shares one cached page

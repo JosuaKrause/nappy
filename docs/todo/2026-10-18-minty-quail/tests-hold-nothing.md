@@ -64,7 +64,7 @@ a test; `test_events_costs.gd:553` (`spoiled_days >= 10` of 13) may be seed-sens
 **Kept on purpose, not findings:** guards that a sweep was not vacuous, orderings between two
 constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_memory_log()` setup
 (kept with its reason in `tests-unseen-reads.md`), and the atlas library's accounting, which
-`tests-unseen-reads.md`'s atlas build handles.
+`tests-unseen-reads.md` says what is left of.
 
 ## The findings, by suite
 
