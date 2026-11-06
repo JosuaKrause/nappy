@@ -24,7 +24,11 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the building's
-ground-floor and roof pieces (20 and more, read by the ground-floor suite), the touch controls'
+window and roof pieces (`window_texture`, `roof_layout`, `roof_interior_cells`,
+`roof_equipment_scale`, read by `test_roof_entities.gd`, `test_recipe_roofs.gd`,
+`test_scene_recipe_activity.gd`, `test_scenery_residency.gd` and the `lazy_scenery_measure.gd`
+probe, the residency suite running without the frames a drawn read needs; its ground-floor pieces
+are done, record minty-quail-misty-badger), the touch controls'
 geometry (which way a touch points her, the dead zone, double taps, the run focus, the screen's
 halves), the frame recorder's ledger, the park cordon (its stretches, officers, last gap, when it
 closed, whether she is trapped, whether it was laid again), the event scheduler's plan helpers, the
