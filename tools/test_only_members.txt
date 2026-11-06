@@ -8,12 +8,9 @@
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/autoload/game_save.gd FILE_KEYS
-src/autoload/game_state.gd penalise_resistance
-src/autoload/game_state.gd save_snapshot
 src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
-src/autoload/visit_counter.gd should_send
 src/city/building.gd VENT_ROTOR_SOURCE_RECT
 src/city/city.gd close_ground
 src/city/city.gd home_door_is_sealed
@@ -80,16 +77,11 @@ src/resistance/resistance_director.gd trap
 src/routes/route_tree.gd branch_for
 src/routes/route_tree.gd bundles
 src/routes/street_network.gd junction_distances
-src/run/run_calendar.gd settled_yesterday
-src/run/run_state_registry.gd unregistered_in
 src/telemetry/frame_ledger.gd DRAWS_HALOS
 src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
-src/telemetry/run_session.gd observer
 src/ui/frame_graph.gd classes
-src/ui/save_indicator.gd shows_struck
-src/ui/title_screen.gd mode_name_shown
 src/visuals/atlas_library.gd illustrated_path_for
 src/visuals/atlas_library.gd is_acquired
 src/visuals/atlas_library.gd is_resident
@@ -305,6 +297,7 @@ src/routes/seal_planner.gd escape_candidates
 src/run/day_director.gd loss_cause
 src/run/run_calendar.gd is_checkpoint_day
 src/run/run_state_registry.gd rider_data
+src/run/run_state_registry.gd state_data
 src/run/summary_model.gd clock_line
 src/run/summary_model.gd resistance_tally
 src/run_config.gd day_length_override

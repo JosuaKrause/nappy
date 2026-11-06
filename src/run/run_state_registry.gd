@@ -79,18 +79,6 @@ func restore_riders(data: Dictionary) -> void:
 				if nested is Dictionary:
 					part.restore(nested)
 
-## The names of `owner`'s properties that hold a `RunSubState` which is not on `registry`: the
-## check that a part declared and left off the list is caught.
-static func unregistered_in(owner: Object, registry: RunStateRegistry) -> Array[String]:
-	var missing: Array[String] = []
-	for property in owner.get_property_list():
-		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
-			continue
-		var value: Variant = owner.get(property["name"])
-		if value is RunSubState and value not in registry._parts:
-			missing.append(property["name"])
-	return missing
-
 ## The registry's parts in the shape a save carries them: `state_data()` under `"state"` and the
 ## riders beside it. This is also exactly what a checkpoint is, so the save and the checkpoint
 ## never carry two different ideas of what a run is (`GameSave.file_data()` adds the file's

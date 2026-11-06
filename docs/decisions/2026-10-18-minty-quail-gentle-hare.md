@@ -25,8 +25,10 @@ hold nothing, "let's make sure those tests also won't enter the codebase again" 
   (the three fairness helpers of Tuning; eleven dependency hand-ins). Its docstring says what it can
   miss and where it can accuse falsely. It has a test of its own, run by `tools/pycheck.sh`, and a
   row in the **using-tools** catalogue.
-- The merge of `main` added `Blackout.go_dark()` to the own-file group: a patrol test now calls it,
-  and only the blackout's own file uses it.
+- The merges of `main` added `Blackout.go_dark()` (a patrol test now calls it, and only the
+  blackout's own file uses it) and `RunStateRegistry.state_data()` (the save suites now read the
+  run's parts through it, and only its own file's `run_data()` calls it) to the own-file group,
+  and took off the eight members the save, run, telemetry and screen build deleted.
 
 **Open to overturn:** the variables, signals and constants line of the own-file rule and the
 hand-ins' kept group, both the orchestrator's readings of the player's words; the engine-name set's

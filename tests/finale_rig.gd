@@ -2343,7 +2343,7 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 			"the boot read the section off the save")
 	t.check(Boot.title(main).is_open() and not Boot.summary(main).is_showing(),
 			"a genuinely resumed escape opens on the title first, the section's brief not yet up")
-	t.check(Boot.title(main).mode_name_shown() != "", "and names the mode, which the save already fixed")
+	t.check(Boot.mode_name_drawn(Boot.title(main)) != "", "and names the mode, which the save already fixed")
 	t.check(Boot.title(main).is_open() and t.get_tree().paused, "and the boot is behind its title")
 	t.check(t.get_tree().paused and not day.can_process()
 			and is_equal_approx(day.time_remaining, length),

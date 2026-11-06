@@ -21,15 +21,9 @@ var _pending: Array[String] = []
 func _init(evaluate: Callable) -> void:
 	_evaluate = evaluate
 
-## The gate, as a pure function of its four inputs: on the web, not a debug build, not
-## `?debug=1` (`RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the
-## page — see `export_presets.cfg`'s `html/head_include`), and `window.goatcounter.count` actually
-## present, since the script can fail to load or be blocked by the visitor's own browser.
-static func gate_allows(on_web: bool, is_debug_build: bool, debug_requested: bool,
-		goatcounter_present: bool) -> bool:
-	return may_ever_send(on_web, is_debug_build, debug_requested) and goatcounter_present
-
-## The three of the gate's four inputs that can never change their answer for the rest of this
+## The three of the gate's four inputs (on the web, not a debug build, not `?debug=1` —
+## `RunConfig.readout_requested`, the same flag that keeps `count.js` itself off the page, see
+## `export_presets.cfg`'s `html/head_include`) that can never change their answer for the rest of this
 ## page's life once asked — the build is not going to stop being a debug build, and `?debug=1`
 ## does not disappear from a page nobody reloads. `goatcounter_present` is the one input that
 ## legitimately answers differently a moment later, because `count.js` loads asynchronously
@@ -42,7 +36,7 @@ static func may_ever_send(on_web: bool, is_debug_build: bool, debug_requested: b
 
 ## Counts `name` when `present` holds, after whatever was queued before it, in the order it was
 ## asked for; queues it otherwise. `present` is a parameter rather than a read taken in here, the
-## same split `gate_allows()` makes for its own live half, so a test drives both outcomes without
+## same split `may_ever_send()` makes for the inputs that never change, so a test drives both outcomes without
 ## a page to ask.
 func send(name: String, present: bool) -> void:
 	if present:

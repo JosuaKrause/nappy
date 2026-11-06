@@ -24,6 +24,8 @@ extends RefCounted
 ## runs on is handed in (`use_platform()`, `use_touch()`) before it enters the tree, and nothing is
 ## read from or written to a private member.
 
+const Boot := preload("res://tests/booted_main.gd")
+
 const UI := preload("res://tests/ui_screens.gd")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
@@ -598,16 +600,16 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	var title := _title(t, false, true, run)
 	run.calendar.hard_mode = false
 	title.open(false, false, true)
-	t.check(title.mode_name_shown() == "Normal", "a decided Normal run is named 'Normal'")
+	t.check(Boot.mode_name_drawn(title) == "Normal", "a decided Normal run is named 'Normal'")
 	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
 	run.calendar.hard_mode = true
 	title.open(false, false, true)
-	t.check(title.mode_name_shown() == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
+	t.check(Boot.mode_name_drawn(title) == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)
-	t.check(title.mode_name_shown() == "", "a new game, where the mode is not decided, names none")
+	t.check(Boot.mode_name_drawn(title) == "", "a new game, where the mode is not decided, names none")
 	t.check(title.hard_mode_shown(), "and offers the checkbox")
 	title.open(true)
-	t.check(title.mode_name_shown() == "" and not title.hard_mode_shown(),
+	t.check(Boot.mode_name_drawn(title) == "" and not title.hard_mode_shown(),
 			"a title with no run behind it shows neither")
 	title.free()
 	run.free()
