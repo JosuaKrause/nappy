@@ -243,8 +243,6 @@ src/ui/title_screen.gd hard_mode_shown
 src/ui/title_screen.gd hard_mode_target
 src/visuals/atlas_library.gd aspect_ceiling
 src/visuals/atlas_library.gd moment_for_a_load
-src/visuals/ground_layers.gd compose_image
-src/visuals/ground_layers.gd rotate_clockwise
 src/web_display.gd dpr_cap
 src/world/draw_layer.gd z_of
 src/world/excitement_source.gd expected_impact_at

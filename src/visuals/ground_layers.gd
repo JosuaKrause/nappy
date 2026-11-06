@@ -251,8 +251,8 @@ static func atlas_coords_for(source_id: int, city_seed: int, tile: Vector2i,
 	return Vector2i.ZERO
 
 ## Alpha-composites opaque `base` and transparent layers without changing base pixels where an
-## overlay is empty. Public for the focused pixel-level contract tests.
-static func compose_image(base: Image, overlays: Array[Image]) -> Image:
+## overlay is empty.
+static func _compose_image(base: Image, overlays: Array[Image]) -> Image:
 	var result := base.duplicate()
 	for overlay in overlays:
 		if overlay == null or overlay.get_size() != result.get_size():
@@ -261,7 +261,7 @@ static func compose_image(base: Image, overlays: Array[Image]) -> Image:
 	return result
 
 ## Rotates a component clockwise in the manifest's declared coordinate system.
-static func rotate_clockwise(image: Image, degrees: int) -> Image:
+static func _rotate_clockwise(image: Image, degrees: int) -> Image:
 	var result := image.duplicate()
 	match posmod(degrees, 360):
 		0:
@@ -311,14 +311,14 @@ static func _layered_image(source_id: int, manifest: Dictionary, page: Image,
 			missing.append("the component '%s'" % component_name)
 			return null
 		var degrees := int(record.get("rotation_degrees", 0))
-		var rotated := rotate_clockwise(overlay, degrees)
+		var rotated := _rotate_clockwise(overlay, degrees)
 		if rotated == null:
 			missing.append("a %d degree turn of the component '%s'" % [degrees, component_name])
 			return null
 		if tint_curbstone and component_name == "curbstone":
 			rotated = _tint_opaque(rotated)
 		overlays.append(rotated)
-	var composed := compose_image(base, overlays)
+	var composed := _compose_image(base, overlays)
 	if composed == null:
 		missing.append("a component of source %d the size of its own base" % source_id)
 	return composed
@@ -396,7 +396,7 @@ static func _damage_atlas(source_id: int, manifest: Dictionary, page: Image,
 		if overlay == null:
 			missing.append("the damage stencil '%s'" % pool[variant])
 			return null
-		var composed := compose_image(base, [overlay])
+		var composed := _compose_image(base, [overlay])
 		if composed == null:
 			missing.append("a damage stencil '%s' the size of its own base" % pool[variant])
 			return null
