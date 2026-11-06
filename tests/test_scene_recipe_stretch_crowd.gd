@@ -67,7 +67,6 @@ func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
 	var run := RunState.new()
 	run.start_run(STRETCH_SEED)
 	var city := RunCity.in_run(CITY_SCENE, run)
-	city.add_child(run)
 	var view := ScreenCrowdView.new(t)
 	city.crowd_view = view
 	t.add_child(city)

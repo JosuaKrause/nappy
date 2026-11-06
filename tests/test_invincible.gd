@@ -30,7 +30,7 @@ class _MeterRig extends RefCounted:
 	var baby: Baby
 
 var _map: CityMap
-## The run the day's clock is handed (`_build()`): a run of the test's own, freed with it.
+## The run the day's clock is handed (`_build()`): a run of the test's own.
 var _run: RunState
 var _player: Node2D
 var _day: DayController
@@ -102,7 +102,6 @@ func _build(t) -> void:
 func _teardown() -> void:
 	_day.free()
 	_player.free()
-	_run.free()
 
 ## A `Baby` on a live `Stroller`, standing on a `FakeWorld` — the same shape `tests/test_meters.
 ## gd`'s own `_build()` uses, kept local to this suite so a rig this small does not need a shared
@@ -258,7 +257,6 @@ func _test_the_hud_names_the_mode_when_invincible(t) -> void:
 
 	on.owner.free()
 	off.owner.free()
-	run.free()
 
 ## The header a debug HUD draws on entering the tree, configured `invincible` or not and handed
 ## `run`; its owner is the HUD, which the caller frees.

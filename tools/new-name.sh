@@ -190,6 +190,8 @@ resolve_entry() {
     matches="$(entry_names | grep -E "^([0-9]{4}-[0-9]{2}-[0-9]{2}-)?$want$" | sort -u)"
     if [[ -z "$matches" ]]; then
         echo "new-name.sh: no entry named $want under docs/todo, docs/decisions or docs/review" >&2
+        echo "  A record is drawn from the entry's folder, so draw it first and delete the folder after:" >&2
+        echo "  once the folder is gone (and no record or review item carries the name) the entry has no name left." >&2
         exit 1
     fi
     if [[ "$(printf '%s\n' "$matches" | wc -l | tr -d ' ')" -gt 1 ]]; then

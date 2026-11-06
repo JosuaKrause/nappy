@@ -53,7 +53,6 @@ func _put_away(rig: Dictionary) -> void:
 	EventBus.day_ended.disconnect(_on_day_ended)
 	for node: Node in rig["nodes"]:
 		node.free()
-	_run.free()
 
 func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
 	var rig := _rig(t)

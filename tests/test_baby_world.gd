@@ -62,7 +62,6 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 ## A fresh run on the player's seed, on `DAY`, in the escape's `section` (`DaySpec.Section.NONE`
 ## for an ordinary day): what a boot is handed to play.
@@ -144,4 +143,3 @@ func _boot_and_check(t, section: int, what: String) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()

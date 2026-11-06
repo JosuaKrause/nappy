@@ -10,7 +10,7 @@ extends RefCounted
 ## Not `tests/test_checkpoints.gd`, which is the region wall's gatehouses — the same word for a
 ## different thing, and the reason this suite's name says whose checkpoints these are.
 ##
-## **Every test plays a run of its own**, a fresh `RunState` it makes and frees: the calendar's
+## **Every test plays a run of its own**, a fresh `RunState` it makes: the calendar's
 ## tests drive that run's own calls, the screens are handed it (`use_run()`), and a test that boots
 ## the real `scenes/main.tscn` hands the boot a home with a sitting parked in it that holds the run
 ## (`tests/booted_main.gd`'s `home_playing()`), so the game plays it. Booted games are driven the
@@ -158,7 +158,6 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	t.check(run.calendar.checkpoint_day() == 4 and not run.calendar.hard_mode,
 			"still a normal run, whose checkpoint is still day 4")
 	t.check(run.header.ending == GameEnums.Ending.NONE, "and a normal run has no bad ending")
-	run.free()
 
 ## Every key of the file that is the run's own state — top-level riders by name, and `"state"`'s
 ## fields as `state.<name>` — read off `RunStateRegistry.run_data()` itself.
@@ -247,7 +246,6 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 	run.header.day = 12
 	run.calendar.begin_day()
 	t.check(run.calendar.checkpoint_day() == 12, "day 12, the last act's first, replaces it too")
-	run.free()
 
 ## Before day 4, the last nerve goes back to day 1 of the same city — the same seed, and the same
 ## parent pushing the pram — rather than a new run.
@@ -271,7 +269,6 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 			and run.resistance.completed_steps.is_empty(), "with every nerve and nothing done")
 	t.check(run.header.player_is_male == parent, "pushed by the same parent")
 	t.check(events == [[1, 3]], "and the counter hears checkpoint 1 from day 3 (%s)" % [events])
-	run.free()
 
 ## **The run's play time only ever grows** (inbox #920 in plaid-penguin): going back to checkpoint zero, going back
 ## to a later checkpoint, retrying a lost day and a save continued after a go-back each leave the
@@ -322,7 +319,6 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 	_read_from_the_scratch_file(run)
 	t.check(kept == 8000 and run.header.play_ticks == 8000,
 			"a save continued after a go-back keeps the play time (%d)" % run.header.play_ticks)
-	run.free()
 
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
 ## for the rest of the run (`City.board_neighbor_window()`), which nothing in a dawn takes down; a
@@ -404,7 +400,6 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 			"and the next boot took that sitting and spent the carry")
 	playing.free_all()
 	home.free()
-	run.free()
 
 func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	var run := RunState.new()
@@ -419,7 +414,6 @@ func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 	t.check(run.header.ending == GameEnums.Ending.BAD and run.header.day == 8,
 			"with the bad ending, on the day it was lost")
 	run.header.ending = GameEnums.Ending.NONE
-	run.free()
 
 ## A `--day 8` boot keeps day 8's dawn behind the title before the mode is chosen; choosing hard
 ## mode on that title drops it.
@@ -431,7 +425,6 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 	t.check(run.calendar.checkpoint_day() == 8, "a normal run keeps day 8")
 	run.calendar.choose_mode(true)
 	t.check(run.calendar.hard_mode and run.calendar.checkpoint.is_empty(), "hard mode has none")
-	run.free()
 
 # ------------------------------------------------------------------- the escape ---
 
@@ -479,7 +472,6 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 ## *(dotted-hawk, the player, #718: "No regain in escape either.")* A hard run handed over to the
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
@@ -510,7 +502,6 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 # ---------------------------------------------------------------- the screens ---
 
@@ -534,7 +525,6 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 	t.check(UI.control(summary, "ContinueColumn").visible, "and the continue button stays")
 	summary.free()
 	t.get_tree().paused = false
-	run.free()
 
 ## A title of the real scene, handed `run` and the platform's touch answer the way `main` hands
 ## them before the screen enters the tree (`use_run()`, `use_platform()`), under `t`.
@@ -573,7 +563,6 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 	title.open(false, true)
 	t.check(title.hard_mode_checked(), "--hard opens it checked")
 	title.free()
-	run.free()
 
 ## **Which titles a player can meet show the box today, pinned as it stands, not as settled.**
 ## *(inbox #746 in woolly-penguin, the player: "I don't see the hard mode button at all locally".)* The title opens
@@ -610,7 +599,6 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 				saved.header.day = Tuning.RUN_LENGTH_DAYS
 				saved.facts.escape_section = DaySpec.Section.BUILDING
 			_with_saving(func() -> void: _save.write(saved, bool(case[0])))
-			saved.free()
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
 		var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
@@ -632,7 +620,6 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 		Telemetry.end_run()
 		booted.free_all()
 		home.free()
-		run.free()
 
 ## The box answers a touch, a click and `H`, and none of them starts the run; the three buttons
 ## still do. Each press is pushed through the viewport, the GUI pass and then the title's own
@@ -676,7 +663,6 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 				"the %s button's disc is outside the box's reach: it starts the run and flips nothing"
 						% button_name)
 	title.free()
-	run.free()
 
 ## **A real tap on the box flips it, through the engine's own input dispatch.** *(fluffy-kestrel,
 ## the player, #740: "Hard mode should have the same 5% extension over the box and text as other
@@ -754,7 +740,6 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 	t.get_window().content_scale_size = Vector2i(ScreenOrientation.DESIGN_SIZE)
 	t.get_window().size = original_window_size
 	t.get_tree().paused = false
-	run.free()
 
 ## **Nothing on the title uses a press up before the title's own handler reads it.** Every press on
 ## this screen is read off its raw position in `TitleScreen._unhandled_input()`, and Godot's GUI pass
@@ -776,7 +761,6 @@ func _test_no_control_on_the_title_stops_a_press(t) -> void:
 			stopping.append(str(title.get_path_to(node)))
 	t.check(stopping.is_empty(), "no Control on the title stops a press (%s)" % [stopping])
 	title.free()
-	run.free()
 
 ## A tap at `presented`, a point in the viewport's own (stretched, possibly rotated) box, sent as a
 ## real device sends it: from a phone a screen touch, which the engine also turns into an emulated
@@ -814,7 +798,6 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	saved.start_run(_SEED)
 	saved.calendar.choose_mode(true)
 	_with_saving(func() -> void: _save.write(saved, false))
-	saved.free()
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
@@ -825,7 +808,6 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 	run = RunState.new()
 	home = Boot.home_playing(t, run)
@@ -843,7 +825,6 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 # ------------------------------------------------------------------- helpers ---
 

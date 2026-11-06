@@ -55,7 +55,6 @@ func run(t) -> void:
 	await _test_an_explosion_flashes_every_hallway_window(t)
 	await _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 	await _test_the_building_shows_what_the_city_shows(t)
-	_rig.free_all()
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -1897,7 +1896,7 @@ func _drawn_z(item: CanvasItem) -> int:
 ## window lit across two ticks and the checks that call a tick dark could not tell.
 const FLASH_SCALE := 6.0
 
-## The runs the suite has made, freed when it ends: each test makes a fresh one of its own.
+## Where each test makes a fresh run of its own.
 var _rig := InteriorRig.new()
 
 ## The hallway windows as drawn: every sprite in the building showing the picture of a window,

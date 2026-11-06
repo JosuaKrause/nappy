@@ -400,7 +400,6 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	recorder.free()
 	var written := sitting.frame_record_path
 	sitting.free()
-	run.free()
 	if written != "":
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))

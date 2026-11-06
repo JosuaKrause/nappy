@@ -106,7 +106,6 @@ func _scripted_boot(t, path: String, label: String) -> Dictionary:
 			"%s boots real scripted Main" % label)
 	booted.free_all()
 	home.free()
-	run.free()
 	return initial
 
 ## What a scene started from: its actors and the events installed, as the manifest records them at
@@ -174,7 +173,6 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	if initial.is_empty() or player == null:
 		booted.free_all()
 		home.free()
-		run.free()
 		return result
 	result.initial = initial
 	var map: CityMap = recipe.built.map
@@ -216,7 +214,6 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 		again.free_all()
 	booted.free_all()
 	home.free()
-	run.free()
 	return result
 
 ## Free play, left a second time through a won day: the day's win applies the normal progression,

@@ -2047,11 +2047,12 @@ func _carry_the_run_into_the_next_boot() -> void:
 
 ## Back to the title, with everything about the run thrown away.
 ##
-## A scene reload rather than a `RunState.start_run()` and a rebuild, because the run is not the
-## only thing that would have to be reset: the city, the crowd, the streamed events, the resistance
-## deadline, the telemetry observer and every scar are all state hanging off nodes built in
-## `_ready`. Re-entering `_ready` resets all of it by construction, and *"a fresh run gets a fresh
-## city"* is what the player expects from a restart anyway.
+## A fresh run handed to the sitting and a scene reload, rather than a fresh run and a rebuild on
+## this boot, because the run is not the only thing that would have to be reset: the city, the
+## crowd, the streamed events, the resistance deadline, the telemetry observer and every scar are
+## all state hanging off nodes built in `_ready`. Re-entering `_ready` resets all of it by
+## construction, and *"a fresh run gets a fresh city"* is what the player expects from a restart
+## anyway.
 ##
 ## Deferred because it is called from inside input handling on a screen that is about to be freed,
 ## and the tree is unpaused first: `reload_current_scene` builds the new scene into the same tree,
@@ -2080,12 +2081,13 @@ func _restart_run() -> void:
 	_save.clear()
 	if _session:
 		_session.close()
-	# And with it the run's record of being in the escape, which outlives the scene reload below
-	# because the sitting carries the run across it. Left set, the fresh boot would skip its own
-	# `start_run()` and open the escape again over a run that was just thrown away. A no-op for a
-	# restart from an ordinary day and for a finished run, which the `run_ended` subscriber has
-	# already cleared.
-	_facts.escape_section = DaySpec.Section.NONE
+	# The run is thrown away: the sitting is handed a fresh one, which the boot after the reload
+	# starts (`RunState.start_run()`, the seed chosen there), so nothing of this run reaches that
+	# boot, its record of being in the escape (`run.facts.escape_section`) included, which would
+	# open the escape again over a run that was just thrown away. Only the run goes: what else the
+	# sitting keeps (the title's answer, the restart stamp below, the save symbol's home) outlives
+	# the restart. This boot plays on its own `_run` until the reload frees it.
+	_sitting.run = RunState.new()
 	_sitting.note_restart_requested()
 	_reload_the_scene()
 

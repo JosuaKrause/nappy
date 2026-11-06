@@ -49,7 +49,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), and in the tree: its own physics tick hands every instance
 ## where she is and starts the hold. Added to the tree before the stroller, so on every tick it
-## runs first. `_free_manager()` frees it with the run it was handed.
+## runs first. `_free_manager()` frees it.
 func _chat_manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
@@ -66,11 +66,9 @@ func _chat_manager(t) -> EventManager:
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	var holder := manager.world.map.world
 	manager.free()
 	holder.free()
-	run.free()
 
 ## Frees a rig whatever state its checks left it in: the manager first, so that no tick is left to
 ## act on a mother who is still mid-conversation (or a hold a failed check never let start), then

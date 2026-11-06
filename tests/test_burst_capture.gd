@@ -51,7 +51,6 @@ class Rig:
 		readout.free()
 		layer.free()
 		session.free()
-		run.free()
 		Telemetry.end_run()
 
 ## The input map binds B through a physical key, so these are real `InputEventKey` shapes

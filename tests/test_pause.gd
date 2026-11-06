@@ -77,20 +77,18 @@ func run(t) -> void:
 	await _test_a_continue_press_flashes_before_it_is_acted_on(t)
 	t.get_tree().paused = was_paused
 
-## A fresh run, started on the seed every test here reads it on. The caller frees it, or hands it to
-## a screen as a child (`_pause()`, `_title()`), which frees it with the screen.
+## A fresh run, started on the seed every test here reads it on.
 func _fresh_run() -> RunState:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	return run
 
 ## A pause screen on a platform, in the tree and closed, standing over `run`, or over a fresh run of
-## its own that it frees with itself.
+## its own.
 func _pause(t, touch := false, can_quit := true, run: RunState = null) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
 	if run == null:
 		run = _fresh_run()
-		pause.add_child(run)
 	pause.use_run(run)
 	pause.use_platform(touch, can_quit)
 	t.add_child(pause)
@@ -103,7 +101,6 @@ func _title(t, touch := false, can_quit := true, run: RunState = null) -> TitleS
 	var title: TitleScreen = TITLE.instantiate()
 	if run == null:
 		run = _fresh_run()
-		title.add_child(run)
 	title.use_run(run)
 	title.use_platform(touch, can_quit)
 	title.use_clock(func() -> int: return Time.get_ticks_msec() + 100000)
@@ -121,14 +118,12 @@ func _summary(t, touch := false) -> CanvasLayer:
 func _ending(which: GameEnums.Ending) -> SummaryModel:
 	var run := _fresh_run()
 	var model := SummaryModel.ending(run, which)
-	run.free()
 	return model
 
 ## Shows an ordinary day's summary that ended as `result`.
 func _show_day_over(summary: CanvasLayer, result: GameEnums.DayResult) -> void:
 	var run := _fresh_run()
 	summary.show_summary(SummaryModel.day_over(run, UI.ended(result)), RunFlow.Mode.DAY_OVER)
-	run.free()
 
 ## A restart button whose hold is measured on a clock the test moves.
 func _clocked(restart: ModeButton, clock: UI.FakeClock) -> void:
@@ -315,7 +310,6 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 
 	t.get_tree().paused = false
 	pause.free()
-	run.free()
 
 ## **The dead end.** *(M38: "the lost screen doesn't allow for restarting the game — you can just
 ## cycle between pause screen and loss screen at that point.")*
@@ -611,7 +605,6 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	t.check(Boot.mode_name_drawn(title) == "" and not UI.control(title, "HardMode").visible,
 			"a title with no run behind it shows neither")
 	title.free()
-	run.free()
 
 ## **The hint has to name the thing that actually works.** *(2026-09-07, on review: "a bare tap no
 ## longer begins anything ... the screen instructs the player to do the one thing that will not

@@ -346,7 +346,6 @@ func _in_a_day(t, check: Callable) -> void:
 	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
 	check.call(t, city)
 	city.free()
-	run_state.free()
 
 static func _rng(stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
