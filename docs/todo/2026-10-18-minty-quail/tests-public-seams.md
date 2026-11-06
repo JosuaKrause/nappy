@@ -1,141 +1,102 @@
 # Tests drive public seams and real frames
 
-Tests reach private members and drive frames by hand. Count a suite's lines that read a private member,
-including one named in a string, with
-`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/*.gd`, and its
-lines that call a frame function or emit the frame signal by hand with
-`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`;
-both skip comment lines and neither sees access through a variable holding the name. Many suites instantiate `main`;
-`test_home_block.gd` (near 249) copies `City._height_for`'s random stream. `SceneRecipeRuntime` places authored seals and doors through `SealPlanner.may_seal()`, `offers()`,
-`seal_street()` and `RegionPlanner.stand_door()`, which the day's planning calls too, and walks a held
-event through `EventInstance.walk_on_by_hand()`; its walk spec is private. `ResistanceDirector`'s
-fallback to the map's navigator is untested: a director handed no city siting builds its spawn
-siting on it, and the one start it sites that way is a trap sent at her (`_send_at_her()`), so the
-test it needs is a director handed a city whose spawn siting is unset, with that trap sited.
+A test reaches the game through what the game itself offers and lets real frames pass; it does not
+read a private member or call a frame function by hand. Two commands count the breaches. The first
+counts a suite's lines that read a private member, including one named in a string:
+`rg -c '^[^#]*(\.\_[a-z][a-zA-Z0-9_]*|\.(call|callv|set|get|call_deferred)\("_)' tests/*.gd`. The
+second counts its lines that call a frame function or emit the frame signal by hand:
+`rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
+Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
+well as the suites), and neither sees access through a variable holding the name, so
+`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
+nothing, and a test or helper that makes them print something is a breach.
 
-**Build:** as each owner is extracted (the items above), it gets public seams and injected
-dependencies, and the tests that reached into it move to the seams, with fakes injected instead of
-statics patched; since the test runner lets frames pass, scene-level tests step real frames. Planners
-get public "place this at this site" entry points that the scheduler and recipes both call. A seam
-is one the game itself uses: a member made public, or added, has a caller among the game's own
-classes, or is a dependency the game's own code hands in (records minty-quail-44 and -47); a public
-member only a test reads is not a seam, however it is named, and where the game has no reader the
-test goes through what the game exposes (what is drawn, a signal, real input and frames). It is
-one pass after the last refactor item, "once the refactor is done let's rewrite the tests with
-dependency injection and through public APIs", and a step may convert the tests it touches early,
-"you can also do it as a bit with each step as long as the final result is the same" (inbox #813 in curly-moose).
+- `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
+  leaves out of its comparison, read by name since the runner's job is to compare every static.
+- `tests/test_prediction_reuse.gd` stays: it changes the event's heading, notice, spread axis and
+  vehicle side and a crowd body's speed, axis, yield and door hold by writing them (some through a
+  name held in a variable: `_speed`, `_direction`, `_turn_back_hold`, the `_jolt` fields),
+  overrides `_sample_expected_landed`, and reads its reference fixture's `_event` and `_agent`,
+  since no game path changes one input alone and that is what it proves the cache notices.
 
-**Where it stands:** the files still to convert are the ones the first command above counts above zero; what the commands cannot see (a private member reached another way, a game collection edited by hand, a public member only tests call) is `tests-unseen-reads.md`.
-Two files the command counts are not to convert: `tests/shared_state.gd`, whose matches are the names in the runner's table of statics it leaves out of its comparison, read by name since the runner's job is to compare every static, and `test_prediction_reuse.gd`, for the reason below.
-The commands count every file under `tests/`, suites and the rigs and helpers they share alike, so a read moved out of a suite into a helper (`tests/finale_rig.gd`, `tests/crowd_closures_rig.gd`, `tests/park_cordon_sweep.gd`) is still counted.
-The resistance suites share `tests/resistance_rig.gd` and drive `ResistanceDirector`'s public seams (`contact()`, `read_mark()`, `rider()`, `use_steps()`, `red_arrow_target()`, and a mark's relocation through one `tick()`, `_relocate_round()` in the rig, record minty-quail-golden-chipmunk) and read what it puts in the street, the checkpoint guard's chase read off the world, the home door read off the city's nodes (`tests/home_door_reads.gd`), and `ResistanceHappenings.spine_x()`, with the arrow, the masts and the way home read through the test helper `tests/resistance_reads.gd` off what the game places, the day 9 door derived in `test_resistance_crossing.gd` (`_named_door()`) and the raid's points read off a first arrival in `test_resistance_replacement.gd`;
-the rig, `test_resistance_steps.gd`, `test_resistance_traps.gd`, `test_resistance_reach_contacts.gd`, `test_resistance_crossing.gd`, `test_resistance_placement_kinds.gd`, `test_resistance_replacement.gd`, `test_resistance_arrow.gd`, `test_resistance_alley_siting.gd` and the three reach suites are converted, all eleven, each test building its own city in a run of its own, with no test leaning on what an earlier one left behind.
-The event drawing suites (`test_event_redraw.gd`, `test_event_views.gd`, `test_event_strides.gd`, `test_destination_drawing.gd`, `test_fire_truck_body.gd`, `test_event_parts.gd`, `test_event_phase.gd`) ask what the game asks (the redraw gate `redraw_if_the_picture_changed()`, `EventLook.is_mirrored()`, the look's public picture queries) and step real frames, the stride and redraw suites reading strides off what the event's drawer stands and counting redraws by the engine's `draw` signal, and the phase suite holds a robber's notice by standing her inside his stand-off, where `notice_her_at()` holds it, so a notice that runs a while and is then held is not reached;
-except for this read: `test_prediction_reuse.gd` changes the event's heading, notice, spread axis and vehicle side and a crowd body's speed, axis, yield and door hold by writing them (some through a name held in a variable: `_speed`, `_direction`, `_turn_back_hold`, the `_jolt` fields), overrides `_sample_expected_landed`, and reads its reference fixture's `_event` and `_agent`, since no game path changes one input alone and that is what it proves the cache notices.
-The stroller suites (`test_stroller.gd`, `test_stroller_gait.gd`) and `test_player_presentation.gd`'s reads of the stroller read `Stroller.pose()`, the one pose its `_draw()` paints from (`test_stroller_gait.gd` walks real physics frames with the move key held, `test_stroller.gd` turns her through `facing`).
-The crowd suites place their bodies through the entry the game gives a task scene's pinned actors (`Crowd.add_recipe_actor()`), read them through `heading()`, `lane_key()` and the crowd's public queries, let the crowd's own physics frames pass, ask the strike box the crowd asks (`CarStrike.hits()`, which `Crowd._strike()` calls) and find the seed that draws a walker's door answer (`WalkerStrategy.door_answer_for()`, which `draw_the_door_answer()` calls); `test_car_front.gd` and `test_crowd_contributions.gd` read no private member.
-The crowd closures suites (their cases in `tests/crowd_closures_rig.gd`) read the cooldown through a hut's `WalkerDoorHold.inside` with a body stood across the footway by `obstruct_tiles()` (they read seals through `SealPlanner.positions_across()`, a hut's hold off a walker's `door_ahead`, a held walker through the hut and its own velocity, and the crowd's own recycles as they happen);
-`test_turns.gd` reads no private member (a figure on the map's moves holds the blocking car, `crashed_into()` brings a car to rest, `add_recipe_actor()` places the queue);
-the crowd suites (their cases in `tests/crowd_rig.gd`) hand the bucket-edge test's city a region plan through `City.set_region_plan()`, the call a scene recipe makes, and read the hut a walker placed by `add_recipe_actor()` finds as its `door_ahead`;
-the rigs' other cases step the crowd through `Crowd.step()`.
-`test_pelican.gd` reads no private member, and with the event manager suite has the director owe a row through `start_recipe_route()`, the call a scene's recipe makes, and lets the manager's own ticks warn of it or send it down her line.
-`test_world_passability.gd` and `test_regions.gd` read no private member: the cat crossing comes through the director's `force()`, `start_day()` and `due()`, the scheduler's crossing path through `EventScheduler.place_at()`, a car's mover through `EventInstance.mover_for()`, and the streets an alley opens onto through `StreetNetwork.segment_containing()`; `EventScheduler._cross_street_path` serves no catalogue row today, since the director sites the cat, so it wants a row or removing.
-`test_police_car.gd` reads no private member: it reads the car's facing through `facing_now()`, finds its body by type and turns it at a route's corner; the event manager and pelican suites hand the manager a city on a fresh `RunState` and let its real ticks run, and the pelican suite reads why the day was lost through `EventManager.what_struck_her()`, which `DayDirector.finish_day()` calls.
-A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable through `add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the game calls.
-`test_presentation_mode.gd` reads each flag off the field of `RunConfig.parse()` the game reads, `test_web_display.gd` asks `WebDisplay.dpr_cap()` with `on_web` handed in (the game's `apply()` passes the default), and `test_meters.gd` steps real physics frames with the baby in the tree, the long stretches (a whole street day, the park's walk-out) under `Engine.time_scale`, and startles through `CrowdExcitement.startle()` and `advance()`, which the crowd calls.
-No suite steps the baby by hand: her meters run on her own `_physics_process()` with her in the tree.
-`test_balance.gd` walks her on real physics ticks at four times real time, its settle times in game seconds.
-`test_touch.gd` pushes events through `Viewport.push_input(event, true)`, lets real frames pass and reads the `Input` actions `TouchControls` presses, with the double-tap window on a clock handed to `TouchControls.use_clock()`; `test_hud.gd` hands the HUD a `RunState` of its own, drives it through `EventBus` signals and real frames and reads the labels it draws; `test_orientation.gd` runs on a booted `main` in a portrait touch window.
-A clock with a wall-clock default that only tests hand in (`TouchControls.use_clock()`, as `ModeButton.use_clock()`, `TitleScreen.use_clock()` and `ReturnWindow.use_clock()` are) is accepted as a seam, open to overturn: read strictly, the Build line would rule all four out, and real time with short waits would replace them.
-Left there: `test_touch.gd` reads `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS` (the knob drawn inside its ring has no reader but the drawing); `HelpText.line` is read only by tests (the HUD's teaching line, whose parsed text drops the icons); and the HUD suite restores `VisitCounter._day` by emitting `EventBus.day_started`, which the counter's own conversion would remove by handing it the run.
-The suites that boot `main` (`test_baby_world.gd`, `test_move_poses.gd`, `test_player_presentation.gd`, `test_run_config.gd`, `test_boot_handing.gd`, `test_camera_start.gd`, `test_run_flow.gd`, `test_invincible.gd`, `test_escape_invisible_wall.gd`, `test_main.gd`, `test_day_controller.gd`, `test_day_loop.gd`, `test_park_return.gd`) wait with `tests/booted_main.gd` until she stands in a world and the boot camera is gone, find what `main` built by the names it gives its nodes, press the title and the summary through the viewport, catch a node as it enters the tree where a check is about what it was handed before it built, and hand every boot a scratch-path save;
-`main` has no public read surface, since nothing in the game reads it back.
-`test_boot_handing.gd` sees the crowd handed her through the crowd's field following her, `test_camera_start.gd` rebuilds the home's view from the doorstep and the view's extent, and `test_atlas_loading.gd` boots `main` with a parent over a sitting the test parks and reads the pages off the sitting's atlas; the full run suites (`tests/full_run_rig.gd`, one seed a suite) tick the events on real physics ticks at the step they always took.
-`test_run_config.gd` shows a resolved `RunConfig` refuses writes through its public fields and reads what it was parsed from through `with_recipe()`, the call `main` makes.
-The run flow suite reads the reload through the pause screen's restart and `main`'s `use_reload()` hand-in, and the main suite checks the readout's interval on real frames.
-`test_run_checkpoints.gd` boots the real `main` for every check about it (a day reached by `--day`, the title answered through the viewport, days won by the day's end signal and the summary's Continue, hard runs lost through `EventBus.hard_fail_triggered`, the title's box read off saves the test wrote) and photographs a changed run through `RunStateRegistry.photograph()`, the call `begin_day()` makes.
-The finale suites (their cases in `tests/finale_rig.gd`) boot their escapes through one helper, a run of the test's own in a home, its screens continued through the viewport, the building won through its door's `exit_requested`;
-the guards walk and warn on real frames, where a band stands is read off bands built through `EventInstance.setup()`, the escape's rows come from `EventScheduler.build_day()` and `SealPlanner.plan_day()`, and the street-tint test boots the real `main`;
-the marble test reads how many marbles a plan drew off the run log's note of it, which `build_day()` writes when handed the trace `DayPlanner` hands it.
-`tests/booted_main.gd` gives the observers back what they held before each boot it frees.
-No test catches removing `DayDirector.prepare_city_scenery()` from `start_day()` (the home's ground is already loaded) or `DaySummary`'s `_continuing` guard.
-`test_resistance_arrow.gd` reads the siting through `EventsAhead.walk_siting()`, and the director's siting band is read off the asks it really makes on a walk (`test_siting_judges_once.gd`'s `SpySiting`, record minty-quail-speckled-tapir).
-`test_day13_guard.gd` reads the move's spot off the street as the red arrow turns to a roadblock, and rings her in with soft seals or bodies to see the spot taken away and given back; the director's own `swing_base()` calls `Prop._playground_frame_shape()`.
-No test isolates the raid's wait for the patrol car's beat to be out of her view in `ResistanceHappenings._maybe_raid()`: deleting that check fails nothing, since the vans' own check holds the raid back; the happenings' tests gain one that fails without it.
-The event behaviour and placement suites ask the placed row and its def what the scheduler asks them (`EventScheduler.Planned.gap_to()`, `counts_against_the_line()`, `denies()`, `reach_touches()`, `keeps_its_field_clear()`; `EventDef.line_reach()`, `reach_above()`, `has_a_line_to_avoid()`, `reaches_the_far_lane()`, `for_day()`), finish a contact through `ResistanceDirector.contact().complete_now()`, find what was put on her route as the plans in `EventManager.plans()` that were not there before, build their own `EventScheduler.WalkSiting`, and `test_masts.gd` and `test_loose_dog_arrives.gd` let real physics frames pass;
-`test_event_spacing.gd`, `test_mast_place.gd`, `test_events_costs.gd`, `test_events_fire.gd`, `test_burnt_door.gd`, `test_day6_yeller_met.gd`, `test_day7_van.gd` and `test_masts.gd` read no private member.
-Still to do there: `test_checkpoints.gd`, `test_events_chat.gd` and `test_encounters.gd` hand the manager a map and a fresh `RunState` through `setup_world()`, put it in the tree before a real stroller so its own physics ticks run the holds, steps and releases, and push fingers through the viewport (`tests/physics_ticks.gd` lets real ticks pass, one per frame);
-the chat and encounter suites read no private member, and `test_checkpoints.gd` hands the crowd her through `Crowd.use_player()` and steps its gates through `Crowd.step()`, and drives by hand the street-door rig's public `watch_the_door_lines()`, `warn_at_the_doors()` and `hut.step()` on a city that never ticks, a standalone guard's `step()` in the pursuit simulations, and the gate rig's `city.crowd.step()` (a real tick passes the car at another time than the rig's own, so it is a different experiment);
-`test_event_manager.gd` reads an arrival's intensity through `current_intensity()`;
-`test_pursuer_on_foot.gd`'s tick calls `EventManager.step_the_encounters()` and `check_hard_fails()`, the two steps the manager's own tick calls, since real manager ticks over its whole encounters run past four hundred seconds against about thirty (record minty-quail-snowy-panda), and `test_events_pursuit.gd` hands the real `EventsAhead` a fake director through `use_director()`, as `EventManager.setup()` hands it the real one, and a counting board, and measures a real `DangerEdge` on real frames;
-the event picture suites (`test_events_catalogue.gd`, `test_event_views.gd`, `test_heat.gd`, `test_protest.gd`, `test_draw_layers.gd`) read where a look stands its pictures off a recording drawer handed through `EventInstance.drawer`, as `EventSpawner.create()` hands every instance the manager's `EventDrawer`, and the catalogue suite reads roles off `recipe_placement()`;
-`test_siting_judges_once.gd` counts the scheduler's judgements through a counting verdict store handed to `WalkSiting` where it is built, as the game hands each siting a store of its own, and the director's looks through its spy siting's `begin_look()`; `WalkSiting.offers_worked_out` is a public counter only this suite reads, which wants the offer handed in;
-`test_acts.gd` reads a fire's flames off what its drawer stands;
-`test_events_scheduler.gd` plans a day twice through `build_day()`, as the game plans it and with every wall kept through the spec's `wall_row_share`, which `DaySpec.for_day()` sets and the scheduler reads;
-`test_events_solid.gd` asks `Corridor.walked_sidewalks()`, which the scheduler's own guard asks.
-`test_walk_siting_spec.gd`, `test_seals.gd`, `test_scene_recipe_task.gd` and `test_scene_recipe_activity.gd` read no private member: the walk siting suite asks `WalkSiting.near_her()` and `EventManager.queue_a_task_row()` on a city in a run of its own, the seals suite states the junction rule as the flood fill `test_events_placement.gd` uses and asks it per route junction a row reaches, the task suite refuses a mast beside a door through `SceneRecipeRuntime.install()`, and the activity probe loads its recipe as `main` does and reads the booted tree, a building's roof fixtures off the roof it draws, through a recording roof drawer's `layout()`.
-`test_event_behaviours.gd`, `test_patrol_vanish.gd` and `test_barrier_stays.gd` read no private member: they stream plans in through `EventStreaming.add()`, let the manager's own physics ticks run with a real stroller in the tree, and read a barrier through its look's `band_node()` and `band_rim_holder()`, the body under the instance, its excitement rim and `is_faded_out()`.
-`test_events_placement.gd` reads no private member: it reads each row's role off the `Planned.role` that `EventScheduler.recipe_placement()` returns, and the ground a row is offered off `open_ground_for()`; `test_acts.gd` reads the city through `City.buildings()` and `CityMap.block_at()` and a park's reach through `EventScheduler.blocked_by()` and the grid's `flood()` and `reaches()`.
-`test_day7_van.gd` reads the rigged bag through `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the resistance director to answer what is in front of her.
-`test_tutorial_dog.gd` reads no private member: it hands the director's rows out through `due()` and rigs a second dog with `rig_her_route()`; and `test_loose_dog_arrives.gd` has the director owe the dog through `EventManager.force()` and lets the manager's own ticks send it down her line.
-The city suites `test_scenery_residency.gd`, `test_blackout.gd` and `test_city_decay.gd` are partly converted: the residency and blackout suites hand each city a fresh `RunState` (`City.run`), and the others let real process frames pass, read the frame ledger through `rows()`, count lit windows through `Building.window_texture()`, recover storefronts off the drawn front (`tests/front_reads.gd`), and read the scenery ground through `City.scenery_ground`, which `SceneryResidency.update()` reads.
-`test_scenery_residency.gd` reads no private member: it hands every building a recording drawer through `Building.roof_drawer` that also stands each unit through the real `RoofDrawer`, so eviction and ownership are checked on real objects, and reads windows through `window_texture()` and the roof off the recording drawer's `layout()`; the blackout suite picks its spine cars through `travelling_vertically()` and `CrowdLanes.corridor_at()`.
-The blackout and city decay suites read a station hall's clerestory, a burnt front's parapets and a signal head's lamp off a recording drawer handed through `Building.front_drawer` and `TrafficLight.drawer`, as the city hands each the real `FrontDrawer` and `TrafficLightDrawer`.
-`test_city_decay.gd` checks the alley mouse's pull toward a garbage-sack pile through where planned days place it. What they still reach that the count cannot see (the blackout suite's crowd focus and hand-started day, the residency suite's scenery ground) is in `tests-unseen-reads.md`.
-A second city pass partly converted `test_spent_park.gd`, `test_park_cordon.gd`, `test_park_cordon_seeds.gd`, `test_barrier_stays.gd`, `test_home_block.gd`, `test_regions.gd`, `test_seals.gd`, `test_world_passability.gd`, `test_blocks.gd` and `test_shapes.gd` onto members the game already calls (`SealPlanner.positions_across()`, `CityMap.is_main_road()`, day 1's `plan_day()`, a plan's `wall_bodies` with `alley_mouth_rect()`, `EventInstance.runs_vertically()`, `contact().complete_now()`), and lit windows through `Building.window_texture()`, which stays public for the residency suite (record minty-quail-plaid-egret), each city handed a fresh `RunState` through the fixtures `RunCity.in_run` and `RunCity.with_own_run`.
-The park cordon suites take the park through a `ResistanceHappenings` of their own, handed the day's obstruction built apart from the director (`ResistanceReads.day_reachability()`) through `take_the_park()` as the director does at the swing, play the reaching-the-swing test through the director with a real `Stroller`, and read the officers and the shut park off the world (`tests/cordon_in_the_world.gd`).
-`test_spent_park.gd` finds the closure pictures down the city's tree and hands a second city its closures through `recipe_closures`.
-`test_park_return.gd` boots `main` on a run of its own resuming a scratch-path save, walks her out on happenings of its own handed the same reach, and reads the shut-in case through the director and the world.
-The park cordon suites read the way out off the street musician once he is sent off (`way_left()`, which the cordon itself reads), and the cordon's hold on the gap while somebody is still to come out through what it causes: the gap stays untaped and the cordon open while a slow leaver is inside the line and away from it.
-`test_blocks.gd` counts the street tree beds the decals draw off a recording scenery drawer handed through `CityDecals.drawer`, as the city hands it the real `SceneryDrawer`, streamed and in the non-streamed draw alike.
-`test_shapes.gd`, `test_power_station.gd` and `test_home_block.gd` read no private member: the shapes suite asks the physics world what is solid at a point after a real physics tick, the power station suite counts `RouteTree.cells()` and plans its days on maps of their own, and the home block suite counts the roof objects in the city's entities layer by the lot they stand on and checks heights and variants by their properties rather than a copy of the city's random stream.
-`test_roof_entities.gd` and `test_recipe_roofs.gd` read no private member: they read where a roof's units stand off the recording roof drawer's `layout()` (`tests/roof_reads.gd`), the layout the building's own drawing draws, rolled from its variant and place, hand the building a recording drawer through `Building.roof_drawer` as `City._spawn_buildings()` hands it the real `RoofDrawer`, and read what the real drawer stands off the layer it stands it in.
-`test_posters.gd` reads no private member and no `GameState`: each test builds its city on a run of its own, hands the events a real `Stroller` and holds a movement key on real physics ticks, so the city's building bodies stop her at the wall and the poster walls tick on their own; a door is a real door of the city, a bollard holds her off reach, and pursuers are retired through `EventManager.retire()`.
-`test_scenery_animation.gd` reads a roof's rotors off the units a recording roof drawer is told to stand, turned by the building's own process frames in the tree, event scenery through `SpreadLook.slices()` and water through its material and the ground's own clock; it reads the pictures each rotor and each layer of an event's scenery stands off a recording scenery drawer, handed through the roof drawer's constructor and the event drawer as the city and the event drawer hand the real one, and its probe reads `Building._vent_timer`.
-`test_wall_shield.gd`'s cull test hands `DebugLayers.setup()` emitters of a chosen shape and speed, since no real event row or crowd agent reaches the sweep's speeds, and reads the outlines `field_runs()` returns.
-`test_building_shadows.gd` reads each chunk's tiles off a recording shadow drawer handed through `BuildingShadows.drawer`, as the city hands it the real `ShadowDrawer`.
-The generator suite reads what the subtraction leaves through a generated city's buildings, block layouts and home, and the grid suite its mask table through one-cell maps and the cells a flood dirties through `flood()` and `reaches()`.
-`test_interior.gd` steers a real stroller with a key held, latches the door through `teleport_to_door()`, reads the night's window flashes off the windows' pictures on real ticks and runs the vents with a player handed through `use_player()`;
-the masked man's walks, the second man up the shaft and her walk of every flight at 45 degrees, in `test_interior_masked_man.gd` and `test_interior_masked_man_badge.gd` (split off so CI can run them on separate shards, sharing `tests/masked_man_meeting.gd` and `tests/interior_rig.gd`), run on real physics ticks, sped up by raising the tick rate and the time scale together (`PhysicsTicks.pass_ticks_faster()`), with her own body sliding along the walls;
-the screen-edge badge runs on its own real frames, at real time from about 60 px before he runs, since the badge reads his closing speed off the frame's time, and only its first-frame check is exempt from lengthened frames;
-the rims are read through what the excitement halo and the source rim read (`excitement.rim.is_held()`, `rim().is_faded_out()`) and the debug layers through `field_runs()`.
-The telemetry suites drive what the game hands in: `test_visit_counter.gd` emits on a bus the counter is handed (`VisitCounter.listen()`) and reads what goes out through an outbox it is handed (`send_through()`, a `GoatCounterOutbox`), `test_telemetry.gd` asks `TelemetryShots` and `TelemetryPage`, drives the observer on real frames with the day moved by `DayController.tick()`, and counts the shots a drawing screen handed through `Telemetry.use_screen()` writes into a scratch run folder handed to `begin_run()`, as `main` and `RunSession.open()` hand the game's, and `test_frame_trace.gd` and `test_frame_record.gd`'s ledger checks read the rows they record.
-Their reads no seam answers yet: the recording counter's override of `_send_event()` in `test_visit_counter.gd` (the counter's gate reads the platform, which a headless run cannot fake).
-`test_frame_record.gd` boots the real game with `--frame-record` on a sitting and a scratch record path of its own and reads no private member (its desktop file name wants the records folder handed to the recorder), `test_burst_capture.gd` hands a recorder of its own through `Telemetry.use_bursts()`, as `main` hands the game's, to see a day's and the run's end cut a burst short, and the burst recorder and the observer's frame watch are pieces of their own (`BurstRecorder`, `FrameWatch`).
-`test_observers.gd` reads no private member and no `GameState`: it boots the real `main` on a fresh `RunState` with a scratch save, presses the summary's Continue through the viewport with the tree held paused so no tick moves the logged times, ends the day on the clock's own `day_finished` and leaves the building on the interior's `exit_requested`, and answers the title through its `start_requested` signal with the title skipped; it keeps `RecordingCounter`'s override of the counter's `_send_event()`, since the counter's gate reads the platform, which a headless run cannot fake.
-The scene recipe suites `test_scene_recipe_runtime.gd`, `test_scene_recipe_task.gd` and `test_recipe_structures.gd` install, begin and step scenes as `main` does, build each day in a run of its own with a fresh `RunState`, and check that an authored checkpoint door and soft seal stand where the day's own would and that the runtime walks a held event on over real frames;
-`test_navigator_fallbacks.gd` checks the crowd handed no navigator still pushes a walker walking toward her aside, further than his own side-step, and `test_scene_recipe_boot.gd` boots `main` on a day recipe and an escape recipe and checks their events run under the spec their clock runs on.
-The runtime suite hands a real director to `install()` and lets a task expire or be refused on the runtime's own ticks; the stretch suite reads the red arrow's ground through `WalkField.ground_for()` and the draft through `record()` and `compose()`; the lifecycle suites boot `main` through `tests/booted_main.gd` on a fresh `RunState`, count reloads through `main.use_reload()` and read that a scene ended the game through the `use_quit()` hand-in, which `main` hands the runtime as the call a scene ends the game with.
-Untested there: the director's own use of the arrow ground (it wants a task scene of several targets on a stretch), free play past its whole duration (it wants a clock the scene is handed), the runtime suite's boundary probe writing the runtime's named world (it wants a scene recipe actor that needs no city), and the bounded scene's check that no event body stands outside the authored ground holds on today's recipes by construction (it wants a bounded recipe that names a gate).
-`test_route_rig.gd` asks the rig's planner (`RouteRigPlanner`, whose every public member `RouteRig` calls) through the constructor the rig uses, and drives the rig through `setup()`, `start_day()` and real physics frames, each city on a `RunState` of its own, and its zebra rule through `plan()` over a crosswalk three tiles wide it paints on an open run of the city's map.
-`test_routes_fallen_trees.gd` checks every closure `plan_day()` puts on a bare street instead of calling `ClosurePlanner._pick_kind()`.
-The recipe composition suite reads the street trees off `city.props()` and a walker's lane through the test helper `tests/lane_key_search.gd`, which finds a lane's parts through the game's own `make_lane_key()`; no suite guards the heading a recycled walker rolls when it chooses its lane again.
-`test_route_bag.gd` reads the director through `director()`, the places handed to her walk through `is_from_her_route()`, the ground through `open_ground_for()` and the mast's offer by siting a mast through `ahead_of()`; a place waiting for its site sits in the director's private list, which nothing a game class asks reads, and `EventsAhead.walk_siting()`, which the route bag and fire suites and two probes read, is a seam still without a game caller.
-The dev capture suites read the tools through what they take and what they do: `test_walk_plan.gd` walks a real `Stroller` on real physics ticks with the rig `AutoScreenshot.from_config()` builds from `--walk` or `--smooth-walk`, handed a clock that counts the ticks passed;
-`test_route_lines.gd` builds the readout from `RunConfig.parse()` in a tree, presses keys through the viewport and reads the `RouteLines` node's visibility (its picture sweep still calls `RouteLines.routes()`, a public member no game class calls);
-`test_debug_layers.gd` sets the readout up through `RunConfig.parse()`, pushes its keys through the viewport and counts redraws over real frames;
-`test_auto_screenshot.gd` builds the rig with `AutoScreenshot.from_config()` from the walk and flee words on a clock it hands in and reads what is pressed on `Input`;
-`test_rig_press.gd` takes its taps from the real rig on real frames;
-`test_still_watch.gd` counts the still watch's hold in physics ticks (the watch now counts in `_physics_process()`);
-none of the four reads a private member.
-`test_run_config.gd` reads the shadow layer off the scene's `BuildingShadows` node, the forced row by the cyclist the manager's own ticks send, and the screens' touch and quit answers on two real boots with clicks, fingers and keys pushed through the viewport.
-The drawing suites read what is drawn: a headless run calls `_draw()` and emits `draw`, so `test_halo.gd`, `test_halo_behind.gd`, `test_visible_view.gd`, `test_sentence_lines.gd` and `test_sentence_lines_render.gd` read no private member, counting what a rim traces each frame, when the badge edge redraws and the colour its shader is handed, with fakes handed in through the game's own inputs (`ExcitementHalo.setup()`, `ExcitementSource.rim`, a map handed to `EventInstance.setup()`), and the sentence suites show each sentence alone in the screen's real label through `break_for_label()`.
-`test_drawn_view.gd` reads the fire's front and sizes off what its drawer stands, and that the gate works out no caret off screen by moving her far off after the gate's frame and asking for the caret; the caret and its flash are drawn by the look itself, not through the drawer.
-`test_return_patrols.gd` reads no private member: it drives `EventDirector`'s public calls (`start_day()`, `force()`, `owe_the_return()`, `owed()`, `due()`, `rig_her_route()`, `start_recipe_route()`) and reads what `due()` hands out as she walks.
-`test_crowd_yields.gd` reads no private member (each figure's move off the map's moves, its plan streamed with `EventStreaming.add()`, the manager handed its world through `setup_world()`), and the crowd suites read the door answer through `WalkerStrategy.door_answer_for()` and `door_is_shut()`, a bump through a real `Stroller` handed to `Crowd.use_player()` and `EventBus.crowd_bumped`, the crossing look-ahead through `LaneStrategy.cannot_go_on()`, and recycles as interpolation resets.
-`test_crowd_bodies.gd`, `test_danger.gd` and `test_scene_recipe_stretch_crowd.gd` read no private member: the crowd-body suite reads an `EventInstance` set up as the spawner sets one up, the danger suite places its car and walker on a real street through the crowd's own entry, and the stretch-crowd suite walks a walker and a car off every end of a real `City` on a fresh `RunState` under a `ScreenCrowdView` and a real camera, on the crowd's own ticks.
-`test_save_wiring.gd` boots a real `main`, waits for the boot with `Boot.until_booted()`, plays a fresh `RunState` per test and reads what is on disk back into a run of its own; a test hands in the home the game parks its `Sitting` in across a reload, and reads it back out of that home.
-The save tests reach `GameSave` through `write()`, `try_resume()` and `clear()`.
+**Build:** where a test needs something of a class, that class gets public seams and
+injected dependencies, and the test moves to them, with fakes handed in instead of statics patched;
+since the test runner lets frames pass, scene-level tests step real frames. Planners get public
+"place this at this site" entry points that the scheduler and recipes both call. A seam is one the
+game itself uses: a member made public, or added, has a caller among the game's own classes, or is a
+dependency the game's own code hands in (records minty-quail-44 and -47); a public member only a
+test reads is not a seam, however it is named, and where the game has no reader the test goes
+through what the game exposes (what is drawn, a signal, real input and frames). A step that touches
+a test may convert it as it goes, "you can also do it as a bit with each step as long as the final
+result is the same" (inbox #813 in curly-moose).
 
-**How drawn art is tested.** The suites that read what the game draws with nothing in the game reading
-it back (the roof art: scenery animation, roof entities, recipe roofs, residency, blackout, city decay;
-and the event pictures: the catalogue's caps, the fire's flames) follow the player's answer to the board
-question drawn-art-tests: "what are we testing here? the placement of the elements is defined by the rng
-which can be tested in isolation. the drawing happens through general drawing code which is also tested
-in isolation elsewhere. if you're just testing the holder for it the inject a mock drawer that confirms
-that all elements are properly drawn" (inbox #1018 in brisk-ferret).
+**Accepted, open to overturn.** A clock with a wall-clock default that only tests hand in
+(`TouchControls.use_clock()`, as `ModeButton.use_clock()`, `TitleScreen.use_clock()` and
+`ReturnWindow.use_clock()` are) is a seam: read strictly, the rule would rule all four out, and real
+time with short waits would replace them.
 
-**Read as:** placement is tested on its own through the random draws, as a function of the seed; the
-general drawing code is not retested; the holder (a building's roof, an event's picture) is tested with
-an injected mock drawer that confirms every element is drawn. It is read as applying to the roof art
-and the event picture suites, whose reads of what a look draws it answers with the injected drawer.
+**Drawn art.** The suites that read what the game draws with nothing in the game reading it back
+(the roof art: scenery animation, roof entities, recipe roofs, residency, blackout, city decay; and
+the event pictures: the catalogue's caps, the fire's flames) follow the player's answer to the
+board question drawn-art-tests: "what are we testing here? the placement of the elements is defined
+by the rng which can be tested in isolation. the drawing happens through general drawing code which
+is also tested in isolation elsewhere. if you're just testing the holder for it the inject a mock
+drawer that confirms that all elements are properly drawn" (inbox #1018 in brisk-ferret).
+
+**Read as:** placement is tested on its own through the random draws, as a function of the seed;
+the general drawing code is not retested; the holder (a building's roof, an event's picture) is
+tested with an injected mock drawer that confirms every element is drawn. It is read as applying to
+the roof art and the event picture suites, whose reads of what a look draws it answers with the
+injected drawer.
+
+**Where a suite drives a public step by hand.** Each is a different experiment from the one real
+ticks give, and is kept with its reason:
+
+- `test_pursuer_on_foot.gd` calls `EventManager.step_the_encounters()` and `check_hard_fails()`,
+  the two steps the manager's own tick calls, since real manager ticks over its whole encounters run
+  past four hundred seconds against about thirty (record minty-quail-snowy-panda).
+- `test_checkpoints.gd` drives the street-door rig's public `watch_the_door_lines()`,
+  `warn_at_the_doors()` and `hut.step()` on a city that never ticks, a standalone guard's `step()` in
+  the pursuit simulations, and the gate rig's `city.crowd.step()`: a real tick passes the car at
+  another time than the rig's own.
+- A crowd car at speed 700, and a walker at pace 0 other than a waiting one, are not reachable
+  through `Crowd.add_recipe_actor()`; a stopped car is reached through `crashed_into()`, which the
+  game calls.
+
+**Open: what a test still reads that the game does not, or does not check.**
+
+- **The resistance director's fallback to the map's navigator is untested:** a director handed no
+  city siting builds its spawn siting on it, and the one start it sites that way is a trap sent at
+  her (`_send_at_her()`). The test it needs is a director handed a city whose spawn siting is unset,
+  with that trap sited.
+- **No test isolates the raid's wait for the patrol car's beat to be out of her view** in
+  `ResistanceHappenings._maybe_raid()`: deleting that check fails nothing, since the vans' own check
+  holds the raid back; the happenings' tests gain one that fails without it.
+- **No test catches removing `DayDirector.prepare_city_scenery()` from `start_day()`** (the home's
+  ground is already loaded; `test_camera_start.gd`'s dawn check does not fail without the call), or
+  `DaySummary`'s `_continuing` guard.
+- **`EventScheduler._cross_street_path`** serves no catalogue row today, since the director sites the
+  cat; it wants a row or removing.
+- **A recycled walker's heading** when it chooses its lane again has no suite guarding it.
+- **`EventsAhead.walk_siting()`** has no game caller (the route bag and fire suites and two probes
+  read it), and `test_route_bag.gd` reads a place waiting for its site in the director's private
+  list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
+  `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
+  resistance director to answer what is in front of her.
+- **`WalkSiting.offers_worked_out`** is a public counter only `test_siting_judges_once.gd` reads,
+  which wants the offer handed in.
+- **`RouteLines.routes()`**, a public member no game class calls, is read by `test_route_lines.gd`'s
+  picture sweep.
+- **`test_touch.gd`** reads `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS` (the knob
+  drawn inside its ring has no reader but the drawing); **`HelpText.line`** is read only by tests (the
+  HUD's teaching line, whose parsed text drops the icons); and the HUD suite restores
+  `VisitCounter._day` by emitting `EventBus.day_started`, which the counter's own conversion would
+  remove by handing it the run.
+- **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
+  `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
+- **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a
+  task scene of several targets on a stretch), free play past its whole duration (it wants a clock
+  the scene is handed), the runtime suite's boundary probe writing the runtime's named world (it
+  wants a scene recipe actor that needs no city), and the bounded scene's check that no event body
+  stands outside the authored ground, which holds on today's recipes by construction (it wants a
+  bounded recipe that names a gate).

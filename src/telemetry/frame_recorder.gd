@@ -17,8 +17,9 @@ extends Node
 ## **On the web, a button the page itself draws saves the record** through the browser's own
 ## download: a DOM element over the canvas rather than a game control, so a tap on it never also
 ## steers her, and the download starts inside the tap that asked for it, which is what a phone's
-## browser requires. **On the desktop the record is written under `user://frame-records/`** on
-## every scene exit, the same file each time, so a quit or a restart leaves the whole record: the
+## browser requires. **On the desktop the record is written in the folder `main` hands to `setup()`**
+## (the game's is `user://frame-records/`; a suite hands a scratch folder) on every scene exit,
+## the same file each time, so a quit or a restart leaves the whole record: the
 ## file's path is kept on the `Sitting` `main` hands in, which outlives the restart's reload.
 ##
 ## Frames are kept only while a day is being played — not paused, not the title, not a summary —
@@ -66,13 +67,17 @@ var _viewport: RID
 ## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
 ## file and a restart, which builds a new recorder, does not start a second.
 var _sitting: Sitting
+## The folder a desktop record is written in, handed in by `setup()`: the recorder never names the
+## player's own folder, so whoever builds one chooses where its records go.
+var _records_dir := ""
 ## The page button's callback into the recorder, held for the recorder's life. See
 ## `_add_page_button()`.
 var _save_callback: JavaScriptObject
 
 func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
-		run: RunState, sitting: Sitting) -> void:
+		run: RunState, sitting: Sitting, records_dir: String) -> void:
 	_run = run
+	_records_dir = records_dir
 	_sitting = sitting
 	_in_the_title = in_the_title
 	_city = city
@@ -304,8 +309,8 @@ func _report_text() -> String:
 	report["environment"] = metadata
 	return JSON.stringify(report)
 
-## Saves the record: through the browser's download on the web, to `user://frame-records/` on
-## the desktop. Answers where it went. The frame this runs in is not kept, since building the
+## Saves the record: through the browser's download on the web, into the folder `setup()` was
+## handed on the desktop. Answers where it went. The frame this runs in is not kept, since building the
 ## file is the slowest thing in it.
 func save() -> String:
 	var text := _report_text()
@@ -316,7 +321,7 @@ func save() -> String:
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
 	if _sitting.frame_record_path == "":
-		_sitting.frame_record_path = "user://frame-records/record-%s-seed%d.json" % [
+		_sitting.frame_record_path = "%s/record-%s-seed%d.json" % [_records_dir,
 			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
 	var path := _sitting.frame_record_path
 	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:

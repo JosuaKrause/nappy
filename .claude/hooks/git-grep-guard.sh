@@ -392,8 +392,8 @@ if (.tool_name | IN("Bash", "Monitor")) | not then empty else
 end
 JQ
 
-# A failure of the program itself denies rather than letting the command through; only a missing
-# jq, which every hook here needs, passes everything.
+# A failure of the program itself, or of the answer's own printing (below), denies rather than
+# letting the command through; only a missing jq, which every hook here needs, passes everything.
 command -v jq >/dev/null 2>&1 || exit 0
 if ! flagged=$(jq -r "$check_program" 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
@@ -408,11 +408,17 @@ A git grep without -I over this repo's ~900 MB docs/, binaries included, has bee
 git-grep instead of git grep. If it is a search, add -I (skip binary files), restrict the pathspec to \
 text globs (e.g. -- '*.md' '*.gd' '*.sh'), or use rg on the checkout. Flagged: $flagged"
 
-jq -n --arg reason "$reason" '{
+# The reason goes in on stdin and the answer is built whole before any of it is printed, so a jq
+# that fails here prints a fixed deny instead of nothing (which would let the search through), and
+# never a deny after half an answer.
+if ! answer=$(printf '%s' "$reason" | jq -Rsc '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: "deny",
-    permissionDecisionReason: $reason
+    permissionDecisionReason: .
   }
-}'
+}' 2>/dev/null) || [ -z "$answer" ]; then
+	answer='{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"The git grep guard flagged this command and could not print its own reason, so it is denied. Add -I, or write git-grep for a mention. See .claude/hooks/git-grep-guard.sh."}}'
+fi
+printf '%s\n' "$answer"
 exit 0
