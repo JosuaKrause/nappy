@@ -157,12 +157,6 @@ class Stage extends RefCounted:
 		manager.streaming.stream_in(plan)
 		var instance := plan.live
 		instance.set_process(false)
-		# The streaming records the body on the map for the crowd to steer round, and the rig has
-		# no crowd. A recorded body also blocks a pursuer's line to her (`EventInstance._sight`), so
-		# the rig gives it back: the rig's walks were measured with no body on the record, and with
-		# it on, some crossings let her past a posted guard uncaught (the PR says which).
-		_map.release_obstruction(plan.get_instance_id())
-		_map.release_obstruction(instance.get_instance_id())
 		return instance
 
 	## What `instance` leaves behind when it finishes, made where it stands as the spawner makes it

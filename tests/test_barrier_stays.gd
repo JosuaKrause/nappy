@@ -21,6 +21,7 @@ func run(t) -> void:
 	await _test_he_is_never_removed_in_view_while_she_stays_near(t)
 	await _test_the_barrier_rim_survives_the_departure(t)
 	await _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
+	_test_a_posted_guard_sees_and_charges_her_across_his_own_band(t)
 
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
@@ -343,3 +344,54 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	EventBus.pursuit_ended.disconnect(listen[3])
 	EventBus.pursuit_cut_short.disconnect(listen[4])
 	city.free()
+
+## **A guard sees out of the band he belongs to, and only that one.** *(`EventInstance.clear_line_to()`:
+## "a guard sees out of the band he stands in".)* A band streamed in as a day's is has its body on
+## the map's record, and the guard who steps out to his post on her side is then off the band's
+## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
+## band. He still charges; a second band's body between them still hides her, and his catch still
+## reaches through nothing.
+func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
+	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
+	var post := Vector2(2128.0, 80.0)
+	var stage := RoadblockRig.Stage.new(t, map)
+	var guard := stage.stand(EventScheduler.Planned.new(_hot_roadblock(), post))
+	var body := guard.body_position()
+	t.check(map.is_obstructed(map.world_to_tile(body)), "the band's body is on the map's record")
+	var near := Vector2.INF
+	for bearing in 16:
+		var toward := Vector2.from_angle(TAU * float(bearing) / 16.0) * 100.0
+		var a := body + toward
+		var b := body - toward
+		if map.is_walkable(map.world_to_tile(a)) and map.is_walkable(map.world_to_tile(b)) \
+				and not map.is_obstructed(map.world_to_tile(a)) \
+				and not map.is_obstructed(map.world_to_tile(b)) \
+				and map.clear_line(body, a) and map.clear_line(body, b) and near == Vector2.INF:
+			near = a
+	t.check(near != Vector2.INF, "there is open ground either side of the band")
+	if near == Vector2.INF:
+		stage.close()
+		return
+	var far := body * 2.0 - near
+	var made: Array[EventInstance] = [guard]
+	var frames := 0
+	while guard.is_waiting() and frames < int(5.0 / STEP):
+		RoadblockRig.tick(made, near, false)
+		frames += 1
+	t.check(guard.is_telegraphing(), "he notices her on the near side and warns")
+	t.check(guard.global_position.distance_to(body) > 1.0, "from his post, off the band's middle")
+	t.check(guard.clear_line_to(far),
+			"and sees her on the band's far side across his own band's body")
+	# A body of another band in the line still hides her: a second band stands beyond her.
+	var second := stage.stand(EventScheduler.Planned.new(_hot_roadblock(),
+			body + (far - body) * 2.0))
+	t.check(second.body_position().distance_to(body) > 150.0
+			and not guard.clear_line_to(body + (far - body) * 2.6),
+			"a second band's body in the line still hides her")
+	# She walks round to the far side while he warns, and he charges anyway.
+	frames = 0
+	while not guard.is_chasing() and frames < int((guard.def.pursuit.warns_for + 2.0) / STEP):
+		RoadblockRig.tick(made, far, false)
+		frames += 1
+	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)
+	stage.close()

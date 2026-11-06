@@ -1764,7 +1764,7 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
-	return def.pursuit == null or clear_line_to(world_position)
+	return def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
 
 ## Whether the straight line from this node to `world_position` crosses only ground this figure
 ## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question a pursuer's catch asks, since a
@@ -1774,8 +1774,28 @@ func is_lethal_at(world_position: Vector2) -> bool:
 ## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
 ## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
 ## built without a map, exactly as `_step()` is.
+##
+## **Seeing out of his own band is not reaching through it.** The line a guard notices her along and
+## lunges along does not ask the tiles of his own body (`own_body_tiles()`), because he steps out to
+## his post on her side and she may stand on the band's far side; the catch above asks every body,
+## his own included, and so does every other body's tile for either question.
 func clear_line_to(world_position: Vector2) -> bool:
-	return _navigator.clear_line(global_position, world_position, _sight)
+	return _navigator.clear_line(global_position, world_position, _sight, own_body_tiles())
+
+## The tiles this event's own solid body is recorded on (`EventSpawner.obstructed_footprint()`, the
+## record the planned body and the live one are written from), as a set; empty for a row with no
+## body. Worked out once for where the body stands.
+func own_body_tiles() -> Dictionary:
+	var at := body_position()
+	if _own_tiles_at != at:
+		_own_tiles_at = at
+		_own_tiles.clear()
+		for tile in EventSpawner.obstructed_footprint(_map, def, at, _heading):
+			_own_tiles[tile] = true
+	return _own_tiles
+
+var _own_tiles := {}
+var _own_tiles_at := Vector2.INF
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:
