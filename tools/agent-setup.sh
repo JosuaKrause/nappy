@@ -122,6 +122,15 @@ main="$(cd "$first_worktree" && pwd -P)"
 slug="${branch:-}"; slug="${slug//\//-}"
 brief="$main/.claude/briefs/$slug.md"
 
+# Whether the brief's header (up to its first blank line) has the line $1. The header is read
+# whole before it is searched, never piped into a search: under pipefail, a search that matches
+# and leaves fails the pipe when sed is still writing, so a match would read as a miss.
+header_has() {
+    local header
+    header="$(sed '/^$/q' "$brief")" || return 1
+    grep -qxF -- "$1" <<<"$header"
+}
+
 # Inserts "KEY: VALUE" at the end of the brief's header (before its first blank line, or at the
 # end of a file with none), then proves the line is there.
 header_add() {
@@ -133,21 +142,21 @@ header_add() {
         END { if (!done) print line }' "$brief" > "$tmp" || { rm -f "$tmp"; return 1; }
     cat "$tmp" > "$brief"
     rm -f "$tmp"
-    sed '/^$/q' "$brief" | grep -qxF "$key: $value" \
+    header_has "$key: $value" \
         || { echo "tools/agent-setup.sh: $key line did not land in $brief" >&2; return 1; }
 }
 
 if [[ $mode == agent || $mode == release ]]; then
     [[ -f "$brief" ]] || { echo "tools/agent-setup.sh: no brief at $brief" >&2; exit 1; }
     if [[ $mode == agent ]]; then
-        if sed '/^$/q' "$brief" | grep -qxF "agent: $agent_id"; then
+        if header_has "agent: $agent_id"; then
             echo "agent $agent_id is already in $brief"
             exit 0
         fi
         header_add agent "$agent_id" || exit 1
         echo "appended agent: $agent_id to $brief"
     else
-        if sed '/^$/q' "$brief" | grep -qxF "cleanup: ready"; then
+        if header_has "cleanup: ready"; then
             echo "$brief already says cleanup: ready"
             exit 0
         fi
