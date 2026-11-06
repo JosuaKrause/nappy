@@ -26,14 +26,19 @@ func run(t) -> void:
 	_test_key_five_does_nothing_in_a_release_build(t)
 	_test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_calm(t)
 
-# ------------------------------------------------------------------ DevFlags.parse_layers ---
+# ------------------------------------------------------------------ --layers ---
+
+## The layers a debug build given `--layers raw` starts on.
+func _layers(raw: String) -> Array[int]:
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+
 
 ## Beside `test_debug_layers.gd`'s own `_test_parse_layers_*` cases, which stop at `1..3`: `5` is
 ## the one other layer `--layers`/`?layers=` may set, and `4` (the readout, toggled its own way)
 ## stays rejected even though it now sits inside the numeric range the other four span.
 func _test_parse_layers_accepts_five_and_still_rejects_four(t) -> void:
-	t.check(DevFlags.parse_layers("5") == [5], "5 (the day's routes) is accepted on its own")
-	t.check(DevFlags.parse_layers("1,4,5") == [1, 5],
+	t.check(_layers("5") == [5], "5 (the day's routes) is accepted on its own")
+	t.check(_layers("1,4,5") == [1, 5],
 			"4 is still dropped — the readout is never set through this flag — while 1 and 5 pass")
 
 # ------------------------------------------------------------------ the readout ---

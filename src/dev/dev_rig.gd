@@ -77,7 +77,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# walking there. The arterial is where the floor is highest, so it is where the
 	# question "can a day be won on an ordinary street" is actually answered.
 	if target == "arterial":
-		return nearest_walkable(city.map, CrowdLanes.arterial_pavement(city.map))
+		return _nearest_walkable(city.map, CrowdLanes.arterial_pavement(city.map))
 	# A closed street, from the junction outside its barrier — the place the closure is
 	# supposed to be readable from, which is the thing worth looking at.
 	# `closure:<n>` picks one of the day's closures, since only one of them is a street
@@ -90,7 +90,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
 		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
 		var junction := closures[which].cause_centre(city.map)
-		return nearest_walkable(city.map, mouth + (mouth - junction).normalized() * 64.0)
+		return _nearest_walkable(city.map, mouth + (mouth - junction).normalized() * 64.0)
 	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which puts
 	# both of the things a zone has to get right in one frame: the T-junction where the absorbed
 	# street stops, and the calm behind it.
@@ -106,7 +106,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var which := clampi(int(target.get_slice(":", 1)), 0, keys.size() - 1)
 		var anchor: Vector2i = keys[which]
 		var corner := CityMap.blocks_tile_rect(city.map.zone_rects[anchor]).position
-		return nearest_walkable(city.map, city.map.tile_to_world(corner - Vector2i.ONE * 2))
+		return _nearest_walkable(city.map, city.map.tile_to_world(corner - Vector2i.ONE * 2))
 	# A big building, stood on the street running along the joined side of it, level with the
 	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
 	# rather than as two blocks with the road missing between them, and this flag is the only way
@@ -120,7 +120,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# Off the **long** side, which is the one the joined seam runs the width of: a mass two
 		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
 		# out and not three, because a corridor is `sidewalk | road | sidewalk` and three tiles off
-		# a frontage is the carriageway — `nearest_walkable` will happily leave her standing on it,
+		# a frontage is the carriageway — `_nearest_walkable` will happily leave her standing on it,
 		# and a shot taken from there is a shot of the day ending.
 		# And a little off the middle of that side, because the middle of the mass is where the
 		# built-over street was, so the tile facing it across the corridor is a junction — which is
@@ -128,7 +128,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var beside := Vector2i(mass.get_center().x - Tuning.STREET_WIDTH, mass.position.y - 2) \
 				if pair.size.x == 2 \
 				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
-		return nearest_walkable(city.map, city.map.tile_to_world(beside))
+		return _nearest_walkable(city.map, city.map.tile_to_world(beside))
 	# The power station's front door, stood on its own pavement a door's width east of it so the
 	# door is in frame beside her rather than behind the pram. The door is on the station's south
 	# face, which is the one the camera sees, so this is also where its picture is judged from.
@@ -137,7 +137,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 			push_warning("this city has no power station")
 			return city.map.home_world_position()
 		var door := city.map.power_station_door_position()
-		return nearest_walkable(city.map,
+		return _nearest_walkable(city.map,
 				door + Vector2.RIGHT * CityMap.POWER_STATION_DOOR_TILES * Tuning.TILE_SIZE)
 	# A signalled junction on the spine, stood a little back down the side street, so that the
 	# main road, its lights and one of its zebras are all in the same frame. The lights
@@ -150,7 +150,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
 		var corner := Vector2i(CityMap.block_rect(Vector2i(spine, 0)).position.x + 2,
 				down * CityMap.period() + 1)
-		return nearest_walkable(city.map, city.map.tile_to_world(corner))
+		return _nearest_walkable(city.map, city.map.tile_to_world(corner))
 	# The mouth of the tunnel the main road leaves by, from a few tiles down the spine. `edge:s`
 	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
 	if target.begins_with("edge"):
@@ -164,7 +164,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 			"s": at = Vector2i(spine_x - 2, city.map.size.y - 2)
 			"e": at = Vector2i(city.map.size.x - 2, spine_y - 2)
 			"w": at = Vector2i(1, spine_y - 2)
-		return nearest_walkable(city.map, city.map.tile_to_world(at))
+		return _nearest_walkable(city.map, city.map.tile_to_world(at))
 	# The middle of a pedestrianised street, which is the other end of the same trade: paving
 	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
 	if target == "precinct":
@@ -174,7 +174,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var span: Vector4i = city.map.precinct_spans[0]
 		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
-		return nearest_walkable(city.map, city.map.tile_to_world(
+		return _nearest_walkable(city.map, city.map.tile_to_world(
 				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
 	# A corner of the map, stood a couple of tiles inside it, so that two of the border's four
 	# bands and the join between them are in the same frame — the seam is where the mountain and
@@ -187,7 +187,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var which := target.get_slice(":", 1)
 		# The outermost pavement and not the outermost tile: the corridor is `sidewalk | road |
 		# sidewalk`, so anything past `SIDEWALK_WIDTH` is the carriageway of the boundary street
-		# and `nearest_walkable` will happily leave her standing on it — a shot taken from there
+		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
 		# is a shot of the day ending, which is the trap the `landmark` target has too.
 		var near := Tuning.SIDEWALK_WIDTH - 1
 		var far := city.map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
@@ -196,7 +196,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 			"ne": at = Vector2i(far.x, near)
 			"sw": at = Vector2i(near, far.y)
 			"se": at = far
-		return nearest_walkable(city.map, city.map.tile_to_world(at))
+		return _nearest_walkable(city.map, city.map.tile_to_world(at))
 	if target == "contact":
 		# A pickup's mark may not stay where this puts the camera: if she then walks away from
 		# it without it ever being seen, the re-placement rule in `ResistanceDirector` moves it
@@ -227,7 +227,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventScheduler.Planned = huts[which]
-		return nearest_walkable(city.map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
+		return _nearest_walkable(city.map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
@@ -283,9 +283,9 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 		if plan.def.notice_within() > 0.0:
 			var clearance := maxf(plan.def.outer_radius, plan.def.notice_within()) + Tuning.TILE_SIZE
 			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
-			return nearest_walkable(city.map, plan.position + stand_off)
+			return _nearest_walkable(city.map, plan.position + stand_off)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
-		return nearest_walkable(city.map, plan.position + offset)
+		return _nearest_walkable(city.map, plan.position + offset)
 	if waits_for_her_walk:
 		var reason := (("'%s' is planned today with no position: it is sited from her walk, so "
 				% wanted_id) + "there is nowhere to stand at dawn. Use --follow %s once it exists"
@@ -314,7 +314,7 @@ static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: flo
 	var vertical := EventInstance._spread_is_vertical(map, at)
 	return Vector2(0.0, radius * scale) if vertical else Vector2(radius * scale, 0.0)
 
-static func nearest_walkable(map: CityMap, near: Vector2) -> Vector2:
+static func _nearest_walkable(map: CityMap, near: Vector2) -> Vector2:
 	var start := map.world_to_tile(near)
 	for radius in 12:
 		for dy in range(-radius, radius + 1):

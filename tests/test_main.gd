@@ -1073,7 +1073,8 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	var viewport := Vector2(
 			ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))
-	var zoom := ZoomOutCamera.overview_zoom(bounds, viewport)
+	# The zoom that fits all of the bounds in the window, as `ZoomOutCamera` ends its pull back on.
+	var zoom := minf(viewport.x / bounds.size.x, viewport.y / bounds.size.y)
 	var size := viewport / zoom
 	var view := Rect2(bounds.get_center() - size / 2.0, size)
 	var lo := city.map.world_to_tile(view.position)

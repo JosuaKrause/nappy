@@ -11,7 +11,6 @@
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
 src/city/city.gd home_door_is_sealed
@@ -19,7 +18,6 @@ src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
-src/dev/debug_layers.gd body_outline_count
 src/events/event_instance.gd charger_name
 src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
@@ -28,11 +26,6 @@ src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
 src/resistance/resistance_director.gd mark_guard
-src/telemetry/frame_ledger.gd DRAWS_HALOS
-src/telemetry/frame_ledger.gd DRAWS_OTHER
-src/telemetry/frame_ledger.gd DRAWS_PLAYER
-src/telemetry/frame_ledger.gd DRAWS_SCENERY
-src/ui/frame_graph.gd classes
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
 src/world/world_context.gd total_excitement_at
@@ -71,20 +64,6 @@ src/crowd/walker_look.gd heading_now
 src/crowd/walker_strategy.gd door_answer_for
 src/day/loss_cause.gd crying_suffix
 src/day/loss_cause.gd hard_fail_suffix
-src/dev/auto_screenshot.gd can_photograph
-src/dev/auto_screenshot.gd recording_frame_needs_force
-src/dev/debug_layers.gd collision_nodes_under
-src/dev/debug_layers.gd field_runs
-src/dev/debug_layers.gd open_runs
-src/dev/dev_flags.gd parse_ground_mode
-src/dev/dev_flags.gd parse_layers
-src/dev/dev_flags.gd parse_parent
-src/dev/dev_rig.gd nearest_walkable
-src/dev/dev_rig.gd pavement_offset
-src/dev/still_watch.gd facing_a_red_light
-src/dev/trailer_text.gd opacity_at
-src/dev/zoom_out_camera.gd overview_zoom
-src/dev/zoom_out_camera.gd pose_at
 src/events/behaviours/event_car_driving.gd is_driving
 src/events/behaviours/event_car_driving.gd room_to_its_line
 src/events/checkpoint_controller.gd guard_is_after_her
@@ -181,15 +160,12 @@ src/run/summary_model.gd resistance_tally
 src/run_config.gd day_length_override
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
-src/telemetry/telemetry_map.gd role_mark
-src/telemetry/telemetry_observer.gd spikes_on
 src/ui/badge_model.gd announces
 src/ui/badge_model.gd approach_speed
 src/ui/danger_edge.gd arrows_drawn
 src/ui/danger_edge.gd subject_for_def
 src/ui/entity_halo.gd has_settled
 src/ui/entity_halo.gd trace_offsets
-src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
 src/web_display.gd dpr_cap
@@ -247,3 +223,10 @@ src/dev/scene_recipe_runtime.gd charging_refusal  # why a row may not start char
 src/dev/scene_recipe_runtime.gd hold_refusal  # why a row may not be held after it leaves; reached outward only as an error of install(), after the row has been placed at a legal site, so a refusal per row (fire truck, delivery van, roadblock, a flock) needs a legal siting per row; tests/test_scene_recipe_runtime.gd asks the decision per catalogue row (open to overturn)
 src/dev/scene_recipe_runtime.gd hold_refusal_message  # the sentence install() reports for a refused hold, which names the event and the row; reached outward only through the same siting as hold_refusal (open to overturn)
 src/dev/scene_recipe_runtime.gd relentless_refusal  # why a row may not be kept coming; reached outward only as an error of install(), after the row has been placed at a legal site, so a refusal for a row that does not pursue needs a legal siting for it (open to overturn)
+src/dev/dev_rig.gd pavement_offset  # the step from an event to a stand-off point, across the street's width axis (a step along its length would stay on the carriageway); first_event_position() snaps the result to the nearest walkable tile, so where she stands does not show which axis the step crossed, and only the unsnapped vector tells (tests/test_dev_rig.gd asks it on a bare map for a north-south and an east-west street)
+src/dev/auto_screenshot.gd recording_frame_needs_force  # whether a covered movie-writer window needs a frame drawn on demand; its whole effect is the call to RenderingServer.force_draw() in _draw_covered_recording_frame(), which a headless run draws to nothing and reports nowhere, and its second input is the engine's own answer (DisplayServer.window_can_draw()), not a hand-in, so the suite asks the pure decision for the three cases (tests/test_auto_screenshot.gd)
+src/dev/debug_layers.gd collision_nodes_under  # the collision shapes the bounding-box layer outlines; they exist only as the arguments of the draw_* calls in _draw_bodies(), which a headless run draws to nothing and no node exposes, so the list is the only handle on which bodies the layer shows (tests/test_debug_layers.gd walks the tree by hand and compares)
+src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [runs, colour] per outline for a view; they exist only as the arguments of draw_polyline() in _draw_fields(), which a headless run draws to nothing and no node exposes (tests/test_wall_shield.gd, tests/test_interior.gd; tests/probes/calm_pelican_fields_layer_cost.gd times it)
+src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
+src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
+src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
