@@ -9,9 +9,6 @@ const FAST_SCALE := 21.0
 
 ## One frame, for `_simulate(ONE_FRAME)`: the least a stretch can last.
 const ONE_FRAME := 0.0
-## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
-## each tick steps the game as long as before, only sooner in real time.
-const TICK_FACTOR := 8
 
 ## Stands in for the city: the baby only ever asks these three questions.
 class FakeWorld extends WorldContext:
@@ -120,7 +117,7 @@ func _teardown() -> void:
 ## meters, one fixed step per frame (the project's own physics rate, `Engine.physics_ticks_per_second`).
 func _simulate(seconds: float) -> void:
 	await PhysicsTicks.pass_ticks_faster(_baby, maxi(1, int(round(seconds * Engine.physics_ticks_per_second))),
-			TICK_FACTOR)
+			PhysicsTicks.FASTER)
 
 ## A long stretch of real physics frames in a fraction of the wall time: the engine hands each
 ## frame `1 / Engine.physics_ticks_per_second * Engine.time_scale` seconds, so the clock is sped

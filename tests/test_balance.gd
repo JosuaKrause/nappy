@@ -19,9 +19,6 @@ const STEP := 1.0 / 60.0
 
 ## How many times real time the walks run at (`PhysicsTicks.pass_ticks()`'s `scale`).
 const TIME_SCALE := 4.0
-## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
-## each tick steps the game as long as before, only sooner in real time.
-const TICK_FACTOR := 8
 
 ## How long `_test_the_arterial_never_settles_her` walks the arterial for — see that test's own
 ## docstring for the measurement behind the number.
@@ -111,7 +108,7 @@ func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 		var note := func(ran: int) -> void:
 			if settled[0] < 0.0 and _baby.state == GameEnums.BabyState.ASLEEP:
 				settled[0] = (before + ran) * STEP * TIME_SCALE
-		await PhysicsTicks.pass_ticks_faster(t, chunk, TICK_FACTOR, note, TIME_SCALE)
+		await PhysicsTicks.pass_ticks_faster(t, chunk, PhysicsTicks.FASTER, note, TIME_SCALE)
 		ticked += chunk
 	return settled[0]
 

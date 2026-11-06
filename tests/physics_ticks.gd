@@ -33,6 +33,9 @@ static func pass_ticks(t, ticks: int, each := Callable(), scale := 1.0) -> void:
 	Engine.max_physics_steps_per_frame = steps
 	Engine.time_scale = clock
 
+## The factor the suites whose waits are not CPU-bound pass to `pass_ticks_faster()`.
+const FASTER := 8
+
 ## Lets `ticks` physics ticks pass as `pass_ticks()` does, at `factor` times the engine's rate:
 ## `Engine.physics_ticks_per_second` and `Engine.time_scale` both multiplied by `factor`, so every
 ## tick still steps the game by the same `1 / physics_ticks_per_second` seconds (a tick's delta is
