@@ -6,8 +6,8 @@ extends RefCounted
 ## region is read out of `AtlasLibrary.page_image()` with `Image.get_region()`, which is the same
 ## rectangle `AtlasLibrary.region()` hands a draw call.
 ##
-## Every sweep below is over `AtlasTable.baked().region_names()` and carries a count with it, because a
-## sweep that silently finds nothing is the way this file has failed before: its predecessor walked
+## Every sweep below is over every region the bake wrote (`tests/baked_regions.gd`) and carries a
+## count with it, because a sweep that silently finds nothing is the way this file has failed before: its predecessor walked
 ## `event_instance.gd`'s constants for `Texture2D`s, and passed vacuously on an empty map the day
 ## those constants became region names.
 ##
@@ -24,6 +24,7 @@ extends RefCounted
 ##
 ## The rest are about *placement and coverage* and hold for either bake.
 
+const BakedRegions := preload("res://tests/baked_regions.gd")
 ## How far a picture's visible centre may sit from the anchor its caller draws it on.
 const ANCHOR_TOLERANCE := 1.5
 ## The ground components' own canvas — `GroundLayers.TILE_SIZE`, restated as the number this file
@@ -82,7 +83,7 @@ func run(t) -> void:
 ## between a pram's wheels, are what stop a figure reading as a filled block.
 func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 	var checked := 0
-	for name: StringName in AtlasTable.baked().region_names():
+	for name: StringName in BakedRegions.names():
 		if not String(name).begins_with("rig/"):
 			continue
 		var image := _region_image(name)
@@ -116,7 +117,7 @@ func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 func _test_ground_tiles_cover_their_cell(t) -> void:
 	var checked := 0
 	var holed: Array[String] = []
-	for name: StringName in AtlasTable.baked().region_names():
+	for name: StringName in BakedRegions.names():
 		var text := String(name)
 		if not text.begins_with("tiles/") or text.begins_with("tiles/layers/"):
 			continue
@@ -148,7 +149,7 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 func _test_ground_components_keep_their_canvas(t) -> void:
 	var checked := 0
 	var bases := 0
-	for name: StringName in AtlasTable.baked().region_names():
+	for name: StringName in BakedRegions.names():
 		var text := String(name)
 		if not text.begins_with("tiles/layers/"):
 			continue
