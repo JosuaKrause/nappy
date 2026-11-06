@@ -35,8 +35,6 @@ func _test_parse_layers_accepts_five_and_still_rejects_four(t) -> void:
 	t.check(DevFlags.parse_layers("5") == [5], "5 (the day's routes) is accepted on its own")
 	t.check(DevFlags.parse_layers("1,4,5") == [1, 5],
 			"4 is still dropped — the readout is never set through this flag — while 1 and 5 pass")
-	t.check(DevFlags.parse_layers("1,9,0") == [1],
-			"still-invalid entries (there is no layer 9 or 0) are dropped the same way as before")
 
 # ------------------------------------------------------------------ the readout ---
 

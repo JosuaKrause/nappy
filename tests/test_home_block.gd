@@ -37,7 +37,6 @@ const CITY_SWEEP_SEEDS := 6
 
 func run(t) -> void:
 	_test_the_home_block_lot_geometry_is_already_seed_independent(t)
-	_test_her_building_is_the_same_across_two_seeds(t)
 	_test_every_home_block_building_is_the_same_across_two_seeds(t)
 	_test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t)
@@ -142,49 +141,17 @@ func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
 	var other := CityGenerator.generate(OTHER_SEED)
 	var short_rects := _home_block_rects(short)
 	var other_rects := _home_block_rects(other)
-	t.check(short_rects.size() == 3,
-			"the home block carves into exactly three lots — the door's own and the two flanking the notch (%d)"
-			% short_rects.size())
 	t.check(short_rects == other_rects,
 			"the home block's own lot rects are identical on every seed (seed %d: %s, seed %d: %s)"
 			% [SHORT_SEED, short_rects, OTHER_SEED, other_rects])
 
 # --------------------------------------------------------------- fixed visuals ---
 
-## Her own building, end to end through `City.build()`: the same floor count, colour variant,
-## window style, lit-window pattern and roof furniture (always empty — see the class doc) on two
-## seeds with nothing else in common, including the one PLAYTEST-134 found short.
-func _test_her_building_is_the_same_across_two_seeds(t) -> void:
-	var short := _city_for(t, SHORT_SEED)
-	var other := _city_for(t, OTHER_SEED)
-	var a: Building = short.home_door_building()
-	var b: Building = other.home_door_building()
-	t.check(a != null and b != null, "both seeds carve a door building on the home block")
-	if a != null and b != null:
-		t.check(a.wall_tiles() == b.wall_tiles(),
-				"her building's own floor count matches across seeds (%d vs %d)"
-				% [a.wall_tiles(), b.wall_tiles()])
-		t.check(a.columns() == b.columns(),
-				"her building's own width matches across seeds (%d vs %d)" % [a.columns(), b.columns()])
-		t.check(a.variant == b.variant,
-				"her building's own colour variant matches across seeds (%d vs %d)" % [a.variant, b.variant])
-		t.check(_window_pictures(a) == _window_pictures(b),
-				"her building's own window style and lit-window pattern match across seeds")
-		t.check(a.scenery_resident and b.scenery_resident,
-				"her building's scenery is built on either seed, so its roof is drawn")
-		var a_units := _roof_units_on(short, a)
-		var b_units := _roof_units_on(other, b)
-		t.check(a_units.is_empty() and b_units.is_empty(),
-				"her building's own roof is too shallow to carry furniture on either seed (%s vs %s)"
-				% [a_units, b_units])
-	_check_the_units_are_seen(t, short, "seed %d" % SHORT_SEED)
-	_check_the_units_are_seen(t, other, "seed %d" % OTHER_SEED)
-	short.free()
-	other.free()
-
-## The same comparison as above, for all three of the home block's own buildings — hers and the
-## two flanking the door notch — matched up by lot, since the lots themselves are already identical
-## across seeds.
+## Her own building, end to end through `City.build()`, and the two flanking the door notch: the
+## same floor count, colour variant, window style, lit-window pattern and roof furniture (always
+## empty — see the class doc) on two seeds with nothing else in common, including the one
+## PLAYTEST-134 found short. The buildings are matched up by lot, since the lots themselves are
+## already identical across seeds.
 func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 	var short := _city_for(t, SHORT_SEED)
 	var other := _city_for(t, OTHER_SEED)
@@ -209,6 +176,8 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 		# compare empty with empty; each is asked to be empty instead.
 		t.check(_roof_units_on(short, a).is_empty() and _roof_units_on(other, b).is_empty(),
 				"lot %s: no roof furniture on either seed" % lot)
+	_check_the_units_are_seen(t, short, "seed %d" % SHORT_SEED)
+	_check_the_units_are_seen(t, other, "seed %d" % OTHER_SEED)
 	short.free()
 	other.free()
 

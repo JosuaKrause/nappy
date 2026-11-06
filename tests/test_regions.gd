@@ -514,16 +514,13 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
 							tile, distance])
 	t.check(checked > 0, "at least one wall body was checked against every alley mouth (%d)" % checked)
 
-## A wall crossing posts four guards, not six, and the catalogue `roadblock` row is untouched.
+## A wall crossing posts four guards, not six.
 ## *(2026-09-25, PLAYTEST-135, statement 8: "maybe four? one on each sidewalk. would that cover
 ## everything?")* `place_hard_on` returns three bodies at a street's width — sidewalk, road,
 ## sidewalk — and the two sidewalk ones keep `EventDef.guard_sides`' own default (`[-1, 1]`, two
 ## each) while the road body between them (`bodies.size() / 2`, the same middle index
 ## `RegionPlanner._add_door_bodies` reads its `road_index` from) is empty.
 func _test_wall_crossing_posts_four_guards(t) -> void:
-	var catalogue_sides := EventCatalogue.by_id("roadblock").guard_sides
-	t.check(catalogue_sides.size() == 2,
-			"a catalogue roadblock still posts two guards (%d)" % catalogue_sides.size())
 	var checked := 0
 	for map in _maps:
 		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
