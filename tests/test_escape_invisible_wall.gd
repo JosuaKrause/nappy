@@ -24,6 +24,7 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const PageLog := preload("res://tests/atlas_page_log.gd")
 ## The save the boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_escape_invisible_wall_scratch.json"
 const SEED := 4216201080
@@ -32,6 +33,7 @@ const DAY := 1
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
 func run(t) -> void:
+	var pages := PageLog.new()
 	var seat := Seat.new(t, func(fresh: RunState) -> void:
 			fresh.start_run(SEED)
 			fresh.header.day = DAY
@@ -41,13 +43,13 @@ func run(t) -> void:
 	var interior := Boot.interior(main)
 	t.check(interior != null, "the boot stands in the building")
 	await Boot.press_continue(t, main)
-	var before := _her_page_counts(Boot.player(main))
+	var before := _her_page_lives(pages, Boot.player(main))
 	if interior:
 		interior.exit_requested.emit()
 	await Boot.press_continue(t, main)
-	var after := _her_page_counts(Boot.player(main))
+	var after := _her_page_lives(pages, Boot.player(main))
 	t.check(after == before,
-			"walking her out into the city leaves her pages' counts as they were (%s, then %s)"
+			"walking her out into the city loads and drops none of her pages (%s, then %s)"
 			% [before, after])
 	var city := Boot.city(main)
 	t.check(city != null and city.is_ancestor_of(Boot.player(main)),
@@ -56,7 +58,7 @@ func run(t) -> void:
 		_test_she_can_walk_north_from_where_the_player_stood(t, main)
 		_test_nothing_but_the_city_stands_on_the_escape_streets(t, main)
 		_test_nothing_of_the_building_is_drawn_in_the_city(t, main)
-	Telemetry.end_run()
+	pages.stop()
 	booted.free_all()
 	seat.end()
 
@@ -143,14 +145,17 @@ func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void
 	t.check(drawn == 0, "none of them is drawn in the city (%d of %d drawn, first %s)"
 			% [drawn, asked, ", ".join(shown)])
 
-## Her three pages' reference counts — the parent's, the stroller's and the `ui` page — in that
-## order. **The walk-out moves her from the building to the city**, out of the tree and back in,
-## and a page taken once but given back on every exit leaves the next boot in the same process
-## reading it from disk outside the loading window.
-static func _her_page_counts(player: Stroller) -> Array[int]:
-	return [player.atlas.reference_count(Stroller.parent_atlas(player.is_male)),
-			player.atlas.reference_count(Stroller.STROLLER_ATLAS),
-			player.atlas.reference_count(Stroller.INDICATOR_ATLAS)]
+## What the run log says of her three pages — the parent's, the stroller's and the `ui` page — in
+## that order, each as its loads and its releases so far. **The walk-out moves her from the building
+## to the city**, out of the tree and back in, and a page given back on every exit leaves the next
+## boot in the same process reading it from disk outside the loading window: the page's lines show a
+## release and a second load.
+static func _her_page_lives(pages: PageLog, player: Stroller) -> Array[Vector2i]:
+	var lives: Array[Vector2i] = []
+	for group: StringName in [Stroller.parent_atlas(player.is_male), Stroller.STROLLER_ATLAS,
+			Stroller.INDICATOR_ATLAS]:
+		lives.append(Vector2i(pages.loads(group), pages.releases(group)))
+	return lives
 
 ## `body`'s path below `main`, so a failure names the subtree the body belongs to.
 static func _owner_path(main: Node, body: Object) -> String:
