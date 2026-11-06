@@ -353,7 +353,7 @@ func _spine_traffic(t) -> Vector2:
 			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
 				totals.stopped += 1
 		return false
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(40.0, 1.0), sample)
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), PhysicsTicks.FASTER, sample)
 	_city.crowd.use_player(null)
 	her.free()
 	_sampled_cars = totals.samples

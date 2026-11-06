@@ -25,7 +25,13 @@ separate session that has none of this context.
 **On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
 Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
 rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or
-a review verdict updates the Running table in the same turn. **Both tabs are read**, since the
+a review verdict is not written to the Running table at once: the board is the player's information
+and the channel they answer on, so it is updated in batches, and the orchestrator's own temporary
+working state is kept in the local restart prompt (**session-cleanup**, step 8), which a fresh session
+can recover from. The player usually asks for the current state before looking at the board
+(inbox #986 in brisk-pelican). *Proposed, not asked for, open to the player's correction:* a batch is
+whenever the orchestrator next writes the board for the player: a question, an answer, or the player
+asking for the state. **Both tabs are read**, since the
 player answers review items on the Review tab and design questions on the Main tab.
 
 ## The layout
@@ -109,12 +115,13 @@ answer differs.
 
 A question is settled when the player's answer leaves nothing open. Its Me line then begins
 "settled:" and says what will be built, and the question moves under `## Settled`. A Running row
-moves to Recently done when its pull request merges, apart from a filing's (below).
+moves to Recently done when its pull request merges, apart from a filing's (below), at the next
+batch (**When it is read**).
 
 **An item that is fully filed leaves the board whole, with no record of it kept there**
 (inbox #877 in minty-dolphin): once the filing pull request carrying its inbox note merges, its settled question,
-its mention in the Running row of notes waiting to be filed, and any line about the filing go in the
-same turn, and no Recently done row or "filed" note stands in for them. The queue and the records
+its mention in the Running row of notes waiting to be filed, and any line about the filing go at the
+next batch, and no Recently done row or "filed" note stands in for them. The queue and the records
 hold it from then on, and the board holds open things only.
 
 ## Keeping it cheap

@@ -116,8 +116,8 @@ func _teardown() -> void:
 ## Lets whole physics frames pass with the baby in the tree: its own `_physics_process()` runs her
 ## meters, one fixed step per frame (the project's own physics rate, `Engine.physics_ticks_per_second`).
 func _simulate(seconds: float) -> void:
-	for i in maxi(1, int(round(seconds * Engine.physics_ticks_per_second))):
-		await _baby.get_tree().physics_frame
+	await PhysicsTicks.pass_ticks_faster(_baby, maxi(1, int(round(seconds * Engine.physics_ticks_per_second))),
+			PhysicsTicks.FASTER)
 
 ## A long stretch of real physics frames in a fraction of the wall time: the engine hands each
 ## frame `1 / Engine.physics_ticks_per_second * Engine.time_scale` seconds, so the clock is sped

@@ -94,17 +94,19 @@ func _walk_the_day(t, seed_value: int) -> void:
 	var last := {}
 	var counts := {"wrong": 0, "by_kind": {}, "turns": 0, "recycled": 0, "came": 0, "officers": 0, "ticks": 0}
 	_bumps = 0
+	# Her step is read at the project's own rate, here, before the ticks come faster.
+	var step := Tuning.WALK_SPEED * SCALE / Engine.physics_ticks_per_second
 	var ticks := PhysicsTicks.ticks_for(BEFORE_THE_SWING + AFTER_THE_SWING, SCALE)
 	var swing_tick := PhysicsTicks.ticks_for(BEFORE_THE_SWING, SCALE)
 	# At dawn, before any mover has stepped: each joined where it stands.
 	_check_the_tick(t, main, seed_value, -1, counts, seen, last)
-	_before_the_tick(t, main, seed_value, 0, swing_tick, swing, counts, seen, last)
+	_before_the_tick(t, main, seed_value, 0, swing_tick, swing, step, counts, seen, last)
 	var after_each := func(ran: int) -> void:
 		counts["ticks"] += 1
 		_check_the_tick(t, main, seed_value, ran - 1, counts, seen, last)
 		if ran < ticks:
-			_before_the_tick(t, main, seed_value, ran, swing_tick, swing, counts, seen, last)
-	await PhysicsTicks.pass_ticks(t, ticks, after_each, SCALE)
+			_before_the_tick(t, main, seed_value, ran, swing_tick, swing, step, counts, seen, last)
+	await PhysicsTicks.pass_ticks_faster(t, ticks, PhysicsTicks.FASTER, after_each, SCALE)
 	t.check(day.is_running(), "seed %d: the day still runs at the walk's end" % seed_value)
 	t.check(counts["wrong"] == 0, "seed %d: every live mover's move stands at its pose at the end "
 			% seed_value + "of every one of %d ticks (%d wrong: %s)"
@@ -125,7 +127,7 @@ func _walk_the_day(t, seed_value: int) -> void:
 ## What happens to her before the physics tick `tick` runs: the walk toward the swing, stood against
 ## a walker now and then, and the swing touched when the tick comes.
 func _before_the_tick(t, main: Node2D, seed_value: int, tick: int, swing_tick: int,
-		swing: Vector2, counts: Dictionary, seen: Dictionary, last: Dictionary) -> void:
+		swing: Vector2, step: float, counts: Dictionary, seen: Dictionary, last: Dictionary) -> void:
 	var player := Boot.player(main)
 	if tick == swing_tick:
 		t.check(Boot.day(main).is_running(), "seed %d: the day still runs when the swing is touched"
@@ -140,8 +142,7 @@ func _before_the_tick(t, main: Node2D, seed_value: int, tick: int, swing_tick: i
 		_stand_against_a_walker(main)
 	else:
 		var here: Vector2 = player.global_position
-		player.global_position = here.move_toward(swing, Tuning.WALK_SPEED * SCALE
-				/ Engine.physics_ticks_per_second)
+		player.global_position = here.move_toward(swing, step)
 
 ## Stands her a few pixels off the nearest walker, inside his bump radius, so his bump pushes him.
 func _stand_against_a_walker(main: Node2D) -> void:
