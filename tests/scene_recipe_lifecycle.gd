@@ -102,7 +102,7 @@ func _scripted_boot(t, path: String, label: String) -> Dictionary:
 	var booted := await _boot(t, path, "scripted", home, reloads)
 	var recipe := scene_of(booted.main)
 	var initial := _start_of(t, booted, run, recipe, label)
-	t.check(recipe != null and recipe.scripted and not recipe.manifest.get("setup_failed", false),
+	t.check(recipe != null and recipe.plays_by_script() and not recipe.manifest.get("setup_failed", false),
 			"%s boots real scripted Main" % label)
 	booted.free_all()
 	home.free()
@@ -169,7 +169,7 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	var player := Boot.player(main)
 	var city := Boot.city(main) if Boot.interior(main) == null else null
 	var initial := _start_of(t, booted, run, recipe, label)
-	t.check(not initial.is_empty() and player != null and not recipe.scripted,
+	t.check(not initial.is_empty() and player != null and not recipe.plays_by_script(),
 			"%s boots and completes real free-play lifecycle" % label)
 	if initial.is_empty() or player == null:
 		booted.free_all()
@@ -184,7 +184,7 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 	await PhysicsTicks.pass_ticks(t, 3)
 	var rig_lock := main.get_node_or_null("RigLock") as RigLock
 	t.check(recipe.tick > counted and not recipe.manifest.get("playback_complete", false)
-			and (rig_lock == null or not rig_lock.has_a_deadline()),
+			and (rig_lock == null or not rig_lock.locked_out),
 			"%s free play has no capture deadline" % label)
 	var start := player.global_position
 	var direction := Vector2.ZERO

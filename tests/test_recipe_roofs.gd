@@ -8,6 +8,10 @@ extends RefCounted
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
+const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
+
+## Where each recipe is written and loaded, and what loading it answers.
+var _errors := RecipeErrors.new()
 
 func run(t) -> void:
 	_test_authored_fixtures_replace_the_roll(t)
@@ -50,7 +54,7 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 		if entry.texture == Building.DUCT_RUN:
 			t.check(entry.span == 1 and entry.links in [3, 9],
 					"public duct names become supported horizontal spans and an elbow")
-	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"roof_fixtures": [
+	t.check(_errors.errors_of(t, {"setup": {"roof_fixtures": [
 		{"lot": [1, 2, 8, 8], "fixtures": fixtures}]}}).is_empty(),
 			"saved public duct names pass the runtime schema before production placement")
 	building.set_scenery_resident(false)
@@ -77,7 +81,7 @@ func _displayed_reservations(t) -> void:
 		[GameEnums.BlockPurpose.INDUSTRIAL, "pipe_manifold"]]:
 		var building := _roof(t, Vector2(256, 256), 64, fixture[0])
 		var valid := [{"cell": [5, 1], "kind": fixture[1]}]
-		t.check(SceneRecipeRuntime.validate_runtime({"setup": {"roof_fixtures": [
+		t.check(_errors.errors_of(t, {"setup": {"roof_fixtures": [
 			{"lot": [1, 2, 8, 8], "fixtures": valid}]}}).is_empty(),
 				"current production fixtures pass the public recipe schema")
 		t.check(building.author_roof_furniture(valid).is_empty(),
@@ -124,9 +128,9 @@ func _test_malformed_recipes_fail_before_construction(t) -> void:
 	for roof in [true, [{"lot": [1, 2], "fixtures": []}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1.5, 2], "kind": "vent"}]}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": "unknown"}]}]]:
-		t.check(not SceneRecipeRuntime.validate_runtime({"setup": {"roof_fixtures": roof}}).is_empty(),
+		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": roof}}).is_empty(),
 				"malformed roof recipes fail before runtime construction")
 	for kind in ["duct_run", "_unused_duct_corner"]:
-		t.check(not SceneRecipeRuntime.validate_runtime({"setup": {"roof_fixtures": [
+		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": [
 			{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": kind}]}]}}).is_empty(),
 				"internal duct enum values are not leaked into the public recipe schema")

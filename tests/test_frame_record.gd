@@ -145,11 +145,11 @@ func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
 	t.check(first[FrameLedger.FIRST_BUCKET + FrameRecord.DRAW] == 1500
 			and first[FrameLedger.FIRST_BUCKET + FrameRecord.RENDER] == 3500,
 			"draw runs to the pre-draw callback and render from it to the post-draw one")
-	t.check(first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 2
-			and first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_HALOS] == 1
+	t.check(first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 2
+			and first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.HALOS] == 1
 			and first[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD] == 0,
 			"_draw() calls are counted by kind")
-	t.check(second[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 0
+	t.check(second[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 0
 			and second[FrameLedger.FIRST_BUCKET + FrameRecord.RENDER] == 0,
 			"the next frame starts at zero, and a frame with no renderer has no render")
 
@@ -310,17 +310,17 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	marker.draw.emit()
 	var drawn := _row_so_far(ledger)
 	var counters := FrameLedger.FIRST_COUNTER
-	t.check(drawn[counters + FrameLedger.DRAWS_SCENERY] == 2 and drawn[counters + FrameLedger.DRAWS_OTHER] == 1
-			and drawn[counters + FrameLedger.DRAWS_PLAYER] == 0,
+	t.check(drawn[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 2 and drawn[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.OTHER] == 1
+			and drawn[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.PLAYER] == 0,
 			"a prop and a tagged canvas count as scenery, a marker as other, a label as nothing")
 	t.remove_child(prop)
 	t.add_child(prop)
 	prop.draw.emit()
-	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_SCENERY] == 1,
+	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 1,
 			"a node that re-enters the tree is counted once")
 	record.on = false
 	prop.draw.emit()
-	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_SCENERY] == 0,
+	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 0,
 			"a record that is off counts nothing")
 	record.on = true
 	# Each node of a counted class lands on the counter of its kind when it draws; one that is
@@ -465,7 +465,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var drawn_in := _rows_over(restarted, await _frames_counted(t, restarted, 3))
 	var drew_her := false
 	for row in drawn_in:
-		drew_her = drew_her or row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_PLAYER] >= 1
+		drew_her = drew_her or row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.PLAYER] >= 1
 	t.check(drew_her and drawn_in.size() >= 2,
 			"her stroller's drawn frame is counted by the recorder's listening")
 	var end := recorder.get_node("ProcessEnd")

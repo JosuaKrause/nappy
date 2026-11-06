@@ -78,9 +78,9 @@ static func _label(label_name: String, text: String, size: int, outline: int, co
 
 func _process(delta: float) -> void:
 	_elapsed += delta
-	_root.modulate.a = opacity_at(_elapsed)
+	_root.modulate.a = _opacity_at(_elapsed)
 
 ## How visible the text is `elapsed` seconds into the shot: nothing until `DELAY_SECONDS`, then a
 ## linear rise to full over `FADE_SECONDS`, then full.
-static func opacity_at(elapsed: float) -> float:
+static func _opacity_at(elapsed: float) -> float:
 	return clampf((elapsed - DELAY_SECONDS) / FADE_SECONDS, 0.0, 1.0)

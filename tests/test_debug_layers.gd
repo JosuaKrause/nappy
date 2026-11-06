@@ -1,7 +1,7 @@
 extends RefCounted
 ## `DebugLayers` (M104, "the debug view") and the two pieces of it that sit outside that one class:
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
-## `DevFlags.parse_layers()`, the `--layers`/`?layers=` parsing.
+## `_layers()`, the `--layers`/`?layers=` parsing.
 ##
 ## The tree-presence and key-toggle tests build a `DebugReadout` the way `tests/test_main.gd` does
 ## for the readout — on its own, handed a `RunConfig`, a label and the run's header — because
@@ -131,19 +131,24 @@ func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
 			"the boundary's own rear edge sits closer than 'level' behind the emitter — the "
 			+ "eccentricity actually pulled the field in")
 
-# ------------------------------------------------------------------ DevFlags.parse_layers ---
+# ------------------------------------------------------------------ --layers ---
+
+## The layers a debug build given `--layers raw` starts on.
+func _layers(raw: String) -> Array[int]:
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+
 
 func _test_parse_layers_reads_a_comma_list(t) -> void:
-	var result := DevFlags.parse_layers("1,3")
+	var result := _layers("1,3")
 	t.check(result == [1, 3], "the two named layers, in the order given")
-	t.check(DevFlags.parse_layers("") == [], "an empty value asks for nothing")
+	t.check(_layers("") == [], "an empty value asks for nothing")
 
 func _test_parse_layers_drops_malformed_entries_without_crashing(t) -> void:
-	t.check(DevFlags.parse_layers("1,x,2") == [1, 2],
+	t.check(_layers("1,x,2") == [1, 2],
 			"a non-numeric entry is dropped, not a crash or an empty result")
-	t.check(DevFlags.parse_layers("1,9,0") == [1],
+	t.check(_layers("1,9,0") == [1],
 			"an out-of-range entry (there is no layer 9 or 0 to set) is dropped the same way")
-	t.check(DevFlags.parse_layers("2,2") == [2], "a repeated entry is not added twice")
+	t.check(_layers("2,2") == [2], "a repeated entry is not added twice")
 
 func _test_apply_initial_state_sets_only_the_listed_layers(t) -> void:
 	var layers := DebugLayers.new()

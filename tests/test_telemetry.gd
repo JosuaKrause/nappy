@@ -40,13 +40,13 @@ class Rig extends RefCounted:
 	var tree: SceneTree
 	var elapsed := 0.0
 
-	func _init(parent: Node, map: WorldMap = null, a_city: City = null) -> void:
+	func _init(parent: Node, map: WorldMap = null, a_city: City = null, spikes := false) -> void:
 		tree = parent.get_tree()
 		city = a_city
 		if city != null:
-			observer.setup(city.run, city, player, baby, clock, null, false)
+			observer.setup(city.run, city, player, baby, clock, null, spikes)
 		else:
-			observer.setup_escape(player, baby, clock, false)
+			observer.setup_escape(player, baby, clock, spikes)
 			if map != null:
 				observer.watch_building(map, null)
 		parent.add_child(observer)
@@ -73,7 +73,6 @@ func run(t) -> void:
 	_test_a_day_header_opens_a_day(t)
 	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
 	await _test_the_escape_is_in_the_run_log_as_a_day_is(t)
-	_test_the_escape_observer_is_handed_the_spikes_flag(t)
 	_test_a_retried_section_restarts_its_snapshot_schedule(t)
 	await _test_a_stuck_player_is_logged_once(t)
 	await _test_a_free_walk_is_never_logged_as_blocked(t)
@@ -954,11 +953,22 @@ func _test_the_map_picture_draws_the_corridor(t) -> void:
 	t.check(elsewhere == 0, "and no cell off the tree is marked (%d of %d were)"
 			% [elsewhere, checked])
 
+## The colour the legend gives a role, read off its public marks and not off the drawing's own code.
+func _mark_of(role: GameEnums.BlockerRole) -> Color:
+	match role:
+		GameEnums.BlockerRole.WALL:
+			return TelemetryMap.WALL_MARK
+		GameEnums.BlockerRole.FRICTION:
+			return TelemetryMap.FRICTION_MARK
+		GameEnums.BlockerRole.SET_PIECE:
+			return TelemetryMap.SET_PIECE_MARK
+	return TelemetryMap.NO_ROLE_MARK
+
 ## What the day placed, carrying what it is. *(M50, and this is the picture the milestone is
 ## checked against rather than a decoration on one.)*
 ##
 ## The thing being asserted is that the **legend is the drawing**: a picture whose colours have
-## drifted from `role_mark` is worse than no picture, because it answers the one question the
+## drifted from the legend's marks (`TelemetryMap.WALL_MARK` and the rest) is worse than no picture, because it answers the one question the
 ## milestone can get badly wrong — *is that wall on the corridor or beside it* — confidently and
 ## wrongly. Two days rather than one because the vocabulary has four roles and no single day places
 ## in all of them: day 9 has walls and friction and no one-shot, day 3 is the day the fire is on her
@@ -995,7 +1005,7 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 				roles[plan.role] = true
 		var seen := _colours_in(drawn)
 		for role: GameEnums.BlockerRole in placed:
-			t.check(seen.has(TelemetryMap.role_mark(role)),
+			t.check(seen.has(_mark_of(role)),
 					"and every role day %d placed in is in the picture (%s is not)"
 					% [day, GameEnums.BlockerRole.keys()[role]])
 		if day == 9:
@@ -1051,7 +1061,7 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		var only: Array[EventScheduler.Planned] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
 		var at := map.world_to_tile(plan.position)
-		var colour := TelemetryMap.role_mark(plan.role)
+		var colour := _mark_of(plan.role)
 		t.check(_tile_colour(image, at) == colour,
 				"%s is marked on the tile the day put it on" % plan.def.id)
 		t.check(_tile_colour(image, at + Vector2i(1, 0)) == colour, "and reaches a tile across")
@@ -1150,9 +1160,9 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	Telemetry.begin_day(1, 1, 1, 1, 180.0)
 	var log := Telemetry.current_log()
 	var before := log.lines.size()
-	for i in Telemetry.SHOTS_PER_DAY * 2 + 1:
+	for i in TelemetryShots.PER_DAY * 2 + 1:
 		Telemetry.snapshot_now("press %d" % i)
-	t.check(log.lines.size() - before == Telemetry.SHOTS_PER_DAY * 2 + 1,
+	t.check(log.lines.size() - before == TelemetryShots.PER_DAY * 2 + 1,
 			"every press writes its line, well past the heuristic's own daily cap")
 	t.check(log.lines[log.lines.size() - 1].contains("shot"),
 			"and the line is a shot entry")
@@ -1406,23 +1416,6 @@ func _test_reads_the_url_only_when_debug_and_web(t) -> void:
 # frame — no new per-frame hook on a gameplay class, the **telemetry** rule's own "the observer
 # reads state".)*
 
-## `--spikes` reaches the escape's observer as it reaches a day's: the flag is a parameter of both
-## setups, so a builder cannot leave it out.
-func _test_the_escape_observer_is_handed_the_spikes_flag(t) -> void:
-	var player := Stroller.new()
-	var baby := Baby.new()
-	var clock := DayController.new()
-	var on := TelemetryObserver.new()
-	on.setup_escape(player, baby, clock, RunConfig.parse(PackedStringArray(["--spikes"]), "", true)
-			.spikes_requested)
-	var off := TelemetryObserver.new()
-	off.setup_escape(player, baby, clock, RunConfig.parse(PackedStringArray(), "", true)
-			.spikes_requested)
-	t.check(on.spikes_on and not off.spikes_on,
-			"the escape's observer watches for spikes exactly when --spikes was given")
-	for node in [on, off, player, baby, clock]:
-		node.free()
-
 ## A frame watch writing into lines of the test's own, as the observer's writes into the run log
 ## (`TelemetryObserver` hands its `FrameWatch` the log's `note`), and fed a series of frame lengths
 ## the way the observer hands it each frame's: a frame's length is the one thing a real frame cannot
@@ -1516,9 +1509,8 @@ func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
 	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(9001))
-	var rig := Rig.new(t, null, city)
+	var rig := Rig.new(t, null, city, true)
 	rig.player.global_position = city.map.home_world_position()
-	rig.observer.spikes_on = true
 	Telemetry.begin_memory_log()
 	Telemetry.begin_day(1, 1, 1, 1, Rig.LENGTH)
 	var scale := Engine.time_scale

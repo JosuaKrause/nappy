@@ -602,6 +602,17 @@ func _test_starting_a_day_resets_the_package_flag(t) -> void:
 # stops shouting and walks off screen, the same departure `EventInstance._be_done()` gives any
 # finished event. `EventInstance.leave_for_a_completed_task()` is the wrapper the director calls.
 
+## The nearest open tile centre to `near` (within twelve tiles), or the home's position when none is.
+func _open_ground_near(near: Vector2) -> Vector2:
+	var start := _city.map.world_to_tile(near)
+	for radius in 12:
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				var tile := start + Vector2i(dx, dy)
+				if _city.map.is_walkable(tile):
+					return _city.map.tile_to_world(tile)
+	return _city.map.home_world_position()
+
 ## The look-alike she never reached is a second live `homeless_yeller`, spawned directly rather
 ## than waiting for the scheduler to place one, so the test does not depend on the seed placing a
 ## second one that day. It stands on the open tile nearest 600px east of the rider, never inside
@@ -619,7 +630,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 	t.check(rider != null and not rider.is_leaving, "the seeded rider is shouting, not leaving")
 
 	var decoy := _city.events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
-			DevRig.nearest_walkable(_city.map, rider.global_position + Vector2(600.0, 0.0)))
+			_open_ground_near(rider.global_position + Vector2(600.0, 0.0)))
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(decoy.global_position))
 			and decoy.global_position.distance_to(rider.global_position) > 400.0,
 			"the look-alike stands on open ground, well away from the one she reached")

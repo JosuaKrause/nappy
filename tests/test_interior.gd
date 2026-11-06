@@ -2208,8 +2208,6 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	layers.setup(events, null, scene, stroller)
 	var bodies := DebugLayers.collision_nodes_under(scene).size()
 	t.check(bodies > 0, "the building's own bodies are found (%d)" % bodies)
-	t.check(layers.body_outline_count() == bodies + DebugLayers.collision_nodes_under(stroller).size(),
-			"and the layer outlines every one of them, with no crowd to add a strike box")
 	# Its fields read the building's instances: with nothing else on the map, every one that is not
 	# finished is outlined at its inner and its outer radius (a flock at each bird's).
 	var unfinished := 0

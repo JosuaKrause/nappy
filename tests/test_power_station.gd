@@ -393,7 +393,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	ledger.process_end(Time.get_ticks_usec())
 	ledger.process_start(Time.get_ticks_usec())
 	var rows := ledger.rows()
-	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_SCENERY] == 1,
+	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 1,
 			"a yard layer built into a listening tree is counted as scenery")
 	station.free()
 	recorder.free()

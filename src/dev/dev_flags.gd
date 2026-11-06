@@ -434,13 +434,13 @@ func ground_mode() -> int:
 static func _ground_mode_for(args: PackedStringArray, query: String, flags_open: bool) -> int:
 	var index := args.find("--ground-mode")
 	if index != -1 and index + 1 < args.size():
-		return parse_ground_mode(args[index + 1])
+		return _parse_ground_mode(args[index + 1])
 	if not flags_open:
 		return GROUND_MODE_DEFAULT
 	for parameter in query.trim_prefix("?").split("&"):
 		var pair := parameter.split("=", true, 1)
 		if pair.size() == 2 and pair[0] == "groundmode":
-			return parse_ground_mode(pair[1])
+			return _parse_ground_mode(pair[1])
 	return GROUND_MODE_DEFAULT
 
 const GROUND_MODE_DEFAULT := 2
@@ -448,7 +448,7 @@ const GROUND_MODE_DEFAULT := 2
 ## The bare parsing of a `--ground-mode`/`?groundmode=` value. Anything but `1`, `2` or `3` refuses
 ## the whole flag with `push_warning` and answers the default: a measurement of a mode nobody asked
 ## for that said nothing about it would compare the wrong thing.
-static func parse_ground_mode(raw: String) -> int:
+static func _parse_ground_mode(raw: String) -> int:
 	if raw in ["1", "2", "3"]:
 		return int(raw)
 	push_warning("--ground-mode: '%s' is not 1, 2 or 3, ignoring the flag" % raw)
@@ -576,15 +576,15 @@ func layers_override() -> Array[int]:
 	var args := active_args()
 	var index := args.find("--layers")
 	if index != -1 and index + 1 < args.size():
-		return parse_layers(args[index + 1])
+		return _parse_layers(args[index + 1])
 	if not live_debug_requested():
 		return []
-	return parse_layers(_layers_from_query(_query))
+	return _parse_layers(_layers_from_query(_query))
 
 ## The bare parsing of a `--layers`/`?layers=` value into layer indices. A malformed entry (not a
 ## number, or outside the valid indices, `4` included) is dropped with a warning rather than
 ## failing the whole flag: a rig's one typo should not turn off the layers it did ask for.
-static func parse_layers(raw: String) -> Array[int]:
+static func _parse_layers(raw: String) -> Array[int]:
 	var result: Array[int] = []
 	if raw == "":
 		return result
@@ -769,7 +769,7 @@ func parent_override() -> String:
 	var index := args.find("--parent")
 	if index == -1 or index + 1 >= args.size():
 		return ""
-	return parse_parent(args[index + 1])
+	return _parse_parent(args[index + 1])
 
 ## `--hard`: the fresh run begins in hard mode, and the title's Hard Mode checkbox opens checked.
 func hard_mode_requested() -> bool:
@@ -794,7 +794,7 @@ static func parse_nerves(raw: String) -> int:
 	return 0
 
 ## The bare parsing of a `--parent` value.
-static func parse_parent(raw: String) -> String:
+static func _parse_parent(raw: String) -> String:
 	if raw in ["mother", "father"]:
 		return raw
 	push_warning("--parent: '%s' is neither mother nor father, ignoring the flag" % raw)
