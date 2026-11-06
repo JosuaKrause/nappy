@@ -1,4 +1,4 @@
-# minty-quail — The resistance director's, the happenings' and the contact points' members only their own class used become internal, five placement queries kept · 2026-11-06
+# minty-quail — The resistance director's, the happenings' and the contact points' members only their own class used become internal, five placement queries left to convert · 2026-11-06
 
 
 minty-quail's `tests-own-class-members.md`, the underscore pass, for the resistance director, the
