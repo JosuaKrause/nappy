@@ -23,11 +23,16 @@ const SEED := 4242
 ## rather than null, the same reason `tests/test_dev_rig.gd` picks it for `--spawn contact`.
 const DAY := 6
 ## The seed of the run each city stands in. Which ground the rig's targets resolve to depends on it.
-## The checks hold on the seeds tried besides it (1, 3 and 5) but for the two plan-past-the-van
-## checks in `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van`, which fail on
-## seed 2: those two are the seed-bound ones, and why the plan crosses a body's clearance there is
-## not known.
+## The checks hold on the other seeds tried (1 to 12). On `PINCHED_RUN_SEEDS` a second stationary
+## body stands beside the first kerb site the clearance test would park a van at and shuts the
+## carriageway's second lane and the far sidewalk, so no plan can go round the van and crossing a
+## tile of its clearance is right; `_site_is_quiet()` keeps the site off such ground, and
+## `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van` runs on those seeds too.
 const RUN_SEED := 4
+## The run seeds whose day-6 events put a second body beside the first kerb site.
+const PINCHED_RUN_SEEDS := [2, 9]
+## How far from a kerb site, in tiles, no other event may stand (`_site_is_quiet()`).
+const QUIET_SITE_TILES := 8
 ## How much faster than real time a test's stretch of real physics frames runs: the engine hands
 ## each tick `Engine.time_scale` times its ordinary length, so the rig's half-second checks and
 ## three-second waits pass in a quarter of the wall time (`_real_frames()`).
@@ -49,6 +54,8 @@ func run(t) -> void:
 	_test_a_straight_run_onto_a_crossing_is_cut(t)
 	_test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t)
 	_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t)
+	for pinched: int in PINCHED_RUN_SEEDS:
+		_test_clearance_holds_on_a_run_that_pinches_the_far_sidewalk(t, pinched)
 	_test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t)
 	_test_a_replan_keeps_off_the_ground_round_what_caught_her(t)
 	_test_unstick_tries_the_direction_away_from_what_caught_her_first(t)
@@ -99,9 +106,10 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 ## for every ordinary day, `Tuning.RESISTANCE_GOAL` for the last night's finale, which needs
 ## `RunState.sabotage_available()` to hold before the step is on offer at all. `her` hands the
 ## director and the events her (`use_player()`), as `main` does. Freed by `_free_fixture()`.
-func _build_fixture(t, day: int, progress_at_dawn := 0, her := true) -> Dictionary:
+func _build_fixture(t, day: int, progress_at_dawn := 0, her := true,
+		run_seed := RUN_SEED) -> Dictionary:
 	var run := RunState.new()
-	run.start_run(RUN_SEED)
+	run.start_run(run_seed)
 	run.resistance.progress = progress_at_dawn
 	var city: City = CITY_SCENE.instantiate()
 	city.run = run
@@ -452,7 +460,8 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t) ->
 ## front, and the same on the three tiles either side along the street — the site a `delivery_van`
 ## (`pavement_side = AT_THE_KERB`) is parked on — far enough from the doorstep that nothing this
 ## suite walks passes it, and with no body's clearance already reaching its frontage tile.
-## Scanned rather than hard-coded, like `_find_tile()`. Answers `Vector2i(-1, -1)` if none.
+## Quiet (`_site_is_quiet()`). Scanned rather than hard-coded, like `_find_tile()`. Answers
+## `Vector2i(-1, -1)` if none.
 func _find_kerb_site(t, planner: RouteRigPlanner) -> Vector2i:
 	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())
 	var clear := planner.body_clear_tiles()
@@ -464,11 +473,22 @@ func _find_kerb_site(t, planner: RouteRigPlanner) -> Vector2i:
 			var inward := _city.map.pavement_inward(kerb)
 			if inward == Vector2i.ZERO:
 				continue
-			if _kerb_site_fits(kerb, inward, clear):
+			if _kerb_site_fits(kerb, inward, clear) and _site_is_quiet(kerb):
 				return kerb
 	t.check(false, "seed %d day %d has a clear kerb with a two-lane pavement to park a van at"
 			% [SEED, DAY])
 	return Vector2i(-1, -1)
+
+## Whether no event stands within `QUIET_SITE_TILES` of `kerb`. The way past a kerbed van is the
+## carriageway's second lane or the far sidewalk, and a second body near the site (a hazard's ring
+## or a seal, which `_kerb_site_fits` cannot see in the tile record) can shut both, leaving a plan
+## no way round the van's clearance: crossing a tile of it is then the right answer and not a fault.
+func _site_is_quiet(kerb: Vector2i) -> bool:
+	var at := _city.map.tile_to_world(kerb)
+	for instance: EventInstance in _city.events.instances():
+		if instance.global_position.distance_to(at) < QUIET_SITE_TILES * Tuning.TILE_SIZE:
+			return false
+	return true
 
 func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> bool:
 	var along := Vector2i(inward.y, inward.x)
@@ -491,7 +511,24 @@ func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> boo
 ## lane. `body_clear_tiles()` must keep a plan off both, and off the kerb tiles either side, while
 ## leaving the carriageway's second lane open: that is the way past a van at the kerb.
 func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t) -> void:
-	var planner := _planner()
+	_check_clearance_beside_a_kerbed_van(t, _planner())
+
+## The same checks on a run of the given seed, a fixture of its own.
+func _test_clearance_holds_on_a_run_that_pinches_the_far_sidewalk(t, run_seed: int) -> void:
+	var fixture := _build_fixture(t, DAY, 0, false, run_seed)
+	var saved := [_run, _city, _resistance, _stroller]
+	_run = fixture["run"]
+	_city = fixture["city"]
+	_resistance = fixture["resistance"]
+	_stroller = fixture["stroller"]
+	_check_clearance_beside_a_kerbed_van(t, _planner())
+	_run = saved[0]
+	_city = saved[1]
+	_resistance = saved[2]
+	_stroller = saved[3]
+	_free_fixture(fixture)
+
+func _check_clearance_beside_a_kerbed_van(t, planner: RouteRigPlanner) -> void:
 	var kerb := _find_kerb_site(t, planner)
 	if kerb == Vector2i(-1, -1):
 		return
