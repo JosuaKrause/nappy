@@ -388,19 +388,35 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 			% [differ, compared])
 
 ## A closure's barrier line stands on ground the closure took, so every mover is stopped by the same
-## line that stops her.
+## line that stops her. Read off the solid the city put in the world at each mouth: its collision box,
+## laid down the tiles it covers, is on closed ground.
 func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
 	var map := city.map
 	var lines := 0
+	var stood := 0
 	var outside := 0
 	for closure in city.closures():
 		for mouth in closure.mouth_centres(map):
 			lines += 1
-			for tile in City.barrier_footprint(closure).tiles(mouth):
+			var body := _barrier_body_at(city, mouth)
+			if body == null:
+				continue
+			stood += 1
+			var box := (body.get_child(0) as CollisionShape2D).shape as RectangleShape2D
+			for tile in Footprint.of(GroundShape.rect(box.size * 0.5)).tiles(mouth):
 				if not map.is_closed(tile):
 					outside += 1
 	t.check(lines > 0, "the day has barrier lines to check (%d)" % lines)
+	t.check(stood == lines, "and the city stands a solid at each of them (%d of %d)" % [stood, lines])
 	t.check(outside == 0, "every barrier's tiles are closed ground (%d are not)" % outside)
+
+## The solid body the city stands at `at`, one box, or null.
+func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
+	for body in city.find_children("*", "StaticBody2D", false, false):
+		if (body as StaticBody2D).position.is_equal_approx(at) and body.get_child_count() == 1 \
+				and (body.get_child(0) as CollisionShape2D).shape is RectangleShape2D:
+			return body
+	return null
 
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
 ## and runs clear between, never out of or into a lot; so does the scheduler's own crossing from any

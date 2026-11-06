@@ -249,8 +249,19 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	t.check(city.events.skip_drawing
 			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,
 			"the events")
-	t.check(city.crowd.skip_motion and city.crowd.skip_agent_drawing and city.blackout.forced,
-			"the crowd and the blackout")
+	t.check(city.crowd.skip_motion and city.crowd.skip_agent_drawing, "the crowd")
+	# The blackout counts the city as sabotaged: with her far from the station, the lights go out.
+	var lot := city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	var she := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	she.add_child(camera)
+	t.add_child(she)
+	she.set_physics_process(false)
+	she.global_position = Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0)
+	await PhysicsTicks.pass_ticks(t, 2)
+	she.free()
+	t.check(not city.signals.powered, "and the blackout, which puts the lights out with no sabotage done")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	city.crowd.start_day(1, rng)

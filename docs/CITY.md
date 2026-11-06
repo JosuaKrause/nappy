@@ -1449,7 +1449,7 @@ day's tiles with every barrier tile added on top; what the flood never reaches i
   soft seals and the stationary bodies; every step, walk, line and way a figure takes is asked of
   that record through its own `Mover` (`CityMap.passable()`, the `Navigator` it moves by), so a
   dog, a bike or a pursuer never walks through a closure's barrier, and a closure's barrier body
-  stands on ground the closure took (`City.barrier_footprint()`).
+  stands on ground the closure took (`City._barrier_footprint()`).
 
 ### Sealing the tree
 

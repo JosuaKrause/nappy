@@ -20,6 +20,12 @@ var _run: RunState
 var _city: City
 ## How many car samples the last `_spine_traffic()` took.
 var _sampled_cars := 0
+## Her, once a test has stood her somewhere: a stroller in the city's tree, in the group the blackout
+## finds her through. Made by `_she_stands_at()`, freed with the city.
+var _her: Stroller
+## How many times the city said it went dark (`EventBus.city_gone_dark`) since `_begin()`.
+var _went_dark := 0
+var _on_dark := func() -> void: _went_dark += 1
 
 func run(t) -> void:
 	await _test_nothing_goes_dark_without_the_sabotage(t)
@@ -40,19 +46,40 @@ func _begin(t) -> void:
 	_run = _city.run
 	_run.resistance.sabotage_done = false
 	_run.facts.escape_section = DaySpec.Section.NONE
+	_went_dark = 0
+	EventBus.city_gone_dark.connect(_on_dark)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_start_the_last_day()
 
 func _end() -> void:
+	EventBus.city_gone_dark.disconnect(_on_dark)
 	_city.free()
 	_city = null
 	_run = null
+	_her = null
 
 ## The city after the sabotage is done and she has walked far enough south of the station.
-func _go_dark() -> void:
+func _go_dark(t) -> void:
 	_run.resistance.sabotage_done = true
-	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
+	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
+
+## She stands at `point` for two physics ticks, which is how often the blackout looks at where she
+## is: a stroller of the city's with its own physics off, so nothing moves her.
+func _she_stands_at(t, point: Vector2) -> void:
+	if not is_instance_valid(_her):
+		_her = Stroller.new()
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		_her.add_child(camera)
+		_city.add_child(_her)
+		_her.set_physics_process(false)
+	_her.global_position = point
+	await PhysicsTicks.pass_ticks(t, 2)
+
+## Whether the city's lights are out, as the traffic signals it stands on see it.
+func _is_dark() -> bool:
+	return not _city.signals.powered
 
 func _rng(label: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -100,8 +127,8 @@ func _spine_junction() -> Vector2i:
 
 func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 	_begin(t)
-	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
-	t.check(not _city.blackout.is_dark, "far from the station with no sabotage, the city is lit")
+	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
+	t.check(not _is_dark() and _went_dark == 0, "far from the station with no sabotage, the city is lit")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the spine's lights are working")
 	_end()
 
@@ -109,10 +136,10 @@ func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
 	_begin(t)
 	_run.resistance.sabotage_done = true
-	_city.blackout.update(_city.map.power_station_door_position())
-	t.check(not _city.blackout.is_dark, "at the door she has just touched, nothing is off yet")
-	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
-	t.check(not _city.blackout.is_dark, "nor just short of the distance")
+	await _she_stands_at(t, _city.map.power_station_door_position())
+	t.check(not _is_dark(), "at the door she has just touched, nothing is off yet")
+	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
+	t.check(not _is_dark() and _went_dark == 0, "nor just short of the distance")
 	_end()
 
 func _test_everything_goes_dark_at_once(t) -> void:
@@ -138,9 +165,10 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	t.check(lit_head.get("picture") == TrafficLight.HEAD and lit_head.get("lamps", []).size() == 1,
 			"a lit signal head shows its face with one lamp on it (%s)" % [lit_head])
 
-	_go_dark()
+	await _go_dark(t)
 
-	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
+	t.check(_is_dark() and _went_dark == 1,
+			"past the distance, with the sabotage done, the city goes dark, once (%d)" % _went_dark)
 	var still_lit := await _lit_windows(t)
 	t.check(still_lit == 0, "every lit window went out in the same call (%d left)" % still_lit)
 	t.check(not _city.signals.is_signalled(_spine_junction()),
@@ -174,19 +202,20 @@ func _lit_windows(t) -> int:
 
 func _test_it_stays_dark_walking_back(t) -> void:
 	_begin(t)
-	_go_dark()
-	_city.blackout.update(_city.map.power_station_door_position())
-	t.check(_city.blackout.is_dark, "walking back to the door does not put the lights on")
+	await _go_dark(t)
+	await _she_stands_at(t, _city.map.power_station_door_position())
+	t.check(_is_dark() and not _city.signals.is_signalled(_spine_junction()),
+			"walking back to the door does not put the lights on")
 	_end()
 
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
 func _test_a_retry_gives_the_power_back(t) -> void:
 	_begin(t)
-	_go_dark()
-	t.check(_city.blackout.is_dark, "the power was off before the retry")
+	await _go_dark(t)
+	t.check(_is_dark(), "the power was off before the retry")
 	_run.resistance.sabotage_done = false
-	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
-	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
+	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
+	t.check(not _is_dark(), "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
 	var lit_windows := await _lit_windows(t)
 	t.check(lit_windows > 0, "and the same windows are lit again (%d)" % lit_windows)
@@ -265,7 +294,7 @@ func _test_a_dark_junction_is_negotiated(t) -> void:
 		signals.advance(Tuning.signal_cycle_seconds() / 24.0)
 	t.check(reds > 0, "a lit spine junction holds its own traffic for part of the cycle (%d/24)"
 			% reds)
-	_go_dark()
+	await _go_dark(t)
 	t.check(not signals.is_signalled(junction),
 			"a dark one is left to the crowd's own give-way, the same as a side street's")
 	_end()
@@ -278,7 +307,9 @@ func _test_the_dark_spine_keeps_moving(t) -> void:
 	_begin(t)
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
-	_go_dark()
+	await _go_dark(t)
+	# She has done what she was there for: the traffic is sampled with only the stroller it makes.
+	_her.free()
 	var dark: Vector2 = await _spine_traffic(t)
 	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_blackout] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "
@@ -345,9 +376,13 @@ func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
 	city.run.resistance.sabotage_done = true
 	city.run.facts.escape_section = DaySpec.Section.NONE
 	city.dark_from_the_start = DaySpec.for_section(DaySpec.Section.CITY, 180.0).dark_from_the_start
+	var gone_dark := [0]
+	var count_it := func() -> void: gone_dark[0] += 1
+	EventBus.city_gone_dark.connect(count_it)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	t.check(city.blackout.is_dark, "the escape's city is dark from the moment it is built")
+	EventBus.city_gone_dark.disconnect(count_it)
+	t.check(gone_dark[0] == 1, "the escape's city is dark from the moment it is built (%d)" % gone_dark[0])
 	t.check(not city.signals.powered, "its lights with it")
 	city.free()
 
@@ -368,21 +403,32 @@ func _test_the_building_is_dark_too(t) -> void:
 	t.check(plan.doors.size() > 0 and misplaced == 0,
 			"every door is in the part its id names (%d of %d misplaced)"
 			% [misplaced, plan.doors.size()])
-	var hallway := scene.lighting_at(plan.waypoints["hallway_second"])
-	var lobby := scene.lighting_at(plan.waypoints["lobby"])
-	var basement := scene.lighting_at(plan.waypoints["basement"])
-	var stairs := scene.lighting_at(plan.waypoints["stairwell_left"])
+	var player := Node2D.new()
+	t.add_child(player)
+	var hallway := _lighting_at(scene, player, plan.waypoints["hallway_second"])
+	var lobby := _lighting_at(scene, player, plan.waypoints["lobby"])
+	var basement := _lighting_at(scene, player, plan.waypoints["basement"])
+	var stairs := _lighting_at(scene, player, plan.waypoints["stairwell_left"])
 	t.check(hallway == Palette.ESCAPE_GLOOM and lobby == Palette.ESCAPE_GLOOM,
 			"the hallways and the lobby are in the gloom")
 	t.check(basement.get_luminance() < hallway.get_luminance(),
 			"and the basement is darker than they are")
 	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED,
 			"the stairwells are on the red emergency lighting")
-	t.check(scene.lighting_at(plan.waypoints["stairwell_right"]) == stairs,
+	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_right"]) == stairs,
 			"both of them")
-	scene.flash_windows()
-	t.check(scene.lighting_at(plan.waypoints["hallway_second"]).get_luminance()
+	# An explosion outside, the call the day's events make (`WorldContext.bang_outside()`).
+	scene.bang_outside()
+	t.check(_lighting_at(scene, player, plan.waypoints["hallway_second"]).get_luminance()
 			> hallway.get_luminance(), "a hallway is lit up while its windows flash")
-	t.check(scene.lighting_at(plan.waypoints["stairwell_left"]) == stairs,
+	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_left"]) == stairs,
 			"a stairwell, with no windows, is not")
+	player.free()
 	scene.free()
+
+## The light she stands in at `tile`: the scene's own modulate after the building has been asked what
+## its ground does to somebody standing there (`process_player()`, which the run flow asks every frame).
+func _lighting_at(scene: InteriorScene, player: Node2D, tile: Vector2i) -> Color:
+	player.global_position = scene.map.tile_to_world(tile)
+	scene.map.process_player(player, 0.0)
+	return scene.modulate
