@@ -70,7 +70,9 @@ class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose
 reproduces, spot-checked names by hand for the same reason. It can *miss* a test-only member when an
 unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
 of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it
-does not see members of an inner class. Because the own-file count is a word count, a call `.name(` on a
+does not see members of an inner class. A base class's plain call of the name reads a subclass's override, so an
+override whose subclass also overrides the base method that makes the call, without calling `super`, is read by
+that plain call although the game never reaches it. Because the own-file count is a word count, a call `.name(` on a
 namesake is not an own use either, so a member only that call and a test use lands in `[no reader]` although its
 own class does call it (a call on another instance of the file's own class, `other.name()`); the remedy is then
 the underscore of inbox #1098 (it is not dead code), not deleting it. It can *accuse falsely* in three ways:
@@ -84,7 +86,9 @@ builder adds the line to a kept group with the reason as a comment (a member nam
 which a test reads on an engine node it holds, is the only reason to add to `ENGINE_MEMBERS`; never a way to
 exempt a game member).
 `shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
-them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree.
+them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree. A local
+`--base` run on a branch that is behind a checker change on main sees that change reversed (the diff to the base shows
+it reversed, which counts as a change of the checker, so additions to the shrinking groups pass); merge main first.
 """
 
 from __future__ import annotations

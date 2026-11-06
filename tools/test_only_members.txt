@@ -22,11 +22,11 @@ src/events/views/event_look.gd mark_rect  # the rectangle the danger caret cover
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/autoload/telemetry.gd begin_memory_log
+src/city/marble_bag.gd take  # no test reads it: the tests' `.take(` are `EventStreaming.take` and a callable's, on receivers the check cannot type, so it counts them; nothing calls it, so it is deleted
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
+src/crowd/crowd_field.gd contains  # no test reads it: the tests' `.contains(` are `String.contains` on untyped receivers, which the check counts; nothing calls it, so it is deleted
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
-src/city/marble_bag.gd take  # no test reads it: the tests' `.take(` are `EventStreaming.take` and a callable's, on receivers the check cannot type, so it counts them; nothing calls it, so it is deleted
-src/crowd/crowd_field.gd contains  # no test reads it: the tests' `.contains(` are `String.contains` on untyped receivers, which the check counts; nothing calls it, so it is deleted
 src/player/stroller.gd family_sources
 src/world/navigator.gd open_ground
 

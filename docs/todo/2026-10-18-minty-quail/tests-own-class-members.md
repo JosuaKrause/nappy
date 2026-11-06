@@ -26,16 +26,15 @@ stay public for the same reason: the fairness tests check numbers against them.
 no line, every member it lists being internal or kept with its reason. What is left is the members
 the check cannot see.
 
-**What the check still cannot see** (record minty-quail-feathery-finch): it qualifies a member by its class where a
-reader's type is known when another class has a member of the same name, and a reader typed as a base class reaches an
-override. A member whose name only one file defines is still judged by its word, so a local or an engine method of
-that name hides it: `ParkCordon.gap` (other files have a local `gap`, so it can take no `[kept]` line, whose reason
-stands as a comment on it, record minty-quail-grassy-squirrel) and `RouteTree.grow` (`Rect2.grow` calls). The check
-takes a plain word in another file as a read only where that file's class extends the member's class, and an
-engine-typed or local receiver as not a src class's. A declaration is taken for the whole file, not per function.
-Three members have no test reader: `CrowdField.contains` and `MarbleBag.take` (the tests' reads are `String.contains`
-and `EventStreaming.take`, which the check cannot type) are dead and are deleted, and `Main.use_sitting` is a hand-in
-no test calls (the tests' `use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
+**What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
+judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local
+`gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
+`RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
+file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
+taken for the whole file, not per function. Three members have no test reader: `CrowdField.contains` and
+`MarbleBag.take` (the tests' reads are `String.contains` and `EventStreaming.take`, which the check cannot type) are
+listed as `[no reader]` and are dead code to delete, and `Main.use_sitting` is a hand-in no test calls (the tests'
+`use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
 **Build.** Each of those members becomes internal, its tests moving to what the class does outward,
 or takes a `[kept]` line with its reason, owner by owner (or several small owners together) in a

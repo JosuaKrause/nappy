@@ -7,10 +7,12 @@ case here brings a list of its own, so a change to the game's code never turns t
 
 from __future__ import annotations
 
+import io
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from typing import ClassVar
 
@@ -424,6 +426,36 @@ class ListTests(unittest.TestCase):
             self.assertFalse(members.read_checker_changed("HEAD", root))
             checker.write_text("two\n")
             self.assertTrue(members.read_checker_changed("HEAD", root))
+
+    def test_main_lets_a_group_grow_only_in_a_diff_that_changes_the_checker(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            checker = root / "tools" / Path(members.__file__).name
+            listing = root / members.ALLOWLIST
+
+            def run(*args: str) -> None:
+                command = ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args]
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+
+            (root / "src").mkdir()
+            (root / "tests").mkdir()
+            checker.parent.mkdir()
+            (root / "src" / "a.gd").write_text("class_name A\nfunc bump() -> void:\n\tpass\n")
+            (root / "tests" / "test_a.gd").write_text("func f(a):\n\ta.bump()\n")
+            checker.write_text("one\n")
+            listing.write_text("# [no reader] group\n")
+            run("init", "-q")
+            run("add", "-A")
+            run("commit", "-q", "-m", "base")
+            listing.write_text("# [no reader] group\nsrc/a.gd bump\n")
+
+            def main() -> int:
+                with redirect_stdout(io.StringIO()):
+                    return members.main(["--root", str(root), "--base", "HEAD"])
+
+            self.assertEqual(main(), 1)
+            checker.write_text("two\n")
+            self.assertEqual(main(), 0)
 
 
 class ReadTests(unittest.TestCase):
