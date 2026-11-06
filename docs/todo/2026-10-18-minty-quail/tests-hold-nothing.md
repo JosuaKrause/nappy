@@ -13,10 +13,11 @@ set itself; and a duplicate of the same behavior another suite already tests.
 
 **Read as:** the checks of those four kinds are removed. **The findings below are the audit's, not
 the player's:** seven read-only agents of the orchestrator's read every suite on 2026-11-05 and
-wrote each line, and the player has ruled only on the four cases next. So a builder checks each
+wrote each line, and the player has ruled only on the cases under the next heading and on the stairwell masked man below. So a builder checks each
 finding against the suite before acting on it, removes it if it holds, tightens it where the line
 says so (a sweep guard that cannot fail becomes one that can), and keeps it, saying why in its
-record, where it does not hold. Keeping the four kinds out from now on is `tests-kept-out.md`.
+record, where it does not hold. Keeping the four kinds out from now on is **verify**'s testing policy and the CI check of
+test-only members (record minty-quail-gentle-hare).
 
 **The player's rulings on the four cases the audit could not settle** (curly-rabbit #1100, #1102):
 
@@ -50,15 +51,11 @@ and a finding whose check is already gone is skipped.
 
 **Open, for the builder to settle by running it, not by reading:** `test_turns.gd:637`, the red
 light test, returns with no check if the city has no signals or the junction is not signalled, and
-whether its fixed seed ever does needs a run; `test_route_rig.gd` says its checks hold on seeds 4
-and 5 and fail on 1 to 3, and which checks are seed-bound needs a run; `test_events_placement.gd:194-200`'s
+whether its fixed seed ever does needs a run; `test_events_placement.gd:194-200`'s
 share floors (0.35 and 0.36) were measured on one city, and asserting the relationship over several
-seeds may replace them; `test_ground_layers.gd:103-145` compares literal tables to the manifest,
-and deriving the expected rotation from `GroundTiles` may replace them rather than deleting them;
+seeds may replace them;
 `test_siting_judges_once.gd`'s `_test_the_director_drops_the_verdicts` may duplicate
-`_test_a_dropped_verdict_is_judged_again`; `test_scene_recipe_task.gd`'s checks of the authored
-scene-recipe files (`272-297`, `303-318`, `343-348`) exercise no game code and may belong in the
-recipe validator; `test_walk_siting_spec.gd:90` greps `events_ahead.gd`'s text, a lint rather than
+`_test_a_dropped_verdict_is_judged_again`; `test_walk_siting_spec.gd:90` greps `events_ahead.gd`'s text, a lint rather than
 a test; `test_events_costs.gd:553` (`spoiled_days >= 10` of 13) may be seed-sensitive.
 
 **Kept on purpose, not findings:** guards that a sweep was not vacuous, orderings between two
