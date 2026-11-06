@@ -40,7 +40,7 @@ jobs:
   # substitute for it; `tools/release.sh` reads the same check before tagging as a courtesy to
   # the operator, and nothing here trusts that script.
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - name: The tagged commit's test check is green
@@ -73,7 +73,7 @@ jobs:
 
   build:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 180
     steps:
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
@@ -134,7 +134,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       pages: write
       id-token: write
@@ -152,7 +152,7 @@ jobs:
   # permissions above stay exactly as narrow as they were before this job existed.
   release:
     needs: deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
