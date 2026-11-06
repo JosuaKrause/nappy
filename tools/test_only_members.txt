@@ -41,8 +41,6 @@ src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
-src/visuals/atlas_library.gd illustrated_path_for
-src/visuals/atlas_library.gd region_name_for
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
 src/world/world_context.gd total_excitement_at
@@ -241,8 +239,6 @@ src/ui/screen_orientation.gd rotation_transform
 src/ui/title_screen.gd hard_mode_contains_design_point
 src/ui/title_screen.gd hard_mode_shown
 src/ui/title_screen.gd hard_mode_target
-src/visuals/atlas_library.gd aspect_ceiling
-src/visuals/atlas_library.gd moment_for_a_load
 src/web_display.gd dpr_cap
 src/world/draw_layer.gd z_of
 src/world/excitement_source.gd expected_impact_at
@@ -280,3 +276,6 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
 src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)
 src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the focus opposite the steering one in the joystick scheme, none in the tap scheme; the disc is drawn and nothing else reads its place, and the booted-main suites (tests/test_main.gd, tests/test_run_checkpoints.gd, tests/test_visible_view.gd) ask it while the title or a brief holds the tree paused, when a press reaches nothing; which half holds Run is confirmed by real presses in tests/test_touch.gd
+src/visuals/atlas_library.gd illustrated_path_for  # the bake calls it: tools/bake_atlases.gd names each member's illustrated PNG with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd and tests/test_atlas_events.gd check it one-to-one over the membership)
+src/visuals/atlas_library.gd moment_for_a_load  # what a page read from disk right now would be called; its OUTSIDE state is the one in which acquire() raises an engine error, which the test gate is red for, so the log's page lines cannot show it without failing the run, and only asking without loading states the rule (tests/test_atlas_loading.gd asks it for the three states)
+src/visuals/atlas_library.gd region_name_for  # the bake calls it: tools/bake_atlases.gd names each region with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd derives the same names from the membership file)
