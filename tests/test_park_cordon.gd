@@ -391,6 +391,7 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 ## tiles are recorded as obstructed. An officer whose stretch she is standing in waits until she
 ## has stepped off it.
 func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
+	var listener := _listen_for_hard_fails()
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [fixture.swing]
@@ -423,8 +424,12 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 			* Tuning.TILE_SIZE * 2.0
 	_run_until_closed(happenings, her, Callable())
 	var tapes := CordonInTheWorld.tapes(_city)
-	t.check(cordon.is_closed() and CordonInTheWorld.open_gaps(_city.map, fixture.park) == 0,
-			"once she steps out of it, it is taped with her outside")
+	var fails: Array[String] = listener[0]
+	_stop_listening(listener)
+	t.check(cordon.is_closed() and CordonInTheWorld.open_gaps(_city.map, fixture.park) == 0
+			and fails.is_empty(),
+			"once she steps out of it, it is taped with her outside: no hard fail shuts her in (%s)"
+			% [fails])
 	var bodies := 0
 	for tape in tapes:
 		if CordonInTheWorld.body_rect(tape).has_area():

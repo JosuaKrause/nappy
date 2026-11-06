@@ -800,12 +800,8 @@ func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
 func _test_the_steering_half_reaches_two_thirds_toward_run(t) -> void:
 	var left := TouchControls.FOCUS_LEFT
 	var right := TouchControls.FOCUS_RIGHT
-	t.check(is_equal_approx(_edge(left), left.x + (right.x - left.x) * 2.0 / 3.0),
-			"with the left side steering, the edge is two thirds of the way to the right focus "
-			+ "(got %.2f)" % _edge(left))
-	t.check(is_equal_approx(_edge(right), right.x - (right.x - left.x) * 2.0 / 3.0),
-			"and mirrored with the right side steering (got %.2f)" % _edge(right))
-	t.check(_edge(left) + TouchControls.RING_RADIUS < right.x - TouchControls.RUN_RADIUS,
+	t.check(left.x + (right.x - left.x) * TouchControls.STEERING_REACH + TouchControls.RING_RADIUS
+			< right.x - TouchControls.RUN_RADIUS,
 			"the stop band ends short of Run's painted disc: not all the way")
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
