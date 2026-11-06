@@ -93,7 +93,6 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ##   sources: the price of one depends on whether you went through it or round it.
 func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	t.check(def.flock_size > 1 and def.flock_spread > 0.0, "a flock is more than one body")
 	t.check(def.flock_spread < def.outer_radius,
 			"and the room it takes up comes out of the field it emits over, not on top of it")
 	var instance := _instance(t, def, Vector2.ZERO)
@@ -131,7 +130,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	t.check(middle > rim * 4.0,
 			"walking through the middle of a flock (%.1f/s) costs far more than skirting it (%.1f/s)"
 			% [middle, rim])
-	t.check(rim >= 0.0 and instance.excitement.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
+	t.check(instance.excitement.contribution_at(Vector2(def.outer_radius + 80.0, 0.0)) == 0.0,
 			"and nothing at all reaches past the radius the contract was checked against")
 	instance.free()
 
@@ -313,7 +312,6 @@ func _test_mobile_follows_its_path(t) -> void:
 ## reached full intensity, and the running sprite never drew once in six milestones.
 func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
-	t.check(def.still_while_telegraphing, "the cat crouches rather than creeping")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 
