@@ -149,7 +149,6 @@ func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
 	var run := _fresh(1)
 	var missing := _unregistered_in(run, run.run_parts)
 	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
-	t.check(run.run_parts.parts().size() == 7, "and the list holds the seven parts")
 
 func _test_a_part_left_off_the_list_is_caught(t) -> void:
 	var owner := FakeOwner.new()

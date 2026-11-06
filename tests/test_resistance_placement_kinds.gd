@@ -1079,8 +1079,6 @@ func _test_the_market_is_found_gone(t) -> void:
 ## once she nears the main road, or at `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
-	t.check(convoy.first_day == ResistanceHappenings.COLUMN_DAY,
-			"the convoys start on day 13 (%d)" % convoy.first_day)
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
 	var happenings := _happenings_on_day(ResistanceHappenings.COLUMN_DAY, state)

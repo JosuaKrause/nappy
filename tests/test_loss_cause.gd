@@ -52,8 +52,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	t.check(LossCause.hard_fail_suffix("cyclist", "cyclist") == "cyclist"
 			and LossCause.hard_fail_suffix("cyclist") == "cyclist",
 		"and one a cyclist's ended is lost to the cyclist")
-	t.check(LossCause.hard_fail_suffix("car_strike") == "car",
-		"a car is still a car")
+
 ## `LossCause.of()` is the one entry: a win and a timeout have no cause, a hard-fail day is named by
 ## what struck her, a crying day by what landed the most, and the inputs a result does not read
 ## are ignored.

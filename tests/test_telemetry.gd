@@ -230,7 +230,6 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 	t.check(version != "", "a run always records something about where it came from")
 	if version == "unknown":
 		# An exported build with no repository to ask. Nothing more to check.
-		t.check(true, "no repository here, and the log says so rather than guessing")
 		return
 	var stripped := version.trim_suffix("-dirty")
 	t.check(stripped != "", "a version is never just the dirty marker")
