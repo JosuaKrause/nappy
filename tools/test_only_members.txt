@@ -56,9 +56,6 @@ src/world/world_context.gd total_excitement_at
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/autoload/visit_counter.gd charger_counter_name
-src/autoload/visit_counter.gd listen
-src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
@@ -305,6 +302,8 @@ src/crowd/crowd.gd set_focus  # where the crowd's simulated patch is centred; th
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
 # what it depends on, the game using its default and a test handing in a fake.
+src/autoload/visit_counter.gd listen  # a hand-in: _ready() hands the counter the game's EventBus and a test hands a bus of its own, so what it emits reaches this counter alone (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/autoload/visit_counter.gd send_through  # a hand-in: _ready() hands the counter an outbox that evaluates its script through JavaScriptBridge and a test hands one with a recorder (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_reload  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
