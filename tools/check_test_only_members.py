@@ -62,9 +62,8 @@ call parenthesis; and a game reader that goes through a string (`call("name")`, 
 `Callable(self, "name")`, a scene's `.tscn`) is blanked out and not seen. On such a false failure the
 builder adds the line to a kept group with the reason as a comment (a real engine callback name, one the
 engine calls on the node, is the only reason to add to `ENGINE_MEMBERS`).
-`shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped them. `--rev` and `--root` read the tree of that commit or
-checkout,
-and the list file of that same tree.
+`shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
+them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree.
 """
 
 from __future__ import annotations
