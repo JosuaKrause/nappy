@@ -69,6 +69,7 @@ func run(t) -> void:
 	await _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t)
 	await _test_a_covered_portico_column_drops_the_portico_and_the_front_gets_a_door_instead(t)
 	await _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
+	await _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t)
 	await _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t)
 	await _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t)
 	await _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
@@ -730,7 +731,7 @@ func _test_the_front_rolls_replay_their_own_streams(t) -> void:
 	var shop_at := Vector2(4096.0, 3072.0)
 	var shop := _new_building(t, GameEnums.BlockPurpose.COMMERCIAL, Vector2(256.0, 128.0), 96.0, false, shop_at)
 	# The door's roll is unused while a storefront draws, so it is read on the same front with the
-	# odd columns covered: no pair draws, and the door stands on an even column.
+	# odd columns covered: no pair draws, and the front draws a door.
 	var odd_covered: Array[bool] = []
 	for col in 8:
 		odd_covered.append(col % 2 == 1)
@@ -1293,6 +1294,55 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		city.free()
 	t.check(checked > 0, "the sweep met at least one real covered column to check the extension's own wiring on (%d)" % checked)
 	t.check(edge_fronts > 0, "the sweep met a front facing the map's edge (%d)" % edge_fronts)
+
+## A cul-de-sac wall (`CityGenerator._wall_off_one_end()`, a 2-tile lot) can stand directly north
+## of the power station. Over the station's yard no roof stands to extend, so the wall keeps its
+## facade and the station draws no roof there; over its hall the wall is covered and the hall's roof
+## is drawn as many rows taller as the wall is high. Seeds 823576 (a wall over the yard) and 966118
+## (a wall over the hall) are cities that have each.
+func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t) -> void:
+	var over_yard := 0
+	var over_hall := 0
+	for seed_value in [823576, 966118]:
+		var map := CityGenerator.generate(seed_value)
+		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+		t.add_child(city)
+		city.build(map)
+		var fronts := await _watch_the_fronts(t, city)
+		var station: Building = null
+		for building: Building in city.buildings():
+			if building.power_station:
+				station = building
+		t.check(station != null, "seed %d: the city has its power station" % seed_value)
+		if station == null:
+			city.free()
+			continue
+		var hall := station.hall_cols()
+		for wall: Building in city.buildings():
+			if wall.power_station or wall.lot.end.y != station.lot.position.y:
+				continue
+			for col in wall.columns():
+				var local := wall.lot.position.x + col - station.lot.position.x
+				if local < 0 or local >= station.columns():
+					continue
+				var covered: bool = col < wall.covered_ground_cols.size() and wall.covered_ground_cols[col]
+				var station_rows: int = fronts[station].roof_rows_at(local)
+				if local >= hall.x and local < hall.y:
+					over_hall += 1
+					t.check(covered and not fronts[wall].facade_drawn_in(col),
+							"seed %d: a wall over the hall (column %d) is covered and draws no facade" % [seed_value, col])
+					t.check(station_rows == station.roof_tiles() + wall.wall_tiles(),
+							"seed %d: the hall's roof is drawn %d rows taller over that wall (%d rows)"
+							% [seed_value, wall.wall_tiles(), station_rows])
+				else:
+					over_yard += 1
+					t.check(not covered and fronts[wall].facade_drawn_in(col),
+							"seed %d: a wall over the yard (column %d) keeps its facade" % [seed_value, col])
+					t.check(station_rows == 0,
+							"seed %d: the station draws no roof over its yard (%d rows)" % [seed_value, station_rows])
+		city.free()
+	t.check(over_yard > 0, "the seeds have a wall over the station's yard (%d)" % over_yard)
+	t.check(over_hall > 0, "the seeds have a wall over the station's hall (%d)" % over_hall)
 
 ## `City.assign_roof_extensions()`'s own courtyard wiring: a covered column's extension is
 ## seamless exactly when the covered building and the covering building were both cut from the same

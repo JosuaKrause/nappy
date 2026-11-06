@@ -56,7 +56,7 @@ func run(t) -> void:
 	var scenarios: Array[Callable] = [
 		_test_a_car_turns_into_each_arm_from_every_approach,
 		_test_a_car_turns_round_when_every_arm_is_shut,
-		_test_a_car_turns_round_in_the_street_short_of_a_closure,
+		_test_a_car_turns_round_in_the_street_short_of_a_barrier,
 		_test_a_car_waits_for_the_lane_its_half_turn_lands_in,
 		_test_a_car_with_no_road_either_way_stands_rather_than_flickering,
 		_test_a_car_against_a_barrier_is_not_shunted_later,
@@ -175,9 +175,9 @@ func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
 ## The about-face with no junction to take it in: a body standing across the mouth of the street, so the
 ## car has to turn round short of it. **This is the one manoeuvre whose swept body crosses a kerb**
 ## — a half turn between two lanes 32px apart is a 16px arc and the body's corners reach 40px from
-## the centre of it — so the road check here is the looser one. Nothing else is relaxed: the closure
+## the centre of it — so the road check here is the looser one. Nothing else is relaxed: the barrier
 ## itself is still refused, which is what "never drive through a barrier" means.
-func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
+func _test_a_car_turns_round_in_the_street_short_of_a_barrier(t) -> void:
 	_clear_the_holds()
 	_bar_the_junction_band()
 	var car := _place_a_car(true, 1.0)
@@ -309,7 +309,7 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 ## jump on whichever later frame the leader has pulled far enough ahead for the full slide to be
 ## legal — a frame nobody chooses, so possibly one she is watching. On the morning that is the
 ## probe's `behind a car already there on the first frame` row: a car placed in the stub of road
-## just past a closure, unpacked on the second frame instead of before the first.
+## just past a barrier, unpacked on the second frame instead of before the first.
 ##
 ## The rig is two cars heading away from a barred junction, the follower a little past the barrier
 ## and the leader a fraction of a car's length in front of it. The first frame is the resolve; every
@@ -672,7 +672,7 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 	t.check(turned, "then takes the turn once it has the green")
 
 ## Out of bounds is a wall to everybody but a car on the spine, so a car heading for the edge turns
-## at the last junction — the boundary case of the same rule a closure exercises.
+## at the last junction — the boundary case of the same rule a barrier exercises.
 func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
 	_clear_the_holds()
 	# The outermost street that is an ordinary one, the map's corner: its last junction has one arm to
