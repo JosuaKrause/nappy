@@ -253,7 +253,6 @@ src/ui/danger_edge.gd arrows_drawn
 src/ui/danger_edge.gd subject_for_def
 src/ui/entity_halo.gd has_settled
 src/ui/entity_halo.gd trace_offsets
-src/ui/excitement_halo.gd select_sources
 src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform

@@ -17,6 +17,7 @@ extends RefCounted
 ## (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
 
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
+const HaloRig := preload("res://tests/halo_rig.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const SEEDS := 4
@@ -897,7 +898,7 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 	var candidates: Array = []
 	for structure in kit:
 		candidates.append(structure.excitement)
-	var picked := ExcitementHalo.select_sources(candidates, there)
+	var picked := await HaloRig.lit_among(t, candidates, there)
 	t.check(picked.size() == 1,
 			("and the halo draws one rim, on that same body: a rim on a structure landing nothing " +
 			"while its neighbour reads red is a cue disagreeing with the bar (%d picked)")

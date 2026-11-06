@@ -56,7 +56,7 @@ var rim: RefCounted = null
 
 ## Whether another source of the same kind is the one charging her in this one's place this frame,
 ## so this one is not projected (`expected_gross_at()` answers zero) and is not picked for a rim
-## (`ExcitementHalo.select_sources()`). Told from outside, once a frame: a region boundary's
+## (`ExcitementHalo._select_sources()`). Told from outside, once a frame: a region boundary's
 ## structures charge as their strongest (`EventSources`). False until somebody says otherwise.
 var outranked := false
 

@@ -2580,7 +2580,7 @@ only a startled body.** *(2026-09-08, the player: "a busy street is noisy becaus
 busy sidewalk is noisy because of people ... that will allow us to attribute the source
 exactly".)* The tabled question this answers — "The crowd has a halo" in `docs/TODO.md` — offered
 three shapes and none of them is this one: the crowd is not a floor to fold into events, not one
-combined outline, and not gated on a higher threshold. `ExcitementHalo.select_sources()` takes
+combined outline, and not gated on a higher threshold. `ExcitementHalo._select_sources()` takes
 every `ExcitementSource` of the sets it is handed, an event's and a crowd body's alike since both
 compose one, so the crowd and the events are offered on the same terms. `CONTRIBUTION_FLOOR` and `MAX_SOURCES`
 (the eight strongest) are what keep a busy pavement legible rather than a special case admitting

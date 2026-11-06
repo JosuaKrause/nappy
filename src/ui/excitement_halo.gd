@@ -43,7 +43,7 @@ extends Node2D
 const CONTRIBUTION_FLOOR := 1.0
 
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
-## ones left out**, in `select_sources()` below — not the furthest and not the newest — because
+## ones left out**, in `_select_sources()` below — not the furthest and not the newest — because
 ## dropping the smallest terms of a sum is the smallest possible error the drawn total can carry.
 ## The candidate set is every live event plus the whole crowd, so an ordinary busy sidewalk can put
 ## far more than eight candidates inside her reach at once — this cap, together with
@@ -65,9 +65,8 @@ const MAX_SOURCES := 8
 ## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
 ## red.
 ##
-## Pulled out as a static function so a test can hold the selection, the floor and the drop order
-## without a scene, a shader or a viewport — the same reason `BadgeModel.announces()` is static.
-static func select_sources(candidates: Array, at: Vector2) -> Array:
+## A static function of the candidates and her position, so the selection reads without a scene.
+static func _select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
 	for source in candidates:
 		if source.outranked:
@@ -217,7 +216,7 @@ func _pick_and_predict() -> void:
 	_candidates.clear()
 	for set in _sets:
 		set.every_source(_candidates)
-	var picked := select_sources(_candidates, here)
+	var picked := _select_sources(_candidates, here)
 	# A `Dictionary` keyed by the picked sources themselves, built once off the (at most
 	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than a linear
 	# scan of `picked` for every one of up to ~275 candidates.
