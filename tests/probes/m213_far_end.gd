@@ -16,7 +16,7 @@ extends RefCounted
 ##
 ## **The screen.** She stands on every `ALLEY` tile in turn; the screen is 640x360 world px
 ## around her, unrotated (`Tuning.VIEW_HALF_EXTENT`); the director relocates the mark to
-## `nearest_alley_within()` and draws its guard exactly as `_maybe_set_a_trap()` does for a
+## `_nearest_alley_within()` and draws its guard exactly as `_maybe_set_a_trap()` does for a
 ## relocation. Counted: a relocated mark whose picture, or whose guard's body, shows on that
 ## screen, and a relocation that leaves the mark unguarded.
 ##
@@ -195,13 +195,13 @@ func _on_screen(t) -> void:
 			view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
 			director.set_sight(view.sees)
-			var mark := director.nearest_alley_within(her)
+			var mark := director._nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue
 			relocations += 1
 			if _shows(mark, her, 16.0, 16.0):
 				marks_seen += 1
-			var guard_at := director.guard_position(rng, mark, true, her, true)
+			var guard_at := director._guard_position(rng, mark, true, her, true)
 			if guard_at == Vector2.INF:
 				unguarded += 1
 				continue
