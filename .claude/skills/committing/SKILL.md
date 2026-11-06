@@ -145,7 +145,7 @@ player's settings carried it, so `CLAUDE.md` and the skills are not relied on as
 own approval of one action (their next message, or the `/permissions` recently-blocked list) is a different thing
 and is fine. When the classifier refuses a write the player's standing permission covers, report the refusal to the
 player naming their settings; never work around it: no other command shape, no `gh api` substitute, no
-player-write prompt to get the same write through. *Proposed by the filer, not asked for, open to the player's
+player-write prompt, no allow rule added to the repository's own settings files, to get the same write through. *Proposed by the filer, not asked for, open to the player's
 correction: the player asked only for the standing permission in their own settings (curly-rabbit #1094).*
 
 **A PR merges only after its review**

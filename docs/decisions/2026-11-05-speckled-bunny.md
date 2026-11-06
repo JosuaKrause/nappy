@@ -4,10 +4,11 @@
 **Built.** Claude Code's auto-mode classifier refused reviewer agents' approvals and a reviewer spawn
 although `CLAUDE.md` gives the orchestrating session standing permission to merge. The player added the
 permission to their own Claude Code settings (curly-rabbit #1094). The repository now says where such a
-permission has to live: the player's Claude Code settings (`~/.claude/settings.json`'s permission allow rules
-and its auto-mode environment lines), never `CLAUDE.md` or a skill, which the classifier does not read as the
-player's consent; and a refusal of a write the permission covers is reported to the player naming that place,
-never worked around. The wording is the filer's proposal, open to overturn.
+permission has to live: the player's own `~/.claude/settings.json` (`permissions.allow` rules for a command,
+`autoMode.environment` or `autoMode.allow` lines otherwise, a reviewer spawn only by an `autoMode` line). The
+classifier reads `CLAUDE.md` but refused the writes its permission covered, so `CLAUDE.md` and the skills are not
+relied on as the player's consent; the player's own approval of one action is fine; a refusal is reported to the
+player naming their settings, never worked around. The wording is the filer's proposal, open to overturn.
 
 **Where.** One paragraph in **committing**'s "Merging" (the full rule, marked as the filer's proposal, with the
 one-off approval distinguished and "worked around" defined), one sentence in **pr-review**'s "The findings go on
