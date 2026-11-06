@@ -27,6 +27,7 @@ func run(t) -> void:
 	_test_mast_foot_answers_a_stable_id(t)
 	_test_silencing_one_mast_works_for_the_rest_of_the_day(t)
 	_test_silencing_every_mast_works_for_the_rest_of_the_day(t)
+	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
 	_teardown()
 
 func _rng(day: int) -> RandomNumberGenerator:
@@ -291,6 +292,41 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
 	t.check(mast_plans_checked == standing_ids.size() * 2,
 			("and both of today's mast rows were checked (%d): the ordinary broadcast and "
 			% mast_plans_checked) + "the curfew announcement, one pair per standing site")
+
+## **The scar a fixed-site mast leaves silences that site the next day**, and only that site: the
+## day she touches a mast the director records a scar at its foot (`RunState.add_scar()`), and the
+## next day's plan stands the same pole with its lamp out while every other site speaks. Played on
+## one city, two days running through the manager, the way the run plans them.
+func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t) -> void:
+	var first := Tuning.MAST_FIRST_DAY
+	var run := _city.run
+	run.header.day = first
+	_city.events.start_day(DaySpec.for_day(first), _rng(first), [])
+	var target: MastSites.Site = null
+	for site in _sites():
+		if _plan_for(site.id) != null:
+			target = site
+			break
+	t.check(target != null, "day %d stands a mast to silence" % first)
+	if target == null:
+		return
+	t.check(not _plan_for(target.id).silenced, "the mast speaks the day she reaches it")
+	var foot := _city.events.mast_foot(target.id)
+	_city.events.silence_mast(target.id)
+	run.add_scar(EventScheduler.SILENCED_MAST, foot)
+
+	run.header.day = first + 1
+	_city.events.start_day(DaySpec.for_day(first + 1), _rng(first + 1), [])
+	var tomorrow := _plan_for(target.id)
+	t.check(tomorrow != null and tomorrow.silenced,
+			"the next day the same site stands silenced, lamp out and no field")
+	var others_speak := 0
+	for site in _sites():
+		var plan := _plan_for(site.id)
+		if site.id != target.id and plan != null and not plan.silenced:
+			others_speak += 1
+	t.check(others_speak > 0, "while the other sites speak (%d)" % others_speak)
+	run.attempt_spend.scars.clear()
 
 func _teardown() -> void:
 	if _city:

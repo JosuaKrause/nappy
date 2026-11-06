@@ -288,10 +288,8 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 	for radius in [3, 5, 7]:
 		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
-			run.attempt_spend.scars.append({
-				"id": "barricade", "position": _map.tile_to_world(home + step * radius),
-				"since_day": 1,
-			})
+			# The run's own writer, on day 1, which is the day a scar stands from the day after.
+			run.add_scar("barricade", _map.tile_to_world(home + step * radius))
 
 	var grid := ReachabilityGrid.build(_map)
 	# Day 1 runs with no scar in effect (a scar applies from the day after its `since_day`), and
