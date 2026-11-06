@@ -313,11 +313,18 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route
+	var siting := _a_siting(day)
 	var points := PackedVector2Array()
 	for i in best.size():
 		var cell: Vector2i = best[best.size() - 1 - i] if outward else best[i]
-		points.append(_city.events.ahead.walk_siting().cell_centre(cell))
+		points.append(siting.cell_centre(cell))
 	return points
+
+## A siting of the test's own over the day's tree, to ask what the director's own is asked: where a
+## cell of a route stands, and whether a point is still ahead of her along the branch she walks.
+func _a_siting(day: int) -> EventScheduler.WalkSiting:
+	return EventScheduler.WalkSiting.new(day, _city.map, _days_tree(day), [] as Array[Vector2i],
+			PackedVector2Array(), EventScheduler.Verdicts.new())
 
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
@@ -416,8 +423,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 				("walking %s: %.0fpx out, past the %.0fpx streaming band, so it is neither visible "
 				% [leg, plan.position.distance_to(sited_from), Tuning.EVENT_STREAM_RADIUS])
 				+ "nor real when it is placed")
-		var siting := _city.events.ahead.walk_siting()
-		t.check(siting != null and siting.still_ahead_of(sited_from, heading, plan.position),
+		t.check(_a_siting(day).still_ahead_of(sited_from, heading, plan.position),
 				"walking %s: and it is ahead of her along the branch she is walking" % leg)
 		var seen_at := -1.0
 		await _walk(t, rig, route, func() -> bool: return _city.events.sees(plan.position))

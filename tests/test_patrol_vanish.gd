@@ -159,7 +159,7 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t) -> void:
 		car = car if car != null else plan.live
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
-			officer = car.its_officer()
+			officer = MenLetOut.first_of(city.events, car)
 			let_out = let_out or officer != null
 		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
@@ -190,7 +190,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 		car = car if car != null else plan.live
 		# The man is freed at a frame's end once he is back in, so what he did is kept as it happens.
 		if car != null and officer == null:
-			officer = car.its_officer()
+			officer = MenLetOut.first_of(city.events, car)
 			let_out = let_out or officer != null
 		gave_up = gave_up or (is_instance_valid(officer) and officer.gave_up)
 		if car != null and _removed(car):
