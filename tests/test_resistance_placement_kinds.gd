@@ -37,6 +37,7 @@ func run(t) -> void:
 	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
 	_test_the_market_is_found_gone(t)
+	_test_the_market_waits_while_she_can_see_it(t)
 	_test_the_column_comes_down_the_main_road(t)
 	_free_city()
 
@@ -1119,6 +1120,35 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 		if state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.BOARDED_UP:
 			boarded.append(block)
 	return boarded
+
+## Day 11: **a market in her sight is not boarded up.** She stands in the middle of a candidate
+## block's frontage, walks as long as the market waits for a way to be chosen and then past the day's
+## deadline; the block she stands at stays commercial, whatever the day
+## does with the others. Checked on each of the first two candidates, a city state of its own for each.
+func _test_the_market_waits_while_she_can_see_it(t) -> void:
+	_build_city_in_a_new_run(t)
+	var seen := 0
+	for which in 2:
+		var state := CityState.new()
+		var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
+		var candidates: Array[Vector2i] = []
+		for y in Tuning.CITY_BLOCKS.y:
+			for x in Tuning.CITY_BLOCKS.x:
+				var candidate := Vector2i(x, y)
+				if _city.map.block_plans.has(candidate) \
+						and state.purpose_of(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+						and state.next_purpose(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+					candidates.append(candidate)
+		if candidates.size() <= which:
+			break
+		var block := candidates[which]
+		var her := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH)).get_center()
+		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
+		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
+		seen += 1
+		t.check(state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL,
+				"the market in block %s is not boarded up with her standing in front of it" % block)
+	t.check(seen > 0, "the test city has a block to stand in front of, or this test checks nothing")
 
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
 ## in one lane of the main road, warned of first: its badge goes up with no truck in the world, its

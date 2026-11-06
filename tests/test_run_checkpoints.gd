@@ -24,7 +24,9 @@ const Boot := preload("res://tests/booted_main.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## Her street door and the building it stands in front of, read off the city's nodes.
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
-const _SCRATCH_PATH := "user://test_run_checkpoints_scratch.json"
+## Takes the process id, since `user://` is shared by every checkout on the machine and two runs of
+## the suite at once would otherwise read each other's file.
+var _scratch_path := "user://test_run_checkpoints_scratch_%d.json" % OS.get_process_id()
 const _SEED := 712044
 ## The height of a phone held landscape, in points (an iPhone 15, 852x393).
 const _PHONE_LANDSCAPE_HEIGHT_PT := 393.0
@@ -36,7 +38,7 @@ const TITLE := preload("res://scenes/ui/title_screen.tscn")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 
 ## The save under test, at a scratch path.
-var _save := GameSave.new(_SCRATCH_PATH)
+var _save := GameSave.new(_scratch_path)
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -339,7 +341,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		main.use_sitting_home(home)
 		main.use_reload(func() -> void: reloads.append(1))
 	var config := Boot.config(["--day", "8"])
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, config, hand)
+	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, config, hand)
 	var main := booted.main
 	# A joystick, steered from the right: what the title answered has to hold for the sitting, and
 	# the boot going back opens no title to ask again.
@@ -373,7 +375,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 		t.check(parked != null and parked.carry_the_run_over,
 				"the continue leaves the sitting in its home, carrying the run over")
-		playing = await Boot.boot(t, _SCRATCH_PATH, config, hand)
+		playing = await Boot.boot(t, _scratch_path, config, hand)
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
 	t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
@@ -440,7 +442,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	run.header.nerves = 2
 	run.facts.escape_section = DaySpec.Section.BUILDING
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, Boot.config([]),
+	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var main := booted.main
 	var summary := Boot.summary(main)
@@ -483,7 +485,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	run.header.nerves = 3
 	run.facts.escape_section = DaySpec.Section.BUILDING
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, Boot.config([]),
+	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var main := booted.main
 	var interior := Boot.interior(main)
@@ -599,7 +601,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 			_with_saving(func() -> void: _save.write(saved, bool(case[0])))
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
-		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, _windowed(),
+		var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
 				func(main: Node) -> void: main.use_sitting_home(home))
 		var title := Boot.title(booted.main)
 		t.check(title.is_open() and _box_shown(title) == case[2],
@@ -798,7 +800,7 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	_with_saving(func() -> void: _save.write(saved, false))
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, _windowed(),
+	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	await Boot.press_title(t, booted.main, "Tap")
 	t.check(run.calendar.hard_mode and modes.is_empty(),
@@ -809,7 +811,7 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 
 	run = RunState.new()
 	home = Boot.home_playing(t, run)
-	booted = await Boot.boot(t, _SCRATCH_PATH, _windowed(),
+	booted = await Boot.boot(t, _scratch_path, _windowed(),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var title := Boot.title(booted.main)
 	await UI.frames(t)
