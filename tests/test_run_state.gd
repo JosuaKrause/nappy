@@ -5,7 +5,7 @@ extends RefCounted
 ## **Save compatibility is held against a file main wrote.** `tests/fixtures/
 ## run_state_saved_by_main.json` is `GameSave.file_data()` of the run `run_state_scenario.gd`
 ## builds, and of the same run after a lost day, dumped on commit e1cc7c7f — the build that kept
-## every field by hand in `GameState.save_snapshot()`/`restore_snapshot()`, the `_dawn_*` copies and
+## every field by hand in `GameState`, the `_dawn_*` copies and
 ## `RunStateRegistry.run_data()` — by a throwaway probe that ran the scenario under `tools/test.sh`. The
 ## suite replays the scenario on this build and expects the same bytes (everything but the `build`
 ## string), loads the fixture and expects the same run back, and loses a day from the loaded run
@@ -130,20 +130,34 @@ func _first_difference(a: Dictionary, b: Dictionary) -> String:
 			return "missing " + key
 	return "same"
 
+## The names of `owner`'s script variables that hold a `RunSubState` which is not on `registry`,
+## read off the registry's public `parts()`: the check that a part declared and left off the list is
+## caught.
+static func _unregistered_in(owner: Object, registry: RunStateRegistry) -> Array[String]:
+	var registered := registry.parts()
+	var missing: Array[String] = []
+	for property in owner.get_property_list():
+		if not property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			continue
+		var value: Variant = owner.get(property["name"])
+		if value is RunSubState and value not in registered:
+			missing.append(property["name"])
+	return missing
+
 ## Every part a `RunState` declares is on its registry.
 func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
 	var run := _fresh(1)
-	var missing := RunStateRegistry.unregistered_in(run, run.run_parts)
+	var missing := _unregistered_in(run, run.run_parts)
 	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
 	t.check(run.run_parts.parts().size() == 7, "and the list holds the seven parts")
 
 func _test_a_part_left_off_the_list_is_caught(t) -> void:
 	var owner := FakeOwner.new()
 	var registry := RunStateRegistry.new()
-	t.check(RunStateRegistry.unregistered_in(owner, registry) == ["part"],
+	t.check(_unregistered_in(owner, registry) == ["part"],
 			"a part declared and never registered is named")
 	registry.register(owner.part)
-	t.check(RunStateRegistry.unregistered_in(owner, registry).is_empty(),
+	t.check(_unregistered_in(owner, registry).is_empty(),
 			"and not named once it is registered")
 
 ## Photographs a run, spends more of every kind of thing an attempt can spend, gives back: the run

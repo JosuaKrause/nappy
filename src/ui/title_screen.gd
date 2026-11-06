@@ -280,10 +280,6 @@ func close() -> void:
 func hard_mode_checked() -> bool:
 	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed
 
-## The mode's name on screen, or `""` while it is not showing (a new game, where the checkbox asks).
-func mode_name_shown() -> String:
-	return _mode_name.text if _mode_name != null and _mode_name.visible else ""
-
 ## Whether the Hard Mode checkbox is on screen: only while the title begins a new game.
 func hard_mode_shown() -> bool:
 	return _hard_mode != null and _hard_mode.visible
