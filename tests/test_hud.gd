@@ -158,7 +158,6 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 	first.free()
 	second.free()
 	hud.free()
-	run.free()
 
 ## **The lesson names the control on every device, not only a touch one.** *(Filed from a phone
 ## play of the deployed build: "the run tutorial says hold 'SHIFT' on mobile", then confirmed by
@@ -176,7 +175,6 @@ func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 
 	first.free()
 	hud.free()
-	run.free()
 
 ## **The day-1 walk lesson has the same defect the run lesson had, and the same fix.** *(Playtest
 ## 29 finding 4.)* The device flag used to choose between "Tap to walk, double tap to run" and
@@ -191,7 +189,6 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 			"day 1 tells every device to tap — no key is named for a keyboard either")
 
 	hud.free()
-	run.free()
 
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
 ## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you
@@ -225,7 +222,6 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	second.free()
 	third.free()
 	hud.free()
-	run.free()
 
 ## **The meters move to the top on a touch build, so a walking thumb never rests on the one
 ## reading that may never be occluded.** *(2026-09-02: "let's also move the progress bars to the
@@ -256,7 +252,6 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 
 	desktop.free()
 	touch.free()
-	run.free()
 
 ## **The pause lesson names the button on every device, in plain words rather than a label that is
 ## not there.** Same defect the walk and run lessons had, filed by the same audit, closed the same
@@ -285,7 +280,6 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 	watch.free()
 	stroller.free()
 	hud.free()
-	run.free()
 	_release_actions()
 
 ## **Being held is not stopping.** *(Player: "the pause tutorial comes up when being detained
@@ -326,7 +320,6 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 	watch.free()
 	stroller.free()
 	hud.free()
-	run.free()
 	_release_actions()
 
 ## Every pursuit after the teaching day is the mechanic working, not the lesson repeating —
@@ -342,7 +335,6 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	t.check(_teach(hud_before).line == "", "a pursuit before the teaching day says nothing")
 	early.free()
 	hud_before.free()
-	run_before.free()
 
 	# After it: the lesson already happened on an earlier day, and a fresh HUD (a new day started)
 	# has never taught this run, but the pursuit is not on the teaching day, so it still says
@@ -354,7 +346,6 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 	t.check(_teach(hud_after).line == "", "a pursuit well after the teaching day says nothing")
 	late.free()
 	hud_after.free()
-	run_after.free()
 
 ## Day, act and nerves are all read between days already; during the day the release build says
 ## none of it. A test is itself a debug build, so the release shape is a HUD configured for it.
@@ -369,7 +360,6 @@ func _test_the_release_hud_drops_the_header(t) -> void:
 
 	release.free()
 	debug.free()
-	run.free()
 
 ## The baby's own state, `stall_reason()` and the city-wide note are debug output — the state is
 ## already on the pram, and the other two are read between days. An announcement is not part of
@@ -404,7 +394,6 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	release.free()
 	debug.free()
 	stroller.free()
-	run.free()
 
 ## *"The readout said 'awake' while the baby was drawn asleep,"* found once under
 ## `--start-escape stairwell:right --invincible`. `main` builds this HUD before the escape's
@@ -436,7 +425,6 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> vo
 
 	hud.free()
 	stroller.free()
-	run.free()
 
 ## Playtest 19 finding 5, verbatim: *"the first chalk mark is written in the status when it
 ## should not be"* — seen as `resistance ....   out there: a chalk mark` before
@@ -475,7 +463,6 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 	_close_offers([2])
 	release.free()
 	debug.free()
-	run.free()
 
 ## The small HUD task line is the short version and always one line: every step's own line fits
 ## the width the HUD gives the label (the Meters column, 280px) at its 12px font, so it never wraps.
@@ -500,7 +487,6 @@ func _test_every_task_line_fits_on_one_line(t) -> void:
 				"step %d's task line starts 'out there:' and has no break" % step.index)
 		_close_offers([step.index])
 	hud.free()
-	run.free()
 
 ## The big message shown when a mark is touched breaks between sentences where it must wrap: every
 ## real mark text comes out with each line inside the Teach label's width, and a sentence is never
@@ -535,7 +521,6 @@ func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 			"a touched mark's long message breaks after its first sentence, got '%s'" % teach.line)
 	step.brief = saved_brief
 	hud.free()
-	run.free()
 
 ## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
@@ -558,7 +543,6 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 		_close_offers([step.index])
 
 	hud.free()
-	run.free()
 
 ## *"no onscreen text for acknowledgements like this"* (PLAYTEST-117): a **finished** resistance
 ## step is shown by the world — the mark's touched picture, the man shouting walking away — and
@@ -580,7 +564,6 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 	t.check(_teach(hud).line == "", "a completed perform step puts no text on screen")
 
 	hud.free()
-	run.free()
 
 ## fluffy-alpaca, "the bottom left text with the current task should disappear when the task is
 ## complete" — *"this is not an onscreen text that shows up so it fits the rule still. but it is
@@ -617,7 +600,6 @@ func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
 			"completing the task clears the line, with no further contact to overwrite it")
 
 	hud.free()
-	run.free()
 
 ## *(Playtest 25 finding 1, verified against the engine rather than inferred: `"%3.0f" % value`
 ## rounds to nearest, so 99.5 and everything above it already printed `100` while the day was
@@ -698,7 +680,6 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	p2.free()
 	controls.free()
 	hud.free()
-	run.free()
 
 ## `configure(debug, invincible, lessons_learned)` with `lessons_learned` (an authored mid-game
 ## scene's `tutorial_complete`) silences the three ordinary control lessons and nothing else: the
@@ -733,7 +714,6 @@ func _test_learned_lessons_say_no_control_lesson(t) -> void:
 	pursuer.free()
 	stroller.free()
 	hud.free()
-	run.free()
 	_release_actions()
 
 ## The same calls with `lessons_learned` false: every lesson comes back, so the test above cannot
@@ -767,7 +747,6 @@ func _test_unlearned_lessons_are_all_said(t) -> void:
 	pursuer.free()
 	stroller.free()
 	hud.free()
-	run.free()
 	_release_actions()
 
 func _release_actions() -> void:

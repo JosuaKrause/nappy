@@ -36,7 +36,7 @@ func _start_a_boot(t, config: RunConfig) -> Array:
 	main.use_sitting_home(home)
 	main.configure(config)
 	t.add_child(main)
-	return [main, save, home, run]
+	return [main, save, home]
 
 func _end_the_boot(boot: Array, observers: Dictionary) -> void:
 	var main: Node2D = boot[0]
@@ -45,7 +45,6 @@ func _end_the_boot(boot: Array, observers: Dictionary) -> void:
 	main.free()
 	(boot[1] as GameSave).free()
 	(boot[2] as Node).free()
-	(boot[3] as RunState).free()
 	Boot.give_back_observers(observers)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 

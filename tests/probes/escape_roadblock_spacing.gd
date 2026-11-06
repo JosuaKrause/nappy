@@ -53,7 +53,6 @@ func run(t) -> void:
 				% [seed_value, bands.size(), nearest, nearest_pair])
 	print("ESCAPE_SPACING | %d seeds | %d roadblocks | %d pairs, %d nearer than their two notices | nearest %.0fpx"
 			% [SEEDS, total, pairs, under, nearest_of_all])
-	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 ## The escape city's section spec, the one the run flow walks the city under.

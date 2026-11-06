@@ -227,7 +227,6 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 		Telemetry.end_run()
 		booted.free_all()
 		home.free()
-		run.free()
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t) -> void:
@@ -465,7 +464,6 @@ func _the_screens_answer(t, flagged: bool) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 static func _a_walking_key_is_held() -> bool:
 	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:

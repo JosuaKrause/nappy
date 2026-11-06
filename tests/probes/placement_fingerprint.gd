@@ -71,7 +71,6 @@ func _the_building(t, seed_value: int) -> int:
 	var printed := _print("building seed %d" % seed_value, scene.map, events.plans())
 	events.free()
 	scene.free()
-	own_run.free()
 	return printed
 
 ## A day, as `DayDirector.start_day()` plans it: the city's own morning, then the events.

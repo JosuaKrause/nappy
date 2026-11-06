@@ -21,7 +21,7 @@ func run(t) -> void:
 ## A manager handed a map drawn in a world node and a run of its own (`EventManager.setup_world()`,
 ## the entry the escape's building is handed its world through), out of the tree so that nothing
 ## ticks it: the parts under test are its own (`streaming`, `spawner`, `warnings`) and its `world`
-## is the one every part is handed. `_free_manager()` frees it with the node and the run.
+## is the one every part is handed. `_free_manager()` frees it with the node.
 func _manager(t) -> EventManager:
 	var holder := WorldContext.new()
 	t.add_child(holder)
@@ -45,11 +45,9 @@ func _her(t) -> Stroller:
 	return her
 
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	var holder := manager.world.map.world
 	manager.free()
 	holder.free()
-	run.free()
 
 func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 	var manager := _manager(t)
@@ -163,7 +161,6 @@ func _test_the_pelican_bag_is_the_handed_runs(t) -> void:
 	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
 	t.check(run.pelican.draws == 5, "a dog draws nothing")
 	manager.free()
-	run.free()
 
 func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t) -> void:
 	var manager := _manager(t)
@@ -245,4 +242,3 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	manager.free()
 	her.free()
 	holder.free()
-	run.free()

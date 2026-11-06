@@ -43,7 +43,6 @@ func _init(t: Node) -> void:
 func free_rig() -> void:
 	_events.free()
 	_scene.free()
-	_run.free()
 
 ## One walk. `arrival` is how many seconds of the section's own clock have run before she reaches
 ## the corridor, `delay` how long she then stands at its entry before walking, `asleep` whether the

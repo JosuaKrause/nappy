@@ -23,14 +23,13 @@ class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 	## The bus of its own this counter listens to.
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 
-	## The run it counts, made fresh for it (day 1 of a normal run) and held as its child, so freeing
-	## the counter frees the run. A test reaches it as `counter.run`.
+	## The run it counts, made fresh for it (day 1 of a normal run). A test reaches it as
+	## `counter.run`.
 	var run := RunState.new()
 
 	## Counts a run of its own, as `main` hands the real counter the run it plays.
 	func _init() -> void:
 		run.start_run(1)
-		add_child(run)
 		configure(null, run)
 		listen(bus)
 
@@ -343,7 +342,6 @@ func _test_listening_touches_no_gameplay_state(t) -> void:
 		"a headless test process is never the web, so nothing above reached a real page")
 	bus.free()
 	counter.free()
-	run.free()
 
 ## Frees the counter, which lets go of every bus it listened to, and the bus of its own.
 func _done(counter: RecordingCounter) -> void:
@@ -589,7 +587,6 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 		"a debug build and ?debug=1 are refused for good, a release web page is not")
 	bus.free()
 	counter.free()
-	run.free()
 
 ## `EventBus.pursuit_began` (the counter's `dog-chased`) fires once per chase, and **a pursuer
 ## created where its warning pointed reports the chase it starts**. `EventManager.spawn_warned()`

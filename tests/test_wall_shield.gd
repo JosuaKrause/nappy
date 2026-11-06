@@ -496,7 +496,6 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t) -> void:
 	player.free()
 	events.free()
 	scene.free()
-	run.free()
 
 ## The debug view's fields layer draws an outline only where the meter would read it: a musician
 ## beside a building two tiles thick has the part of his outline past the building's middle cut

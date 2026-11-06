@@ -398,5 +398,4 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	station.free()
 	recorder.free()
 	sitting.free()
-	run.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))

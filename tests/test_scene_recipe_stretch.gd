@@ -117,7 +117,6 @@ func _sight(t, zoom: float, tiles: int) -> Array[int]:
 		runtime.begin()
 		await PhysicsTicks.pass_ticks(t, 20)
 	viewport.free()
-	own_run.free()
 	return ended
 
 ## The live map against the recipe's own lists, never against a generated city *(mossy-marmot,
@@ -477,7 +476,6 @@ func _drafted(t, city: City, data: Dictionary, walked: Array[Vector2i],
 	var problems: Array[String] = []
 	var drafted := draft.compose(data, own_run, city, city.map.tile_to_world(walked[0]), pinned,
 			problems)
-	own_run.free()
 	return drafted
 
 ## The tiles a drafted recipe's `stretch.tiles` lists, as a set.

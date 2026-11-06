@@ -86,7 +86,6 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 	end.elapsed_seconds = 10.0
 	var run := RunState.new()
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
-	run.free()
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	t.check(title.text == "She started crying after 0:10.\nThere is no settling her now.",
 			"the day summary's title breaks after the first sentence's own period, exactly where " +
@@ -103,7 +102,6 @@ func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t) -> v
 	var run := RunState.new()
 	run.header.day = 1
 	summary.show_summary(SummaryModel.brief_for(run), RunFlow.Mode.BRIEF)
-	run.free()
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
 	t.check(brief.text == "She won't settle indoors. It is quiet in the park.\n" +
 			"Walk until she sleeps, then bring her home.",
@@ -182,5 +180,4 @@ func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
 		pause.close()
 	pause.free()
-	run.free()
 	controls.free()

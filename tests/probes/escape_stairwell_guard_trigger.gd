@@ -129,7 +129,6 @@ func _once(t, s: int, route: String, pace: String) -> void:
 	player.free()
 	events.free()
 	scene.free()
-	run.free()
 
 func _hold(actions: Array, running: bool) -> void:
 	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:

@@ -182,7 +182,6 @@ func measure(t, seed_value: int) -> Dictionary:
 		happenings.start_day(day + 1)
 	director.free()
 	city.free()
-	run.free()
 	return result
 
 ## How many of the park's people the cordon has taken on just after its first tick: an escort each,

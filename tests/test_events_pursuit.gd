@@ -578,7 +578,6 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	if not warning:
 		manager.free()
 		holder.free()
-		run.free()
 		edge.free()
 		atlas.release(&"events")
 		return
@@ -659,7 +658,6 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 	player.free()
 	manager.free()
 	holder.free()
-	run.free()
 	atlas.release(&"events")
 
 	var walked := 0
