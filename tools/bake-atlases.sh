@@ -34,18 +34,14 @@
 # leaves this tree up to date. The ground is the group that needs it: a default bake composes 46
 # of its tiles out of layers, so those tiles' whole pictures are on an --svg page only.
 #
-# **A bake that succeeds can still make the engine complain.** This runs Godot with --script,
-# which loads every autoload first whatever the script references. On a checkout with no .godot/
-# at all -- every fresh clone and every new worktree -- there is no global class-name cache, so
-# no class_name resolves, every autoload fails to parse and the engine prints its own ERROR: and
-# SCRIPT ERROR: lines for the cascade, right after a bake that wrote every page correctly. The
-# bake reads its sources itself and builds nothing out of the project's own classes, so its
-# pages are unaffected. When that happens this script says so in plain words after the engine's
-# own lines, which stay visible, and still exits 0 -- every caller runs this before its own
-# import pass on purpose, on a fresh clone included, so failing here would break all of them for
-# a condition tools/check.sh already repairs. A real bake failure (the engine process itself
-# failing, or its outputs still stale afterwards) keeps its own message and its non-zero exit,
-# and this explanation is never printed over it.
+# **The bake starts from a built class cache.** This runs Godot with --script, which loads every
+# autoload first whatever the script references. On a checkout with no .godot/global_script_class_cache.cfg
+# -- every fresh clone and every new worktree -- no class_name resolves, every autoload fails to
+# parse and the engine prints its own ERROR: and SCRIPT ERROR: lines for the cascade (about 70 of
+# them) right after a bake that wrote every page correctly. So when the cache file is missing this
+# script first runs one quiet `--headless --import` pass, which builds it; the bake's output is then
+# as clean as a second run's, and any ERROR: it still prints is a real one. The pass prints nothing
+# unless it fails, and it runs only when the cache is missing and a bake is about to happen.
 set -uo pipefail
 
 GODOT="${GODOT:-/Applications/Godot.app/Contents/MacOS/Godot}"
@@ -240,6 +236,15 @@ import_restore_arm "$PROJECT_DIR"
 trap import_restore_run EXIT
 
 echo "atlases: baking ($mode mode) -- $reason"
+# Builds the class cache a fresh checkout lacks, so the bake below prints no cascade of parse errors
+# (see the header). Quiet unless it fails.
+if [[ ! -f "$PROJECT_DIR/.godot/global_script_class_cache.cfg" ]]; then
+    import_output="$("$GODOT" --headless --import --path "$PROJECT_DIR" 2>&1)" || {
+        echo "$import_output"
+        echo "FAILED: the import pass that builds the class cache did not succeed" >&2
+        exit 1
+    }
+fi
 bake_args=()
 if [[ "$mode" == "svg" ]]; then
     bake_args+=(--svg)
@@ -264,32 +269,4 @@ if ! staleness_reason >/dev/null; then
     exit 1
 fi
 
-# The pages above are correct: the bake reads its sources itself and builds nothing out of the
-# project's own classes. But --script still loads every autoload -- and on a checkout with no
-# .godot/ (a fresh clone or a new worktree) there is no global class-name cache for them to
-# resolve against, so the first autoload fails to parse and the engine prints its own
-# ERROR:/SCRIPT ERROR: lines for it and for every script the failure cascades into, right above
-# this line, while the bake has already finished. check.sh's own error vocabulary is reused as
-# the trigger rather than a narrower pattern that names the compile-cascade shapes specifically:
-# which autoload fails first, and what it drags down with it, depends on load order and on the
-# dependency graph of whatever changed, so a parser that requires every ERROR: line to match a
-# fixed list of shapes would be chasing the engine's own diagnostics rather than checking a
-# stable contract -- and a change to what it does not recognise would silently stop explaining
-# the exact case this item exists for.
-if grep -qE "SCRIPT ERROR|Parse Error|ERROR:" <<<"$bake_output"; then
-    cat >&2 <<'EOF'
-
-The pages above were baked correctly. The errors above them are the engine loading the game's
-own scripts -- this wrapper starts Godot with --script, which loads every autoload first -- on a
-checkout with no .godot/ to resolve their class_names against, which is every fresh clone and
-every new worktree. The bake reads its sources directly and builds nothing out of those classes,
-so its pages are unaffected.
-
-Run tools/check.sh: it bakes (nothing to redo, the pages above are current) and then runs the
-import pass the engine's own errors above are missing.
-EOF
-fi
-
-# Explicit: the grep above exits 1 on no match, and that must never become this script's own
-# exit code -- a bake that succeeded with a clean engine run is exit 0 whichever way it reads.
 exit 0
