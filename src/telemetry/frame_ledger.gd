@@ -55,17 +55,11 @@ const PROCESS_FRAME := 20
 ## post-draw callback (`RenderingServer.viewport_get_measured_render_time_cpu`). 0 where the
 ## engine does not report it.
 const RENDER_CPU_USEC := 21
-## How many of the game's own `_draw()` calls ran in the frame, by kind: the crowd's agents, the
-## live events, the danger halos' rims (`EntityHalo`), scenery (buildings, their shadow chunks,
-## decals, props, edges, water), the danger badges (`DangerEdge`), her own stroller, and every
-## other (traffic lights, chalk, closure markers, the HUD's own drawing).
+## How many of the game's own `_draw()` calls ran in the frame, by kind: seven consecutive counters
+## from `DRAWS_CROWD`, one per `FrameTiming.Draw` kind in that order (the crowd's agents, the live
+## events, the danger halos' rims, scenery, the danger badges, her own stroller, and every other),
+## so a kind's counter is `DRAWS_CROWD + kind` (`FrameRecord.drew()`).
 const DRAWS_CROWD := 22
-const DRAWS_EVENTS := 23
-const DRAWS_HALOS := 24
-const DRAWS_SCENERY := 25
-const DRAWS_BADGES := 26
-const DRAWS_PLAYER := 27
-const DRAWS_OTHER := 28
 const COUNTER_NAMES: Array[String] = ["physics_steps", "timer_calls", "scenery_updates",
 	"scenery_over_budget_usec", "scenery_deferred_usec", "jobs_ground", "jobs_building",
 	"jobs_prop", "jobs_shadow", "jobs_decal", "guard_preparations", "drawn", "draw_calls",

@@ -192,9 +192,10 @@ func measure(t, seed_value: int) -> Dictionary:
 func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 	# The two tapers are the first two officers in the world; every other is an escort.
 	var people := maxi(0, CordonInTheWorld.officers(city).size() - 2)
+	var area := CordonInTheWorld.park_ground(city.map, cordon.park)
 	for live in city.events.instances():
 		var def := live.def
-		if live.is_finished or not live.is_leaving or not cordon.area.has_point(live.global_position):
+		if live.is_finished or not live.is_leaving or not area.has_point(live.global_position):
 			continue
 		if def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
 				and not def.warned_first and not def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
@@ -208,7 +209,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	_look(city, her[0])
 	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
-	var result := {"park_size": cordon.area.size, "walk": swing.distance_to(cordon.last_gap)}
+	var result := {"park_size": CordonInTheWorld.park_ground(city.map, cordon.park).size,
+			"walk": swing.distance_to(cordon.last_gap)}
 	result.people = _people_taken_on(city, cordon)
 	_measure_the_gap(city, director, cordon, result)
 	var standing := _play(city, cordon, her, shows, false, result.people == 0)
@@ -242,7 +244,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 ## closed, and the officers' steps onto a body's ground (`_count_the_step()`).
 func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
 		swing: Vector2, place: Array) -> Dictionary:
-	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
+	var area := CordonInTheWorld.park_ground(city.map, park)
+	var line := CordonInTheWorld.tape_line(city.map, park)
 	var spot: Vector2 = area.position + area.size * (place[0] as Vector2) + (place[1] as Vector2)
 	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"), spot)
 	if not busker:
@@ -284,7 +287,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		_tick(city, cordon, her[0])
 		clock += STEP
 		if closed_at < 0.0 and cordon.is_closed():
-			closed_at = cordon.elapsed
+			closed_at = clock
 		_count_the_steps(city.map, before, counts)
 		for tape in CordonInTheWorld.tapes(city):
 			if taped_at.has(tape.get_instance_id()):
@@ -300,7 +303,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 		var now := busker.global_position
 		if CordonInTheWorld.is_across_tape(city, last, now):
 			through_tape += 1
-		if not cordon.line.has_point(now):
+		if not line.has_point(now):
 			left = true
 		elif left:
 			back_in += 1
@@ -327,6 +330,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 		result: Dictionary) -> void:
 	var map := city.map
 	var rect := ClosurePlanner.calm_area_rect(map, cordon.park)
+	var area := CordonInTheWorld.park_ground(map, cordon.park)
 	var blocked: Dictionary = ResistanceReads.day_reachability(city)[1]
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
@@ -341,7 +345,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 		reaches = reaches and out
 		var point := (stretch.a + stretch.b) * 0.5 + Vector2(stretch.outward) * Tuning.TILE_SIZE
 		for plan in city.events.plans():
-			if plan.spent or not plan.is_placed() or cordon.area.has_point(plan.position):
+			if plan.spent or not plan.is_placed() or area.has_point(plan.position):
 				continue
 			var def := plan.def
 			if def.obstructs_radius <= 0.0 and not def.hard_fail:
@@ -377,6 +381,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
 		watch_stalls: bool) -> Dictionary:
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
+	var line := CordonInTheWorld.tape_line(city.map, cordon.park)
 	var first_seen := -1.0
 	var clock := STEP
 	var gap := cordon.last_gap
@@ -396,7 +401,7 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 					first_seen = clock
 		if walks and first_seen >= 0.0 and clock >= first_seen + REACTION:
 			var target := gap if (her[0] as Vector2).distance_to(gap) > 1.0 \
-					and cordon.line.has_point(her[0]) else out
+					and line.has_point(her[0]) else out
 			her[0] = (her[0] as Vector2).move_toward(target, Tuning.WALK_SPEED * STEP)
 		_tick(city, cordon, her[0])
 		clock += STEP
@@ -410,7 +415,7 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 				elif started.has(officer) and officer.global_position.distance_to(her[0]) > STALL_AWAY:
 					stalled += 1
 	EventBus.hard_fail_triggered.disconnect(listen)
-	return {"first_seen": first_seen, "closed_at": cordon.elapsed if cordon.is_closed() else -1.0,
+	return {"first_seen": first_seen, "closed_at": clock if cordon.is_closed() else -1.0,
 			"trapped": fails == [ParkCordon.TRAPPED], "onto_bodies": counts.onto_bodies,
 			"stalled": stalled}
 

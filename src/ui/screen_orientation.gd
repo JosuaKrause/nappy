@@ -10,11 +10,11 @@ extends RefCounted
 ## (1280x720 by default), regardless of the real window's own pixel size. Swapping
 ## `content_scale_size` to the ROTATED box when the window is portrait asks Godot to do that same
 ## free mapping against the rotated shape instead, so a real touch already arrives in 720x1280
-## space, and `rotation_transform()` is the fixed step back into the 1280x720 space every screen
+## space, and `_rotation_transform()` is the fixed step back into the 1280x720 space every screen
 ## is still authored in.
 ##
 ## **One rotation, carried by every `CanvasLayer` of screen furniture.** `main._apply_orientation()`
-## sets `layer.transform` to `rotation_transform()` (or `Transform2D.IDENTITY`) on every layer —
+## sets `layer.transform` to `_rotation_transform()` (or `Transform2D.IDENTITY`) on every layer —
 ## `apply_to_layer()` is that one line, so it is written once. A layer's own children still have to
 ## be laid out against the fixed 1280x720 box rather than against whatever `content_scale_size`
 ## currently is — a `Control` anchored full-rect under a rotated layer would otherwise size itself
@@ -56,7 +56,7 @@ static func content_scale_size(rotate: bool) -> Vector2i:
 ## `content_scale_size` reports while rotated — a rotation and a recentre between two constant
 ## boxes, independent of the real window's own pixel size, because `content_scale_size` is what
 ## already fits either box to whatever the real window turns out to be.
-static func rotation_transform() -> Transform2D:
+static func _rotation_transform() -> Transform2D:
 	var t := Transform2D().rotated(deg_to_rad(90.0))
 	t.origin = ROTATED_SIZE * 0.5 - t.basis_xform(DESIGN_SIZE * 0.5)
 	return t
@@ -67,14 +67,14 @@ static func rotation_transform() -> Transform2D:
 static func to_design_space(position: Vector2, rotate: bool) -> Vector2:
 	if not rotate:
 		return position
-	return rotation_transform().affine_inverse() * position
+	return _rotation_transform().affine_inverse() * position
 
 ## The other direction: a point authored in the 1280x720 box, to where it actually belongs once
 ## rotated. Identity while not rotating.
 static func to_presented_space(position: Vector2, rotate: bool) -> Vector2:
 	if not rotate:
 		return position
-	return rotation_transform() * position
+	return _rotation_transform() * position
 
 ## Pins `control`'s rect to the fixed 1280x720 box every screen is authored against — top-left
 ## anchors and literal offsets, so its size depends on nothing but this call, not on whatever
@@ -97,7 +97,7 @@ static func pin_to_design_box(control: Control) -> void:
 ## definition every screen-furniture `CanvasLayer` applies, so `main._apply_orientation()` reads
 ## as one line per layer rather than an `if rotate: ... else: IDENTITY` repeated at each one.
 static func apply_to_layer(layer: CanvasLayer, rotate: bool) -> void:
-	layer.transform = rotation_transform() if rotate else Transform2D.IDENTITY
+	layer.transform = _rotation_transform() if rotate else Transform2D.IDENTITY
 
 ## The world's half of the same rotation, for whichever `Camera2D` is current: hers
 ## (`Stroller.set_screen_rotation()`) or the boot camera that stands in for hers until she exists
@@ -105,7 +105,7 @@ static func apply_to_layer(layer: CanvasLayer, rotate: bool) -> void:
 ## through a `CanvasLayer`, and a camera's `rotation` is the only handle on that canvas's
 ## transform, so this is the one definition every camera the game draws through takes.
 ##
-## **The sign is the opposite of `rotation_transform()`'s own +90°, and has to be**: a `Camera2D`
+## **The sign is the opposite of `_rotation_transform()`'s own +90°, and has to be**: a `Camera2D`
 ## rotated by `+r` turns the *view* by `-r` — rotating the thing you are looking through one way
 ## swings what you see through it the other way — so `+90°` here turns the world counter-clockwise
 ## while every layer turns clockwise, 180° apart. `-90°` turns the view by `+90°`, which agrees.

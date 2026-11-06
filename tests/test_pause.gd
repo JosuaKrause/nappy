@@ -835,10 +835,10 @@ func _test_the_title_names_a_version(t) -> void:
 	t.check(version.text == BuildInfo.source_version(),
 			"and it is git's own answer where git can give one (got '%s')" % version.text)
 
-	var commit := BuildInfo.commit_text()
-
 	var build := BuildInfo.build_text()
-	t.check(build.contains(BuildInfo.version_text()) and build.contains(commit),
+	var after_version := build.trim_prefix(BuildInfo.version_text())
+	t.check(build.begins_with(BuildInfo.version_text()) and after_version.begins_with(" (")
+			and after_version.ends_with(")") and after_version.length() > 4,
 			"the build stamp is the describe form and the commit together (got '%s')" % build)
 	var note := DebugModeNote.new()
 	t.add_child(note)

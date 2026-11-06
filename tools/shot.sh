@@ -190,7 +190,7 @@ rig_focus_watch_stop "$FOCUS_WATCHER_PID"
 # A capture is checked, not assumed: Godot exiting 0 is not by itself proof the
 # picture exists (`--route` racing its own quit against `--after` is one way it would not, before
 # `reject_route_with_screenshot` above closed that specific combination off; a display fallen back
-# to headless mid-run, per `AutoScreenshot.can_photograph()`, is another). Checked here rather than
+# to headless mid-run, per `AutoScreenshot._capture()`'s headless guard, is another). Checked here rather than
 # left to whoever opens $OUT next.
 if [[ "$WAIT_OR_KILL_STATUS" -ne 0 ]]; then
     echo "shot.sh: Godot exited $WAIT_OR_KILL_STATUS -- no picture written" >&2

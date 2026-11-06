@@ -4,6 +4,7 @@ extends RefCounted
 
 const AlleyMarks := preload("res://tests/alley_marks.gd")
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
+const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 const PROBE := """extends Node
 class World extends Node2D:
 	var frames := 0
@@ -154,6 +155,9 @@ func _probe_the_camera() -> void:
 	get_tree().quit(0)
 """
 
+## Where each recipe is written and loaded, and what loading it answers.
+var _errors := RecipeErrors.new()
+
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
 	_test_schema(t)
@@ -269,7 +273,7 @@ func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
 			"the cold roadblock has no radius to skip")
 	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("fire_truck")).contains("wait"),
 			"a row that does not wait is refused")
-	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
 
 ## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
@@ -278,26 +282,26 @@ func _test_relentless_is_for_a_pursuer(t) -> void:
 			"a pursuer may be kept coming")
 	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("pigeon_flock")).contains("pursue"),
 			"a row that does not pursue is refused")
-	t.check(SceneRecipeRuntime.validate_runtime({"setup": {"day": 7, "events": [{"name": "g",
+	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
 
 func _test_schema(t) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
 			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true},
 				"settled_camera": true}}
-	t.check(SceneRecipeRuntime.validate_runtime(valid).is_empty(), "valid optional runtime defaults are accepted")
+	t.check(_errors.errors_of(t, valid).is_empty(), "valid optional runtime defaults are accepted")
 	var heated := {"setup": {"day": 7, "events": [{"name": "block", "row": "roadblock", "at": [0, 0],
 			"heat": EventDef.HEAT_HUNTS_LEVEL}]}}
-	t.check(SceneRecipeRuntime.validate_runtime(heated).is_empty(),
+	t.check(_errors.errors_of(t, heated).is_empty(),
 			"an event may name the resistance progress its row is installed at")
 	var mixed := {"setup": {"background": {"crowd": true, "uniform_walkers": true},
 			"actors": [{"name": "walker", "kind": "walker", "at": [0, 0], "direction": "north"}]}}
-	t.check(SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "uniform background admits explicit walkers")
+	t.check(_errors.errors_of(t, mixed).is_empty(), "uniform background admits explicit walkers")
 	mixed.setup.actors[0].kind = "car"
-	t.check(not SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "background still refuses pinned cars")
+	t.check(not _errors.errors_of(t, mixed).is_empty(), "background still refuses pinned cars")
 	mixed.setup.actors[0].kind = "walker"
 	mixed.setup.background.uniform_walkers = false
-	t.check(not SceneRecipeRuntime.validate_runtime(mixed).is_empty(), "random background still refuses pinned actors")
+	t.check(not _errors.errors_of(t, mixed).is_empty(), "random background still refuses pinned actors")
 	var invalid: Array[Dictionary] = [
 		{"setup": {"day": 1.5}},
 		{"setup": {"day": 13, "seals": [{"segment": [3, 5, 0], "candidate": "cafe_pair"}],
@@ -347,7 +351,7 @@ func _test_schema(t) -> void:
 		{"playback": {"unsupported": true}},
 	]
 	for recipe in invalid:
-		t.check(not SceneRecipeRuntime.validate_runtime(recipe).is_empty(),
+		t.check(not _errors.errors_of(t, recipe).is_empty(),
 				"malformed runtime data is rejected: %s" % [recipe])
 
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car

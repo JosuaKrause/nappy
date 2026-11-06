@@ -60,7 +60,7 @@ const BUCKET_NAMES: Array[String] = ["physics_rest", "process_rest", "scenery", 
 ## events, the danger halos' rims (`EntityHalo`), scenery (buildings, their shadow chunks, decals,
 ## props, edges, water), the danger badges (`DangerEdge`), her own stroller, and every other
 ## (traffic lights, chalk, closure markers, the HUD's own drawing). In this order, which
-## `FrameLedger`'s `DRAWS_*` counters follow.
+## `FrameLedger`'s draw counters follow.
 enum Draw { CROWD, EVENTS, HALOS, SCENERY, BADGES, PLAYER, OTHER }
 
 ## The kinds of scenery job the queue counts, in the order `FrameLedger`'s `JOBS_*` counters follow

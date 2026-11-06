@@ -24,6 +24,12 @@ var _city: City
 var _run: RunState
 ## Where the swing is, set by `_at_the_swing()` before it runs its `before_the_touch`.
 var _swing_now := Vector2.ZERO
+## Seconds the suite has ticked the happenings since the touch: the time since the swing.
+var _clock := 0.0
+## The park's ground and the rectangle the tape stands on, read off the map once the city is built
+## (`CordonInTheWorld`).
+var _ground_rect := Rect2()
+var _line_rect := Rect2()
 
 func run(t) -> void:
 	# Finishing the swing's task the game's way makes the director's own happenings take the park
@@ -87,6 +93,10 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 			"day 12 sends her to the swing")
 	var swing := director.contact_position()
 	_swing_now = swing
+	_clock = 0.0
+	var swing_park := CityGenerator.swing_park(_city.map)
+	_ground_rect = CordonInTheWorld.park_ground(_city.map, swing_park)
+	_line_rect = CordonInTheWorld.tape_line(_city.map, swing_park)
 	if before_the_touch.is_valid():
 		before_the_touch.call()
 	var happenings: ResistanceHappenings = null
@@ -126,6 +136,13 @@ func _camera_on(her: Array) -> Callable:
 func _tick(happenings: ResistanceHappenings, at: Vector2, camera := true) -> void:
 	_look(_city, at if camera else null)
 	happenings.tick(STEP, at, Vector2.ZERO)
+	_clock += STEP
+
+func _ground() -> Rect2:
+	return _ground_rect
+
+func _line() -> Rect2:
+	return _line_rect
 
 static func _look(city: City, at) -> void:
 	var view := city.events.visible_view()
@@ -299,7 +316,7 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 	_tick(happenings, her[0], false)
 	var cordon := happenings.cordon
 	var gap := cordon.last_gap
-	her[0] = gap + (gap - cordon.area.get_center()).normalized() * Tuning.TILE_SIZE * 3.0
+	her[0] = gap + (gap - _ground().get_center()).normalized() * Tuning.TILE_SIZE * 3.0
 	# Lambdas capture locals by value, so what they count lives in a dictionary.
 	var seen := {"most_gaps": 0, "last": null, "taped": {}}
 	var watch := func() -> void:
@@ -313,7 +330,7 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 	t.check(seen.most_gaps == 1, "and the open edge is one gap the whole time (at most %d)"
 			% seen.most_gaps)
 	t.check(CordonInTheWorld.open_gaps(_city.map, fixture.park) == 0, "and none is left once it has")
-	var line := cordon.line
+	var line := _line()
 	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end,
 			Vector2(line.position.x, line.end.y)]
 	var nearest := INF
@@ -343,10 +360,10 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 	t.check(cordon.is_closed() and fails.size() == 1 and fails[0] == ParkCordon.TRAPPED,
 			"standing at the swing, she is shut in, and it ends the day as the cordon's own hard "
 			+ "fail (%s)" % [fails])
-	t.check(cordon.elapsed >= ParkCordon.PARK_CLOSING_SECONDS - 0.05
-			and cordon.elapsed <= ParkCordon.PARK_CLOSING_SECONDS + 0.5,
+	t.check(_clock >= ParkCordon.PARK_CLOSING_SECONDS - 0.05
+			and _clock <= ParkCordon.PARK_CLOSING_SECONDS + 0.5,
 			"the last gap is taped about %.0fs after the touch (%.1fs)"
-			% [ParkCordon.PARK_CLOSING_SECONDS, cordon.elapsed])
+			% [ParkCordon.PARK_CLOSING_SECONDS, _clock])
 	t.check(Texts.HARD_FAIL_TEXT.has(ParkCordon.TRAPPED),
 			"which the day's end has a sentence for")
 	_stop_listening(listener)
@@ -370,10 +387,10 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 		clock[0] += delta
 		if clock[0] < REACTION:
 			return
-		var was_inside := cordon.line.has_point(her[0])
+		var was_inside := _line().has_point(her[0])
 		var next: Vector2 = (her[0] as Vector2).move_toward(out, Tuning.WALK_SPEED * delta)
 		her[0] = next
-		if was_inside and not cordon.line.has_point(next) and crossed[0] < 0.0:
+		if was_inside and not _line().has_point(next) and crossed[0] < 0.0:
 			crossed[0] = clock[0]
 			crossed[1] = CordonInTheWorld.is_beside_tape(_city, next, ParkCordon.HER_REACH)
 	_run_until_closed(happenings, her, _camera_on(her), step_her)
@@ -381,9 +398,9 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 	t.check(cordon.is_closed() and fails.is_empty(),
 			"walking out from the swing after %.0fs, she is outside when the last gap closes, "
 			% REACTION + "and nothing ends the day (%s)" % [fails])
-	t.check(crossed[0] > 0.0 and crossed[0] < cordon.elapsed,
+	t.check(crossed[0] > 0.0 and crossed[0] < _clock,
 			"she crossed the line at %.1fs, before it closed at %.1fs (the walk: %.0fpx)"
-			% [crossed[0], cordon.elapsed, swing.distance_to(exit)])
+			% [crossed[0], _clock, swing.distance_to(exit)])
 	t.check(not crossed[1], "through a gap with no tape in it")
 	_stop_listening(listener)
 	_end(fixture)
@@ -421,7 +438,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 		if before.has(at):
 			waiting += 1
 	t.check(waiting >= 1, "an officer waits beside her (%d)" % waiting)
-	her[0] = cordon.last_gap + (cordon.last_gap - cordon.area.get_center()).normalized() \
+	her[0] = cordon.last_gap + (cordon.last_gap - _ground().get_center()).normalized() \
 			* Tuning.TILE_SIZE * 2.0
 	_run_until_closed(happenings, her, Callable())
 	var tapes := CordonInTheWorld.tapes(_city)
@@ -439,7 +456,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 			% [bodies, tapes.size()])
 	# Along the whole of the edge that needs tape: a point every half tile along each side of the
 	# line, on a stretch that needs tape, lies in some tape's body.
-	var line := cordon.line
+	var line := _line()
 	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end,
 			Vector2(line.position.x, line.end.y)]
 	var needed_tiles := {}
@@ -580,16 +597,16 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 				seen.off_ground += 1
 			if CordonInTheWorld.is_across_tape(_city, before, now):
 				seen.through_tape += 1
-			if who == "busker" and cordon.line.has_point(before) \
-					and not cordon.line.has_point(now):
+			if who == "busker" and _line().has_point(before) \
+					and not _line().has_point(now):
 				seen.crossed_at = now
 			last[who] = now
-		if walkers.has("busker") and busker.is_leaving and cordon.line.has_point(walkers.busker) \
-				and not cordon.line.has_point(escort.global_position):
+		if walkers.has("busker") and busker.is_leaving and _line().has_point(walkers.busker) \
+				and not _line().has_point(escort.global_position):
 			seen.escort_ahead += 1
 		if not was_closed and cordon.is_closed():
-			seen.closed_with_them_inside = cordon.line.has_point(escort.global_position) \
-					or (walkers.has("busker") and cordon.line.has_point(walkers.busker))
+			seen.closed_with_them_inside = _line().has_point(escort.global_position) \
+					or (walkers.has("busker") and _line().has_point(walkers.busker))
 		if escort.is_queued_for_deletion():
 			seen.gone_seen = shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW),
 					escort.global_position)
@@ -719,7 +736,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 			var now := busker.global_position
 			if CordonInTheWorld.is_across_tape(_city, last, now):
 				through_tape += 1
-			if cordon.line.has_point(last) and not cordon.line.has_point(now):
+			if _line().has_point(last) and not _line().has_point(now):
 				crossed_at = now
 			last = now
 		var when := "already leaving at the touch" if after_the_touch < 0.0 \
@@ -761,11 +778,11 @@ func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t) -> void:
 	var figures := CordonInTheWorld.officers(_city)
 	var escort: CordonOfficer = figures[2] if figures.size() == 3 else null
 	var waited := 0.0
-	while waited < PATIENCE and escort and not cordon.line.grow(-Tuning.TILE_SIZE).has_point(
+	while waited < PATIENCE and escort and not _line().grow(-Tuning.TILE_SIZE).has_point(
 			escort.global_position):
 		_tick(happenings, her[0], shows.is_valid())
 		waited += STEP
-	t.check(escort != null and cordon.line.has_point(escort.global_position),
+	t.check(escort != null and _line().has_point(escort.global_position),
 			"an escort is inside the park on his way to the busker (%.1fs)" % waited)
 	if escort == null:
 		_end(fixture)
@@ -782,7 +799,7 @@ func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t) -> void:
 		if CordonInTheWorld.is_across_tape(_city, last, now):
 			through_tape += 1
 		if not was_closed and cordon.is_closed():
-			inside_at_the_close = cordon.line.has_point(now)
+			inside_at_the_close = _line().has_point(now)
 		last = now
 	t.check(cordon.is_closed() and not inside_at_the_close,
 			"with the busker gone, the gap closes only once he is out of it")
@@ -823,7 +840,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> 
 		var now := busker.global_position
 		# The tapers owe the gap its tape once every other stretch that needs it is up; the gap is
 		# taped when tape stands at the place it closes.
-		if cordon.line.grow(ParkCordon.WALKER_REACH).has_point(now) and not gap_tiles.is_empty() \
+		if _line().grow(ParkCordon.WALKER_REACH).has_point(now) and not gap_tiles.is_empty() \
 				and CordonInTheWorld.is_only_the_gap_open(_city.map, fixture.park, gap_tiles):
 			if cordon.last_gap.distance_to(now) > ParkCordon.WALKER_REACH + Tuning.TILE_SIZE:
 				holding += 1

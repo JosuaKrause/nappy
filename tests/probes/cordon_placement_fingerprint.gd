@@ -75,7 +75,7 @@ func _play(city: City, happenings: ResistanceHappenings, swing: Vector2, walks: 
 			cordon._deadline, cordon._exit])
 	printed += 1
 	if walks:
-		her[0] = cordon.last_gap + (cordon.last_gap - cordon.area.get_center()).normalized() \
+		her[0] = cordon.last_gap + (cordon.last_gap - cordon._area.get_center()).normalized() \
 				* Tuning.TILE_SIZE * 3.0
 	var frame := 0
 	var gone_for := 0
