@@ -23,15 +23,9 @@ least as long as the fairness floor needs") is what **verify**'s testing policy 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: one
-drawing helper, and the resistance director's five placement queries (`guard_position`,
-`place_contact`, `nearest_alley_within`, `nearest_alley_among`, `weighted_mast_index`), left public
-for now on cost: their sweeps ask every alley tile of several generated maps of a bare director
-(record minty-quail-sunny-heron). A sampled sweep through the world costs seconds: a recipe task
-(`start_recipe_task()`) pins a mark on a tile and stands its guard, and a guard's move toward
-another roadblock shows in the world.
-The CI check of test-only members lists them one by one; its count is the scope, since the tier's
-"about 250" was an estimate.
+**Scope.** The CI check of test-only members lists the owners one by one, and its count is the
+scope; its own-file group holds no line, every member it lists being internal or kept with its
+reason. What is left is the members the check cannot see, below.
 
 *Proposed by the orchestrator, from a review, not asked for:* the CI check of test-only members
 counts a member as read by the game when any other class has a member of the same name, so a
