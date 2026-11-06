@@ -27,13 +27,16 @@ stay public for the same reason: the fairness tests check numbers against them.
 scope; its own-file group holds no line, every member it lists being internal or kept with its
 reason. What is left is the members the check cannot see, below.
 
-**The members the check now sees** (record minty-quail-feathery-finch): the CI check qualifies a member by its
-class where a reader's type is known, so a member whose name another class shares is no longer hidden by that
-namesake. The ones it newly lists, in the last `[kept]` group of the CI check's list, are `BuildingShadows.compute`,
-`City.sleepiness_multiplier` and `decay_multiplier`, `CityMap.walkable_lut`, `is_crossing`, `corridor_offsets` and
-`alley_at`, `MarbleBag.take`, the `photograph` and `to_data` of the run-state parts, `CarStrategy` and
-`WalkerStrategy` helpers, `CrowdField.contains`, `ParkClosure.barrier_width` and `barrier_runs_across`, and others;
-each is made internal, or kept with its reason, in its owner's pass, which deletes its line.
+**What the check still cannot see** (record minty-quail-feathery-finch): it qualifies a member by its class where a
+reader's type is known when another class has a member of the same name, and a reader typed as a base class reaches an
+override. A member whose name only one file defines is still judged by its word, so a local or an engine method of
+that name hides it: `ParkCordon.gap` (other files have a local `gap`, so it can take no `[kept]` line, whose reason
+stands as a comment on it, record minty-quail-grassy-squirrel) and `RouteTree.grow` (`Rect2.grow` calls). The check
+takes a plain word in another file as a read only where that file's class extends the member's class, and an
+engine-typed or local receiver as not a src class's. A declaration is taken for the whole file, not per function.
+Three members have no test reader: `CrowdField.contains` and `MarbleBag.take` (the tests' reads are `String.contains`
+and `EventStreaming.take`, which the check cannot type) are dead and are deleted, and `Main.use_sitting` is a hand-in
+no test calls (the tests' `use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing a check that holds nothing once its member is

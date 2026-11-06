@@ -1,9 +1,10 @@
 # The public members only tests read, which tools/check_test_only_members.py lets stand: one
 # "<file> <member>" per line, sorted within a group. A group starts at a header comment whose first
 # word is its tag in brackets. The [no reader] and [own file only] groups only shrink: the check fails
-# a line added to either (against the pull request's base) and a line that has gone stale, a member
-# that gained a reader in another file, lost its tests, or is gone. The pull request that fixes a
-# member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
+# a line added to either against the pull request's base, unless the same diff changes the checker itself
+# (a better checker surfaces members the old one could not see). It also fails a line that has gone stale,
+# a member that gained a reader in another file, lost its tests, or is gone. The pull request that fixes
+# a member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
 # after its '#'.
 
 # [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
@@ -24,11 +25,24 @@ src/autoload/telemetry.gd begin_memory_log
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
+src/city/marble_bag.gd take  # no test reads it: the tests' `.take(` are `EventStreaming.take` and a callable's, on receivers the check cannot type, so it counts them; nothing calls it, so it is deleted
+src/crowd/crowd_field.gd contains  # no test reads it: the tests' `.contains(` are `String.contains` on untyped receivers, which the check counts; nothing calls it, so it is deleted
+src/player/stroller.gd family_sources
+src/world/navigator.gd open_ground
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
+src/city/building_shadows.gd compute
+src/city/poster_art.gd compose
+src/crowd/walker_look.gd gait_phase
+src/main.gd configure
+src/run/day_director.gd facts
+src/run/day_director.gd hands_over_to_the_escape
+src/run/run_calendar.gd facts
+src/telemetry/frame_recorder.gd ledger
+src/ui/badge_model.gd watch
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -111,57 +125,3 @@ src/events/walk_ground.gd held_by  # the ground a placement holds the walk off f
 src/events/walk_ground.gd solids_of  # the body pieces a placement stands for the whole walk, at the place EventInstance.setup() will put them (successor included); held_by() and stand() build on it, and the finale rigs read each piece's spine and its stops_her_at() to hold that no escape body reaches over a building and that her line past a roadblock fits at its place; the same discs the judge counts, so a rig that read an instance's bodies instead would not test the judge's own prediction; open to overturn
 src/events/event_manager.gd check_hard_fails  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it
 src/events/event_manager.gd step_the_encounters  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it
-
-# [kept] Newly seen when the check began telling a member from another class's member of the same name (record
-# minty-quail-feathery-finch): each shares its name with a member of another class that the game reads,
-# which hid it. Each is owed the underscore or its own kept reason in its owner's pass (tests-own-class-members.md),
-# and its line is deleted there; the list below is the work, not an exception.
-src/city/building_shadows.gd compute  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/city/city.gd decay_multiplier  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/city.gd sleepiness_multiplier  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/city_map.gd alley_at  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/city_map.gd corridor_offsets  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/city_map.gd is_crossing  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/city_map.gd walkable_lut  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/marble_bag.gd take  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/pelican_state.gd photograph  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/pelican_state.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/poster_art.gd compose  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/city/poster_state.gd photograph  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/city/poster_state.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/car_strategy.gd cannot_go_on  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/car_strategy.gd ground_shape  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/car_strategy.gd is_in_a_pocket  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/car_strategy.gd speed_range  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/car_strategy.gd stride_length  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/crowd_agent.gd end_the_frame  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/crowd_excitement.gd will_be_lethal  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/crowd_field.gd contains  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_look.gd gait_phase  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_strategy.gd cannot_go_on  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_strategy.gd door_is_shut  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_strategy.gd ground_shape  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_strategy.gd speed_range  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/crowd/walker_strategy.gd stride_length  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/events/event_excitement.gd will_be_lethal  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/events/views/roadblock_look.gd release_nodes  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/events/views/spread_look.gd release_nodes  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/interior/interior_scene.gd decay_multiplier  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/main.gd configure  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/player/stroller.gd family_sources  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/routes/park_closure.gd barrier_runs_across  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/routes/park_closure.gd barrier_width  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/attempt_spend_state.gd photograph  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/attempt_spend_state.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/day_director.gd facts  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/run/day_director.gd hands_over_to_the_escape  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/run/resistance_run_state.gd photograph  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/run/resistance_run_state.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/run_calendar.gd facts  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/run/run_facts.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/run_header.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/run/settled_state.gd to_data  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/telemetry/frame_record.gd scenery_job  # no reader; only tests read this class's member, the game's readers of the name are another class's
-src/telemetry/frame_recorder.gd ledger  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/ui/badge_model.gd watch  # own file only; only tests read this class's member, the game's readers of the name are another class's
-src/world/navigator.gd open_ground  # no reader; only tests read this class's member, the game's readers of the name are another class's

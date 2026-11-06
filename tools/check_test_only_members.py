@@ -40,7 +40,8 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
   deletes its line; one open beside it merges `main` and deletes its own lines;
 - a `[kept]` line with no reason after its `#` **fails**;
 - with `--base REV`, a line in the `[no reader]` or `[own file only]` group that `REV`'s list did not hold in
-  either of them **fails**: those two groups only shrink. CI passes the pull request's base commit, and on a
+  either of them **fails**: those two groups only shrink, unless the same diff changes this checker (a better
+  checker surfaces members the old one could not see). CI passes the pull request's base commit, and on a
   push to `main` the commit before it, so a builder cannot answer the check's failure by listing the
   member; only a kept line, with its reason, is added, and review reads the reason. A line that moves with its
   member passes: an added line passes when a line of the same group that the pull request removes has the
@@ -48,15 +49,21 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
   same diff (a file move carries its lines, each removed line pairing with one added line; a renamed member is
   fixed or kept, not carried). A `REV` without the list yet compares nothing.
 
-**A name more than one file defines** (`ParkCordon.gap` and another class's `gap`) is judged by its class, so
-the other class's own uses do not hide it. A `.name` is qualified by its receiver where the file shows the receiver's
-type: a name declared `x: Foo` or built `x := Foo.new()` (one class for the name in the file), `self`, or a
-`ClassName.name` static use; a reader typed as a class that is, or extends, the member's class reaches it, one typed
-as another src class does not, and one not typed (a call result, a chain `a.b.name`, an autoload, an untyped
-parameter) reaches every class with the name, in the game's files and the tests' alike. In a file that defines the
-name too, only such a `.name` counts, a plain use being that file's own member. A `[kept]` line for such a member
-stands while every use of it elsewhere is untyped (the check cannot tell whose it is, and the line says it is not
-the game's) and is a `REMOVE` line once a typed reader reads it. A name defined once is judged by its word as before.
+**A name more than one file defines** (`CarStrategy.speed_range` and `WalkerStrategy.speed_range`) is judged by its
+class, so another class's own uses do not hide it. A `.name` is qualified by its receiver where the file shows the
+receiver's type: a name declared `x: Foo` or built `x := Foo.new()` (one class for the name in the file; `x: Foo.Inner`
+and a one-line `if c: Foo.f()` declare nothing), `self`, or a `ClassName.name` static use. A reader typed as the
+member's class, a class it extends or a class that extends it reaches it (a call dispatches on the object, so a reader
+typed as the base reaches the override); one typed as another src class does not; one not typed (a call result, a
+chain `a.b.name`, an autoload, an untyped parameter) reaches every class with the name, in the game's files and the
+tests' alike. In a file that defines the name too, only such a `.name` counts, a plain use being that file's own
+member, except in an ancestor's file, where a plain use is a call the override answers (a template method). A `[kept]`
+line for such a member stands while every use of it elsewhere is untyped (the check cannot tell whose it is, and the
+line says it is not the game's) and is a `REMOVE` line once a typed reader reads it. A name defined once is judged by
+its word as before, which hides `ParkCordon.gap` (other files have a local `gap`) and `RouteTree.grow` (`Rect2.grow`
+calls): a plain word in another file counts as a read, a local or an engine method of the name included. A
+declaration is taken for the whole file, not per function, so a name typed in one function and rebound untyped in
+another carries the first type.
 
 **What it can miss and where it can accuse falsely.** A name defined once is judged by its word, never by its
 class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose method this
@@ -113,7 +120,7 @@ USE = re.compile(r"\.\s*([A-Za-z]\w*)(\s*\()?")
 # The word right before a dot, not itself a member of something (`a.b.name` has no known receiver).
 RECEIVER = re.compile(r"(?<![\w.])(\w+)$")
 # A name typed where it is declared (`var x: Foo`, a parameter, a `for x: Foo in`) or built (`x := Foo.new()`).
-TYPED = re.compile(r"\b(\w+)\s*:\s*([A-Z]\w*)")
+TYPED = re.compile(r"\b(\w+)\s*:\s*([A-Z]\w*)\b(?!\s*\.)")
 BUILT = re.compile(r"\b(\w+)\s*:?=\s*([A-Z]\w*)\s*\.\s*new\s*\(")
 EXTENDS = re.compile(r"^extends[ \t]+(\w+)", re.MULTILINE)
 # A word used in its own file other than as a member of another object: not after a `.`; `self.name` and the
@@ -193,20 +200,28 @@ class World:
     class_of: dict[str, str | None]
     colliding: frozenset[str]
 
+    def ancestors(self, klass: str) -> list[str]:
+        """`klass` and every class it extends, nearest first."""
+        chain: list[str] = []
+        current: str | None = klass
+        while current and current not in chain:
+            chain.append(current)
+            current = self.extends.get(current)
+        return chain
+
     def hits(self, klass: str | None, path: str) -> bool:
-        """Whether a reader of static type `klass` can reach the member defined in `path`: an unknown type can,
-        and a known one can when it is that file's class or extends it."""
+        """Whether a reader of static type `klass` can reach the member defined in `path`: an unknown type can;
+        a known one can when it is that file's class, extends it, or is extended by it (a reader typed as the
+        base reaches the override, since a call dispatches on the object)."""
         if klass is None:
             return True
         mine = self.class_of.get(path)
-        seen: set[str] = set()
-        current: str | None = klass
-        while current and current not in seen:
-            if current == mine:
-                return True
-            seen.add(current)
-            current = self.extends.get(current)
-        return False
+        return mine is not None and (mine in self.ancestors(klass) or klass in self.ancestors(mine))
+
+    def is_ancestor_file(self, path: str, of: str) -> bool:
+        """Whether the class defined in `path` is a proper ancestor of the class defined in `of`."""
+        mine, theirs = self.class_of.get(path), self.class_of.get(of)
+        return mine is not None and theirs is not None and mine in self.ancestors(theirs)[1:]
 
 
 @dataclass(frozen=True)
@@ -359,8 +374,9 @@ def scan(files: Files) -> tuple[list[Member], dict[tuple[str, str], Stand]]:
             stands[member.key] = Stand(elsewhere=elsewhere, own=own_count)
             continue
         # A name more than one file defines: in a file that defines it too, a plain use is that file's own member,
-        # and only a `.name` whose receiver can be this class counts; elsewhere a `.name` on a known other class
-        # is taken off the word count. A receiver not typed counts, and is counted as unsure.
+        # and only a `.name` whose receiver can be this class counts (a plain use in an ancestor's file counts too:
+        # it is a call the override answers); elsewhere a `.name` on a known other class is taken off the word
+        # count. A receiver not typed counts, and is counted as unsure.
         elsewhere = unsure = 0
         for path in words:
             if path == member.path:
@@ -370,6 +386,9 @@ def scan(files: Files) -> tuple[list[Member], dict[tuple[str, str], Stand]]:
             unsure += sum(1 for klass in reaching if klass is None)
             if member.name in defined[path]:
                 elsewhere += len(reaching)
+                if world.is_ancestor_file(path, member.path):
+                    # A plain use in an ancestor's own file dispatches to this override (a template method).
+                    elsewhere += own_uses[path][member.name]
             else:
                 elsewhere += words[path][member.name] - (len(dots) - len(reaching))
         stands[member.key] = Stand(elsewhere=elsewhere, own=own_count, unsure=unsure)
@@ -449,19 +468,25 @@ def listed(text: str) -> set[tuple[str, str]]:
     return {entry.key for entry in entries_of(text)}
 
 
-def list_failures(entries: list[Entry], base: list[Entry] | None, renames: dict[str, str] | None = None) -> list[str]:
+def list_failures(
+    entries: list[Entry],
+    base: list[Entry] | None,
+    renames: dict[str, str] | None = None,
+    checker_changed: bool = False,
+) -> list[str]:
     """What the list's own lines fail: a kept line with no reason, and, against the base's list, a line added to
     the no reader or own file only group (those only shrink). A line in a shrinking group that the base's list
     held in either of them is not an addition, so a member that moves from one to the other is not one; nor is
     one that moves with its file: `renames` maps a path git reports as renamed to its new path, and an added line
     pairs with one removed line of the same group with the same member name in the old path, each removed line
-    with at most one added line."""
+    with at most one added line. A diff that also changes this checker (`checker_changed`) may add lines to the
+    two shrinking groups: a better checker surfaces members the old one could not see."""
     failures = [
         f"{ALLOWLIST_NAME}:{e.number}: {e.path} {e.name} is in a kept group with no reason after a '#'"
         for e in entries
         if e.group == KEPT and not e.reason
     ]
-    if base is not None:
+    if base is not None and not checker_changed:
         before = {e.key for e in base if e.group != KEPT}
         now = {e.key for e in entries}
         gone = [e for e in base if e.group != KEPT and e.key not in now]
@@ -603,6 +628,12 @@ def read_renames(base: str, cwd: Path, rev: str | None = None) -> dict[str, str]
     return renames
 
 
+def read_checker_changed(base: str, cwd: Path, rev: str | None = None) -> bool:
+    """Whether the diff from `base` to `rev` (or the checkout) changes this checker."""
+    args = ["diff", "--name-only", base] + ([rev] if rev else []) + ["--", f"tools/{Path(__file__).name}"]
+    return bool(check_layers.git(*args, cwd=cwd).strip())
+
+
 def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_test_only_members.py",
@@ -649,7 +680,8 @@ def main(argv: list[str]) -> int:
         base = read_base(args.base, args.root or ROOT) if args.base else None
         root = args.root or ROOT
         renames = read_renames(args.base, root, args.rev) if args.base and base is not None else None
-        failures.extend(list_failures(entries, base, renames))
+        changed = read_checker_changed(args.base, root, args.rev) if args.base and base is not None else False
+        failures.extend(list_failures(entries, base, renames, changed))
         stands = scanned[1]
     except (check_layers.LayerError, MembersError, OSError) as error:
         print(f"tools/check_test_only_members.py: {error}", file=sys.stderr)

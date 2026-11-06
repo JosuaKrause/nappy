@@ -157,6 +157,46 @@ class CollisionTests(unittest.TestCase):
         hud = {self.HUD: "func f(s: Sub):\n\tprint(s.gap)\n"}
         self.assertEqual(only(self.SRC | sub | hud, self.TESTS), set())
 
+    BASE = "src/x/strategy.gd"
+    CAR = "src/x/car.gd"
+    CAR_TEST: ClassVar[dict[str, str]] = {"tests/test_car.gd": "func f(c: Car):\n\tprint(c.speed())\n"}
+
+    def overriding(self, game: dict[str, str]) -> dict[str, str]:
+        return {
+            self.BASE: "class_name Strategy\nfunc speed() -> float:\n\treturn 1.0\n" + game.get(self.BASE, ""),
+            self.CAR: "class_name Car\nextends Strategy\nfunc speed() -> float:\n\treturn 2.0\n",
+        } | {path: text for path, text in game.items() if path != self.BASE}
+
+    def test_an_override_the_game_reads_through_its_base_type_is_read(self) -> None:
+        game = {self.HUD: "func f(s: Strategy):\n\tprint(s.speed())\n"}
+        self.assertEqual(only(self.overriding(game), self.CAR_TEST), set())
+
+    def test_an_override_nothing_reads_but_a_test_is_test_only(self) -> None:
+        self.assertEqual(only(self.overriding({}), self.CAR_TEST), {(self.BASE, "speed"), (self.CAR, "speed")})
+
+    def test_a_base_class_calling_the_name_plainly_reads_the_override(self) -> None:
+        game = {self.BASE: "func tick() -> void:\n\tspeed()\n"}
+        # The base's own call reads the override, not the base's own member (which is its own file's use).
+        self.assertEqual(only(self.overriding(game), self.CAR_TEST), {(self.BASE, "speed")})
+
+    def test_a_subclass_calling_the_name_plainly_does_not_read_the_base(self) -> None:
+        car = "class_name Car\nextends Strategy\nfunc speed() -> float:\n\treturn 2.0\nfunc go():\n\tspeed()\n"
+        tests = {"tests/test_base.gd": "func f(s: Strategy):\n\tprint(s.speed())\n"}
+        self.assertIn((self.BASE, "speed"), only(self.overriding({}) | {self.CAR: car}, tests))
+
+    def test_an_inner_class_type_is_not_read_as_its_outer_class(self) -> None:
+        # `p: Closure.Piece` is not a `Closure`, so `p.gap` is not typed and counts for every class with the name.
+        hud = {self.HUD: "func f(p: Closure.Piece):\n\tprint(p.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), set())
+
+    def test_a_one_line_if_declares_nothing(self) -> None:
+        hud = {self.HUD: "func f(c, k):\n\tif c: Closure.reset()\n\tprint(c.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), set())
+
+    def test_self_names_the_files_own_class(self) -> None:
+        own = {self.CLOSURE: "class_name Closure\nvar gap := 1\nfunc total() -> int:\n\treturn self.gap\n"}
+        self.assertEqual(only(self.SRC | own, self.TESTS), {(self.CORDON, "gap")})
+
     def test_a_name_defined_once_is_still_judged_by_its_word(self) -> None:
         src = {self.CORDON: "class_name Cordon\nvar gap := 0\n", self.HUD: "func f(k: Other):\n\tprint(k.gap)\n"}
         self.assertEqual(only(src, self.TESTS), set())
@@ -276,6 +316,7 @@ class ListTests(unittest.TestCase):
         self.assertIn("src/a.gd new is added to the [no reader] group", failures[0])
         self.assertIn("src/a.gd added is added to the [own file only] group", failures[1])
         self.assertEqual(members.list_failures(now, None), [])
+        self.assertEqual(members.list_failures(now, base, checker_changed=True), [])
 
     def test_a_member_moved_to_a_kept_group_is_not_an_addition_to_a_shrinking_one(self) -> None:
         base = members.entries_of("# [no reader] a\nsrc/a.gd old\n")
@@ -365,6 +406,24 @@ class ListTests(unittest.TestCase):
             run("add", "-A")
             run("commit", "-q", "-m", "move")
             self.assertEqual(members.read_renames("HEAD~1", root, "HEAD"), {"a.gd": "b.gd"})
+
+    def test_a_change_to_the_checker_is_read_from_git(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            checker = root / "tools" / Path(members.__file__).name
+
+            def run(*args: str) -> None:
+                command = ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args]
+                subprocess.run(command, cwd=root, check=True, capture_output=True)
+
+            run("init", "-q")
+            checker.parent.mkdir()
+            checker.write_text("one\n")
+            run("add", "-A")
+            run("commit", "-q", "-m", "base")
+            self.assertFalse(members.read_checker_changed("HEAD", root))
+            checker.write_text("two\n")
+            self.assertTrue(members.read_checker_changed("HEAD", root))
 
 
 class ReadTests(unittest.TestCase):
