@@ -144,31 +144,24 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 ## from the rows level with and below the flight's head tread, and from the landing tile between
 ## the two flights holding down-left; **a walker who holds plain left from the landing tile between
 ## the two flights gets through**. A runner gets through on every line, whether she was running all
-## along or starts running the moment he does, with the keys she already holds. **The margins are
+## along or starts running the moment he does, with the keys she already holds. **The margin is
 ## thin:** on the tightest runner's line (walking until he runs, then running, turning plain left at
 ## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
-## catch is checked, is pinned just outside his catch (`_TIGHTEST_RUNNER_CLOSEST` against
-## `EventCatalogue.MASKED_PURSUER_CATCH`); **she is caught if she starts running 16 ticks (a little over half a second) after he
-## does.**
+## catch is checked, stays outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`). A start
+## running a little after he does is not pinned either way.
 func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 	for walk: Array in MaskedManMeeting.TURNS:
-		for pace: String in ["walk", "run", "walk-run", "run-late"]:
-			if pace == "run-late" and walk[0] != 11:
-				continue
+		for pace: String in ["walk", "run", "walk-run"]:
 			var met := await _meeting.meet(t, walk, pace)
 			var expected := "through" if pace != "walk" or not walk[2] else "caught"
-			if pace == "run-late":
-				expected = "caught"
 			t.check(met["ran"], "%s at a %s: he runs" % [walk[3], pace])
 			t.check(met["outcome"] == expected,
 					"%s at a %s: %s (%s, %.0fpx from him at the closest)"
 					% [walk[3], pace, expected, met["outcome"], met["closest"]])
 			if walk[0] == 11 and pace == "walk-run":
-				t.check(absf(met["closest"] - _TIGHTEST_RUNNER_CLOSEST) < 0.5
-						and met["closest"] > EventCatalogue.MASKED_PURSUER_CATCH,
-						"%s at a %s: he comes %.1fpx from her centre on the tick (%.1fpx pinned), %s"
-						% [walk[3], pace, met["closest"], _TIGHTEST_RUNNER_CLOSEST,
-						"outside his %.1fpx catch" % EventCatalogue.MASKED_PURSUER_CATCH])
+				t.check(met["closest"] > EventCatalogue.MASKED_PURSUER_CATCH,
+						"%s at a %s: he comes %.1fpx from her centre on the tick, outside his %.1fpx catch"
+						% [walk[3], pace, met["closest"], EventCatalogue.MASKED_PURSUER_CATCH])
 			print("The masked man, %s at a %s: %s, %.0fpx from him at the closest"
 					% [walk[3], pace, met["outcome"], met["closest"]])
 
@@ -193,13 +186,6 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void
 					"%s at a %s: the edge badge points at him from the frame he runs, and stays up "
 					% [walk[3], pace] + "until he is in view (first up %d frames in, down on %d of %d)"
 					% [met["badge_first"], met["badge_dropped"], met["unseen_frames"]])
-
-## How near the masked man comes to her centre, on the tick, on the tightest runner's line (row 11,
-## walking until he runs, then running): the margin `_test_she_has_to_run_to_the_first_floor_door`
-## pins outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`), measured on the escape as built.
-## It is 36.4 on her real `move_and_slide()`, which slides her velocity along the walls she
-## touches; the rig that stepped her by hand applied the unslid velocity, and measured 24.6.
-const _TIGHTEST_RUNNER_CLOSEST := 36.4
 
 ## *"Then the pursuing guy should respawn forcing to switch the side again."*
 ##

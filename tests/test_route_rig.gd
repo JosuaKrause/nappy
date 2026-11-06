@@ -22,8 +22,11 @@ const SEED := 4242
 ## Day 6, "A chalk mark" — the first task day, and the smallest one whose mark is a pickup step
 ## rather than null, the same reason `tests/test_dev_rig.gd` picks it for `--spawn contact`.
 const DAY := 6
-## The seed of the run each city stands in. Which ground the rig's targets resolve to depends on it:
-## these checks hold on seeds 4 and 5 and fail on 1, 2 and 3.
+## The seed of the run each city stands in. Which ground the rig's targets resolve to depends on it.
+## The checks hold on the seeds tried besides it (1, 3 and 5) but for the two plan-past-the-van
+## checks in `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van`, which fail on
+## seed 2: those two are the seed-bound ones, and why the plan crosses a body's clearance there is
+## not known.
 const RUN_SEED := 4
 ## How much faster than real time a test's stretch of real physics frames runs: the engine hands
 ## each tick `Engine.time_scale` times its ordinary length, so the rig's half-second checks and

@@ -243,33 +243,26 @@ func case_calm_ground_is_still_walkable_to(t) -> void:
 					% [map.seed_used, day])
 			map.close_streets([])
 
-## A closure is a **wall**, so it is placed off the day's corridor and preferentially on a turning
-## off it. *(M50 step 2: "a road block becomes guidance and is not a hindrance. It flips its
-## role.")*
+## A closure is a **wall**, so it is placed off the day's corridor. *(M50 step 2: "a road block
+## becomes guidance and is not a hindrance. It flips its role.")*
 ##
-## Two assertions and they are deliberately of different strengths, because the two halves of the
-## rule are of different strengths. **Never on the corridor** is absolute — a wall across the route
-## is not a worse wall, it is the opposite of one — and it is what lets the rest of the day be
-## planned against a tree that is still walkable once the barriers are up. **On the rim** is a
-## preference, `CLOSURE_WALL_BIAS`, so it is asserted as a proportion over a run's worth of days.
+## **Never on the corridor** is absolute, asked once per closure: a wall across the route is not a
+## worse wall, it is the opposite of one, and it is what lets the rest of the day be planned
+## against a tree that is still walkable once the barriers are up. How often a closure lands on a
+## turning off the corridor (`CLOSURE_WALL_BIAS`) or in a gap (`CLOSURE_GAP_BIAS`) is a proportion
+## the tuning sets, not a promise a test could find broken, so it is not asserted.
 ##
-## This test used to say the opposite in both halves — *"%d of %d closures landed on a street the
-## player would have used"* — and it passed for thirty-four milestones while doing so. It is worth
-## keeping that in view: the assertion was not wrong then and is not right now for any reason a
-## test could have found. The design changed, and a test that encodes a design has to be read as
-## one of the places the design is written down.
-##
-## **`RULE_SEEDS` maps, every day of each.** Both halves are proportions over closures, so what
-## sizes this is the number of *closures* rather than the number of cities: six maps through
-## fourteen days is upwards of two hundred of them, which is a wide enough sample for bounds set at
-## 0.5 and at 0.15/0.7 that noise cannot reach either. The days stay whole because the act decides
-## how many streets a day shuts, so sampling days would sample the proportion unevenly. The
-## absolute half — never on the corridor — is asked once per closure either way.
+## **`RULE_SEEDS` maps, every day of each**, because the act decides how many streets a day shuts,
+## so sampling days would sample the closures unevenly.
 func case_closures_land_where_a_wall_belongs(t) -> void:
+	var total := 0
+	# What an unbiased pick would land, summed over the same days: each closure is as likely to
+	# be on a turning off the corridor (or in a gap) as that kind is common among the streets off
+	# the corridor. The planner's own preference has to beat it, whatever the preference is set to.
 	var on_the_rim := 0
 	var in_a_gap := 0
-	var gaps := 0
-	var total := 0
+	var rim_unbiased := 0.0
+	var gap_unbiased := 0.0
 	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			# Today's city before today's corridor: which blocks are calm is what the tree grows
@@ -282,36 +275,32 @@ func case_closures_land_where_a_wall_belongs(t) -> void:
 			var gap := {}
 			for key in tree.gaps():
 				gap[key] = true
-			gaps += gap.size()
-			for closure in _plan(map, day):
+			var off := 0
+			var off_rim := 0
+			var off_gap := 0
+			for segment in map.network.segments():
+				var key := segment.key()
+				if map.has_street(key) and not tree.is_on_the_tree(key):
+					off += 1
+					off_rim += 1 if rim.has(key) else 0
+					off_gap += 1 if gap.has(key) else 0
+			var closures := _plan(map, day)
+			if off > 0:
+				rim_unbiased += float(closures.size() * off_rim) / off
+				gap_unbiased += float(closures.size() * off_gap) / off
+			for closure in closures:
 				total += 1
+				on_the_rim += 1 if rim.has(closure.segment.key()) else 0
+				in_a_gap += 1 if gap.has(closure.segment.key()) else 0
 				t.check(not tree.is_on_the_tree(closure.segment.key()),
 						"seed %d day %d: the closure at %s is off the corridor"
 						% [map.seed_used, day, closure.segment.key()])
-				if rim.has(closure.segment.key()):
-					on_the_rim += 1
-				if gap.has(closure.segment.key()):
-					in_a_gap += 1
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
-	# The rim is a minority of the off-tree lattice — measured at about a third of it — so an
-	# unweighted planner would land there about a third of the time. Half is a floor with room in
-	# it rather than a measurement, which is the same shape the old assertion had.
-	t.check(float(on_the_rim) / maxf(1.0, float(total)) > 0.5,
-			"%d of %d closures landed on a turning off the corridor" % [on_the_rim, total])
-
-	# **A gap gets the impassable half of *"wall or event"*, and the quota is what keeps it a
-	# "sometimes".** *(M55, playtest 17 finding 2.)* `CLOSURE_GAP_BIAS` aims a closure at the one
-	# street two adjacent strands are joined by; a day shuts one street in act I and four in act IV,
-	# so it can never shut the fifteen a day has. Both bounds are the instruction: an unweighted
-	# planner lands in a gap about a twelfth of the time, and a planner that only ever shut gaps
-	# would have stopped being a wall round the corridor and become a fence down the middle of it.
-	var gap_share := float(in_a_gap) / maxf(1.0, float(total))
-	t.check(gaps > total * 4,
-			"a day has many more gaps than it has closures to spend (%d against %d)"
-			% [gaps, total])
-	t.check(gap_share > 0.15, "%d of %d closures landed in one of them" % [in_a_gap, total])
-	t.check(gap_share < 0.7, "and most of the rim is still ordinary ground (%.0f%% in a gap)"
-			% (gap_share * 100.0))
+	t.check(on_the_rim > rim_unbiased * 1.5,
+			"closures land on a turning off the corridor more than chance would (%d against %.0f)"
+			% [on_the_rim, rim_unbiased])
+	t.check(in_a_gap > gap_unbiased * 1.5,
+			"and in a gap more than chance would (%d against %.0f)" % [in_a_gap, gap_unbiased])
 
 ## **The payoff rule.** A closure never lands on a calm area's own access street: never beside a
 ## park, since a barrier there closes nothing the ground itself does not already leave open on

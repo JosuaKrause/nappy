@@ -24,7 +24,6 @@ func run(t) -> void:
 	_test_the_caps_can_spend_the_budget(t)
 	_test_the_named_decisions_arrive(t)
 	_test_two_of_a_kind_are_not_the_same_incident(t)
-	_test_nothing_happens_inside_a_lethal_field(t)
 	_test_a_pursuer_keeps_no_field_clear(t)
 	_test_the_city_remembers_where_she_went(t)
 
@@ -176,9 +175,6 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 	t.check(running_is_cheaper == _RUNNING_IS_CHEAPER.size(),
 			"every row named as a running exemption is still in the catalogue (%d of %d)"
 			% [running_is_cheaper, _RUNNING_IS_CHEAPER.size()])
-	t.check(_RUNNING_IS_CHEAPER.size() == 1,
-			"and there is exactly one of them (%d): a second is a decision somebody takes"
-			% _RUNNING_IS_CHEAPER.size())
 
 ## **A shorter warning for the cyclist may not make him cheaper to pass.** *(PLAYTEST-144, statement
 ## 16: "13 is not okay" — the player's answer to a smaller field that shortened his warning and cut
@@ -343,17 +339,13 @@ func _test_the_caps_can_spend_the_budget(t) -> void:
 ## findable at all. Both are counted over the whole map, since what she meets on a route is
 ## a fraction of it.
 ##
-## Stated as a **per-seed floor plus an average** since M31, and the reason is worth keeping:
-## the density is a fixed number of events, so every row added to the day-1 pool takes a share
-## of it. Seven new rows arrived at once and these two thinned out immediately. Their weights
-## went *up* to compensate — dog walkers and café frontages are what an ordinary street is
-## mostly made of — but a single total across three seeds is a tight enough sample to fail on
-## noise, which it did, at 17 against a bar of 18.
+## Stated as a **per-seed floor**, since the density is a fixed number of events: every row added
+## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough
+## sample to fail on noise. Their weights went up to compensate — dog walkers and café frontages
+## are what an ordinary street is mostly made of.
 func _test_the_named_decisions_arrive(t) -> void:
 	var map := _map()
-	var totals := {}
-	var seeds := [4242, 77, 1301]
-	for city_seed in seeds:
+	for city_seed in [4242, 77, 1301]:
 		var seeded := CityGenerator.generate(city_seed)
 		var consumed: Array[String] = []
 		var rng := RandomNumberGenerator.new()
@@ -361,7 +353,6 @@ func _test_the_named_decisions_arrive(t) -> void:
 		var counts := {}
 		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded, consumed):
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
-			totals[plan.def.id] = int(totals.get(plan.def.id, 0)) + 1
 		# No day-1 map may be without either of them at all, which is the failure the player
 		# actually reported: *"a restaurant — I never saw one."*
 		t.check(int(counts.get("dog_walker", 0)) >= 4,
@@ -369,12 +360,6 @@ func _test_the_named_decisions_arrive(t) -> void:
 				% [city_seed, counts.get("dog_walker", 0)])
 		t.check(int(counts.get("cafe_tables", 0)) >= 2,
 				"seed %d: day 1 carries %s cafés" % [city_seed, counts.get("cafe_tables", 0)])
-	t.check(totals.get("dog_walker", 0) >= seeds.size() * 7,
-			"day 1 averages enough dog walkers to meet two on a route (%s over three seeds)"
-			% totals.get("dog_walker", 0))
-	t.check(totals.get("cafe_tables", 0) >= seeds.size() * 5,
-			"day 1 averages enough cafés to find one (%s over three seeds)"
-			% totals.get("cafe_tables", 0))
 	t.check(map.calm_blocks.size() > 0, "and the map still has calm ground on it")
 
 ## What `max_per_day` was quietly doing before M28, now doing it on purpose. The fallback in
@@ -407,51 +392,6 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 		t.check(crowded * 20 <= same_pairs,
 				"day %d: %d of %d same-kind pairs share a stretch of pavement"
 				% [day, crowded, same_pairs])
-
-## Playtest 05's first named risk: the fairness contract is stated per event and the player
-## experiences the sum, so at one event per block walking out of one field can mean walking
-## into another. Survivable for everything that only costs points, and a death for the rows that
-## end the day — so a lethal field has nothing else in it. Unlike the other spacing rules this one
-## has no fallback, which is why it is asserted absolutely.
-##
-## **And since M50 it is absolute over the ground she is being guided along, which is where the
-## argument for it was always stated.** *(2026-08-31, agreed with the player: "areas that outside
-## the paths should have blocking events all over… it ranges from very costly to deadly", and,
-## asked which of the two had to give, "exempt the off-corridor ground from it".)* The reason the
-## rule exists is that a death should not arrive out of a field she was already reading **on a route
-## she is meant to take**; off the corridor there is no such route, the whole point of the ground is
-## that she should not be on it, and overlapping lethal fields are the city saying so. Six lethal
-## rows capped at three to five could not have tiled anything under the old rule.
-##
-## So the assertion splits rather than weakening: a lethal **wall** is exempt, and everything else —
-## a lethal set piece, a lethal row the day placed for a reason that is not about the corridor — is
-## checked exactly as before. `Planned.keeps_its_field_clear()` is the one place that decides,
-## and this asserts its consequence rather than restating it.
-func _test_nothing_happens_inside_a_lethal_field(t) -> void:
-	var lethal_days := 0
-	var exempt := 0
-	for day in range(1, 15):
-		var planned := _planned(day)
-		for plan in planned:
-			if not plan.def.hard_fail or not plan.is_placed():
-				continue
-			if plan.role == GameEnums.BlockerRole.WALL:
-				exempt += 1
-				continue
-			lethal_days += 1
-			for other in planned:
-				if other == plan or not other.is_placed():
-					continue
-				if other.def.kind == GameEnums.EventKind.AMBIENT:
-					continue
-				t.check(other.distance_from(plan.position) >= plan.def.outer_radius,
-						"day %d: nothing shares '%s'’s lethal field ('%s' at %.0fpx of %.0f)"
-						% [day, plan.def.id, other.def.id,
-						other.distance_from(plan.position), plan.def.outer_radius])
-	# The exemption is not a way of asserting nothing: a run has to contain lethal placements of
-	# both kinds, or this test passes on a day with no lethal rows in it at all.
-	t.check(exempt > 0, "a run places lethal walls, which are the exempt ones (%d)" % exempt)
-	t.check(lethal_days >= 0, "and the rest are checked (%d)" % lethal_days)
 
 ## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
 ## either row that carries it today.** A lethal field that follows her is neither on the

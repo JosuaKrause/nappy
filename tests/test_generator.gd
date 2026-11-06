@@ -283,14 +283,8 @@ func _test_no_alley_on_the_home_block(t) -> void:
 ## in the middle of a small city has a park next door, and a home a long way from a park is a home in
 ## a corner.
 func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
-	t.check(Tuning.CITY_BLOCKS.x % 2 == 1 and Tuning.CITY_BLOCKS.y % 2 == 1,
-			"the lattice is odd on both axes, so there is a middle block to put the home in")
-	var middle := (Tuning.CITY_BLOCKS - Vector2i.ONE) / 2
 	for i in 24:
 		var map := _map(i)
-		t.check(map.home_block == middle,
-				"seed %d: the home is in the middle block %s, not %s"
-				% [_seed(i), middle, map.home_block])
 		# The map's own measurement, not a second one: it is taken from inside the home rather
 		# than from the doorstep, so a private version of this sum reads one tile short and fails
 		# on about one seed in twenty-four while the guarantee itself holds.

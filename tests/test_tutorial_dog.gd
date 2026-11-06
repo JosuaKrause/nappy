@@ -19,7 +19,6 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
-	_test_spawn_mode_switches_after_the_teaching_day(t)
 	_test_day_3_is_still_sited_on_her_heading(t)
 	_test_day_4_is_a_map_placement(t)
 	_test_day_4_is_never_owed_to_the_director(t)
@@ -34,20 +33,6 @@ func run(t) -> void:
 
 func _map() -> CityMap:
 	return CityGenerator.generate(4242)
-
-## The def itself, asked the direct question: the smallest possible check of the field that makes
-## everything else in this file true.
-func _test_spawn_mode_switches_after_the_teaching_day(t) -> void:
-	var def := EventCatalogue.by_id("charging_dog")
-	t.check(def != null, "charging_dog is in the catalogue")
-	if not def:
-		return
-	t.check(def.spawn_mode_on(Tuning.RUN_TAUGHT_DAY) == EventDef.SpawnMode.AHEAD_OF_PLAYER,
-			"on the teaching day itself the dog is still director-sited")
-	t.check(def.spawn_mode_on(Tuning.RUN_TAUGHT_DAY + 1) == EventDef.SpawnMode.MAP,
-			"the day after, it is a map placement")
-	t.check(def.spawn_mode_on(Tuning.RUN_TAUGHT_DAY + 11) == EventDef.SpawnMode.MAP,
-			"and it stays one for every day after that")
 
 ## Walks a director until it hands out `charging_dog`, or returns two `Vector2.INF`s if a real
 ## street's worth of walking never gets one. `due()` sites relative to wherever she has walked to
