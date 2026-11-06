@@ -1106,7 +1106,7 @@ static func steam_grate(atlas: AtlasLibrary) -> AtlasTexture:
 ## instead. Not read by the live draw path, which has the path already in hand — this is the one
 ## place "everything a look can draw" is enumerable, which is what a completeness check against
 ## `assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`), the same role
-## `Stroller.sources_by_group()` plays for the rig.
+## `Stroller._sources_by_group()` plays for the rig.
 static func family_sources(look: EventDef.Look) -> Array[String]:
 	var sources: Dictionary = {}
 	match look:

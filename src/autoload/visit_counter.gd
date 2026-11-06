@@ -358,21 +358,21 @@ func _on_city_gone_dark() -> void:
 ## when it starts warning her, `-chased` at its charge, and its charge's end in exactly one of
 ## `-caught`, `-shaken`, `-outlasted` and `-ended` (the day ended some other way under it), whatever
 ## the day does — a catch that ends the day sends `lost-hard-fail-<row>` as well. `<charger>` is
-## `charger_counter_name()`.
+## `_charger_counter_name()`.
 func _on_pursuit_warned(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-warned" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-warned" % _charger_counter_name(id)))
 
 func _on_pursuit_began(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-chased" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-chased" % _charger_counter_name(id)))
 
 func _on_pursuit_caught(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-caught" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-caught" % _charger_counter_name(id)))
 
 func _on_pursuit_cut_short(id: String) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-ended" % charger_counter_name(id)))
+	_send_event(_day_event_name(_counted_day(), "%s-ended" % _charger_counter_name(id)))
 
 func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
-	_send_event(_day_event_name(_counted_day(), "%s-%s" % [charger_counter_name(id),
+	_send_event(_day_event_name(_counted_day(), "%s-%s" % [_charger_counter_name(id),
 			"shaken" if shaken_off else "outlasted"]))
 
 ## A charger's name in its counter: `dog` for `charging_dog`, so its `dog-chased`, `dog-shaken` and
@@ -381,7 +381,7 @@ func _on_pursuit_ended(id: String, shaken_off: bool) -> void:
 ## dog's *(PLAYTEST-141: "we need to record like dog tutorial")*; every other row its id hyphenated,
 ## as the encounter events are (`alley_robbery` -> `alley-robbery`), and `task-guard` for day 13's
 ## task guard, his row `task_guard`, whose sent copy counts as him (`EventDef.counts_charges_as`).
-static func charger_counter_name(id: String) -> String:
+static func _charger_counter_name(id: String) -> String:
 	match id:
 		"charging_dog":
 			return "dog"

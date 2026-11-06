@@ -2,7 +2,6 @@ extends RefCounted
 ## Real runtime installation rejects incomplete structures and refreshes a felled tree's source, and
 ## runs the scene's events under the one spec the run flow hands it.
 
-const MAIN := preload("res://src/main.gd")
 
 func run(t) -> void:
 	# A run of its own, handed to the city and the scene as `main` hands them the game's.
@@ -160,13 +159,13 @@ func _along_and_side(street: StreetNetwork.Segment, centre: Vector2, at: Vector2
 ## on (`DayDirector.start_authored_day()`, or the escape boot's section) — is the spec the scene's events run
 ## under, handed through `install()`, with no second spec built beside it. An escape scene's events
 ## owe no return and a torn poster sends nobody there; a day scene's walk is the day as configured,
-## `--day-length` included (`main.day_spec()`), and its events run with a day's settings, a torn
+## `--day-length` included (`RunConfig.day_length_for()`), and its events run with a day's settings, a torn
 ## poster sending its pursuer.
 func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState) -> void:
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
 	city.events.use_player(player)
-	var escape := MAIN.escape_section_spec(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var errors := runtime.install(city, player, baby, escape)
 	t.check(errors.is_empty() and not city.events.ahead.holds_the_home_streets,
 			"an escape scene is installed into the spec it is handed, whose siting keeps off no home street: %s"
@@ -176,8 +175,8 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRun
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().is_empty(), "so a torn poster there sends nobody")
 
-	var day := MAIN.day_spec(RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true),
-			own_run.header.day)
+	var configured := RunConfig.parse(PackedStringArray(["--day-length", "77"]), "", true)
+	var day := DaySpec.for_day(own_run.header.day, configured.day_length_for(own_run.header.day))
 	t.check(is_equal_approx(day.length, 77.0),
 			"a day scene's walk is the configured day's length (%.1fs)" % day.length)
 	errors = runtime.install(city, player, baby, day)

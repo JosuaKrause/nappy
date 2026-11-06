@@ -301,9 +301,8 @@ class _GroupShape:
 	## side — what a member actually costs the page, since its border is never shared with a
 	## neighbour (`AtlasLibrary.SEPARATION`, twice `PADDING`, is what keeps it that way).
 	var bordered_area := 0
-	## The group's own native sizes, kept so the aspect check can hand them straight to
-	## `AtlasLibrary.aspect_ceiling()` — the same function `plan()`'s own width search scores
-	## itself against, rather than a second copy of that formula kept in step by hand.
+	## The group's own native sizes, kept so the aspect check can work out the ceiling its page
+	## is held to (`_aspect_ceiling()`).
 	var sizes: Array[Vector2i] = []
 
 static func _group_shapes() -> Dictionary:
@@ -351,9 +350,22 @@ func _test_pages_meet_a_fill_floor(t) -> void:
 				"%s: fill %.1f%% clears its floor %.1f%% for %d members (page %dx%d)"
 				% [group, fill, floor_percent, shape.count, page.x, page.y])
 
-## Every page's aspect ratio stays under `AtlasLibrary.aspect_ceiling()` — the same function
-## `plan()`'s own width search scores its candidates against, so this asks whether the search
-## delivered what it was aiming for rather than checking a second, independent opinion of it. The
+## The aspect ratio (longer side over shorter) a well-packed page should not exceed, restated
+## here from its rule so that a change in what `plan()` takes for square enough is noticed rather
+## than followed: `1.8` when no single member dominates, loosened to `1.0 + dominance` — the
+## largest of a member's own width or height over the square root of the group's total bordered
+## area — when one member already needs most of one side of an ideally square page.
+static func _aspect_ceiling(sizes: Array[Vector2i]) -> float:
+	var bordered_area := 0
+	var longest := 0
+	for size in sizes:
+		var bordered := size + Vector2i.ONE * (2 * AtlasLibrary.PADDING)
+		bordered_area += bordered.x * bordered.y
+		longest = maxi(longest, maxi(size.x, size.y))
+	return maxf(1.8, 1.0 + float(longest) / sqrt(float(bordered_area)))
+
+## Every baked page's aspect ratio stays under `_aspect_ceiling()`, so the width search `plan()`
+## ran when the page was baked delivered a page as square as the group's shapes allow. The
 ## same reverted-packer run that proves the fill floor also proves this one: every shelf-packed
 ## page is a single strip, tens of times wider than it is tall, which is exactly the shape this
 ## check exists to catch.
@@ -363,7 +375,7 @@ func _test_pages_meet_an_aspect_ceiling(t) -> void:
 		var shape: _GroupShape = shapes[group]
 		var page := AtlasTable.baked().page_size(group)
 		var aspect := float(maxi(page.x, page.y)) / float(mini(page.x, page.y))
-		var ceiling := AtlasLibrary.aspect_ceiling(shape.sizes)
+		var ceiling := _aspect_ceiling(shape.sizes)
 		t.check(aspect <= ceiling,
 				"%s: aspect %.3f stays under its ceiling %.3f (page %dx%d)"
 				% [group, aspect, ceiling, page.x, page.y])

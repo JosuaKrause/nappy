@@ -224,8 +224,6 @@ const AMBIENT_SHUTTER_SHARE := 0.3
 const VENT_HOUSING := &"illustrated/roof-equipment/industrial_vent"
 const VENT_ROTOR := &"props/industrial_vent_rotor"
 const VENT_ROTOR_B := &"props/industrial_vent_rotor_b"
-## Both authored rotor frames' source crop in the old complete housing canvas.
-const VENT_ROTOR_SOURCE_RECT := Rect2(21, 19, 6, 6)
 ## The generated housing's circular opening, relative to its new 44×44 canvas.
 const VENT_ROTOR_RECT := Rect2(22, 15, 14, 14)
 const HVAC_A := &"illustrated/roof-equipment/hvac_large"
@@ -417,7 +415,7 @@ func _is_covered(col: int) -> bool:
 ## meet edge to edge with no gap and no overlap. Sized to `columns()`, or empty for a front covering
 ## nothing; `_extension_rows()` reads an index past the end as 0, the same convention
 ## `_is_covered()` already uses. A geometry fact, not a roll, but the roof furniture's own pool
-## reaches onto the extension (`roof_layout()`), so the setter rebuilds rather than only
+## reaches onto the extension (`_roof_layout()`), so the setter rebuilds rather than only
 ## redrawing — before `add_child()`, where `City` already sets it, that is a no-op.
 @export var roof_extension_rows: Array[int] = []:
 	set(value):
@@ -589,7 +587,7 @@ var _fire_escape_pots: Dictionary = {}
 ## `_build_entrance()` whether or not it ends up with one — `_entrance_door_col()` is what decides
 ## that, so the home flag and the district's own entrance can change without rolling anything.
 var _door_col := 0
-## The roof layout the roof layers draw (`roof_layout()`, one entry per unit), cached at build
+## The roof layout the roof layers draw (`_roof_layout()`, one entry per unit), cached at build
 ## time and cleared while the building's scenery is not resident. Sorted north-most (highest row)
 ## first, so the roof layers can paint far units before near ones without re-sorting every frame —
 ## the same back-to-front order a unit taller than one tile (the water tank) needs to lie correctly
@@ -1412,11 +1410,11 @@ func _draw_fire_escape() -> void:
 
 # ------------------------------------------------------------- roof furniture ---
 
-## Caches this building's roof layout (`roof_layout()`) for the roof layers to draw, once per
+## Caches this building's roof layout (`_roof_layout()`) for the roof layers to draw, once per
 ## `_rebuild()` rather than once per frame, the same contract `_build_windows()` already keeps,
 ## and notes whether any unit is a vent, whose rotor turns on the building's own clock.
 func _build_roof_furniture() -> void:
-	_roof_furniture.assign(roof_layout())
+	_roof_furniture.assign(_roof_layout())
 	_has_vent = false
 	for entry: Dictionary in _roof_furniture:
 		_has_vent = _has_vent or entry.kind == _Furniture.VENT
@@ -1430,7 +1428,7 @@ func _build_roof_furniture() -> void:
 ## reserves, `span` how many columns that is. An authored recipe (`recipe_roof_furniture`)
 ## replaces the roll outright.
 ##
-## Otherwise it is rolled over the cells `roof_interior_cells()` offers, keyed on `variant` and the
+## Otherwise it is rolled over the cells `_roof_interior_cells()` offers, keyed on `variant` and the
 ## building's position alone, so it is a pure function of the seed and the lot: asking twice gives
 ## the same layout, and nothing is written. It reads where the building stands, so it is asked of
 ## a building in the tree. Nothing is placed on a roof too shallow to have an interior cell at all:
@@ -1444,7 +1442,7 @@ func _build_roof_furniture() -> void:
 ## same building would have with nothing to cover. A unit never sits on a cell the roof's own lips
 ## already draw: the perimeter, as on every roof, and on the extension any cell
 ## `_roof_cell_edges()` gives a lip, which is where a taller column steps down beside a shorter one.
-func roof_layout() -> Array[Dictionary]:
+func _roof_layout() -> Array[Dictionary]:
 	var units: Array[Dictionary] = []
 	if recipe_roof_furniture != null:
 		for entry: Dictionary in recipe_roof_furniture:
@@ -1458,7 +1456,7 @@ func roof_layout() -> Array[Dictionary]:
 	var density: float = _FURNITURE_DENSITY.get(district, 0.0)
 	if kinds.is_empty() or density <= 0.0:
 		return units
-	var interior := roof_interior_cells()
+	var interior := _roof_interior_cells()
 	if interior.is_empty():
 		return units
 	var rng := RandomNumberGenerator.new()
@@ -1502,9 +1500,9 @@ func roof_layout() -> Array[Dictionary]:
 ## cells; height is deliberately unrelated to this footprint and may extend several tiles north.
 func _furniture_span(kind: int) -> int:
 	var key := _furniture_texture(kind)
-	return ceili(AtlasTable.baked().native_size(key).x * roof_equipment_scale(key) / TILE)
+	return ceili(AtlasTable.baked().native_size(key).x * _roof_equipment_scale(key) / TILE)
 
-static func roof_equipment_scale(key: StringName) -> float:
+static func _roof_equipment_scale(key: StringName) -> float:
 	if key in [VENT_STACK, VENT_HOUSING, EXHAUST_FAN, PIPE_MANIFOLD]:
 		return STANDALONE_EQUIPMENT_SCALE
 	if key == SERVICE_BULKHEAD:
@@ -1517,7 +1515,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 	var errors: Array[String] = []
 	var placed: Array[Dictionary] = []
 	var used := {}
-	var interior := roof_interior_cells()
+	var interior := _roof_interior_cells()
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, []).duplicate()
 	if district == GameEnums.BlockPurpose.INDUSTRIAL:
 		kinds.append(_Furniture.DUCT_RUN)
@@ -1554,7 +1552,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 		_rebuild()
 	return errors
 
-## The cells a roof unit may stand on, in the fixed order `roof_layout()` shuffles:
+## The cells a roof unit may stand on, in the fixed order `_roof_layout()` shuffles:
 ## row by row from row 1, each row west to east over the interior columns, keeping a cell only
 ## below its own column's top (extension included) and leaving out any extension cell
 ## `_roof_cell_edges()` gives a lip. Empty for a roof under three columns wide or whose tallest
@@ -1563,7 +1561,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 ## units where an unextended roof always has only because its pool is the same cells in the same
 ## row-major order. The rows below `roof_tiles()` take no lip check, since no step or seam lip
 ## reaches them.
-func roof_interior_cells() -> Array[Vector2i]:
+func _roof_interior_cells() -> Array[Vector2i]:
 	var interior: Array[Vector2i] = []
 	var roof_rows := roof_tiles()
 	var cols := columns()
@@ -1713,7 +1711,7 @@ class RoofObject extends Node2D:
 	func _enter_tree() -> void:
 		atlas.acquire(&"buildings")
 		# Uniform scale about the foot also scales any rotor child and preserves depth sorting.
-		scale = Vector2.ONE * Building.roof_equipment_scale(texture_key)
+		scale = Vector2.ONE * Building._roof_equipment_scale(texture_key)
 
 	func _exit_tree() -> void:
 		atlas.release(&"buildings")

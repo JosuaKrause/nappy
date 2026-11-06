@@ -1,7 +1,9 @@
 extends RefCounted
 ## Direction quantisation for the player rig, including its boundary hold.
 
+const HeadIndicators := preload("res://tests/head_indicators.gd")
 const STEP := 1.0 / 60.0
+
 
 ## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
 ## from her own library.
@@ -81,7 +83,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 				"and direction %d is on the same page every other pram view is on" % direction)
 		t.check((pram as AtlasTexture).atlas != atlas,
 				"which is the page the two parents share, not the one her body is on")
-	for mark: String in Stroller.indicator_sources():
+	for mark: String in HeadIndicators.ALL:
 		var packed := rig.atlas.region(StringName(mark))
 		t.check(packed is AtlasTexture,
 				"the head indicator %s is drawn from the UI's page" % mark.get_file())

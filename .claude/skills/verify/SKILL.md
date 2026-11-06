@@ -112,7 +112,7 @@ wrong.
 
 **An agent's run always carries a dev flag or `--no-save`.** Every checkout and worktree of this
 repository shares one `user://`, so the player's save is in reach of any game an agent starts.
-`GameSave.uses_save()` already refuses a headless run and any run carrying a dev flag; `--no-save`
+`GameSave._uses_save()` already refuses a headless run and any run carrying a dev flag; `--no-save`
 is what a flagless `tools/run.sh` session needs to say the same thing.
 
 ---

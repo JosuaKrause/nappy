@@ -142,7 +142,7 @@ var _title: TitleScreen
 ## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
 ## for the escape only when it is a run's own — the flag's escape touches the save not at all
-## (`GameSave.uses_save()` refuses every one of them), so a symbol there could only ever stay dark.
+## (`GameSave._uses_save()` refuses every one of them), so a symbol there could only ever stay dark.
 ## It may be the one a reloading `main` handed to the sitting (`_sitting`), not a child of this node.
 var _save_indicator: SaveIndicator
 
@@ -191,7 +191,7 @@ var _first_day := true
 ## playing": with a save on disk, pressing start opens the day brief instead — or, when the load
 ## spent a hard run's last nerve, the ending. (A normal run's last nerve spent by the load opens the
 ## brief too, on its checkpoint's day.) Empty for every dev-flag or headless boot, since
-## `GameSave.uses_save()` already refuses all of them — see that function's own doc — and for a
+## `GameSave._uses_save()` already refuses all of them — see that function's own doc — and for a
 ## boot that carries a run on from a checkpoint (`RunFlow.Opening.CARRIED_FROM_CHECKPOINT`).
 var _resume := {}
 
@@ -500,7 +500,7 @@ func _ready() -> void:
 	# question, and `--press` and `--walk` would hold keys against a game that has not begun.
 	# A rig is driving, so it starts the day the way the player would. `--title` is how the screen
 	# itself gets photographed. `_resume` is always empty here for every one of these branches —
-	# `GameSave.uses_save()` already refuses a dev-flagged or headless run, so a rig boot and a
+	# `GameSave._uses_save()` already refuses a dev-flagged or headless run, so a rig boot and a
 	# resumed boot can never both be true — but the title still comes up for an ordinary resumed
 	# boot exactly as it does for a fresh one; see `_on_title_start()` for what pressing start on it
 	# then leads to.
@@ -540,7 +540,7 @@ func _open_the_first_screen_of_the_escape(resumed_from_disk: bool) -> void:
 ## checkpoint, picked back up from the save, or begun fresh.
 func _settle_the_run() -> void:
 	# Tried before a fresh run is started, so a resumed run keeps the seed, the day and everything
-	# else it held rather than being handed a new one. `GameSave.uses_save()` is the one gate every
+	# else it held rather than being handed a new one. `GameSave._uses_save()` is the one gate every
 	# read and write of the save goes through, so a dev flag, a headless boot or a release build
 	# with nothing on disk yet all fall straight through to `_resume.is_empty()` and an ordinary
 	# fresh run below — see `GameSave`'s own doc. Kept on the instance, not a local, so
@@ -559,7 +559,7 @@ func _settle_the_run() -> void:
 	# two ways and both of them must survive this line: the save above restores it for a game
 	# closed inside a section, and a handover from day 14 leaves it set on the sitting's run across
 	# the scene reload that reaches this boot — a reload under a dev flag or in a headless rig,
-	# where `GameSave.uses_save()` refuses every read, would otherwise start a brand new run over
+	# where `GameSave._uses_save()` refuses every read, would otherwise start a brand new run over
 	# the one that just earned its ending.
 	if _resume.is_empty() and _facts.escape_section == DaySpec.Section.NONE \
 			and not carried:
@@ -608,22 +608,21 @@ func _the_first_day() -> DaySpec:
 	if _escape_scene_requested or _flow.escape_from_a_run():
 		var start_at_the_city := _escape_start_part() == "city" \
 				or (_flow.escape_from_a_run() and _facts.escape_section == DaySpec.Section.CITY)
-		return escape_section_spec(DaySpec.Section.CITY if start_at_the_city
+		return _escape_section_spec(DaySpec.Section.CITY if start_at_the_city
 				else DaySpec.Section.BUILDING, config.escape_section_length())
-	return day_spec(config, _run.header.day)
+	return _day_spec(config, _run.header.day)
 
 ## One of the fourteen days as this boot walks it: `day`, its clock `config`'s length for it
 ## (`RunConfig.day_length_for()`, which `--day-length` compresses). The one spec a day is handed to
-## its clock, its HUD and its events alike, an authored scene's day included. Static so a test builds
-## the same spec the run walks.
-static func day_spec(run_config: RunConfig, day: int) -> DaySpec:
+## its clock, its HUD and its events alike, an authored scene's day included.
+static func _day_spec(run_config: RunConfig, day: int) -> DaySpec:
 	return DaySpec.for_day(day, run_config.day_length_for(day))
 
 ## One of the escape's two sections, `length` seconds long, with its own words — *"Escape the
 ## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
 ## here, since the spec is data and names nothing of the UI's. `section` is a `DaySpec.Section` as
-## an `int`. Static so a test builds the same spec the run walks.
-static func escape_section_spec(section: int, length: float) -> DaySpec:
+## an `int`.
+static func _escape_section_spec(section: int, length: float) -> DaySpec:
 	return DaySpec.for_section(section, length, Texts.ESCAPE_BUILDING
 			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY)
 
@@ -1006,10 +1005,10 @@ func _plan_the_finale_city() -> void:
 ## with no building built at all, so a rig or a person can look at the finale's streets without
 ## walking down three floors first. `_the_first_day()` is what reads it that way.
 func _escape_start_part() -> String:
-	return escape_part_for(config.start_escape_at)
+	return _escape_part_for(config.start_escape_at)
 
-## The mapping itself, with the configuration taken out of it, so a test can drive every word.
-static func escape_part_for(raw: String) -> String:
+## The mapping itself, with the configuration taken out of it.
+static func _escape_part_for(raw: String) -> String:
 	match raw:
 		"city":
 			return "city"
@@ -1785,7 +1784,7 @@ func _pauses_with_the_game(node: Node) -> void:
 ## since nothing gates an ordinary continue into the next day at all). False, with the game quitting,
 ## when an authored scene's setup did not stand.
 func _start_day() -> bool:
-	var errors := _flow.start_day(_new_director(), day_spec(config, _run.header.day))
+	var errors := _flow.start_day(_new_director(), _day_spec(config, _run.header.day))
 	if not errors.is_empty():
 		_scene_failed(errors)
 		return false
@@ -1955,7 +1954,7 @@ func _finish_the_section(end: DayEnd) -> void:
 			_reload_the_scene()
 		return
 	if won and spec.a_win_leads_into != DaySpec.Section.NONE:
-		_start_section(escape_section_spec(spec.a_win_leads_into, config.escape_section_length()),
+		_start_section(_escape_section_spec(spec.a_win_leads_into, config.escape_section_length()),
 				false)
 		_show_the_section_brief()
 		return

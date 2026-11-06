@@ -176,7 +176,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 	camera.force_update_scroll()
 	_city.scenery.update(Rect2(at - extent / 2, extent), true)
 	ground.worst_step_usec = 0
-	var started := ground.prepared
+	var prepared_regions := 0
 	var catchups := _city.scenery.ordinary_guard_preparations
 	var misses := 0
 	var pending_frames := 0
@@ -229,6 +229,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		var ordinary := 0
 		var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
 		for key: Vector2i in ground.chunks:
+			prepared_regions += int(not resident_before.has(key))
 			if not relocating and not resident_before.has(key):
 				if guard.intersects(SceneryGround.bounds(key)):
 					guarded += 1
@@ -248,7 +249,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		"look_ahead_reversal_px": 92 if reverse_look_ahead else 0,
 		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,
-		"prepared_regions": ground.prepared - started,
+		"prepared_regions": prepared_regions,
 		"guard_catchups": _city.scenery.ordinary_guard_preparations - catchups,
 		"most_ordinary_regions_in_a_frame": most_ordinary_in_a_frame,
 		"frames_with_ordinary_beside_guard": ordinary_beside_guard,

@@ -55,7 +55,7 @@ the things around her is doing it.* The arithmetic is the `ExcitementHalo` class
 narrowness is what stops it from being the next ring somebody wants:**
 
 - **One cue, not a general licence to draw.** Nothing else in the vocabulary gets a halo of its own
-  by analogy to this one. `ExcitementHalo.select_sources()` decides which entities earn one, once a
+  by analogy to this one. `ExcitementHalo._select_sources()` decides which entities earn one, once a
   frame, and `EntityHalo` is the one place that draws. **The whole crowd is in the candidate set**
   (M92-the-halo-says-how-much-it-cost), cars on a busy street and people on a busy sidewalk alike,
   so the source is attributed exactly. `CONTRIBUTION_FLOOR` and `MAX_SOURCES` are what keep a busy
@@ -66,10 +66,10 @@ narrowness is what stops it from being the next ring somebody wants:**
   the entity's own sprite cannot do it alone: it writes only inside its own rect, so a dilation is
   clipped at the silhouette's edge. **A radius that means anything about reach is the ring this
   exception does not authorise.**
-- **For the cost being charged right now, not for what exists.** Colour is `colour_for()`, linear
+- **For the cost being charged right now, not for what exists.** Colour is `_colour_for()`, linear
   through `Palette.HALO_MID` over `ExcitementSource.net_landed()`: the source's traced `landed()` less
   its share of the decay the bar took in the same window, floored at zero. A rim reads red only
-  while the bar is climbing because of it (PLAYTEST-112 2). Transparency is `magnitude_for()` over
+  while the bar is climbing because of it (PLAYTEST-112 2). Transparency is `_magnitude_for()` over
   the same net on a curve that saturates early *(asked on 2026-09-07 for brightness to show distance
   · overturned on 2026-09-08: only the amount received counts, colour and transparency are not the
   same number, and transparency emphasizes low values)* (PLAYTEST-38 3). Both channels ease rather

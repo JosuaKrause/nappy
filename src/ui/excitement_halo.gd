@@ -9,7 +9,7 @@ extends Node2D
 ## distance** *(2026-09-08, the player: "the transparency shouldn't show distance since distance
 ## actually doesn't matter. only the actual received amount counts ... color and transparency
 ## shouldn't be the same number. transparency can be used to emphasize low values.")*
-## `colour_for()` is linear in the net, so hue separates the high end; `magnitude_for()` rises fast
+## `_colour_for()` is linear in the net, so hue separates the high end; `_magnitude_for()` rises fast
 ## and saturates early, so the low end is where transparency does its work.
 ##
 ## **The net, not the gross** *(playtest 112: "he gets deep red but my bar doesn't move up much")*:
@@ -43,7 +43,7 @@ extends Node2D
 const CONTRIBUTION_FLOOR := 1.0
 
 ## The most sources one frame may light up. **Past the cap the weakest contributors are the
-## ones left out**, in `select_sources()` below — not the furthest and not the newest — because
+## ones left out**, in `_select_sources()` below — not the furthest and not the newest — because
 ## dropping the smallest terms of a sum is the smallest possible error the drawn total can carry.
 ## The candidate set is every live event plus the whole crowd, so an ordinary busy sidewalk can put
 ## far more than eight candidates inside her reach at once — this cap, together with
@@ -65,9 +65,8 @@ const MAX_SOURCES := 8
 ## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
 ## red.
 ##
-## Pulled out as a static function so a test can hold the selection, the floor and the drop order
-## without a scene, a shader or a viewport — the same reason `BadgeModel.announces()` is static.
-static func select_sources(candidates: Array, at: Vector2) -> Array:
+## A static function of the candidates and her position, so the selection reads without a scene.
+static func _select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
 	for source in candidates:
 		if source.outranked:
@@ -89,7 +88,7 @@ static func select_sources(candidates: Array, at: Vector2) -> Array:
 ## — see docs/EVENTS.md, "Soft, and under everything."
 const MAX_ALPHA := 0.75
 
-## Below this, `magnitude_for()` is a floor rather than a read of `landed()`. *(2026-09-08, the
+## Below this, `_magnitude_for()` is a floor rather than a read of `landed()`. *(2026-09-08, the
 ## player: "transparency can be used to emphasize low values ... all changes should transition
 ## (hue and transparency) instead of immediately showing the actual value".)* A source just picked
 ## has landed nothing yet — `landed()` is a sliding sum, not instantaneous — and a rim that opened
@@ -97,7 +96,7 @@ const MAX_ALPHA := 0.75
 ## nothing. The floor is what a source fades *in* to before it has anything to say about magnitude.
 const MIN_MAGNITUDE := 0.2
 
-## Where `magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
+## Where `_magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
 ## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
 ## carries the difference between fifteen and forty".)* Deliberately far below
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40): transparency's job is the *low* end, so it has finished
@@ -106,12 +105,12 @@ const LOW_EMPHASIS_POINTS := 15.0
 
 ## How brightly a source's own rim reads: `ExcitementSource.net_landed()` on a curve that rises
 ## fast and saturates early, so a point or two is already faintly visible and fifteen points is
-## already solid — the opposite curve from `colour_for()`'s straight line to forty, so the two
+## already solid — the opposite curve from `_colour_for()`'s straight line to forty, so the two
 ## channels never say the same thing at once *(2026-09-08, the player: "transparency can be used to
 ## emphasize low values.")* `sqrt` is the cheap curve with that shape: `sqrt(x)` for `x` in `0..1`
-## rises steeply near zero and flattens as it approaches one, unlike the straight line `colour_for`
+## rises steeply near zero and flattens as it approaches one, unlike the straight line `_colour_for`
 ## wants for its own axis.
-static func magnitude_for(net: float) -> float:
+static func _magnitude_for(net: float) -> float:
 	return MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
 
 # -------------------------------------------------------------------- colour ---
@@ -134,7 +133,7 @@ static func magnitude_for(net: float) -> float:
 ## salmon there, because averaging two saturated colours pulls the saturation down with the hue.
 ## Two lerps either side of the midpoint keeps every point on the ramp as saturated as its own
 ## ends.
-static func colour_for(net: float) -> Color:
+static func _colour_for(net: float) -> Color:
 	var t := clampf(net / Tuning.EXPECTED_IMPACT_POINTS, 0.0, 1.0)
 	if t < 0.5:
 		return Palette.HALO_WEAK.lerp(Palette.HALO_MID, t * 2.0)
@@ -217,7 +216,7 @@ func _pick_and_predict() -> void:
 	_candidates.clear()
 	for set in _sets:
 		set.every_source(_candidates)
-	var picked := select_sources(_candidates, here)
+	var picked := _select_sources(_candidates, here)
 	# A `Dictionary` keyed by the picked sources themselves, built once off the (at most
 	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than a linear
 	# scan of `picked` for every one of up to ~275 candidates.
@@ -283,5 +282,5 @@ func _pick_and_predict() -> void:
 				continue
 			holders[source] = true
 		var net := ExcitementSource.net_landed(source.landed(), total_landed, decay)
-		rim.set_strength(magnitude_for(net), colour_for(net))
+		rim.set_strength(_magnitude_for(net), _colour_for(net))
 	_holders = holders

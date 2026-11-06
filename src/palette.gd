@@ -83,7 +83,7 @@ const MARK_COSTLY := Color("e8b64a")
 const MARK_LETHAL := Color("8f2f38")
 
 ## The halo's own colour ramp — pale for a source that has cost her almost nothing over its own
-## `ExcitementSource.WINDOW`, red for one that has actually hurt. See `ExcitementHalo.colour_for()`.
+## `ExcitementSource.WINDOW`, red for one that has actually hurt. See `ExcitementHalo._colour_for()`.
 ##
 ## **Not `MARK_COSTLY`/`MARK_LETHAL`.** A mark colour is drawn small and opaque over a caret; a
 ## glow that dark under an entity reads as a shadow on the ground rather than as a glow around it,
@@ -101,7 +101,7 @@ const HALO_STRONG := Color("cf4235")
 ## and a saturated red pulls the *saturation* down along with the hue, the same way mixing two
 ## bright paints gives a duller one — so a source half way up the ramp read as barely different
 ## from either end. This is a real, separately chosen orange (88% saturated, hue between the
-## other two) that `ExcitementHalo.colour_for()` lerps *through* rather than *past*.
+## other two) that `ExcitementHalo._colour_for()` lerps *through* rather than *past*.
 const HALO_MID := Color("e8791a")
 
 ## The three lamps of a signal head. **Not** the mark colours, deliberately: a caret says how bad

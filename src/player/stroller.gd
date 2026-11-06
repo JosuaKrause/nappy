@@ -195,7 +195,7 @@ static func parent_atlas(male: bool) -> StringName:
 ## the live draw path — `Pose.mother_texture()` and `Pose.pram_texture()` turn the picture already in
 ## hand into a region name directly — but kept as the one place "everything the rig can draw" is
 ## enumerable, which is what a completeness check against the membership file wants.
-static func sources_by_group() -> Dictionary:
+static func _sources_by_group() -> Dictionary:
 	return {
 		MOTHER_ATLAS: _paths_in([
 			MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
@@ -220,7 +220,7 @@ static func _paths_in(view_sets: Array) -> Array[String]:
 ## Everything the rig can draw, flattened — both parents and the pram they share.
 static func family_sources() -> Array[String]:
 	var sources: Array[String] = []
-	var by_group := sources_by_group()
+	var by_group := _sources_by_group()
 	for group: StringName in by_group.keys():
 		sources.append_array(by_group[group] as Array[String])
 	return sources
@@ -228,11 +228,6 @@ static func family_sources() -> Array[String]:
 ## The pram's own five views, which both parents push and neither owns.
 static func stroller_sources() -> Array[String]:
 	return [PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL]
-
-## Every region `INDICATOR_ATLAS` bakes: the two warning marks that ride over her head and the
-## baby's own three, which ride over the pram.
-static func indicator_sources() -> Array[String]:
-	return [ALERT, ALERT_CLOSE, BABY_ZZZ, BABY_FUSS, BABY_CRY]
 
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up

@@ -235,7 +235,7 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 	return spec
 
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
-## words, handed in by whoever builds it (`main.escape_section_spec()`). `which` is a `Section`
+## words, handed in by whoever builds it (`main._escape_section_spec()`). `which` is a `Section`
 ## passed as an `int`, the way `run.facts.escape_section` holds it.
 static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
 	var spec := DaySpec.new()

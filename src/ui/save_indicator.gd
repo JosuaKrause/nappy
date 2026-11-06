@@ -57,7 +57,7 @@ extends CanvasLayer
 ## play (a won day 14 with every task complete hands the run over to it, see
 ## `DayDirector.hands_over_to_the_escape()`) and each of its section briefs writes the save, so that
 ## escape draws the symbol too. Not built under the `--start-escape` dev flag, where
-## `GameSave.uses_save()` refuses every read, write and deletion and there is nothing to show.
+## `GameSave._uses_save()` refuses every read, write and deletion and there is nothing to show.
 
 ## The least time the symbol is fully shown, counted from when it appears — long enough to be
 ## noticed once — and how long it then takes to fade. `MIN_STRUCK_SECONDS` is the same minimum for

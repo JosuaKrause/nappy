@@ -229,11 +229,11 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 	t.get_tree().paused = false
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	t.check(pause.is_open(), "focus loss still opens the pause")
-	t.check(not _save.has_save(), "but writes nothing")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "but writes nothing")
 	pause.close()
 
 	main.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
-	t.check(not _save.has_save(), "and neither does the window-close notification")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and neither does the window-close notification")
 
 	_shut(t, main)
 	home.free()
@@ -261,7 +261,7 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 	var main := await _boot(t, _windowed(), Calls.new())
 	t.check(Boot.title(main).is_open()
 			and not Boot.summary(main).is_showing(), "a fresh run's own default — nothing to resume")
-	t.check(not _save.has_save(), "a fresh boot writes nothing at all")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "a fresh boot writes nothing at all")
 
 	await Boot.press_title(t, main, "Tap")
 	t.check(not Boot.summary(main).is_showing()
@@ -290,12 +290,12 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	var calls := Calls.new()
 	var main := await _boot(t, _windowed(), calls, home)
 	await Boot.press_title(t, main, "Tap")
-	t.check(_save.has_save(), "a save exists before the restart")
+	t.check(FileAccess.file_exists(_SCRATCH_PATH), "a save exists before the restart")
 	Telemetry.begin_memory_log()
 	var log: TelemetryLog = Telemetry.current_log()
 
 	Boot.pause(main).restart_requested.emit()
-	t.check(not _save.has_save(), "the held restart clears it")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "the held restart clears it")
 	t.check(calls.reloads.size() == 1, "and reloads the scene")
 	t.check(log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
 			"the restart's deletion is logged")
@@ -310,7 +310,7 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 
 	t.check(_on_disk().is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
 	var reloaded := await _boot(t, _windowed(), calls, home)
-	t.check(not _save.has_save(), "and its own dawn write does nothing either")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and its own dawn write does nothing either")
 	t.check(Boot.title(reloaded).is_open(), "it opens on the title")
 	t.check(_one(reloaded, "SaveIndicator") == null and home.get_child_count() == 1
 			and SaveIndicator.carried(sitting) == carried,
@@ -345,10 +345,18 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 
 	var first := await _boot(t, _windowed(), calls, home, false)
 	# Only the lookup under test keeps this boot off the player's own save file: if it broke, `main`
-	# would make a save at the default path. `main` configures only the save it took, and this test
-	# never configures `parked`, so stop before anything can write unless the boot took it.
-	t.check(parked.uses_save(), "the first boot took the save under the sitting and configured it")
-	if not parked.uses_save():
+	# would make a save at the default path, wherever it parked it. So stop before anything can
+	# write unless `parked` is the one `GameSave` anywhere in the tree.
+	var saves: Array[Node] = []
+	var pending: Array[Node] = [t.get_tree().root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		pending.append_array(node.get_children())
+		if node is GameSave:
+			saves.append(node)
+	var took_it := saves == [parked]
+	t.check(took_it, "the first boot took the save under the sitting and made none of its own")
+	if not took_it:
 		_shut(t, first)
 		EventBus.save_written.disconnect(hear)
 		Telemetry.end_run()
@@ -524,7 +532,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	var own := _one(main, "SaveIndicator") as SaveIndicator
 	t.check(own != null and own.is_showing(),
 			"the symbol is raised before the resumed run's charge, so the deletion it makes is announced")
-	t.check(run.header.ending != GameEnums.Ending.NONE and not _save.has_save(),
+	t.check(run.header.ending != GameEnums.Ending.NONE and not FileAccess.file_exists(_SCRATCH_PATH),
 			"the charge spent the last nerve, ended the run and deleted the save")
 	await Boot.press_title(t, main, "Tap")
 	var summary := Boot.summary(main)
@@ -533,7 +541,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 			== SummaryModel.ending(run, run.header.ending).title,
 			"the ending is shown rather than the day brief, so there is no day brief for a later"
 			+ " continue to engage")
-	t.check(not _save.has_save(), "a run that has ended writes nothing, on this path either")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "a run that has ended writes nothing, on this path either")
 
 	_shut(t, main)
 	home.free()
@@ -618,7 +626,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	run.free()
 	_save.clear()
 
-## The whole path through `main`'s write: a run `_save.uses_save()` refuses — here the headless
+## The whole path through `main`'s write: a run the save refuses — here the headless
 ## runner — leaves the symbol dark rather than struck. The same write straight through
 ## `_save.write()` is `tests/test_save.gd`'s `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
 func _test_main_draws_nothing_for_a_refused_run(t) -> void:
@@ -629,7 +637,7 @@ func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 	t.check(not t.get_tree().paused, "the day engaged, which is where the game writes its save")
 	t.check(parked.timeline.is_idle() and not parked.timeline.struck,
 			"a refused save leaves the symbol dark")
-	t.check(not _save.has_save(), "and writes nothing")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and writes nothing")
 
 	_shut(t, main)
 	parked.free_all()

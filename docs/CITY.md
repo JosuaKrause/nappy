@@ -2154,7 +2154,7 @@ Top-down camera with a fake vertical extrusion:
   connected tree within eligible interior cells, reserving each cell before ordinary equipment.
   Its seeded length and branches vary with available space; at least one ordinary equipment roll
   remains, and roofs too small for a network retain compact furniture. The cells are listed row by
-  row before the shuffle (`Building.roof_interior_cells()`), which is what keeps a roof with
+  row before the shuffle (`Building._roof_interior_cells()`), which is what keeps a roof with
   nothing to cover on the layout it has without any extension in the city: the shuffle permutes
   positions, so any other order moves its units. Every unit is a visual-only `Building.RoofObject`
   in the city's y-sorted `Entities` layer, anchored at its bottom-center roof foot. Full-height art

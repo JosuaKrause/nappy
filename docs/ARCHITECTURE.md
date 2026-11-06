@@ -559,8 +559,8 @@ command line, which a visitor has no way to set regardless. `--start-escape` tak
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
 floor, or `city`, which is the one value that is not a part of the building: it boots the escape's
-second section on its own, with no building built at all. `main.escape_part_for()` maps the word,
-with the command line taken out of it so the mapping is testable.
+second section on its own, with no building built at all. `main._escape_part_for()` maps the word
+onto an `InteriorMap.PARTS` name, with the command line taken out of it; the real `main` booted on each word is what shows she lands on ground she can stand on.
 
 **A named subset of that same list also answers a release page's own query string, behind
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug
@@ -572,7 +572,7 @@ build, or `?debug=1` (`readout_requested`) — is the gate: `?day=`, `?invincibl
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
-the debug build alone, with no release-page door at all. `GameSave.uses_save()` refuses the
+the debug build alone, with no release-page door at all. `GameSave._uses_save()` refuses the
 player's own save the moment a release page's query actually used one of the flags above
 (`RunConfig.web_debug_flag_used`), the same way it already refuses a debug build's own argv.
 
@@ -771,7 +771,7 @@ taken, the one thing `PosterArt` draws from the run), the HUD, the pause and tit
 `VisitCounter`, the route rig and the scene recipe runtime — so a test hands a reader whichever run
 it built. `GameSave` is a node under the `Sitting` (`main` makes it on the first boot), handed the run
 on every call that reads or writes one (`write(run, …)`, `try_resume(run)`, `load_in_memory(run)`,
-`file_data(run, …)`, the last a static); the registry's own `run_data()` and `restore_run_data()` are what a save and a
+`_file_data(run, …)`, the last a static); the registry's own `run_data()` and `restore_run_data()` are what a save and a
 checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the save when `run_ended`
 fires. The run is handed per call rather than held; what the save holds (the web flush's page-side
 objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that

@@ -128,7 +128,7 @@ The events:
   the player: "Dog-chased implies charge"; "Ending a day and a charging counter are not the same
   thing"; "Charging is independent of an ended day")* — `nappy-day-N-<charger>-warned`, `-chased`,
   and then exactly one of `-caught`, `-shaken`, `-outlasted` and `-ended`, for every charger
-  (`VisitCounter.charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
+  (`VisitCounter._charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
   - `-warned` — its warning goes up (`EventBus.pursuit_warned`), the level below the charge: a
     charger that waited for her noticing her (the dog that waits past the teaching day, the alley
     robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
@@ -575,13 +575,13 @@ window and nothing else here would cover it.
 ### `--no-save`
 
 The run is saved implicitly when a day starts being played and when the day brief or the
-end-of-day message comes up — see `docs/MECHANICS.md`, "Saving and resuming". `GameSave.uses_save()` is the one gate every read and
+end-of-day message comes up — see `docs/MECHANICS.md`, "Saving and resuming". `GameSave._uses_save()` is the one gate every read and
 write goes through, and it already refuses a headless run and any run carrying a dev flag, since
 every checkout and worktree of this repository shares one `user://` and none of those runs may
 land in or overwrite the player's own save.
 
 `--no-save` (or the page's own `?nosave=1`, a debug web build only) says the same thing for a
-flagless `tools/run.sh` session, which carries no other flag for `uses_save()` to refuse on —
+flagless `tools/run.sh` session, which carries no other flag for `_uses_save()` to refuse on —
 `DevFlags`' own developer flag, gated behind `DevFlags.enabled()` like every other one, listed in
 README.md's "Dev flags" table.
 
@@ -1237,7 +1237,7 @@ build has nothing in `project.godot` to reach:
   snapshot key and everything that drives input, takes a picture or writes a file are the only
   things still unreachable from a visitor's address bar, except the frame record's own file, which
   reaches the visitor only through the browser's download when they tap the page's button for it
-  (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags"). `GameSave.uses_save()` refuses the save the moment the query
+  (docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug flags"). `GameSave._uses_save()` refuses the save the moment the query
   actually used one of those parameters.
   Directly beneath the seed line, a `skip` line names what `--skip`/`?skip=` turned off — `events`,
   `crowd`, `shadows`, `motion`, comma-separated, any order (`DevFlags.skip_words()`) — turning the
