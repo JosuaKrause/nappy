@@ -90,10 +90,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 - `finale_rig.gd:1703-1704` | "the burst names the crater it leaves" / "and draws nothing itself" | duplicate | `burst.aftermath.on_finish == crater.id` is restated catalogue data, and the wiring half of the same test (1739-1744, a burst run to its end leaves exactly one solid crater) fails if the link is wrong. `look == NONE` is the row read back. | medium
 - `finale_rig.gd:2006-2011` (`_test_the_city_word_boots_the_second_section`, whole function) | "'city' is the second section ..." / "a bare flag is still her own door" / "as is anything this does not recognise" | restates a design decision | Three lines of the `escape_part_for()` mapping read back (`"city" -> "city"`, `"" -> "hallway_third"`). The behaviour the mapping exists for is `_test_every_part_word_reaches_its_own_walkable_position` (2015) and the boot tests. Red only when the table is edited. | medium
 
-**`routes_closures_rig.gd`**
-
-- `routes_closures_rig.gd:299`, `:313`, `:314` (in `case_closures_land_where_a_wall_belongs`) | "closures landed on a turning off the corridor" (> 0.5), "landed in one of them" (gap_share > 0.15), "most of the rim is still ordinary ground" (< 0.7) | restates a design decision | Share thresholds over a fixed seed set; the comments call 0.5 "a floor with room in it rather than a measurement" and the 0.15/0.7 band the quota's instruction. They go red when `CLOSURE_GAP_BIAS` or the quota is retuned, not when a wall stops landing off the corridor (the per-closure check on 288 holds that). | medium
-
 **`test_acts.gd`**
 
 - `test_acts.gd:330` and `:335` | "act %d has its own cast", "act III is cooler than act I" | restates a design decision | Palette tints per act are colour/look, which verify's policy says is checked by eye ("Not tested: layout, colour"). Goes red only when the palette is retuned. Line 330 (all four tints distinct) is the milder case | medium
@@ -106,28 +102,14 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_barrier_stays.gd:192-214` (`_test_the_barrier_costs_nothing_while_he_walks_away`, whole function) and `:139` (`current_intensity() == 0.0`) | "the barrier costs nothing beside it on any leaving frame" / "nor after it, as a roadblock's band never does" | duplicate | `finale_rig.gd:525-592` (`_test_a_roadblock_band_costs_nothing`) walks the same roadblock through posted, warning, charging, walking away, gone and streamed back, and asserts `strongest == 0.0` on every frame including the leaving ones; its 531 check asserts the row's intensity is 0.0. The two suites test the same behavior of the same component (`excitement.contribution_at` on a roadblock band). | medium
 
-**`test_bollards.gd`**
-
-- `test_bollards.gd:46` | "and that circle is 4.8px" (`post.shape.radius == 12.0 * 0.4`) | restates a design decision | The literal radius restated; line 44 already asserts the body's circle equals the radius the shadow is drawn from, which is the relationship that matters. | high
-
 **`test_burst_capture.gd`**
 
 - `test_burst_capture.gd:302-303` | "the frame cap ends a sequence at its thirty-sixth frame, and a thirty-seventh is never drawn in" | restates a design decision | `_frames_until_the_end(2.9) == ["frame_cap", 36]` and the helper's `frame-0037.png` hard-code `BurstRecorder.MAX_FRAMES` (36) as literals, while the helper's loop uses `MAX_FRAMES`. Red only when the cap is retuned. Compare against `MAX_FRAMES` and `MAX_FRAMES + 1`. | medium
-
-**`test_car_views.gd`**
-
-- test_car_views.gd:53-58 `_test_car_view_by_sector_matches_the_walker_convention` | "sector %d draws the %s view", "sector %d mirror matches the west-mirror convention" | duplicate + restates a table | See test_event_views.gd:171. | medium
-- test_car_views.gd:65-72 `_test_body_and_trim_can_never_disagree`, `body_views.size() == 5` | "the car family has exactly five authored views, body and trim alike" | restates a design decision | The 5 literal; the has-key and distinct-region checks after it are the part with a reason. | medium
 
 **`test_checkpoints.gd`**
 
 - `test_checkpoints.gd:1784` (in `_test_the_boom_never_inspects_her`) | "checkpoint_gate carries no detention of its own" (`not gate.def.redetains and gate.def.detain_seconds <= 0.0`) | restates a design decision | Table row read back; the behaviour (a boom body never starts a hold, lines 1798-1802) is asserted right after it. | medium
 - `test_checkpoints.gd:1677` | "chatting_mother does not redetain" (`not def.redetains`) | restates a design decision | Same shape; the one-conversation behaviour is checked on 1684-1693. | medium
-
-**`test_crowd_yields.gd`**
-
-- `test_crowd_yields.gd:181` | `_test_a_row_hands_what_it_stands_as_to_its_move`, its `expected` table (police_patrol, fire_truck, market_stall true; charging_dog, policeman_giving_chase, busker false) | RESTATES | Each row's `stands_as` declaration written out again. The handing-over (a row's declaration reaches its move) is covered by any one row. | medium
-- `test_crowd_yields.gd:196` and `:229` | `undeclared.is_empty()` ("every row says what it stands as" / "whether it parks") | DUPLICATE | `EventDef.validate()` (event_def.gd:1197 and :1201) refuses `UNDECLARED` for both fields, and `_test_catalogue_is_fair` (test_events_catalogue.gd:218) calls `validate()` on every row. The function's own comment says so. | high
 
 **`test_danger.gd`**
 
@@ -185,19 +167,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_frame_graph.gd:80` | `_test_a_bars_class_is_fixed_when_it_is_pushed` | CANNOT-FAIL | The comment concedes it: "With the lines fixed the answer could not change anyway". A graph that classed at draw time would give the same `classes()` answers because `classify()` depends on fixed lines only, so the test passes with either implementation. It names a player report but pins nothing that could differ. | medium
 
-**`test_generator.gd`**
-
-- `test_generator.gd:286` | `Tuning.CITY_BLOCKS.x % 2 == 1 and .y % 2 == 1` ("the lattice is odd on both axes") and the `home_block == middle` check | RESTATES | Parity of a constant and the home being in the middle block are the design written out. The `home_to_nearest_calm() >= MIN_HOME_TO_PARK_TILES` check in the same loop is a floor and stays. | medium
-
-**`test_give_way.gd`**
-
-- test_give_way.gd:34-37 `_test_the_stop_line_is_a_setback_short` | "the line is the setback short of what it stops for" (`GiveWay.stop_line(100.0) == 100.0 - Tuning.CAR_STOP_LINE_SETBACK`) | cannot fail (tautology) | The assertion is the function's body retyped. The second check (`stop_line(1.0) < 0.0`) is a real edge case and is worth keeping. | medium
-
-**`test_ground_layers.gd`**
-
-- test_ground_layers.gd:114-145 `_test_directional_component_pairs_match_ground_tiles` (with `_check_directional_layers`) | "source %d has its GroundTiles direction and component rotation" | restates a design decision | A literal 22-row table (source id -> component, rotation) compared to the same table in `ground_layers.json`; it never reads `GroundTiles` for the direction it names, so it can go red only when the JSON or the table is edited, and every such edit is made together. If the intent is "the rotated component agrees with the tile's direction", derive the expected rotation from `GroundTiles`; otherwise delete. | medium
-- test_ground_layers.gd:103-108 (in `_test_damage_pools_are_shared_without_changing_source_semantics`) | "damage source %d retains its authored severity and A/B gameplay slot" | restates a design decision | Hand-written severity pattern `[hairline, hairline, cracked, cracked, broken, broken]` per source compared to the manifest's `source_damage_types`; same table restated. | medium
-
 **`test_halo.gd`**
 
 - `test_halo.gd:809-813` (inside `_test_the_rims_mirrored_copies_land_on_the_ring`) | "clearing a canvas's transform puts it back to identity" | cannot fail | The test calls `Sprites.set_base_transform(canvas, IDENTITY)` and then asserts `Sprites.base_transform_of(canvas) == IDENTITY`: a value read back after the test wrote it. The 809-810 check (an untouched canvas mirrors about its own anchor) is related and also trivial, but the mirrored-origin checks above it carry the real property. | high
@@ -209,11 +178,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_heat.gd:145-146` and `:150-151` | "the raid is scripted for day 10", "the raid still only ever appears on day 10" (`available_on(10)`) | restates a design decision | The catalogue row's day (and `SCRIPTED` kind) read back; moving the raid day edits the catalogue and this test. Other suites (`test_resistance_placement_kinds.gd:857-883` "only on day 10") hold the behaviour (raid arrives only on day 10) | medium
 
-**`test_home_block.gd`**
-
-- `test_home_block.gd:157` | `_test_her_building_is_the_same_across_two_seeds` | DUPLICATE | `_test_every_home_block_building_is_the_same_across_two_seeds` (test_home_block.gd:188) compares floor count, variant, window pictures, scenery residency and roof furniture for all three home-block lots, her lot included. Only `columns()` and the "roof too shallow" explanation are extra. | medium
-- `test_home_block.gd:145` | `short_rects.size() == 3` | RESTATES | The count of lots the home block carves into; the equality of the rect lists on the next line is the property. | medium
-
 **`test_interior_masked_man.gd`**
 
 - test_interior_masked_man.gd:167-171 (inside `_test_she_has_to_run_to_the_first_floor_door`) | "he comes %.1fpx from her centre on the tick (%.1fpx pinned)" (`absf(closest - _TIGHTEST_RUNNER_CLOSEST) < 0.5`, with `_TIGHTEST_RUNNER_CLOSEST := 36.4`) | restates a design decision | A measured figure of the escape's geometry pinned to half a pixel; it goes red on any stairwell, speed or collision tweak even when the margin is still fair. The part that holds the contract is the other half of the same condition, `closest > EventCatalogue.MASKED_PURSUER_CATCH`. Tighten to that inequality (optionally with a minimum margin) and drop the literal. | medium
@@ -221,10 +185,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_loss_cause.gd`**
 
 - test_loss_cause.gd:_test_a_day_lost_to_the_pelican_names_the_pelican, third check "a car is still a car" | `hard_fail_suffix("car_strike") == "car"` | duplicate | Same call, same value as the first check of `_test_hard_fail_cause_suffix` (:21) and again in `_test_the_cause_by_result` (`car_strike` -> "car"). | medium
-
-**`test_orientation.gd`**
-
-- `test_orientation.gd:284` | `layers.size() == 8` ("every layer of screen furniture is built, and nothing extra") | RESTATES | A count of CanvasLayers that changes whenever a screen is added; the transform check that follows over `layers` is the property. | medium
 
 **`test_pause.gd`**
 
@@ -245,10 +205,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_player_presentation.gd`**
 
 - `test_player_presentation.gd:34` | "the presentation is the run stream's equal two-way draw" | cannot fail (tautology) | Re-derives the expected value with the very same call the code under test makes (`run_rng("player-presentation").randi_range(0, 1) == 1`, `game_state.gd:86`); it can only differ if the stream name is changed in one place. The replay and retain-the-choice checks on lines 41 and 43, and the both-families guard on line 44, are the property. | medium
-
-**`test_regions.gd`**
-
-- `test_regions.gd:525` (first check of `_test_wall_crossing_posts_four_guards`) | "a catalogue roadblock still posts two guards (%d)" | restates a design decision | `guard_sides.size() == 2` is the table; the per-wall counts in the loop (`street_walls.size() == per_wall * ...`, `total_guards == 4`) are derived from it and also restate "a wall stands three bodies / four guards" (546, 561). Would go red only on a design change to the crossing's make-up. | medium
 
 **`test_resistance_arrow.gd`**
 
@@ -277,13 +233,9 @@ Each line: where | the check | its kind | why | the audit's confidence.
 - `test_return_patrols.gd:117-126` (`_test_owed_count_per_act`, whole function) | "day %d (act %d) owes %d return patrol(s)" | restates a design decision | `owed() == EventDirector.RETURN_PATROLS_PER_ACT[act - 1]` reads the table back to itself (the doc comment states `[0, 0, 2, 3]`). `test_tuning_fairness.gd:84-88` already guards the table's shape. The behaviour this table drives is checked by the walking tests below (`_test_each_patrol_comes_within_its_rigged_bag` 229, `_test_a_marble_spent_unmet...` 258). | high
 - `test_return_patrols.gd:140` | "the one batch is the whole of act IV's count" | restates a design decision | `once == RETURN_PATROLS_PER_ACT[3]`: the same table read back. The no-second-batch check above it (137) is the real one. | medium
 
-**`test_route_lines.gd`**
-
-- `test_route_lines.gd:34` (`_test_parse_layers_accepts_five_and_still_rejects_four`) | "5 ... is accepted on its own", "1,9,0" -> [1] etc. | duplicate | `DevFlags.parse_layers` is tested in `test_debug_layers.gd:136-146` (`_test_parse_layers_reads_a_comma_list`, `_..._drops_malformed_entries_without_crashing`, the same `"1,9,0" == [1]` case on line 144). The 5-accepted case is the only new one; fold it into that suite. | medium
-
 **`test_route_rig.gd`**
 
-- test_route_rig.gd:24-27 (`RUN_SEED` comment: "these checks hold on seeds 4 and 5 and fail on 1, 2 and 3") | the whole target-resolution and rig-walk group built by `_build_fixture(RUN_SEED)` | cannot fail (true by luck of the seed) | The suite's own comment says the ground the targets resolve to depends on the run seed and the checks fail on three of five seeds, so they hold on the seed picked, not on a property of the code. Not a deletion: say in the finding that a run on seeds 1-3 would show which checks are seed-dependent; I could not tell which ones from reading. | medium
+- The rig suite's seed claim, run (record 2026-10-18-minty-quail-brisk-llama): on seeds 1, 2, 3 and 5 only seed 2 fails, and only two checks, both in `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van` ("crosses none of any body's clearance", "no step of the plan past the van..."). Open: why the dev route rig's plan crosses a body's clearance on seed 2, a planner gap in a dev tool or a check that holds by luck.
 
 **`test_route_tree.gd`**
 
@@ -315,10 +267,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_save_wiring.gd`**
 
 - `test_save_wiring.gd:657-658` | "and that one change is already answered" (`parked.indicator.is_showing() and timeline.pending == 0`) | duplicate | `timeline.pending == 0` is asserted at 652 (together with `not is_idle()`), and `begun == 1` at 656; `indicator.is_showing()` is the same state as `not timeline.is_idle()`. | medium
-
-**`test_scene_recipe_task.gd`**
-
-- `test_scene_recipe_task.gd:272-297` (`_test_the_task_scenes_start_off_an_unread_mark`, whole function), `:303-318` (`_test_the_door_scenes_show_the_robber_a_done_task_sends`, whole function), `:343-348` (last check of `_test_an_authored_mast_carries_its_own_id`) | "%s starts off the mark" / "%s lists the street the robber starts on" / "the two-mast scene stands two masts under two ids" | restates a design decision | These load the authored `scene-recipes/*.json` files and assert facts about their contents (the start anchor is not the mark, an observation is at tick 1, `draft.include` is non-empty). No game code is exercised; they are red only when a recipe file is edited, and the second says in its own comment that the headless scene play (`tools/scene-recipes.sh`) answers the question and this "keeps either from being dropped". That is a lint of authored data, not a behavior. Could move into the recipe validator (`SceneRecipeRuntime.validate_runtime`) if the rule is wanted. | medium
 
 **`test_seals.gd`**
 
@@ -375,11 +323,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_walk_siting_spec.gd`**
 
 - test_walk_siting_spec.gd:90-107 `_test_every_place_that_builds_a_siting_copies_the_rule` | "EventsAhead builds a WalkSiting in four places (%d)", "each copies holds_the_home_streets", "each hands it a verdict store" | restates a design decision | Greps the source text of `events_ahead.gd` for `WalkSiting.new(` and a copy line within 5 lines; `builds == 4` goes red when a fifth siting is added legitimately, and the string match goes red on a rename while the behaviour is intact. The comment says the first two sitings cannot be observed otherwise; if so this is a lint, and the same text-scan family as test_auto_screenshot's source scan. Keep only if the player wants source-text guards. | medium
-
-**`test_walker_views.gd`**
-
-- `test_walker_views.gd:106-107`, `:148-151` | "sector %d mirror matches the west-mirror convention", "sector %d draws the %s view" (`EXPECTED_MIRRORED`, `EXPECTED_VIEW`) | restates a design decision | The test's own copy of the sector-to-view and mirror tables, compared to `WalkerLook`'s tables. Changing the art convention means editing both. The behavioural checks in this file (hysteresis, wrap, stopped walker keeps its view, placement resets view) stay | medium
-- `test_walker_views.gd:162`, `:320`, `:323` | "exactly five authored views", "gait-b body %s is native 18x38" | restates a design decision | Counts and pixel sizes of authored art; the same facts the atlas suites (`test_atlas_library.gd` membership/regions) and the bake already enforce, and they go red only when an art spec is changed on purpose. Keep the checks that a gait-b entry exists and is baked (303-315) | medium
 
 **`test_web_display.gd`**
 
