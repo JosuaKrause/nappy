@@ -1,6 +1,6 @@
 extends RefCounted
 ## What one `SpawnSiting.ask_of_ground()` costs at each day the region wall stands on, the call
-## `ResistanceDirector.nearest_alley_within()` makes for every candidate tile of a relocation, and
+## `ResistanceDirector._nearest_alley_within()` makes for every candidate tile of a relocation, and
 ## `region()`'s part of it: the median per-call time over a few thousand calls per day, one line a
 ## day (`SITING_ASK_COST_JSON`). Run in each revision's checkout and compare the times; the
 ## `bodies` count is what the day's region holds, and `same` that two asks in a row are handed the

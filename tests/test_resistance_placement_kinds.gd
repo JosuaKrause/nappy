@@ -7,9 +7,11 @@ extends "res://tests/resistance_rig.gd"
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
 ## (`spine_x()`, `tick()`). The ground a row is offered is asked of
 ## `EventScheduler.open_ground_for()`, the next day's masts of the day the manager plans, the
-## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` puts her stroller in
+## near mast of the arrow's tip over two masts a test stands, and `_start_the_day()` puts her stroller in
 ## the tree with the baby a child of it, as the scene has them.
 const UI := preload("res://tests/ui_screens.gd")
+## Where the red arrow's tip stands and the mast there.
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
 ## Her street door's picture and the building it stands in front of, read off the city's nodes.
@@ -755,65 +757,97 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 	t.check(live_tomorrow, "while the others speak")
 	director.free()
 
-## `weighted_mast_index()` is the draw `_place_at_a_mast()` makes among the masts already found
-## reachable, so this reaches the weighting rule directly, over two tiles at fixed, known
-## distances from her, rather than through a live day 11 — whose own reachable masts a small test
-## city can offer as few as one of (`docs/DECISIONS.md`, M181, day 11's mast in the map's corner),
-## too few to compare a near draw against a far one. No `_city` is needed for the draw itself, the
-## same bare-map rig `_test_the_guard_never_lands_inside_a_building()` uses.
-##
-## Two tiles 2 and 10 tiles from her (64px, 320px): weight is `1/d^2`, so the near tile outweighs
-## the far one 25 to 1, drawn clearly more often over many rolls and still, sometimes, not drawn.
+## Day 11's task draws among the masts near where she read the mark, weighted toward the nearer: a
+## mark of the test city with two loudspeakers stood round it the way a scene recipe stands its own
+## (`EventManager.start_recipe()`, each with its `mast_id`), one 3 to 4 tiles from the mark and one 7
+## to 9, both well inside the circle her paths reach. She stands on the mark, pinned
+## (`start_recipe_task()`), and reads it, and the task is placed on one of them: which, read off the
+## arrow's tip (`ResistanceReads.mast_at()`). Read again over `MAST_DRAWS` days of their own streams,
+## the near mast is drawn clearly more often and the far one still, sometimes, drawn. Each read starts
+## a day, which builds the day's reachability afresh, so the draws are few and the masts' distances
+## are set so the far one's share is still drawn among them.
 func _test_the_mast_task_favors_the_near_mast(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	var run := RunState.new()
-	run.start_run(RUN_SEED)
-	var director := ResistanceDirector.new()
-	t.add_child(director)
-	director.setup(null, map, null, run)
-	var doorstep_tile := map.world_to_tile(map.doorstep_world_position())
-	var near_tile := doorstep_tile + Vector2i(2, 0)
-	var far_tile := doorstep_tile + Vector2i(10, 0)
-	var beside: Array[Vector2i] = [near_tile, far_tile]
-	var player := _rig_player(t, map.tile_to_world(doorstep_tile))
+	var run := _build_city_in_a_new_run(t)
+	var map := _city.map
+	var found := _two_masts_round_a_mark(map)
+	t.check(not found.is_empty(), "the test city has a mark with room for a near and a far mast")
+	if found.is_empty():
+		return
+	var mark: Vector2 = found[0]
+	var plans: Array[EventScheduler.Planned] = [found[1], found[2]]
+	plans[0].mast_id = "near"
+	plans[1].mast_id = "far"
+	_city.events.start_recipe(plans, DaySpec.for_day(11), 11, mark)
+	var director := _director(t)
+	var player := _rig_player(t, mark)
 	director.use_player(player)
-
-	var draws := 300
-	var near_drawn := 0
-	var far_drawn := 0
-	for i in draws:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("mast weight test %d" % i)
-		var index := director.weighted_mast_index(beside, rng)
-		if index == 0:
-			near_drawn += 1
-		elif index == 1:
-			far_drawn += 1
-	t.check(near_drawn > far_drawn * 3,
-			("the 2-tile mast is drawn clearly more often than the 10-tile one (%d vs %d of %d " +
-			"draws)") % [near_drawn, far_drawn, draws])
-	t.check(far_drawn > 0, "and the 10-tile mast can still be drawn (%d of %d draws)"
-			% [far_drawn, draws])
-
-	# The same draw with nobody in the tree falls back to the doorstep, exactly where she is
-	# standing above — so it favors the near tile exactly as strongly.
+	var drawn := {}
+	for i in MAST_DRAWS:
+		# Each read a day of its own, with the run as its dawn left it.
+		run.resistance.give_back()
+		run.facts.completed_resistance_alley_tiles = []
+		var errors := director.start_recipe_task(11, _rng(11, "mast-weight:%d" % i), 300.0, mark)
+		if not errors.is_empty() or director.contact() == null:
+			t.check(false, "draw %d: the pinned mark is offered: %s" % [i, errors])
+			continue
+		director.contact().complete_now()
+		var id := ResistanceReads.mast_at(director, _city.events)
+		drawn[id] = int(drawn.get(id, 0)) + 1
+	var near_drawn: int = drawn.get("near", 0)
+	var far_drawn: int = drawn.get("far", 0)
+	t.check(near_drawn + far_drawn == MAST_DRAWS,
+			"every read sends her to one of the two masts (%s)" % [drawn])
+	t.check(near_drawn > far_drawn * 2,
+			("the near mast is drawn clearly more often than the far one (%d vs %d of %d " +
+			"draws)") % [near_drawn, far_drawn, MAST_DRAWS])
+	t.check(far_drawn > 0, "and the far mast can still be drawn (%d of %d draws)"
+			% [far_drawn, MAST_DRAWS])
 	player.free()
-	var fallback_near := 0
-	var fallback_far := 0
-	for i in draws:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("mast weight fallback test %d" % i)
-		var index := director.weighted_mast_index(beside, rng)
-		if index == 0:
-			fallback_near += 1
-		elif index == 1:
-			fallback_far += 1
-	t.check(fallback_near > fallback_far * 3,
-			("with no player in the tree, the doorstep fallback favors the near tile just as " +
-			"clearly (%d vs %d of %d draws)") % [fallback_near, fallback_far, draws])
-
 	director.free()
-	run.free()
+
+## How many days `_test_the_mast_task_favors_the_near_mast()` reads the mark on.
+const MAST_DRAWS := 32
+
+## `[the mark's centre, a near mast's plan, a far mast's plan]` for the first mark tile of `map` more
+## than 800px from the doorstep with a sidewalk tile 96 to 128px from it and another 224 to 288px from
+## it that each take a loudspeaker the way a scene recipe's are accepted (an eligible mast site, not
+## closed, held or on the home block, `MastSites.is_eligible()`, and room for it,
+## `EventScheduler.place_at()`); empty when none has.
+func _two_masts_round_a_mark(map: CityMap) -> Array:
+	for tile in _mark_tiles():
+		var mark := map.tile_to_world(tile)
+		if mark.distance_to(map.doorstep_world_position()) < 800.0:
+			continue
+		var near: Array[Vector2i] = []
+		var far: Array[Vector2i] = []
+		for dy in range(-9, 10):
+			for dx in range(-9, 10):
+				var site := tile + Vector2i(dx, dy)
+				if map.tile_at(site) != GameEnums.TileType.SIDEWALK:
+					continue
+				var at := map.tile_to_world(site)
+				var away := at.distance_to(mark)
+				var is_near := away >= 96.0 and away <= 128.0
+				if not is_near and (away < 224.0 or away > 288.0):
+					continue
+				if map.is_closed(site) or map.is_held_at(site) or map.is_on_home_block(site) \
+						or not MastSites.is_eligible(at, map):
+					continue
+				if is_near:
+					near.append(site)
+				else:
+					far.append(site)
+		for a in near:
+			var first := EventScheduler.place_at(EventCatalogue.mast(), map, a,
+					RandomNumberGenerator.new(), [] as Array[EventScheduler.Planned])
+			if first == null:
+				continue
+			for b in far:
+				var second := EventScheduler.place_at(EventCatalogue.mast(), map, b,
+						RandomNumberGenerator.new(), [first] as Array[EventScheduler.Planned])
+				if second != null:
+					return [mark, first, second]
+	return []
 
 ## On the mornings before day 10 the neighbor walks out of her building beside her and off along
 ## her street, away from her, with nothing pointing at them; from day 10 on there is no morning

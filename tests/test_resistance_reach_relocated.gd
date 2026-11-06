@@ -148,15 +148,16 @@ func _plan_the_day(day: int, seed_value: int) -> void:
 
 ## downy-otter, "a mark is never placed in an alley she cannot reach" (*"also a mark should never
 ## be placed in an alley that is not reachable (ie sealed off)"*, olive-koala statement 9), on the
-## relocation path: `nearest_alley_within()` asks `_reachable_from_home()` over the flood
+## relocation path: the relocation asks `_reachable_from_home()` over the flood
 ## `_ensure_reachability()` builds once and caches for the day. Asked here from every tenth
-## sidewalk tile of two cities, over every mark day, the way a mark relocating mid-walk is placed,
+## sidewalk tile of two cities, over every mark day, the way a mark relocating mid-walk is placed —
+## her stroller set down there and one tick (`_relocate_round()`), the mark read off the street —
 ## and every answer is checked two ways: against `_day_reachability()`, the same rule the director
 ## keeps (every obstructing or lethal plan's disc and the day's closures), built afresh; and against
 ## a plain walk from the doorstep over walkable ground minus `CityMap.closed_tiles`,
 ## `soft_sealed_tiles` and `obstructed_tiles` — the per-tile record of where a body stands, a
 ## second source the director's discs do not read. Two seeds and a tenth of the sidewalks keep the
-## cost down: `nearest_alley_within()` is linear in the alley count per call.
+## cost down: a relocation is linear in the alley count per tick.
 ##
 ## **A region door counts as a way through**, for the director and for the tile walk alike, so a
 ## mark reachable only by crossing a district door passes here. That is the player's own rule
@@ -198,12 +199,17 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 			var walk := city.map.walk_field(
 					city.map.world_to_tile(city.map.doorstep_world_position()), by_tiles)
 
+			var player := _rig_player(t, director.contact_position())
+			director.use_player(player)
+			var away: Array[Vector2] = []
+			for tile in _mark_tiles():
+				away.append(city.map.tile_to_world(tile))
 			var sidewalks := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for i in sidewalks.size():
 				if i % 10 != 0:
 					continue
 				var here := city.map.tile_to_world(sidewalks[i])
-				var nearest := director.nearest_alley_within(here)
+				var nearest := _relocate_round(director, player, here, away)
 				if nearest == Vector2.INF:
 					continue
 				checked += 1
@@ -217,6 +223,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> v
 						("seed %d day %d: and a walk from the doorstep around every closure, seal " +
 						"and body reaches it (%s, from %s)")
 						% [seed_value, day, nearest_tile, sidewalks[i]])
+			player.free()
 			director.free()
 	_free_city()
 	t.check(checked > 0, "some relocation target was actually checked (%d)" % checked)

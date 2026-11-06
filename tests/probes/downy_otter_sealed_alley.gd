@@ -54,7 +54,7 @@ func run(t) -> void:
 					"seed %d day %d dawn" % [seed_value, day])
 			var sidewalks := city.map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for i in range(0, sidewalks.size(), 10):
-				var target := director.nearest_alley_within(city.map.tile_to_world(sidewalks[i]))
+				var target := director._nearest_alley_within(city.map.tile_to_world(sidewalks[i]))
 				if target == Vector2.INF:
 					continue
 				_count(totals["moved"], city, director, target, shut, by_tiles, "")
