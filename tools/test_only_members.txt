@@ -43,7 +43,6 @@ src/world/world_context.gd total_excitement_at
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
 src/city/city.gd barrier_footprint
