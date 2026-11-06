@@ -88,20 +88,8 @@ through the manager's own `trace` setter. Two writes of the baby's `WorldContext
 ### 2.3 `CityMap` tile state written by hand
 
 The game writes a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
-`obstruct_tiles(owner_id, tiles)` with `release_obstruction()`, and the tests do too, apart from five fixtures on a
-bare or hand-made map that no game writer can make:
-- `test_turns.gd` closes a junction box's lane tiles, a two-tile plug in an arm and lane stubs four tiles apart by
-  writing `closed_tiles`. `close_streets()` closes only the ground a street segment's two mouths cut off, so it makes
-  none of these, and closing the segment beyond the box instead changes what each check asserts. Open: re-author the
-  scenarios around a real segment closure, or a map-level hand-in for lane stubs, which only tests would call.
-- `test_resistance_alley_siting.gd` appends a 16-tile alley to `alley_rects`; no generated alley is longer than 8
-  tiles.
-- `test_ground_floor.gd` writes `building_rects` for hand-placed buildings; the recipe path writes it only from a
-  full saved scene context.
-- `test_still_watch.gd` writes `main_road = 0`, which the generator never picks (it picks among the middle
-  corridors) and only a recipe context can set.
-- `test_scene_recipe_stretch.gd` writes `stretch_active` on a 5x5 U-shaped map made as a counterexample; the test
-  is already handed the real scene's map (unused) as `_map`.
+`obstruct_tiles(owner_id, tiles)` with `release_obstruction()`, and the tests write it through those alone (record
+minty-quail-misty-badger).
 
 ### 2.4 Run and city state written by hand
 `run.attempt_spend.scars.append({...})` (`test_acts.gd:292`), `run.attempt_spend.consumed_one_shots.append(...)` (`test_day_loop.gd:807,823`),
@@ -138,7 +126,7 @@ Grouped by owner. Each line: `member` (src file:line) -> tests that read it -> s
 
 ### Two weaker tiers (counts, for scope)
 - **DEV-only readers** (the only `src/` caller is under `src/dev`, the scene-recipe/rig tools): about 55 names including `Crowd.add_recipe_actor` and `recipe_coverage`, `City.set_region_plan`, `ResistanceDirector.read_mark/start_recipe_task/scene_task_errors`, `EventManager.start_recipe`, `EventScheduler.place_at/recipe_placement`, `EventInstance.walk_on_by_hand/solid_part_centres/solid_part_shapes/is_solid`, `WorldMap.is_obstructed`, `VisibleView.visible_share`. The README already treats the recipe runtime as a game caller; the first reading above counts `src/dev` among the game's own classes (the item's own seams `add_recipe_actor`, `place_at`, `read_mark` depend on it).
-- **SELF-only readers** (public, but the only caller is the defining file itself): about 250 names, dominated by `Building` (ground-floor and roof family used by `test_ground_floor.gd`: `ground_floor_texture`, `window_texture`, `entrance_door_col`, `extension_rows`, `portico_is_drawn`, `roof_layout`, `fire_escape_*`, 20+ members), `TouchControls` geometry (`heading_to`, `in_dead_zone`, `is_double_tap`, `run_focus_for`, `boundary_x`), `FrameRecorder`/`FrameLedger` (`ledger` alone has 34 test reads), `ParkCordon` (`stretches` 34, `officers` 11, `last_gap` 7, `closed_at`, `trapped`, `relaid`), `EventScheduler.Planned` helpers (`gap_to`, `counts_against_the_line`, `denies`, `reach_touches`, `keeps_its_field_clear`, which the item names as asked "what the scheduler asks"), `ResistanceDirector` (`guard_position`, `guard_spot`, `draw_reachable`, `place_contact`, `nearest_alley_*`), `TitleScreen.hard_mode_*`, `GameSave.has_save/fail/file_data`, `FigureLook`/`PursuerLook` `*_pictures()`, `Sprites.base_transform_of`. They are internals made public for tests, which the player ruled a loophole (the second reading above); `tests-own-class-members.md` is the pass that makes them internal.
+- **SELF-only readers** (public, but the only caller is the defining file itself): about 250 names, among them `Building`'s window and roof pieces (`window_texture`, `roof_layout`; its ground-floor pieces are internal, record minty-quail-misty-badger), `TouchControls` geometry (`heading_to`, `in_dead_zone`, `is_double_tap`, `run_focus_for`, `boundary_x`), `FrameRecorder`/`FrameLedger` (`ledger` alone has 34 test reads), `ParkCordon` (`stretches` 34, `officers` 11, `last_gap` 7, `closed_at`, `trapped`, `relaid`), `EventScheduler.Planned` helpers (`gap_to`, `counts_against_the_line`, `denies`, `reach_touches`, `keeps_its_field_clear`, which the item names as asked "what the scheduler asks"), `ResistanceDirector` (`guard_position`, `guard_spot`, `draw_reachable`, `place_contact`, `nearest_alley_*`), `TitleScreen.hard_mode_*`, `GameSave.has_save/fail/file_data`, `FigureLook`/`PursuerLook` `*_pictures()`, `Sprites.base_transform_of`. They are internals made public for tests, which the player ruled a loophole (the second reading above); `tests-own-class-members.md` is the pass that makes them internal.
 
 ---
 
@@ -154,6 +142,4 @@ Grouped by owner. Each line: `member` (src file:line) -> tests that read it -> s
 
 Files in a build are those in the tables above. Builds with disjoint file sets can run in parallel; a shared helper (`finale_rig.gd`, `crowd_rig.gd`, `resistance_rig.gd`, `event_manager_rig.gd`) belongs to exactly one build.
 
-3. **Map tile state through the map's own writers** (section 2.3): the five fixtures it lists, each open as it says. Files: `test_turns.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`.
-
-Parallel groups: 3's open fixtures are 3's alone; the DEV-only tier is not scheduled (the first reading), and the SELF-only tier is `tests-own-class-members.md`'s.
+The DEV-only tier is not scheduled (the first reading), and the SELF-only tier is `tests-own-class-members.md`'s.

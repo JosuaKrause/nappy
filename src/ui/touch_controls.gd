@@ -67,7 +67,7 @@ const DOUBLE_TAP_DISTANCE := 60.0
 ## narrow band in the middle of the screen (size of the stop circle) that stops the player")*, when
 ## the stop circle and the ring were both 48px. The stop circle is now the 16px dead zone, and
 ## keeping the band at the ring's width is the filer's proposal, open to overturn; see
-## `is_in_stop_band()`. Run's disc is sized off this ring.
+## `_is_in_stop_band()`. Run's disc is sized off this ring.
 const RING_RADIUS := 48.0
 
 ## How close a press has to land to the steering focus, in **design-space** px, to stop her rather
@@ -75,7 +75,7 @@ const RING_RADIUS := 48.0
 ## the dead zone")*; the ring and the dot at the focus are what shows. 16px *(2026-10-10: "why is the
 ## deadzone so big now?" at 32px; "make it the size of the dot"; then "we can try 16px to keep the
 ## deadzone consistent")*, which is also what tap mode's stop circle is on screen (see
-## `TAP_STOP_RADIUS`). `in_dead_zone()` is the only place it is compared. **It never takes
+## `TAP_STOP_RADIUS`). `_in_dead_zone()` is the only place it is compared. **It never takes
 ## `ButtonGeometry.CATCH_SCALE`** *(2026-10-10: "the 5% increase doesn't apply to dead zones only to
 ## buttons")*: it is steering geometry, not a button, so a press just past 16px steers.
 const DEAD_ZONE_RADIUS := 16.0
@@ -84,7 +84,7 @@ const DEAD_ZONE_RADIUS := 16.0
 ## two foci. *(2026-10-10, the player: "we can even increase the influence zone of the joystick
 ## (instead of splitting the in middle we can move it closer to the run button; although I wouldn't
 ## go all the way)".)* Two thirds puts the edge at x≈773 with the left side steering, about 216px
-## short of Run's painted rim, and at x≈507 with the right side steering. See `boundary_x()`.
+## short of Run's painted rim, and at x≈507 with the right side steering. See `_boundary_x()`.
 const STEERING_REACH := 2.0 / 3.0
 
 ## How close a press has to land to her, in **world** px, to read as *stop* rather than a direction
@@ -134,7 +134,7 @@ const FOCUS_RIGHT := Vector2(1040.0, 480.0)
 
 ## The joystick ring's stroke reaches one pixel beyond `RING_RADIUS`. Run's disc matches that
 ## visible outer edge, rather than the SVG's transparent texture bounds. Run needs no catch radius
-## of its own: its whole half catches a run press (`is_on_run_side()`), which holds the disc and
+## of its own: its whole half catches a run press (`_is_on_run_side()`), which holds the disc and
 ## 1.05 times its radius on both sides (`tests/test_touch.gd` pins it).
 const FOCUS_STROKE_WIDTH := 2.0
 const RUN_RADIUS := RING_RADIUS + FOCUS_STROKE_WIDTH * 0.5
@@ -191,16 +191,16 @@ var _mode := ControlsMode.Mode.TAP
 ## What these controls cover of the screen, and whether the scheme that covers it is in force: the
 ## one `ScreenCover` this node keeps current as the mode changes (`set_mode()`), handed on by `main`
 ## to everything that asks what she can see (`VisibleView`).
-var covering := covered_screen(false)
+var covering := _covered_screen(false)
 
 ## The left covered corner includes the painted ring or Run disc, never its invisible catch.
-static func covered_left() -> Rect2:
+static func _covered_left() -> Rect2:
 	var top := FOCUS_LEFT.y - RUN_RADIUS
 	var right := FOCUS_LEFT.x + RUN_RADIUS
 	return Rect2(0.0, top, right, ScreenOrientation.DESIGN_SIZE.y - top)
 
 ## The right covered corner mirrors the same disc footprint.
-static func covered_right() -> Rect2:
+static func _covered_right() -> Rect2:
 	var top := FOCUS_RIGHT.y - RUN_RADIUS
 	var left := FOCUS_RIGHT.x - RUN_RADIUS
 	return Rect2(left, top, ScreenOrientation.DESIGN_SIZE.x - left, ScreenOrientation.DESIGN_SIZE.y - top)
@@ -208,8 +208,8 @@ static func covered_right() -> Rect2:
 ## The two covered corners as a `ScreenCover`, in force unless `in_force` says otherwise: each focus carries either a
 ## steering ring or an equally sized Run disc, so the steering side the title chose does not change
 ## the covered footprint.
-static func covered_screen(in_force := true) -> ScreenCover:
-	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, covered_left(), covered_right())
+static func _covered_screen(in_force := true) -> ScreenCover:
+	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, _covered_left(), _covered_right())
 	made.in_force = in_force
 	return made
 
@@ -272,7 +272,7 @@ var _rig: Node2D
 var _direction := Vector2.ZERO
 var _walking := false
 ## Whether this node itself currently holds the `run` action pressed — set alongside `_direction`
-## in `set_direction()`, cleared wherever `_direction` is. Tracked rather than read back off
+## in `_set_direction()`, cleared wherever `_direction` is. Tracked rather than read back off
 ## `Input.is_action_pressed(&"run")`, which cannot tell this node's own press from `Tuning`'s Shift
 ## binding: see `_yield_to_the_keyboard()`'s own doc for why that distinction is the whole fix.
 var _run_active := false
@@ -428,7 +428,7 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 			_pause_touch = index
 			queue_redraw()
 			return
-		if _mode == ControlsMode.Mode.JOYSTICK and is_on_run_side(design, _steering_focus):
+		if _mode == ControlsMode.Mode.JOYSTICK and _is_on_run_side(design, _steering_focus):
 			# A press that *begins* on Run's half, and only that, holds `run` — never a direction,
 			# whatever the drawn disc covers, so the steering finger's drag and the double-tap
 			# clock are left alone. A second finger there joins the first rather than being read as
@@ -492,8 +492,8 @@ func _on_pointer(position: Vector2, pressed: bool, index: int) -> void:
 ## aims from her own world position, exactly as a mouse always has, and a press within
 ## `TAP_STOP_RADIUS` of that same position stops her rather than steering her — the one door this
 ## mode has, since its aiming origin already *is* her. `Mode.JOYSTICK` instead aims from the
-## steering focus the title chose, and is stopped by a press in its dead zone (`in_dead_zone()`) or
-## in the stop band at the steering half's edge (`is_in_stop_band()`) — not by a press near her own
+## steering focus the title chose, and is stopped by a press in its dead zone (`_in_dead_zone()`) or
+## in the stop band at the steering half's edge (`_is_in_stop_band()`) — not by a press near her own
 ## position, which a drag crossing her by accident would otherwise stop her on by surprise. A press
 ## on Run's half never reaches this function: `_on_pointer()` gives it to Run.
 ##
@@ -537,14 +537,14 @@ func _on_tap(screen_position: Vector2, now: float) -> void:
 		if _near_her(world):
 			_stop()
 			return
-		set_direction(world, double)
+		_set_direction(world, double)
 		return
 	# Mode.JOYSTICK, past here — see the class doc and this function's own doc above.
 	var design := ScreenOrientation.to_design_space(screen_position, rotated)
-	if in_dead_zone(design, _steering_focus) or is_in_stop_band(design, _steering_focus):
+	if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 		_stop()
 		return
-	set_direction(world, double, _focus_world(_steering_focus))
+	_set_direction(world, double, _focus_world(_steering_focus))
 
 ## The design→presented→world trip a fixed focus takes to become a heading's own origin — the same
 ## trip `_on_tap()`'s own doc walks through, pulled out here so `_on_drag()` can redo it every
@@ -571,7 +571,7 @@ func _near_her(world: Vector2) -> bool:
 ## A finger or a held left mouse button, still down and moving, at `screen_position` — the drag
 ## stick's replacement, and the reason it survives
 ## `_test_no_input_path_presses_a_vector_shorter_than_one` is the whole of the difference from it:
-## this recomputes a heading through `set_direction()`, which always normalises, rather than
+## this recomputes a heading through `_set_direction()`, which always normalises, rather than
 ## pressing a partial vector for a thumb short of some rim. *(2026-09-07: "dragging the finger
 ## doesn't work anymore but should", and "although dragging a mouse should reaim as well".)*
 ##
@@ -592,15 +592,15 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 	var world := get_viewport().get_canvas_transform().affine_inverse() * screen_position
 	if _mode == ControlsMode.Mode.JOYSTICK:
 		var design := ScreenOrientation.to_design_space(screen_position, rotated)
-		if in_dead_zone(design, _steering_focus) or is_in_stop_band(design, _steering_focus):
+		if _in_dead_zone(design, _steering_focus) or _is_in_stop_band(design, _steering_focus):
 			_stop()
 			return
-		set_direction(world, _drag_run, _focus_world(_steering_focus))
+		_set_direction(world, _drag_run, _focus_world(_steering_focus))
 		return
 	if _near_her(world):
 		_stop()
 		return
-	set_direction(world, _drag_run)
+	_set_direction(world, _drag_run)
 
 ## Locks in the heading toward `target` from `from` — computed once here and never again, so a
 ## shove that knocks her off the line does not silently correct itself, the same way walking into a
@@ -613,17 +613,15 @@ func _on_drag(screen_position: Vector2, index: int) -> void:
 ## real focus or a real press. `_on_tap()` and `_on_drag()` are the only two callers that ever pass
 ## something else: a focus already converted to world space, in `Mode.JOYSTICK`.
 ##
-## A press exactly on `from` has no heading to compute and stops her instead, the same case
-## `_near_her()`'s own `TAP_STOP_RADIUS` check already catches for a `Mode.TAP` press a pixel's-width
-## away from her — this is the fallback for the one caller (a test) that calls straight in with an
-## exact point.
-func set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
+## A press exactly on `from` has no heading to compute and stops her instead: in `Mode.TAP`, a click on
+## the very pixel of her feet, which `_near_her()` does not catch since it centres its circle above them.
+func _set_direction(target: Vector2, run: bool, from := Vector2.INF) -> void:
 	if not _rig:
 		_rig = get_tree().get_first_node_in_group("player") as Node2D
 	if not _rig:
 		return
 	var origin := _rig.global_position if from == Vector2.INF else from
-	var direction := heading_to(target, origin)
+	var direction := _heading_to(target, origin)
 	if direction == Vector2.ZERO:
 		_stop()
 		return
@@ -667,7 +665,7 @@ func stand_still_after_hold() -> void:
 func run_button_center() -> Vector2:
 	if _mode != ControlsMode.Mode.JOYSTICK:
 		return Vector2.INF
-	return run_focus_for(_steering_focus)
+	return _run_focus_for(_steering_focus)
 
 ## Lets go of a run button's hold. `run` itself stays down if a double press's latch still wants it.
 func _let_go_of_the_run_button() -> void:
@@ -682,7 +680,7 @@ func _let_go_of_the_run_button() -> void:
 ## keys should reset any mouse click position. when pressing awsd or arrow keys right now the last
 ## pressed mouse position is still active resulting in incorrect / drifting movement.")* A pointer
 ## press locks a heading in by pressing `move_*` actions synthetically (`set_axis()`, called from
-## `set_direction()`), and `Stroller._physics_process()` reads the same four actions through
+## `_set_direction()`), and `Stroller._physics_process()` reads the same four actions through
 ## `Input.get_vector()`, which sums over *everybody* currently pressing them — so a real key adds
 ## to, rather than replaces, whatever a click left behind, and she drifts toward neither heading.
 ##
@@ -691,7 +689,7 @@ func _let_go_of_the_run_button() -> void:
 ## `_input()` sees the event that changed it, so a naive `Input.action_release()` on the same
 ## action the key press just set would cancel the key that is now actually held, not the click
 ## that is stale. `_our_pressed_move_actions()` names exactly what this node itself is holding down
-## from the last `set_direction()` call — never derived from a real key's own state, which `Input`
+## from the last `_set_direction()` call — never derived from a real key's own state, which `Input`
 ## already tracks correctly and this never has to touch — and every entry that is not `key`'s own
 ## action is released. An entry that *is* that action is left alone, because the real key is now
 ## the one holding it, which is already the direction she should walk.
@@ -729,7 +727,7 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	queue_redraw()
 
 ## Exactly the `move_*` actions this node itself currently holds pressed, derived from `_direction`
-## rather than kept as a second copy of it — `set_axis()` is what `set_direction()` presses these
+## rather than kept as a second copy of it — `set_axis()` is what `_set_direction()` presses these
 ## through, and it presses at most one of each opposing pair, matching `_direction`'s own sign on
 ## each axis. Empty once `_direction` is `Vector2.ZERO`, which `_stop()` and `_release_all()` both
 ## already set.
@@ -746,33 +744,33 @@ func _our_pressed_move_actions() -> Array[StringName]:
 	return found
 
 ## The unit vector from `from` to `target`, or `Vector2.ZERO` for a press with nowhere to go.
-static func heading_to(target: Vector2, from: Vector2) -> Vector2:
+static func _heading_to(target: Vector2, from: Vector2) -> Vector2:
 	var offset := target - from
 	return offset.normalized() if offset.length() > 0.001 else Vector2.ZERO
 
 ## Run's focus for a given steering focus: the other of `FOCUS_LEFT`/`FOCUS_RIGHT`. Pure and static,
-## like `heading_to()`/`is_double_tap()`, as is the rest of the joystick's geometry below, so it is
-## testable with no viewport and no rig; every point is in the 1280x720 design box — see
+## like `_heading_to()`/`is_double_tap()`, as is the rest of the joystick's geometry below; every point
+## is in the 1280x720 design box — see
 ## `_on_tap()`'s own doc for the coordinate-space trip that takes.
-static func run_focus_for(steering: Vector2) -> Vector2:
+static func _run_focus_for(steering: Vector2) -> Vector2:
 	return FOCUS_LEFT if steering == FOCUS_RIGHT else FOCUS_RIGHT
 
 ## The x of the steering half's edge: `STEERING_REACH` of the way from the steering focus to Run's.
-static func boundary_x(steering: Vector2) -> float:
-	return lerpf(steering.x, run_focus_for(steering).x, STEERING_REACH)
+static func _boundary_x(steering: Vector2) -> float:
+	return lerpf(steering.x, _run_focus_for(steering).x, STEERING_REACH)
 
 ## Whether `design_position` lies beyond the steering half's edge, on Run's side. Everything there
 ## is Run's: a press there holds run and never steers *(2026-10-10, the player: "the right side
 ## permanently run button")*. The edge itself still belongs to steering.
-static func is_on_run_side(design_position: Vector2, steering: Vector2) -> bool:
-	var beyond := design_position.x - boundary_x(steering)
-	return beyond > 0.0 if run_focus_for(steering).x > steering.x else beyond < 0.0
+static func _is_on_run_side(design_position: Vector2, steering: Vector2) -> bool:
+	var beyond := design_position.x - _boundary_x(steering)
+	return beyond > 0.0 if _run_focus_for(steering).x > steering.x else beyond < 0.0
 
 ## Whether `design_position` lands in the steering focus's dead zone, `DEAD_ZONE_RADIUS` around
 ## it — one of the two doors `_on_tap()` and `_on_drag()` stop her through in `Mode.JOYSTICK`,
 ## beside the stop band. *(2026-09-06, the player: "tapping in their center or on the player should
 ## stop the player still".)* Run's focus has no dead zone: a press there is Run's.
-static func in_dead_zone(design_position: Vector2, steering: Vector2) -> bool:
+static func _in_dead_zone(design_position: Vector2, steering: Vector2) -> bool:
 	return design_position.distance_to(steering) <= DEAD_ZONE_RADIUS
 
 ## Whether `design_position` lands in the stop band, `RING_RADIUS` either side of the steering
@@ -786,8 +784,8 @@ static func in_dead_zone(design_position: Vector2, steering: Vector2) -> bool:
 ## open to overturn. **Not drawn**, by the same quote. The half
 ## of it beyond the edge is on Run's side, so a fresh press there holds Run; only a steering drag
 ## that wanders in is stopped by it, before it carries on past onto Run's half.
-static func is_in_stop_band(design_position: Vector2, steering: Vector2) -> bool:
-	return absf(design_position.x - boundary_x(steering)) <= RING_RADIUS
+static func _is_in_stop_band(design_position: Vector2, steering: Vector2) -> bool:
+	return absf(design_position.x - _boundary_x(steering)) <= RING_RADIUS
 
 ## Whether a second tap `distance` px from the first, `elapsed` seconds after it, reads as the
 ## same direction doubled into a run rather than a new one.
@@ -963,12 +961,12 @@ func _draw_focus_circles() -> void:
 	draw_circle(_steering_focus + offset, knob_radius, knob_colour)
 
 ## The heading she is actually walking this instant, whichever of the two doors set it: a press or
-## drag through `set_direction()` (`set_axis()` presses these same four actions), or a real key
+## drag through `_set_direction()` (`set_axis()` presses these same four actions), or a real key
 ## through `_yield_to_the_keyboard()` overriding it. `Input.get_vector()` on `move_left`/
 ## `move_right`/`move_up`/`move_down` is the read `Stroller._physics_process()` makes to decide her
 ## own velocity, and the rig's `Stroller.input_she_moves_by()` is what this defers to when the rig has it, so this is not a second,
 ## independent notion of "what is pressed" that could disagree with it — `.normalized()` on top guarantees a unit vector or exactly
-## `Vector2.ZERO`, matching `heading_to()`'s own convention, rather than trusting whatever length a
+## `Vector2.ZERO`, matching `_heading_to()`'s own convention, rather than trusting whatever length a
 ## diagonal keyboard press or a partial controller strength happens to produce.
 ##
 ## **Zero while `rig` is detained, the same door `Stroller._physics_process()` itself reads

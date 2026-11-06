@@ -2123,7 +2123,7 @@ func _action(name: StringName) -> InputEventAction:
 ## `main.use_reload()`), since the real ones would take the runner's own scene away: the pause
 ## screen's own quit and restart signals are heard reaching them, the window's focus loss is the
 ## `ReturnWindow`'s own notification, `Esc` is pushed through the viewport as a key arrives, and her
-## heading is held by the on-screen controls (`TouchControls.set_direction()`, what a tap locks in).
+## heading is held by the on-screen controls (a click east of her, what a tap locks in).
 ## `--no-focus-pause` is a second boot under that flag.
 ##
 ## **`Esc` over a pause already open is the pause screen's to answer**: it reaches the screen before
@@ -2157,7 +2157,10 @@ func _test_the_escape_pauses_the_same_way_a_day_does(t) -> void:
 	# frame of the walk first, so they have seen the tree running since the brief.
 	await UI.frames(t)
 	var controls := Boot.touch_controls(main)
-	controls.set_direction(Boot.player(main).global_position + Vector2(200.0, 0.0), false)
+	var east: Vector2 = controls.get_viewport().get_canvas_transform() \
+			* (Boot.player(main).global_position + Vector2(200.0, 0.0))
+	UI.push(controls, UI.mouse_at(east, true))
+	UI.push(controls, UI.mouse_at(east, false))
 	var held := Input.is_action_pressed(&"move_right")
 	var window := main.get_node("ReturnWindow") as ReturnWindow
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)

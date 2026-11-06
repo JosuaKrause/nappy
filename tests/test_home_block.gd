@@ -24,6 +24,9 @@ extends RefCounted
 ## added to guard it.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const UI := preload("res://tests/ui_screens.gd")
+## What a building's front shows, read off the pictures it was drawn with.
+const FrontReads := preload("res://tests/front_reads.gd")
 ## The seed PLAYTEST-134 found with only two wall rows on her own building, before this fix.
 const SHORT_SEED := 4242
 ## A second seed with nothing else in common with the first, for the cross-seed comparisons.
@@ -37,7 +40,7 @@ const CITY_SWEEP_SEEDS := 6
 
 func run(t) -> void:
 	_test_the_home_block_lot_geometry_is_already_seed_independent(t)
-	_test_every_home_block_building_is_the_same_across_two_seeds(t)
+	await _test_every_home_block_building_is_the_same_across_two_seeds(t)
 	_test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t)
 	_test_non_home_buildings_still_roll_the_seed(t)
@@ -52,13 +55,11 @@ static func _city_for(t, seed_value: int) -> City:
 	city.build(map)
 	return city
 
-## The window picture the drawing paints on each wall cell of `building`
-## (`Building.window_texture()`): the building's window style and which cells are lit, in one list.
+## The window picture drawn on each wall cell of `building`, row by row: the building's window style
+## and which cells are lit, in one list. Read off what the building was drawn with, so it has been
+## handed a recording drawer (`FrontReads.watch()`) and drawn.
 static func _window_pictures(building: Building) -> Array[StringName]:
-	var pictures: Array[StringName] = []
-	for index in building.columns() * building.wall_tiles():
-		pictures.append(building.window_texture(index))
-	return pictures
+	return FrontReads.look(building).window_pictures_in_order()
 
 ## Every home-block building rect, sorted so two independently-collected lists compare directly.
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
@@ -157,6 +158,10 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := _home_buildings_by_lot(short)
 	var other_by_lot := _home_buildings_by_lot(other)
+	for by_lot in [short_by_lot, other_by_lot]:
+		for lot: Rect2i in by_lot:
+			FrontReads.watch(by_lot[lot])
+	await UI.frames(t, 2)
 	t.check(short_by_lot.size() == 3 and other_by_lot.size() == 3,
 			"both seeds build all three home-block buildings (%d vs %d)"
 			% [short_by_lot.size(), other_by_lot.size()])
@@ -168,7 +173,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 		var b: Building = other_by_lot[lot]
 		t.check(a.wall_tiles() == b.wall_tiles(), "lot %s: floor count matches across seeds" % lot)
 		t.check(a.variant == b.variant, "lot %s: colour variant matches across seeds" % lot)
-		t.check(_window_pictures(a) == _window_pictures(b),
+		t.check(not _window_pictures(a).is_empty() and _window_pictures(a) == _window_pictures(b),
 				"lot %s: window style and lit-window pattern match across seeds" % lot)
 		t.check(a.scenery_resident and b.scenery_resident,
 				"lot %s: the scenery is built on both seeds, so the roof is drawn" % lot)

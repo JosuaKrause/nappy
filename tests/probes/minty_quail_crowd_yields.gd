@@ -191,7 +191,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 		city.events.visible_view().look(camera, null)
 		cordon.tick(STEP, swing)
 		meeting.tick_the_crowd()
-		meeting.observe(before, cordon.officers)
+		meeting.observe(before, cordon._officers)
 	_print(meeting.report())
 	cordon.clear()
 	_take_out(city, before)

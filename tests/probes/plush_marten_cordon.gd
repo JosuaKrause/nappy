@@ -4,15 +4,14 @@ extends RefCounted
 ## suite measures it — with her at the swing and the camera on her — and printed as a table.
 ##
 ## For each seed it prints the park's size, the walk from the swing to the last gap and how long
-## that takes at `Tuning.WALK_SPEED`, when the first officer comes into her view and when the
-## cordon expected it (`ParkCordon.first_in_view`), the close it paced to, when the last gap
+## that takes at `Tuning.WALK_SPEED`, when the first officer comes into her view, when the last gap
 ## is taped with her standing at the swing, the margin between the two beyond the walk, whether
 ## the gap's outside reaches home and the day's other calm ground with the park blocked and stands
 ## clear of the day's bodies and fields, and whether setting off at a walk a second after first
 ## sight gets her out. Then, for each spot the suite stands a busker at (`PLACES`), when the
-## cordon closed with him walked out and the close it said, how often an officer's walk was laid
-## again or walked straight, how many stretches went up through him, and a `CORDON_STRETCHES` line
-## of when each stretch went up, by its index, to compare two revisions run for run. Run it again after changing any `PARK_CLOSING_*` constant.
+## cordon closed with him walked out, how many pieces of tape went up through him, and a
+## `CORDON_STRETCHES` line of when each piece of tape went up, by its instance, to compare two
+## revisions run for run. Run it again after changing any `PARK_CLOSING_*` constant.
 
 const SWEEP := preload("res://tests/park_cordon_sweep.gd")
 
@@ -37,8 +36,7 @@ func run(t) -> void:
 		closes.append(m.closed_at)
 		walks.append(walk_seconds)
 		print("seed %5d: park %3.0fx%3.0f, walk %3.0fpx (%.1fs), " % [seed_value, size.x, size.y,
-				m.walk, walk_seconds] + "first seen %4.1fs (expected %4.1fs), " % [m.first_seen,
-				m.first_in_view] + "deadline %4.1fs, " % m.deadline
+				m.walk, walk_seconds] + "first seen %4.1fs, " % m.first_seen
 				+ "closed %4.1fs standing, %.1fs beyond the walk; " % [m.closed_at, margin]
 				+ "gap reaches home %s, other calm %s, clear %s (%s); walked out %s" % [
 				m.gap_reaches_home, m.other_calm_reached, m.gap_clear, m.gap_blocker, m.walked_out])
@@ -46,9 +44,8 @@ func run(t) -> void:
 			if not run.person_placed:
 				print("            busker at %s: not placed" % run.place)
 				continue
-			print("            busker at %s: closed %5.1fs (said %4.1fs), relaid %d, straight %d, "
-					% [run.place, run.closed_at, run.deadline, run.relaid, run.walked_straight]
-					+ "taped through him %d" % run.taped_over_him)
+			print("            busker at %s: closed %5.1fs, taped through him %d"
+					% [run.place, run.closed_at, run.taped_over_him])
 			var times: Array[String] = []
 			for i: int in run.taped_at:
 				times.append("%d:%.3f" % [i, run.taped_at[i]])

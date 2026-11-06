@@ -24,14 +24,18 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the building's
-ground-floor and roof pieces (20 and more, read by the ground-floor suite), the touch controls'
-geometry (which way a touch points her, the dead zone, double taps, the run focus, the screen's
-halves), the frame recorder's ledger, the park cordon (its stretches, officers, last gap, when it
-closed, whether she is trapped, whether it was laid again), the event scheduler's plan helpers, the
-resistance director's guard and contact spots and nearest alleys, the title screen's hard-mode
-controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
+window and roof pieces (`window_texture`, `roof_layout`, `roof_interior_cells`,
+`roof_equipment_scale`, read by `test_roof_entities.gd`, `test_recipe_roofs.gd`,
+`test_scene_recipe_activity.gd`, `test_scenery_residency.gd` and the `lazy_scenery_measure.gd`
+probe, the residency suite running without the frames a drawn read needs; record
+minty-quail-misty-badger), the event scheduler's plan helpers, the resistance director's guard
+and contact spots and nearest alleys, the title screen's hard-mode controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
-"about 250" was an estimate.
+"about 250" was an estimate. The park cordon's `gap`, `line`, `area`, `elapsed` and
+`walk_to_the_gap` are in scope too, though the CI check misses them since other classes have
+members of the same names: only the cordon and the tests use them, and their tests read the gap
+stretches and the tape line, so moving them is a build of its own (record
+minty-quail-dappled-sparrow).
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing `tests-hold-nothing.md`'s findings in the files

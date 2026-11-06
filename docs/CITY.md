@@ -2190,7 +2190,7 @@ Top-down camera with a fake vertical extrusion:
   seeded share, kept at least `Building.FIRE_ESCAPE_GAP_COLUMNS` (4) columns from the first —
   centre to centre, so at least 1.5 escape widths of wall (72px) separate the two pictures' own
   edges — and, like the first, off the corner columns. The escape is one picture per floor per
-  column (`Building.fire_escape_landings()`): a balcony on every floor line from the top floor's
+  column (`Building._fire_escape_landings()`): a balcony on every floor line from the top floor's
   down to the first floor's, each but the lowest hanging its flight down to the next, every
   flight facing the same way; the lowest is the platform alone, so the ground floor carries only
   the brackets under it and nothing comes down to the sidewalk. Each balcony independently shows
@@ -2203,7 +2203,7 @@ Top-down camera with a fake vertical extrusion:
   awning is the one piece of a front that leaves the wall plane; it stays inside the
   wall's own footprint rather than reaching over the pavement's walkable band.
 - **A multi-story front with no other way in has one entrance door**
-  (`Building.entrance_door_col()`), since a ground floor with no windows needs a way in. A
+  (`Building._entrance_door_col()`), since a ground floor with no windows needs a way in. A
   storefront is a commercial front's way in and the portico a civic front's, so neither gets a
   second; her own block keeps its windows and has her own door; a one-row facade keeps its
   windows and has no door; the power station draws its own. Everything else — every `RESIDENTIAL`
@@ -2260,7 +2260,7 @@ Top-down camera with a fake vertical extrusion:
   piece's column (`Building.roof_extension_seamless`) draws no `ROOF_EDGE_N` at its extension's
   top, and the covered piece's column (`Building.seamless_cover_cols`) draws no `ROOF_EDGE_S` on
   its first roof row, so the two roofs run into each other with no lip on either side.
-  `Building.roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
+  `Building._roof_cell_edges()` is the one place a roof cell's lips are decided. A covered piece
   with no roof rows of its own is the one courtyard seam that still caps, since nothing of its own
   carries on above the extension. Every piece of the lot takes one tint (`Building.tint_variant`,
   wall and roof alike), since four tints read as four buildings. An ordinary city takes its first

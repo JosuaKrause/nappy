@@ -9,11 +9,15 @@ extends "res://tests/resistance_rig.gd"
 ## `EventScheduler.open_ground_for()`, the next day's masts of `EventScheduler._place_masts()`, the
 ## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` hands the baby its
 ## stroller with `Baby.set_stroller()`.
+const UI := preload("res://tests/ui_screens.gd")
+## What a building's front shows, read off the pictures it was drawn with.
+const FrontReads := preload("res://tests/front_reads.gd")
+
 func run(t) -> void:
 	t.gives_back_observers()
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	await _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
-	_test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)
+	await _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)
 	_test_the_door_task_sits_at_a_region_door(t)
 	_test_a_day_is_built_in_its_order(t)
 	_test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t)
@@ -85,7 +89,7 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 			"%s: the one standing at the run's own recorded scar" % label)
 	t.check(run.attempt_spend.scars.size() == 1,
 			"%s: and no second scar is recorded for the task (%s)" % [label, run.attempt_spend.scars])
-	_check_the_task_is_at_the_burnt_buildings_door(t, director)
+	await _check_the_task_is_at_the_burnt_buildings_door(t, director)
 
 	# She walks off across the city: the shell stays under its contact.
 	_city.events.stream_around(scar_at + Vector2(1.0, 1.0) * 4.0
@@ -111,7 +115,8 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 ## enough radius for half the sidewalk to be covered"* (sandy-egret). The shell has no body and
 ## draws nothing, so its own position is bare sidewalk. The door is read off the building behind the
 ## shell (the lot `City` draws burnt) independently of `Building.way_in_local_x()`: its entrance
-## door's column centre when it has one, half a tile up its ground floor.
+## door's column centre when it has one (the column its door is drawn in), half a tile up its ground
+## floor.
 func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirector) -> void:
 	var tip := director.red_arrow_target()
 	t.check(tip != Vector2.INF, "day 8's task earns the red arrow")
@@ -133,7 +138,7 @@ func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirec
 	var size := float(Tuning.TILE_SIZE)
 	t.close_to(tip.y, lot.end.y - size * 0.5,
 			"the tip is half a tile up that building's ground floor", 0.01)
-	var door_col := behind.entrance_door_col()
+	var door_col: int = (await _doors_drawn_on(t, [behind]))[behind]
 	if door_col >= 0:
 		t.close_to(tip.x, lot.position.x + (door_col + 0.5) * size,
 				"and on its entrance door, column %d of %s" % [door_col, behind.lot], 0.01)
@@ -192,12 +197,17 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 			_city.map, {})
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
+	var behind_tile := {}
+	var drawn_on: Array[Building] = []
 	for tile in fronts:
-		var way := _city.way_in_behind(_city.map.tile_to_world(tile))
-		var behind: Building = null
 		for building in _city.buildings():
 			if building.lot.has_point(tile + Vector2i.UP):
-				behind = building
+				behind_tile[tile] = building
+				drawn_on.append(building)
+	var doors := await _doors_drawn_on(t, drawn_on)
+	for tile in fronts:
+		var way := _city.way_in_behind(_city.map.tile_to_world(tile))
+		var behind: Building = behind_tile.get(tile)
 		if behind == null or way == Vector2.INF:
 			wrong.append(tile)
 			continue
@@ -205,7 +215,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 		var below := _city.map.world_to_tile(way) + Vector2i.DOWN
 		var ok := absf(way.y - (lot.end.y - size * 0.5)) < 0.01 \
 				and _city.map.tile_at(below) == GameEnums.TileType.SIDEWALK
-		var door_col := behind.entrance_door_col()
+		var door_col: int = doors[behind]
 		if door_col >= 0:
 			on_a_door += 1
 			ok = ok and absf(way.x - (lot.position.x + (door_col + 0.5) * size)) < 0.01
@@ -216,6 +226,17 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 	t.check(wrong.is_empty(),
 			"every front's way in is on its building's door, over a sidewalk (%d are not, first %s)"
 			% [wrong.size(), wrong.slice(0, 3)])
+
+## The column each of `buildings` draws its entrance door in (-1 for none), once each has been drawn
+## through a drawer that records.
+func _doors_drawn_on(t, buildings: Array) -> Dictionary:
+	for building: Building in buildings:
+		FrontReads.watch(building)
+	await UI.frames(t, 2)
+	var doors := {}
+	for building: Building in buildings:
+		doors[building] = FrontReads.look(building).door_col()
+	return doors
 
 ## A run with no recorded `burnt_shell` scar (a `--day 8` start, or a day 3 that never burned)
 ## still sends her to a burnt building: the shell stands on a front day 3's fire could have caught
@@ -267,7 +288,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 			"the building behind the shell is burnt the moment the task is on offer")
 	t.check(burnt_now == burnt_before + 1,
 			"and no other building is (%d burnt, %d before)" % [burnt_now, burnt_before])
-	_check_the_task_is_at_the_burnt_buildings_door(t, director)
+	await _check_the_task_is_at_the_burnt_buildings_door(t, director)
 	await _check_a_touch_from_the_near_half_of_the_sidewalk(t, director)
 
 	director.free()

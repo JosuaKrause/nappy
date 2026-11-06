@@ -6,6 +6,15 @@
 # member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
 # after its '#'.
 
+# [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
+# confirm what it does (inbox #1095 and #1098 in curly-rabbit; verify's testing policy). The reason is on each line.
+src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
+src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
+src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
+src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
+src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
+src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the caret is drawn straight onto the event with Sprites.draw_caret, a static primitive that never reaches a recording drawer, so this is the only outward statement of whether a mark is drawn and how wide it breathes (the look's wants_a_mark/mark_swell are internal and read through it)
 # [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
 # proposal, not asked for and open to the player's correction: vars, signals and constants with no
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
@@ -60,28 +69,10 @@ src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
-src/city/building.gd civic_entrance_cols
-src/city/building.gd column_under_door
-src/city/building.gd door_column_from
-src/city/building.gd draws_window_at
-src/city/building.gd entrance_door_col
-src/city/building.gd entrance_door_texture
-src/city/building.gd extension_is_seamless
-src/city/building.gd extension_rows
-src/city/building.gd fire_escape_landings
-src/city/building.gd fire_escape_texture
-src/city/building.gd ground_cell
-src/city/building.gd ground_floor_texture
-src/city/building.gd has_visible_storefront
-src/city/building.gd is_covered
-src/city/building.gd portico_is_drawn
-src/city/building.gd roll_fire_escape_extras
-src/city/building.gd roof_cell_edges
 src/city/building.gd roof_equipment_scale
 src/city/building.gd roof_interior_cells
 src/city/building.gd roof_layout
 src/city/building.gd window_texture
-src/city/city.gd assign_roof_extensions
 src/city/city.gd barrier_footprint
 src/city/city.gd blackout
 src/city/city.gd home_door_building
@@ -173,18 +164,6 @@ src/resistance/happenings.gd market_block
 src/resistance/happenings.gd market_candidates
 src/resistance/happenings.gd raid
 src/resistance/happenings.gd send_the_column
-src/resistance/park_cordon.gd closed_at
-src/resistance/park_cordon.gd deadline
-src/resistance/park_cordon.gd first_in_view
-src/resistance/park_cordon.gd gap_clear
-src/resistance/park_cordon.gd gap_reaches_home
-src/resistance/park_cordon.gd last_gap
-src/resistance/park_cordon.gd officers
-src/resistance/park_cordon.gd other_calm_reached
-src/resistance/park_cordon.gd relaid
-src/resistance/park_cordon.gd stretches
-src/resistance/park_cordon.gd trapped
-src/resistance/park_cordon.gd walked_straight
 src/resistance/resistance_director.gd alley_ends
 src/resistance/resistance_director.gd draw_guard_position
 src/resistance/resistance_director.gd draw_reachable
@@ -224,17 +203,6 @@ src/run/summary_model.gd resistance_tally
 src/run_config.gd day_length_override
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
-src/telemetry/frame_ledger.gd last_slow
-src/telemetry/frame_ledger.gd overwritten
-src/telemetry/frame_ledger.gd slow_frames
-src/telemetry/frame_ledger.gd top_costs
-src/telemetry/frame_recorder.gd calibrate
-src/telemetry/frame_recorder.gd clock_resolution
-src/telemetry/frame_recorder.gd draw_kind
-src/telemetry/frame_recorder.gd fits_the_readout
-src/telemetry/frame_recorder.gd report_text
-src/telemetry/frame_recorder.gd save_on_exit
-src/telemetry/frame_recorder.gd view_size
 src/telemetry/telemetry_map.gd role_mark
 src/telemetry/telemetry_observer.gd spikes_on
 src/ui/badge_model.gd announces
@@ -257,18 +225,6 @@ src/ui/screen_orientation.gd rotation_transform
 src/ui/title_screen.gd hard_mode_contains_design_point
 src/ui/title_screen.gd hard_mode_shown
 src/ui/title_screen.gd hard_mode_target
-src/ui/touch_controls.gd boundary_x
-src/ui/touch_controls.gd covered_left
-src/ui/touch_controls.gd covered_right
-src/ui/touch_controls.gd covered_screen
-src/ui/touch_controls.gd current_heading
-src/ui/touch_controls.gd heading_to
-src/ui/touch_controls.gd in_dead_zone
-src/ui/touch_controls.gd is_in_stop_band
-src/ui/touch_controls.gd is_on_run_side
-src/ui/touch_controls.gd run_button_center
-src/ui/touch_controls.gd run_focus_for
-src/ui/touch_controls.gd set_direction
 src/visuals/atlas_library.gd aspect_ceiling
 src/visuals/atlas_library.gd moment_for_a_load
 src/visuals/ground_layers.gd compose_image
@@ -307,13 +263,6 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
-
-# [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
-# confirm what it does (inbox #1095 and #1098 in curly-rabbit; verify's testing policy). The reason is on each line.
-src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
-src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
-src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
-src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
-src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
-src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
-src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the caret is drawn straight onto the event with Sprites.draw_caret, a static primitive that never reaches a recording drawer, so this is the only outward statement of whether a mark is drawn and how wide it breathes (the look's wants_a_mark/mark_swell are internal and read through it)
+src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
+src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)
+src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the focus opposite the steering one in the joystick scheme, none in the tap scheme; the disc is drawn and nothing else reads its place, and the booted-main suites (tests/test_main.gd, tests/test_run_checkpoints.gd, tests/test_visible_view.gd) ask it while the title or a brief holds the tree paused, when a press reaches nothing; which half holds Run is confirmed by real presses in tests/test_touch.gd

@@ -108,7 +108,7 @@ func _run(watch: EncounterWatch, instances: Array[EventInstance], centre: Vector
 ## What she can see with the view about `centre`, in the joystick scheme or not.
 static func _visible(centre: Vector2, joystick := false) -> VisibleView:
 	var visible := VisibleView.new()
-	visible.look(_view(centre), TouchControls.covered_screen() if joystick else null)
+	visible.look(_view(centre), TouchCover.joystick() if joystick else null)
 	return visible
 
 ## Far enough from any instance near the origin that nothing of it is in view.
@@ -177,8 +177,8 @@ func _test_a_sliver_at_the_edge_is_not_seen(t) -> void:
 ## reaches no higher than the ring's top; in the joystick scheme what lies in a corner is not
 ## visible, in the tap scheme it is, and the middle of the view is visible in both.
 func _test_the_joystick_corners_are_not_visible(t) -> void:
-	var left := TouchControls.covered_left()
-	var right := TouchControls.covered_right()
+	var left := TouchCover.joystick().left
+	var right := TouchCover.joystick().right
 	var ring := Vector2(TouchControls.RING_RADIUS, TouchControls.RING_RADIUS)
 	var button := Vector2(TouchControls.RUN_RADIUS, TouchControls.RUN_RADIUS)
 	t.check(left.encloses(Rect2(TouchControls.FOCUS_LEFT - ring, ring * 2.0))
@@ -204,18 +204,18 @@ func _test_the_joystick_corners_are_not_visible(t) -> void:
 	var bottom_middle := Rect2(Vector2(-5.0, view.end.y - 12.0), Vector2(10.0, 10.0))
 	var middle := Rect2(Vector2(-5.0, -5.0), Vector2(10.0, 10.0))
 	for rect: Rect2 in [in_left, in_right]:
-		t.check(is_zero_approx(VisibleView.visible_share(rect, view, TouchControls.covered_screen()))
+		t.check(is_zero_approx(VisibleView.visible_share(rect, view, TouchCover.joystick()))
 				and is_equal_approx(VisibleView.visible_share(rect, view, null), 1.0),
 				"a thing in a bottom corner is hidden by the joystick scheme and seen in the tap one")
 	for rect: Rect2 in [bottom_middle, middle]:
-		t.check(is_equal_approx(VisibleView.visible_share(rect, view, TouchControls.covered_screen()), 1.0)
+		t.check(is_equal_approx(VisibleView.visible_share(rect, view, TouchCover.joystick()), 1.0)
 				and is_equal_approx(VisibleView.visible_share(rect, view, null), 1.0),
 				"a thing between the corners or in the middle is visible in both schemes")
 	var top := view.position.y + left.position.y * scale.y
 	var straddling := Rect2(Vector2(view.position.x + 10.0, top - 5.0), Vector2(10.0, 10.0))
-	t.check(is_equal_approx(VisibleView.visible_share(straddling, view, TouchControls.covered_screen()), 0.5),
+	t.check(is_equal_approx(VisibleView.visible_share(straddling, view, TouchCover.joystick()), 0.5),
 			"one across the corner's top edge is half visible in the joystick scheme (%.2f)"
-			% VisibleView.visible_share(straddling, view, TouchControls.covered_screen()))
+			% VisibleView.visible_share(straddling, view, TouchCover.joystick()))
 	t.check(is_zero_approx(VisibleView.visible_share(Rect2(), view, null)),
 			"a thing with no area is not visible")
 
@@ -226,12 +226,12 @@ func _test_a_thing_under_the_joystick_controls_is_not_seen(t) -> void:
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	var view := _view(Vector2.ZERO)
-	var corner := view.position + TouchControls.covered_left().get_center() \
+	var corner := view.position + TouchCover.joystick().left.get_center() \
 			* (view.size / ScreenOrientation.DESIGN_SIZE)
 	# The view's centre that puts the yeller's drawn box in the middle of that corner.
 	var centre := yeller.drawn_box().get_center() - corner
 	t.check(is_zero_approx(VisibleView.visible_share(
-			Rect2(yeller.drawn_box().position, yeller.drawn_box().size), _view(centre), TouchControls.covered_screen())),
+			Rect2(yeller.drawn_box().position, yeller.drawn_box().size), _view(centre), TouchCover.joystick())),
 			"the yeller's whole drawn box is under the joystick controls")
 	var watch := _watch()
 	_run(watch, instances, centre, 2.0, false, true)
@@ -589,11 +589,11 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 	events.use_controls(controls.covering)
 	var view := _view(stroller.camera_screen_center())
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
-	var corner := view.position + TouchControls.covered_left().get_center() * scale
+	var corner := view.position + TouchCover.joystick().left.get_center() * scale
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var yeller := events.spawn_extra(def, her)
 	yeller.global_position = corner - yeller.drawn_box().get_center()
-	var right_corner := view.position + TouchControls.covered_right().get_center() * scale
+	var right_corner := view.position + TouchCover.joystick().right.get_center() * scale
 	var cyclist := EventCatalogue.by_id("cyclist")
 	# Warned of as a pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
 	# roll its warning made).

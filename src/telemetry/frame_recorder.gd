@@ -10,7 +10,7 @@ extends Node
 ## pre-draw callback ends `draw` and its post-draw callback ends `render`. The named systems mark
 ## themselves through the `FrameTiming` they are handed (`FrameRecord`, here). **The game's own
 ## `_draw()` calls are counted here, by listening**: the recorder connects the `draw` signal of
-## every node that is counted, found by its class (`draw_kind()`) in the tree as it stands at
+## every node that is counted, found by its class (`_draw_kind()`) in the tree as it stands at
 ## `setup()` and as nodes enter it, so no drawing node reads a switch and a page without the record
 ## connects nothing.
 ##
@@ -30,9 +30,9 @@ extends Node
 
 const PRIORITY_FIRST := -1000000000
 const PRIORITY_LAST := 1000000000
-## How many enter/leave pairs `calibrate()` times, once, at setup.
+## How many enter/leave pairs `_calibrate()` times, once, at setup.
 const CALIBRATION_PAIRS := 2000
-## How many clock steps `clock_resolution()` watches, once, at setup.
+## How many clock steps `_clock_resolution()` watches, once, at setup.
 const RESOLUTION_STEPS := 50
 ## The readout's width in design pixels: `Status` starts at x=960 in the 1280-wide design box and
 ## does not clip, so 320px less its 5px outline and a margin. Measured at the 12px fallback font.
@@ -61,8 +61,6 @@ var _run: RunState
 var _metadata: Dictionary = {}
 ## The window's viewport, whose render time the engine measures while the record is on.
 var _viewport: RID
-## Whether scene exit writes the record on the desktop. A test turns it off.
-var save_on_exit := true
 
 ## The sitting that keeps where a native record is written (`Sitting.frame_record_path`), handed
 ## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
@@ -86,8 +84,8 @@ func setup(in_the_title: Callable, city: City, player: Stroller, day: DayControl
 	process_physics_priority = PRIORITY_FIRST
 	var refresh := _refresh_hz()
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
-	var resolution := clock_resolution()
-	var pair := calibrate()
+	var resolution := _clock_resolution()
+	var pair := _calibrate()
 	_record = _sitting.frame_timing as FrameRecord
 	_record.start(_record.ledger if _record.ledger != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
@@ -155,7 +153,7 @@ func _listen_for_draws() -> void:
 ## Counts the `draw` signal of `node` under its kind when it is a node the record counts. A node
 ## that leaves the tree and comes back is connected once.
 func _count_draws_of(node: Node) -> void:
-	var kind := draw_kind(node)
+	var kind := _draw_kind(node)
 	if kind < 0:
 		return
 	var counted := _drew.bind(kind)
@@ -167,7 +165,7 @@ func _count_draws_of(node: Node) -> void:
 ## counted: by its class where the recorder may name it, else by the kind it declares in its
 ## `FrameTiming.DRAW_KIND_META`. The crowd's agents are not here: the crowd counts them itself, through its timing sink
 ## (`FrameRecordTiming`).
-static func draw_kind(node: Node) -> int:
+static func _draw_kind(node: Node) -> int:
 	if not node is CanvasItem:
 		return -1
 	if node is Prop or node is Building or node is Building.RoofObject \
@@ -193,7 +191,7 @@ func _drew(kind: int) -> void:
 ## the record's own cost, since this recorder's per-frame work (its phase callbacks, the counters,
 ## the post-draw reads, the ring copy) is not in it. On a desktop the record on against off cost
 ## more than the product (docs/evidence/m159-frame-record-2026-10-04/).
-static func calibrate() -> float:
+static func _calibrate() -> float:
 	var scratch := FrameRecord.new()
 	scratch.start(FrameLedger.new(1))
 	var started := Time.get_ticks_usec()
@@ -208,7 +206,7 @@ static func calibrate() -> float:
 ## reduced precision (about 100µs in Chrome, about 1ms in Safari and Firefox), so every per-frame
 ## value in a page's record is quantized to this, and a single short interval reads as 0 or as a
 ## whole step.
-static func clock_resolution() -> int:
+static func _clock_resolution() -> int:
 	var least := 0
 	for _i in RESOLUTION_STEPS:
 		var from := Time.get_ticks_usec()
@@ -223,7 +221,7 @@ static func clock_resolution() -> int:
 ## desktop), `device_pixel_ratio` is how many device pixels a CSS pixel is, and `drawn_width`/
 ## `drawn_height` is the size the engine actually draws (the canvas's backing store on a page).
 ## Without it a phone's frame cost cannot be read against the pixels behind it.
-static func view_size() -> Dictionary:
+static func _view_size() -> Dictionary:
 	var drawn := DisplayServer.window_get_size()
 	var window := Vector2(drawn)
 	var ratio := DisplayServer.screen_get_scale()
@@ -246,9 +244,9 @@ static func view_size() -> Dictionary:
 		"device_pixel_ratio": snappedf(ratio, 0.01),
 		"drawn_width": drawn.x, "drawn_height": drawn.y}
 
-## The two readout lines for `view_size()`, in the readout's own fixed-width style.
+## The two readout lines for `_view_size()`, in the readout's own fixed-width style.
 static func view_lines() -> Array[String]:
-	var view := view_size()
+	var view := _view_size()
 	var window := "unknown"
 	if view["device_pixel_ratio"] > 0.0:
 		window = "%dx%d @%.2f" % [view["window_width"], view["window_height"],
@@ -260,16 +258,16 @@ static func view_lines() -> Array[String]:
 
 ## The readout's line. See `FrameLedger.readout_line()`.
 func readout_line() -> String:
-	return ledger.readout_line(fits_the_readout)
+	return ledger.readout_line(_fits_the_readout)
 
 ## Whether `line` fits the readout at its own font. The readout uses the engine's fallback font,
 ## since the project sets no theme.
-static func fits_the_readout(line: String) -> bool:
+static func _fits_the_readout(line: String) -> bool:
 	return ThemeDB.fallback_font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			READOUT_FONT_SIZE).x <= READOUT_WIDTH
 
 ## The whole record as the file's text.
-func report_text() -> String:
+func _report_text() -> String:
 	var report := ledger.report()
 	report["schema"] = "nappy-frame-record"
 	report["schema_version"] = 2
@@ -298,7 +296,7 @@ func report_text() -> String:
 	metadata["display_server"] = DisplayServer.get_name()
 	metadata["main_thread_is_render_thread"] = RenderingServer.is_on_render_thread()
 	metadata["render_cpu_reported"] = _render_cpu_reported()
-	metadata.merge(view_size(), true)
+	metadata.merge(_view_size(), true)
 	metadata["saved_at"] = Time.get_datetime_string_from_system()
 	if OS.get_name() == "Web":
 		var agent: Variant = JavaScriptBridge.eval("navigator.userAgent")
@@ -310,7 +308,7 @@ func report_text() -> String:
 ## the desktop. Answers where it went. The frame this runs in is not kept, since building the
 ## file is the slowest thing in it.
 func save() -> String:
-	var text := report_text()
+	var text := _report_text()
 	ledger.keep = false
 	if OS.get_name() == "Web":
 		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
@@ -355,7 +353,7 @@ func _exit_tree() -> void:
 		var window := JavaScriptBridge.get_interface("window")
 		if window != null:
 			window.call("nappyFrameRecordHide")
-	elif save_on_exit:
+	else:
 		save()
 
 ## The page's own button, added once per page: a reload of the scene hands the button the new

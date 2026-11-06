@@ -131,7 +131,7 @@ func _test_a_rotated_touch_still_fires_the_pause_button(t: Node) -> void:
 	rig.free()
 	_release_actions()
 
-## **A direction press needs no remap of its own** — see `TouchControls.set_direction()`'s own
+## **A direction press needs no remap of its own** — see `TouchControls`'s own
 ## class doc for why — but the pause corner it must *not* be read as still does, so a touch well
 ## away from the button, at its own rotated screen position, must still set a direction rather
 ## than being swallowed by a stale, unrotated comparison to `PAUSE_CENTRE`.

@@ -22,7 +22,6 @@ func run(t) -> void:
 	_test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t)
 	_test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t)
 	_test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t)
-	_test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t)
 	_test_reading_a_mark_never_lands_her_in_his_catch(t)
 	_test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t)
 	_test_no_alley_robbery_stands_near_the_doorstep(t)
@@ -392,55 +391,6 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 			all_equal = false
 	t.check(distances.size() >= 2 and not all_equal,
 			"the guard's own distance from the mark still varies from mark to mark")
-
-## The long case of the same rule: where an alley is long enough for its two-thirds point to be
-## 216px or more from the mark (his 180px `EventDef.notice` and `ContactPoint.REACH`), he stands
-## there, and walking in from the mark's own end to read it and back out never wakes him. No city
-## has an alley that long — every one is a block, 8 tiles — so the test carves one, 16 tiles, into a
-## generated map's own grid and registers it as a through-alley, and reads a mark on its first
-## tile.
-func _test_a_long_alleys_robber_stands_two_thirds_in_past_his_trigger(t) -> void:
-	var robbery := EventCatalogue.by_id("alley_robbery")
-	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
-	var map := CityGenerator.generate(13)
-	var rect := Rect2i()
-	for x in range(4, map.size.x - 6):
-		var candidate := Rect2i(Vector2i(x, 4), Vector2i(Tuning.ALLEY_WIDTH_TILES, 16))
-		var clear := true
-		for alley in map.alley_rects:
-			if alley.intersects(candidate.grow(1)):
-				clear = false
-		for tile in map.rect_tiles(candidate.grow(1)):
-			if map.is_on_home_block(tile) or map.is_held_at(tile) or map.is_closed(tile):
-				clear = false
-				break
-		if clear:
-			rect = candidate
-			break
-	t.check(rect.has_area(), "there is ground on the test map to carve a long alley into")
-	if not rect.has_area():
-		return
-	for tile in map.rect_tiles(rect):
-		map.set_tile(tile, GameEnums.TileType.ALLEY)
-	map.alley_rects.append(rect)
-	var run := _fresh_run()
-	var director := _bare_director(map, run)
-	var mark := map.tile_to_world(rect.position)
-	var length := float(rect.size.y * Tuning.TILE_SIZE)
-	var near_edge := mark - Vector2(0.0, Tuning.TILE_SIZE * 0.5)
-	var guard_at := director.guard_position(RandomNumberGenerator.new(), mark, true,
-			Vector2.INF, false)
-	t.check(guard_at.distance_to(near_edge + Vector2.DOWN * length * 2.0 / 3.0) < 0.5,
-			"in a %.0fpx alley he stands two-thirds through it (%s)" % [length, guard_at])
-	t.check(guard_at.distance_to(mark) >= max_distance,
-			"which is %.0fpx from the mark, past his own trigger and the touch reach (%.0fpx)"
-			% [guard_at.distance_to(mark), max_distance])
-	var outside := near_edge + Vector2.UP * Tuning.TILE_SIZE
-	var touch := mark + Vector2.UP * (ContactPoint.REACH - 2.0)
-	t.check(_stays_asleep_walking_in_and_out(robbery, guard_at, outside, touch),
-			"and walking in from the mark's own end to read it and back out never wakes him")
-	director.free()
-	run.free()
 
 ## The floor the player's "Two-thirds wins" left standing: reading a mark never lands her inside
 ## his catch (`EventDef.lethal_reach()`). Over every through-alley tile of six cities, she walks in
