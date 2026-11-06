@@ -37,13 +37,6 @@ const _HALLWAY_FIRST_ORIGIN := Vector2i(4 * _SLOT_STRIDE, 0)
 const _LOBBY_ORIGIN := Vector2i(5 * _SLOT_STRIDE, 0)
 const _BASEMENT_ORIGIN := Vector2i(6 * _SLOT_STRIDE, 0)
 
-## `--start-escape <part>`'s own recognised words, and the `tests/test_interior.gd` per-part flood
-## seed — the same list, since both questions are "where does this part begin".
-const PARTS: Array[String] = [
-	"hallway_third", "hallway_second", "hallway_first",
-	"stairwell_left", "stairwell_right", "lobby", "basement",
-]
-
 ## The part each slot holds, in slot order — the same order as the `_ORIGIN`s above.
 const _SLOT_PARTS: Array[String] = [
 	"hallway_third", "stairwell_left", "stairwell_right", "hallway_second", "hallway_first",
@@ -223,14 +216,13 @@ static func _build_stairwell(f: InteriorMapPlan, side: String, origin: Vector2i)
 					f.waypoints[part_id] = landing
 				door_index += 1
 				continue
-			f.tiles[at] = stair_kind_for_symbol(symbol)
+			f.tiles[at] = _stair_kind_for_symbol(symbol)
 	if door_index != _STAIRWELL_LANDINGS.size():
 		push_error("Stairwell grammar placed %d doors, expected %d" \
 				% [door_index, _STAIRWELL_LANDINGS.size()])
 
-## The tile kind one non-background stair symbol paints. Kept public so the focused suite can ask
-## the same parser the runtime uses instead of maintaining a second symbol-to-kind table.
-static func stair_kind_for_symbol(symbol: String) -> InteriorTile.Kind:
+## The tile kind one non-background stair symbol paints.
+static func _stair_kind_for_symbol(symbol: String) -> InteriorTile.Kind:
 	match symbol:
 		"F":
 			return InteriorTile.Kind.STAIRWELL_FLOOR

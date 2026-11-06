@@ -99,7 +99,7 @@ func _open_run_for(before: int, after: int) -> Vector2i:
 			for dx in range(-before, after + 1):
 				var tile := Vector2i(x + dx, y)
 				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
-						or map.is_soft_sealed(tile):
+						or not map.passable(tile, Mover.of(Mover.SOFT_SEALS)):
 					open = false
 					break
 			if open:

@@ -168,7 +168,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
 	# The dawn decides how many she is owed and the route's bag decides which row each one is, so
 	# the cat this test is about is put in front of the bag on purpose rather than left to its draw.
-	director.route_bag().put_in_front(["cat_dash"])
+	director.route_bag().rig(["cat_dash"], 1)
 
 	# Somewhere on a street, walking north. `arterial_pavement` is a pavement lane by
 	# construction, so the lead lands on walkable ground.

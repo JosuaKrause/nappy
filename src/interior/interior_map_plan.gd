@@ -331,33 +331,13 @@ func waypoint(id: String) -> Vector2i:
 func start_world_position() -> Vector2:
 	return tile_to_world(start_tile)
 
-## `InteriorMap.PARTS`' own waypoint, in world space — what `--start-escape <part>` teleports to.
+## A building part's own waypoint, in world space — what `--start-escape <part>` teleports to.
 ## Her own start for a name this does not recognise, the same "unknown means the default" shape
 ## `DevFlags.start_escape_at()` already leaves to its caller.
 func part_world_position(part: String) -> Vector2:
 	if waypoints.has(part):
 		return tile_to_world(waypoints[part])
 	return start_world_position()
-
-## The inner cell of each intermediate floor's level approach, in one shaft — the second of the two
-## level `F` cells below a `D`, two tiles from the door. Named for what it is: **the grammar has no
-## half-landing between floors and no cell of kind `LANDING` in a shaft at all**, so anything
-## sited here is on a floor's own approach, one cell further in than the door.
-##
-## Which is exactly what the fire wants: two tiles from the door, its body closes the flight the
-## approach leads onto without covering the corridor transition itself, so the way past it is
-## through that floor's door rather than back up the stairs. The top and lobby approaches are
-## excluded, since neither has a flight above it to close.
-func inner_floor_approaches(part_id: String) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for landing_id in ["landing_second", "landing_first"]:
-		var first: Vector2i = waypoint("%s:%s" % [part_id, landing_id])
-		if first == NOWHERE:
-			continue
-		var inner := first + Vector2i.DOWN
-		if is_walkable(inner):
-			found.append(inner)
-	return found
 
 ## Every painted cell inside one grammar rectangle, including the non-walkable stair-side roles.
 ## The events' placement and focused tests use the same bounds rather than inferring a shaft from
@@ -387,7 +367,7 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 	var top := waypoint(part_id)
 	if bottom == NOWHERE or top == NOWHERE:
 		return []
-	return shortest_walk(bottom, top)
+	return _shortest_walk(bottom, top)
 
 ## Where the basement corridor is one tile wide on the way out, in the order she meets them —
 ## `corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
@@ -422,7 +402,7 @@ func basement_walk() -> Array[Vector2i]:
 	var entry := door("basement:entry")
 	if not entry or exit_tile.x < 0:
 		return []
-	return shortest_walk(entry.tile, exit_tile)
+	return _shortest_walk(entry.tile, exit_tile)
 
 ## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
 ## empty when there is no walk between them.
@@ -431,12 +411,12 @@ func basement_walk() -> Array[Vector2i]:
 ## `t/m` and `T/M` roles drop one tile height over one tile width — so a four-connected walk finds
 ## no way down a staircase at all. She walks those corners, so a walk that could not is not the
 ## walk she takes.
-func shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
-	return walk_avoiding(from, to, {})
+func _shortest_walk(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
+	return _walk_avoiding(from, to, {})
 
-## `shortest_walk()` that never steps on a tile in `blocked` (a set: tile -> anything), other than
+## `_shortest_walk()` that never steps on a tile in `blocked` (a set: tile -> anything), other than
 ## `from` and `to` themselves. Empty when no such walk exists.
-func walk_avoiding(from: Vector2i, to: Vector2i, blocked: Dictionary) -> Array[Vector2i]:
+func _walk_avoiding(from: Vector2i, to: Vector2i, blocked: Dictionary) -> Array[Vector2i]:
 	var previous := {from: from}
 	var queue: Array[Vector2i] = [from]
 	var head := 0
@@ -509,7 +489,7 @@ func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
 		for node in nodes:
 			if node == arrives_at or settled.has(node) or InteriorMap.part_at(node) != InteriorMap.part_at(arrives_at):
 				continue
-			var leg := walk_avoiding(arrives_at, node, keep_off)
+			var leg := _walk_avoiding(arrives_at, node, keep_off)
 			if leg.is_empty():
 				continue
 			var total: int = cost[here] + leg.size()

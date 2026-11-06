@@ -56,10 +56,10 @@ static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[Even
 	_place_the_explosions_outside(plans)
 	return plans
 
-## The fire, on the **inner** cell of the second floor's level approach in the burning shaft
-## (`InteriorMapPlan.inner_floor_approaches()`), **always that floor, never a roll**: named rather
-## than taken from the head of that list, which would quietly become the first floor's if the
-## second floor's cell stopped being walkable. It closes the flight from the second floor down, so
+## The fire, on the **inner** cell of the second floor's level approach in the burning shaft (the
+## cell below that floor's landing, one further in than its door), **always that floor, never a
+## roll**: named rather than taken from whichever approach comes first, which would quietly become
+## the first floor's if the second floor's cell stopped being walkable. It closes the flight from the second floor down, so
 ## her walk from the top is left, then right: the rubble sends her down the burning shaft from the
 ## third floor and the fire makes her cross over at the second. The way on from the first floor is
 ## not forced: the right shaft reaches the lobby and the left stays open too, which is where the

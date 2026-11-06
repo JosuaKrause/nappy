@@ -183,7 +183,7 @@ func walked_sidewalks(map: CityMap) -> Array:
 				continue
 			var walked := 0
 			for band in sidewalk_bands(rect, segment.horizontal):
-				if not walks_along(band):
+				if not _walks_along(band):
 					continue
 				walked += 1
 				found.append([segment, band, map.tile_rect_to_world(band)])
@@ -209,7 +209,7 @@ static func sidewalk_bands(rect: Rect2i, horizontal: bool) -> Array[Rect2i]:
 
 ## Whether a route's cell stands on any tile of `band` (`walked_sidewalks()` keeps the bands this
 ## answers yes for).
-func walks_along(band: Rect2i) -> bool:
+func _walks_along(band: Rect2i) -> bool:
 	for y in range(band.position.y, band.end.y):
 		for x in range(band.position.x, band.end.x):
 			if carries_a_route(Vector2i(x, y)):

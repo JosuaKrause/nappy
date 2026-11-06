@@ -218,7 +218,7 @@ signal poster_torn()
 signal poster_pursuit_sent()
 ## The blackout came and the masts went quiet with the power.
 signal city_went_quiet()
-## `Blackout.go_dark()`'s own moment the city goes dark, whether or not there was a mast to
+## `Blackout._go_dark()`'s own moment the city goes dark, whether or not there was a mast to
 ## silence — unlike `city_went_quiet` above, this fires on every go-dark. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal city_gone_dark()

@@ -182,7 +182,7 @@ func _test_determinism(t) -> void:
 func _test_buildings_tile_the_blocks(t) -> void:
 	for i in 12:
 		var map := _map(i)
-		var building_tiles := map.size.x * map.size.y - map.count_walkable()
+		var building_tiles := map.tiles_of_type(GameEnums.TileType.BUILDING).size()
 		t.check(_area(map.building_rects) == building_tiles,
 				"seed %d: building rects cover every BUILDING tile exactly once" % _seed(i))
 		t.check(not _overlaps(map.building_rects), "seed %d: no two buildings overlap" % _seed(i))

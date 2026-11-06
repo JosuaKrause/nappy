@@ -178,7 +178,7 @@ var keeps_the_walk_open := false
 enum SealPictures {
 	## The day's eight, soft and hard, each from its own act on (`SealPlanner.candidates()`).
 	DAY,
-	## The escape's four, all hard (`SealPlanner.escape_candidates()`).
+	## The escape's four, all hard (`SealPlanner._escape_candidates()`).
 	ESCAPE,
 }
 var seal_pictures := SealPictures.DAY

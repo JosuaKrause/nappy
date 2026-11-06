@@ -1,6 +1,6 @@
 extends RefCounted
 ## The planning calls the dev walker (`BuildingWalker`) makes on the building, through their public
-## surface: `InteriorMapPlan.way_out()` and `walk_avoiding()`, and the two accessors on `BuildingPlan`
+## surface: `InteriorMapPlan.way_out()`, with and without tiles to keep off, and the two accessors on `BuildingPlan`
 ## that say what to keep off, `fire_tile()` and `pursuer_ground_below_the_first_floor()`. The game
 ## itself calls none of them, so no other suite reaches them.
 
@@ -8,7 +8,7 @@ func run(t) -> void:
 	var map := InteriorMap.build()
 	_test_a_way_out_is_legs_from_her_start_to_the_exit_ending_on_door_thresholds(t, map)
 	_test_a_way_out_keeps_off_the_ground_it_is_told_to(t, map)
-	_test_walk_avoiding_never_steps_on_the_blocked_tile(t, map)
+	_test_a_way_out_steps_around_a_blocked_tile_in_the_middle_of_its_first_leg(t, map)
 	_test_the_fire_tile_is_the_second_floors_approach_in_the_burning_shaft(t, map)
 	_test_the_pursuers_ground_is_the_shaft_below_the_first_floor_landing(t, map)
 
@@ -44,13 +44,18 @@ func _test_a_way_out_keeps_off_the_ground_it_is_told_to(t, map: InteriorMapPlan)
 		for tile: Vector2i in leg:
 			t.check(not blocked.has(tile), "the way keeps off the blocked tile %s" % [tile])
 
-func _test_walk_avoiding_never_steps_on_the_blocked_tile(t, map: InteriorMapPlan) -> void:
+func _test_a_way_out_steps_around_a_blocked_tile_in_the_middle_of_its_first_leg(t, map: InteriorMapPlan) -> void:
 	var first: Array = map.way_out(map.start_tile)[0]
 	var middle: Vector2i = first[first.size() / 2]
-	var around := map.walk_avoiding(map.start_tile, first.back(), {middle: true})
-	t.check(first.size() >= 3 and not around.has(middle),
+	var legs := map.way_out(map.start_tile, {middle: true})
+	var crossed := false
+	for leg: Array in legs:
+		crossed = crossed or leg.has(middle)
+	t.check(first.size() >= 3 and not legs.is_empty() and not crossed,
 			"a tile in the middle of the first leg is stepped around, not crossed (%s)" % [middle])
-	t.check(map.walk_avoiding(map.start_tile, first.back(), {first.back(): true}) == map.shortest_walk(map.start_tile, first.back()),
+	var goal: Vector2i = first.back()
+	var with_the_goal_blocked := map.way_out(map.start_tile, {goal: true})
+	t.check(not with_the_goal_blocked.is_empty() and with_the_goal_blocked[0] == first,
 			"the goal itself is never blocked")
 
 func _test_the_fire_tile_is_the_second_floors_approach_in_the_burning_shaft(t, map: InteriorMapPlan) -> void:

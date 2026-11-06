@@ -40,7 +40,7 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
 	var ordinary := ["a", "a", "b", "b", "b"]
 	var bag := MarbleBag.new([], ordinary, 7)
 	var first: Array = [bag.draw(), bag.draw()]
-	bag.put_in_front(["x", "y"])
+	bag.rig(["x", "y"], 2)
 	t.check(bag.sizes() == [2, 3], "the special bag is in front of the three marbles left (%s)"
 			% [bag.sizes()])
 	var special: Array = [bag.draw(), bag.draw()]
@@ -121,7 +121,7 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
 	t.check(same, "a peek names the marble the draw takes, and the draws are the straight bag's")
 	var interrupted := MarbleBag.new([], ordinary, 5)
 	interrupted.peek()
-	interrupted.put_in_front(["z"])
+	interrupted.rig(["z"], 1)
 	t.check(interrupted.sizes() == [1, ordinary.size()],
 			"a bag put in front after a peek leaves the peeked marble where it was (%s)"
 			% [interrupted.sizes()])

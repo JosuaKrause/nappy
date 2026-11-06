@@ -39,7 +39,7 @@ func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t, map: CityM
 	var signals := TrafficSignals.new(map)
 	var junction := Vector2i(map.main_road, 1)
 	signals.elapsed = 0.0
-	while signals.phase_of(junction) != TrafficSignals.Phase.MAIN_GREEN:
+	while not signals.green_for(junction, true):
 		signals.elapsed += 0.25
 	t.check(signals.is_signalled(junction), "the main road's junctions are signalled")
 	var vertical_green := signals.green_for(junction, true)

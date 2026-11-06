@@ -21,43 +21,15 @@ src/events/views/event_look.gd mark_rect  # the rectangle the danger caret cover
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/autoload/telemetry.gd begin_memory_log
-src/city/city.gd home_door_is_sealed
-src/city/city_map.gd is_post
-src/city/city_map.gd is_soft_sealed
-src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
-src/interior/interior_map.gd PARTS
-src/interior/interior_map_plan.gd inner_floor_approaches
 src/resistance/resistance_director.gd mark_guard
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/city/blackout.gd go_dark
-src/city/blackout.gd is_dark
-src/city/city.gd barrier_footprint
-src/city/city.gd blackout
-src/city/city.gd home_door_building
-src/city/city_generator.gd blocks_from_home
-src/city/city_generator.gd power_station_rank
-src/city/city_map.gd count_walkable
-src/city/marble_bag.gd put_in_front
-src/city/poster_art.gd torn
-src/city/scenery_residency.gd camera_view
-src/city/scenery_residency.gd ordinary_guard_preparations
-src/city/traffic_signals.gd phase_of
-src/finale/finale_planner.gd service_exit_tile
-src/interior/interior_map.gd stair_kind_for_symbol
-src/interior/interior_map_plan.gd shortest_walk
-src/interior/interior_map_plan.gd walk_avoiding
-src/interior/interior_scene.gd distant_flash_wait
-src/interior/interior_scene.gd flash_windows
-src/interior/interior_scene.gd lighting_at
-src/interior/interior_scene.gd teleport_to_door
-src/interior/interior_scene.gd windows_are_flashing
 src/resistance/contact_point.gd draws_a_mark
 src/resistance/contact_point.gd would_complete_at
 src/resistance/happenings.gd cordon
@@ -87,15 +59,6 @@ src/resistance/resistance_director.gd sets_a_trap_on_her
 src/resistance/resistance_director.gd swing_base
 src/resistance/resistance_director.gd touch_reach
 src/resistance/resistance_director.gd weighted_mast_index
-src/routes/closure_marker.gd cause_feet
-src/routes/closure_marker.gd cause_picture
-src/routes/corridor.gd walks_along
-src/routes/park_closure.gd to_along
-src/routes/region_planner.gd alley_mouth_ground_region
-src/routes/region_planner.gd region_of_segment
-src/routes/route_tree.gd lattice_grid
-src/routes/route_tree.gd trunk_used_the_spine
-src/routes/seal_planner.gd escape_candidates
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -167,6 +130,11 @@ src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [r
 src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
 src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
+src/city/city_generator.gd power_station_rank  # the order the generator tries the free horizontal pairs in for the power station (industrial ground, then half, then the nearest to it); a city keeps only the pair it picked and how many industrial blocks it stands on, never the ones it passed over, so the preference is visible only through the rank (tests/test_power_station.gd holds the order on constructed block sets)
+src/city/scenery_residency.gd ordinary_guard_preparations  # how many regions and pieces the guard prepared at once rather than in the ordinary stepped pass, a count of work done that no tile the ground lays carries; the frame-timing probes (tests/probes/ground_frames.gd, ground_frames_matched.gd, run by tools/measure-ground-frames.sh) zero and read it after a traversal, as they do SceneryGround.worst_step_usec
+src/interior/interior_scene.gd distant_flash_wait  # the wait between two far flashes from a uniform draw; its curve (bounds, mean, median and 95th percentile) needs thousands of draws, which the night makes one a second (an hour of ticks for the same sample), and the flash ticks the seeded stream makes are replayed through it (tests/test_interior.gd, the far windows' test); the real flashes over a minute are checked on real ticks beside it
+src/routes/closure_marker.gd cause_feet  # where a closure's cause picture stands relative to the street's middle; it exists only as the anchor handed to Sprites.draw_standing() in _draw_cause(), which a headless run draws to nothing and no node exposes (tests/test_closure_marker.gd: "a headless draw pass makes no pixels to read"), so the pictures' centring is read off the function
+src/routes/closure_marker.gd cause_picture  # which picture a closure's cause is drawn with for each axis; it exists only as the region name handed to the atlas in _draw_cause(), which a headless run draws to nothing and no node exposes, so the pictures' axes and sizes are read off the function
 src/events/event_catalogue.gd heat_levels  # the number of heat levels a run can reach (the goal plus the cold one), which all() validates every heated shape of every row over; the heat, shapes, pursuit-on-foot and resistance-trap suites loop every level of every row to hold the fairness contracts to each shape, and a test that wrote the goal plus one itself would pass when the table's range moved; nothing outward carries the range, since a run reaches one level at a time
 src/events/walk_ground.gd held_by  # the ground a placement holds the walk off for its whole length: its body and, for a van that stands and takes her, the disc of its lethal reach; the scheduler's judge reads it only as accepts()'s yes or no, and the finale rigs (tests/finale_rig.gd, escape_roadblock_rig.gd, seal_reach_rig.gd and the probes that print their tables) flood the walk with exactly these discs to hold the promise that both exits stay reachable past every body and every standing lethal reach, which no placement or instance carries as a whole; open to overturn (the real instances' solid_part_* could replace the bodies, not the reach discs)
 src/events/walk_ground.gd solids_of  # the body pieces a placement stands for the whole walk, at the place EventInstance.setup() will put them (successor included); held_by() and stand() build on it, and the finale rigs read each piece's spine and its stops_her_at() to hold that no escape body reaches over a building and that her line past a roadblock fits at its place; the same discs the judge counts, so a rig that read an instance's bodies instead would not test the judge's own prediction; open to overturn

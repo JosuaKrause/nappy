@@ -37,7 +37,7 @@ func run(t) -> void:
 	_test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t)
 	_test_an_ordinary_departure_still_gives_up_at_six_seconds(t)
 	_test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t)
-	_test_the_sabotage_silences_the_city(t)
+	await _test_the_sabotage_silences_the_city(t)
 	_free_city()
 
 func _test_step_table(t) -> void:
@@ -854,8 +854,10 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 	t.check(quiet.is_empty() and not mast.silenced,
 			"and the masts are still speaking at the door: they stop with the power")
 	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
-	_city.blackout.update(Vector2(lot.get_center().x,
-			lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
+	# She walks far enough from the station, a physics tick or two (the blackout watches her there).
+	var she := _rig_player(t, Vector2(lot.get_center().x, lot.end.y + Blackout.BLACKOUT_DISTANCE + 8.0))
+	await PhysicsTicks.pass_ticks(t, 2)
+	she.free()
 	t.check(quiet.size() == 1, "far enough away, the city goes quiet, once")
 	t.check(mast.silenced, "the mast is marked silenced")
 	t.close_to(mast.excitement.contribution_at(nearby), 0.0,

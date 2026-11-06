@@ -1196,7 +1196,7 @@ func _sidewalk_side_tiles(segment: StreetNetwork.Segment, near: bool) -> Array[V
 
 func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 	for tile in tiles:
-		if not _city.map.is_soft_sealed(tile):
+		if _city.map.passable(tile, Mover.of(Mover.SOFT_SEALS)):
 			return false
 	return true
 

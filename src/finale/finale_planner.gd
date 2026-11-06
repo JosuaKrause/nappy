@@ -134,7 +134,7 @@ class Plan extends RouteSource:
 ## and what is placed on the walk is handed the same start (`DayPlanner.plan_the_escape_city()`).
 static func route(map: CityMap) -> Plan:
 	var grid := ReachabilityGrid.build(map)
-	var start := service_exit_tile(map)
+	var start := _service_exit_tile(map)
 	var areas := calm_areas(map, grid)
 	var result := Plan.new()
 	result._network = map.network
@@ -255,7 +255,7 @@ static func _cell_of(tile: Vector2i) -> Vector2i:
 ## than derived. If that tile is not walkable — a lot whose frontage is built over — the nearest
 ## walkable tile on the block's own perimeter is taken instead, so this always answers with ground
 ## she can stand on.
-static func service_exit_tile(map: CityMap) -> Vector2i:
+static func _service_exit_tile(map: CityMap) -> Vector2i:
 	var lot := map.lot_blocks(map.home_block)
 	var tiles := CityMap.blocks_tile_rect(lot)
 	var row := tiles.position.y + tiles.size.y / 2
@@ -273,7 +273,7 @@ static func service_exit_tile(map: CityMap) -> Vector2i:
 	return map.world_to_tile(map.doorstep_world_position())
 
 static func service_exit_world_position(map: CityMap) -> Vector2:
-	return map.tile_to_world(service_exit_tile(map))
+	return map.tile_to_world(_service_exit_tile(map))
 
 ## The last walkable tile of the spine at one end of the map — the carriageway under the tunnel's
 ## portal, or the one running out onto the bridge deck. `City.tunnel_world_position()` draws the

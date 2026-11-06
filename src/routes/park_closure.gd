@@ -82,8 +82,8 @@ var outward := Vector2i.ZERO
 ## Where the line starts and ends along its run, in world pixels on the run's own axis (x for a
 ## north or south edge, y for a west or east one). The run's own tiles, except at an end that turns
 ## a corner onto the next side's run, which stops at the corner of the two fence lines instead.
-var from_along := 0.0
-var to_along := 0.0
+var _from_along := 0.0
+var _to_along := 0.0
 ## Whether each end turns a corner onto the next side's run (`fence()`).
 var joined_start := false
 var joined_end := false
@@ -97,12 +97,12 @@ func _init(anchor: Vector2i, calm_rect: Rect2i, strip: Rect2i, out: Vector2i,
 	joined_end = end_turns
 	var tile := float(Tuning.TILE_SIZE)
 	var horizontal := out.y != 0
-	from_along = (strip.position.x if horizontal else strip.position.y) * tile
-	to_along = (strip.end.x if horizontal else strip.end.y) * tile
+	_from_along = (strip.position.x if horizontal else strip.position.y) * tile
+	_to_along = (strip.end.x if horizontal else strip.end.y) * tile
 	if joined_start:
-		from_along = _line(calm_rect, Vector2i.LEFT if horizontal else Vector2i.UP)
+		_from_along = _line(calm_rect, Vector2i.LEFT if horizontal else Vector2i.UP)
 	if joined_end:
-		to_along = _line(calm_rect, Vector2i.RIGHT if horizontal else Vector2i.DOWN)
+		_to_along = _line(calm_rect, Vector2i.RIGHT if horizontal else Vector2i.DOWN)
 
 ## Every fence a shut calm area needs: one per run of its edge that has walkable ground outside it,
 ## each told which of its ends turns a corner onto the next side's run. The two runs at a corner
@@ -188,17 +188,17 @@ static func _edge_tile(rect: Rect2i, out: Vector2i, i: int) -> Vector2i:
 		return Vector2i(rect.position.x, rect.position.y + i)
 	return Vector2i(rect.end.x - 1, rect.position.y + i)
 
-## How long this fence's one line is: from `from_along` to `to_along`, in pixels — never a
+## How long this fence's one line is: from `_from_along` to `_to_along`, in pixels — never a
 ## street's width. Overrides `RoadClosure.barrier_width()`, which `City._spawn_barrier()` reads
 ## instead of assuming `Tuning.STREET_WIDTH`; see the class doc.
 func barrier_width() -> float:
-	return to_along - from_along
+	return _to_along - _from_along
 
 ## Where the one line of barrier stands: the middle of its span, across it half a barrier's depth
 ## inside the area's edge. One point is the whole of it — `barrier_width()` already says how wide
 ## `City._spawn_barrier()` draws it, so nothing here has to split a long run into several.
 func mouth_centres(_map: CityMap) -> Array[Vector2]:
-	var found: Array[Vector2] = [_point((from_along + to_along) * 0.5)]
+	var found: Array[Vector2] = [_point((_from_along + _to_along) * 0.5)]
 	return found
 
 ## The posts this run ends on (`RoadClosure.posts()`). A corner two runs turn on has one post, and
@@ -220,8 +220,8 @@ func posts(_map: CityMap) -> Array[Vector2]:
 ## post it ends on stand on the same point and not on two sums of one length.
 func rail_ends() -> PackedVector2Array:
 	return PackedVector2Array([
-		_point(from_along if joined_start else from_along + POST_HALF),
-		_point(to_along if joined_end else to_along - POST_HALF)])
+		_point(_from_along if joined_start else _from_along + POST_HALF),
+		_point(_to_along if joined_end else _to_along - POST_HALF)])
 
 ## The point `along` pixels down this run's axis, on its fence line.
 func _point(along: float) -> Vector2:
