@@ -74,9 +74,9 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> 
 
 ## *(2026-09-27, the player: "if a text has multiple sentences like \"She started crying after
 ## 0:10. There is no settling now.\" the newline comes after the period".)* The exact line quoted
-## is `SummaryModel.clock_line()`'s own reconstruction of `DayController`'s `"She started crying.
-## There is no settling her now."` with the clock worked into the first sentence — see that
-## function's own doc.
+## is the title `SummaryModel.day_over()` builds from `DayController`'s `"She started crying.
+## There is no settling her now."` with the clock worked into the first sentence — see
+## `SummaryModel._clock_line()`'s own doc.
 func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)

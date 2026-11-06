@@ -182,8 +182,6 @@ src/routes/route_tree.gd lattice_grid
 src/routes/route_tree.gd trunk_used_the_spine
 src/routes/seal_planner.gd escape_candidates
 src/run/day_director.gd loss_cause
-src/run/summary_model.gd clock_line
-src/run/summary_model.gd resistance_tally
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
 src/telemetry/telemetry_map.gd role_mark

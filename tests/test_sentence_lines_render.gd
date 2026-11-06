@@ -25,10 +25,15 @@ func run(t) -> void:
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
 	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
+	var hard_fail_run := RunState.new()
 	for reason in hard_fails.keys():
-		var line := SummaryModel.clock_line(GameEnums.DayResult.LOST_HARD_FAIL,
-				hard_fails[reason], "10:00")
+		var hard_fail_end := DayEnd.new()
+		hard_fail_end.result = GameEnums.DayResult.LOST_HARD_FAIL
+		hard_fail_end.reason = hard_fails[reason]
+		hard_fail_end.elapsed_seconds = 600.0
+		var line := SummaryModel.day_over(hard_fail_run, hard_fail_end).title
 		_check_label(t, line, title, "the day summary title for %s" % reason)
+	hard_fail_run.free()
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")
 	summary.queue_free()
 
