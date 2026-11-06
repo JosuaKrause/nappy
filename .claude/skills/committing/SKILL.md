@@ -137,6 +137,12 @@ another session does not carry over to it. A review agent never merges (**pr-rev
 Finishing implementation, opening a PR and green CI do not by themselves make a PR mergeable.
 Leave the PR open and report its link when the session has no permission to merge it.
 
+**The standing permission reaches Claude Code's auto-mode classifier only through the player's Claude Code
+settings** (`~/.claude/settings.json`'s permission allow rules and its auto-mode environment lines), never
+through `CLAUDE.md` or a skill, which the classifier does not read as the player's consent. When it refuses a
+write the standing permission covers, report the refusal to the player naming that place; never work around it
+(curly-rabbit #1094).
+
 **A PR merges only after its review**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). A review under
 **pr-review** has posted the verdict *ready* on the PR against its current head, or against a head
