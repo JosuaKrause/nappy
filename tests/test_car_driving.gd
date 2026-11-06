@@ -40,11 +40,14 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 	while past <= 44.0:
 		var engine := _engine(t, route)
 		var her := Vector2(past, 0.0)
+		var held := false
 		for i in int(3.0 / STEP):
+			var was_at := engine.global_position
 			_step(engine, her, Vector2.RIGHT)
-			if engine.is_parked or (engine.car.is_standing() and engine.path_travelled() > length - 4.0):
+			held = engine.global_position.is_equal_approx(was_at)
+			if engine.is_parked or (held and engine.path_travelled() > length - 4.0):
 				break
-		if engine.car.is_standing() or engine.is_parked and engine.path_travelled() < length - 0.001:
+		if held or engine.is_parked and engine.path_travelled() < length - 0.001:
 			refused_at_the_end += 1
 		if engine.is_parked and engine.path_travelled() < length - 0.001:
 			parked_short += 1
@@ -70,13 +73,13 @@ func _test_a_car_comes_back_standing(t) -> void:
 	var engine := _engine(t, route)
 	for i in int(0.5 / STEP):
 		_step(engine, Vector2(600.0, 600.0), Vector2.RIGHT)
-	t.check(not engine.car.is_standing() and engine.car.is_driving(), "the engine is driving its route")
+	t.check(engine.car.is_driving(), "the engine is driving its route")
 	var state := engine.save_behaviours()
 	t.check(not state.has(&"EventCarDriving"), "and its driving saves nothing")
 	var back := _engine(t, route)
 	back.resume(engine.age, engine.path_travelled(), engine.noticed_at())
 	back.restore_behaviours(state)
-	t.check(back.car.is_standing() and back.global_position.is_equal_approx(engine.global_position),
+	t.check(not back.car.is_driving() and back.global_position.is_equal_approx(engine.global_position),
 			"streamed back in, it stands where it had got to")
 	engine.free()
 	back.free()
