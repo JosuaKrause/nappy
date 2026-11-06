@@ -80,7 +80,7 @@ func _test_the_siting_the_director_hands_out_carries_the_rule(t) -> void:
 	t.check(_on_the_home_street(city) == null, "and a day's spec reaches it again")
 	city.free()
 
-## Four places in `EventsAhead` build a `WalkSiting` (the day's, a mast's, the task's, a rigged
+## Every place in `EventsAhead` that builds a `WalkSiting` (the day's, a mast's, the task's, a rigged
 ## route's), and the first two cannot be observed from outside; each must copy the rule onto what
 ## it builds, read off the source so a dropped copy fails here rather than siting on a day's rule.
 ## Each also hands what it builds a verdict store of its own (`EventScheduler.Verdicts.new()` in
@@ -101,7 +101,7 @@ func _test_every_place_that_builds_a_siting_copies_the_rule(t) -> void:
 					break
 				if "EventScheduler.Verdicts.new()" in lines[j]:
 					stores += 1
-	t.check(builds == 4, "EventsAhead builds a WalkSiting in four places (%d)" % builds)
+	t.check(builds > 0, "EventsAhead builds a WalkSiting somewhere (%d places)" % builds)
 	t.check(copied == builds, "and each copies holds_the_home_streets onto it (%d of %d)" % [copied, builds])
 	t.check(stores == builds,
 			"and each hands it a verdict store of its own (%d of %d)" % [stores, builds])

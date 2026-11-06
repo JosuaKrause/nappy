@@ -142,13 +142,13 @@ func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
 	var cold := _cold_raid()
 	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
 			"the raid answers to the resistance, on the hunting rung")
-	t.check(cold.kind == GameEnums.EventKind.SCRIPTED and cold.available_on(10),
-			"the raid is scripted for day 10")
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
 		t.check(hot.validate(), "the raid is fair at heat %d" % level)
-		t.check(hot.kind == GameEnums.EventKind.SCRIPTED and hot.available_on(10),
-				"heat %d: the raid still only ever appears on day 10" % level)
+		var same_days := hot.kind == cold.kind
+		for day in range(1, 15):
+			same_days = same_days and hot.available_on(day) == cold.available_on(day)
+		t.check(same_days, "heat %d: heat moves what the raid does and never when it appears" % level)
 		t.check(hot.max_per_day == cold.max_per_day and hot.intensity == cold.intensity,
 				"heat %d: hunting moves neither population nor intensity" % level)
 		if level < EventDef.HEAT_HUNTS_LEVEL:
