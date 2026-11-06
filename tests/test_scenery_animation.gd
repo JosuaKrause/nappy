@@ -274,12 +274,13 @@ func _split_by_animation(scenery: EventScenery) -> Array:
 	for layer in layers:
 		had[layer] = layer.frame_b
 	scenery.set_frame(true)
-	var turned_on: Array[SceneryLayer] = layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b)
+	var turned_on: Array[SceneryLayer] = []
+	turned_on.assign(layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b))
 	scenery.set_frame(false)
-	var moving: Array[SceneryLayer] = turned_on.filter(
-			func(l: SceneryLayer) -> bool: return not l.frame_b)
-	var still: Array[SceneryLayer] = layers.filter(
-			func(l: SceneryLayer) -> bool: return not moving.has(l))
+	var moving: Array[SceneryLayer] = []
+	moving.assign(turned_on.filter(func(l: SceneryLayer) -> bool: return not l.frame_b))
+	var still: Array[SceneryLayer] = []
+	still.assign(layers.filter(func(l: SceneryLayer) -> bool: return not moving.has(l)))
 	scenery.set_frame(not moving.is_empty() and had[moving[0]])
 	return [moving, still]
 
