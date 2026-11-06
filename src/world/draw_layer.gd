@@ -57,19 +57,6 @@ static func draw_on(item: CanvasItem, layer: int) -> void:
 		item.z_as_relative = false
 		item.z_index = z
 
-## The layer `item` is drawn on: its own, or the nearest one above it in the tree that was set
-## (`draw_on()`). `GROUND` for anything no layer was asked for, which draws at the default z.
-static func layer_of(item: CanvasItem) -> int:
-	var z := 0
-	var node: Node = item
-	while node is CanvasItem:
-		var canvas_item := node as CanvasItem
-		z += canvas_item.z_index
-		if not canvas_item.z_as_relative:
-			break
-		node = node.get_parent()
-	return clampi(z + Layer.GROUND, Layer.BACKDROP, Layer.DEBUG)
-
 ## Makes `node` a world's node for `layer` (`WorldLayers`): drawn on the layer, and y-sorted when
 ## what it holds stands on the ground and sorts at its feet.
 static func adopt(node: Node2D, layer: int, y_sorted := false) -> void:

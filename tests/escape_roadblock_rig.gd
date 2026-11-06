@@ -23,6 +23,8 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const BEYOND := 260.0
 const LANE_SCAN := 4.0
+## How long a charge that has begun is followed past the end of her line, in seconds.
+const TAIL := 10.0
 
 ## The finale's plan for a seed, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds it: the map, the walk
 ## (`plan`) and what stands on it (`placements`).
@@ -62,16 +64,12 @@ static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
 	var rect := map.tile_rect_to_world(segment.tile_rect())
 	var centre := rect.get_center()
 	var solids: Array[WalkGround.Solid] = []
-	var holder := Node2D.new()
-	t.add_child(holder)
+	var stage := Stage.new(t, map)
 	var places: Array[float] = []
 	for placement in group:
 		solids.append_array(ground.solids_of(placement))
-		var instance := EventInstance.new()
-		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
-		holder.add_child(instance)
-		places.append((instance.body_position() - centre).dot(along))
-	holder.free()
+		places.append((stage.stand(placement).body_position() - centre).dot(along))
+	stage.close()
 	var half_width := (rect.size.y if segment.horizontal else rect.size.x) * 0.5
 	var runs: Array[Vector2] = []
 	var run_start := INF
@@ -117,23 +115,93 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 			return false
 	return true
 
-## The street's roadblocks, live: `[holder, Array[EventInstance]]`. Freeing the holder frees them
-## and their bands. Each is handed `atlas` (the pages the spawner hands every event it makes) when a
+## A world of its own for events to stand in, and the manager that puts them there: the world
+## node a city or a building is to its map (`WorldContext`, which the map is handed as its own), a
+## run of its own and an `EventManager` over them, its physics off so nothing steps but the caller.
+## A `Planned` is handed to the manager's streaming (`EventStreaming.add()`, then `stream_in()`, as
+## the manager's `stream_around()` does when she comes near it), so the spawner makes the
+## instance the way a day's is made: on the map, in the world's entity layer, with its look's nodes
+## to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
+## the plans recorded on the map and leaves the map and every plan as the stage found them.
+class Stage extends RefCounted:
+	var world: WorldContext
+	var manager: EventManager
+	var _map: WorldMap
+	var _was_world: WorldContext
+	## Each plan stood, with whether it had been live and what it held.
+	var _stood: Array = []
+	var _successors: Array[EventInstance] = []
+
+	## Under `t`, or in no tree when `t` is null, for a rig that only reads where an event
+	## stands once it is made. `atlas` is the page set the manager hands every event it makes, for a
+	## case that lets real frames draw them.
+	func _init(t: Node, map: WorldMap, atlas: AtlasLibrary = null) -> void:
+		_map = map
+		_was_world = map.world if map.has_world() else null
+		world = WorldContext.new()
+		if t != null:
+			t.add_child(world)
+		var run := RunState.new()
+		world.add_child(run)
+		map.world = world
+		manager = EventManager.new()
+		manager.setup_world(map, run)
+		if atlas != null:
+			manager.atlas = atlas
+		world.add_child(manager)
+		manager.set_physics_process(false)
+
+	## Puts `plan` in the world as the day's streaming does, and answers the instance, its
+	## own process off (a case that lets frames draw it turns it on).
+	func stand(plan: EventScheduler.Planned) -> EventInstance:
+		_stood.append([plan, plan.was_live, plan.live])
+		manager.streaming.add(plan)
+		manager.streaming.stream_in(plan)
+		var instance := plan.live
+		instance.set_process(false)
+		return instance
+
+	## What `instance` leaves behind when it finishes, made where it stands as the spawner makes it
+	## (`EventSpawner.successor_of()`), or null for a row that leaves nothing.
+	func successor_of(instance: EventInstance) -> EventInstance:
+		var made := manager.spawner.successor_of(instance)
+		if made != null:
+			_successors.append(made)
+		return made
+
+	## Frees the world and what is in it.
+	func close() -> void:
+		for made in _successors:
+			_map.release_obstruction(made.get_instance_id())
+		_stood.reverse()
+		for stood: Array in _stood:
+			var plan: EventScheduler.Planned = stood[0]
+			_map.release_obstruction(plan.get_instance_id())
+			if plan.live != null and is_instance_valid(plan.live):
+				_map.release_obstruction(plan.live.get_instance_id())
+			plan.was_live = stood[1]
+			plan.live = stood[2]
+		_map.world = _was_world
+		world.free()
+
+## Lets the idle frames pass that a made event's drawing nodes wait for (`EventLook.build_nodes()`
+## defers their attaching), so a band stands in the world beside its guard. The tree's `process_frame`
+## signal comes before the frame's deferred calls, so the first one passed is the frame that was
+## already starting and the second is the one that attached what the caller left.
+static func settle(t: Node) -> void:
+	await t.get_tree().process_frame
+	await t.get_tree().process_frame
+
+## The street's roadblocks, live: `[stage, Array[EventInstance]]`. `Stage.close()` frees them and
+## their bands. Each is handed `atlas` (the pages the spawner hands every event it makes) when a
 ## case lets real frames draw them.
-static func build(t: Node, map: CityMap, group: Array[EventScheduler.Planned],
+static func build(t: Node, map: WorldMap, group: Array[EventScheduler.Planned],
 		atlas: AtlasLibrary = null) -> Array:
-	var holder := Node2D.new()
-	t.add_child(holder)
+	var stage := Stage.new(t, map, atlas)
 	var made: Array[EventInstance] = []
 	for placement in group:
-		var instance := EventInstance.new()
-		instance.setup(placement.def, placement.position, placement.path, placement.facing, map)
-		instance.atlas = atlas
-		holder.add_child(instance)
-		instance.set_process(false)
-		instance.look.attach_nodes()
-		made.append(instance)
-	return [holder, made]
+		made.append(stage.stand(placement))
+	return [stage, made]
 
 ## A meter fed the way `Baby._update_excitement()` feeds it.
 class Meter extends RefCounted:
@@ -193,7 +261,8 @@ static func _charging(instances: Array[EventInstance]) -> int:
 ## At a walk from `from` to `to` past the street's roadblocks, `built` (from `build()`) or a fresh
 ## set, which it frees. Answers `cost` (the meter's peak less where it started), `peak`, `end`,
 ## `caught`, `charged` (how many guards charged her), `strongest` (the most any of them charged a
-## second at her on the way) and `at`, where she stopped.
+## second at her on the way) and `at`, where she stopped. A charge begun when her line ends is followed
+## on (`TAIL`).
 static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
@@ -219,7 +288,17 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
-	made[0].free()
+	# A charge that has begun is not over where her line ends: she walks on at the same pace until
+	# every charge has caught her or given up (`TAIL`), as she would past the end of a street.
+	var tail := 0
+	while not caught and _charging(instances) > 0 and tail < int(TAIL / STEP):
+		her += heading * Tuning.WALK_SPEED * STEP
+		if tick(instances, her, false, heading):
+			caught = true
+			break
+		meter.feed(instances, her, false, false)
+		tail += 1
+	made[0].close()
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
 			"charged": charged.size(), "strongest": strongest, "at": her}
 
@@ -288,7 +367,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var luring := {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value,
 			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her}
 	if caught:
-		made[0].free()
+		made[0].close()
 		return {"lure": luring, "after": {}}
 	return {"lure": luring, "after": walk(t, map, group, her, to, meter, made)}
 

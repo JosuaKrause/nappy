@@ -51,8 +51,8 @@ func passable_at(at: Vector2, mover: Mover) -> bool:
 ## Whether the straight line from `from` to `to` crosses only ground `mover` may enter
 ## (`WorldMap.clear_line()`): the line a pursuer notices her along, lunges along and catches her
 ## along.
-func clear_line(from: Vector2, to: Vector2, mover: Mover) -> bool:
-	return _map.clear_line(from, to, mover)
+func clear_line(from: Vector2, to: Vector2, mover: Mover, own_tiles := {}) -> bool:
+	return _map.clear_line(from, to, mover, own_tiles)
 
 ## The ground a sweep over the whole map runs on for `mover` (`WorldMap.ground_for()`).
 func ground(mover: Mover) -> PackedInt32Array:

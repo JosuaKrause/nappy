@@ -181,8 +181,12 @@ func is_obstructed(tile: Vector2i) -> bool:
 ## the other one stands, so a body that covers the middle of her tile does not hide her from a man
 ## beside her. Everything between is asked: a pursuer neither notices nor reaches her through a café,
 ## a barrier or a seal.
-func clear_line(from: Vector2, to: Vector2, mover: Mover = null) -> bool:
-	return _line_is_clear(from, to, mover if mover else Mover.lattice(), true)
+##
+## **`own_tiles` are tiles the line's owner stands on** (a guard's own band, `EventInstance.clear_line_to()`):
+## the day's solids are not asked there, so he sees out of the band he belongs to however far he has
+## stepped from its middle, and only that band; another body, a building or a café still stops it.
+func clear_line(from: Vector2, to: Vector2, mover: Mover = null, own_tiles := {}) -> bool:
+	return _line_is_clear(from, to, mover if mover else Mover.lattice(), true, own_tiles)
 
 ## Whether the swept step from `from` to `to` crosses only ground `mover` may enter, its landing tile
 ## included: `clear_line()` without the far end left out, what `Navigator.step()` asks.
@@ -191,7 +195,8 @@ func step_is_clear(from: Vector2, to: Vector2, mover: Mover) -> bool:
 
 ## `clear_line()` and `step_is_clear()`: the same tile walk, the far end's tile left out of the day's
 ## layers only for a line to somebody (`to_somebody`).
-func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool) -> bool:
+func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
+		own_tiles := {}) -> bool:
 	if not has_ground():
 		return true
 	var layers := mover.blocked_by
@@ -200,7 +205,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool)
 	if not _ground_lets(tile, layers) and _ground_stops(tile, layers, from, to):
 		return false
 	# Inside a solid of the day's it starts in: those layers are not asked until it is out.
-	var leaving := today != 0 and blocked.blocks(tile, today)
+	var leaving := today != 0 and blocked.blocks(tile, today) and not own_tiles.has(tile)
 	var last := world_to_tile(to)
 	var delta := to - from
 	var tile_size := float(Tuning.TILE_SIZE)
@@ -223,7 +228,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool)
 				if not _ground_lets(side, layers) and _ground_stops(side, layers, from, to):
 					return false
 				if today != 0 and not leaving and blocked.blocks(side, today) \
-						and not (to_somebody and side == last):
+						and not own_tiles.has(side) and not (to_somebody and side == last):
 					return false
 			tile += step
 			next_x += each_x
@@ -238,7 +243,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool)
 			return false
 		if today == 0:
 			continue
-		if not blocked.blocks(tile, today):
+		if not blocked.blocks(tile, today) or own_tiles.has(tile):
 			leaving = false
 		elif not leaving and not (to_somebody and tile == last):
 			return false
