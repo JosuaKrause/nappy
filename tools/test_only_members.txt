@@ -116,6 +116,7 @@ src/autoload/visit_counter.gd listen
 src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
 src/build_info.gd source_commit
+src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
 src/city/building.gd civic_entrance_cols
 src/city/building.gd column_under_door
