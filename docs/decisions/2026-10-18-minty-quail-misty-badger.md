@@ -20,12 +20,18 @@ city-decay, blackout, home-block and placement suites, and seventeen of its fron
 underscore; `City.assign_roof_extensions()` lost its only test reader and left the list.
 
 **Removed.** The 16-tile alley in the alley-siting suite, since no generated alley is longer than
-8 tiles; the ground-floor suite's power-station-yard front, since a yard sits inside a lot and a
-front needs a lot beside it; the door and fire-escape stream replays, which re-ran the private
+8 tiles; the door and fire-escape stream replays, which re-ran the private
 rolls; and the read-backs of the extension rows past the end, replaced by a check that each
-column's roof is drawn as tall as its extension.
+column's roof is drawn as tall as its extension. Some per-column checks folded into one stronger
+"no facade drawn" check over a covered column.
+
+**The power station's yard, after review.** The hand-placed yard fixture went at first on the
+claim that no front stands over a yard; the review found one does: a cul-de-sac wall
+(`CityGenerator._wall_off_one_end()`) can close the street just north of the station, in about one
+city in forty. The ground-floor suite reads it off generated cities: over the yard (seed 823576)
+the wall keeps its facade and the station draws no roof there, and over the hall (seed 966118) the
+wall is covered and the station's roof is drawn as many rows taller as the wall is high.
 
 **Open to overturn.** Body obstruction stands in for a closure in the turns suite. The shared
-helper rather than one reader per suite. The yard skip in `City.assign_roof_extensions()` is left
-in place, though the generator never puts a front over a yard. The building's window and roof
+helper rather than one reader per suite. The building's window and roof
 pieces stay public until a build owns their suites.
