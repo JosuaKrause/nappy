@@ -20,8 +20,6 @@ src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/dev/debug_layers.gd body_outline_count
-src/dev/rig_lock.gd has_a_deadline
-src/dev/walk_plan.gd smoothed_turns
 src/events/event_instance.gd charger_name
 src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
@@ -83,14 +81,6 @@ src/dev/dev_flags.gd parse_layers
 src/dev/dev_flags.gd parse_parent
 src/dev/dev_rig.gd nearest_walkable
 src/dev/dev_rig.gd pavement_offset
-src/dev/rig_lock.gd is_the_rigs_own_press
-src/dev/scene_recipe_runtime.gd charging_refusal
-src/dev/scene_recipe_runtime.gd hold_refusal
-src/dev/scene_recipe_runtime.gd hold_refusal_message
-src/dev/scene_recipe_runtime.gd relentless_refusal
-src/dev/scene_recipe_runtime.gd scripted
-src/dev/scene_recipe_runtime.gd settle_camera_on
-src/dev/scene_recipe_runtime.gd validate_runtime
 src/dev/still_watch.gd facing_a_red_light
 src/dev/trailer_text.gd opacity_at
 src/dev/zoom_out_camera.gd overview_zoom
@@ -253,3 +243,7 @@ src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the foc
 src/visuals/atlas_library.gd illustrated_path_for  # the bake calls it: tools/bake_atlases.gd names each member's illustrated PNG with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd and tests/test_atlas_events.gd check it one-to-one over the membership)
 src/visuals/atlas_library.gd moment_for_a_load  # what a page read from disk right now would be called; its OUTSIDE state is the one in which acquire() raises an engine error, which the test gate is red for, so the log's page lines cannot show it without failing the run, and only asking without loading states the rule (tests/test_atlas_loading.gd asks it for the three states)
 src/visuals/atlas_library.gd region_name_for  # the bake calls it: tools/bake_atlases.gd names each region with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd derives the same names from the membership file)
+src/dev/scene_recipe_runtime.gd charging_refusal  # why a row may not start charging; the reason is reached outward only as an error of install(), and install() reaches the check after the row has been placed at a legal site (ordinary day, ground, route and spacing), so a refusal per row (the cold roadblock, the fire truck) needs a legal siting per row in a city; tests/test_scene_recipe_runtime.gd asks the decision per catalogue row (open to overturn: a siting per row would move it)
+src/dev/scene_recipe_runtime.gd hold_refusal  # why a row may not be held after it leaves; reached outward only as an error of install(), after the row has been placed at a legal site, so a refusal per row (fire truck, delivery van, roadblock, a flock) needs a legal siting per row; tests/test_scene_recipe_runtime.gd asks the decision per catalogue row (open to overturn)
+src/dev/scene_recipe_runtime.gd hold_refusal_message  # the sentence install() reports for a refused hold, which names the event and the row; reached outward only through the same siting as hold_refusal (open to overturn)
+src/dev/scene_recipe_runtime.gd relentless_refusal  # why a row may not be kept coming; reached outward only as an error of install(), after the row has been placed at a legal site, so a refusal for a row that does not pursue needs a legal siting for it (open to overturn)

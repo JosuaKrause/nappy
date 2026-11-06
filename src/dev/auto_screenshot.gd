@@ -452,7 +452,7 @@ func _process(delta: float) -> void:
 ##
 ## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.**
 ## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
-## device id — see `RigLock.is_the_rigs_own_press()` for why a tag on the event and not its class.
+## device id — see `RigLock._input()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent
