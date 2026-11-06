@@ -22,6 +22,10 @@ thirteen. The crowd closure windows, each still stepped at 1/60 s:
 | plain edge, four sides | 20 s | 10 s | the check is an absence; a broken edge showed 200 to 700 frames out of bounds |
 | entry roll in its own room | 60 s | 30 s | 247 landed walkers and 61 samples against the 20 asked, with the spread already 39 px |
 
+The "another masked man" trim and the plain-edge, four-sides window go beyond the pick the player
+accepted; the builder made them as the same kind of trim, and the player accepted them too ("it's
+fine", inbox #1145).
+
 **Measured** on a loaded machine, so only the ratios mean anything: the six suites together took
 1639 s before and 729 s after; per suite, city decay 426 to 140 s, closures a 424 to 187 s, b 329 to
 107 s, c 215 to 135 s, the masked man 100 to 74 s and its badge test 120 to 73 s. The checks went from
