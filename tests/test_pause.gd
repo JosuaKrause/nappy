@@ -1040,7 +1040,10 @@ func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.TAP)
-	controls.set_direction(Vector2(1500.0, 300.0), false) # due east of her
+	# A click due east of her, a whole press and lift: the heading it locks in outlasts the finger.
+	var east: Vector2 = controls.get_viewport().get_canvas_transform() * Vector2(1500.0, 300.0)
+	UI.push(controls, UI.mouse_at(east, true))
+	UI.push(controls, UI.mouse_at(east, false))
 	t.check(Input.is_action_pressed("move_right"), "walking east before the pause")
 
 	var pause := _pause(t, true)

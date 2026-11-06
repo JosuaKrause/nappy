@@ -288,18 +288,6 @@ src/ui/screen_orientation.gd rotation_transform
 src/ui/title_screen.gd hard_mode_contains_design_point
 src/ui/title_screen.gd hard_mode_shown
 src/ui/title_screen.gd hard_mode_target
-src/ui/touch_controls.gd boundary_x
-src/ui/touch_controls.gd covered_left
-src/ui/touch_controls.gd covered_right
-src/ui/touch_controls.gd covered_screen
-src/ui/touch_controls.gd current_heading
-src/ui/touch_controls.gd heading_to
-src/ui/touch_controls.gd in_dead_zone
-src/ui/touch_controls.gd is_in_stop_band
-src/ui/touch_controls.gd is_on_run_side
-src/ui/touch_controls.gd run_button_center
-src/ui/touch_controls.gd run_focus_for
-src/ui/touch_controls.gd set_direction
 src/visuals/atlas_library.gd aspect_ceiling
 src/visuals/atlas_library.gd moment_for_a_load
 src/visuals/ground_layers.gd compose_image
@@ -338,3 +326,5 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)
+src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the focus opposite the steering one in the joystick scheme, none in the tap scheme; the disc is drawn and nothing else reads its place, and the booted-main suites (tests/test_main.gd, tests/test_run_checkpoints.gd, tests/test_visible_view.gd) ask it while the title or a brief holds the tree paused, when a press reaches nothing; which half holds Run is confirmed by real presses in tests/test_touch.gd

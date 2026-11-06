@@ -100,11 +100,11 @@ static func _badge_sees(t, edge: DangerEdge, source: _Source, row: EventDef, at:
 ## middle — the middle and the bottom middle seen in both schemes, the corners only in the tap one.
 func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
-	var joystick := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen())
+	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var view := tap.view
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
-	var in_left := view.position + TouchControls.covered_left().get_center() * scale
-	var in_right := view.position + TouchControls.covered_right().get_center() * scale
+	var in_left := view.position + TouchCover.joystick().left.get_center() * scale
+	var in_right := view.position + TouchCover.joystick().right.get_center() * scale
 	for point: Vector2 in [in_left, in_right]:
 		t.check(tap.sees(point) and not joystick.sees(point),
 				"%v, under a corner, is in sight in the tap scheme and not in the joystick one" % point)
@@ -119,13 +119,13 @@ func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick
 ## `margin` world px count as in sight past the view's edge and into a covered corner, the badge's
 ## hysteresis; with none, the edge is the edge.
 func _test_the_margin_counts_past_the_edge_and_into_a_corner(t) -> void:
-	var joystick := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen())
+	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var past := Vector2(0.0, -Tuning.VIEW_HALF_EXTENT.y - 10.0)
 	t.check(not joystick.sees(past) and joystick.sees(past, 20.0),
 			"10px past the top edge is out of sight, and in sight with a 20px margin")
 	var scale := joystick.view.size / ScreenOrientation.DESIGN_SIZE
-	var corner_top := joystick.view.position.y + TouchControls.covered_left().position.y * scale.y
-	var corner_x := joystick.view.position.x + TouchControls.covered_left().get_center().x * scale.x
+	var corner_top := joystick.view.position.y + TouchCover.joystick().left.position.y * scale.y
+	var corner_x := joystick.view.position.x + TouchCover.joystick().left.get_center().x * scale.x
 	var just_in := Vector2(corner_x, corner_top + 10.0)
 	t.check(not joystick.sees(just_in) and joystick.sees(just_in, 20.0),
 			"10px into a covered corner is out of sight, and in sight with a 20px margin")
@@ -157,7 +157,7 @@ func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t) -> void:
 ## view's own: the corner is out of sight, as the area says.
 func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
-	var joystick := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen())
+	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var box := Rect2(-6.0, -12.0, 12.0, 12.0)
 	var way := Vector2(-1.0, 1.0).normalized()
 	var with_corner := joystick.clear_of_sight(Vector2.ZERO, way, box)
@@ -179,7 +179,7 @@ func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
 func _test_just_out_of_sight_is_never_nearer_than_its_floor(t) -> void:
 	var floor_px := Offscreen.min_boundary()
 	for joystick: bool in [false, true]:
-		var view := VisibleView.around(Vector2.ZERO, TouchControls.covered_screen() if joystick else null)
+		var view := VisibleView.around(Vector2.ZERO, TouchCover.joystick() if joystick else null)
 		var nearest := INF
 		for step in 72:
 			var direction := Vector2.RIGHT.rotated(TAU * step / 72.0)
@@ -234,9 +234,9 @@ func _test_a_rotated_window_shows_the_same_world_under_the_same_corners(t) -> vo
 	var turned := Transform2D(-camera.rotation, zoom, 0.0, presented * 0.5) \
 			* Transform2D(0.0, -centre)
 	camera.free()
-	var joystick := VisibleView.around(centre, TouchControls.covered_screen())
-	var left := TouchControls.covered_left()
-	var right := TouchControls.covered_right()
+	var joystick := VisibleView.around(centre, TouchCover.joystick())
+	var left := TouchCover.joystick().left
+	var right := TouchCover.joystick().right
 	var design_box := Rect2(Vector2.ZERO, ScreenOrientation.DESIGN_SIZE)
 	var agreed := 0
 	var points := 0
@@ -274,7 +274,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var her := Vector2(2000.0, 2000.0)
-	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchCover.joystick().left.get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var start := her + corner * 0.5
 	for joystick: bool in [true, false]:
 		var source := _Source.new()
@@ -286,7 +286,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
 		bike.came_under_a_warning = true
 		source.live.append(bike)
-		source.view.look(VisibleView.around(her, null).view, TouchControls.covered_screen() if joystick else null)
+		source.view.look(VisibleView.around(her, null).view, TouchCover.joystick() if joystick else null)
 		var edge := DangerEdge.new()
 		edge.atlas = atlas
 		edge.setup(source, player)
