@@ -4,6 +4,8 @@ extends RefCounted
 
 const SEED := 4242
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## What a city's state has recorded, read off the snapshot the save writes.
+const CityStateReads := preload("res://tests/city_state_reads.gd")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const Boot := preload("res://tests/booted_main.gd")
 ## The save the boot is handed, so nothing here reaches `user://save.json`.
@@ -801,19 +803,19 @@ func _test_a_lost_day_gives_back_what_it_burned(t) -> void:
 	run.start_run(SEED)
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	run.calendar.begin_day()
-	var arc_at_dawn := run.attempt_spend.city_state.changed_on(block)
+	var arc_at_dawn := CityStateReads.changed_on(run.attempt_spend.city_state, block)
 	run.attempt_spend.consumed_one_shots.append("burning_building")
 	run.add_scar("burnt_shell", Vector2(1000.0, 1000.0))
 	run.attempt_spend.city_state.apply_cause(_burnable_plans(block), block, GameEnums.BlockCause.FIRE,
 			run.header.day)
-	t.check(run.attempt_spend.city_state.changed_on(block) == run.header.day,
+	t.check(CityStateReads.changed_on(run.attempt_spend.city_state, block) == run.header.day,
 			"the rig actually burned a block down on the day it is about to lose")
 
 	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(not "burning_building" in run.attempt_spend.consumed_one_shots,
 			"a lost day 3 owes the fire again, whether or not she saw it burn")
 	t.check(run.attempt_spend.scars.is_empty(), "and leaves no shell standing where it burned")
-	t.check(run.attempt_spend.city_state.changed_on(block) == arc_at_dawn,
+	t.check(CityStateReads.changed_on(run.attempt_spend.city_state, block) == arc_at_dawn,
 			"and hands the block back at the step it was on that morning")
 
 	# The retry wins with a fire of its own, somewhere else. That one is the run's.

@@ -13,7 +13,6 @@
 # deleted.
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
-src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/event_instance.gd charger_name
 src/events/event_manager.gd walks_under_a_boom

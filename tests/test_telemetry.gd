@@ -16,6 +16,8 @@ extends RefCounted
 ## fourteen thousand checks below it is running a file write it did not ask for.
 
 const BuildingEvents := preload("res://tests/building_events.gd")
+## What a city's state has recorded, read off the snapshot the save writes.
+const CityStateReads := preload("res://tests/city_state_reads.gd")
 ## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
 const RUN_SEED := 2
 
@@ -1626,5 +1628,5 @@ func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 	blocks.sort()
 	for block: Vector2i in blocks:
 		parts.append("%s=%d:%d" % [RunTrace.tile(block),
-				state.purpose_of(map.block_plans, block), state.changed_on(block)])
+				state.purpose_of(map.block_plans, block), CityStateReads.changed_on(state, block)])
 	return "|".join(parts)
