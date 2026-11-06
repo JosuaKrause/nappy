@@ -10,7 +10,7 @@ extends RefCounted
 ## of south then five of east, read left to right.)*
 ##
 ## *(`docs/TODO.md`, M87, "No rig can drive a heading that is not an axis": a heading is now an
-## arbitrary unit vector, `TouchControls.heading_to()`'s own answer, and `1s5e`'s letters can only
+## arbitrary unit vector, as a touch's heading always is, and `1s5e`'s letters can only
 ## ever name four of them. `3@45@` presses `move_left`/`move_right` and `move_up`/`move_down`
 ## through `TouchControls.set_axis()` at the bearing's own fractional strength — the same call
 ## the real touch scheme presses through — so the vector stays unit length and the rig still

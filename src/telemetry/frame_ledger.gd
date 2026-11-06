@@ -97,15 +97,15 @@ var slow_after_usec: int
 ## Frames kept, at most `capacity`.
 var count := 0
 ## Frames kept and then overwritten by newer ones.
-var overwritten := 0
+var _overwritten := 0
 ## Slow frames among every frame ever kept, overwritten ones included.
-var slow_frames := 0
+var _slow_frames := 0
 ## Whether the open frame is to be kept when it closes. `FrameRecorder` sets it each frame, so a
 ## paused game, the title and the summary are timed (the phases stay in step) but not kept.
 var keep := false
-## The last kept slow frame's row, meaningful once `slow_frames` is above zero. Copied into
+## The last kept slow frame's row, meaningful once `_slow_frames` is above zero. Copied into
 ## place rather than sliced, so a slow frame allocates nothing either.
-var last_slow := PackedInt64Array()
+var _last_slow := PackedInt64Array()
 
 var _rows := PackedInt64Array()
 var _next := 0
@@ -128,7 +128,7 @@ func _init(rows: int = CAPACITY, budget_usec: int = 16667) -> void:
 	_rows.resize(capacity * WIDTH)
 	_spent.resize(FrameRecord.BUCKET_NAMES.size())
 	_counters.resize(COUNTER_NAMES.size())
-	last_slow.resize(WIDTH)
+	_last_slow.resize(WIDTH)
 
 static func columns() -> Array[String]:
 	var names: Array[String] = ["start_usec", "frame_usec", "slow"]
@@ -233,12 +233,12 @@ func _keep_frame(length: int) -> void:
 	for i in _counters.size():
 		_rows[offset + FIRST_COUNTER + i] = _counters[i]
 	if slow:
-		slow_frames += 1
+		_slow_frames += 1
 		for i in WIDTH:
-			last_slow[i] = _rows[offset + i]
+			_last_slow[i] = _rows[offset + i]
 	_next = (_next + 1) % capacity
 	if count == capacity:
-		overwritten += 1
+		_overwritten += 1
 	else:
 		count += 1
 
@@ -255,7 +255,7 @@ func rows() -> Array[PackedInt64Array]:
 
 ## A row's `n` largest costs, largest first, as `[bucket index, microseconds]` pairs. `wait` is
 ## not a cost and is never among them.
-static func top_costs(row: PackedInt64Array, n: int = 3) -> Array:
+static func _top_costs(row: PackedInt64Array, n: int = 3) -> Array:
 	var costs: Array = []
 	for i in FrameRecord.BUCKET_NAMES.size():
 		if i != FrameRecord.WAIT:
@@ -280,28 +280,28 @@ static func scenery_ran(row: PackedInt64Array) -> bool:
 func slow_cause(row: PackedInt64Array) -> String:
 	if work_usec(row) < display_budget_usec:
 		return OUTSIDE_CALLBACKS
-	return FrameRecord.BUCKET_NAMES[top_costs(row, 1)[0][0]]
+	return FrameRecord.BUCKET_NAMES[_top_costs(row, 1)[0][0]]
 
 ## The readout's line: the last slow frame's length and what its callbacks took, as
 ## `frame/work`, then its three largest costs in ms under short names — or two, when `fits` (a width test the caller supplies) says
 ## three do not fit. Built once per slow frame rather than once per frame the readout asks.
 func readout_line(fits: Callable = Callable()) -> String:
-	if slow_frames == 0:
+	if _slow_frames == 0:
 		return "slow  none yet"
-	if _readout_for != slow_frames:
-		var head := "slow %.1f/%.1f ms" % [last_slow[FRAME] / 1000.0,
-			work_usec(last_slow) / 1000.0]
-		if slow_cause(last_slow) == OUTSIDE_CALLBACKS:
+	if _readout_for != _slow_frames:
+		var head := "slow %.1f/%.1f ms" % [_last_slow[FRAME] / 1000.0,
+			work_usec(_last_slow) / 1000.0]
+		if slow_cause(_last_slow) == OUTSIDE_CALLBACKS:
 			_readout = head + "  outside callbacks"
 		else:
 			for n in [3, 2, 1]:
 				var parts: Array[String] = []
-				for cost: Array in top_costs(last_slow, n):
+				for cost: Array in _top_costs(_last_slow, n):
 					parts.append("%s %.1f" % [SHORT_NAMES[cost[0]], cost[1] / 1000.0])
 				_readout = head + "  " + "  ".join(parts)
 				if not fits.is_valid() or fits.call(_readout):
 					break
-		_readout_for = slow_frames
+		_readout_for = _slow_frames
 	return _readout
 
 ## The record as one dictionary for a file: the rows, their column names, and a summary that
@@ -356,8 +356,8 @@ func report() -> Dictionary:
 		"slow_frames_without_scenery_jobs": without_count,
 		"mean_ms_per_slow_frame_without_scenery_jobs": _means(without_spent, without_count),
 		"largest_cost_in_slow_frames_without_scenery_jobs": largest_without}
-	return {"capacity": capacity, "retained": kept.size(), "overwritten": overwritten,
-		"slow_frames_ever": slow_frames, "columns": columns(), "rows": json_rows,
+	return {"capacity": capacity, "retained": kept.size(), "overwritten": _overwritten,
+		"slow_frames_ever": _slow_frames, "columns": columns(), "rows": json_rows,
 		"summary": summary}
 
 static func _means(spent: PackedInt64Array, frames: int) -> Dictionary:

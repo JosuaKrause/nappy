@@ -319,10 +319,10 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 		# Camera look-ahead puts this nearby mark beneath the narrower focal-disc corner.
 		# Keep her within the 150px notice distance independently of the camera centre.
 		var her := mark_at + Vector2(135.0, -50.0)
-		var view := VisibleView.around(her + Vector2(45.0, 0.0), TouchControls.covered_screen() if joystick else null)
+		var view := VisibleView.around(her + Vector2(45.0, 0.0), TouchCover.joystick() if joystick else null)
 		t.check(view.sees(mark_at) != joystick,
 				"the actual camera view covers the mark only in joystick mode")
-		_city.events.visible_view().look(view.view, TouchControls.covered_screen() if joystick else null)
+		_city.events.visible_view().look(view.view, TouchCover.joystick() if joystick else null)
 		director.set_sight(_city.events.sees)
 		var player := _rig_player(t, her)
 		director.use_player(player)
@@ -360,7 +360,7 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var director := _on_day_six(t)
 	var events := _city.events
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
-	var corner := TouchControls.covered_left()
+	var corner := TouchCover.joystick().left
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var refused := 0
@@ -374,10 +374,10 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 			var her := view_at + Tuning.VIEW_HALF_EXTENT
 			# With the view nowhere near, the only mouth is the answer.
 			events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
-					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
+					Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 			if director.nearest_alley_among(only, her).distance_to(mark) > 0.5:
 				continue
-			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
+			events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 			# Only a mouth the visible area alone would not refuse (its picture and its
 			# guard's body, each laid at its centre and four corners, all unseen under the
 			# covered corner or out of the view) is a case the whole view has to refuse.
@@ -409,7 +409,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t) -> void:
 	_build_city_in_a_new_run(t)
 	var events := _city.events
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
-	var corner := TouchControls.covered_left()
+	var corner := TouchCover.joystick().left
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var late := _director_on_the_neighbor(t)
@@ -424,7 +424,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t) -> void:
 				"reaching the door first, they are to be taken")
 		var at := walker.global_position
 		var view_at := at - corner_at - corner_size * 0.5
-		events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
+		events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 		t.check(events.on_screen(at) and not events.sees(at),
 				"the neighbor stands in the view, under the covered corner")
 		late.set_sight(events.sees)
@@ -433,7 +433,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t) -> void:
 				and not walker.is_finished,
 				"under the covered corner, the neighbor is not taken where they are drawn")
 		events.visible_view().look(Rect2(at + Vector2(Tuning.VIEW_HALF_EXTENT.x * 4.0, 0.0),
-				Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen())
+				Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 		late.tick(STEP)
 		t.check(_said(lines, "the neighbor is taken with the raid") and walker.is_finished,
 				"once the camera is off them, they are taken")
@@ -448,7 +448,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t) -> void:
 		var scheme := "joystick" if joystick else "tap"
 		_build_city_in_a_new_run(t)
 		var events := _city.events
-		var covered: Variant = TouchControls.covered_screen() if joystick else null
+		var covered: Variant = TouchCover.joystick() if joystick else null
 		var late := _director_on_the_neighbor(t)
 		var lines: Array[String] = []
 		late.trace = RunTrace.recording(lines)
@@ -491,7 +491,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 		var scheme := "joystick" if joystick else "tap"
 		_build_city_in_a_new_run(t)
 		var events := _city.events
-		var covered: Variant = TouchControls.covered_screen() if joystick else null
+		var covered: Variant = TouchCover.joystick() if joystick else null
 		var day := ResistanceHappenings.NEIGHBOR_DAY
 		var state := CityState.new()
 		state.begin_day(_city.map.block_plans, day)

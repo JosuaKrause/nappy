@@ -489,7 +489,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 	var at := _map.tile_to_world(tile)
 	var crew := _city.events.spawn_extra(EventCatalogue.by_id("poster_crew"), at)
 	# She stands where the camera's view puts the crew only under the left corner the controls cover.
-	var corner := TouchControls.covered_left().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchCover.joystick().left.get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	_her.teleport_to(at - corner * 0.5)
 	await _wait(t, 0.5)
 	for joystick: bool in [true, false]:
@@ -497,7 +497,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 		_walls.start_day(DAY, null)
 		_run.posters.reset()
 		_run.posters.pasted_through = DAY
-		_city.events.use_controls(TouchControls.covered_screen() if joystick else null)
+		_city.events.use_controls(TouchCover.joystick() if joystick else null)
 		await _wait(t, 0.2)
 		t.check(_city.events.sees(at) != joystick,
 				"%s scheme: the crew is %s from where she stands" % ["joystick" if joystick else "tap",

@@ -418,7 +418,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 		player.add_to_group("player")
 		_city.events.use_player(player)
 		var view := _city.events.visible_view()
-		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
+		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
 		director.set_sight(_city.events.sees)
 		# The note handed over where the contact stands: its trap is sent at her from there.
 		director.contact().complete_now()
@@ -429,7 +429,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 			var initial := warning.place
 			var bearing := (initial - her).normalized()
 			view.look(Rect2(her + bearing * 30.0 - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0), TouchControls.covered_screen() if joystick else null)
+					Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
 			_city.events.warnings.run(warning.left * 0.5, her)
 			t.check(warning.place == initial and _live("robber_giving_chase").is_empty(),
 					"camera movement neither moves the badge nor creates its trap early")

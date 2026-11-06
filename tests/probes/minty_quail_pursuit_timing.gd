@@ -227,16 +227,16 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 		cordon.tick(STEP, swing)
 		run.observe(city, swing, tick)
 		var line := "%d" % tick
-		for officer in cordon.officers:
+		for officer in cordon._officers:
 			line += "|%s,%s,%d" % [var_to_str(officer.at.x), var_to_str(officer.at.y),
 					officer.phase]
 		chain.update(line.to_utf8_buffer())
 		if cordon.is_closed() and (busker == null or not is_instance_valid(busker)
 				or busker.is_finished):
 			break
-	_print("%s cordon busker %s closed %s officers %d relaid %d straight %d chain %s %s" % [label,
-			"placed" if busker else "none", var_to_str(cordon.closed_at), cordon.officers.size(),
-			cordon.relaid, cordon.walked_straight, chain.finish().hex_encode(), run.report()])
+	_print("%s cordon busker %s closed %s officers %d chain %s %s" % [label,
+			"placed" if busker else "none", var_to_str(cordon._closed_at), cordon._officers.size(),
+			chain.finish().hex_encode(), run.report()])
 	cordon.clear()
 	_take_out(city, before)
 
