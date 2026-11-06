@@ -189,9 +189,6 @@ src/interior/interior_scene.gd flash_windows
 src/interior/interior_scene.gd lighting_at
 src/interior/interior_scene.gd teleport_to_door
 src/interior/interior_scene.gd windows_are_flashing
-src/main.gd day_spec
-src/main.gd escape_part_for
-src/main.gd escape_section_spec
 src/player/baby.gd overflow_mass
 src/player/stroller.gd baby_cue_aside
 src/player/stroller.gd baby_cue_lift

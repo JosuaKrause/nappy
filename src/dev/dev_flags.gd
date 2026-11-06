@@ -189,7 +189,7 @@ func live_debug_requested() -> bool:
 static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 	return is_debug or readout
 
-## The query parameter names `live_debug_requested()`'s bundle answers to. `GameSave.uses_save()`
+## The query parameter names `live_debug_requested()`'s bundle answers to. `GameSave._uses_save()`
 ## reads `web_debug_flag_used()` against this list, so a release page's visitor who typed one of
 ## these never touches the save a real player's page shares, as against `?debug=1` alone, which
 ## opens the bundle without using any of it.
@@ -477,7 +477,7 @@ static func _escape_from_query(query: String) -> bool:
 ## `floor:N` or `city` — so a rig or a person can start anywhere in the escape: the six part words
 ## choose where in the building she starts, and `city` boots the escape's second section with no
 ## building built. "" for a bare flag (her own door on the third floor) or none; mapping the word
-## onto an `InteriorMap.PARTS` name is `main.escape_part_for()`'s. Read only right after
+## onto an `InteriorMap.PARTS` name is `main._escape_part_for()`'s. Read only right after
 ## `--start-escape`, and never a word that starts with `--`, so the next flag is not swallowed.
 func start_escape_at() -> String:
 	if not _recipe.is_empty():
@@ -654,7 +654,7 @@ static func _no_focus_pause_from_query(query: String) -> bool:
 ## `--no-save` (or `?nosave=1`, a debug web build only): the flag whose whole job is to be *a* flag
 ## when no other is wanted, so a plain playtest session run from a shared checkout never touches
 ## `user://`'s real save. Every other dev flag already keeps a run off the save by being one — see
-## `GameSave.uses_save()`.
+## `GameSave._uses_save()`.
 func no_save() -> bool:
 	if not enabled():
 		return false

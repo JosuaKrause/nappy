@@ -297,7 +297,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
 	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
 	_clock = clock
-	days.start_day(MAIN_SCRIPT.day_spec(config, day))
+	days.start_day(DaySpec.for_day(day, config.day_length_for(day)))
 	return [player, clock]
 
 func _end_the_day(nodes: Array[Node]) -> void:
