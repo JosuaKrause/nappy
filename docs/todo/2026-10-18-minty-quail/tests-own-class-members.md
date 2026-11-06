@@ -35,6 +35,6 @@ The CI check of test-only members lists them one by one; its count is the scope,
 "about 250" was an estimate.
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
-several small owners together), each also removing `tests-hold-nothing.md`'s findings in the files
-it rewrites. A builder deletes the owner's lines from the CI check's list as its members turn
+several small owners together), each also removing a check that holds nothing once its member is
+gone (curly-rabbit #1097). A builder deletes the owner's lines from the CI check's list as its members turn
 internal.
