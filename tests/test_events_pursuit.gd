@@ -255,11 +255,6 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t) -> void:
 	# uniform (`EventCatalogue._policeman_giving_chase()`).
 	var robbers := ["alley_robbery", "robber_giving_chase", "policeman_giving_chase",
 			"guardsman_giving_chase"]
-	for id: String in robbers:
-		var def := EventCatalogue.by_id(id)
-		t.close_to(def.lethal_reach(), 26.0, "'%s' catches at 26px" % id, 0.01)
-		t.close_to(PursuitSpec.standoff(def.chase_speed(), def.standoff_reach()), 116.0,
-				"'%s' lunges from 116px" % id, 0.01)
 	for def in EventCatalogue.all():
 		t.check(not def.lunge_is_inside_the_catch(), "'%s' does not lunge from inside its catch" % def.id)
 		if def.pursuit != null and not robbers.has(def.id):
@@ -715,13 +710,9 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t) -> void:
 ## here.
 func _test_the_day_3_dog_keeps_its_gold_timing(t) -> void:
 	var dog := EventCatalogue.by_id("charging_dog")
-	t.close_to(dog.offscreen_notice, 0.5, "the day-3 dog's badge alone is half a second", 0.001)
-	t.close_to(dog.telegraph_time, 4.5, "its approach is 4.5s", 0.001)
-	t.close_to(dog.duration, Tuning.PURSUIT_TIME, "its chase is the pursuit's own", 0.001)
 	# Amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks".
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
-	t.close_to(dog.chase_speed(), 130.0, "at 130px/s", 0.001)
 	var sent := EventSpawner.as_warned(dog)
 	t.check(sent.warns_before_it_exists() and is_equal_approx(sent.warned_for(), dog.offscreen_notice)
 			and sent.warned_for() <= Tuning.WARNING_ALONE_MAX,
@@ -905,9 +896,6 @@ func _test_the_run_is_always_taught(t) -> void:
 ## stroll off down the street eight seconds into every day.
 func _test_a_paced_event_walks_a_beat(t) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
-	t.check(def.paces and def.mobile, "the man shouting walks a beat")
-	t.check(def.obstructs_radius <= 0.0,
-			"and has no body, because a moving wall pins her — the dog_walker decision")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(256.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 

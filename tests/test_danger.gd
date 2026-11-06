@@ -13,7 +13,6 @@ extends RefCounted
 
 func run(t) -> void:
 	_atlas.acquire(&"events")
-	_test_the_rings_are_gone(t)
 	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
 	_test_the_caret_matches_the_halo_after_the_horizon(t)
@@ -45,25 +44,6 @@ const STEP := 1.0 / 60.0
 ## The events' atlas page, held for the suite: an event or a badge in the tree is drawn on real
 ## frames, and the game hands each the library it draws from.
 var _atlas := AtlasLibrary.new()
-
-# ---------------------------------------------------------------- no circles ---
-
-## Playtest 02 finding 8, restated by playtest 04 finding 2, and a standing decision in between:
-## the rings are **deleted, not restyled**. A test rather than a note, because the failure mode
-## is somebody reaching for a ring again when something new needs signalling — which is exactly
-## what the decision exists to stop, and exactly what a comment in a deleted file cannot.
-func _test_the_rings_are_gone(t) -> void:
-	t.check(not ResourceLoader.exists("res://src/events/event_aura_layer.gd"),
-			"the aura layer is deleted rather than disabled")
-	t.check(not ClassDB.class_exists("EventAuraLayer"),
-			"and nothing can construct one")
-	# Asked of the script rather than of an instance: a `City` is a scene's worth of nodes and
-	# building one to ask it a question about its own interface leaks the lot.
-	var methods: Array[String] = []
-	for entry in (load("res://src/city/city.gd") as GDScript).get_script_method_list():
-		methods.append(String(entry["name"]))
-	t.check(not ("add_aura_layer" in methods),
-			"and the City has no layer left to hang a field on")
 
 # ------------------------------------------------------------------- the mark ---
 

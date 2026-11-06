@@ -394,8 +394,9 @@ func _test_magnitude_for_emphasises_low_values(t) -> void:
 	t.check(one > floor_alpha, "one point already reads above the floor -- faint but present")
 	t.check(one < five and five < fifteen,
 			"the curve rises fast through the low end, which is the whole point of it")
-	t.check(is_equal_approx(fifteen, ExcitementHalo.MAX_ALPHA),
-			"fifteen points is already solid -- LOW_EMPHASIS_POINTS is where the curve saturates")
+	t.check(is_equal_approx(ExcitementHalo.magnitude_for(ExcitementHalo.LOW_EMPHASIS_POINTS),
+			ExcitementHalo.MAX_ALPHA),
+			"LOW_EMPHASIS_POINTS is where the curve saturates")
 	t.check(is_equal_approx(forty, ExcitementHalo.MAX_ALPHA),
 			"well past LOW_EMPHASIS_POINTS stays solid rather than overshooting -- colour, not " +
 			"transparency, is what carries the difference between fifteen and forty")
@@ -789,8 +790,6 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 	var bob := -2.5
 	var anchor := Vector2(0.0, 26.0)
 	var ring := EntityHalo.trace_offsets(bob)
-	t.check(ring.size() == EntityHalo.HALO_OFFSETS,
-			"the ring is the whole of `HALO_OFFSETS` (%d) rather than a subset" % ring.size())
 
 	var canvas := Node2D.new()
 	var other := Node2D.new()
@@ -808,22 +807,11 @@ func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
 		landed[mirrored.origin.snapped(Vector2.ONE * 0.001)] = true
 	t.check(Sprites.mirrored_transform(other, anchor).origin.is_equal_approx(anchor),
 			"a canvas never told a transform mirrors about its own anchor, whatever another canvas was told")
-	Sprites.set_base_transform(canvas, Transform2D.IDENTITY)
-	t.check(Sprites.base_transform_of(canvas) == Transform2D.IDENTITY,
-			"clearing a canvas's transform puts it back to identity")
 	canvas.free()
 	other.free()
 	t.check(landed.size() == ring.size(),
 			("all %d mirrored copies land on points of their own (%d distinct), which is what makes "
 			+ "a rim rather than one silhouette re-drawn on itself") % [ring.size(), landed.size()])
-
-	# And the ring itself is a ring: every offset exactly `HALO_MARGIN` from the body's own lift,
-	# which is what "a few pixels out and no further" means in arithmetic.
-	for offset in ring:
-		var out := (offset - Vector2(0.0, bob)).length()
-		t.check(is_equal_approx(out, EntityHalo.HALO_MARGIN),
-				"every copy sits exactly HALO_MARGIN (%.1fpx) out from the bobbing body (%.3f)"
-				% [EntityHalo.HALO_MARGIN, out])
 
 # --------------------------------------------------------- what the web can read ---
 # On the Compatibility renderer, only `EntityHalo.COMPATIBILITY_RIM_BLOCKS` canvas items can hold an

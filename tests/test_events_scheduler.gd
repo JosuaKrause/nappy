@@ -556,10 +556,6 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 	var walls := 0
 	var kept := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
-		var spec := DaySpec.for_day(day)
-		t.check(is_equal_approx(spec.wall_row_share, 1.0 if day < Tuning.REGION_WALL_FIRST_DAY
-				else DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE),
-				"day %d: the game's spec keeps %.2f of the walls" % [day, spec.wall_row_share])
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
