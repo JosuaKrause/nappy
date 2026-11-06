@@ -14,7 +14,7 @@ const _SCRATCH_SAVE := "user://test_day_loop_scratch.json"
 var _map: CityMap
 var _player: Node2D
 var _day: DayController
-## The run the rig's day belongs to, made fresh for each build and freed with its teardown.
+## The run the rig's day belongs to, made fresh for each build.
 var _run: RunState
 var _results: Array[GameEnums.DayResult] = []
 
@@ -48,8 +48,8 @@ func run(t) -> void:
 
 # --------------------------------------------------------------------- rig ---
 
-## A run of its own, started on `SEED`: what a test hands the part it tests, and frees itself
-## (`RunState` is a node nothing owns). No test here shares a run or puts one back.
+## A run of its own, started on `SEED`: what a test hands the part it tests. No test here shares
+## a run or puts one back.
 func _fresh_run() -> RunState:
 	var run := RunState.new()
 	run.start_run(SEED)
@@ -76,7 +76,6 @@ func _teardown(keep_run := false) -> void:
 	_day.free()
 	_player.free()
 	if not keep_run:
-		_run.free()
 		_run = null
 
 func _tick(seconds: float) -> void:
@@ -304,8 +303,6 @@ func _test_nerves_and_endings(t) -> void:
 	run.complete_resistance_step(1)
 	t.check(run.resistance.progress == 1, "a resistance step counts once")
 
-	run.free()
-
 ## Player, 2026-09-27: *"one thing to do quickly: a won day recovers a nerve up to the max"* — "that
 ## way you can recover from a bad single day without being in a tight spot towards the end of the
 ## game". `run.calendar.regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
@@ -350,7 +347,6 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 	run.calendar.hard_mode = false
 	run.calendar.regain_a_nerve_for_a_won_day()
 	t.check(run.header.nerves == 4, "while a normal run's wrapper call still gives one")
-	run.free()
 
 ## The recording half of M24. The scheduler's half is tested in `test_events.gd`; this is the
 ## half that decides *what* it gets told, and it is easy to get subtly wrong in two ways —
@@ -424,7 +420,6 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 
 	booted.free_all()
 	home.free()
-	run.free()
 	# **Unpause, or this test silently disarms three of `tests/test_hud.gd`'s.** A summary coming up
 	# sets `get_tree().paused = true` (`DaySummary.show_summary()`, so the city keeps its state behind
 	# it) and `.free()` on the node does not put it back — the whole suite shares one tree, so the
@@ -463,7 +458,6 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 	# See the same restoration in `_test_day_finished_shows_the_summary_with_no_observer_in_the_
 	# tree`, above: a summary coming up pauses the tree and freeing the node does not undo that.
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## M154: the summary carries the day's own clock at the instant it ended, phrased per outcome —
 ## `docs/TODO.md`'s M154 item, quoting the player: *"fell asleep after xx:xx or something like
@@ -505,7 +499,6 @@ func _test_the_summary_shows_when_the_day_ended(t) -> void:
 
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## The day number the summary prints is the run's day — the day about to start — never the day
 ## that just ended. A win has already moved `run.header.day` on by the time the summary comes up
@@ -534,7 +527,6 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## Nerves are stars everywhere they show, never a digit — on a win as much as a loss, since the
 ## count carried into the coming day matters whichever way the last one went — and on the day
@@ -572,7 +564,6 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## **The escape's epilogue never carries the note line a brief before it showed** — the one line a
 ## resumed run's day brief adds (`DaySummary._note`), which every other screen hides on the way in
@@ -593,7 +584,6 @@ func _test_the_epilogue_carries_no_brief_note(t) -> void:
 	t.check(not note.visible, "and the epilogue after it does not carry it")
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## The day 7 brief breaks its line before "The same face is on most of them." — `Texts.DAY_BRIEF[7]` is
 ## plain prose with no break of its own; `SentenceLines.break_for_label()` (see its own suite,
@@ -615,7 +605,6 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## The `BAD` ending names the last day played, not the last day completed — a run that loses its
 ## last nerve on day 1 reads day 1, not 0. The neutral and good endings are reached by finishing
@@ -649,7 +638,6 @@ func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
 
 	summary.free()
 	t.get_tree().paused = saved_paused
-	run.free()
 
 ## The summary of the day `end` settled, as `main` raises it over the run as it stands.
 func _show_day(summary: CanvasLayer, run: RunState, end: DayEnd) -> void:
@@ -739,8 +727,6 @@ func _test_a_lost_day_gives_the_resistance_back(t) -> void:
 	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
 	t.check(run.resistance.completed_steps.has(2) and run.resistance.progress == 1,
 			"a won day's own work is committed and survives the next day's loss")
-
-	run.free()
 
 ## The half a test of the run alone cannot see: that the *director* re-offers what the restored
 ## state says is untouched, in the place the day first put it. Its placement is drawn from
@@ -834,8 +820,6 @@ func _test_a_lost_day_gives_back_what_it_burned(t) -> void:
 	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	t.check("burning_building" in run.attempt_spend.consumed_one_shots and run.attempt_spend.scars.size() == 1,
 			"and a later lost day gives back its own attempt only, never a won day's")
-
-	run.free()
 
 ## A block plan with a fire in its arc, so `CityState.apply_cause` has somewhere to advance to.
 ## Built here rather than taken from the map, because which blocks a generated city happens to give

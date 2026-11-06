@@ -334,6 +334,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 			"the held restart parks the one sitting in the home")
 	lines.append_array(log.lines)
 	_shut(t, first)
+	# The restart handed the sitting a fresh run, which the reloaded boot plays.
+	run = seat.sitting.run
 
 	# The restart closed the run log; the reloaded boot's lines go in a fresh one.
 	Telemetry.begin_memory_log()

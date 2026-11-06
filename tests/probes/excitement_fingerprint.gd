@@ -106,7 +106,6 @@ func _the_building(t, seed_value: int) -> int:
 	events.clear()
 	events.free()
 	scene.free()
-	own_run.free()
 	return printed
 
 ## One walk of `ticks` ticks in `world`, printing every source's line after every tick.

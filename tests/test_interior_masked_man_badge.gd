@@ -12,7 +12,6 @@ var _meeting := MaskedManMeeting.new(_rig)
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
-	_rig.free_all()
 
 ## **The same checks with the camera interpolated, as the game runs it, from many places in the
 ## physics tick.** The case starts after a pause of a different length each time (seeded, so the

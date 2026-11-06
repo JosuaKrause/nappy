@@ -1,5 +1,5 @@
 class_name RunState
-extends Node
+extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
 ##
 ## Determinism contract (docs/ARCHITECTURE.md): nothing gameplay-relevant may call the
@@ -13,13 +13,14 @@ extends Node
 ##
 ## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the
 ## scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a
-## held restart starts a fresh run in it (`start_run()`). `main`, the composition root, takes it
-## off the sitting once a boot and hands it, typed `RunState`, to `GameSave` and to every reader
-## it builds, so a test hands a reader whichever run it built; the resistance is handed it with
-## its city (`City.run`) or by `ResistanceDirector.setup()`.
+## held restart hands the sitting a fresh one, which the next boot starts (`start_run()`). `main`,
+## the composition root, takes it off the sitting once a boot and hands it, typed `RunState`, to
+## `GameSave` and to every reader it builds, so a test hands a reader whichever run it built; the
+## resistance is handed it with its city (`City.run`) or by `ResistanceDirector.setup()`.
 ##
-## **It is a `Node` so the sitting can hold it as a child and free it with itself**; nothing in the
-## game needs a node otherwise, and no autoload registers it.
+## **A plain `RefCounted`, not a node**: the sitting holds it by reference, and it goes when the
+## last holder lets it go, so no test frees one. It reaches nothing in the scene tree, and no
+## autoload registers it.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())
@@ -73,7 +74,7 @@ static func format_clock_seconds(seconds: float) -> String:
 	return "%d:%02d" % [total_seconds / 60, total_seconds % 60]
 
 ## Hands the run the trace its facts are written to, and the city's arcs with it. `main` hands the
-## run session's at every boot; the test runner hands a silent one back between suites.
+## run session's at every boot; a run nobody hands one, as a test's own run is, writes nowhere.
 func use_trace(sink: RunTrace) -> void:
 	calendar.use_trace(sink)
 	attempt_spend.city_state.trace = sink

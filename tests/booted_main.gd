@@ -24,10 +24,9 @@ extends RefCounted
 ## (`main.use_save()`), whatever configuration it boots under.
 ##
 ## **Freeing a boot gives the observers back what they held before it.** A booted `main` hands the
-## run it plays to the observers (`VisitCounter.configure()`), which keep it after `main` is gone;
-## a test that hands its boot a run of its own (`home_playing()`) frees that run afterwards, and an
-## observer left holding it would read a freed run at the next bus signal a later test sends with
-## no boot of its own. `free_all()` puts back what `hold_observers()` read before the boot, the way
+## run it plays to the observers (`VisitCounter.configure()`), which keep it after `main` is gone,
+## and an observer left holding it would count the next bus signal a later test sends with no boot
+## of its own against a run that test never played. `free_all()` puts back what `hold_observers()` read before the boot, the way
 ## the runner puts them back after a suite (`SharedState.put_back_observers()`); a suite that boots
 ## `main` its own way does the same with `hold_observers()` and `give_back_observers()`.
 
@@ -105,7 +104,7 @@ static func until_booted(t, main: Node) -> void:
 ## is the sitting the boot takes, so the game plays the run the test made and hands it down, rather
 ## than one of its own. A reload the boot asks for leaves that sitting where it is, and the boot
 ## standing for the reload takes it again, as a real one takes the sitting parked at the root. The
-## caller frees the home, and the run, which the sitting does not own (`Sitting.run`).
+## caller frees the home.
 static func home_playing(t, run: RunState) -> Node:
 	var home := Node.new()
 	t.add_child(home)

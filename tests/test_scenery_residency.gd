@@ -26,7 +26,7 @@ func run(t) -> void:
 func _view(at: Vector2) -> Rect2:
 	return Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2)
 
-## A city built over a run of its own (freed with the city) from `seed_value`, every building
+## A city built over a run of its own from `seed_value`, every building
 ## handed a recording roof drawer. Every test builds its own, so none reads what another left.
 func _city_for(t, seed_value: int) -> City:
 	var city: City = RunCity.with_own_run(CITY, seed_value)

@@ -55,7 +55,6 @@ func _repaint(map: CityMap, day: int, used: Array[Vector2i],
 	run.facts.fenced_park_act = fenced_act
 	run.facts.remember_fenced_park(map.fenced_park, map.fenced_park_act)
 	var remembered := [run.facts.fenced_park, run.facts.fenced_park_act]
-	run.free()
 	return remembered
 
 ## The calm areas today's repaint leaves calm with nothing handed over.
@@ -579,7 +578,6 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			% [city.map.seed_used, day, calm.size()])
 	if calm.is_empty():
 		city.free()
-		run.free()
 		return
 	var used: Array[Vector2i] = [calm[0]]
 	city.map.set_spent_calm(used)
@@ -591,7 +589,6 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			% [city.map.fenced_park])
 	if city.map.fenced_park.x < 0:
 		city.free()
-		run.free()
 		return
 	var park_pictures := 0
 	for marker in _closure_markers(city, []):
@@ -619,7 +616,6 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 	t.check(entrances > 0, "fenced %s has ways in to stand bodies across" % block)
 	var fenced: Array[RoadClosure] = city.closures().duplicate()
 	city.free()
-	run.free()
 	_test_the_fence_pieces_stand_in_draw_order(t, fenced)
 
 ## The fence's pictures, drawn for the closures a recipe hands the city (`recipe_closures`, which
@@ -677,4 +673,3 @@ func _test_the_fence_pieces_stand_in_draw_order(t, fenced: Array[RoadClosure]) -
 	t.check(short_end_checked, "the short archway's support order is exercised")
 	t.check(sign_centers.is_empty(), "every park fence run has exactly one centered mounted sign")
 	city.free()
-	run.free()

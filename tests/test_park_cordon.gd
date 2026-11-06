@@ -120,7 +120,6 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 func _end(fixture: Dictionary) -> void:
 	(fixture.director as ResistanceDirector).free()
 	_city.free()
-	_run.free()
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
