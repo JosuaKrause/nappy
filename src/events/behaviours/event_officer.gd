@@ -44,6 +44,8 @@ func stand_with_her() -> void:
 ## who would stop her waits outside a door's hold** (`EventInstance.she_is_held`): a stop is a cost
 ## on the meter, and inside a hold nothing but the door's toll reaches her, so he keeps after her
 ## and stops her once she is let out. *Chosen while building, open to overturn.*
+##
+## Overrides EventBehaviour.step.
 func step(_delta: float) -> void:
 	if has_stopped_her():
 		stand_with_her()
@@ -110,10 +112,13 @@ func walk_back(step: float) -> bool:
 	return false
 
 ## His trail and his stop (its start as seconds before the event's age), not his vehicle.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"trail": trail,
 			"stopped_ago": event.age - _stopped_her_at if _stopped_her_at != INF else INF}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	trail = state.get("trail", PackedVector2Array())
 	var ago := float(state.get("stopped_ago", INF))

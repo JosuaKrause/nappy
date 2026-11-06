@@ -452,6 +452,8 @@ func is_calm_zone(world_position: Vector2) -> bool:
 ## many blocks the lot has**, not of the tile. A single park block and one corner of a four-block
 ## zone are the same grass, so this is the one ground question that cannot be answered from the tile
 ## type alone, and that is the reason for the cache below.
+##
+## Overrides WorldContext.sleepiness_multiplier.
 func sleepiness_multiplier(world_position: Vector2) -> float:
 	if not map:
 		return 1.0
@@ -488,6 +490,8 @@ func _sleepiness_on(tile: Vector2i) -> float:
 ## on brick is standing on brick, and the tile she is on is the whole of what this question is
 ## about. A main road's *pavement* is main road, though — the thing that makes it bad ground is
 ## the road beside it, not the surface under her.
+##
+## Overrides WorldContext.decay_multiplier.
 func decay_multiplier(world_position: Vector2) -> float:
 	var ground := _ground_decay_multiplier(world_position)
 	if run.resistance.carrying_package:
@@ -517,6 +521,7 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 		return EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	return 1.0
 
+## Overrides WorldContext.is_alley.
 func is_alley(world_position: Vector2) -> bool:
 	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
 

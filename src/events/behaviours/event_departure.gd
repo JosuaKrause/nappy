@@ -251,6 +251,8 @@ func _walk_points(planned: bool, step: float) -> float:
 ## Its state once it has begun, and nothing before: **a departure that never began is never written
 ## over**, since `EventInstance.resume()` can begin one (a route cut since by something solid ends
 ## there) before `EventStreaming.stream_in()` restores what was saved.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	if not _begun:
 		return {}
@@ -258,6 +260,7 @@ func save() -> Dictionary:
 			"way_on": _way_on, "way_avoids": _way_avoids, "walks_a_way": _walks_a_way,
 			"way_speed": _way_speed}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	if state.is_empty():
 		return

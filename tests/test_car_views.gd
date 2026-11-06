@@ -266,6 +266,7 @@ class TracingAtlas extends AtlasLibrary:
 		halo = rim
 		halo.draw.connect(_on_halo_drawn)
 
+	## Overrides AtlasLibrary.region.
 	func region(name: StringName) -> AtlasTexture:
 		if halo != null and is_instance_valid(halo):
 			var base := Sprites.base_transform_of(halo)

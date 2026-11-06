@@ -122,6 +122,8 @@ func _lay_the_deck() -> void:
 
 ## The deck's own stretch for the residency test, in place of the 512px square every other
 ## structure uses: without it the deck would unload while its far end is still in view.
+##
+## Overrides ScenerySprite.scenery_bounds.
 func scenery_bounds() -> Rect2:
 	if kind != Kind.BRIDGE:
 		return super.scenery_bounds()

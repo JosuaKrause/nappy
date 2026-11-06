@@ -27,6 +27,8 @@ func stop() -> void:
 ## in**: a take cut short by the van disappearing mid-walk would read as a bug. **A hunting van has
 ## other business**: the instant it stops waiting it is letting its men out after her, so a take in
 ## progress is abandoned — no victim is drawn again and nothing is logged.
+##
+## Overrides EventBehaviour.step.
 func step(_delta: float) -> void:
 	var def: EventDef = event.def
 	if (def.pursuit != null or def.investigates()) and not event.is_waiting():
@@ -52,9 +54,12 @@ func _time_left() -> float:
 	return (event.notice_time() + event.def.duration) - event.chase_age()
 
 ## The take's start as seconds before the event's age (`INF` for none), and whether it was logged.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"taken_ago": event.age - _taken_at if _taken_at != INF else INF, "logged": _logged}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	var ago := float(state.get("taken_ago", INF))
 	_taken_at = event.age - ago if ago != INF else INF

@@ -175,10 +175,14 @@ func bird_outer() -> float:
 
 ## A tick of the flock while its event is neither leaving nor held: pecking on the ground through
 ## the wait and the telegraph, up and wheeling once it has gone up.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_fly(delta)
 
 ## A tick while its event is leaving: everybody the same way, climbing hard.
+##
+## Overrides EventBehaviour.step_leaving.
 func step_leaving(delta: float) -> void:
 	_fly(delta)
 
@@ -197,6 +201,8 @@ func velocities() -> Array[Vector2]:
 	return out
 
 ## Every bird's state, as plain values.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	var out: Array = []
 	for bird in birds:
@@ -206,6 +212,8 @@ func save() -> Dictionary:
 
 ## Puts back what `save()` gave: the birds a plan carried replace the ones `build()` scattered from
 ## its position, which `EventInstance._ready()` has run by the time a plan streams back in.
+##
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	var saved: Array = state.get("birds", [])
 	if saved.is_empty():

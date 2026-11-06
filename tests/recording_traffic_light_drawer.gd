@@ -11,10 +11,12 @@ var heads: Array[Dictionary] = []
 func _init() -> void:
 	super(null)
 
+## Overrides TrafficLightDrawer.draw_head.
 func draw_head(canvas: CanvasItem, picture: StringName, mirrored: bool) -> void:
 	heads.append({"canvas": canvas, "picture": picture, "mirrored": mirrored, "lamps": [],
 		"frame": Engine.get_process_frames()})
 
+## Overrides TrafficLightDrawer.draw_lamp.
 func draw_lamp(canvas: CanvasItem, lamp: int, edge_on: bool, mirrored: bool) -> void:
 	# A lamp painted with no head under it is recorded as a head of its own with no picture, so a
 	# check that every lamp stands on a head sees it.

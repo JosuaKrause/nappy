@@ -41,11 +41,15 @@ func _init(event: EventInstance) -> void:
 
 ## The event's own clock, which stops once it is finished, so a spent instance's window simply
 ## stops moving rather than draining after nothing more can land.
+##
+## Overrides ExcitementSource.clock.
 func clock() -> float:
 	return _event.clock()
 
 ## The halo's word on where she is reaches the instance too, where its behaviours and its look
 ## read it.
+##
+## Overrides ExcitementSource.set_player_at.
 func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
 	super(at, velocity, decay_rate, sensitivity)
@@ -53,15 +57,20 @@ func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: fl
 
 ## The instance's own `player_at`, which its manager tells it on the physics tick as well as the
 ## halo once a drawn frame: the one point its behaviours, its look and its caret all read.
+##
+## Overrides ExcitementSource._her_at.
 func _her_at() -> Vector2:
 	return _event.player_at
 
+## Overrides ExcitementSource._contribution_stamp.
 func _contribution_stamp() -> float:
 	return _event.age
 
 ## **A source beyond `EventDef.silent_beyond()` of the point answers zero before anything else is
 ## asked** — its intensity, its velocity, its shape — since its field is zero there by construction.
 ## Not for a flock or anything leaving: a flock's birds and a guard's band stand away from the node.
+##
+## Overrides ExcitementSource._field.
 func _field(at: Vector2) -> float:
 	if not _event.is_leaving and _event.birds().is_empty():
 		var reach := _event.def.silent_beyond()
@@ -72,19 +81,26 @@ func _field(at: Vector2) -> float:
 ## The map the event stands on, its buildings outdoors and the building's walls indoors — open
 ## ground for a row no wall stops (`EventDef.from_outside`), so the debug view's fields layer cuts
 ## its outline exactly where the meter does.
+##
+## Overrides ExcitementSource.wall_grid.
 func wall_grid() -> WorldMap:
 	return _NO_WALLS if _event.def.from_outside else _event.world_map()
 
 ## Nothing finished or leaving projects anything.
+##
+## Overrides ExcitementSource._projects.
 func _projects() -> bool:
 	return not (_event.is_finished or _event.is_leaving)
 
 ## **The row's live course** (`EventInstance.caret_velocity()`), because the caret asks what this
 ## thing is on its way to doing rather than what a telegraph has it doing: a pursuer holding its
 ## stand-off is still, and about to lunge.
+##
+## Overrides ExcitementSource._projection_velocity.
 func _projection_velocity() -> Vector2:
 	return _event.caret_velocity()
 
+## Overrides ExcitementSource._projection_reach.
 func _projection_reach() -> float:
 	return _event.def.field_reach()
 
@@ -96,6 +112,8 @@ func _projection_reach() -> float:
 ## projects (`_projects()`: neither finished nor leaving, which is all `field_at()` checks before
 ## the kernel), and `_direct` holds only where `field_at()` would take the rate and the course as
 ## given and reach the kernel.
+##
+## Overrides ExcitementSource._begin_the_projection.
 func _begin_the_projection(velocity: Vector2) -> void:
 	_live_intensity = _event.caret_intensity_over_horizon()
 	_flock = not _event.birds().is_empty()
@@ -108,6 +126,8 @@ func _begin_the_projection(velocity: Vector2) -> void:
 ## Every input the samples read, by value, mutable definition and shape fields included: age alone
 ## cannot cover a retirement, silence, external movement or changed player state. Empty for a flock,
 ## whose every bird has its own mutable geometry and is sampled afresh.
+##
+## Overrides ExcitementSource._projection_key.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 	if _flock:
 		return []
@@ -121,6 +141,8 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 
 ## The field at the translated point, at the live rate, its ellipse oriented by the source's own
 ## velocity rather than the pair's relative heading.
+##
+## Overrides ExcitementSource._projected_field.
 func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 	if not _direct:
 		return _event.field_at(sample, _live_intensity, velocity)
@@ -138,6 +160,8 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ## second. Waiting, finished or leaving refuses it: there is no course to be lethal on.
 ##
 ## **A car that drives asks its own strike along its own course** (`EventCarDriving.will_strike()`).
+##
+## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
 	if _event.car:
 		return _event.car.will_strike(player_position)
@@ -162,11 +186,15 @@ func will_be_lethal(player_position: Vector2) -> bool:
 ## `player_at` is written by the manager on its physics tick and by the halo once a drawn frame,
 ## while the look asks on the event's own drawn frame. Keyed on age alone, the first to ask would
 ## fix the answer for the whole tick.
+##
+## Overrides ExcitementSource._caret_key.
 func _caret_key() -> Variant:
 	return [_event.age, _event.player_at]
 
 ## A permanent feature of a fixed map never appears, so there is no moment to mark — the reason the
 ## fairness contract exempts an `AMBIENT` row — and nothing finished or leaving is marked.
+##
+## Overrides ExcitementSource._may_mark.
 func _may_mark() -> bool:
 	return not (_event.is_finished or _event.is_leaving
 			or _event.def.kind == GameEnums.EventKind.AMBIENT)

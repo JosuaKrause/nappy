@@ -3,6 +3,7 @@ extends EventLook
 ## A burning building: the flames along its facade and the smoke over them, or the five flames of a
 ## fire that stands on its own ground.
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.BURNING_BUILDING:
@@ -173,5 +174,6 @@ func _wall_offset() -> Vector2:
 	var inward := map.pavement_inward(map.world_to_tile(event.global_position))
 	return Vector2(inward) * (Tuning.TILE_SIZE * 0.5)
 
+## Overrides EventLook._front_box.
 func _front_box() -> Rect2:
 	return _fire_front_box()
