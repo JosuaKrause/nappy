@@ -549,16 +549,6 @@ func release(group: StringName) -> void:
 	_note("texture", "atlas page '%s' released after %.1f s: %d x %d"
 			% [group, held / 1000000.0, page.size.x, page.size.y])
 
-## Whether `group` currently holds its page.
-func is_acquired(group: StringName) -> bool:
-	var page: Page = _pages.get(group)
-	return page != null and page.count > 0
-
-## How many references `group` is holding, which is what a test asserts the counting on.
-func reference_count(group: StringName) -> int:
-	var page: Page = _pages.get(group)
-	return page.count if page != null else 0
-
 # ---------------------------------------------------------------- the regions ---
 
 ## The picture to draw, as an `AtlasTexture` over its group's page: its region's own size is

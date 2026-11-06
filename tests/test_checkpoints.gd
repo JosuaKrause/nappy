@@ -16,6 +16,7 @@ extends RefCounted
 ## stand a real city's door and call the controller's public frame methods
 ## (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
 
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const SEEDS := 4
@@ -40,7 +41,7 @@ func run(t) -> void:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
-	_test_the_boom_bars_the_carriageway(t)
+	await _test_the_boom_bars_the_carriageway(t)
 	_test_the_three_rows_validate_and_are_never_rolled(t)
 	_test_the_manager_actually_places_the_door_structure(t)
 	_test_nothing_the_day_places_reaches_into_a_doors_gap(t)
@@ -204,8 +205,9 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 ## *(PLAYTEST-57: "the gate for the cars is too high up. it needs to be further down".)* The boom
 ## is the one body at a door whose picture is much wider than the body under it, so where the bar
 ## actually lands is a question only the drawing can answer — and a headless run's draw pass makes
-## no pixels (see the **verify** skill), which is why `EventPictures.boom_arm_span()` states the
-## arm's own reach as a number the drawing and this check share.
+## no pixels (see the **verify** skill), which is why the reach is read off the picture the gate
+## draws: a real gate is drawn through a recording drawer (`tests/recording_event_drawer.gd`) and the
+## lowered boom's opaque pixels are measured where it lands (`_drawn_boom_span()`).
 ##
 ## Three things about a street door, over every sampled day: the gate stands level with its two
 ## huts along the street, its own ground point is on the carriageway's centre line, and the arm it
@@ -214,6 +216,7 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 ## point, at the height of the road's upper kerb with the lanes open under it.
 func _test_the_boom_bars_the_carriageway(t) -> void:
 	var checked := 0
+	var spans := {}
 	for pair in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
@@ -256,8 +259,9 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					% [map.seed_used, day] + "(%.1f in %.1f..%.1f)"
 					% [gate_across, across_low, across_high])
 
-			var span := EventPictures.boom_arm_span(
-					EventPictures.gate_runs_north_south(gate.facing))
+			if not spans.has(gate.facing):
+				spans[gate.facing] = await _drawn_boom_span(t, gate)
+			var span: Vector2 = spans[gate.facing]
 			var arm_near := gate_across + span.x
 			var arm_far := gate_across + span.y
 			t.check(arm_near <= across_low and arm_far >= across_high,
@@ -284,6 +288,48 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 					"(%.1f..%.1f over %.1f..%.1f)")
 					% [map.seed_used, day, arm_near, arm_far, solid_low, solid_high])
 	t.check(checked > 0, "at least one street door's boom was measured (%d)" % checked)
+
+## How far the lowered boom a gate planned like `gate` draws reaches to either side of its ground
+## point, across the road it bars: `x` the near edge (negative), `y` the far edge, along the
+## cross-street axis. The gate is made as the game makes one (`EventInstance.setup()`, a lowered
+## boom for a `gate_state` of none) and stands in the tree until it has drawn; the picture it paints
+## lands where the recording drawer says, and what the player sees of the boom is the opaque
+## pixels of that picture along the cross axis, bar and posts together, so that is what is measured.
+func _drawn_boom_span(t, gate: EventScheduler.Planned) -> Vector2:
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(EventPictures.ATLAS_GROUP)
+	var drawer := RecordingEventDrawer.new(atlas)
+	var instance := EventInstance.new()
+	instance.atlas = atlas
+	instance.drawer = drawer
+	instance.setup(gate.def, Vector2.ZERO, PackedVector2Array(), gate.facing, WorldMap.open_ground())
+	t.add_child(instance)
+	await t.get_tree().process_frame
+	var boom: Array[String] = [EventPictures.BOOM_GATE_NS_LOWERED, EventPictures.BOOM_GATE_EW_LOWERED]
+	var drawn: Dictionary = {}
+	for entry in drawer.draws:
+		if entry["picture"] in boom:
+			drawn = entry
+	t.check(not drawn.is_empty(), "the gate draws a lowered boom")
+	var span := Vector2.ZERO
+	if not drawn.is_empty():
+		var texture := atlas.region(StringName(drawn["picture"]))
+		var image := texture.atlas.get_image().get_region(Rect2i(texture.region))
+		var across_x: bool = drawn["picture"] == EventPictures.BOOM_GATE_NS_LOWERED
+		var lo := 1 << 30
+		var hi := -1
+		for y in image.get_height():
+			for x in image.get_width():
+				if image.get_pixel(x, y).a > 0.5:
+					var along := x if across_x else y
+					lo = mini(lo, along)
+					hi = maxi(hi, along + 1)
+		var origin: Vector2 = (drawn["rect"] as Rect2).position
+		var first := origin.x if across_x else origin.y
+		span = Vector2(first + lo, first + hi)
+	instance.free()
+	atlas.release(EventPictures.ATLAS_GROUP)
+	return span
 
 ## The three rows exist and the ordinary catalogue roll never schedules one, over several days.
 ## What makes that true — `SCRIPTED`, `scripted_day 0`, like the seal pictures — is not

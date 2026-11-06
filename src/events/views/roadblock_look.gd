@@ -150,8 +150,8 @@ func _build_the_band() -> void:
 	_band.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	_attach_the_band.call_deferred()
 
-## Idempotent, so a rig that never reaches the idle frame can call it itself. The band's slices go
-## in with it.
+## Puts the band into the world beside the event, on the idle frame after it is built. Idempotent.
+## The band's slices go in with it.
 func _attach_the_band() -> void:
 	_attach_the_slices()
 	if _band == null or _band.is_inside_tree() or not event.is_inside_tree() \
@@ -197,9 +197,6 @@ func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void
 func build_nodes() -> void:
 	_build_the_band()
 	super()
-
-func attach_nodes() -> void:
-	_attach_the_band()
 
 func move_nodes(redraw := false) -> void:
 	_move_the_band(redraw)
