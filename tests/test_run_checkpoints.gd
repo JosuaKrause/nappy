@@ -614,15 +614,15 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 		t.check(title.is_open() and title.hard_mode_shown() == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
 		# Where the box is not shown a resumed run's mode is decided, so its name stands there.
-		t.check(_mode_name_drawn(title) == ("" if case[2] else "Normal"),
+		t.check(Boot.mode_name_drawn(title) == ("" if case[2] else "Normal"),
 				"%s: the mode's name is %s" % [case[3], "not shown" if case[2] else "shown"])
 		if case[0] == null:
 			title.open(true, true)
 			t.check(title.hard_mode_shown(), "the same, after an ending in this scene: the box is shown")
-			t.check(_mode_name_drawn(title) == "",
+			t.check(Boot.mode_name_drawn(title) == "",
 					"the same, after an ending in this scene: the mode's name is not shown")
 			title.open(true)
-			t.check(not title.hard_mode_shown() and _mode_name_drawn(title) == "",
+			t.check(not title.hard_mode_shown() and Boot.mode_name_drawn(title) == "",
 					"nor does the --start-escape epilogue show a box or a name")
 		Telemetry.end_run()
 		booted.free_all()
@@ -847,9 +847,3 @@ func _key(code: Key) -> InputEventKey:
 	event.keycode = code
 	event.pressed = true
 	return event
-
-## The mode's name the title draws, or `""` while its label is hidden (a new game, where the
-## checkbox asks): the `ModeName` label's own text and visibility.
-static func _mode_name_drawn(title: TitleScreen) -> String:
-	var label := title.find_child("ModeName", true, false) as Label
-	return label.text if label != null and label.visible else ""

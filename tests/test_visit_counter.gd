@@ -98,6 +98,20 @@ func _test_should_send_truth_table(t) -> void:
 	t.check(scripts.is_empty(), "a missing or blocked window.goatcounter sends nothing")
 	t.check(not GoatCounterOutbox.may_ever_send(false, true, true),
 		"every reason to refuse at once still refuses")
+	# The composition `VisitCounter._send_event()` makes, over all sixteen inputs: counted only
+	# when the three fixed inputs allow it and the page has goatcounter.
+	for bits in 16:
+		var web := bits & 1 != 0
+		var debug_build := bits & 2 != 0
+		var debug_requested := bits & 4 != 0
+		var present := bits & 8 != 0
+		scripts.clear()
+		var fresh := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
+		if GoatCounterOutbox.may_ever_send(web, debug_build, debug_requested):
+			fresh.send("composed", present)
+		t.check((scripts.size() == 1) == (web and not debug_build and not debug_requested and present),
+			"web %s, debug build %s, ?debug=1 %s, present %s counts only when all four allow it"
+			% [web, debug_build, debug_requested, present])
 
 ## A day-scoped name is `nappy-day-<day>-<suffix>`, joined the way PLAYTEST-132's own example does.
 func _test_day_event_name(t) -> void:

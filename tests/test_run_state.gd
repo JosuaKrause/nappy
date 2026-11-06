@@ -5,7 +5,7 @@ extends RefCounted
 ## **Save compatibility is held against a file main wrote.** `tests/fixtures/
 ## run_state_saved_by_main.json` is `GameSave.file_data()` of the run `run_state_scenario.gd`
 ## builds, and of the same run after a lost day, dumped on commit e1cc7c7f — the build that kept
-## every field by hand in `GameState`'s snapshot writer and `restore_snapshot()`, the `_dawn_*` copies and
+## every field by hand in `GameState`, the `_dawn_*` copies and
 ## `RunStateRegistry.run_data()` — by a throwaway probe that ran the scenario under `tools/test.sh`. The
 ## suite replays the scenario on this build and expects the same bytes (everything but the `build`
 ## string), loads the fixture and expects the same run back, and loses a day from the loaded run

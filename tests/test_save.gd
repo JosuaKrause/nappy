@@ -15,6 +15,8 @@ extends RefCounted
 ## end) and hands it to the save, as `main` hands the save the run its sitting holds; nothing here
 ## reads or sets a global run, so nothing is put back for the suite that runs after it.
 
+const Boot := preload("res://tests/booted_main.gd")
+
 const _SCRATCH_PATH := "user://test_save_scratch.json"
 
 ## The save under test, at a scratch path.
@@ -1116,15 +1118,16 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 	var write_token := flushes.register(_next_operation(), write_answers.take)
 	var delete_token := flushes.register(_next_operation(), delete_answers.take, true)
 	flushes.advance(3600.0)
-	t.check(not flushes.is_empty() and write_answers.results.is_empty(),
-			"a write's flush is still waiting after the huge frame")
-	t.check(not flushes.is_empty() and delete_answers.results.is_empty(),
-			"and so is a deletion's")
-	flushes.answer([float(write_token), ""])
+	t.check(write_answers.results.is_empty() and delete_answers.results.is_empty()
+			and not flushes.is_empty(),
+			"neither flush has been settled by the huge frame")
 	flushes.answer([float(delete_token), ""])
-	t.check(write_answers.results == [GameSave.Result.CONFIRMED]
-			and delete_answers.results == [GameSave.Result.CONFIRMED],
-			"so the browser's own answer on that frame is kept, not ignored")
+	t.check(delete_answers.results == [GameSave.Result.CONFIRMED] and write_answers.results.is_empty()
+			and not flushes.is_empty(),
+			"the deletion's flush was still waiting, and answering it leaves the write's waiting")
+	flushes.answer([float(write_token), ""])
+	t.check(write_answers.results == [GameSave.Result.CONFIRMED] and flushes.is_empty(),
+			"and the write's was too: the browser's own answer on that frame is kept, not ignored")
 
 ## The timeout still exists: frames actually drawn add up to `FLUSH_TIMEOUT_SECONDS`.
 func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
@@ -1155,7 +1158,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 		t.check(_save.clear() == GameSave.Result.CONFIRMED, "the deletion is kept")
 		t.check(indicator.is_showing() and timeline.pending == 0,
 				"the symbol is up and the deletion is already answered")
-		t.check(not _drawn_struck(indicator), "plain, since it was kept")
+		t.check(Boot.save_symbol_plain(indicator), "plain, since it was kept")
 		indicator.free()
 
 		var waiting_timeline := SaveIndicator.Showing.new()
@@ -1180,7 +1183,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var immediate := SaveIndicator.new(immediate_timeline)
 	t.add_child(immediate)
 	EventBus.save_deleted.emit(_next_operation(), int(GameSave.Result.FAILED))
-	t.check(_drawn_struck(immediate) and immediate_timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(immediate) and immediate_timeline.pending == 0,
 			"a deletion that failed at once shows the struck picture")
 	immediate_timeline.advance(9.9)
 	t.check(immediate_timeline.alpha() == 1.0, "fully for ten seconds")
@@ -1192,7 +1195,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 	var deletion := _next_operation()
 	EventBus.save_deleted.emit(deletion, int(GameSave.Result.PENDING))
 	EventBus.save_deletion_settled.emit(deletion, false)
-	t.check(_drawn_struck(later) and later_timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(later) and later_timeline.pending == 0,
 			"a deletion the browser did not keep shows the struck picture")
 	later.free()
 
@@ -1216,7 +1219,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(run.header.ending != GameEnums.Ending.NONE, "the final day ends the run")
 		t.check(not _save.has_save(), "which deletes the save")
-		t.check(indicator.is_showing() and not _drawn_struck(indicator),
+		t.check(indicator.is_showing() and Boot.save_symbol_plain(indicator),
 				"and the symbol shows the deletion, kept")
 		indicator.free()
 	)
@@ -1284,7 +1287,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 	t.check(timeline.pending == 1 and indicator.is_showing(), "still showing the pending deletion")
 
 	EventBus.save_deletion_settled.emit(deletion, false)
-	t.check(_drawn_struck(indicator) and timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(indicator) and timeline.pending == 0,
 			"the browser's answer arrives after the reload and settles it, struck")
 	indicator.free()
 	t.check(SaveIndicator.carried(sitting) == null, "nothing is left on the sitting")
@@ -1388,7 +1391,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	old_main_scene.free()
 
 	flushes.answer([float(token), ""])
-	t.check(timeline.pending == 0 and not _drawn_struck(indicator),
+	t.check(timeline.pending == 0 and Boot.save_symbol_plain(indicator),
 			"the answer reaches the symbol with the main that saved gone, and it is kept")
 	timeline.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 0.1)
 	t.check(timeline.is_idle(), "so the symbol fades out instead of staying up for good")
@@ -1397,7 +1400,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 	EventBus.save_written.emit(save, int(GameSave.Result.PENDING))
 	token = flushes.register(save, Callable())
 	flushes.answer([float(token), "Connection to Indexed Database server lost"])
-	t.check(_drawn_struck(indicator) and timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(indicator) and timeline.pending == 0,
 			"and a save the browser did not keep strikes it the same way")
 	indicator.free()
 	sitting.free()
@@ -1414,10 +1417,10 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 	EventBus.save_written.emit(its_own, int(GameSave.Result.PENDING))
 	EventBus.save_write_settled.emit(before_it, true)
 	EventBus.save_deletion_settled.emit(before_it, false)
-	t.check(timeline.pending == 1 and not _drawn_struck(indicator),
+	t.check(timeline.pending == 1 and Boot.save_symbol_plain(indicator),
 			"an answer to a change announced before it was built neither settles nor strikes it")
 	EventBus.save_write_settled.emit(its_own, false)
-	t.check(_drawn_struck(indicator) and timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(indicator) and timeline.pending == 0,
 			"and its own change's answer still does")
 	indicator.free()
 
@@ -1766,7 +1769,7 @@ func _test_a_desktop_save_shows_the_symbol_confirmed_at_once(t) -> void:
 		_save.write(run, true)
 		t.check(timeline.pending == 0 and not timeline.is_idle(),
 				"a desktop save is answered at once and the symbol is already showing")
-		t.check(not timeline.struck and not _drawn_struck(indicator), "showing the plain picture")
+		t.check(not timeline.struck and Boot.save_symbol_plain(indicator), "showing the plain picture")
 		indicator.free()
 	)
 	run.free()
@@ -1784,19 +1787,10 @@ func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
 	var struck := icon.texture
 	t.check(plain != null and struck != null and struck != plain,
 			"the plain and the struck pictures are both on the atlas, and different")
-	t.check(_drawn_struck(indicator), "a save not kept shows the struck picture")
+	t.check(Boot.save_symbol_struck(indicator), "a save not kept shows the struck picture")
 	indicator.begin(2)
-	t.check(_drawn_struck(indicator), "a new save still unanswered does not hide the failure")
+	t.check(Boot.save_symbol_struck(indicator), "a new save still unanswered does not hide the failure")
 	indicator.settle(2, true)
-	t.check(not _drawn_struck(indicator) and icon.texture == plain,
+	t.check(Boot.save_symbol_plain(indicator) and icon.texture == plain,
 			"and a kept answer swaps back to the plain one")
 	indicator.free()
-
-## Whether the symbol on screen is the struck-through picture: the `Icon` rect's drawn texture
-## against the struck region of the `ui` atlas the symbol draws from, by rectangle: a symbol
-## that changed parents has re-acquired its page and holds a new texture object for the same region.
-static func _drawn_struck(indicator: SaveIndicator) -> bool:
-	var icon := indicator.find_child("Icon", true, false) as TextureRect
-	var struck := indicator.atlas.region(&"ui/save_unavailable")
-	return icon != null and icon.texture is AtlasTexture \
-			and (icon.texture as AtlasTexture).region == struck.region
