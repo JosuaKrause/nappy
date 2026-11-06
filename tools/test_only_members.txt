@@ -182,7 +182,6 @@ src/routes/seal_planner.gd escape_candidates
 src/telemetry/telemetry_map.gd role_mark
 src/telemetry/telemetry_observer.gd spikes_on
 src/ui/frame_graph.gd classify
-src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
 src/world/draw_layer.gd z_of
 src/world/excitement_source.gd expected_impact_at

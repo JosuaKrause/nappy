@@ -160,20 +160,27 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 	summary.queue_free()
 
 func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
+	# The touch layer holds the control scheme, and the screen words its body again on every open.
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
 	var run := RunState.new()
 	pause.use_run(run)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
-		var source: String = pause.body_for(joystick)
-		var wrapped := SentenceLines.break_for_help(source, body)
-		var lines := wrapped.split("\n")
+		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		pause.open()
+		var source: String = Texts.WALKING_LESSON_PAUSE % (
+				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
+		var lines := body.line.split("\n")
 		for i in range(lines.size() - 1):
 			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
 					"the pause screen's instructions (joystick %s) break only after a sentence's end"
 							% joystick)
 		t.check(" ".join(lines) == source,
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
+		pause.close()
 	pause.free()
 	run.free()
+	controls.free()

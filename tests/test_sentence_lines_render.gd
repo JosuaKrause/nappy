@@ -38,13 +38,25 @@ func run(t) -> void:
 	summary.queue_free()
 
 	var run := RunState.new()
+	var was_paused: bool = t.get_tree().paused
+	# The touch layer holds the control scheme, and the screen words its body again on every open;
+	# what it shows has its sentences on separate lines, so the text it was laid out from is the
+	# shown lines joined by the spaces they stand for.
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
 	pause.use_run(run)
 	t.add_child(pause)
 	var pause_body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
-		_check_help(t, pause.body_for(joystick), pause_body, "the pause body (joystick %s)" % joystick)
+		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		pause.open()
+		var shown := pause_body.line.replace("\n", " ")
+		pause.close()
+		_check_help(t, shown, pause_body, "the pause body (joystick %s)" % joystick)
 	pause.free()
+	controls.free()
+	t.get_tree().paused = was_paused
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
 	hud.use_run(run)
