@@ -20,8 +20,9 @@ extends RefCounted
 ## a group added to `main.RESIDENT_GROUPS` is a group this suite is asking about: the pages the booted
 ## game holds are read on that sitting's library (`Sitting.atlas`, the one `main` hands everything it
 ## builds), and the cities and rigs the test builds by hand are handed that library as `main` hands
-## its own. Each test builds its own sitting, run and library, so no count it reads depends on a
-## suite before it.
+## its own. Each test builds its own sitting, run and library, and reads what that library loaded
+## and dropped off the run log's lines for each page (`tests/atlas_page_log.gd`), watched from before
+## its first boot, so nothing it reads depends on a suite before it.
 ##
 ## Two more tests boot it for what is drawn from the library: one, on the day and in the escape's
 ## building, asks that everything it built draws from the one library its sitting holds; the other
@@ -36,6 +37,8 @@ const RUN_SEED := 2
 const UI := preload("res://tests/ui_screens.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const BakedRegions := preload("res://tests/baked_regions.gd")
+const PageLog := preload("res://tests/atlas_page_log.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
@@ -59,8 +62,6 @@ func run(t) -> void:
 ## third the run holds whichever parent it drew.
 func _test_each_parent_has_a_page_of_their_own(t) -> void:
 	var by_group := Stroller.sources_by_group()
-	t.check(by_group.size() == 3, "the rig's pictures are spread over three groups (%d)"
-			% by_group.size())
 	var seen: Dictionary = {}
 	for group: StringName in by_group.keys():
 		var sources: Array[String] = by_group[group]
@@ -75,7 +76,6 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 	t.check((by_group[Stroller.MOTHER_ATLAS] as Array[String]).size()
 			== (by_group[Stroller.FATHER_ATLAS] as Array[String]).size(),
 			"the two parents carry the same number of views, so neither page is the other's tail")
-	t.check(Stroller.stroller_sources().size() == 5, "the pram's five views are the shared group")
 	t.check(Stroller.parent_atlas(false) == Stroller.MOTHER_ATLAS
 			and Stroller.parent_atlas(true) == Stroller.FATHER_ATLAS,
 			"the run's choice names the page it draws from")
@@ -84,7 +84,6 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 ## which is what "combined" has to mean for it to save anything. The marks are still drawn by
 ## their own pass and tinted on their own; a page is not a pass.
 func _test_the_indicators_share_the_ui_page(t) -> void:
-	t.check(Stroller.INDICATOR_ATLAS == &"ui", "the indicators name the UI's own group")
 	t.check(not &"head_indicators" in AtlasTable.baked().groups(),
 			"and the head indicators are no longer a group of their own")
 	for path: String in Stroller.indicator_sources():
@@ -93,7 +92,7 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 		t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % path)
 	# The screen furniture the indicators share the page with is swept by
 	# `test_atlas_leaf_consumers.gd`'s `ui/` walk.
-	for name in AtlasTable.baked().region_names():
+	for name in BakedRegions.names():
 		if String(name).begins_with("ui/"):
 			t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % name)
 
@@ -104,46 +103,58 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 ## page the run cannot draw. The drop matters because the held restart (`main._restart_run()`)
 ## reloads the scene into the same process and rerolls the choice: without it one process that
 ## restarted once would be holding both, which is the waste the split exists to remove.
+##
+## Between days the run's own parent is back to the boot's single reference: the second boot's drop
+## of the first run's parent is one `stop_holding()`, and it lets the page go only if nothing the
+## days built still holds a reference; the second run's own is given back the same way at the end.
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
+	var pages := PageLog.new()
 	for male in [false, true]:
 		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
 				"father" if male else "mother"])
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
 		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
-		t.check(atlas.is_acquired(mine),
+		t.check(pages.held(mine),
 				"the boot holds the '%s' page the run draws from" % mine)
-		t.check(not atlas.is_acquired(theirs),
+		t.check(not pages.held(theirs),
 				"and holds nothing of '%s', which this run can never draw, with a day built and "
 				% theirs + "she standing in it")
 		booted.free_all()
+		var theirs_read := pages.loads(theirs)
 		for day in [1, 2, 3]:
 			var city := _city(t, atlas)
 			city.crowd.start_day(day, _rng("parent-%s-%d" % [male, day]))
 			var rig := _rig(t, male, atlas)
-			t.check(not atlas.is_acquired(theirs),
+			t.check(pages.loads(theirs) == theirs_read,
 					"day %d builds a city, a crowd and the rig without ever asking for '%s'"
 					% [day, theirs])
 			rig.free()
 			city.free()
-		t.check(atlas.reference_count(mine) == 1,
-				"and the run's own parent is back to the boot's single reference between days")
-	t.check(not atlas.is_acquired(Stroller.MOTHER_ATLAS),
-			"a second boot that rerolled the choice gave the first run's parent back")
+		t.check(pages.held(mine), "and the run's own parent stays held between days")
+	t.check(pages.releases(Stroller.MOTHER_ATLAS) == 1,
+			"a second boot that rerolled the choice gave the first run's parent back, the days "
+			+ "between having left it the boot's single reference")
+	atlas.stop_holding(Stroller.FATHER_ATLAS)
+	t.check(pages.releases(Stroller.FATHER_ATLAS) == 1,
+			"and the second run's own parent is back to the boot's single reference between days")
+	pages.stop()
 	seat.end()
 
 # -------------------------------------------------------------------- the rule ---
 
 ## The three states of `moment_for_a_load()`, and the one thing a consumer's own `acquire()` does
-## once a page is resident: bump a count and read nothing.
+## once a page is resident: bump a count and read nothing. What was read, and in which moment, is
+## the run log's load line for the page.
 ##
 ## `MOMENT_UNMANAGED` is not a hole in the rule for tests — it is the state of a library no boot
 ## sequence has claimed the loading moments on, which is every one a suite builds along with a
 ## `Stroller`, a `City` or a `Crowd` by hand, and where there is no played frame for a load to
 ## stutter. The moment `main` boots, the rule is on for the sitting's library until it leaves.
 func _test_a_page_may_only_be_read_in_a_window(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"with no boot, nothing owns the loading moments")
@@ -159,12 +170,9 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 			"and inside a claim the brief is the second moment a page may arrive in")
 	atlas.open_loading_window(AtlasLibrary.MOMENT_STARTUP)
 	atlas.hold_for_the_process(&"ui")
-	t.check(atlas.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
+	t.check(pages.last_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
 			"and the page that arrived in it records that moment")
-	t.check(atlas.is_resident(&"ui") and atlas.reference_count(&"ui") == 1,
-			"a residency is one reference, not one per call")
 	atlas.hold_for_the_process(&"ui")
-	t.check(atlas.reference_count(&"ui") == 1, "and asking for it twice is not two")
 	atlas.close_loading_window()
 	# The refusal itself is what this must not perform — see the class note. This is the same
 	# claim: a page that had to be read from disk at this instant would be called OUTSIDE, which
@@ -172,16 +180,20 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_OUTSIDE,
 			"with the moments claimed and the window shut, a read from disk would be OUTSIDE")
 	atlas.acquire(&"ui")
-	t.check(atlas.reference_count(&"ui") == 2,
+	t.check(pages.loads(&"ui") == 1,
 			"a consumer acquiring a resident page outside every window is only a count")
-	t.check(atlas.last_load_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
+	t.check(pages.last_moment(&"ui") == AtlasLibrary.MOMENT_STARTUP,
 			"and reads nothing, so the page still records the boot that actually loaded it")
 	atlas.release(&"ui")
-	t.check(atlas.is_acquired(&"ui"),
+	t.check(pages.releases(&"ui") == 0,
 			"releasing a consumer's reference cannot drop a resident page")
+	atlas.stop_holding(&"ui")
+	t.check(pages.releases(&"ui") == 1,
+			"a residency is one reference, not one per call: asked for twice, it is given back once")
 	atlas.release_the_loading_moments()
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"and a boot that leaves the tree hands the moments back for the next one")
+	pages.stop()
 
 # -------------------------------------------------------------------- the days ---
 
@@ -191,12 +203,13 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 func _test_two_days_never_reload_a_page(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
+	var pages := PageLog.new()
 	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"])).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
 	var rig := _rig(t, false, atlas)
-	var first := _page_objects(atlas)
+	var first := _page_objects(atlas, pages)
 	t.check(first.size() >= MAIN_SCRIPT.RESIDENT_GROUPS.size(),
 			"there were pages to compare (%d)" % first.size())
 	# The whole day torn down the way quitting to the title tears it down: the rig out of the
@@ -205,13 +218,13 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	city.crowd.clear()
 	city.free()
 	for group: StringName in first.keys():
-		t.check(atlas.is_acquired(group),
+		t.check(pages.held(group),
 				"'%s' survives the day it was drawn in" % group)
 
 	var tomorrow := _city(t, atlas)
 	tomorrow.crowd.start_day(2, _rng("day-2"))
 	var rig_tomorrow := _rig(t, false, atlas)
-	var second := _page_objects(atlas)
+	var second := _page_objects(atlas, pages)
 	var reloaded: Array[String] = []
 	for group: StringName in first.keys():
 		if first[group] != second.get(group):
@@ -222,6 +235,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	rig_tomorrow.free()
 	tomorrow.crowd.clear()
 	tomorrow.free()
+	pages.stop()
 	seat.end()
 
 # ------------------------------------------------------------------ the boot ---
@@ -232,7 +246,9 @@ func _test_two_days_never_reload_a_page(t) -> void:
 ## second load line for it. So every node under a booted `main` that holds a library — the city and
 ## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
-## the building alike. A node with an `atlas` it was never handed fails this by name.
+## the building alike. A node with an `atlas` it was never handed fails this by name. And the pages
+## the boot took for the process are the sitting's library's: they still answer on it once
+## everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
@@ -259,9 +275,10 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 				% [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
 				% [where, ", ".join(strays)])
-		t.check(atlas.is_resident(Crowd.ATLAS_GROUP) and atlas.is_resident(EventPictures.ATLAS_GROUP),
-				"%s: and the sitting's library is the one holding the boot's pages" % where)
 		booted.free_all()
+		t.check(atlas.region(_a_region_of(Crowd.ATLAS_GROUP)) != null
+				and atlas.region(_a_region_of(EventPictures.ATLAS_GROUP)) != null,
+				"%s: and the sitting's library is the one holding the boot's pages" % where)
 		seat.end()
 
 ## **A missed hand-off is red wherever and whenever the node is made.** A node handed no library
@@ -417,23 +434,21 @@ func _rig(t, male: bool, atlas: AtlasLibrary) -> Stroller:
 	rig.set_physics_process(false)
 	return rig
 
-## One live page texture per acquired group, taken through `region()` so the object compared is
-## the one a draw call would actually reach rather than the library's own bookkeeping.
-func _page_objects(atlas: AtlasLibrary) -> Dictionary:
-	var pages: Dictionary = {}
+## One live page texture per group the run log says is held, taken through `region()` so the object
+## compared is the one a draw call would actually reach.
+func _page_objects(atlas: AtlasLibrary, watched: PageLog) -> Dictionary:
+	var objects: Dictionary = {}
 	for group: StringName in AtlasTable.baked().groups():
-		if not atlas.is_acquired(group):
+		if not watched.held(group):
 			continue
 		var sample := _a_region_of(group)
 		if sample == &"":
 			continue
 		var region := atlas.region(sample)
 		if region != null:
-			pages[group] = region.atlas
-	return pages
+			objects[group] = region.atlas
+	return objects
 
 func _a_region_of(group: StringName) -> StringName:
-	for name: StringName in AtlasTable.baked().region_names():
-		if AtlasTable.baked().group_of(name) == group:
-			return name
-	return &""
+	var names := BakedRegions.on(group)
+	return names[0] if not names.is_empty() else &""

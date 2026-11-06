@@ -1534,36 +1534,6 @@ func present_block(block: Vector2i, state: CityState) -> void:
 			building.condition = condition
 	mark_the_burnt_frontage()
 
-## **Ground taken away in front of her**: `tiles` become `SPOILED` now, in the map and on screen.
-## **Nothing in the game calls it**: day 12's park, which it was written for, is closed by a police
-## cordon that changes no tile (`ParkCordon`). It stays because `tests/test_scenery_residency.gd`
-## uses it as the one live ground edit that checks resident scenery chunks are redrawn. Each tile
-## and its eight neighbors are repainted from `GroundTiles.source_for()`, the dawn paint's own
-## answer, so an edge drawn against the old ground is redrawn against the new. The swing frame
-## goes with the playground tile it stands on, and the calm-ground cache is dropped, since the tile
-## she is standing on may be one that just stopped being calm.
-func close_ground(tiles: Array[Vector2i]) -> void:
-	var redraw := {}
-	var closed := {}
-	for tile in tiles:
-		map.repaint_tile(tile, GameEnums.TileType.SPOILED)
-		closed[tile] = true
-		for dy in range(-1, 2):
-			for dx in range(-1, 2):
-				redraw[tile + Vector2i(dx, dy)] = true
-	for tile: Vector2i in redraw:
-		var source := scenery_ground_source(tile)
-		if source >= 0:
-			scenery_ground.set_cell(tile, source,
-					GroundLayers.atlas_coords_for(source, map.seed_used, tile, scenery_ground.tile_set))
-	_sleepiness_tile = Vector2i(-1, -1)
-	for prop in _props.duplicate():
-		var frame := prop as Prop
-		if frame and frame.kind == Prop.Kind.PLAYGROUND_FRAME \
-				and closed.has(map.world_to_tile(frame.position)):
-			_props.erase(frame)
-			frame.queue_free()
-
 ## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
 ## the city degrades over the run, so unlike a park's planting this is not the same every morning.
 ## Each is a `Prop` with a `GroundShape` for its shadow and no body, exactly as decorative as a
