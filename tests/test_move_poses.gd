@@ -72,9 +72,10 @@ func run(t) -> void:
 func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
 	# The boot and the title take as many physics ticks as the wall clock gives them frames, so the
-	# game stands still through them (a tick of no game time) and the walk starts from the same dawn.
+	# game runs them at a scale so small that a tick's delta moves nothing a pixel can show (never 0:
+	# the crowd divides a step by its delta), and the walk starts from the same dawn.
 	var clock := Engine.time_scale
-	Engine.time_scale = 0.0
+	Engine.time_scale = 0.0000001
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
 	await Boot.press_title(t, booted.main, "Right")
 	var summary := Boot.summary(booted.main)

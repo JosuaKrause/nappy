@@ -23,6 +23,15 @@ for the observers' count of a run, which the `Telemetry` and `VisitCounter` auto
 suite can hold a copy of; giving each its own teardown, once that count is held by something a
 suite is handed, removes the declaration.
 
+**Boots that drift with the wall clock.** A booted `main` has stepped as many physics ticks by the
+time a suite takes hold as the wall clock gave its boot frames, so a suite that then counts ticks
+or frames starts its walk from a crowd that is a few ticks apart from run to run, which
+`test_move_poses.gd` holds still by running the boot at a time scale of 1e-7. The suites that boot
+`main` and count physics ticks or frames after it, and check nothing the drift reaches today, are
+`test_boot_handing.gd`, `test_run_config.gd`, `test_main.gd`, `test_run_flow.gd`,
+`test_frame_record.gd` and `test_run_checkpoints.gd`; they hold the boot still the same way when a
+check of theirs reads a position or a crowd state.
+
 **Tests touch nothing real.** A test overwrote the player's desktop save, and asked whether tests
 should be made unable to touch it at all, by a guard in the save that refuses the real path while
 the test runner runs, the player: "so a) tests shouldn't touch anything real. all of that should be

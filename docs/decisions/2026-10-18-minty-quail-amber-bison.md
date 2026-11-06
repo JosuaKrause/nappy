@@ -14,19 +14,26 @@ two weeks was mined for failures that passed on a re-run, and each failed shard 
   recomputed on every poll. The child opened its log at 23:59:34 UTC in the folder of 2026-11-05; at
   midnight the suite looked in the folder of 2026-11-06, which did not exist, and read no route
   lines. Fix: the suite names the day it started on once and reads every day folder from that day
-  on. Two probes (`tests/probes/escape_winnable.gd`, `m184_route_timing.gd`) build the same path and
-  are not suites; they keep it.
+  on. The two probes that build the same path are fixed the same way.
 - **`test_move_poses.gd`, a position nothing checked** (a lead from the review of #1129: her
   position at the swing tick took five different values on main for seed 1, and three for seed
   4242). Cause: the boot and the title's presses await real frames, and a frame gives the game as
   many physics ticks as the wall clock allows (35 or 36 for seed 4242), so the crowd had stepped a
   wall-time-dependent number of ticks before the walk began; the walk stands her against the nearest
   walker every 30 ticks, so one tick of difference chose another walker and the walks diverged. The
-  game's own code reads no wall time here. Fix: the suite holds `Engine.time_scale` at 0 through the
-  boot and the title, so ticks that run then carry no game time, and restores it before the walk;
-  three runs gave the same position. Other suites that boot `main` and await frames before a
-  tick-counted walk have the same shape; none of them was found to check a position the variation
-  reaches.
+  game's own code reads no wall time here. Fix: the suite holds `Engine.time_scale` at 1e-7 through the
+  boot and the title and restores it before the walk, so a tick that runs then carries a delta far
+  below a pixel of motion and the boot's tick count no longer reaches the crowd; five runs gave the
+  same position for both seeds. **Rejected:** a scale of 0 (the first fix) made every crowd tick
+  step with a delta of 0, so `WalkerStrategy.make_way_for()` was handed `keeper.step / delta`, a
+  non-finite vector, and printed 640 `Vector2 cannot be normalized` warnings, none on main; a scale
+  of 1e-4 had no warnings but seed 1 still gave two positions (2418.984 and 2418.59). The game never
+  steps the crowd with a delta of 0 (a physics tick is the fixed step times the time scale, and
+  `src/` sets no time scale), so that warning is no game bug. Two probes (`escape_winnable.gd`,
+  `m184_route_timing.gd`) had the midnight bug of the first flake in their `_find_log` and read every
+  day folder now. The suites that boot `main` and then count physics ticks or frames, whose crowd
+  has the same tick-count drift and which check no position it reaches, are listed in
+  `tests-isolated.md`.
 - **CI's shuffle seed.** The seed was the run id, which a re-run shares, so re-running a head
   replayed the same order. It is now the run id followed by the attempt number, and the log prints
   the seed that replays it.
