@@ -36,18 +36,6 @@ constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_me
 
 Each line: where | the check | its kind | why | the audit's confidence.
 
-**`test_resistance_arrow.gd`**
-
-- `test_resistance_arrow.gd:217` and `:220` | `_test_the_arrow_moves_at_four_tiles_closer` / `_test_the_arrow_does_not_move_at_three_tiles_closer` | RESTATES | Two probes straddling the hysteresis constant (4 tiles) read back as `moves` true/false; they go red when the threshold is retuned, not when switching breaks. `_test_the_arrow_switches_as_another_target_becomes_closer` (test_resistance_arrow.gd:182) is the behaviour. | medium
-
-**`test_resistance_reach_narrow.gd`**
-
-- test_resistance_reach_narrow.gd:97-98 `_test_the_narrow_targets_are_reachable_on_their_day` | "day %d has a narrow resistance target" (`ResistanceSteps.narrow_target_on(day) != null` for days 9, 12, 14) | restates a design decision | Reads which days have a narrow target out of `ResistanceSteps` and then loops over the same three days; goes red only when the table is edited. The skip-branch `continue` it guards is the only thing it does. Medium-low; kept as a guard if the player prefers. | medium
-
-**`test_resistance_replacement.gd`**
-
-- `test_resistance_replacement.gd:100` | `t.check(true, "skipped: the test city has no two alleys close enough to test this")` | cannot fail | An always-true check on the branch where the setup found nothing, so the whole test silently passes on a seed/city where its precondition does not hold. Should fail (or the setup should pick a city that has the alleys). | high
-
 **`test_route_rig.gd`**
 
 - The rig suite's seed claim, run (record minty-quail-brisk-llama): on seeds 1, 2, 3 and 5 only seed 2 fails, and only two checks, both in `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van` ("crosses none of any body's clearance", "no step of the plan past the van..."). Open: why the dev route rig's plan crosses a body's clearance on seed 2, a planner gap in a dev tool or a check that holds by luck.

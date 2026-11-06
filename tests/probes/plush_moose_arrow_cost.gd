@@ -27,13 +27,13 @@ extends RefCounted
 ##   one it now points at when it moved the arrow.
 ## - **tick while sweeping**: one of the director's physics ticks (`ResistanceDirector.tick()`, one
 ##   `ARROW_SWEEP_TILES_PER_TICK` slice of a sweep with the rest of its tick) while a sweep is under
-##   way (`arrow_sweeping()`), over the first sweep from nothing and every sweep a choice started; and
+##   way (`_arrow_sweeping()`), over the first sweep from nothing and every sweep a choice started; and
 ##   how many ticks the longest of them took to finish.
 ## - **whole sweep at once**: the same field swept in one go over a fresh layout of what blocks her
 ##   (`WalkField.ground_for()`), for scale — what one tick would cost if the sweep were not spread.
 ##
 ## "no length from her" counts positions where her tile has no walking length to any target: the
-## arrow's field of every target names no closest target there (`arrow_nearest_at()`).
+## arrow's field of every target names no closest target there (`_arrow_nearest_at()`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567]
@@ -67,7 +67,7 @@ func run(t) -> void:
 				director.free()
 				city.free()
 				continue
-			var found := director.arrow_targets()
+			var found := _arrow_targets(director)
 			targets = maxi(targets, found.size())
 			print("PLUSH_MOOSE seed %d day %d: %d targets" % [seed_value, day, found.size()])
 			var spots := _positions(city, director)
@@ -90,7 +90,7 @@ func run(t) -> void:
 				ticks.append(Time.get_ticks_usec() - chose)
 				# A choice that moved the arrow starts the sweep of the one it now points at.
 				frames.append(_sweep_to_the_end(director, slices))
-				if director.arrow_nearest_at(city.map.world_to_tile(at)) == null:
+				if _arrow_nearest_at(director, city.map.world_to_tile(at)) == null:
 					unreached += 1
 			player.free()
 			director.free()
@@ -107,7 +107,7 @@ func run(t) -> void:
 ## timing each tick into `slices`, and answers how many ticks they took.
 func _sweep_to_the_end(director: ResistanceDirector, slices: Array[int]) -> int:
 	var count := 0
-	while director.arrow_sweeping() and count < 1000:
+	while _arrow_sweeping(director) and count < 1000:
 		var started := Time.get_ticks_usec()
 		director.tick(1.0 / Engine.physics_ticks_per_second)
 		slices.append(Time.get_ticks_usec() - started)
@@ -193,7 +193,7 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
-					and director.reaches_from_home(tile):
+					and director._reachable_from_home(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = [director.contact_position()]
 	if director.read_mark():
@@ -234,3 +234,22 @@ func _worst(values: Array[int]) -> float:
 	for v in values:
 		worst = maxi(worst, v)
 	return worst / 1000.0
+
+## `ResistanceDirector`'s places that answer today's task, as the arrow chooses among them
+## (`_arrow_candidates()`): empty with no step on offer or one a single place answers. The probe
+## reads the director's private state, which the director offers no query of.
+static func _arrow_targets(director: ResistanceDirector) -> Array[Dictionary]:
+	var step := director.current_step()
+	if step == null or not ResistanceSteps.answers_at_several_places(step):
+		var none: Array[Dictionary] = []
+		return none
+	return director._arrow_candidates(step)
+
+## Whether a sweep of the arrow's walking fields is under way (`ResistanceDirector._arrow_*_next`).
+static func _arrow_sweeping(director: ResistanceDirector) -> bool:
+	return director._arrow_nearest_next != null or director._arrow_own_next != null
+
+## The key of the target closest on foot from `tile` in the director's finished sweep of every
+## target, or null (`ResistanceDirector._arrow_nearest`, which the director offers no query of).
+static func _arrow_nearest_at(director: ResistanceDirector, tile: Vector2i) -> Variant:
+	return director._arrow_nearest.nearest_at(tile) if director._arrow_nearest else null

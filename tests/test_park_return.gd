@@ -160,7 +160,8 @@ func _walk(main: Node2D, to: Vector2, seconds: float, shows: Callable) -> void:
 ## so; the director's cordon ends the day with her inside it) or `PATIENCE` runs out.
 func _wait_for_the_close(main: Node2D, shows: Callable) -> void:
 	var waited := 0.0
-	while (_happenings == null or _happenings.is_closing()) and Boot.day(main).is_running() \
+	while (_happenings == null or (_happenings.cordon != null
+			and not _happenings.cordon.is_closed())) and Boot.day(main).is_running() \
 			and waited < PATIENCE:
 		_frame(main, shows)
 		waited += STEP

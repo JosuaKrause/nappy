@@ -1,6 +1,8 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: a relocated mark is never placed in an alley she cannot reach, and day 11 puts up a mast near the mark when none is near.
 
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
+
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
@@ -29,6 +31,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 		var player: Stroller = read[2]
 		var circle := _edge_of_her_circle(director, mark)
 		var site_near := false
+		var reach := ResistanceReads.home_reach(_city.map, director.reach_obstruction())
 		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventScheduler.Planned = null
 		for plan in _city.events.plans():
@@ -46,7 +49,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				var next := foot_tile + side
 				if not SpawnSiting.is_legal_ground(_city.map, next,
 						_walled_alleys()) or _city.map.is_obstructed(next) \
-						or not director.reaches_from_home(next):
+						or not ResistanceReads.reaches_home(reach, next):
 					continue
 				if circle[0].has(next) or circle[1].has(next):
 					site_near = true
@@ -71,7 +74,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 					"seed %d: reaching it silences it and records its scar" % seed_value)
 			# Day 14's sabotage: lit again, the added mast is put out by `silence_all_masts()`
 			# with the others — it is that one mast's plan this asks about.
-			t.check(not director.fell_back() and _city.events.plans().has(added_plan),
+			t.check(_city.events.plans().has(added_plan),
 					"seed %d: the task went to the mast put up for it, one of the day's plans"
 					% seed_value)
 			added_plan.silenced = false
@@ -116,7 +119,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			for plan in _city.events.plans():
 				if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-"):
 					generated += 1
-			t.check(generated == 0 and director.fell_back(),
+			var stands_on := ResistanceReads.mast_at(director, _city.events)
+			t.check(generated == 0 and stands_on != "" and not stands_on.begins_with("added-"),
 					"seed %d: no mast near the mark, none generated (%d), and the nearest stands in"
 					% [seed_value, generated])
 		player.free()

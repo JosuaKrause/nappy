@@ -15,7 +15,7 @@ extends "res://tests/test_day13_guard.gd"
 ## that a task several places answer is on offer, on each of `ARROW_SEEDS`, with her handed to the
 ## director, the tile the arrow points at with her at each of `POSITIONS` spread over the city, after
 ## every sweep has finished, how many tiles closer on foot the closest target is than that one
-## (`arrow_lead_at()`), and the tile of the closest (`arrow_nearest_at()`). Every city stands in a
+## (`_arrow_lead_at()`), and the tile of the closest (`_arrow_nearest_at()`). Every city stands in a
 ## run of its own.
 
 const PROBE := preload("res://tests/probes/velvet_stork_guard_path_cost.gd")
@@ -101,7 +101,7 @@ func _the_arrow(t, day: int, seed_value: int) -> void:
 	if step == null or step.is_pickup:
 		print("%s: no task on offer" % label)
 	else:
-		var found := director.arrow_targets()
+		var found := _arrow_targets(director)
 		print("%s: %d targets" % [label, found.size()])
 		var index := 0
 		for at in _positions(city, director):
@@ -109,7 +109,7 @@ func _the_arrow(t, day: int, seed_value: int) -> void:
 			_settle_the_arrow(director)
 			print("%s position %d (%.1f, %.1f): arrow tile %s, lead %d, nearest tile %s" % [label,
 					index, at.x, at.y, _arrow_tile(director, city.map),
-					director.arrow_lead_at(city.map.world_to_tile(at)),
+					_arrow_lead_at(director, city.map.world_to_tile(at)),
 					_nearest_tile(director, city.map, found, at)])
 			index += 1
 	_tear_down(player, director, city)
@@ -117,7 +117,7 @@ func _the_arrow(t, day: int, seed_value: int) -> void:
 ## The tile of the target the field of every target says is closest to `at`, from `found`.
 static func _nearest_tile(director: ResistanceDirector, map: CityMap, found: Array[Dictionary],
 		at: Vector2) -> Vector2i:
-	var key: Variant = director.arrow_nearest_at(map.world_to_tile(at))
+	var key: Variant = _arrow_nearest_at(director, map.world_to_tile(at))
 	for target in found:
 		if key != null and _same_key(target["key"], key):
 			return map.world_to_tile(target["at"])
@@ -130,7 +130,7 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		for x in map.size.x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not map.is_obstructed(tile) \
-					and director.reaches_from_home(tile):
+					and director._reachable_from_home(tile):
 				sidewalk.append(tile)
 	var spots: Array[Vector2] = [director.contact_position()]
 	var stride := maxi(1, sidewalk.size() / POSITIONS)
@@ -168,3 +168,27 @@ func _day_rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerato
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
+
+## `ResistanceDirector`'s places that answer today's task, as the arrow chooses among them
+## (`_arrow_candidates()`): empty with no step on offer or one a single place answers. The probe
+## reads the director's private state, which the director offers no query of.
+static func _arrow_targets(director: ResistanceDirector) -> Array[Dictionary]:
+	var step := director.current_step()
+	if step == null or not ResistanceSteps.answers_at_several_places(step):
+		var none: Array[Dictionary] = []
+		return none
+	return director._arrow_candidates(step)
+
+## The key of the target closest on foot from `tile` in the director's finished sweep of every
+## target, or null (`ResistanceDirector._arrow_nearest`, which the director offers no query of).
+static func _arrow_nearest_at(director: ResistanceDirector, tile: Vector2i) -> Variant:
+	return director._arrow_nearest.nearest_at(tile) if director._arrow_nearest else null
+
+## How many tiles closer on foot from `tile` the closest target is than the one the arrow points
+## at, or -1 while either sweep is unfinished (`ResistanceDirector._arrow_nearest`, `_arrow_own`).
+static func _arrow_lead_at(director: ResistanceDirector, tile: Vector2i) -> int:
+	if not director._arrow_nearest or not director._arrow_own:
+		return -1
+	var to_nearest: int = director._arrow_nearest.length_at(tile)
+	var to_own: int = director._arrow_own.length_at(tile)
+	return to_own - to_nearest if to_nearest >= 0 and to_own >= 0 else -1

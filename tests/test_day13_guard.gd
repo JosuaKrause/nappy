@@ -29,14 +29,15 @@ extends RefCounted
 ## the real day order, so none leans on the steps, alleys or scars another left. What the director
 ## has put in the street is read from the street: the contact (`ResistanceDirector.contact()`), the
 ## roadblock the task rides (`rider()`), the task's guard among the city's live instances
-## (`_task_guard()`), and what the red arrow points at through its queries (`arrow_key()`,
-## `arrow_targets()`, `arrow_nearest_at()`). The mark and the task are completed as an action
-## completes them (`ContactPoint.complete_now()`), and the arrow's choices and the guard's moves are
-## the director's own ticks (`tick()`), the step `main` runs on every physics tick: a choice is a tick
-## as long as the arrow's clock (`_choose_again()`), and the arrow is run to rest a physics tick at a
-## time (`_settle_the_arrow()`).
+## (`_task_guard()`), and what the red arrow points at from where its tip stands
+## (`red_arrow_target()`) and the live roadblocks there (`ResistanceReads`). The mark and the task are
+## completed as an action completes them (`ContactPoint.complete_now()`), and the arrow's choices
+## and the guard's moves are the director's own ticks (`tick()`), the step `main` runs on every
+## physics tick: a choice is a tick as long as the arrow's clock (`_choose_again()`), and the arrow
+## is run to rest a physics tick at a time (`_settle_the_arrow()`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const SEED := 4242
 const DAY := 13
 ## The cities day 13's own roadblock is placed on, each under the day's rules
@@ -108,7 +109,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 
 	var other := _her_way_to_another_roadblock(director, player, director.rider())
 	t.check(other != null, "there is another live roadblock she can walk up to (%d live)"
-			% director.arrow_targets().size())
+			% ResistanceReads.answering(city.events, step).size())
 	if other == null:
 		_tear_down(player, director, city)
 		return
@@ -198,7 +199,7 @@ func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance,
 			% guard.global_position.distance_to(player.global_position))
 	var stood := guard.global_position
 	_choose_again(director)
-	t.check(_same_key(director.arrow_key(), roadblock.get_instance_id())
+	t.check(ResistanceReads.pointed_at(director, ResistanceReads.answering(_city.events, director.current_step())) == roadblock
 			and _task_guard() == guard and guard.global_position == stood,
 			"at %s the arrow still points at it and the next choice leaves him there" % what)
 	t.check(_a_way_past(_city.map, guard.global_position, roadblock.body_position(),
@@ -276,10 +277,7 @@ func _test_the_guard_never_stands_on_her_only_way(t, seed_value: int) -> void:
 	var asked := 0
 	var blocked: Array[String] = []
 	var near_side := 0
-	for target: Dictionary in director.arrow_targets():
-		var roadblock := _live_instance(target["key"])
-		if roadblock == null:
-			continue
+	for roadblock in ResistanceReads.answering(city.events, director.current_step()):
 		var body := roadblock.body_position()
 		var reach := ContactPoint.body_reach(roadblock)
 		var places: Array[Vector2] = [read_at]
@@ -632,17 +630,10 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 		_tear_down(player, director, city)
 		return
 	var map := city.map
-	# The red arrow shares `WalkField.ground_for()` with the guard's walk; what is left to guard is
-	# the director's cache of it, which must be a fresh layout of what blocks her now: the field the
-	# arrow reads, swept over it, says what a field swept here over a fresh layout says, tile for
-	# tile. Her view is on him while the arrow settles, so its choices leave him where he stands.
+	# Her view is on him while the arrow settles, so its choices leave him where he stands.
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	_settle_the_arrow(director)
 	_view = Rect2()
-	var differ := _tiles_the_arrow_reads_differently(director, map)
-	t.check(differ[1] > 0 and differ[0] == 0,
-			"(round a building) the red arrow's field is swept over the guard's walk's ground (%d of %d reached tiles differ)"
-			% differ)
 	var standoff := PursuitSpec.standoff(guard.def.chase_speed(), guard.def.standoff_reach())
 	var from := guard.global_position
 	# His walk to her goes round what stops a figure on foot today, as his sweep does.
@@ -795,9 +786,8 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 func _her_way_to_another_roadblock(director: ResistanceDirector, player: Stroller,
 		guarded: EventInstance) -> EventInstance:
 	var map := _city.map
-	for target: Dictionary in director.arrow_targets():
-		var roadblock := _live_instance(target["key"])
-		if roadblock == null or roadblock == guarded:
+	for roadblock in ResistanceReads.answering(_city.events, director.current_step()):
+		if roadblock == guarded:
 			continue
 		var centre := map.world_to_tile(roadblock.body_position())
 		# Far enough out that the band round it is mostly out of his trigger range of her, so a spot
@@ -810,47 +800,15 @@ func _her_way_to_another_roadblock(director: ResistanceDirector, player: Strolle
 					continue
 				player.global_position = map.tile_to_world(tile)
 				_settle_the_arrow(director)
-				if _same_key(director.arrow_key(), target["key"]):
+				if ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) == roadblock:
 					return roadblock
 	return null
 
-## How many of the tiles the arrow's finished field of every target reaches answer a different
-## nearest target from a field swept here over a fresh layout of what blocks her now
-## (`WalkField.ground_for()`), as `[differing, reached]`: the director's field is read through
-## `arrow_nearest_at()`, the read its choice makes.
-static func _tiles_the_arrow_reads_differently(director: ResistanceDirector, map: CityMap) -> Array:
-	var targets := director.arrow_targets()
-	var fresh := WalkField.start(map, targets,
-			Vector2i(map.day_record_version, map.obstruction_version))
-	var ground := WalkField.ground_for(map)
-	for i in 64:
-		if fresh.done:
-			break
-		fresh.advance(map, ground, 1 << 30)
-	var differing := 0
-	var reached := 0
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			var want: Variant = fresh.nearest_at(tile)
-			var read: Variant = director.arrow_nearest_at(tile)
-			if want == null and read == null:
-				continue
-			reached += 1
-			if not _same_key(want, read):
-				differing += 1
-	return [differing, reached]
-
 ## Runs the arrow to rest the way the game does: it chooses (`retarget_the_arrow()`), then the
 ## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a time,
-## choosing again as each finishes, until none is under way. Bounded: a sweep that never ends fails
-## the test's next check rather than hanging it.
+## choosing again as each finishes (`ResistanceReads.settle()`).
 func _settle_the_arrow(director: ResistanceDirector) -> void:
-	director.retarget_the_arrow()
-	var ticks := 0
-	while director.arrow_sweeping() and ticks < 1200:
-		director.tick(1.0 / Engine.physics_ticks_per_second)
-		ticks += 1
+	ResistanceReads.settle(director, 1.0 / Engine.physics_ticks_per_second)
 
 ## One of the arrow's choices, as `main`'s ticks make them: a tick of the director as long as the
 ## arrow's clock (`ResistanceDirector.ARROW_RETARGET_SECONDS`), which chooses again and asks the
@@ -865,22 +823,6 @@ func _task_guard() -> EventInstance:
 		if instance.def.id == EventCatalogue.task_guard().id and not instance.is_finished:
 			return instance
 	return null
-
-## The live instance a key of the arrow's names (`ResistanceDirector.arrow_key()`, an instance id),
-## or null for one finished, freed or not an instance.
-static func _live_instance(key: Variant) -> EventInstance:
-	if not key is int:
-		return null
-	var found := instance_from_id(key)
-	if not is_instance_valid(found) or not found is EventInstance \
-			or (found as EventInstance).is_finished:
-		return null
-	return found as EventInstance
-
-## Whether two of the arrow's keys name the same target: an instance id or a mast id, the type
-## asked first, since comparing an int with a String is an error rather than false.
-static func _same_key(a: Variant, b: Variant) -> bool:
-	return typeof(a) == typeof(b) and a == b
 
 ## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, freed with the city), so
 ## the steps done and the alleys used are this test's and gone with it.

@@ -2005,20 +2005,20 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
 	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
 			"the frame she crosses, the guard across the road raises his hand")
-	t.check(city.events.checkpoints.guard_after_her() == null, "and nobody is after her yet")
+	t.check(_door_guard_after_her(city.events) == null, "and nobody is after her yet")
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
-	t.check(city.events.checkpoints.guard_after_her() == null and not far_hut.guard_warns_her,
+	t.check(_door_guard_after_her(city.events) == null and not far_hut.guard_warns_her,
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING - 0.1)
-	t.check(city.events.checkpoints.guard_after_her() == null, "staying across, nobody comes before it runs")
+	t.check(_door_guard_after_her(city.events) == null, "staying across, nobody comes before it runs")
 	_stand_for(rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
 	t.check(warned == ["door_guard", "door_guard"],
 			"and the page counts each crossing's warning once (%s)" % [warned])
-	var guard := city.events.checkpoints.guard_after_her()
+	var guard := _door_guard_after_her(city.events)
 	t.check(guard != null and guard.def.id == "door_guard",
 			"once it has run, a door_guard is set on her")
 	if guard:
@@ -2036,7 +2036,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var walks := city.events.walks_under_a_boom()
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING + 0.2)
-	t.check(city.events.walks_under_a_boom() == walks + 1 and city.events.checkpoints.guard_after_her() == guard,
+	t.check(city.events.walks_under_a_boom() == walks + 1 and _door_guard_after_her(city.events) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
 
@@ -2073,7 +2073,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 			> far_lane.distance_to(far_hut.global_position),
 			"walked on to the far lane, the hut that warned her is now the nearer one")
 	_stand_for(rig, CheckpointController.CROSSING_WARNING)
-	var guard := city.events.checkpoints.guard_after_her()
+	var guard := _door_guard_after_her(city.events)
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.def.obstructs_radius + 0.5,
 			"once the warning has run, the guard steps out of the hut that warned her (%s)"
@@ -2159,6 +2159,15 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 # `CheckpointController._end_the_guard_for_a_hold()` is the code; the design is `docs/EVENTS.md`,
 # "Checkpoints".
 
+## The `door_guard` a walked crossing set on her last, among the manager's instances, or null while
+## none stands in the world.
+static func _door_guard_after_her(manager: EventManager) -> EventInstance:
+	var found: EventInstance = null
+	for instance in manager.instances():
+		if instance.def.id == "door_guard":
+			found = instance
+	return found
+
 ## A `_door_rig()` (two huts and a gate on an east-west street) with a `door_guard` already after
 ## her, set on her by `CheckpointController.set_a_guard_on_her()` out of the northern hut, `doors[0]`,
 ## on the east side — the shape every test below starts from.
@@ -2171,7 +2180,7 @@ func _guard_after_her_rig(t) -> Dictionary:
 	var axis := near_hut.facing_now()
 	# Set on her the way a walked crossing sets him, out of the near hut on the side she crossed to.
 	manager.checkpoints.set_a_guard_on_her(near_hut, doors[1], near_hut.global_position + axis * 40.0)
-	var guard := manager.checkpoints.guard_after_her()
+	var guard := _door_guard_after_her(manager)
 	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors
 	rig["guard"] = guard

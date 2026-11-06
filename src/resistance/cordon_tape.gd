@@ -56,12 +56,6 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	atlas.release(&"street_kit")
 
-## The world rect the stretch's body covers. Kept for the tests.
-func body_rect() -> Rect2:
-	if across:
-		return Rect2(position - Vector2(length, DEPTH) * 0.5, Vector2(length, DEPTH))
-	return Rect2(position - Vector2(DEPTH * 0.5, length), Vector2(DEPTH, length))
-
 func _draw() -> void:
 	if piece == Piece.POST:
 		Sprites.draw_standing(self, atlas.region(POST), Vector2.ZERO)
