@@ -98,10 +98,10 @@ func gait_frame_at(along: Vector2) -> int:
 ## `LaneMover.STEER_SPEED`, the rate the mover steers at while it has not arrived. Zero once it has
 ## arrived with no detour running, which a stopped walker always has, since
 ## `WalkerStrategy._yield_factor()` zeroes the along term then.
-func heading_now() -> Vector2:
+func _heading_now() -> Vector2:
 	return heading_at(_agent.velocity())
 
-## `heading_now()` for a `velocity()` the caller already holds.
+## `_heading_now()` for a `velocity()` the caller already holds.
 func heading_at(along: Vector2) -> Vector2:
 	var at: Vector2 = _agent.position
 	var cross_gap: float = _agent._lane_centre + _agent._detour - (at.x if _agent._vertical else at.y)
@@ -115,10 +115,10 @@ func heading_at(along: Vector2) -> Vector2:
 ## sector centre 45 degrees clear of its neighbours and twice the hold's reach, and the ordinary
 ## test replaces the sector drawn before with no reset.
 func sector() -> int:
-	view = EightDirection.update(view, heading_now(), IDLE_SPEED)
+	view = EightDirection.update(view, _heading_now(), IDLE_SPEED)
 	return view
 
-## One `velocity()` serves the gait and the sector: the value `gait_frame()` and `heading_now()`
+## One `velocity()` serves the gait and the sector: the value `gait_frame()` and `_heading_now()`
 ## would each have computed, since nothing between them moves it.
 func picture(moving: Vector2) -> Vector3i:
 	var third := gait_frame_at(moving)

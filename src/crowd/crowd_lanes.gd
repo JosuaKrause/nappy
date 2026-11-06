@@ -166,7 +166,7 @@ static func arterial_index(axis_blocks: int) -> int:
 ##
 ## `street_kind`, `GroundTiles`, `TrafficSignals` and `decay_multiplier` all ask the map. This is
 ## the fourth place that has to agree with them and the easiest one to leave behind.
-static func busyness(map: CityMap, vertical: bool, index: int) -> float:
+static func _busyness(map: CityMap, vertical: bool, index: int) -> float:
 	if map.is_main_road(vertical, index):
 		return ARTERIAL_BUSYNESS
 	var rng := RandomNumberGenerator.new()
@@ -191,7 +191,7 @@ static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -
 		# "busiest corridor" delivers its people to wherever on it she is standing.
 		if not cars:
 			return PRECINCT_BUSYNESS
-	return busyness(map, vertical, index)
+	return _busyness(map, vertical, index)
 
 ## A corridor chosen in proportion to how busy it is, restricted to an inclusive range of
 ## corridor indices — the streets that are actually inside the crowd's field. This is what makes

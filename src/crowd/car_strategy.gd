@@ -10,7 +10,7 @@ extends LaneStrategy
 ## half is `WalkerStrategy`; what both share is the mover, `LaneMover`.
 
 ## The places `_plan_a_turn()` looks for room, in the order it tries them, and the slots of
-## `turn_refusals`. See that function for what each one is.
+## `_turn_refusals`. See that function for what each one is.
 enum TurnCandidate { NEAR_ARM, FAR_ARM, BOX_ABOUT_FACE, STREET_ABOUT_FACE }
 
 ## What turned one candidate arc away — the answer `_commit_to_a_turn()` gives back.
@@ -71,16 +71,16 @@ const CAR_BRAKE := 320.0
 ## here* — the distinction the planner itself acts on and the one a measurement of the traffic needs
 ## to read back. Four ints written where the decision is taken, and `tests/probes/m152_car_jumps.gd`
 ## is what reads them.
-var turn_refusals := PackedInt32Array()
+var _turn_refusals := PackedInt32Array()
 
 ## Which of `_plan_a_turn()`'s two ways out reversed this car where it stood, or `NONE` when the
 ## last run of the planner did not. Reset at the top of every `_plan_a_turn()`.
-var turn_round_cause := TurnRoundCause.NONE
+var _turn_round_cause := TurnRoundCause.NONE
 
 ## Whether this car has already committed to an arc since the last time the road in front of it was
 ## clear — what tells a turn that was planned and taken apart from one that was never found. Cleared
 ## by `_look_ahead()` the moment nothing is blocking the lane any more.
-var turned_on_this_approach := false
+var _turned_on_this_approach := false
 
 ## Seconds this car has stood at a barrier with an arc that fits everywhere but in the lane it would
 ## land in. Runs while it waits and is put back to zero the moment anything about the situation
@@ -123,12 +123,12 @@ static func braking_distance(speed: float) -> float:
 ## never a shape a car could get pinned against. This shape is the shadow's and the debug view's;
 ## the lethal rectangle is `will_be_lethal()`'s strike box (`Tuning.CAR_STRIKE_HALF_LENGTH` and
 ## `CAR_STRIKE_HALF_WIDTH`).
-static func shadow_shape() -> GroundShape:
+static func _shadow_shape() -> GroundShape:
 	var radius := SHADOW_ACROSS * 0.5
 	return GroundShape.segment(SHADOW_ALONG * 0.5 - radius, radius)
 
 func ground_shape() -> GroundShape:
-	return shadow_shape()
+	return _shadow_shape()
 
 func lane_offsets_at(_along_tile: int) -> Array[int]:
 	return CrowdLanes.ROAD_OFFSETS
@@ -185,9 +185,9 @@ func paced_velocity(moving: Vector2) -> Vector2:
 	return moving * _pocket_factor()
 
 ## Nothing in the way any more, so whatever this car did about the last thing that was is over and
-## the next blockage is a fresh approach. See `turned_on_this_approach` and `nowhere_to_turn`.
+## the next blockage is a fresh approach. See `_turned_on_this_approach` and `nowhere_to_turn`.
 func on_the_road_clear() -> void:
-	turned_on_this_approach = false
+	_turned_on_this_approach = false
 	nowhere_to_turn = false
 	_waited_to_turn = 0.0
 
@@ -575,7 +575,7 @@ func _plan_a_turn(delta: float) -> void:
 	# is no legal space to sweep and nothing to be gained by waiting for some, so the about-face on
 	# the spot stays exactly what it was: the way out of a state that is already illegal.
 	if not _mover._stands_on_a_street():
-		turn_round_cause = TurnRoundCause.OFF_THE_STREET
+		_turn_round_cause = TurnRoundCause.OFF_THE_STREET
 		_mover._turn_round()
 		return
 	var band := GiveWay.box_index(_mover._along(), _mover._direction)
@@ -642,7 +642,7 @@ func _plan_a_turn(delta: float) -> void:
 	if _no_road_the_other_way():
 		nowhere_to_turn = true
 		return
-	turn_round_cause = TurnRoundCause.STOPPED_NO_ROOM
+	_turn_round_cause = TurnRoundCause.STOPPED_NO_ROOM
 	_mover._turn_round()
 
 ## How long a car waits for the lane a half turn lands in to clear before it gives up and reverses
@@ -659,8 +659,8 @@ const TURN_WAIT_SECONDS := Tuning.CAR_GAP_MIN / Tuning.CAR_TURN_SPEED
 ## Whether any arc the planner has just tried was turned away by something that will move on its
 ## own. See `TurnRefusal`: a lane that is occupied empties, and nothing else on that list does.
 func _an_arc_may_yet_fit() -> bool:
-	for slot in turn_refusals.size():
-		if turn_refusals[slot] == TurnRefusal.LANDING_TAKEN:
+	for slot in _turn_refusals.size():
+		if _turn_refusals[slot] == TurnRefusal.LANDING_TAKEN:
 			return true
 	return false
 
@@ -684,18 +684,18 @@ func _no_road_the_other_way() -> bool:
 ## Empties the record of what the planner last decided, so that every entry in it is about the run
 ## that is about to happen rather than a leftover from the approach before.
 func _forget_the_last_plan() -> void:
-	turn_round_cause = TurnRoundCause.NONE
+	_turn_round_cause = TurnRoundCause.NONE
 	# Re-established below or not at all, so a car whose way out opened again is never left carrying
 	# a reason to be recycled that stopped being true.
 	nowhere_to_turn = false
-	if turn_refusals.size() != TurnCandidate.size():
-		turn_refusals.resize(TurnCandidate.size())
-	turn_refusals.fill(TurnRefusal.NOT_TRIED)
+	if _turn_refusals.size() != TurnCandidate.size():
+		_turn_refusals.resize(TurnCandidate.size())
+	_turn_refusals.fill(TurnRefusal.NOT_TRIED)
 
 ## Tries one candidate arc, writes down what happened to it, and says whether the car took it.
 func _try_a_turn(slot: TurnCandidate, turn: CarTurn, over_the_kerb := false) -> bool:
 	var refusal := _commit_to_a_turn(turn, over_the_kerb)
-	turn_refusals[slot] = refusal
+	_turn_refusals[slot] = refusal
 	return refusal == TurnRefusal.FITS
 
 ## The half turn back down the other lane, taken at a given point along this corridor.
@@ -748,7 +748,7 @@ func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 	if not _has_room_to_land(turn):
 		return TurnRefusal.LANDING_TAKEN
 	_mover.take_the_turn(turn, run_up)
-	turned_on_this_approach = true
+	_turned_on_this_approach = true
 	_waited_to_turn = 0.0
 	_claim_the_turn()
 	return TurnRefusal.FITS

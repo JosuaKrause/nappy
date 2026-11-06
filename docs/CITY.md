@@ -1359,7 +1359,7 @@ from walking past it".)* That row is a `SealPlanner` scene rather than a `RoadCl
 pavements either side of them are ground she can walk. What closes them is
 `EventCatalogue.CAR_ACCIDENT_INTENSITY`, a field over the scene's own band that costs more than half the
 meter to squeeze past. **It is still not a third thing to sum**: a seal is a catalogue row, so it
-emits the way every event does and `WorldContext.total_excitement_at` is unchanged. What has changed is
+emits the way every event does and `WorldContext.excitement_sources_at` is unchanged. What has changed is
 that a seal may be loud, and only this one is — the fallen tree (one trunk kerb to kerb) and the
 burst main (a crater between two barriers) leave no gaps to close and stay at zero.
 
@@ -2040,7 +2040,7 @@ ninety seconds of the arterial: **3,776 overlapping crossing-axis pairs, one in 
 the deepest 39 px into a 40 px footprint** — with every assertion about the traffic passing
 throughout, because each car's own lane was legal.
 
-`Crowd.give_way_at_junctions()` decides whose turn it is, once a frame, per junction:
+`Crowd._give_way_at_junctions()` decides whose turn it is, once a frame, per junction:
 
 - **Only crossing traffic conflicts.** Two cars meeting head-on are in different lanes and pass;
   holding them would stop the city for nothing.

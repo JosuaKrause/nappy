@@ -247,8 +247,8 @@ func _feel_the_frame(delta: float) -> void:
 
 ## **This is where the meter is fed, so this is where a source's `landed()` colour is traced
 ## from** — *(2026-09-08, the player: "don't derive it from the source numbers but trace an
-## increase in excitement back to its constituents".)* `excitement_sources_at()` returns the same
-## bodies `total_excitement_at()` would have summed, broken out so each one's own share of what
+## increase in excitement back to its constituents".)* `excitement_sources_at()` returns
+## every body that charges her, broken out so each one's own share of what
 ## reaches the bar this frame can be handed to its own `accumulate_landed()` — sensitivity
 ## included, so `ExcitementHalo`'s colour can never disagree with what the bar actually did.
 ## Running and the alley trickle have no source and are never attributed to anybody.
