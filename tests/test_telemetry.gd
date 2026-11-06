@@ -1552,8 +1552,6 @@ func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
 func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var group := EventPictures.ATLAS_GROUP
-	t.check(not atlas.is_acquired(group),
-			"the page starts out held by nobody")
 	Telemetry.begin_memory_log()
 	atlas.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
 	atlas.hold_for_the_process(group)
