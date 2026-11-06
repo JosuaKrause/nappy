@@ -344,19 +344,19 @@ func _test_all_mode(t, seed_value: int) -> void:
 	# three; the budget's own spill-over is `_test_all_mode_budget`'s, which a one-microsecond
 	# budget makes countable without timing anything.
 	city.scenery.budget_usec = 1_000_000_000
-	var prepared := ground.chunks.size()
+	var prepared := ground.chunks.keys()
 	city.scenery.update(view)
 	city.scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	var all_whole := true
 	for key in keys:
 		all_whole = all_whole and ground.chunks.has(key)
-	t.check(all_whole and ground.chunks.size() - prepared == keys.size(),
+	t.check(all_whole and _added(ground, prepared) == keys.size(),
 			"mode 1 prepares every needed region whole in the update that needs it")
 	# Nothing waiting: a real frame passes and the residency's own maintenance, which runs an
 	# update whenever work waits, prepares nothing more.
-	var after := ground.chunks.size()
+	var after := ground.chunks.keys()
 	await _frames(city)
-	t.check(ground.pending.is_empty() and ground.chunks.size() == after,
+	t.check(ground.pending.is_empty() and _added(ground, after) == 0,
 			"mode 1 leaves nothing partly built and nothing waiting")
 	for key in keys:
 		_check_chunk(t, city, key)
@@ -380,22 +380,22 @@ func _test_all_mode_budget(t, seed_value: int) -> void:
 	await _frames(city)
 	# The first update is the one that finds the ring; the residency's own per-frame maintenance
 	# then keeps going while work waits, one real frame at a time.
-	var prepared := ground.chunks.size()
+	var prepared := ground.chunks.keys()
 	scenery.update(view)
-	counts.append(ground.chunks.size() - prepared)
+	counts.append(_added(ground, prepared))
 	for frame in keys.size() + 1:
-		prepared = ground.chunks.size()
+		prepared = ground.chunks.keys()
 		await _frames(city)
-		if ground.chunks.size() == prepared:
+		if _added(ground, prepared) == 0:
 			break
-		counts.append(ground.chunks.size() - prepared)
+		counts.append(_added(ground, prepared))
 	scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	var all_whole := true
 	for key in keys:
 		all_whole = all_whole and ground.chunks.has(key)
-	prepared = ground.chunks.size()
+	prepared = ground.chunks.keys()
 	await _frames(city)
-	t.check(all_whole and ground.chunks.size() == prepared, "every spilled region is prepared in the end")
+	t.check(all_whole and _added(ground, prepared) == 0, "every spilled region is prepared in the end")
 	t.check(counts.size() == keys.size() and counts.all(func(n: int) -> bool: return n == 1),
 			"each frame's update prepares only what its own budget allows, frame after frame "
 			+ "(regions per update: %s)" % [counts])
@@ -411,39 +411,39 @@ func _test_one_mode(t, seed_value: int) -> void:
 	t.check(keys.size() == 3, "the mode-2 check has three actual load-ring regions to prepare")
 	# A real frame since the ground was emptied, so the process frame is a new one.
 	await _frames(city)
-	var prepared := ground.chunks.size()
+	var prepared := ground.chunks.keys()
 	scenery.update(view)
-	t.check(ground.chunks.size() - prepared == 1 and ground.pending.is_empty()
+	t.check(_added(ground, prepared) == 1 and ground.pending.is_empty()
 			and not _all_prepared(ground, keys),
 			"mode 2 prepares one whole region in a frame and the others wait, none half built")
 	scenery.update(view)
-	t.check(ground.chunks.size() - prepared == 1,
+	t.check(_added(ground, prepared) == 1,
 			"repeating an update in the same process frame prepares no second region")
 	for frame in keys.size() - 1:
 		# The update above ran before this frame's own `_process`, in the same process frame, so
 		# the fence holds that one back: the first region to follow comes a frame later.
 		await _frames(city, 2 if frame == 0 else 1)
-		t.check(ground.chunks.size() - prepared == frame + 2,
+		t.check(_added(ground, prepared) == frame + 2,
 				"each following frame prepares exactly one more waiting region")
 	var all_whole := true
 	for key in keys:
 		all_whole = all_whole and ground.chunks.has(key)
 		_check_chunk(t, city, key)
 		_check_whole_layout(t, city, key)
-	prepared = ground.chunks.size()
+	prepared = ground.chunks.keys()
 	await _frames(city)
-	t.check(all_whole and ground.chunks.size() == prepared, "every waiting region is prepared in turn")
+	t.check(all_whole and _added(ground, prepared) == 0, "every waiting region is prepared in turn")
 	# A guard preparation spends the frame: the ring region waits rather than making it two.
 	var waiting := _ring_keys(city, view, 1)
 	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
 	ground.release(close)
 	await _frames(city)
 	var guards := scenery.ordinary_guard_preparations
-	prepared = ground.chunks.size()
+	prepared = ground.chunks.keys()
 	scenery.update(view)
 	t.check(ground.chunks.has(close) and scenery.ordinary_guard_preparations == guards + 1,
 			"a region about to come into view is prepared at once by the guard")
-	t.check(ground.chunks.size() - prepared == 1 and not ground.chunks.has(waiting[0]),
+	t.check(_added(ground, prepared) == 1 and not ground.chunks.has(waiting[0]),
 			"a frame that needed the guard prepares no second, ordinary region")
 	await _frames(city, 2)
 	t.check(ground.chunks.has(waiting[0]), "the waiting region follows in the next frame")
@@ -588,6 +588,13 @@ func _chunk_ids(ground: SceneryGround) -> Dictionary:
 	for key: Vector2i in ground.chunks:
 		ids[key] = ground.chunks[key].get_instance_id()
 	return ids
+
+## How many regions the ground gained since `before` (its resident keys then), or -1000 when it also
+## lost one, so an eviction in the same update cannot hide a missing or extra preparation.
+func _added(ground: SceneryGround, before: Array) -> int:
+	if not before.all(func(key: Vector2i) -> bool: return ground.chunks.has(key)):
+		return -1000
+	return ground.chunks.size() - before.size()
 
 func _check_chunk(t, city: City, key: Vector2i) -> void:
 	for y in range(key.y * SceneryGround.CHUNK_TILES, (key.y + 1) * SceneryGround.CHUNK_TILES):
