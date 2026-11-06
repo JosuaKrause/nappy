@@ -60,7 +60,6 @@ src/events/event_scheduler.gd is_spoiled
 src/events/event_scheduler.gd place_masts
 src/events/event_scheduler.gd room_around
 src/events/event_scheduler.gd street_bag
-src/events/events_ahead.gd a_pursuer_is_after_her
 src/events/views/event_look.gd mark_colour
 src/events/views/event_look.gd mark_swell
 src/events/views/event_look.gd wants_a_mark

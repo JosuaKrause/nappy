@@ -141,7 +141,7 @@ func force(row: String, interval: float) -> void:
 # event. it is instant! policemen get switched to guardman on day 9.")*
 
 ## The pursuer on foot a torn poster sent, once he is in the world, or null. Kept only so a second
-## pursuit marble while he is still after her sends nobody more (`a_pursuer_is_after_her()`).
+## pursuit marble while he is still after her sends nobody more (`_a_pursuer_is_after_her()`).
 var _sent_after_her: EventInstance = null
 ## His warning while it is up, before he exists, or null.
 var _sent_warning: PendingWarning = null
@@ -163,12 +163,12 @@ var _sent_warning: PendingWarning = null
 ##
 ## **One at a time, and nothing on a walk with no poster pursuits** (`DaySpec.poster_pursuits`,
 ## false for the escape's sections). A pursuit marble drawn while his warning is up or while he is
-## still after her (`a_pursuer_is_after_her()`) sends nobody more; once he has caught her, given up
+## still after her (`_a_pursuer_is_after_her()`) sends nobody more; once he has caught her, given up
 ## or run out his chase, the next marble sends the next one. *(Proposed, not asked for: the README
 ## of sandy-ferret.)* `EventBus.poster_pursuit_sent` fires only when this sends one, the moment his
 ## warning goes up, so the counter's `poster-pursuit` is one per pursuer sent.
 func send_a_pursuer() -> void:
-	if not sends_poster_pursuits or not world.has_player() or a_pursuer_is_after_her() \
+	if not sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
 			or not _spawn_siting:
 		return
 	var def := EventCatalogue.on_foot_on(world.day)
@@ -242,7 +242,7 @@ const OFFICER_SPACING := 28.0
 
 ## Whether a torn poster's pursuer is on his way or after her: his warning is up, or he is in the
 ## world and neither finished nor leaving.
-func a_pursuer_is_after_her() -> bool:
+func _a_pursuer_is_after_her() -> bool:
 	if _sent_warning != null and _warnings.pending_warnings().has(_sent_warning):
 		return true
 	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_finished \
