@@ -4,7 +4,7 @@ extends "res://tests/resistance_rig.gd"
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. A mark is
 ## read off the street (`ResistanceDirector.contact_position()`), the neighbor and the raid off the
-## street and the happenings' public queries (`ResistanceHappenings.raid_vans()`, `raid_beat()`),
+## street and the happenings' public queries (`ResistanceHappenings.raid`, the raid's instances),
 ## and what the director did on a tick off the run's trace (`RunTrace.recording()`). Three tests
 ## call the director's own draws (`nearest_alley_within()`, `guard_position()`,
 ## `draw_guard_position()`) over bare maps and a run of their own.
@@ -70,7 +70,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 ## within `NOTICE_RADIUS` of another mark tile where she stands, so "there really is a nearer alley
 ## on offer" holds by construction rather than by the luck of which tile the day's RNG chose:
 ## she stands exactly on `nearer`, which is nearer to her than the mark is by definition, and
-## still within `NOTICE_RADIUS` of it. Skipped, saying so, on a city with no such pair.
+## still within `NOTICE_RADIUS` of it. A city with no such pair fails the test.
 func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 	_build_city_in_a_new_run(t)
 	var map := _city.map
@@ -96,8 +96,8 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 			attempt.free()
 		if director != null:
 			break
+	t.check(director != null, "the test city has two mark tiles close enough to test this")
 	if director == null:
-		t.check(true, "skipped: the test city has no two alleys close enough to test this")
 		return
 	t.check(director.contact_position().distance_to(mark_at) < 0.5, "the mark stands where it was pinned")
 	var player := _rig_player(t, player_at)
@@ -364,7 +364,7 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var refused := 0
-	for tile: Vector2i in director.mark_tiles():
+	for tile: Vector2i in _mark_tiles():
 		var mark := _city.map.tile_to_world(tile)
 		var only: Array[Vector2i] = [tile]
 		# The mark's centre at these shares of the corner, its whole picture inside it.
@@ -497,13 +497,29 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 		state.begin_day(_city.map.block_plans, day)
 		_city.start_day(state, day, _rng(day, "closures"))
 		events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+		var door := _city.map.doorstep_world_position()
+		var her := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
+		# Where the raid stands is read off a first arrival with the camera nowhere near: the
+		# vans' feet and the patrol car's beat (`EventInstance.path`), which are put in the
+		# street and then taken out again before the raid this test waits for.
+		var scout := ResistanceHappenings.new()
+		scout.setup(_city, _city.map)
+		scout.start_day(day)
+		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
+				Tuning.VIEW_HALF_EXTENT * 2.0), covered)
+		scout.tick(STEP, her, Vector2.ZERO)
+		var vans := PackedVector2Array()
+		var beat := PackedVector2Array()
+		for arrived in scout.raid:
+			if arrived.def.paces:
+				beat = arrived.path
+			else:
+				vans.append(arrived.global_position)
+			events.retire(arrived)
+		scout.raid.clear()
 		var happenings := ResistanceHappenings.new()
 		happenings.setup(_city, _city.map)
 		happenings.start_day(day)
-		var door := _city.map.doorstep_world_position()
-		var her := door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0)
-		var vans := happenings.raid_vans()
-		var beat := happenings.raid_beat()
 		t.check(beat.size() == 2 and vans.size() == 2,
 				"%s scheme: the raid has its vans and a beat at her building" % scheme)
 		if beat.size() != 2 or vans.size() != 2:

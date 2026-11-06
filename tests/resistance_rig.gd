@@ -212,6 +212,16 @@ func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 			return world
 	return Vector2.INF
 
+## Every tile a chalk mark may stand on in the test city: one step in from each alley mouth
+## (`ResistanceDirector.is_alley_mouth()`, `mark_tile_of()`), in `CityMap.tiles_of_type()`'s own
+## order. The director offers no list of them; it draws from the same walk over the map.
+func _mark_tiles() -> Array[Vector2i]:
+	var marks: Array[Vector2i] = []
+	for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
+		if ResistanceDirector.is_alley_mouth(_city.map, tile):
+			marks.append(ResistanceDirector.mark_tile_of(_city.map, tile))
+	return marks
+
 ## The test city's through-alley tiles — see `_through_alley_tiles()`.
 func _through_alleys() -> Array[Vector2i]:
 	return _through_alley_tiles(_city.map)
@@ -401,8 +411,9 @@ func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: floa
 
 ## Plans `day` on the test city in the real day order (closures, events, resistance) for
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
-## `[director with the task active, the mark's position, her rig]`.
-func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
+## `[director with the task active, the mark's position, her rig]`. With `trace_into`, the director
+## is handed a trace that records its lines there, from the day's start.
+func _read_the_mark_on(t, day: int, seed_value: int, trace_into: Array[String] = []) -> Array:
 	var run: RunState = _city.run
 	run.resistance.completed_steps = _completed_through(2 * (day - 6))
 	run.facts.completed_resistance_alley_tiles = []
@@ -413,6 +424,7 @@ func _read_the_mark_on(t, day: int, seed_value: int) -> Array:
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
+	director.trace = RunTrace.recording(trace_into)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
 	var mark := director.contact_position()
 	var player := _rig_player(t, mark)

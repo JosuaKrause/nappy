@@ -11,6 +11,7 @@ extends RefCounted
 ## frontage lies on a held segment and one whose own frontage tile is under a body.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const SEED := 1
 const DAY := 8
 
@@ -40,12 +41,13 @@ func run(t) -> void:
 		# The tiles she can stand on within the door's reach, by the rule the director applies
 		# (held ground is ground), each a tile centre below the facade.
 		var stand_tiles: Array[Vector2i] = []
+		var reach := ResistanceReads.home_reach(city.map, director.reach_obstruction())
 		for across in [-1, 0, 1]:
 			var tile: Vector2i = frontage + Vector2i(across, 0)
 			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
 					and city.map.is_walkable(tile) and not city.map.is_closed(tile) \
 					and not city.map.is_on_home_block(tile) and not city.map.is_obstructed(tile) \
-					and director.reaches_from_home(tile):
+					and ResistanceReads.reaches_home(reach, tile):
 				stand_tiles.append(tile)
 		var tip := director.red_arrow_target()
 		if not stand_tiles.is_empty():

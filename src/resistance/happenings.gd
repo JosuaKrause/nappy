@@ -67,17 +67,6 @@ var raid: Array[EventInstance] = []
 var _raid_vans := PackedVector2Array()
 var _raid_beat := PackedVector2Array()
 
-## Where the raid stands, or will stand once it has come, on day 10: the points of its two vans,
-## one either side of her door across her street, and empty on every other day or where the street
-## has no room for them.
-func raid_vans() -> PackedVector2Array:
-	return _raid_vans
-
-## Where the raid's patrol car paces: the two ends of its beat along the carriageway in front of
-## her door, or empty on every other day and where the street has no room for it.
-func raid_beat() -> PackedVector2Array:
-	return _raid_beat
-
 ## How long today has run, and how much of it she has spent walking rather than standing — a
 ## happening sited on her way waits for her to have chosen a way, as day 3's fire does, on the same
 ## clock (`EventDirector.site_what_is_on_her_way()`: seconds at `Tuning.AHEAD_MIN_SPEED` or more).
@@ -396,10 +385,6 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true
-
-## Whether day 12's park is still being closed: its cordon has a gap left. Kept for the tests.
-func is_closing() -> bool:
-	return cordon != null and not cordon.is_closed()
 
 # ----------------------------------------------------------- day 13: the column ---
 

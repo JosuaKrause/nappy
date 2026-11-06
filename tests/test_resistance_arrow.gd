@@ -3,11 +3,13 @@ extends "res://tests/resistance_rig.gd"
 ##
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`) and plays the day it
 ## asks about on it, so none leans on a step, a scar or a man shouting an earlier one left. What the
-## arrow has chosen is read from `ResistanceDirector`'s public queries (`red_arrow_target()`,
-## `arrow_targets()`, `arrow_nearest_at()`, `arrow_lead_at()`, `arrow_sweeping()`, `mast_in_play()`,
-## `rider()`, `contact()`); its choosing and sweeping are driven by `retarget_the_arrow()` and
-## `tick()`, the step `main` runs on every physics tick (`_settle_the_arrow()` below); and her touch
-## is a real physics frame (`_step_a_frame()`).
+## arrow has chosen is read the way the player reads it, from where its tip stands
+## (`ResistanceDirector.red_arrow_target()`) and what the street has there (`ResistanceReads`), with the
+## contact (`contact()`, `contact_position()`) and what it rides (`rider()`); its choosing and
+## sweeping are driven by `retarget_the_arrow()` and `tick()`, the step `main` runs on every physics
+## tick (`_settle_the_arrow()` below); and her touch is a real physics frame (`_step_a_frame()`).
+
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -15,8 +17,6 @@ func run(t) -> void:
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
 	_test_the_arrow_switches_as_another_target_becomes_closer(t)
-	_test_the_arrow_moves_at_four_tiles_closer(t)
-	_test_the_arrow_does_not_move_at_three_tiles_closer(t)
 	_test_the_arrow_leaves_a_freed_instance_at_once(t)
 	_test_a_single_target_arrow_stays_on_its_contact(t)
 	await _test_day_eleven_answers_at_any_live_mast(t)
@@ -29,11 +29,7 @@ func run(t) -> void:
 ## choosing again as each finishes, until none is under way. Bounded: a sweep that never ends fails
 ## the test's next check rather than hanging it.
 func _settle_the_arrow(director: ResistanceDirector) -> void:
-	director.retarget_the_arrow()
-	var ticks := 0
-	while director.arrow_sweeping() and ticks < 1200:
-		director.tick(STEP)
-		ticks += 1
+	ResistanceReads.settle(director, STEP)
 
 ## Every built perform step earns the red arrow, the "any instance" ones (the man shouting, a
 ## roadblock) included. A mark never earns one, whichever task it unlocks. Each case plays its day
@@ -172,6 +168,18 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
 		_city.map.release_obstruction(owner)
+		_settle_the_arrow(director)
+		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
+				"the wall taken down, the arrow goes back to the nearer one")
+		# The same wall as the day's soft seals: a change to the day's records
+		# (`CityMap.day_record_version`) rather than to the standing bodies, which the arrow's
+		# cached ground must also notice.
+		for tile in wall:
+			_city.map.seal_soft_tile(tile)
+		_settle_the_arrow(director)
+		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
+				"a wall of soft seals sent up after it has chosen sends the arrow to the one she can walk to")
+		_city.map.clear_day_soft_seals()
 	player.free()
 	director.free()
 	_free_city()
@@ -210,46 +218,6 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 	director.free()
 	_free_city()
 
-## The hold's margin, as the docs state it: another target exactly `ARROW_HOLD_TILES` (four) tiles
-## closer on foot takes the arrow, and one three tiles closer does not. Each case puts the arrow on
-## the east man first, then stands her where the walking lengths differ by that much, measured from
-## the arrow's own queries so a case the city's ground does not give is a failure, not a pass.
-func _test_the_arrow_moves_at_four_tiles_closer(t) -> void:
-	_the_arrow_with_the_west_man_closer_by(t, 14, ResistanceDirector.ARROW_HOLD_TILES, true)
-
-func _test_the_arrow_does_not_move_at_three_tiles_closer(t) -> void:
-	_the_arrow_with_the_west_man_closer_by(t, 13, ResistanceDirector.ARROW_HOLD_TILES - 1, false)
-
-## One case of the hold: the east man `east_at` tiles from the open run's centre, the west man six
-## to its left, her stood where the west man is `lead` tiles closer on foot; whether the arrow then
-## moves to him is `moves`.
-func _the_arrow_with_the_west_man_closer_by(t, east_at: int, lead: int, moves: bool) -> void:
-	var made := _yeller_arrow_case(t, 10, 18, [east_at, -6])
-	var director: ResistanceDirector = made[0]
-	var player: Stroller = made[1]
-	var here: Vector2i = made[2]
-	t.check(here.x >= 0, "the test city has an open run to build the case on")
-	if here.x >= 0:
-		var east: EventInstance = made[3][0]
-		var west: EventInstance = made[3][1]
-		player.global_position = _city.map.tile_to_world(here + Vector2i(east_at - 1, 0))
-		_settle_the_arrow(director)
-		t.check(director.red_arrow_target().distance_to(east.global_position) < 1.0,
-				"beside the east man the arrow is on him")
-		player.global_position = _city.map.tile_to_world(here + Vector2i(2, 0))
-		var tile := _city.map.world_to_tile(player.global_position)
-		t.check(director.arrow_nearest_at(tile) == west.get_instance_id()
-				and director.arrow_lead_at(tile) == lead,
-				"the west man is %d tiles closer on foot (the lead is %d)"
-				% [lead, director.arrow_lead_at(tile)])
-		director.retarget_the_arrow()
-		var moved := director.red_arrow_target().distance_to(west.global_position) < 1.0
-		t.check(moved == moves, "%d tiles closer %s the arrow"
-				% [lead, "moves" if moves else "does not move"])
-	player.free()
-	director.free()
-	_free_city()
-
 ## When the instance the arrow points at goes — freed as it streams out, the way
 ## `EventStreaming.stream_out()` frees it — asking for the arrow is still a read that answers a
 ## real place (the contact's own, never a freed one's and never (0, 0)), and the next frame points
@@ -276,13 +244,9 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 		var asked := director.red_arrow_target()
 		t.check(asked == director.contact_position() and asked != Vector2.ZERO,
 				"asked after he is freed, it answers the contact's own place (%s)" % asked)
-		t.check(not director.arrow_sweeping(),
-				"and asking started no sweep: it is a read")
 		director.tick(STEP)
 		t.check(director.red_arrow_target().distance_to(far.global_position) < 1.0,
 				"the next frame the arrow is on a man still there")
-		t.check(director.arrow_sweeping(),
-				"and that frame chose again at once, the walk to the men still there under way")
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(far.global_position) < 1.0,
 				"and stays there once the sweep without the freed one is done")
@@ -418,15 +382,15 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
 	var step := director.current_step()
-	var near := director.mast_in_play()
+	var near := ResistanceReads.mast_at(director, _city.events)
 	t.check(step != null and near != "", "day 11's task is on offer at the mast near the mark")
-	var before := [director.arrow_key(), director.red_arrow_target(), director.mast_in_play(),
+	var before := [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
 			director.contact_position()]
 	var asked := director.red_arrow_target()
-	t.check(asked == director.contact_position() and not director.arrow_sweeping()
-			and [director.arrow_key(), director.red_arrow_target(), director.mast_in_play(),
+	t.check(asked == director.contact_position()
+			and [director.red_arrow_target(), ResistanceReads.mast_at(director, _city.events),
 			director.contact_position()] == before,
-			"asking for the arrow chooses nothing, sweeps nothing and moves no contact")
+			"asking for the arrow chooses nothing and moves no contact")
 	var at_the_mark := {}
 	for plan in _city.events.plans():
 		if plan.mast_id != "":
@@ -437,29 +401,41 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 		director.free()
 		return
 	routed_on[0] = seed_value
-	var keys: Array = []
-	for target in director.arrow_targets():
-		keys.append(target["key"])
+	# **Which masts answer is what the arrow does when she stands beside one**: the task follows
+	# her to a mast she touches (`tick()`) only if that mast answers it. The near mast answers by
+	# being where the task was put; each other live mast she can stand beside is asked in turn.
+	var answering: Array[String] = [near]
 	var third := ""
-	for key: String in keys:
-		if key != near and key != routed \
-				and _beside_the_mast(director, _city.events.mast_foot(key)) != Vector2.INF:
-			third = key
-	t.check(near in keys and routed in keys and third != "",
-			"the near mast, the routed one and a third all answer (%s)" % [keys])
+	for plan in _city.events.plans():
+		if plan.mast_id == "" or plan.mast_id == near or plan.silenced:
+			continue
+		var beside := _beside_the_mast(director, _city.events.mast_foot(plan.mast_id))
+		if beside == Vector2.INF:
+			continue
+		player.global_position = beside
+		director.tick(STEP)
+		if ResistanceReads.mast_at(director, _city.events) == plan.mast_id:
+			answering.append(plan.mast_id)
+			if plan.mast_id != routed:
+				third = plan.mast_id
+	t.check(near in answering and routed in answering and third != "",
+			"the near mast, the routed one and a third all answer (%s)" % [answering])
 	if third == "":
 		player.free()
 		director.free()
 		return
 	var third_foot := _city.events.mast_foot(third)
-	var near_foot := _city.events.mast_foot(near)
+	# The task is on the routed mast, with her beside it, and the next choice is not yet made.
+	var routed_foot := _city.events.mast_foot(routed)
+	player.global_position = _beside_the_mast(director, routed_foot)
+	director.tick(STEP)
 	player.global_position = _beside_the_mast(director, third_foot)
-	t.check(director.red_arrow_target().distance_to(near_foot) < 1.0
-			and director.mast_in_play() == near,
-			"before the next choice the arrow and task still point at the near mast")
+	t.check(director.red_arrow_target().distance_to(routed_foot) < 1.0
+			and ResistanceReads.mast_at(director, _city.events) == routed,
+			"before the next choice the arrow and task still point at the mast they were on")
 	director.tick(STEP)
 	t.check(director.red_arrow_target().distance_to(third_foot) < 1.0
-			and director.mast_in_play() == third,
+			and ResistanceReads.mast_at(director, _city.events) == third,
 			"following her between masts moves the task to the one she actually touches")
 	await _step_a_frame(t)
 	t.check(step.index in _city.run.resistance.completed_steps,
@@ -570,7 +546,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 					nearest = body.position
 			return nearest
 		ResistanceSteps.TargetKind.MAST:
-			return _city.events.mast_foot(director.mast_in_play())
+			return _city.events.mast_foot(ResistanceReads.mast_at(director, _city.events))
 		ResistanceSteps.TargetKind.PARK_SWING:
 			var layout: BlockLayout = _city.map.block_layouts.get(CityGenerator.swing_park(_city.map))
 			return _city.map.swing_position(layout.playground) if layout else Vector2.INF

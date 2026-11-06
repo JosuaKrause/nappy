@@ -133,12 +133,27 @@ static func _look(city: City, at) -> void:
 	else:
 		view.look(Rect2(at - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
 
+## Whether day 12's park is still being closed: the happenings have a cordon with a gap left.
+static func _is_closing(happenings: ResistanceHappenings) -> bool:
+	return happenings.cordon != null and not happenings.cordon.is_closed()
+
+## The world rect a taped stretch's static body covers, read off its collision shape in the tree
+## (what the physics world blocks her with), or an empty rect when it has none.
+static func _body_rect(tape: CordonTape) -> Rect2:
+	for child in tape.get_children():
+		if child is StaticBody2D:
+			for part in child.get_children():
+				if part is CollisionShape2D and part.shape is RectangleShape2D:
+					var size: Vector2 = part.shape.size
+					return Rect2(part.global_position - size * 0.5, size)
+	return Rect2()
+
 ## Ticks the day's happenings with her at `her[0]`, `step_her` moving her first each frame, until
 ## the cordon closes or `PATIENCE` runs out.
 func _run_until_closed(happenings: ResistanceHappenings, her: Array, shows: Callable,
 		step_her := Callable(), each_frame := Callable()) -> void:
 	var waited := 0.0
-	while happenings.is_closing() and waited < PATIENCE:
+	while _is_closing(happenings) and waited < PATIENCE:
 		if step_her.is_valid():
 			step_her.call(STEP)
 		_tick(happenings, her[0], shows.is_valid())
@@ -306,7 +321,7 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 				seen.last = stretch
 		seen.most_gaps = maxi(seen.most_gaps, _gaps_in(cordon))
 	_run_until_closed(happenings, her, Callable(), Callable(), watch)
-	t.check(not happenings.is_closing(), "the cordon closes")
+	t.check(not _is_closing(happenings), "the cordon closes")
 	t.check(seen.most_gaps == 1, "and the open edge is one gap the whole time (at most %d)"
 			% seen.most_gaps)
 	var last: ParkCordon.Stretch = seen.last
@@ -410,7 +425,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 	while waited < PATIENCE:
 		_tick(happenings, her[0], false)
 		waited += STEP
-	t.check(happenings.is_closing(), "while she stands in the last gap, it stays open (%.0fs)"
+	t.check(_is_closing(happenings), "while she stands in the last gap, it stays open (%.0fs)"
 			% PATIENCE)
 	var holding := 0
 	for officer in cordon.officers:
@@ -439,7 +454,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 				has_body = true
 		if has_body:
 			bodies += 1
-		var box := tape.body_rect().grow(0.5)
+		var box := _body_rect(tape).grow(0.5)
 		if box.has_point(stretch.a) and box.has_point(stretch.b):
 			covered += 1
 		var all_obstructed := true
@@ -486,7 +501,7 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 				waited += STEP
 			cases += 1
 			for each in cordon.stretches:
-				if each.node and _overlaps_her(each.node.body_rect(), her, facing):
+				if each.node and _overlaps_her(_body_rect(each.node), her, facing):
 					through += 1
 			if not cordon.is_closed():
 				held += 1
