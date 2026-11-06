@@ -106,7 +106,7 @@ func _coverage(city: City) -> void:
 		building_nodes += _nodes(building)
 		for col in building.columns():
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
-				building.extension_rows(col) * 32.0)
+				(building.roof_extension_rows[col] if col < building.roof_extension_rows.size() else 0) * 32.0)
 		# The roof furniture each stands feet-anchored on its roof cell (`Building.roof_layout()`,
 		# which `_build_roof_layers()` draws from): its picture rises from the floor line of its row
 		# by the region's height at the equipment's scale, and how far that clears the lot's north
