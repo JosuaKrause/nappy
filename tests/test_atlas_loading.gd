@@ -29,6 +29,7 @@ extends RefCounted
 ## reads the run log across a played day, a held restart and day 14's hand-over for a page loaded on a
 ## library of a node's own.
 
+const HeadIndicators := preload("res://tests/head_indicators.gd")
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -40,8 +41,6 @@ const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const SEED := 4242
-## The regions the UI's page bakes for her: the two warning marks over her head and the baby's three.
-const _HEAD_INDICATORS: Array[String] = [Stroller.ALERT, Stroller.ALERT_CLOSE, Stroller.BABY_ZZZ, Stroller.BABY_FUSS, Stroller.BABY_CRY]
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
 
@@ -110,7 +109,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 func _test_the_indicators_share_the_ui_page(t) -> void:
 	t.check(not &"head_indicators" in AtlasTable.baked().groups(),
 			"and the head indicators are no longer a group of their own")
-	for path: String in _HEAD_INDICATORS:
+	for path: String in HeadIndicators.ALL:
 		var name := StringName(path)
 		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
 		t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % path)

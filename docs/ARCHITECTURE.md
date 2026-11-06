@@ -559,8 +559,8 @@ command line, which a visitor has no way to set regardless. `--start-escape` tak
 `stairwell:right`, `lobby`, `basement` or `floor:2`/`floor:1` — that teleports straight to that
 part of the escape scene's one building-wide map instead of starting at her own door on the third
 floor, or `city`, which is the one value that is not a part of the building: it boots the escape's
-second section on its own, with no building built at all. `main.escape_part_for()` maps the word,
-with the command line taken out of it so the mapping is testable.
+second section on its own, with no building built at all. `main._escape_part_for()` maps the word
+onto an `InteriorMap.PARTS` name, with the command line taken out of it; the real `main` booted on each word is what shows she lands on ground she can stand on.
 
 **A named subset of that same list also answers a release page's own query string, behind
 `?debug=1`.** *(2026-09-25, docs/DECISIONS.md, M193, "the live page's ?debug=1 reaches the debug

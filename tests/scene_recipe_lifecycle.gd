@@ -84,7 +84,7 @@ func lifecycle(t, prefix: String) -> void:
 func _boot(t, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
 	var scratch := "user://scene_recipe_lifecycle_%s_%d.json" % [mode, OS.get_process_id()]
 	# Parsed for a window and without `--no-save`, so the save is refused by the recipe flags' own
-	# policy (`GameSave.uses_save()`) and not by the headless gate: a scratch save written is a failure.
+	# policy (`GameSave._uses_save()`) and not by the headless gate: a scratch save written is a failure.
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry", "--recipe", path,
 			"--recipe-mode", mode, "--no-focus-pause"]), "", true, false, {}, false)
 	return await Boot.boot(t, scratch, config, func(main: Node) -> void:

@@ -345,10 +345,16 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 
 	var first := await _boot(t, _windowed(), calls, home, false)
 	# Only the lookup under test keeps this boot off the player's own save file: if it broke, `main`
-	# would make a save at the default path and park it under the sitting beside this one. So stop
-	# before anything can write unless `parked` is the one save the sitting holds.
-	var saves_parked := sitting.get_children().filter(func(child: Node) -> bool: return child is GameSave)
-	var took_it := saves_parked == [parked]
+	# would make a save at the default path, wherever it parked it. So stop before anything can
+	# write unless `parked` is the one `GameSave` anywhere in the tree.
+	var saves: Array[Node] = []
+	var pending: Array[Node] = [t.get_tree().root]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		pending.append_array(node.get_children())
+		if node is GameSave:
+			saves.append(node)
+	var took_it := saves == [parked]
 	t.check(took_it, "the first boot took the save under the sitting and made none of its own")
 	if not took_it:
 		_shut(t, first)

@@ -201,7 +201,7 @@ func _test_day_from_query_is_not_given_when_absent(t) -> void:
 		"an absent ?day= leaves a --day N on the command line alone")
 	t.check(_page("?debug=1&day=1").day_override == 1, "?day=1 on an open page is day 1")
 
-## `web_debug_flag_used`: `GameSave.uses_save()` reads this so a release page's visitor who
+## `web_debug_flag_used`: the save's policy (`GameSave._uses_save()`) reads this so a release page's visitor who
 ## actually typed one of the bundle's parameters never touches the save the page might otherwise
 ## share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t) -> void:

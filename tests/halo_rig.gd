@@ -1,7 +1,8 @@
 extends RefCounted
 ## What the halo suites share for reading rims on real frames: a clock of the frame time the rims
 ## were handed, and the rim a body hands its source, wrapped so a test reads what `ExcitementHalo`
-## told it. `tests/test_halo.gd` and `tests/test_prediction_reuse.gd` use it.
+## told it. `tests/test_halo.gd`, `tests/test_prediction_reuse.gd`, `tests/test_checkpoints.gd` and
+## `tests/test_wall_shield.gd` use it.
 
 ## The frame time every node in the tree has been handed since this one entered it: the engine
 ## processes it beside the rims, so at any point between frames `elapsed` is the time each rim in
