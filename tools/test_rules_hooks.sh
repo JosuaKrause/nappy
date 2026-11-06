@@ -118,6 +118,11 @@
 #     0 or yes, which the guard turns down by the same comparison with 1, one of each list does;
 #     each case runs once per distinct way the guard's closing ask condition reads it (the comment
 #     above that block says which)
+#   - a failure of github-write-guard.sh's own machinery denies: the payload failing to read, the
+#     program failing, the answer failing to print or printing and then failing (one deny, never
+#     two answers), and, with no jq, a tr that fails, whether it strips its text first or leaves
+#     at once; with no jq and a working tr, a command naming git or gh in any case denies and
+#     brew install jq allows
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
 #     input can append tools/release.sh's own push, so release.sh under one is a write without it;
@@ -268,7 +273,9 @@ now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
 # counts its own checks and failures from zero and leaves them, with its stdout and stderr, in
 # files numbered in call order; case_print_ready prints and adds them in that order, a case only
 # once every case before it has been printed. A case that ends without leaving its counts (killed,
-# or the subshell itself broke) is a failure, never a silent pass.
+# or the subshell itself broke) is a failure, never a silent pass, and is named by its label (the
+# first argument after the case's function, cut at 200 characters) as well as its place in the
+# queue.
 #
 # At most --jobs cases run at once. When that many are running, the script blocks reading the
 # wake-up pipe on fd 9, where every case writes one byte as it ends, and counts again; a byte is
@@ -298,6 +305,7 @@ run_case() {
         printf . >&9
     ) &
     case_pids[$case_tail]=$!
+    case_labels[$case_tail]="${2:0:200}"
     case_tail=$((case_tail + 1))
     case_count_running
     while [ "$case_running" -ge "$case_jobs" ]; do
@@ -338,10 +346,10 @@ case_print_ready() {
             failures=$((failures + n_failures))
         else
             checks=$((checks + 1))
-            fail "case $case_head (the case after the last one printed) ended without leaving its counts"
+            fail "case $case_head, ${case_labels[$case_head]:-(no label)}: ended without leaving its counts"
         fi
         rm -f "$f.out" "$f.err" "$f.n"
-        unset "case_pids[$case_head]" "case_ended[$case_head]"
+        unset "case_pids[$case_head]" "case_ended[$case_head]" "case_labels[$case_head]"
         case_head=$((case_head + 1))
     done
 }
@@ -1194,28 +1202,37 @@ write_guard_gitconfig="$write_guard_no_aliases"
 # hands a long text to another program as an argument passes on a Mac and fails, open, on CI. jq and
 # git are shimmed here to refuse such an argument the way Linux does; `write_guard_path` puts the
 # shims first on the guard's PATH (every timed case does), and `write_guard_fail_jq` makes the jq
-# shim fail outright on a call with an argument holding that text, for the fail-closed cases.
+# shim fail outright on a call with an argument holding that text, for the fail-closed cases;
+# `write_guard_fail_jq_late` makes it do its work, print its answer, and only then fail, the way a
+# pipe fails after its text is through.
 write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
 mkdir -p "$write_guard_shims"
 for write_guard_tool in jq git; do
     write_guard_real="$(command -v "$write_guard_tool")"
     {
         printf '#!/usr/bin/env bash\n'
+        printf 'late=\n'
         printf 'for a in "$@"; do\n'
         printf '    if [ "${#a}" -gt 131072 ]; then echo "%s: Argument list too long" >&2; exit 126; fi\n' "$write_guard_tool"
         printf '    if [ -n "${WRITE_GUARD_FAIL_JQ:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
         printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ"*) echo "jq: made to fail" >&2; exit 5 ;; esac\n'
         printf '    fi\n'
+        printf '    if [ -n "${WRITE_GUARD_FAIL_JQ_LATE:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ_LATE"*) late=1 ;; esac\n'
+        printf '    fi\n'
         printf 'done\n'
+        printf 'if [ -n "$late" ]; then %q "$@"; echo "jq: made to fail after printing" >&2; exit 5; fi\n' "$write_guard_real"
         printf 'exec %q "$@"\n' "$write_guard_real"
     } > "$write_guard_shims/$write_guard_tool"
     chmod +x "$write_guard_shims/$write_guard_tool"
 done
 write_guard_path=""
 write_guard_fail_jq=""
+write_guard_fail_jq_late=""
 write_guard_env() {
     env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
         PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
+        ${write_guard_fail_jq_late:+WRITE_GUARD_FAIL_JQ_LATE=$write_guard_fail_jq_late} \
         GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
 }
 write_guard_payload() {
@@ -2594,9 +2611,10 @@ assert_write_guard "git rebase --show-current-patch; git status -> allow" allow 
 assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
 assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
 
-# A failure of the guard's own machinery denies, never allows: the answer failing to print, the
-# program failing, and no jq at all (where only a command naming git, gh or a pushing script is
-# denied, so installing jq is not refused). And a reason longer than any one argument may be is
+# A failure of the guard's own machinery denies, never allows: the answer failing to print, or
+# printing and then failing, the program failing, the payload failing to read, and no jq at all
+# (where only a command naming git, gh or a pushing script is denied, so installing jq is not
+# refused, and a tr that fails denies whatever it was given). And a reason longer than any one argument may be is
 # cut short and passed on stdin, under the shims' Linux argument limit.
 write_guard_path="$write_guard_shims"
 write_guard_fail_jq="hookSpecificOutput"
@@ -2610,6 +2628,26 @@ write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 write_guard_fail_jq="--slurpfile"
 assert_write_guard "the program fails: git status -> deny" deny 'git status'
 write_guard_fail_jq=""
+# The answer is printed whole and once: a jq that prints it and then fails gets one fixed deny, never
+# that answer with a deny after it, which is two answers and none the harness can read (and, where
+# the guard would ask, an ask the deny was meant to take back).
+write_guard_fail_jq_late="hookSpecificOutput"
+assert_write_guard "the answer prints and then fails: git push -> one deny" deny 'git push origin main'
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+write_guard_switch=1
+assert_write_guard "the answer prints and then fails where it would ask: git commit -> one deny" deny 'git commit -m x'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+write_guard_fail_jq_late=""
+# A payload that fails to read denies, though an empty one would read as nothing to guard: a cat
+# that leaves at once, having read nothing, makes the guard's own read of the payload fail.
+write_guard_cat_fails="${TMPDIR:-/tmp}/write-guard-cat-fails"
+mkdir -p "$write_guard_cat_fails"
+printf '#!/bin/sh\nexit 1\n' > "$write_guard_cat_fails/cat"
+chmod +x "$write_guard_cat_fails/cat"
+write_guard_path="$write_guard_cat_fails"
+assert_write_guard "the payload fails to read: ls -> deny" deny 'ls -la'
+write_guard_path="$write_guard_shims"
 assert_write_guard_reason "a reason from thousands of findings names each kind once" \
     "$(printf 'git -c alias.x=y %.0s' $(seq 1 3800))ci" "(git with an alias set on the command line) outside"
 write_guard_path=""
@@ -2628,21 +2666,50 @@ write_guard_nojq_decision() {
         "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi
 }
-# $1 the expected decision and the command, joined by a colon
+# $1 the expected decision and the command, joined by a colon  $2 what the case changes, for its label
 assert_write_guard_nojq() { run_case assert_write_guard_nojq_now "$@"; }
 assert_write_guard_nojq_now() {
-    local write_guard_case="$1" write_guard_got
+    local write_guard_case="$1" write_guard_note="${2:+, $2}" write_guard_got
     checks=$((checks + 1))
     write_guard_got="$(write_guard_nojq_decision "${write_guard_case#*:}")"
     if [ "$write_guard_got" = "${write_guard_case%%:*}" ]; then
-        echo "ok   no jq: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
+        echo "ok   no jq$write_guard_note: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
     else
-        fail "no jq: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
+        fail "no jq$write_guard_note: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
     fi
 }
-for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "deny:GIT PUSH origin main" \
+        "allow:brew install jq"; do
     assert_write_guard_nojq "$write_guard_case"
 done
+# A tr that fails denies, whether its text names a write or not: under pipefail a pipe from tr into
+# a search fails when tr does, though the search matched, so the guard decides on tr's text only
+# once it is whole. Two stand-ins for the failure (GitHub's runners ignore SIGPIPE, so a tr whose
+# reader has matched and left gets EPIPE and exits non-zero): one strips its text as tr does and
+# then fails, one leaves at once having read nothing.
+write_guard_nojq_plain="$write_guard_nojq"
+for write_guard_tr in late early; do
+    write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-$write_guard_tr"
+    mkdir -p "$write_guard_nojq"
+    for write_guard_tool in bash cat grep env; do
+        ln -sf "$(command -v "$write_guard_tool")" "$write_guard_nojq/$write_guard_tool"
+    done
+    if [ "$write_guard_tr" = late ]; then
+        printf '#!/bin/sh\n%s "$@"\nexit 1\n' "$(command -v tr)" > "$write_guard_nojq/tr"
+    else
+        printf '#!/bin/sh\nexit 1\n' > "$write_guard_nojq/tr"
+    fi
+    chmod +x "$write_guard_nojq/tr"
+done
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-late"
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "deny:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case" "tr strips, then fails"
+done
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-early"
+for write_guard_case in "deny:git push origin main" "deny:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case" "tr leaves at once"
+done
+write_guard_nojq="$write_guard_nojq_plain"
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.
