@@ -11,6 +11,7 @@ extends RefCounted
 ## Built only by the test below, which needs a real scene tree rather than the bare
 ## `CityMap`/`RouteTree` pair every other route test works from directly.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const GroundCells := preload("res://tests/ground_cells.gd")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
 
@@ -86,9 +87,11 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 		t.check(observed.atlas.get(tile, Vector2i(-1, -1)) == expected_atlas,
 				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
 				% tile)
-	var evicted_before := city.scenery_ground.evicted
+	var chunks_before: Array[int] = []
+	for layer: TileMapLayer in city.scenery_ground.chunks.values():
+		chunks_before.append(layer.get_instance_id())
 	var revisited := _visit_every_neighborhood(t, city, true)
-	t.check(city.scenery_ground.evicted > evicted_before,
+	t.check(chunks_before.any(func(id: int) -> bool: return not is_instance_valid(instance_from_id(id))),
 			"revisiting the city crosses retention boundaries and frees ground chunks")
 	t.check(observed.sources == revisited.sources and observed.atlas == revisited.atlas,
 			"every revisited cell reconstructs the same route tint and seeded atlas variant")
@@ -207,8 +210,8 @@ func _visit_every_neighborhood(t, city: City, reverse := false) -> Dictionary:
 				var tile := key * SceneryGround.CHUNK_TILES + Vector2i(x, y)
 				if not Rect2i(Vector2i.ZERO, city.map.size).has_point(tile):
 					continue
-				var source := city.scenery_ground.get_cell_source_id(tile)
+				var source := GroundCells.source_id(city.scenery_ground, tile)
 				if source >= 0:
 					sources[tile] = source
-					atlas[tile] = city.scenery_ground.get_cell_atlas_coords(tile)
+					atlas[tile] = GroundCells.atlas_coords(city.scenery_ground, tile)
 	return {"sources": sources, "atlas": atlas}

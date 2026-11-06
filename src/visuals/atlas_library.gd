@@ -178,7 +178,7 @@ static func illustrated_path_for(source_path: String) -> String:
 ## stacks two same-area road pictures because neither fits beside the other at that width, and
 ## widening to where they sit side by side needs a *fifth less* page, not more. `plan()` packs
 ## the same members at every width `_candidate_widths()` offers and keeps the smallest result
-## whose aspect ratio clears `aspect_ceiling()`, ties broken by the narrower width (candidates are
+## whose aspect ratio clears `_aspect_ceiling()`, ties broken by the narrower width (candidates are
 ## visited narrowest first and only a strict improvement replaces the kept result, so the same
 ## widths in the same order always keep the same one). Every candidate is packed by the same
 ## deterministic placement, so this is still one pure function of `sizes`, just evaluated more
@@ -222,7 +222,7 @@ static func plan(sizes: Array[Vector2i]) -> Dictionary:
 		if area_a != area_b:
 			return area_a > area_b
 		return a < b)
-	var ceiling := aspect_ceiling(sizes)
+	var ceiling := _aspect_ceiling(sizes)
 	var best_regions: Array[Rect2i] = []
 	var best_size := Vector2i.ZERO
 	var best_meets_ceiling := false
@@ -347,9 +347,8 @@ static func _pack_at_width(order: Array[int], padded: Array[Vector2i], sizes: Ar
 ## over the square root of the group's own total bordered area — when one member already needs
 ## most of one side of an ideally square page, since no packer can make the page more square than
 ## that member's own shape forces. `plan()`'s own width search is scored against this, and
-## `tests/test_atlas_library.gd` asserts every baked page against the same function, so the search
-## and the suite agree on what "square enough" means.
-static func aspect_ceiling(sizes: Array[Vector2i]) -> float:
+## `tests/test_atlas_library.gd` restates the rule to hold every baked page to it.
+static func _aspect_ceiling(sizes: Array[Vector2i]) -> float:
 	if sizes.is_empty():
 		return 1.8
 	var bordered_area := 0

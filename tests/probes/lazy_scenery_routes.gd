@@ -3,6 +3,7 @@ extends RefCounted
 ## This inspects generated options; it does not run a player or choose a new route.
 
 const Boot := preload("res://tests/booted_main.gd")
+const GroundCells := preload("res://tests/ground_cells.gd")
 const Seat := preload("res://tests/seat.gd")
 
 const HALF_VIEW := Vector2(320, 180)
@@ -39,7 +40,7 @@ func run(t) -> void:
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
 		"closures": _city.closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
 		"events_planned": _city.events.planned_count(),
-		"ground_prepared": _ground.get_used_cells().size(),
+		"ground_prepared": GroundCells.used_cells(_ground).size(),
 		"buildings_prepared": _city.buildings().size(),
 		"network": _coverage(network_tiles, 0), "network_and_home": _coverage(offered, 0),
 		"network_and_home_lookahead_envelope": _coverage(offered, Stroller.CAMERA_LOOK_AHEAD),
@@ -117,7 +118,7 @@ func _coverage(tiles: Dictionary, margin: float) -> Dictionary:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var cell := Vector2i(x, y)
-				if _ground.get_cell_source_id(cell) >= 0:
+				if GroundCells.source_id(_ground, cell) >= 0:
 					ground_seen[cell] = true
 		for building in _city.buildings():
 			if view.intersects(_city.map.tile_rect_to_world(building.lot)):
