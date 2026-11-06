@@ -240,20 +240,17 @@ var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW))
 var _blocked: Dictionary
 ## The park, as its block, and its calm ground in world space.
 var park := Vector2i(-1, -1)
-var area := Rect2()
+var _area := Rect2()
 var _rect := Rect2i()
 ## The rectangle the tape stands on: the park's ground, half a barrier's depth in. She is shut in
 ## when she is inside it as the last gap is taped.
-var line := Rect2()
+var _line := Rect2()
 var _stretches: Array[Stretch] = []
 var _officers: Array[Officer] = []
 ## Seconds since she touched the swing.
-var elapsed := 0.0
+var _elapsed := 0.0
 ## When the last gap is to close, seconds after the touch (`_time_the_close()`).
 var _deadline := PARK_CLOSING_SECONDS
-## The walk from where she stood at the touch to the last gap, in seconds: what `_deadline` was
-## solved from.
-var walk_to_the_gap := 0.0
 ## The moment the last gap was taped.
 var _closed_at := -1.0
 ## Where the last gap closes, on the line, and the stretches it is (the one chosen and, when it
@@ -261,6 +258,10 @@ var _closed_at := -1.0
 ## gap, or walks her out through it, needs the place before any tape shows it: the world shows the
 ## gap only once the tapers meet at it.
 var last_gap := Vector2.INF
+## The stretches the last gap is, with their tiles and the side of the park they face. Public for
+## the same reason as `last_gap`: the sweep checks the chosen gap against the map, and a test stands
+## her square before it, before any tape shows it. The CI list of test-only members cannot hold it,
+## since other classes have a member of the same name.
 var gap: Array[Stretch] = []
 ## The way out for the park's people and their escorts: from inside the last gap, through it and
 ## along the ground outside to a place out of her sight, in world points.
@@ -290,9 +291,9 @@ func _init(map: CityMap, navigator: Navigator, city: City, block: Vector2i,
 	_blocked = blocked
 	park = block
 	_rect = ClosurePlanner.calm_area_rect(map, block)
-	area = map.tile_rect_to_world(_rect)
+	_area = map.tile_rect_to_world(_rect)
 	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
-	line = area.grow(-inset)
+	_line = _area.grow(-inset)
 	_cut_the_stretches(_rect)
 
 ## Whether the last gap has been taped.
@@ -320,7 +321,7 @@ func clear() -> void:
 ## Once a tick, from `ResistanceHappenings.tick()`. `her` is her position (`Vector2.INF` with no
 ## player). What is in the camera's whole view is the siting's it was handed.
 func tick(delta: float, her: Vector2) -> void:
-	elapsed += delta
+	_elapsed += delta
 	if not _started:
 		_started = true
 		_set_out(her)
@@ -336,8 +337,8 @@ func tick(delta: float, her: Vector2) -> void:
 ## (`ParkClosure.fence()`'s runs, the late park's own entrances).
 func _cut_the_stretches(rect: Rect2i) -> void:
 	var runs: Array[ParkClosure] = ParkClosure.fence(_map, park)
-	var corners: Array[Vector2] = [line.position, Vector2(line.end.x, line.position.y), line.end,
-			Vector2(line.position.x, line.end.y)]
+	var corners: Array[Vector2] = [_line.position, Vector2(_line.end.x, _line.position.y), _line.end,
+			Vector2(_line.position.x, _line.end.y)]
 	var outs: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
 	for side in 4:
 		var from: Vector2 = corners[side]
@@ -519,7 +520,7 @@ func _clear_of_the_day(point: Vector2) -> bool:
 	if not _city or not _city.events:
 		return true
 	for plan in _city.events.plans():
-		if plan.spent or not plan.is_placed() or area.has_point(plan.position):
+		if plan.spent or not plan.is_placed() or _area.has_point(plan.position):
 			continue
 		var def := plan.def
 		if def.obstructs_radius <= 0.0 and not def.hard_fail:
@@ -540,7 +541,7 @@ func _clear_of_the_day(point: Vector2) -> bool:
 ## The first frame: the last gap, which way round each taper works to it from the side opposite,
 ## every officer placed just out of sight, and when the gap is to close.
 func _set_out(her: Vector2) -> void:
-	var from := her if her != Vector2.INF else area.get_center()
+	var from := her if her != Vector2.INF else _area.get_center()
 	var perimeter := _perimeter()
 	var meeting := _choose_the_gap(from)
 	gap = _gap_of(meeting)
@@ -644,7 +645,7 @@ func _seen(feet: Vector2) -> bool:
 ## the run log says so. **And never faster than `PARK_CLOSING_STRETCH_MIN` a stretch**, the
 ## floor `_reach_the_edge()` paces to, folded in here so that `_deadline` is when the gap closes.
 func _time_the_close(her: Vector2) -> void:
-	walk_to_the_gap = her.distance_to(last_gap) / Tuning.WALK_SPEED if her != Vector2.INF \
+	var walk_to_the_gap := her.distance_to(last_gap) / Tuning.WALK_SPEED if her != Vector2.INF \
 			else 0.0
 	var wanted := walk_to_the_gap + PARK_CLOSING_WARNING
 	var soonest := INF
@@ -909,7 +910,7 @@ func _way_out_from(from: Vector2) -> PackedVector2Array:
 	if not _exit.is_empty() and _exit_crossing.has(_map.world_to_tile(from)) \
 			and _rect.has_point(_map.world_to_tile(from)):
 		return _exit.slice(1)
-	if line.grow(WALKER_REACH).has_point(from) or _exit.is_empty():
+	if _line.grow(WALKER_REACH).has_point(from) or _exit.is_empty():
 		return PackedVector2Array(_exit)
 	var nearest := INF
 	var start := 0
@@ -937,7 +938,7 @@ func _send_escorts() -> void:
 	if not _city or not _city.events:
 		return
 	for plan in _city.events.plans():
-		if plan.spent or plan.live or not plan.is_placed() or not area.has_point(plan.position):
+		if plan.spent or plan.live or not plan.is_placed() or not _area.has_point(plan.position):
 			continue
 		if plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
@@ -970,7 +971,7 @@ func _send_escorts() -> void:
 func _walks_out(live: EventInstance) -> bool:
 	if not live or not is_instance_valid(live) or live.is_finished:
 		return false
-	if not area.has_point(live.global_position):
+	if not _area.has_point(live.global_position):
 		return false
 	var def := live.def
 	return def.kind != GameEnums.EventKind.AMBIENT and def.pursuit == null and def.vehicle == null \
@@ -1112,7 +1113,7 @@ func _pace(officer: Officer) -> void:
 	var rest := PackedVector2Array([officer.at])
 	for j in range(officer.next, officer.legs.size()):
 		rest.append_array(officer.legs[j])
-	var left := _deadline - elapsed
+	var left := _deadline - _elapsed
 	var wanted := _length_of(rest) / left if left > 0.0 else INF
 	officer.tape_speed = minf(wanted, officer.top_speed)
 
@@ -1267,7 +1268,7 @@ func _walkers() -> PackedVector2Array:
 ## not yet in, or one inside or at the line — walking someone out, or sent back out alone because
 ## his person went before he reached them — or one of the park's people there.
 func _still_to_come_out() -> bool:
-	var at_the_line := line.grow(WALKER_REACH)
+	var at_the_line := _line.grow(WALKER_REACH)
 	for officer in _officers:
 		if officer.job != Officer.Job.ESCORT:
 			continue
@@ -1368,10 +1369,10 @@ func _escort(officer: Officer, delta: float) -> void:
 
 ## The last gap is taped: she is shut in if she is inside the line. Every officer then walks off.
 func _close(her: Vector2) -> void:
-	_closed_at = elapsed
-	var trapped := her != Vector2.INF and line.has_point(her)
+	_closed_at = _elapsed
+	var trapped := her != Vector2.INF and _line.has_point(her)
 	if _city and _city.events:
-		_city.events.take_away_within(area, ["playground"] as Array[String])
+		_city.events.take_away_within(_area, ["playground"] as Array[String])
 	for officer in _officers:
 		if officer.job == Officer.Job.TAPE:
 			officer.phase = Officer.Phase.LEAVING
@@ -1380,11 +1381,11 @@ func _close(her: Vector2) -> void:
 					else PackedVector2Array())
 	if trapped:
 		trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
-				% elapsed + "swing, with her inside: she is shut in")
+				% _elapsed + "swing, with her inside: she is shut in")
 		EventBus.hard_fail_triggered.emit(TRAPPED)
 	else:
 		trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
-				% [park, elapsed] + "with her outside")
+				% [park, _elapsed] + "with her outside")
 
 ## Sends an escort whose person has gone before he reached them back down the way out, past
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.
