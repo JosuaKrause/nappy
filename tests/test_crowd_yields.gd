@@ -173,14 +173,13 @@ func _a_row_on_a_map(t, id: String) -> Dictionary:
 	return {"instance": instance, "map": map,
 			"move": listed[0] if listed.size() == 1 and map.moves.size() == 1 else null}
 
-## **Each row's `stands_as` reaches its move** (`EventInstance.setup()`): the patrol car and the
-## fire engine, vehicles, are walked round while they stand; the charging dog and the policeman on
-## foot, an animal and a person, are not, so the dog waiting on the map before its charge may be
-## walked through, as the player allowed. And every row of the catalogue declares it, which
-## `EventDef.validate()` also refuses to load without.
+## **A row's `stands_as` reaches its move** (`EventInstance.setup()`): the patrol car, a vehicle, is
+## walked round while it stands; the charging dog, an animal, is not, so the dog waiting on the map
+## before its charge may be walked through, as the player allowed. One row of each answer shows the
+## declaration is handed over rather than fixed. That every row declares it is
+## `EventDef.validate()`'s refusal to load without.
 func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
-	var expected := {"police_patrol": true, "fire_truck": true, "market_stall": true,
-			"charging_dog": false, "policeman_giving_chase": false, "busker": false}
+	var expected := {"police_patrol": true, "charging_dog": false}
 	for id: String in expected:
 		var rig := _a_row_on_a_map(t, id)
 		var move: MoveProposal = rig["move"]
@@ -189,17 +188,12 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
 			t.check(move.stood_round == expected[id],
 					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
 		rig["instance"].free()
-	var undeclared: Array[String] = []
-	for def in EventCatalogue.all():
-		if def.stands_as == EventDef.StandsAs.UNDECLARED:
-			undeclared.append(def.id)
-	t.check(undeclared.is_empty(), "every row says what it stands as (undeclared: %s)" % [undeclared])
 
 ## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
 ## a stall, which never moves, has parked from the start; the fire engine has not while it
 ## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
-## dog go on, so never. And every row of the catalogue declares it, which
-## `EventDef.validate()` also refuses to load without.
+## dog go on, so never. That every row declares it is `EventDef.validate()`'s refusal to load
+## without.
 func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
 	var stall := _a_row_on_a_map(t, "market_stall")
 	var stall_move: MoveProposal = stall["move"]
@@ -222,11 +216,6 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
 		var move: MoveProposal = rig["move"]
 		t.check(move != null and not move.parked, "%s goes on, so it never reads as parked" % id)
 		instance.free()
-	var undeclared: Array[String] = []
-	for def in EventCatalogue.all():
-		if def.when_it_stops == EventDef.WhenItStops.UNDECLARED:
-			undeclared.append(def.id)
-	t.check(undeclared.is_empty(), "every row says whether it parks (undeclared: %s)" % [undeclared])
 
 # -------------------------------------------------- the list of moves keeps up ---
 

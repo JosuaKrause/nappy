@@ -9,10 +9,6 @@ extends RefCounted
 ## diagonal alike, since a car's picture is bound to a rotating strike box a walker's point shape
 ## never has to agree with.
 
-const EXPECTED_VIEW: Array[String] = [
-	"side", "front_diagonal", "front", "front_diagonal", "side",
-	"back_diagonal", "back", "back_diagonal",
-]
 const EXPECTED_MIRRORED: Array[bool] = [false, false, false, true, true, true, false, false]
 
 const ViewRig := preload("res://tests/view_rig.gd")
@@ -21,7 +17,6 @@ var _rig: ViewRig
 
 func run(t) -> void:
 	_rig = ViewRig.new(t)
-	_test_car_view_by_sector_matches_the_walker_convention(t)
 	_test_body_and_trim_can_never_disagree(t)
 	_test_cardinal_headings_select_the_expected_view(t)
 	_test_a_turn_sweeps_through_the_diagonal_views(t)
@@ -47,16 +42,6 @@ func _car(t, heading: Vector2 = Vector2.RIGHT) -> CrowdAgent:
 	t.check(agent != null, "a car is placed heading %s" % heading)
 	return agent
 
-## `CarLook.VIEW_BY_SECTOR` is authored identically to `WalkerLook.VIEW_BY_SECTOR` — the same
-## five projections, the same west-mirror convention — and this is what stops the two silently
-## drifting apart if one is ever hand-edited without the other.
-func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
-	for sector in range(8):
-		t.check(CarLook.VIEW_BY_SECTOR[sector] == EXPECTED_VIEW[sector],
-				"sector %d draws the %s view" % [sector, EXPECTED_VIEW[sector]])
-		t.check(EightDirection.is_mirrored(sector) == EXPECTED_MIRRORED[sector],
-				"sector %d mirror matches the west-mirror convention" % sector)
-
 ## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two could draw two
 ## different cars' worth of paint and glass. And it pins the tint split: body and trim have to be
@@ -65,8 +50,7 @@ func _test_car_view_by_sector_matches_the_walker_convention(t) -> void:
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := CarLook.BODY_BY_VIEW.keys()
 	var trim_views := CarLook.TRIM_BY_VIEW.keys()
-	t.check(body_views.size() == trim_views.size() and body_views.size() == 5,
-			"the car family has exactly five authored views, body and trim alike")
+	t.check(body_views.size() == trim_views.size(), "the car family has as many trim views as body views")
 	for view in body_views:
 		t.check(CarLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)

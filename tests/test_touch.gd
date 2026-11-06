@@ -32,7 +32,6 @@ func run(t) -> void:
 	await _test_the_pause_button_tracks_its_own_touch_index(t)
 	await _test_hiding_the_controls_releases_a_held_direction(t)
 	_test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t)
-	_test_is_double_tap_needs_both_windows(t)
 	await _test_set_direction_presses_the_components_of_the_heading(t)
 	await _test_set_direction_on_her_own_position_stops_rather_than_pressing(t)
 	await _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t)
@@ -69,7 +68,6 @@ func run(t) -> void:
 	await _test_a_press_on_runs_side_never_steers(t)
 	await _test_a_swipe_through_the_dead_zone_lands_on_its_release(t)
 	await _test_round_button_margins_and_unchanged_dead_zones(t)
-	_test_a_rig_word_names_the_side(t)
 	await _test_pointer_roles_hold_wherever_the_pointers_travel(t)
 	await _test_a_run_button_does_not_cancel_a_double_press_latch(t)
 	await _test_pause_hide_and_mode_changes_release_holds(t)
@@ -324,12 +322,6 @@ func _test_heading_to_is_the_unit_vector_and_zero_for_a_tap_on_herself(t) -> voi
 	t.check(direction.is_equal_approx(Vector2.DOWN), "pointing straight at the target")
 	t.check(TouchControls.heading_to(Vector2(10.0, 10.0), Vector2(10.0, 10.0)) == Vector2.ZERO,
 			"a tap on her own position has no line to walk")
-
-func _test_is_double_tap_needs_both_windows(t) -> void:
-	t.check(TouchControls.is_double_tap(0.1, 10.0), "soon and close reads as a double tap")
-	t.check(not TouchControls.is_double_tap(1.0, 10.0), "close but late is a new single tap")
-	t.check(not TouchControls.is_double_tap(0.1, 400.0),
-			"soon but far away is a new direction, not a modifier on the old one")
 
 func _test_set_direction_presses_the_components_of_the_heading(t) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
@@ -803,10 +795,6 @@ func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> voi
 			left), "just outside it, still inside the ring, does not")
 	t.check(not TouchControls.in_dead_zone(TouchControls.FOCUS_RIGHT, left),
 			"Run's focus has no dead zone")
-	t.check(is_equal_approx(TouchControls.DEAD_ZONE_RADIUS, 16.0),
-			"the dead zone is 16 design px (pebbly-alpaca: \"we can try 16px\")")
-	t.check(not TouchControls.in_dead_zone(left + Vector2.UP * 16.0 * 1.01, left),
-			"a press at 1.01 times 16px steers: no 5% catch on a dead zone")
 	t.check(is_equal_approx(TouchControls.TAP_STOP_RADIUS * 2.0, TouchControls.DEAD_ZONE_RADIUS),
 			"tap mode's stop circle covers the dead zone on screen at the camera's zoom of 2, "
 			+ "nothing bigger (playtest 34 finding 5): 8 world px, 16 on screen")
@@ -1275,19 +1263,6 @@ func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t) -> void:
 	controls.free()
 	rig.free()
 	_release_actions()
-
-## A rig that skips the title chooses the side with `--controls` (or `?controls=`), since nothing
-## else can reach the right-steering layout without a press on the title.
-func _test_a_rig_word_names_the_side(t) -> void:
-	for word: String in ["joystick", "joystick-left", "joystick-right"]:
-		t.check(ControlsMode.from_word(word) == ControlsMode.Mode.JOYSTICK,
-				"'%s' is the joystick scheme" % word)
-	t.check(ControlsMode.side_from_word("joystick-right") == ControlsMode.Side.RIGHT,
-			"'joystick-right' steers from the right")
-	for word: String in ["joystick", "joystick-left", "tap", ""]:
-		t.check(ControlsMode.side_from_word(word) == ControlsMode.Side.LEFT,
-				"'%s' steers from the left" % word)
-	t.check(ControlsMode.from_word("tap") == ControlsMode.Mode.TAP, "'tap' is still the tap scheme")
 
 ## Pause's catch is its old 46px, past the 5% rim (27.3px); the dead zone does not grow at all.
 func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:

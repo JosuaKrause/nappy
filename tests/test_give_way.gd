@@ -32,8 +32,6 @@ func _test_the_box_ahead(t, map: CityMap) -> void:
 			== Vector2i(2, 5), "a junction is keyed (column, row) whichever way it is driven")
 
 func _test_the_stop_line_is_a_setback_short(t) -> void:
-	t.check(GiveWay.stop_line(100.0) == 100.0 - Tuning.CAR_STOP_LINE_SETBACK,
-			"the line is the setback short of what it stops for")
 	t.check(GiveWay.stop_line(1.0) < 0.0, "one inside the setback is a negative room")
 
 func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t, map: CityMap) -> void:

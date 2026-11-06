@@ -299,8 +299,8 @@ func _test_unique_paths_and_manifest_timing(t) -> void:
 			"the actual burst duration is after its final readable frame")
 	timed.close()
 
-	t.check(_frames_until_the_end(2.9) == ["frame_cap", 36],
-			"the frame cap ends a sequence at its thirty-sixth frame, and a thirty-seventh is never drawn in")
+	t.check(_frames_until_the_end(2.9) == ["frame_cap", BurstRecorder.MAX_FRAMES],
+			"the frame cap ends a sequence at its last frame, and one more is never drawn in")
 	t.check(_frames_until_the_end(BurstRecorder.DURATION_SECONDS)[0] == "duration",
 			"at both bounds at once, the duration is what ended it")
 
@@ -320,7 +320,7 @@ func _frames_until_the_end(seconds: float) -> Array:
 	bench.draw()
 	var manifest := bench.manifest(folder)
 	var drawn_in := (manifest.get("frames", []) as Array).size()
-	if FileAccess.file_exists("%s/frame-0037.png" % folder):
+	if FileAccess.file_exists("%s/frame-%04d.png" % [folder, BurstRecorder.MAX_FRAMES + 1]):
 		drawn_in += 1
 	var found := [manifest.get("reason"), drawn_in]
 	bench.close()

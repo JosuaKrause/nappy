@@ -1,0 +1,354 @@
+# The public members only tests read, which tools/check_test_only_members.py lets stand: one
+# "<file> <member>" per line, sorted within a group. A group starts at a header comment whose first
+# word is its tag in brackets. The [no reader] and [own file only] groups only shrink: the check fails
+# a line added to either (against the pull request's base) and a line that has gone stale, a member
+# that gained a reader in another file, lost its tests, or is gone. The pull request that fixes a
+# member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
+# after its '#'.
+
+# [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
+# proposal, not asked for and open to the player's correction: vars, signals and constants with no
+# use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
+# or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
+# deleted.
+src/autoload/game_save.gd FILE_KEYS
+src/autoload/telemetry.gd SHOTS_PER_DAY
+src/autoload/telemetry.gd begin_memory_log
+src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
+src/city/building.gd VENT_ROTOR_SOURCE_RECT
+src/city/city.gd home_door_is_sealed
+src/city/city_map.gd is_post
+src/city/city_map.gd is_soft_sealed
+src/city/city_state.gd changed_on
+src/city/scenery_ground.gd get_cell_atlas_coords
+src/city/scenery_ground.gd get_cell_source_id
+src/city/scenery_ground.gd get_used_cells
+src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
+src/crowd/crowd.gd set_focus
+src/crowd/crowd.gd signals_for_tests
+src/crowd/crowd_excitement.gd jolt_swell
+src/crowd/crowd_lanes.gd quietest_pavement
+src/crowd/lane_mover.gd lane_key_parts
+src/crowd/traffic_index.gd entry_count
+src/dev/debug_layers.gd body_outline_count
+src/dev/rig_lock.gd has_a_deadline
+src/dev/walk_plan.gd smoothed_turns
+src/events/behaviours/event_barrier_post.gd has_its_far_guard_posted
+src/events/behaviours/event_departure.gd plan_the_rest_again
+src/events/event_instance.gd charger_name
+src/events/event_manager.gd walks_under_a_boom
+src/events/events_ahead.gd walk_siting
+src/events/views/event_look.gd attach_nodes
+src/events/views/event_look.gd drawn_rect_now
+src/events/views/event_pictures.gd boom_arm_span
+src/events/views/roadblock_look.gd attach_nodes
+src/events/views/roadblock_look.gd far_guard_node
+src/events/views/spread_look.gd attach_nodes
+src/interior/interior_map.gd PARTS
+src/interior/interior_map_plan.gd inner_floor_approaches
+src/player/baby.gd set_stroller
+src/player/stroller.gd indicator_sources
+src/resistance/resistance_director.gd mark_guard
+src/routes/route_tree.gd branch_for
+src/routes/route_tree.gd bundles
+src/routes/street_network.gd junction_distances
+src/telemetry/frame_ledger.gd DRAWS_HALOS
+src/telemetry/frame_ledger.gd DRAWS_OTHER
+src/telemetry/frame_ledger.gd DRAWS_PLAYER
+src/telemetry/frame_ledger.gd DRAWS_SCENERY
+src/ui/frame_graph.gd classes
+src/visuals/atlas_library.gd illustrated_path_for
+src/visuals/atlas_library.gd is_acquired
+src/visuals/atlas_library.gd reference_count
+src/visuals/atlas_library.gd region_name_for
+src/visuals/ground_recipe.gd reads
+src/world/chase_way.gd sweep_under_way
+src/world/draw_layer.gd layer_of
+src/world/world_context.gd total_excitement_at
+
+# [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
+# used in its own file is exempt): internal, so each gets the underscore and its tests go through what
+# the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
+# that adds the underscores deletes these lines.
+src/autoload/game_save.gd file_data
+src/autoload/game_save.gd has_save
+src/autoload/game_save.gd moment_result
+src/autoload/game_save.gd uses_save
+src/autoload/visit_counter.gd charger_counter_name
+src/autoload/visit_counter.gd listen
+src/autoload/visit_counter.gd send_through
+src/build_info.gd commit_text
+src/city/blackout.gd go_dark
+src/city/blackout.gd is_dark
+src/city/building.gd civic_entrance_cols
+src/city/building.gd column_under_door
+src/city/building.gd door_column_from
+src/city/building.gd draws_window_at
+src/city/building.gd entrance_door_col
+src/city/building.gd entrance_door_texture
+src/city/building.gd extension_is_seamless
+src/city/building.gd extension_rows
+src/city/building.gd fire_escape_landings
+src/city/building.gd fire_escape_texture
+src/city/building.gd ground_cell
+src/city/building.gd ground_floor_texture
+src/city/building.gd has_visible_storefront
+src/city/building.gd is_covered
+src/city/building.gd portico_is_drawn
+src/city/building.gd roll_fire_escape_extras
+src/city/building.gd roof_cell_edges
+src/city/building.gd roof_equipment_scale
+src/city/building.gd roof_interior_cells
+src/city/building.gd roof_layout
+src/city/building.gd window_texture
+src/city/city.gd assign_roof_extensions
+src/city/city.gd barrier_footprint
+src/city/city.gd blackout
+src/city/city.gd home_door_building
+src/city/city_generator.gd blocks_from_home
+src/city/city_generator.gd power_station_rank
+src/city/city_map.gd count_walkable
+src/city/marble_bag.gd put_in_front
+src/city/poster_art.gd torn
+src/city/scenery_ground.gd evicted
+src/city/scenery_ground.gd prepared
+src/city/scenery_ground.gd worst_step_usec
+src/city/scenery_residency.gd camera_view
+src/city/scenery_residency.gd ordinary_guard_preparations
+src/city/traffic_signals.gd phase_of
+src/crowd/car_strategy.gd shadow_shape
+src/crowd/car_strategy.gd turn_refusals
+src/crowd/car_strategy.gd turn_round_cause
+src/crowd/car_strategy.gd turned_on_this_approach
+src/crowd/car_turn.gd carriageway_edge
+src/crowd/car_turn.gd spin
+src/crowd/car_turn.gd start_angle
+src/crowd/crowd.gd give_way_at_junctions
+src/crowd/crowd.gd space_out_the_traffic
+src/crowd/crowd_field.gd stretch_ends_of
+src/crowd/crowd_lanes.gd busyness
+src/crowd/lane_mover.gd end_the_frame
+src/crowd/walker_look.gd heading_now
+src/crowd/walker_strategy.gd door_answer_for
+src/day/loss_cause.gd crying_suffix
+src/day/loss_cause.gd hard_fail_suffix
+src/dev/auto_screenshot.gd can_photograph
+src/dev/auto_screenshot.gd recording_frame_needs_force
+src/dev/debug_layers.gd collision_nodes_under
+src/dev/debug_layers.gd field_runs
+src/dev/debug_layers.gd open_runs
+src/dev/dev_flags.gd parse_ground_mode
+src/dev/dev_flags.gd parse_layers
+src/dev/dev_flags.gd parse_parent
+src/dev/dev_rig.gd nearest_walkable
+src/dev/dev_rig.gd pavement_offset
+src/dev/rig_lock.gd is_the_rigs_own_press
+src/dev/scene_recipe_runtime.gd charging_refusal
+src/dev/scene_recipe_runtime.gd hold_refusal
+src/dev/scene_recipe_runtime.gd hold_refusal_message
+src/dev/scene_recipe_runtime.gd relentless_refusal
+src/dev/scene_recipe_runtime.gd scripted
+src/dev/scene_recipe_runtime.gd settle_camera_on
+src/dev/scene_recipe_runtime.gd validate_runtime
+src/dev/still_watch.gd facing_a_red_light
+src/dev/trailer_text.gd opacity_at
+src/dev/zoom_out_camera.gd overview_zoom
+src/dev/zoom_out_camera.gd pose_at
+src/events/behaviours/event_barrier_post.gd come_back_as_the_barrier
+src/events/behaviours/event_car_driving.gd is_driving
+src/events/behaviours/event_car_driving.gd room_to_its_line
+src/events/checkpoint_controller.gd guard_is_after_her
+src/events/checkpoint_controller.gd release_finished_holds
+src/events/checkpoint_controller.gd set_a_guard_on_her
+src/events/checkpoint_controller.gd where_she_crossed
+src/events/event_catalogue.gd guardsmen_from_day
+src/events/event_catalogue.gd heat_levels
+src/events/event_def.gd emission_at
+src/events/event_def.gd lunge_is_inside_the_catch
+src/events/event_def.gd mean_emission_along_the_line
+src/events/event_def.gd minimum_telegraph
+src/events/event_def.gd notice_on
+src/events/event_def.gd warning_time
+src/events/event_director.gd route_rows_on
+src/events/event_director.gd siting_band
+src/events/event_footprints.gd picture_drop_of
+src/events/event_manager.gd check_hard_fails
+src/events/event_manager.gd planner
+src/events/event_manager.gd step_the_encounters
+src/events/event_scenery.gd moving_layers
+src/events/event_scenery.gd static_layers
+src/events/event_scheduler.gd budget_for
+src/events/event_scheduler.gd is_spoiled
+src/events/event_scheduler.gd place_masts
+src/events/event_scheduler.gd room_around
+src/events/event_scheduler.gd street_bag
+src/events/event_spawner.gd obstructed_footprint
+src/events/events_ahead.gd a_pursuer_is_after_her
+src/events/views/event_look.gd mark_colour
+src/events/views/event_look.gd mark_swell
+src/events/views/event_look.gd wants_a_mark
+src/events/views/figure_look.gd charging_dog_pictures
+src/events/views/figure_look.gd rider_pictures
+src/events/views/pursuer_look.gd masked_pursuer_pictures
+src/events/views/pursuer_look.gd policeman_pictures
+src/events/views/pursuer_look.gd robber_pictures
+src/events/views/roadblock_look.gd chaser_pictures
+src/events/walk_ground.gd held_by
+src/events/walk_ground.gd solids_of
+src/finale/finale_planner.gd service_exit_tile
+src/interior/interior_map.gd stair_kind_for_symbol
+src/interior/interior_map_plan.gd shortest_walk
+src/interior/interior_map_plan.gd walk_avoiding
+src/interior/interior_scene.gd distant_flash_wait
+src/interior/interior_scene.gd flash_windows
+src/interior/interior_scene.gd lighting_at
+src/interior/interior_scene.gd teleport_to_door
+src/interior/interior_scene.gd windows_are_flashing
+src/main.gd day_spec
+src/main.gd escape_part_for
+src/main.gd escape_section_spec
+src/player/baby.gd overflow_mass
+src/player/stroller.gd baby_cue_aside
+src/player/stroller.gd baby_cue_lift
+src/player/stroller.gd sources_by_group
+src/resistance/contact_point.gd draws_a_mark
+src/resistance/contact_point.gd would_complete_at
+src/resistance/happenings.gd cordon
+src/resistance/happenings.gd frontage_of
+src/resistance/happenings.gd market_block
+src/resistance/happenings.gd market_candidates
+src/resistance/happenings.gd raid
+src/resistance/happenings.gd send_the_column
+src/resistance/park_cordon.gd closed_at
+src/resistance/park_cordon.gd deadline
+src/resistance/park_cordon.gd first_in_view
+src/resistance/park_cordon.gd gap_clear
+src/resistance/park_cordon.gd gap_reaches_home
+src/resistance/park_cordon.gd last_gap
+src/resistance/park_cordon.gd officers
+src/resistance/park_cordon.gd other_calm_reached
+src/resistance/park_cordon.gd relaid
+src/resistance/park_cordon.gd stretches
+src/resistance/park_cordon.gd trapped
+src/resistance/park_cordon.gd walked_straight
+src/resistance/resistance_director.gd alley_ends
+src/resistance/resistance_director.gd draw_guard_position
+src/resistance/resistance_director.gd draw_reachable
+src/resistance/resistance_director.gd guard_position
+src/resistance/resistance_director.gd guard_spot
+src/resistance/resistance_director.gd is_alley_mouth
+src/resistance/resistance_director.gd is_at_a_front_door
+src/resistance/resistance_director.gd is_mark_tile
+src/resistance/resistance_director.gd keeps_a_waiting_guard
+src/resistance/resistance_director.gd mark_tile_of
+src/resistance/resistance_director.gd nearest_alley_among
+src/resistance/resistance_director.gd nearest_alley_within
+src/resistance/resistance_director.gd place_contact
+src/resistance/resistance_director.gd pointable_objective
+src/resistance/resistance_director.gd pursuer_walker
+src/resistance/resistance_director.gd reach_obstruction
+src/resistance/resistance_director.gd retarget_the_arrow
+src/resistance/resistance_director.gd sets_a_trap_on_her
+src/resistance/resistance_director.gd swing_base
+src/resistance/resistance_director.gd touch_reach
+src/resistance/resistance_director.gd weighted_mast_index
+src/routes/closure_marker.gd cause_feet
+src/routes/closure_marker.gd cause_picture
+src/routes/corridor.gd walks_along
+src/routes/park_closure.gd to_along
+src/routes/region_planner.gd alley_mouth_ground_region
+src/routes/region_planner.gd region_of_segment
+src/routes/route_tree.gd lattice_grid
+src/routes/route_tree.gd trunk_used_the_spine
+src/routes/seal_planner.gd escape_candidates
+src/run/day_director.gd loss_cause
+src/run/run_calendar.gd is_checkpoint_day
+src/run/run_state_registry.gd rider_data
+src/run/run_state_registry.gd state_data
+src/run/summary_model.gd clock_line
+src/run/summary_model.gd resistance_tally
+src/run_config.gd day_length_override
+src/sprites.gd base_transform_of
+src/sprites.gd mirrored_transform
+src/telemetry/frame_ledger.gd last_slow
+src/telemetry/frame_ledger.gd overwritten
+src/telemetry/frame_ledger.gd slow_frames
+src/telemetry/frame_ledger.gd top_costs
+src/telemetry/frame_recorder.gd calibrate
+src/telemetry/frame_recorder.gd clock_resolution
+src/telemetry/frame_recorder.gd draw_kind
+src/telemetry/frame_recorder.gd fits_the_readout
+src/telemetry/frame_recorder.gd report_text
+src/telemetry/frame_recorder.gd save_on_exit
+src/telemetry/frame_recorder.gd view_size
+src/telemetry/telemetry_map.gd role_mark
+src/telemetry/telemetry_observer.gd spikes_on
+src/ui/badge_model.gd announces
+src/ui/badge_model.gd approach_speed
+src/ui/danger_edge.gd arrows_drawn
+src/ui/danger_edge.gd subject_for_def
+src/ui/entity_halo.gd has_settled
+src/ui/entity_halo.gd trace_offsets
+src/ui/excitement_halo.gd colour_for
+src/ui/excitement_halo.gd magnitude_for
+src/ui/excitement_halo.gd select_sources
+src/ui/frame_graph.gd classify
+src/ui/meter_bar.gd displayed_fraction
+src/ui/meter_bar.gd displayed_value
+src/ui/mode_button.gd hold_progress
+src/ui/pause_screen.gd body_for
+src/ui/return_window.gd ignoring_input
+src/ui/return_window.gd on_web_event
+src/ui/screen_orientation.gd rotation_transform
+src/ui/title_screen.gd hard_mode_contains_design_point
+src/ui/title_screen.gd hard_mode_shown
+src/ui/title_screen.gd hard_mode_target
+src/ui/touch_controls.gd boundary_x
+src/ui/touch_controls.gd covered_left
+src/ui/touch_controls.gd covered_right
+src/ui/touch_controls.gd covered_screen
+src/ui/touch_controls.gd current_heading
+src/ui/touch_controls.gd heading_to
+src/ui/touch_controls.gd in_dead_zone
+src/ui/touch_controls.gd is_in_stop_band
+src/ui/touch_controls.gd is_on_run_side
+src/ui/touch_controls.gd run_button_center
+src/ui/touch_controls.gd run_focus_for
+src/ui/touch_controls.gd set_direction
+src/visuals/atlas_library.gd aspect_ceiling
+src/visuals/atlas_library.gd moment_for_a_load
+src/visuals/ground_layers.gd compose_image
+src/visuals/ground_layers.gd rotate_clockwise
+src/web_display.gd dpr_cap
+src/world/draw_layer.gd z_of
+src/world/excitement_source.gd expected_impact_at
+src/world/excitement_source.gd will_be_lethal
+src/world/excitement_sources.gd sources_at
+src/world/spawn_siting.gd is_out_of_sight
+src/world/spawn_siting.gd seen_from
+
+# [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
+# confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
+# line.
+src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so verify's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
+src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs; tests/test_tuning_fairness.gd and tests/crowd_rig.gd check CAR_HORN_SIGHT against it, the same fairness contract (crowd-traffic)
+src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind verify wants
+
+# [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
+# (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
+# what it depends on, the game using its default and a test handing in a fake.
+src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_reload  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_save  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_sitting  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_sitting_home  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/resistance/resistance_director.gd use_steps  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/mode_button.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/return_window.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/title_screen.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+
+# [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
+# because the check misreads the line (name how: a game reader through a string, a test's own fake, an
+# engine member of that name). The reason is on each line.

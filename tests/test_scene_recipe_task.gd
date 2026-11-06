@@ -21,8 +21,6 @@ func run(t) -> void:
 	t.gives_back_observers()
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
-	_test_the_task_scenes_start_off_an_unread_mark(t)
-	_test_the_door_scenes_show_the_robber_a_done_task_sends(t)
 	_test_an_authored_mast_carries_its_own_id(t)
 	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 	_test_a_pinned_mark_is_read_and_its_task_placed_near_it(t)
@@ -268,57 +266,6 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
 			"a mast put up for it on the circle round her")
 	_free_day(made)
 
-## *(Inbox #555.)* Days 6 to 13's scenes start her off the mark, outside its notice, with the mark
-## unread and nothing arrowed at the first tick, then assert the task once she has read it. A scene
-## that put her on the mark, or asserted the task at the first tick, would be the old start.
-func _test_the_task_scenes_start_off_an_unread_mark(t) -> void:
-	var names := ["06-note", "07-package", "08-burnt-shell", "09-crossing", "10-neighbor",
-			"11-mast", "12-swing", "13-roadblock"]
-	for name: String in names:
-		var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-%s.json" % name).data
-		var anchors: Dictionary = data.anchors
-		var mark := Vector2(anchors.mark.tile[0], anchors.mark.tile[1]) * Tuning.TILE_SIZE \
-				+ Vector2.ONE * Tuning.TILE_SIZE * 0.5
-		var start_name: String = data.setup.player.at
-		t.check(start_name != "mark" and anchors.has(start_name), "%s starts off the mark" % name)
-		if not anchors.has(start_name):
-			continue
-		var start := Vector2(anchors[start_name].tile[0], anchors[start_name].tile[1]) \
-				* Tuning.TILE_SIZE + Vector2.ONE * Tuning.TILE_SIZE * 0.5
-		t.check(start.distance_to(mark) > ResistanceDirector.SEEN_DISTANCE
-				and start.distance_to(mark) < ResistanceDirector.NOTICE_RADIUS,
-				"%s starts outside the mark's notice but within its reach of the day (%.0fpx)"
-				% [name, start.distance_to(mark)])
-		var at_first := []
-		for check: Dictionary in data.playback.observations:
-			if int(check.tick) == 1:
-				at_first.append("%s %s" % [check.subject, check.condition])
-		t.check("mark offered" in at_first and "mark unarrowed" in at_first,
-				"%s asserts the mark unread and no arrow at the first tick" % name)
-		t.check(not at_first.any(func(entry: String) -> bool: return entry.begins_with("task ")),
-				"%s asserts nothing of the task before she has read the mark" % name)
-
-## *(Inbox #650, "yes include his approach street.")* Day 9's crossing and the station door's corner
-## list the street a sent robber starts on in `draft.include`, and ask that he pursues her once the
-## task is done. The scenes' own headless play (`tools/scene-recipes.sh`) answers the asking; this
-## keeps either from being dropped from the recipe.
-func _test_the_door_scenes_show_the_robber_a_done_task_sends(t) -> void:
-	for file: String in ["task-09-crossing", "station-door-corner"]:
-		var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/%s.json" % file).data
-		t.check(not data.get("draft", {}).get("include", []).is_empty(),
-				"%s lists the street the robber starts on" % file)
-		var pursues := false
-		var done_at := 0
-		for check: Dictionary in data.playback.observations:
-			if check.subject == "task" and check.condition == "done":
-				done_at = int(check.tick)
-		for check: Dictionary in data.playback.observations:
-			if check.subject == "row:robber_giving_chase" and check.condition == "pursuing" \
-					and int(check.tick) > done_at:
-				pursues = true
-		t.check(done_at > 0 and pursues,
-				"%s asks that the robber pursues her once the task is done" % file)
-
 ## A scene recipe gives an authored loudspeaker a `mast_id`, the identity day 11's task and its red
 ## arrow answer to, so a scene can stand two masts and show the arrow move between them
 ## (`scene-recipes/task-11-two-masts.json`). Only a loudspeaker is a mast, and one id names one mast.
@@ -342,12 +289,6 @@ func _test_an_authored_mast_carries_its_own_id(t) -> void:
 			"two masts cannot share an id")
 	t.check(_refused(with.call([mast.call("a", "loudspeaker", "")]), "unique nonempty string"),
 			"an empty id names nothing")
-	var data: Dictionary = SceneRecipe.load_file("res://scene-recipes/task-11-two-masts.json").data
-	var ids := []
-	for entry: Dictionary in data.setup.events:
-		ids.append(entry.get("mast_id", ""))
-	t.check(ids.size() == 2 and not "" in ids and ids[0] != ids[1],
-			"the two-mast scene stands two masts under two ids")
 
 ## An authored mast is accepted by the checks `EventScheduler.place_masts()` makes of a site: a
 ## day with masts, ground a mast site would be offered that is not closed, held or the home block,

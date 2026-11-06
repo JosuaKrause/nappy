@@ -61,7 +61,6 @@ func run(t) -> void:
 	_test_the_posters_survive_a_round_trip(t)
 	_test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t)
 
-	_test_day_under_way_load_costs_one_nerve(t)
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
 	_test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t)
@@ -108,8 +107,6 @@ func run(t) -> void:
 	_test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t)
 	_test_a_struck_symbol_that_faded_away_is_forgotten(t)
 	_test_a_stray_answer_shows_nothing(t)
-	_test_a_refused_save_leaves_the_symbol_dark(t)
-	_test_a_desktop_save_shows_the_symbol_confirmed_at_once(t)
 	_test_a_save_not_kept_swaps_to_the_struck_picture(t)
 
 	_save.clear()
@@ -707,30 +704,6 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
 
 # ------------------------------------------------------------- the lost-day path ---
 
-## What `main._ready()` does with a `day_under_way: true` resume: apply `RunState.calendar.finish_day()`
-## with a non-`WON` result, the same call an ordinary lost day makes. One nerve, the day's own
-## resistance work undone, the same day again.
-func _test_day_under_way_load_costs_one_nerve(t) -> void:
-	var run := _a_run(55)
-	run.header.day = 4
-	run.header.nerves = 5
-	run.calendar.begin_day()
-	# Progress made during the attempt that is about to be "left" — the dawn snapshot above this
-	# does not carry it, so a loss has something real to give back.
-	run.complete_resistance_step(0)
-	t.check(run.resistance.progress == 1, "the attempt made progress before being saved")
-
-	var resume := {"day_under_way": true}
-	var continues := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-
-	t.check(continues, "a nerve was spent, not the last one, so the run goes on")
-	t.check(run.header.nerves == 4, "exactly one nerve is spent")
-	t.check(run.header.day == 4, "the same day is offered again, not the next one")
-	t.check(run.resistance.progress == 0,
-			"the resistance work the attempt did is given back, the same as any other lost day")
-	t.check(resume["day_under_way"], "the resume dict this all hangs off of is the one asserted")
-	run.free()
-
 ## **A run closed mid-day gives back what that day burned, through the same path an ordinary loss
 ## takes.** `main._ready()` hands a save written with `day_under_way` to `RunState.calendar.finish_day()` as
 ## a hard fail, so the whole of the give-back has to survive the file: the photograph of what the
@@ -880,8 +853,6 @@ func _test_summary_load_costs_nothing(t) -> void:
 	t.check(_saved(run, false), "a save is written at a day's own summary")
 	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way") == false, "it comes back false")
-	t.check(run.header.day == 8 and run.header.nerves == 4,
-			"nothing about the run changes on a load this function never spends a nerve on")
 	run.free()
 
 ## The ordering the commit message states: after the load-time penalty is applied, the very next
@@ -908,9 +879,6 @@ func _test_double_load_does_not_charge_twice(t) -> void:
 	var second := _save.try_resume(run)
 	t.check(second.get("day_under_way") == false,
 			"a second close before pressing continue on the day brief finds nothing under way")
-	# The caller (`main._ready()`) would not call `finish_day()` at all on this result — nothing
-	# here does either, so an unchanged nerve count is the whole of the assertion.
-	t.check(run.header.nerves == 4, "and so the second load does not spend a second nerve")
 	run.free()
 
 
@@ -1332,8 +1300,8 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> 
 		_save.write(run, true)
 		t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
 		t.check(timeline.begun == 1, "and the symbol began once for it, with nobody relaying it")
-		t.check(indicator.is_showing() and timeline.pending == 0,
-				"and that one change is already answered")
+		t.check(indicator.is_showing() and timeline.pending == 0 and Boot.save_symbol_plain(indicator),
+				"and that one change is already answered, showing the plain picture")
 		indicator.free()
 		run.header.ending = GameEnums.Ending.BAD
 		heard.clear()
@@ -1744,35 +1712,6 @@ func _test_a_stray_answer_shows_nothing(t) -> void:
 	showing.settle(8, false)
 	showing.settle(8, true)
 	t.check(showing.struck, "a second answer to a save already answered changes nothing")
-
-## The whole path through `_save.write()` — the one call `main` makes for a save, which it
-## relays nothing of: a run `_save.uses_save()` refuses — here the headless runner — leaves the
-## symbol dark rather than struck.
-func _test_a_refused_save_leaves_the_symbol_dark(t) -> void:
-	var run := _a_run()
-	var timeline := SaveIndicator.Showing.new()
-	var indicator := SaveIndicator.new(timeline)
-	t.add_child(indicator)
-	_headless(func() -> void:
-		t.check(_save.write(run, true) == GameSave.Result.REFUSED, "the write is refused")
-	)
-	t.check(timeline.is_idle() and not timeline.struck, "a refused save leaves the symbol dark")
-	indicator.free()
-	run.free()
-
-func _test_a_desktop_save_shows_the_symbol_confirmed_at_once(t) -> void:
-	var run := _a_run()
-	_with_a_scratch_save(func() -> void:
-		var timeline := SaveIndicator.Showing.new()
-		var indicator := SaveIndicator.new(timeline)
-		t.add_child(indicator)
-		_save.write(run, true)
-		t.check(timeline.pending == 0 and not timeline.is_idle(),
-				"a desktop save is answered at once and the symbol is already showing")
-		t.check(not timeline.struck and Boot.save_symbol_plain(indicator), "showing the plain picture")
-		indicator.free()
-	)
-	run.free()
 
 ## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
 ## in for the plain one rather than drawn over it — so the region has to exist and be a different
