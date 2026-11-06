@@ -489,6 +489,10 @@ its brief resumes it with its context, and its worktree still holds its uncommit
 reports warm or cold. A cold one is replaced as step 4 says, with a fresh agent briefed from the
 brief and the worktree's state ("A finished agent is not resumed after it has gone cold").
 
+**A limit or an outage stops every agent at once, and the pause's length decides what happens
+next.** The player usually tries to hand the session off before a limit hits, so the next one starts
+fresh at the reset, but not every limit is seen coming (woolly-finch 26).
+
 1. **Run `tools/agent-status.sh` before touching anything.** It covers every worktree's branch,
    uncommitted files, how far it is ahead of and behind its own upstream (another session may have
    pushed to it), its PR's CI state, its brief file, and its credited agent's warm/cold verdict in
