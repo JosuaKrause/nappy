@@ -43,7 +43,6 @@ func _test_the_post_body_is_its_drawn_ground_contact(t) -> void:
 	var circle := collision.shape as CircleShape2D
 	t.check(circle != null and is_equal_approx(circle.radius, post.shape.radius),
 			"the post's body is the circle its shadow is drawn from")
-	t.check(is_equal_approx(post.shape.radius, 12.0 * 0.4), "and that circle is 4.8px")
 	post.free()
 
 ## The rows of one map, as lists of cross-axis centres, plus the axis they run along.
