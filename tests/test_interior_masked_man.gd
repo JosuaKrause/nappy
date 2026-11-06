@@ -261,7 +261,15 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 		for instance in events.instances():
 			stood[instance.get_instance_id()] = instance.global_position
 			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
-		return false
+		# Ends once the run has shown what the checks below ask for with room to spare (they need
+		# three men, two who ran and one gap): five men come, four have left the top and four have
+		# taken their first step. The whole section holds thirteen, and a longer watch only repeats
+		# the same men over again.
+		var ran := 0
+		for age in first_step_age:
+			if age >= 0.0:
+				ran += 1
+		return appeared.size() >= 5 and left.size() >= 4 and ran >= 4
 	await PhysicsTicks.pass_ticks_faster(t, ceili(RunConfig.FINALE_LENGTH_SECONDS / STEP), 8,
 			after_the_tick)
 	player.free()
@@ -288,7 +296,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 				"the next man comes %.2fs after the last one ran out of the top, against %.2fs"
 				% [gap, EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS])
 	t.check(gaps > 0, "there were gaps between his runs to measure (%d)" % gaps)
-	print("The masked man came %d times in %.0fs; gaps measured: %d"
-			% [appeared.size(), RunConfig.FINALE_LENGTH_SECONDS, gaps])
+	print("The masked man came %d times before the watch ended; gaps measured: %d"
+			% [appeared.size(), gaps])
 	events.free()
 	scene.free()

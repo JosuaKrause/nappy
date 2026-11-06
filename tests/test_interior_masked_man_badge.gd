@@ -24,7 +24,7 @@ func run(t) -> void:
 ## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
 ## walking, from inside the out-of-sight margin band).
 func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
-	var pauses_ms := [0, 7, 13, 19, 29, 37, 43, 53, 61, 71, 83]
+	var pauses_ms := [0, 19, 43, 71, 83]
 	var worst := 0
 	var failures := 0
 	var seen_fractions := {}

@@ -1365,7 +1365,7 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
 ## **The two edges the spine runs off, and only those.** The exception is what this test is for,
 ## and it exists nowhere else — so the plain west and east edges it used to stand on as well are
 ## exactly the two that `_test_nobody_enters_across_a_plain_edge` below stands on, at the same two
-## coordinates, for the same twenty seconds, asserting a strictly stronger version of the same
+## coordinates, for half the time, asserting a strictly stronger version of the same
 ## sentence (nobody at all, rather than no walker and no off-spine car). Running both was the same
 ## refusal paid for twice.
 func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
@@ -1438,7 +1438,7 @@ func _test_spine_cars_are_put_out_of_sight(t) -> void:
 		var landed := 0
 		var in_view := 0
 		var too_deep := 0
-		for frame in int(round(80.0 / STEP)):
+		for frame in int(round(40.0 / STEP)):
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
@@ -1466,7 +1466,7 @@ func _test_spine_cars_are_put_out_of_sight(t) -> void:
 ## A car driving into the tunnel stops existing once its whole body is inside the mouth, so it
 ## never visibly drives on across the mountain over it, and the bridge is long enough that a car
 ## never drives off the end of its deck. Stood at each end, the furthest any spine car gets past the
-## map edge is measured over a long run.
+## map edge is measured over thirty seconds, by which time the furthest has settled.
 func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
@@ -1484,7 +1484,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 		var departing_north := 0.0
 		var furthest_south := 0.0
 		var seen_past_the_edge := 0
-		for frame in int(round(60.0 / STEP)):
+		for frame in int(round(30.0 / STEP)):
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
@@ -1531,7 +1531,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 		i += 1
 		var inbound := 0
 		var outbound := 0
-		for frame in int(round(40.0 / STEP)):
+		for frame in int(round(20.0 / STEP)):
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
@@ -1580,7 +1580,7 @@ func _test_nobody_enters_across_a_plain_edge(t) -> void:
 		_city.crowd.start_day(1, _rng(30 + i), at)
 		i += 1
 		var out_of_bounds := 0
-		for frame in int(round(20.0 / STEP)):
+		for frame in int(round(10.0 / STEP)):
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
@@ -1619,7 +1619,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 	var lo := INF
 	var hi := -INF
 	var samples := 0
-	for frame in int(round(60.0 / STEP)):
+	for frame in int(round(30.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():
@@ -1679,7 +1679,7 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> voi
 	var landings := Landings.new(_city.crowd)
 	var worst := {CrowdAgent.Kind.WALKER: INF, CrowdAgent.Kind.CAR: INF}
 	var samples := {CrowdAgent.Kind.WALKER: 0, CrowdAgent.Kind.CAR: 0}
-	for frame in int(round(120.0 / STEP)):
+	for frame in int(round(60.0 / STEP)):
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():

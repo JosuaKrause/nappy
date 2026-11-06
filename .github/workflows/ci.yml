@@ -9,8 +9,8 @@
 #               layer check, the telemetry table's check, and on a pull request the checks that
 #               read its files and its description.
 #   hooks       test_rules_hooks.sh, the rule-loading hooks' check, on every run, beside `gates`
-#               rather than inside it: it is the longest single step of the repository's
-#               consistency, and a job of its own keeps it from setting the run's length.
+#               rather than inside it: it is a long step of the repository's consistency,
+#               and a job of its own keeps it from setting the run's length.
 #               Needs nothing but bash and a throwaway repository.
 #   cost-table  cost-table.sh --check, the one consistency check that needs Godot, on every run:
 #               docs/COSTS.md against the code it is generated from.
@@ -299,8 +299,8 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_pr_questions.py --base "origin/${GITHUB_BASE_REF}"
 
-  # The rule-loading hooks' check (.claude/hooks/*.sh fed synthetic hook JSON), the longest step
-  # the repository's consistency has. It stubs everything it calls, so it needs nothing but bash,
+  # The rule-loading hooks' check (.claude/hooks/*.sh fed synthetic hook JSON), a long step of
+  # the repository's consistency. It stubs everything it calls, so it needs nothing but bash,
   # jq, perl and a real throwaway repository, all on the runner image: no uv, no Godot, no ffmpeg.
   # It reads the hooks, the skills they inject and the docs the lint hook reads, so it takes the
   # same sparse checkout as `gates`, without the history `gates` fetches for the pull request's
@@ -641,9 +641,11 @@ jobs:
       # which is why the runner's own PARTIAL RUN note prints for every shard here and must never
       # be read as a green build on its own.
       #
-      # **Every shard runs shuffled**, with the run's id as the seed (every leg of a run shares
-      # it, a re-run of the run shares it too), so an order dependence between two suites shows on
-      # any pull request rather than only where two suites happen to meet on main. The plan is
+      # **Every shard runs shuffled**, with the run's id followed by its attempt number as the seed
+      # (every leg of an attempt shares it, a re-run draws a new one, so each re-run of a head is
+      # another order and the log still prints the seed that replays it), so an order dependence
+      # between two suites shows on any pull request rather than only where two suites happen to
+      # meet on main. The plan is
       # unchanged -- which suites a shard runs is the cost table's decision, and only the order
       # inside the shard's one process is drawn from the seed. The log carries the runner's own
       # `ORDER` line (the seed and the order) and `REPLAY` line (a command that runs those suites
@@ -654,7 +656,7 @@ jobs:
         shell: bash
         env:
           TEST_SUITE_COSTS: ${{ runner.temp }}/suite_costs.txt
-          SHUFFLE_SEED: ${{ github.run_id }}
+          SHUFFLE_SEED: ${{ github.run_id }}${{ github.run_attempt }}
         run: |
           echo "shuffled with seed $SHUFFLE_SEED; to replay this shard's order locally (the plan table is the one the plan job printed, saved as a file named by TEST_SUITE_COSTS):"
           echo "  TEST_SUITE_COSTS=<that file> tools/test.sh --shard ${{ matrix.shard }}/${{ env.SHARD_COUNT }} --shuffle $SHUFFLE_SEED"

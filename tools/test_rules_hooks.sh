@@ -114,7 +114,15 @@
 #     a push whose own quoted word holds a separator, a git or gh whose options hold an unquoted
 #     command substitution, a gh issue write bare or wrapped, a merge, a release, a gh api write
 #     and a pushing script, while git tag, a read, a search for a write's words and a
-#     tools/inbox.py call allow; with the switch unset, 0 or yes, every one of those writes denies
+#     tools/inbox.py call allow; with the switch unset every one of those writes denies, and with
+#     0 or yes, which the guard turns down by the same comparison with 1, one of each list does;
+#     each case runs once per distinct way the guard's closing ask condition reads it (the comment
+#     above that block says which)
+#   - a failure of github-write-guard.sh's own machinery denies: the payload failing to read, the
+#     program failing, the answer failing to print or printing and then failing (one deny, never
+#     two answers), and, with no jq, a tr that fails, whether it strips its text first or leaves
+#     at once; with no jq and a working tr, a command naming git or gh in any case denies and
+#     brew install jq allows
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
 #     input can append tools/release.sh's own push, so release.sh under one is a write without it;
@@ -174,6 +182,18 @@
 #
 # Bash 3.2-safe (no associative arrays, no globstar) -- the same reason the rest of tools/ stays
 # this side of bash 4; see tools/lint.sh's own header.
+#
+# The guard cases run in parallel, --jobs at a time (the CPU count unless the flag or
+# TEST_RULES_HOOKS_JOBS says otherwise; 1 runs them one after another in this shell, the way the
+# suite ran before). Each guard case (assert_guard, assert_write_guard, assert_write_guard_reason,
+# assert_write_guard_nojq) forks a subshell that carries the suite's variables as they stand at
+# that call, so a case's verdict never depends on what the script sets after it or on which case
+# finishes first; a timed case waits for those before it and runs alone, so its bound measures the
+# hook and not the suite. What the cases share on disk (the throwaway repository, the git configs,
+# the jq and git shims, the agents directory) is written before the first case that reads it and
+# never rewritten while cases run. Each case's output, and its checks and failures, are printed and
+# added in the order the cases are written, so the count is the serial run's. The marker and
+# lint-docs cases at the top read files the hooks write as they go, in order, so they stay serial.
 set -uo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -181,29 +201,51 @@ cd "$root" || exit 1
 
 usage() {
     cat <<'EOF'
-usage: tools/test_rules_hooks.sh [--help|-h]
+usage: tools/test_rules_hooks.sh [--jobs N|-j N] [--help|-h]
 
 Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh, git-grep-guard.sh and
 github-write-guard.sh with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the
 per-agent marker keying, the compaction/resume reset, every path added to the skill mapping, the
 lint-docs.sh governed set, and every git-grep-guard.sh and github-write-guard.sh deny/allow shape.
-Takes no arguments besides --help/-h.
 
-  tools/test_rules_hooks.sh
+  --jobs N, -j N  run up to N guard cases at once (a positive whole number; default the
+                  TEST_RULES_HOOKS_JOBS environment variable, else the CPU count); 1 runs every
+                  case one after another
+  --help, -h      print this and exit
+
+  tools/test_rules_hooks.sh --jobs 4
 EOF
 }
 
-for arg in "$@"; do
-    case "$arg" in
+usage_error() {
+    echo "$1" >&2
+    echo >&2
+    usage >&2
+    exit 2
+}
+
+case_jobs="${TEST_RULES_HOOKS_JOBS:-}"
+case_jobs_from="TEST_RULES_HOOKS_JOBS"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
         --help|-h) usage; exit 0 ;;
-        *)
-            echo "unknown option: $arg" >&2
-            echo >&2
-            usage >&2
-            exit 2
+        --jobs|-j)
+            [ "$#" -ge 2 ] || usage_error "$1 needs a value"
+            case_jobs="$2"
+            case_jobs_from="$1"
+            shift 2
             ;;
+        --jobs=*) case_jobs="${1#--jobs=}"; case_jobs_from="--jobs"; shift ;;
+        *) usage_error "unknown option: $1" ;;
     esac
 done
+if [ -z "$case_jobs" ]; then
+    case_jobs_from=""
+    case_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+fi
+case "$case_jobs" in
+    ''|*[!0-9]*|0*) usage_error "${case_jobs_from:-the CPU count} is not a positive whole number: '$case_jobs'" ;;
+esac
 
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
@@ -224,6 +266,103 @@ fail() {
 # turns a 5-second bound into one that can fail from 4.0 s.
 now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
 
+# ------------------------------------------------------------------------ parallel cases -----
+# run_case runs one case: inline when --jobs is 1, otherwise in a background subshell, which takes
+# a copy of every variable as it stands now (the write guard's mode, switch, git config and PATH
+# included), so nothing the script assigns later reaches a case already started. The subshell
+# counts its own checks and failures from zero and leaves them, with its stdout and stderr, in
+# files numbered in call order; case_print_ready prints and adds them in that order, a case only
+# once every case before it has been printed. A case that ends without leaving its counts (killed,
+# or the subshell itself broke) is a failure, never a silent pass, and is named by its label (the
+# first argument after the case's function, cut at 200 characters) as well as its place in the
+# queue.
+#
+# At most --jobs cases run at once. When that many are running, the script blocks reading the
+# wake-up pipe on fd 9, where every case writes one byte as it ends, and counts again; a byte is
+# only a wake-up, so a stale one costs a recount, and the one-second timeout recovers from a case
+# that died before writing its byte.
+case_dir="$work_dir/cases"
+mkdir -p "$case_dir"
+case_head=0
+case_tail=0
+case_running=0
+if [ "$case_jobs" -gt 1 ]; then
+    mkfifo "$case_dir/wake"
+    exec 9<>"$case_dir/wake"
+fi
+
+run_case() {
+    if [ "$case_jobs" -le 1 ]; then
+        "$@"
+        return
+    fi
+    local f="$case_dir/$case_tail"
+    (
+        checks=0
+        failures=0
+        "$@" >"$f.out" 2>"$f.err"
+        printf '%s %s\n' "$checks" "$failures" >"$f.n"
+        printf . >&9
+    ) &
+    case_pids[$case_tail]=$!
+    case_labels[$case_tail]="${2:0:200}"
+    case_tail=$((case_tail + 1))
+    case_count_running
+    while [ "$case_running" -ge "$case_jobs" ]; do
+        read -r -t 1 -n 1 case_wake <&9 || true
+        case_count_running
+    done
+    case_print_ready
+}
+
+# Sets case_running to the number of started cases still running, and marks each that has ended:
+# it left its counts, or its process is gone.
+case_count_running() {
+    local i="$case_head" running=0
+    while [ "$i" -lt "$case_tail" ]; do
+        if [ -z "${case_ended[$i]:-}" ]; then
+            if [ -s "$case_dir/$i.n" ] || ! kill -0 "${case_pids[$i]}" 2>/dev/null; then
+                case_ended[$i]=1
+            else
+                running=$((running + 1))
+            fi
+        fi
+        i=$((i + 1))
+    done
+    case_running=$running
+}
+
+# Prints and adds every ended case at the head of the queue, in call order.
+case_print_ready() {
+    local f n_checks n_failures
+    while [ "$case_head" -lt "$case_tail" ] && [ -n "${case_ended[$case_head]:-}" ]; do
+        f="$case_dir/$case_head"
+        wait "${case_pids[$case_head]}" 2>/dev/null
+        cat "$f.out" 2>/dev/null
+        cat "$f.err" >&2 2>/dev/null
+        if read -r n_checks n_failures <"$f.n" 2>/dev/null \
+                && [ -n "$n_checks" ] && [ -n "$n_failures" ]; then
+            checks=$((checks + n_checks))
+            failures=$((failures + n_failures))
+        else
+            checks=$((checks + 1))
+            fail "case $case_head, ${case_labels[$case_head]:-(no label)}: ended without leaving its counts"
+        fi
+        rm -f "$f.out" "$f.err" "$f.n"
+        unset "case_pids[$case_head]" "case_ended[$case_head]" "case_labels[$case_head]"
+        case_head=$((case_head + 1))
+    done
+}
+
+# Waits for every started case and prints the rest, in call order.
+cases_finish() {
+    while [ "$case_head" -lt "$case_tail" ]; do
+        wait "${case_pids[$case_head]}" 2>/dev/null
+        case_ended[$case_head]=1
+        case_print_ready
+    done
+}
+
 # $1 label  $2 decision function (guard_decision or write_guard_decision)  $3 expected decision
 # $4 command  $5 bound in seconds (default 8)
 #
@@ -233,7 +372,14 @@ now() { perl -MTime::HiRes=time -e 'printf "%.3f\n", time'; }
 # seconds, keeps the first with a margin, and a run past a bound is timed once more before it
 # fails, since a loaded machine slows one run by well under twice while a quadratic walk is slower
 # by ten times or more on both.
+# A timed case runs alone: it waits for every case started before it and runs in this shell, with
+# nothing of the suite's own beside it, since a bound measured next to --jobs other cases measures
+# their load rather than the hook's walk.
 assert_decided_in_time() {
+    cases_finish
+    assert_decided_in_time_now "$@"
+}
+assert_decided_in_time_now() {
     local label="$1" decide="$2" want="$3" cmd="$4" bound="${5:-8}" started secs got try
     for try in 1 2; do
         started=$(now)
@@ -495,7 +641,8 @@ guard_decision() {
 # $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
 # More than four arguments is a broken case, not extra ones to ignore: a missing newline after a
 # command's closing quote runs the next case's words into this one, and the next case never runs.
-assert_guard() {
+assert_guard() { run_case assert_guard_now "$@"; }
+assert_guard_now() {
     checks=$((checks + 1))
     if [ "$#" -gt 4 ]; then
         fail "$1: $# arguments, at most 4 (a missing line break after the command?)"
@@ -1055,28 +1202,37 @@ write_guard_gitconfig="$write_guard_no_aliases"
 # hands a long text to another program as an argument passes on a Mac and fails, open, on CI. jq and
 # git are shimmed here to refuse such an argument the way Linux does; `write_guard_path` puts the
 # shims first on the guard's PATH (every timed case does), and `write_guard_fail_jq` makes the jq
-# shim fail outright on a call with an argument holding that text, for the fail-closed cases.
+# shim fail outright on a call with an argument holding that text, for the fail-closed cases;
+# `write_guard_fail_jq_late` makes it do its work, print its answer, and only then fail, the way a
+# pipe fails after its text is through.
 write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
 mkdir -p "$write_guard_shims"
 for write_guard_tool in jq git; do
     write_guard_real="$(command -v "$write_guard_tool")"
     {
         printf '#!/usr/bin/env bash\n'
+        printf 'late=\n'
         printf 'for a in "$@"; do\n'
         printf '    if [ "${#a}" -gt 131072 ]; then echo "%s: Argument list too long" >&2; exit 126; fi\n' "$write_guard_tool"
         printf '    if [ -n "${WRITE_GUARD_FAIL_JQ:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
         printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ"*) echo "jq: made to fail" >&2; exit 5 ;; esac\n'
         printf '    fi\n'
+        printf '    if [ -n "${WRITE_GUARD_FAIL_JQ_LATE:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ_LATE"*) late=1 ;; esac\n'
+        printf '    fi\n'
         printf 'done\n'
+        printf 'if [ -n "$late" ]; then %q "$@"; echo "jq: made to fail after printing" >&2; exit 5; fi\n' "$write_guard_real"
         printf 'exec %q "$@"\n' "$write_guard_real"
     } > "$write_guard_shims/$write_guard_tool"
     chmod +x "$write_guard_shims/$write_guard_tool"
 done
 write_guard_path=""
 write_guard_fail_jq=""
+write_guard_fail_jq_late=""
 write_guard_env() {
     env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
         PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
+        ${write_guard_fail_jq_late:+WRITE_GUARD_FAIL_JQ_LATE=$write_guard_fail_jq_late} \
         GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
 }
 write_guard_payload() {
@@ -1097,7 +1253,8 @@ write_guard_decision() {
 
 # $1 label  $2 expected ("deny" or "allow")  $3 command  $4 tool name (Bash when omitted)
 # More than four arguments is a broken case, as for assert_guard above.
-assert_write_guard() {
+assert_write_guard() { run_case assert_write_guard_now "$@"; }
+assert_write_guard_now() {
     checks=$((checks + 1))
     if [ "$#" -gt 4 ]; then
         fail "$1: $# arguments, at most 4 (a missing line break after the command?)"
@@ -2147,7 +2304,8 @@ assert_write_guard "a gh api read in \$(...), no write flag -> allow" allow \
 
 # $1 label  $2 command  $3 text the deny reason must contain; more than three arguments is a
 # broken case, as for assert_guard above.
-assert_write_guard_reason() {
+assert_write_guard_reason() { run_case assert_write_guard_reason_now "$@"; }
+assert_write_guard_reason_now() {
     checks=$((checks + 1))
     if [ "$#" -gt 3 ]; then
         fail "$1: $# arguments, at most 3 (a missing line break after the command?)"
@@ -2453,9 +2611,10 @@ assert_write_guard "git rebase --show-current-patch; git status -> allow" allow 
 assert_write_guard "git push --dry-run -> deny (an accepted false deny)" deny 'git push --dry-run origin feature/x'
 assert_write_guard "git commit --dry-run -> deny (an accepted false deny)" deny 'git commit --dry-run'
 
-# A failure of the guard's own machinery denies, never allows: the answer failing to print, the
-# program failing, and no jq at all (where only a command naming git, gh or a pushing script is
-# denied, so installing jq is not refused). And a reason longer than any one argument may be is
+# A failure of the guard's own machinery denies, never allows: the answer failing to print, or
+# printing and then failing, the program failing, the payload failing to read, and no jq at all
+# (where only a command naming git, gh or a pushing script is denied, so installing jq is not
+# refused, and a tr that fails denies whatever it was given). And a reason longer than any one argument may be is
 # cut short and passed on stdin, under the shims' Linux argument limit.
 write_guard_path="$write_guard_shims"
 write_guard_fail_jq="hookSpecificOutput"
@@ -2469,6 +2628,26 @@ write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 write_guard_fail_jq="--slurpfile"
 assert_write_guard "the program fails: git status -> deny" deny 'git status'
 write_guard_fail_jq=""
+# The answer is printed whole and once: a jq that prints it and then fails gets one fixed deny, never
+# that answer with a deny after it, which is two answers and none the harness can read (and, where
+# the guard would ask, an ask the deny was meant to take back).
+write_guard_fail_jq_late="hookSpecificOutput"
+assert_write_guard "the answer prints and then fails: git push -> one deny" deny 'git push origin main'
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+write_guard_switch=1
+assert_write_guard "the answer prints and then fails where it would ask: git commit -> one deny" deny 'git commit -m x'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+write_guard_fail_jq_late=""
+# A payload that fails to read denies, though an empty one would read as nothing to guard: a cat
+# that leaves at once, having read nothing, makes the guard's own read of the payload fail.
+write_guard_cat_fails="${TMPDIR:-/tmp}/write-guard-cat-fails"
+mkdir -p "$write_guard_cat_fails"
+printf '#!/bin/sh\nexit 1\n' > "$write_guard_cat_fails/cat"
+chmod +x "$write_guard_cat_fails/cat"
+write_guard_path="$write_guard_cat_fails"
+assert_write_guard "the payload fails to read: ls -> deny" deny 'ls -la'
+write_guard_path="$write_guard_shims"
 assert_write_guard_reason "a reason from thousands of findings names each kind once" \
     "$(printf 'git -c alias.x=y %.0s' $(seq 1 3800))ci" "(git with an alias set on the command line) outside"
 write_guard_path=""
@@ -2487,15 +2666,50 @@ write_guard_nojq_decision() {
         "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi
 }
-for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+# $1 the expected decision and the command, joined by a colon  $2 what the case changes, for its label
+assert_write_guard_nojq() { run_case assert_write_guard_nojq_now "$@"; }
+assert_write_guard_nojq_now() {
+    local write_guard_case="$1" write_guard_note="${2:+, $2}" write_guard_got
     checks=$((checks + 1))
     write_guard_got="$(write_guard_nojq_decision "${write_guard_case#*:}")"
     if [ "$write_guard_got" = "${write_guard_case%%:*}" ]; then
-        echo "ok   no jq: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
+        echo "ok   no jq$write_guard_note: ${write_guard_case#*:} -> ${write_guard_case%%:*}"
     else
-        fail "no jq: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
+        fail "no jq$write_guard_note: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
     fi
+}
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "deny:GIT PUSH origin main" \
+        "allow:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case"
 done
+# A tr that fails denies, whether its text names a write or not: under pipefail a pipe from tr into
+# a search fails when tr does, though the search matched, so the guard decides on tr's text only
+# once it is whole. Two stand-ins for the failure (GitHub's runners ignore SIGPIPE, so a tr whose
+# reader has matched and left gets EPIPE and exits non-zero): one strips its text as tr does and
+# then fails, one leaves at once having read nothing.
+write_guard_nojq_plain="$write_guard_nojq"
+for write_guard_tr in late early; do
+    write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-$write_guard_tr"
+    mkdir -p "$write_guard_nojq"
+    for write_guard_tool in bash cat grep env; do
+        ln -sf "$(command -v "$write_guard_tool")" "$write_guard_nojq/$write_guard_tool"
+    done
+    if [ "$write_guard_tr" = late ]; then
+        printf '#!/bin/sh\n%s "$@"\nexit 1\n' "$(command -v tr)" > "$write_guard_nojq/tr"
+    else
+        printf '#!/bin/sh\nexit 1\n' > "$write_guard_nojq/tr"
+    fi
+    chmod +x "$write_guard_nojq/tr"
+done
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-late"
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "deny:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case" "tr strips, then fails"
+done
+write_guard_nojq="${TMPDIR:-/tmp}/write-guard-nojq-tr-early"
+for write_guard_case in "deny:git push origin main" "deny:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case" "tr leaves at once"
+done
+write_guard_nojq="$write_guard_nojq_plain"
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
 # at a body file rather than claiming the command is unwrapped and stopping there.
@@ -3306,8 +3520,29 @@ write_guard_allowed=(
     "rg -n 'gh issue comment' .claude/"
     'uv run python tools/inbox.py --role claude-orchestrator close --pr 5'
 )
-# The same denial cases on a machine with identities, even when asking is switched on: a
-# quoted-script expansion must not disappear before environment policy ever sees the write.
+# Which of the passes below each case runs in, and why the rest would repeat one already run.
+# github-write-guard.sh reads the three inputs these passes vary -- the switch
+# NAPPY_ASK_FOR_PLAYER_WRITES, CLAUDE_CODE_REMOTE, and whether the NAPPY_AGENTS_DIR directory
+# exists -- in one place only: the closing `if` that turns a deny into an ask, after the jq program
+# has read the command. Its program never reads the environment, so what it flags for a case is the
+# same in every pass, and the passes differ only in how that closing condition evaluates:
+#
+#   - A command the guard allows never reaches it: the guard prints nothing and exits where the
+#     jq program's result is empty, before the condition. Every pass of write_guard_allowed is one
+#     path, so the array runs whole once (remote, switch 1) and one case of it stands in elsewhere.
+#   - The condition's first test is the switch compared with the string 1, and its && stops there
+#     when that fails. Unset, empty, 0 and yes all fail that one comparison (the guard reads the
+#     switch with :-, so unset and empty are the same word), so with the switch off a write is
+#     denied before the mode is read: the six switch-off passes (unset, 0 and yes, in both modes)
+#     are one path. Each write case runs in it once (remote, switch unset), and one case of each
+#     array stands in for the other five.
+#   - With the switch on, the mode is read past the guard's own too-long, reviewer-push and
+#     failed-reading tests: remote passes through CLAUDE_CODE_REMOTE=true, unconfigured through the
+#     missing agents directory (the other arm of the same ||), and local identities through
+#     neither, so the condition fails there and every write denies. Those are three paths, and
+#     each runs its write cases whole: both arrays in the two ask modes, and write_guard_never_asked
+#     with local identities, the machine an agent works on, where a write that must stay denied
+#     is denied by that failed mode test rather than by the list of askable writes.
 write_guard_switch=1
 for write_guard_cmd in "${write_guard_never_asked[@]}"; do
     assert_write_guard "local identities: $write_guard_cmd -> deny" deny "$write_guard_cmd"
@@ -3328,23 +3563,33 @@ for write_guard_mode in remote unconfigured; do
     for write_guard_cmd in "${write_guard_never_asked[@]}"; do
         assert_write_guard "$write_guard_mode: $write_guard_cmd -> deny" deny "$write_guard_cmd"
     done
-    for write_guard_cmd in "${write_guard_allowed[@]}"; do
-        assert_write_guard "$write_guard_mode: $write_guard_cmd -> allow" allow "$write_guard_cmd"
-    done
+    if [ "$write_guard_mode" = remote ]; then
+        for write_guard_cmd in "${write_guard_allowed[@]}"; do
+            assert_write_guard "$write_guard_mode: $write_guard_cmd -> allow" allow "$write_guard_cmd"
+        done
+    else
+        assert_write_guard "$write_guard_mode: ${write_guard_allowed[0]} -> allow" allow "${write_guard_allowed[0]}"
+    fi
     # The player's switch, unset or anything but 1: the asking is off and every write is denied.
     for write_guard_switch in "" 0 yes; do
-        for write_guard_cmd in "${write_guard_asked[@]}" "${write_guard_never_asked[@]}"; do
-            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> deny" deny \
-                "$write_guard_cmd"
-        done
-        for write_guard_cmd in "${write_guard_allowed[@]}"; do
-            assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> allow" allow \
-                "$write_guard_cmd"
-        done
+        if [ "$write_guard_mode" = remote ] && [ -z "$write_guard_switch" ]; then
+            for write_guard_cmd in "${write_guard_asked[@]}" "${write_guard_never_asked[@]}"; do
+                assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> deny" deny \
+                    "$write_guard_cmd"
+            done
+        else
+            for write_guard_cmd in "${write_guard_asked[0]}" "${write_guard_never_asked[0]}"; do
+                assert_write_guard "$write_guard_mode, switch '$write_guard_switch': $write_guard_cmd -> deny" deny \
+                    "$write_guard_cmd"
+            done
+        fi
+        assert_write_guard "$write_guard_mode, switch '$write_guard_switch': ${write_guard_allowed[0]} -> allow" allow \
+            "${write_guard_allowed[0]}"
     done
     write_guard_switch=""
 done
 write_guard_remote=""
+cases_finish
 
 echo
 echo "$checks checks, $failures failures"
