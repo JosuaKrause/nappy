@@ -7,7 +7,6 @@ extends "res://tests/resistance_rig.gd"
 var _events_atlas := AtlasLibrary.new()
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
 	_test_step_selection(t)

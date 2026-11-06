@@ -161,6 +161,11 @@ func begin_run(run_seed: int, played := true) -> void:
 	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
+	# A log in memory has no folder for a person to find, so its header names no time or version,
+	# which would cost two `git` calls a suite makes for every log it opens.
+	if _run_dir == "":
+		_log.header("nappy %s log  (memory)" % ("run" if played else "rig"))
+		return
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			BuildInfo.source_version()])

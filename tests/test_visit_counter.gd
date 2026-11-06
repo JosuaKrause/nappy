@@ -3,13 +3,9 @@ extends RefCounted
 ## check that answering every signal it connects to touches nothing the run it counts owns, the same
 ## invariant `tests/test_telemetry.gd` pins for the run log.
 ##
-## `VisitCounter` is an autoload, and "autoload names cannot also be `class_name` types"
-## (`game_enums.gd`'s own doc), so a fresh instance is built from a `preload()` of its file rather
-## than the bare autoload name, which keeps the live singleton out of these tests. Every counter is
-## handed a `RunState` made fresh for it (`configure()`, as `main` hands the real one the run it
-## plays); nothing here reads a global run.
-
-const VISIT_COUNTER_SCRIPT = preload("res://src/autoload/visit_counter.gd")
+## Every counter is a fresh instance of the test's own, handed a `RunState` made fresh for it
+## (`configure()`, as `main` hands the one under the sitting the run it plays) and the bus it
+## listens to; nothing here reads a global run.
 
 ## A bus of the game's own kind with nobody listening to it: a counter handed one hears what a test
 ## emits on it and nothing the live singletons answer to.
@@ -17,7 +13,7 @@ const EVENT_BUS_SCRIPT = preload("res://src/autoload/event_bus.gd")
 
 ## `VisitCounter` with `_send_event()` recording the name instead of reaching for a page, so a test
 ## can read what each signal would send. Everything else is the real counter's own code.
-class RecordingCounter extends "res://src/autoload/visit_counter.gd":
+class RecordingCounter extends VisitCounter:
 	var sent: Array[String] = []
 
 	## The bus of its own this counter listens to.
@@ -287,7 +283,7 @@ func _test_is_pickup_step(t) -> void:
 ## same "telemetry must not touch gameplay" invariant `tests/test_telemetry.gd` pins for the run
 ## log, adapted for a listener with no per-frame watch of its own.
 func _test_listening_touches_no_gameplay_state(t) -> void:
-	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	var counter := VisitCounter.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	var run := RunState.new()
 	run.start_run(1)
@@ -555,12 +551,12 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
 ## The other half of the fix: a reason that can never change — off the web, a debug build, or
 ## `?debug=1` — must never populate the queue at all, the same "still send nothing under debug"
 ## the gate itself already promised. This process is never on the web, so the real counter, handed
-## a bus, a release build's configuration and an outbox with a recorder (as `_ready()` hands it the
+## a bus, a release build's configuration and an outbox with a recorder (as `main` hands it the
 ## page's), refuses every event before its outbox is touched. Nothing it was handed is queued: the
 ## outbox's next counted event, a probe sent with `count.js` present, flushes whatever the outbox
 ## holds ahead of itself, and the recorder sees the probe alone.
 func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
-	var counter: Node = VISIT_COUNTER_SCRIPT.new()
+	var counter := VisitCounter.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))

@@ -31,7 +31,6 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()

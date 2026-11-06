@@ -3,7 +3,6 @@ extends "res://tests/resistance_rig.gd"
 
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_task_is_placed_near_its_mark(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
 	_free_city()

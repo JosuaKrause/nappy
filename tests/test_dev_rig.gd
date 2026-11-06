@@ -22,7 +22,6 @@ var _city: City
 var _resistance: ResistanceDirector
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_build_day(t)
 	_test_named_tile_targets_land_on_a_walkable_tile(t)
 	_test_event_target_lands_near_a_placed_event(t)
@@ -114,16 +113,17 @@ func _test_an_unknown_target_warns_and_returns_home(t) -> void:
 ## `cat_dash` is `AHEAD_OF_PLAYER`, so on day 6 of seed 4242 every copy the day budgets is
 ## unplaced — a row the day's plan never holds a position for. `event:cat_dash` refuses rather
 ## than silently starting her on the doorstep as if nothing were wrong: the row and the reason
-## land in the run log (`Telemetry.note("spawn", …)`, checked here) and on `stderr`
-## (`push_warning`, not checked here — Godot gives a test no hook onto it; `push_warning` rather
+## land in the run log through the city's trace (`city.trace.note("spawn", …)`, checked here) and
+## on `stderr` (`push_warning`, not checked here — Godot gives a test no hook onto it; `push_warning` rather
 ## than `push_error` because this test feeds the bad input on purpose and has to reach it by
 ## return value rather than failing the run), and only then does the same doorstep fallback an
 ## unrecognised target reaches apply.
 func _test_a_queue_fed_row_refuses_by_name(t) -> void:
-	Telemetry.begin_memory_log()
+	var lines: Array[String] = []
+	var game_trace := _city.trace
+	_city.trace = RunTrace.recording(lines)
 	var at := DevRig.for_spawn_target("event:cat_dash", _city, _resistance, _city.run.header)
-	var lines := Telemetry.current_log().lines
-	Telemetry.end_run()
+	_city.trace = game_trace
 	t.check(at == _city.map.home_world_position(),
 			"a queue-fed row still leaves her somewhere to stand: the doorstep")
 	var named := false

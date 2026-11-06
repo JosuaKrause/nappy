@@ -27,7 +27,6 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 func run(t) -> void:
-	t.gives_back_observers()
 	for seed_value in GUARD_SEEDS:
 		for walks in [false, true]:
 			_the_guard(t, seed_value, walks)

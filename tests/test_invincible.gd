@@ -37,7 +37,6 @@ var _day: DayController
 var _results: Array[GameEnums.DayResult] = []
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_invincible_from_args(t)
 	_test_invincible_from_query(t)
 	_test_crying_does_not_end_the_day_under_invincible(t)
@@ -271,18 +270,18 @@ func _hud_drawing(t, run: RunState, invincible: bool) -> Label:
 # --------------------------------------------------------------- telemetry ---
 
 func _test_the_run_log_notes_the_flag_once_per_day(t) -> void:
-	Telemetry.begin_memory_log()
+	var run_log := Telemetry.new("")
+	run_log.begin_run(SEED, false)
 
-	Telemetry.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
-	Telemetry.begin_day(1, 1, SEED, SEED, 144.0)
-	var on_lines := Telemetry.current_log().lines.duplicate()
+	run_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
+	run_log.begin_day(1, 1, SEED, SEED, 144.0)
+	var on_lines := run_log.current_log().lines.duplicate()
 
-	Telemetry.configure(RunConfig.parse(PackedStringArray(), "", true))
-	Telemetry.begin_day(2, 1, SEED, SEED, 144.0)
-	var off_lines := Telemetry.current_log().lines.duplicate()
+	run_log.configure(RunConfig.parse(PackedStringArray(), "", true))
+	run_log.begin_day(2, 1, SEED, SEED, 144.0)
+	var off_lines := run_log.current_log().lines.duplicate()
 
-	Telemetry.configure(null)
-	Telemetry.end_run()
+	run_log.free()
 
 	# The header line is the last one `begin_day` wrote before the next call — noted the same
 	# way the seed is, once when the day opens, never as a per-frame entry.

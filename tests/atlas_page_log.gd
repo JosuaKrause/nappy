@@ -19,19 +19,29 @@ extends RefCounted
 ## watches one library at a time: a library of its own, or the sitting's on a boot, which every node
 ## the boot builds draws from (`tests/test_atlas_loading.gd`).
 ##
-## Making one opens a run log that goes nowhere (`Telemetry.begin_memory_log()`) and `stop()` closes
-## it, which a test owes before it ends, since the runner fails a suite that leaves the run log open.
+## Making one opens a run log of its own in memory (`Telemetry.new("")`) and points the library it
+## watches at it (`AtlasLibrary.trace_note`); a boot over the library's sitting points the library
+## at the boot's own log, so a suite that watches a boot hands it this one (`main.use_run_log()`).
+## `stop()` closes and frees the log, which a test owes before it ends.
 
+## The run log the lines go into, open from the watch's start to `stop()`.
+var run_log := Telemetry.new("")
 var _log: TelemetryLog
+var _atlas: AtlasLibrary
 
-## Starts watching: a fresh run log in memory, so only the lines written from here on are read.
-func _init() -> void:
-	Telemetry.begin_memory_log()
-	_log = Telemetry.current_log()
+## Starts watching `atlas`: a fresh run log in memory, so only the lines written from here on are
+## read.
+func _init(atlas: AtlasLibrary) -> void:
+	run_log.begin_run(0, false)
+	_log = run_log.current_log()
+	_atlas = atlas
+	atlas.trace_note = run_log.note
 
-## Closes the run log this watch opened.
+## Stops the library writing here, and closes and frees the run log this watch opened.
 func stop() -> void:
-	Telemetry.end_run()
+	_atlas.trace_note = Callable()
+	run_log.end_run()
+	run_log.free()
 
 ## How many times `group`'s page has been read from disk since the watch began.
 func loads(group: StringName) -> int:

@@ -39,7 +39,6 @@ class FallbackDirector extends ResistanceDirector:
 		return null
 
 func run(t) -> void:
-	t.gives_back_observers()
 	for fallback in [true, false]:
 		_measure(t, fallback)
 

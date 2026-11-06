@@ -42,7 +42,6 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	var spec: DaySpec = Boot.day(booted.main).spec
 	t.check(spec != null and is_equal_approx(spec.length, 77.0),
 			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.length if spec else "no spec"])
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -87,7 +86,6 @@ class ReadoutRig:
 		stroller.free()
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
@@ -624,7 +622,6 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 ## The first boot plays that run and day 14's hand-over reloads; the boot standing for the reload,
 ## handed only the home, opens on the escape the run was left in.
 func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
-	var observers := Boot.hold_observers()
 	var home := Node.new()
 	t.add_child(home)
 	var sitting := Sitting.new()
@@ -656,7 +653,6 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
 	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS, "on day 14 still")
 	_shut(t, main)
 	home.free()
-	Boot.give_back_observers(observers)
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once
 ## per boot, so the checks that start from it share one boot: what the boot builds, the title with

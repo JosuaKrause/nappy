@@ -31,7 +31,6 @@ const POSITIONS := 150
 const STEP := 0.05
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()

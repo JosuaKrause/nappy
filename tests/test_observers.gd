@@ -30,18 +30,19 @@ const SCENARIO_BREAK := "=== the escape"
 const SEED := 4242
 ## `VisitCounter` with `_send_event()` recording the name rather than reaching for a page — the same
 ## stand-in `tests/test_visit_counter.gd` uses — so what each event would send can be read back.
-class RecordingCounter extends "res://src/autoload/visit_counter.gd":
+class RecordingCounter extends VisitCounter:
 	var sent: Array[String] = []
 
-	## Counts `run`, as `main` hands the real counter the run it plays.
+	## Counts `run` and listens to the game's bus, as `main` hands the real counter the run it plays
+	## and the bus.
 	func _init(run: RunState) -> void:
 		configure(null, run)
+		listen(EventBus)
 
 	func _send_event(name: String) -> void:
 		sent.append(name)
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var day_lines: Array[String] = await _test_a_day_lost_to_each_cause_won_and_the_next_begun(t)
 	var escape_lines: Array[String] = await _test_the_escape_handed_over_lost_and_left(t)
 	_test_the_run_log_is_the_baseline(t, day_lines, escape_lines)
@@ -58,7 +59,10 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)
 	t.get_tree().paused = true
-	Telemetry.begin_memory_log()
+	# A run log of the test's own, open before the boot and handed to it: `--no-telemetry` keeps the
+	# boot from opening one, and it writes into the one it is handed.
+	var run_log := Telemetry.new("")
+	run_log.begin_run(SEED)
 
 	# The tree stays paused throughout: the day's clock counts physics ticks, and none passes
 	# between the presses below, so every line is stamped at the clock it was written at. **The
@@ -68,7 +72,9 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
 			Boot.config(["--seed", str(SEED), "--no-title"]),
-			func(m: Node) -> void: m.use_sitting_home(home))
+			func(m: Node) -> void:
+				m.use_sitting_home(home)
+				m.use_run_log(run_log))
 	var main := booted.main
 	t.check(Boot.day(main) != null and Boot.day(main).is_running(), "the boot reached day 1")
 	_check_the_observer_runs_after(t, main, [Boot.city(main), Boot.resistance(main), _edge_of(main),
@@ -97,8 +103,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	day.day_finished.emit(GameEnums.DayResult.WON)
 	await _continue_while_paused(t, main)
 
-	var lines := _lines_kept(Telemetry.current_log().lines)
-	Telemetry.end_run()
+	var lines := _lines_kept(run_log.current_log().lines)
 	t.check(counter.sent == [
 			"nappy-run-fresh", "nappy-day-1-began",
 			"nappy-controls-joystick", "nappy-mode-normal",
@@ -112,6 +117,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 					% [counter.sent])
 
 	booted.free_all()
+	run_log.free()
 	home.free()
 	counter.free()
 	t.get_tree().paused = saved_paused
@@ -156,14 +162,17 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)
 	t.get_tree().paused = true
-	Telemetry.begin_memory_log()
+	var run_log := Telemetry.new("")
+	run_log.begin_run(SEED)
 
-	# No `--no-telemetry`: the escape's boot keeps a log already open, so the memory log above is the
-	# one it writes into, its own section header included.
+	# No `--no-telemetry`: the escape's boot keeps a log already open, so the memory log above, which
+	# it is handed, is the one it writes into, its own section header included.
 	var home := Boot.home_playing(t, run)
 	var config := RunConfig.parse(PackedStringArray(["--no-save"]), "", true)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
-			func(m: Node) -> void: m.use_sitting_home(home))
+			func(m: Node) -> void:
+				m.use_sitting_home(home)
+				m.use_run_log(run_log))
 	var main := booted.main
 	var summary := Boot.summary(main)
 	t.check(Boot.day(main).spec.section == DaySpec.Section.BUILDING and summary.is_showing(),
@@ -187,8 +196,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	Boot.player(main).global_position = Boot.day(main).spec.exits[CityEdge.Kind.TUNNEL]
 	Boot.day(main).tick(0.0)
 
-	var lines := _lines_kept(Telemetry.current_log().lines)
-	Telemetry.end_run()
+	var lines := _lines_kept(run_log.current_log().lines)
 	var building := "nappy-day-%d-" % DaySpec.BUILDING_DAY
 	var city := "nappy-day-%d-" % DaySpec.CITY_DAY
 	t.check(counter.sent == [
@@ -199,6 +207,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 			"the escape handed over, lost once and left sends exactly these (%s)" % [counter.sent])
 
 	booted.free_all()
+	run_log.free()
 	home.free()
 	counter.free()
 	t.get_tree().paused = saved_paused

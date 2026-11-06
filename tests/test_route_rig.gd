@@ -5,8 +5,8 @@ extends RefCounted
 ## real `City` in a run of its own, and drives the rig the way `main` does — `setup()`, `start_day()`
 ## and real physics frames, with a real `Stroller` walking by `move_and_slide()` — reading what the
 ## rig does from what it presses (`Input`'s move actions) and from the lines it writes in the run
-## log (a memory log, `Telemetry.begin_memory_log()`), which is what `tests/probes/m184_route_timing.gd`
-## reads a real run back from. The whole loop — resolve, plan, walk, arrive — is proven, and not
+## log (a memory log of the suite's own, `Telemetry.new("")`, handed to the rig through its trace),
+## which is what `tests/probes/m184_route_timing.gd` reads a real run back from. The whole loop — resolve, plan, walk, arrive — is proven, and not
 ## only its pieces (the verify skill: "a rig that steps the parts is not running the whole, and the
 ## gap is silent both ways").
 ##
@@ -49,7 +49,6 @@ var _stroller: Stroller
 var _clock: DayController
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_build_day(t)
 	_test_a_plan_never_cuts_a_true_diagonal(t)
 	_test_a_straight_run_on_plain_road_is_never_cut(t)
@@ -221,17 +220,22 @@ func _started_rig(t, city: City, stroller: Stroller, resistance: ResistanceDirec
 	var baby: Baby = stroller.get_node("Baby")
 	var targets: Array[String] = []
 	targets.assign(words)
+	_run_log = Telemetry.new("")
+	_run_log.begin_run(run.header.run_seed, false)
+	rig.trace = RunTrace.new(_run_log.note)
 	rig.setup(city, stroller, baby, resistance, day, targets, run)
-	Telemetry.begin_memory_log()
 	rig.start_day(day.spec)
 	return rig
+
+## The memory log the rig started last writes into (`_started_rig()`), freed by `_end_rig()`.
+var _run_log: Telemetry
 
 ## The rig's lines in the run log, in order.
 func _route_lines() -> Array[String]:
 	var lines: Array[String] = []
-	if Telemetry.current_log() == null:
+	if _run_log == null or _run_log.current_log() == null:
 		return lines
-	for line in Telemetry.current_log().lines:
+	for line in _run_log.current_log().lines:
 		if line.contains(" route ") or line.contains("route  "):
 			lines.append(line)
 	return lines
@@ -239,9 +243,9 @@ func _route_lines() -> Array[String]:
 ## How many times the run log says she walked across a door's line rather than being let through
 ## it (the `checkpoint` line `CheckpointController.watch_the_door_lines()` writes for each).
 func _walks_under_a_boom() -> int:
-	if Telemetry.current_log() == null:
+	if _run_log == null or _run_log.current_log() == null:
 		return 0
-	return _walks_told_in(Telemetry.current_log().lines)
+	return _walks_told_in(_run_log.current_log().lines)
 
 ## How many of `lines` tell of such a walk.
 func _walks_told_in(lines: Array) -> int:
@@ -307,7 +311,8 @@ func _steps(t, count: int) -> void:
 
 ## Ends the rig's memory log and frees what a rig test built.
 func _end_rig(rig: RouteRig, day: DayController) -> void:
-	Telemetry.end_run()
+	_run_log.free()
+	_run_log = null
 	rig.free()
 	day.free()
 	_release()

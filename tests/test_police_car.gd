@@ -771,41 +771,40 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 	_tell(car, player)
 	var baby := Baby.new()
 	var clock := DayController.new()
-	var observer := TelemetryObserver.new()
+	var run_log := Telemetry.new("")
+	var observer := TelemetryObserver.new(run_log)
 	observer.setup(city.run, city, player, baby, clock, null, false)
 	t.add_child(observer)
 	clock.start(180.0)
 	t.check(car.car.closes_on(player.global_position), "the car is closing on her in its lane")
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
+	run_log.begin_run(1, false)
+	run_log.begin_day(1, 1, 1, 1, 180.0)
 	await t.get_tree().process_frame
-	var in_lane := await _the_mark_cue(t, player)
+	var in_lane := await _the_mark_cue(t, player, run_log)
 	t.check(in_lane.contains("| police_patrol "),
 			"the log names the patrol for the mark (%s)" % in_lane)
 	player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
 	_tell(car, player)
-	var out_of_lane := await _the_mark_cue(t, player)
+	var out_of_lane := await _the_mark_cue(t, player, run_log)
 	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
 			"and out of its lane it names nothing of it (%s)" % out_of_lane)
-	# Whichever test ran last leaves its clock and attempt count behind; a log opened and closed puts
-	# both back (`tests/test_telemetry.gd` ends the same way).
-	Telemetry.begin_memory_log()
-	Telemetry.end_run()
 	observer.free()
+	run_log.free()
 	clock.free()
 	baby.free()
 	player.free()
 	city.free()
 
 ## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
-## and lets another pass for it to write the cue; returns the cue line the log gained, or "".
-func _the_mark_cue(t, player: Stroller) -> String:
-	var before := Telemetry.current_log().lines.size()
+## and lets another pass for it to write the cue in `run_log`; returns the cue line the log gained,
+## or "".
+func _the_mark_cue(t, player: Stroller, run_log: Telemetry) -> String:
+	var before := run_log.current_log().lines.size()
 	player.warn(Stroller.Alert.SOON, 5.0)
 	await t.get_tree().process_frame
 	player.stand_down(&"")
 	await t.get_tree().process_frame
-	var lines: Array = Telemetry.current_log().lines
+	var lines: Array = run_log.current_log().lines
 	for i in range(before, lines.size()):
 		if String(lines[i]).contains("the mark over her head"):
 			return String(lines[i])

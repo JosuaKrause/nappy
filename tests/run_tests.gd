@@ -29,8 +29,9 @@ extends Node
 ## Every file matching tests/test_*.gd is loaded and its `run(t)` called, where `t` is this
 ## runner. `run` may be a plain function or a coroutine: the runner awaits it, so a suite may
 ## `await` real frames, and lets a frame and a physics frame pass after each suite.
-## Before each suite `_reset_globals` puts back the observers' configuration, and a
-## physics frame has passed before the first, so every suite meets the same engine state. After
+## A physics frame has passed before the first suite, so every suite meets the same engine state,
+## and no suite meets an observer another left behind: the run log and the page counter are each
+## boot's sitting's, or a suite's own, never a global. After
 ## each suite `SharedState` compares the shared state with what it was before, and a suite that
 ## left any of it changed fails by name (`tests/shared_state.gd` says what is compared).
 ##
@@ -66,8 +67,6 @@ var failures: Array[String] = []
 ## when something else quit the tree.
 var _running := ""
 var _finished := false
-## What `gives_back_observers()` recorded for the suite now running, put back once it is over.
-var _observer_hold := {}
 
 const USAGE := """usage: godot --headless --path . res://tests/tests.tscn -- [--help|-h] [--shuffle SEED] [--repeat N] [suite-name-substring...]
 
@@ -138,7 +137,6 @@ func _ready() -> void:
 		print("REPEATED RUN — %d passes of the same suites; the check count is the sum of all of them." % repeat)
 	if not filters.is_empty():
 		print("PARTIAL RUN — only suites matching %s. Not a green build." % ", ".join(filters))
-	VisitCounter.configure(null, null)
 	get_tree().quit(1 if not failures.is_empty() else 0)
 
 ## One suite, one pass: load it, run it, and say what it left behind and how long it took.
@@ -156,7 +154,6 @@ func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 		return
 	var suite: Object = script.new()
 	_running = path.get_file()
-	_reset_globals()
 	var shared_before := SharedState.snapshot(self)
 	# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 	# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
@@ -167,9 +164,6 @@ func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 	# synchronous run never lets happen.
 	await get_tree().process_frame
 	await get_tree().physics_frame
-	if not _observer_hold.is_empty():
-		SharedState.put_back_observers(_observer_hold)
-		_observer_hold = {}
 	for leak in SharedState.diff(shared_before, SharedState.snapshot(self)):
 		failures.append("%s left shared state changed, %s" % [path.get_file(), leak])
 		print("LEAK  %s%s left shared state changed, %s" % [_pass_tag(pass_number, repeat), path.get_file(), leak])
@@ -270,19 +264,6 @@ func _exit_tree() -> void:
 	if not _finished and _running != "":
 		print("QUIT  the tree went away while %s was running; the run did not finish" % _running)
 
-## The one place the globals a suite may leave behind are put back, called before each suite so
-## that no suite starts on another's state: the run configuration a booted `main` handed the
-## observers (none, as before any boot, and no run for the visit counter, which sends nothing
-## without one). The run log and `VisitCounter`'s own state and the `EventBus` connections are
-## left alone, and so is everything else: `SharedState` compares the shared state after each suite
-## and fails the suite that left it changed, except the fields it lists with a reason. It covers
-## the tree's `paused`, `Engine.time_scale`, `Input.mouse_mode`, the nodes under the root and the
-## runner, `InputMap`, the pressed actions, the autoloads' variables and signal connections and
-## every `static var` under `src/`.
-func _reset_globals() -> void:
-	Telemetry.configure(null)
-	VisitCounter.configure(null, null)
-
 ## Every suite, or the ones whose file name contains one of `filters`.
 ##
 ## Substring rather than exact, so `crowd` finds `test_crowd_bodies.gd` without anybody having to
@@ -322,13 +303,6 @@ func _matches(file: String, filters: PackedStringArray) -> bool:
 		if file.contains(filter):
 			return true
 	return false
-
-## A suite that boots `main`, or drives a run the observers watch, calls this first: the observers'
-## count of the run (`SharedState.OBSERVER_FIELDS`) is put back to what it is now once the suite is
-## over, so that the next suite does not meet the days and tasks of this one. Nothing else is
-## given back for it.
-func gives_back_observers() -> void:
-	_observer_hold = SharedState.observers()
 
 # --------------------------------------------------------------- assertions ---
 

@@ -8,7 +8,7 @@ extends RefCounted
 ## more followed by a space and another word or a `%` (so `"Day %d of %d"`, `"press a button"`
 ## and `"The end."` are sentences, `"res://x"`, `"ui/pause"`, `"%d"` and `"A"` are not).
 ## Comments are not code, and neither is the argument of a log or error call (`print`,
-## `push_warning`, `push_error`, `printerr`, `assert`, `Telemetry.note`, a run trace's `note`), which
+## `push_warning`, `push_error`, `printerr`, `assert`, the run log's `note`, a run trace's `note`), which
 ## may run over several lines; both are skipped before a string is judged.
 ##
 ## A text added to a screen's own script therefore fails here, with the file, the line and the
@@ -126,7 +126,7 @@ static func sentences_in(source: String) -> Array:
 			i += 1
 	return found
 
-## The log call's opener (`print(`, `Telemetry.note(` ...) that starts at `at` in `line`, or "".
+## The log call's opener (`print(`, `_log.note(` ...) that starts at `at` in `line`, or "".
 ## A name that merely ends in one (`reprint(`, `_assert(`) is not it.
 static func _log_opener_at(line: String, at: int) -> String:
 	if at > 0:
@@ -135,7 +135,7 @@ static func _log_opener_at(line: String, at: int) -> String:
 				or before.is_valid_int():
 			return ""
 	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
-			"assert(", "Telemetry.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
+			"assert(", "_log.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
 			"event.trace.note(", "_note("]:
 		if line.substr(at, opener.length()) == opener:
 			return opener
@@ -200,7 +200,7 @@ func _test_a_comment_and_a_log_call_are_not_judged(t) -> void:
 			+ "var b := 1 # \"and another trailing\"\n" \
 			+ "print(\"a log line\")\n" \
 			+ "push_warning(\"another log line\")\n" \
-			+ "Telemetry.note(\"kind\", \"a run log note\")\n" \
+			+ "_log.note(\"kind\", \"a run log note\")\n" \
 			+ "var c := \"Second sentence here\"\n"
 	var found := sentences_in(source)
 	t.check(found.size() == 2 and found[0][0] == 1 and found[1][0] == 7,

@@ -8,10 +8,11 @@ compare with instead (`TelemetryLog.note()` takes any `String`), so this reads b
 person auditing the drift by hand would, and requires them to be exactly equal: a kind written and
 undocumented, or documented and never written, both fail.
 
-- **Written**: every `.note(<kind>, ...)` call on a receiver under `src/` — the autoload's
-  `Telemetry.note(` and the injected run trace's `trace.note(`, `_trace.note(`, `_the_trace().note(`
-  or `_log.note(` alike — the bare `note(<kind>, ...)` inside `src/autoload/telemetry.gd` itself, and
-  a file's own `_note(...)` helper, whose kind is its first argument, or its second where the first
+- **Written**: every `.note(<kind>, ...)` call on a receiver under `src/` — the handed run log's
+  `_log.note(` and the injected run trace's `trace.note(`, `_trace.note(`, `_the_trace().note(`
+  alike — the bare `note(<kind>, ...)` inside a file that defines `note()`
+  (`src/autoload/telemetry.gd`, `src/visuals/atlas_library.gd`), and a file's own `_note(...)`
+  helper, whose kind is its first argument, or its second where the first
   is a bare name (`_note(trace, "plan", ...)`, the trace it hands on). The kind is everything up to
   the next comma, and every double-quoted `[a-z_]+` literal in it counts, so a call that picks its
   kind at runtime from two literals (`"calm" if calm else "left"`) names both. Scanned one line at a
@@ -106,7 +107,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/ci_telemetry_kinds.py",
         description=(
-            'Fails unless the telemetry kinds written under src/ (Telemetry.note("kind", ...), trace.note("kind",'
+            'Fails unless the telemetry kinds written under src/ (_log.note("kind", ...), trace.note("kind",'
             ' ...) and a _note(trace, "kind", ...) helper) and the rows'
             " of docs/TELEMETRY.md's entry-kinds table are the same set. Takes no arguments."
         ),

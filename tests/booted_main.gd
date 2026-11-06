@@ -23,12 +23,11 @@ extends RefCounted
 ## **No boot reaches the player's save.** `boot()` hands every `main` a save at a scratch path
 ## (`main.use_save()`), whatever configuration it boots under.
 ##
-## **Freeing a boot gives the observers back what they held before it.** A booted `main` hands the
-## run it plays to the observers (`VisitCounter.configure()`), which keep it after `main` is gone,
-## and an observer left holding it would count the next bus signal a later test sends with no boot
-## of its own against a run that test never played. `free_all()` puts back what `hold_observers()` read before the boot, the way
-## the runner puts them back after a suite (`SharedState.put_back_observers()`); a suite that boots
-## `main` its own way does the same with `hold_observers()` and `give_back_observers()`.
+## **The observers a boot hands its run to are the boot's sitting's.** `main` keeps the run log
+## (`Telemetry`) and the page counter (`VisitCounter`) under the sitting, so freeing the boot, or
+## the home its sitting is parked in, frees them with it and no later suite meets either. A suite
+## that reads the lines a boot writes hands it a log of its own (`main.use_run_log()`, through
+## `boot()`'s `before`) and frees that itself.
 
 const UI := preload("res://tests/ui_screens.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
@@ -45,8 +44,6 @@ class Booted:
 	var main: Node2D
 	var save: GameSave
 	var path := ""
-	## What the observers held before the boot (`hold_observers()`), put back by `free_all()`.
-	var observers := {}
 
 	func free_all() -> void:
 		var tree := main.get_tree() if main.is_inside_tree() else null
@@ -55,16 +52,6 @@ class Booted:
 		main.free()
 		save.free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-		SharedState.put_back_observers(observers)
-
-## What the observers hold now (the configuration and the run `main` hands them,
-## `SharedState.OBSERVER_FIELDS`), for `give_back_observers()` once the boot is freed.
-static func hold_observers() -> Dictionary:
-	return SharedState.observers()
-
-## Puts back what `hold_observers()` read, so no observer keeps the run of a boot that is gone.
-static func give_back_observers(held: Dictionary) -> void:
-	SharedState.put_back_observers(held)
 
 ## The real `main.tscn`, handed `config` (none: the process's own) and a save at `scratch_path`,
 ## put under `t` and waited on, real frames passing, until she stands in a world (see this file's
@@ -74,7 +61,6 @@ static func give_back_observers(held: Dictionary) -> void:
 static func boot(t, scratch_path: String, config: RunConfig = null,
 		before := Callable()) -> Booted:
 	var booted := Booted.new()
-	booted.observers = hold_observers()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
 	booted.main = MAIN_SCENE.instantiate()
