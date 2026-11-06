@@ -118,9 +118,9 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 	t.check(AtlasTable.baked().group_of(CityEdge.MOUNTAIN) == &"ground",
 			"the city edge's mountain tile is on the ground page, not street_kit")
 
-## `ClosureMarker`, `TrafficLight`, `CityEdge` and `ParkFenceMarker` each acquire `street_kit`
-## independently, from different files, and the group still counts references rather than loading
-## four pages.
+## `ClosureMarker`, `TrafficLight`, `CityEdge`, `ParkFenceMarker` and `CordonTape` each acquire
+## `street_kit` independently, from different files, and the group still counts references rather
+## than loading five pages.
 ##
 ## Which consumers share it is this test; that each of them takes a reference of its own is
 ## `_test_each_street_kit_consumer_holds_its_own_reference`, since a release line comes only when
@@ -142,14 +142,18 @@ func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 	var park := ParkFenceMarker.new()
 	park.atlas = atlas
 	t.add_child(park)
+	var tape := CordonTape.new()
+	tape.atlas = atlas
+	t.add_child(tape)
 	t.check(pages.loads(&"street_kit") == 1,
-			"the traffic light, the city edge and the park fence share the same page rather than "
-			+ "reading a second")
+			"the traffic light, the city edge, the park fence and the cordon tape share the same "
+			+ "page rather than reading a second")
 	park.free()
 	marker.free()
 	light.free()
+	tape.free()
 	t.check(pages.releases(&"street_kit") == 0,
-			"freeing three of the four leaves the page to the one that remains")
+			"freeing four of the five leaves the page to the one that remains")
 	edge.free()
 	t.check(pages.releases(&"street_kit") == 1,
 			"freeing every street-kit consumer releases the group, with nothing left over")
@@ -174,6 +178,10 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t) -> void:
 			return node,
 		"the park fence": func(atlas: AtlasLibrary) -> Node:
 			var node := ParkFenceMarker.new()
+			node.atlas = atlas
+			return node,
+		"the cordon tape": func(atlas: AtlasLibrary) -> Node:
+			var node := CordonTape.new()
 			node.atlas = atlas
 			return node,
 	}
@@ -228,8 +236,8 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 		t.check(button.icon != null, "the mode button's symbol %d has a picture from the page" % symbol)
 		button.free()
 
-## `ModeButton`, `TouchControls` and `SaveIndicator` all acquire `ui` — the whole run's own group,
-## including the title screen where no city exists — from three different files.
+## `ModeButton`, `TouchControls`, `SaveIndicator` and `HelpText` all acquire `ui` — the whole run's
+## own group, including the title screen where no city exists — from four different files.
 ##
 ## This test is that they share one page and release it after the last; that each takes a reference
 ## of its own is `_test_each_ui_consumer_holds_its_own_reference`.
@@ -246,12 +254,17 @@ func _test_ui_consumers_share_one_reference_count(t) -> void:
 	var indicator := SaveIndicator.new()
 	indicator.atlas = atlas
 	t.add_child(indicator)
+	var help := HelpText.new()
+	help.atlas = atlas
+	t.add_child(help)
 	t.check(pages.loads(&"ui") == 1,
-			"touch controls and the save indicator share the same page rather than reading a second")
+			"touch controls, the save indicator and the help text share the same page rather than "
+			+ "reading a second")
 	button.free()
 	controls.free()
+	help.free()
 	t.check(pages.releases(&"ui") == 0,
-			"freeing two of the three leaves the page to the one that remains")
+			"freeing three of the four leaves the page to the one that remains")
 	indicator.free()
 	t.check(pages.releases(&"ui") == 1,
 			"freeing every UI consumer releases the group, with nothing left over")
@@ -271,6 +284,10 @@ func _test_each_ui_consumer_holds_its_own_reference(t) -> void:
 			return node,
 		"the save indicator": func(atlas: AtlasLibrary) -> Node:
 			var node := SaveIndicator.new()
+			node.atlas = atlas
+			return node,
+		"the help text": func(atlas: AtlasLibrary) -> Node:
+			var node := HelpText.new()
 			node.atlas = atlas
 			return node,
 	}
