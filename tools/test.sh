@@ -5,7 +5,7 @@
 #   tools/test.sh crowd balance   only the suites whose file name contains one of these
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
 #   tools/test.sh --plan          print the shard split and run nothing
-#   tools/test.sh --shard 3/8     run only shard 3 of 8 -- what one CI matrix leg runs
+#   tools/test.sh --shard 3/12     run only shard 3 of 12 -- what one CI matrix leg runs
 #   tools/test.sh --shuffle 7 ... the suites in an order drawn from seed 7 (any mode above takes it);
 #                                  the runner prints the order and a command that replays it
 #   tools/test.sh --repeat 3 ...  the chosen suites three times in one process (any mode but
@@ -29,7 +29,7 @@
 # runs it, because every plan goes through `_cost_of` and `_plan_the_shards`. A local run reads the
 # committed `tests/suite_costs.txt`; CI's `plan` job freezes one table per run (the newest it saved
 # in its cache, else that same committed file) and hands it to every shard through
-# TEST_SUITE_COSTS. So a local `--shard I/8` runs CI's shard I only when TEST_SUITE_COSTS names
+# TEST_SUITE_COSTS. So a local `--shard I/12` runs CI's shard I only when TEST_SUITE_COSTS names
 # that run's table: the `plan` job's log prints it whole, and every shard's log prints the split.
 #
 # **`--shuffle SEED` and `--repeat N` reach the runner unchanged, in every mode, and change nothing
@@ -111,9 +111,9 @@ its own.
   tools/test.sh
   tools/test.sh crowd balance
   tools/test.sh --serial
-  tools/test.sh --shard 3/8
+  tools/test.sh --shard 3/12
   tools/test.sh --shuffle 42 crowd balance
-  tools/test.sh --shard 3/8 --shuffle 42
+  tools/test.sh --shard 3/12 --shuffle 42
   tools/test.sh --repeat 3 --shuffle 42 crowd
 EOF
 }
@@ -191,7 +191,7 @@ case "${1:-}" in
     --shard)
         shard_arg="${2:-}"
         if [[ -z "$shard_arg" ]]; then
-            echo "tools/test.sh: --shard needs an I/N argument, e.g. --shard 3/8" >&2
+            echo "tools/test.sh: --shard needs an I/N argument, e.g. --shard 3/12" >&2
             echo >&2
             usage >&2
             exit 2
@@ -219,7 +219,7 @@ fi
 shard_index=""
 if [[ -n "$shard_arg" ]]; then
     if [[ ! "$shard_arg" =~ ^[0-9]+/[0-9]+$ ]]; then
-        echo "tools/test.sh: --shard wants I/N, e.g. --shard 3/8 (got '$shard_arg')" >&2
+        echo "tools/test.sh: --shard wants I/N, e.g. --shard 3/12 (got '$shard_arg')" >&2
         echo >&2
         usage >&2
         exit 2

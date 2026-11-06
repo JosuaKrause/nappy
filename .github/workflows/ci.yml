@@ -20,11 +20,11 @@
 #               committed tests/suite_costs.txt. Needs no Godot; skipped on a docs-only pull
 #               request.
 #   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
-#               I/8 -- planned from plan's frozen copy, so all eight plan the same split; a local
+#               I/12 -- planned from plan's frozen copy, so all twelve plan the same split; a local
 #               run plans from the committed tests/suite_costs.txt instead (to reproduce a CI
 #               shard, point TEST_SUITE_COSTS at the table plan printed). Skipped on a docs-only
 #               pull request. Each leg hands back its own suites' timings as a job output.
-#   costs       once every shard has passed, folds the eight shards' timings into the frozen file
+#   costs       once every shard has passed, folds the twelve shards' timings into the frozen file
 #               (tools/ci-costs-merge.sh) and saves it as the cache the next run's plan restores.
 #               A problem in any of its steps is a warning annotation and nothing else
 #               (continue-on-error on each): the job, the run and `test` stay green, since a cache
@@ -76,16 +76,17 @@ env:
   FFMPEG_RELEASE: autobuild-2026-09-30-13-08
   FFMPEG_BUILD: ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1
   FFMPEG_SHA256: 97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79
-  # The longest row of the cost file (see `plan`) alone sets the floor no split can beat,
-  # so this is a shard count that brings every other shard down to or under that same floor
-  # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
-  # the split. Fewer shards each carry more of the suites above that floor; more shards would only
-  # wait on the same longest suite while paying for idle runners.
+  # How many matrix legs split the headless suite. The planner packs suites onto shards from the
+  # measured costs, so each leg's share falls in proportion to the count (`tools/test.sh --plan`
+  # at this count shows the split) until the longest single suite -- about two minutes -- sets a
+  # floor no split can beat, which twelve legs are still well above. Each added leg costs a
+  # runner's start-up and checkout again, so the count is what the player chose for wall time
+  # against runner minutes (ci-speed, inbox #1130), not the most the floor would allow.
   # The count is also spelled out in three places below that this value cannot reach: the `shards`
-  # matrix (`shard: [1..8]`), the eight job outputs `costs_1` to `costs_8` and the matching
-  # COSTS_1 to COSTS_8 in `costs`' env. Change all of them together; `costs` refuses to save
+  # matrix (`shard: [1..12]`), the twelve job outputs `costs_1` to `costs_12` and the matching
+  # COSTS_1 to COSTS_12 in `costs`' env. Change all of them together; `costs` refuses to save
   # and warns if the outputs it reads are not SHARD_COUNT many.
-  SHARD_COUNT: 8
+  SHARD_COUNT: 12
 
 jobs:
   # A pull request is sorted by its files, never by its title, which the agent writes and can get
@@ -540,7 +541,7 @@ jobs:
     outputs:
       # One output per leg, with distinct names: legs of a matrix share one set of job outputs,
       # and two legs writing the same name overwrite each other. A leg sets only its own; `costs`
-      # refuses to save, and warns, if any of the eight is missing.
+      # refuses to save, and warns, if any of the twelve is missing.
       costs_1: ${{ steps.timings.outputs.costs_1 }}
       costs_2: ${{ steps.timings.outputs.costs_2 }}
       costs_3: ${{ steps.timings.outputs.costs_3 }}
@@ -549,12 +550,16 @@ jobs:
       costs_6: ${{ steps.timings.outputs.costs_6 }}
       costs_7: ${{ steps.timings.outputs.costs_7 }}
       costs_8: ${{ steps.timings.outputs.costs_8 }}
+      costs_9: ${{ steps.timings.outputs.costs_9 }}
+      costs_10: ${{ steps.timings.outputs.costs_10 }}
+      costs_11: ${{ steps.timings.outputs.costs_11 }}
+      costs_12: ${{ steps.timings.outputs.costs_12 }}
     strategy:
       # One slow shard should not cancel the rest -- each shard's log is its own evidence, and
       # cancelling the others would throw away timing data from a run that is otherwise fine.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     steps:
       # Same partial clone as `gates` above, minus the full history and the SVG re-include: no
       # suite `tools/test.sh` runs reads a file under docs/evidence/ -- it only appears in doc
@@ -597,7 +602,7 @@ jobs:
           fi
           echo "timings sha256 $(sha256sum "$RUNNER_TEMP/suite_costs.txt" | cut -d' ' -f1)"
 
-      # The whole split, printed by every leg: eight identical blocks and one hash are the proof
+      # The whole split, printed by every leg: twelve identical blocks and one hash are the proof
       # that the shards agree.
       - name: Split
         shell: bash
@@ -690,7 +695,7 @@ jobs:
       # tools/agent-status.sh and hides the run from tools/ci-costs.sh, which lists only successful
       # runs): both steps below carry continue-on-error and the last one turns a failure of either
       # into a warning annotation.
-      - name: Merge the eight shards' timings into the plan's
+      - name: Merge the twelve shards' timings into the plan's
         id: merge
         continue-on-error: true
         env:
@@ -703,6 +708,10 @@ jobs:
           COSTS_6: ${{ needs.shards.outputs.costs_6 }}
           COSTS_7: ${{ needs.shards.outputs.costs_7 }}
           COSTS_8: ${{ needs.shards.outputs.costs_8 }}
+          COSTS_9: ${{ needs.shards.outputs.costs_9 }}
+          COSTS_10: ${{ needs.shards.outputs.costs_10 }}
+          COSTS_11: ${{ needs.shards.outputs.costs_11 }}
+          COSTS_12: ${{ needs.shards.outputs.costs_12 }}
         run: |
           printf '%s\n' "$FROZEN" > "$RUNNER_TEMP/frozen.txt"
           : > "$RUNNER_TEMP/measured.txt"
