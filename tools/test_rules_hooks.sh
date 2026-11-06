@@ -180,15 +180,15 @@
 #
 # The guard cases run in parallel, --jobs at a time (the CPU count unless the flag or
 # TEST_RULES_HOOKS_JOBS says otherwise; 1 runs them one after another in this shell, the way the
-# suite ran before). Each assert_guard, assert_write_guard and assert_write_guard_reason call forks
-# a subshell that carries the suite's variables as they stand at that call, so a case's verdict
-# never depends on what the script sets after it or on which case finishes first; a timed case
-# waits for those before it and runs alone, so its bound measures the hook and not the suite. What
-# the cases share on disk (the throwaway repository, the git configs, the jq and git shims, the
-# agents directory) is written before the first case that reads it and never rewritten while cases
-# run. Each case's output, and its checks and failures, are printed and added in the order the
-# cases are written, so the count is the serial run's. The marker and lint-docs cases at the top
-# read files the hooks write as they go, in order, so they stay serial.
+# suite ran before). Each guard case (assert_guard, assert_write_guard, assert_write_guard_reason,
+# assert_write_guard_nojq) forks a subshell that carries the suite's variables as they stand at
+# that call, so a case's verdict never depends on what the script sets after it or on which case
+# finishes first; a timed case waits for those before it and runs alone, so its bound measures the
+# hook and not the suite. What the cases share on disk (the throwaway repository, the git configs,
+# the jq and git shims, the agents directory) is written before the first case that reads it and
+# never rewritten while cases run. Each case's output, and its checks and failures, are printed and
+# added in the order the cases are written, so the count is the serial run's. The marker and
+# lint-docs cases at the top read files the hooks write as they go, in order, so they stay serial.
 set -uo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -2629,7 +2629,10 @@ write_guard_nojq_decision() {
         "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then printf 'allow'; else printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'; fi
 }
-for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+# $1 the expected decision and the command, joined by a colon
+assert_write_guard_nojq() { run_case assert_write_guard_nojq_now "$@"; }
+assert_write_guard_nojq_now() {
+    local write_guard_case="$1" write_guard_got
     checks=$((checks + 1))
     write_guard_got="$(write_guard_nojq_decision "${write_guard_case#*:}")"
     if [ "$write_guard_got" = "${write_guard_case%%:*}" ]; then
@@ -2637,6 +2640,9 @@ for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:
     else
         fail "no jq: ${write_guard_case#*:}: expected ${write_guard_case%%:*}, got $write_guard_got"
     fi
+}
+for write_guard_case in "deny:git push origin main" "deny:gh pr merge 5" "allow:brew install jq"; do
+    assert_write_guard_nojq "$write_guard_case"
 done
 
 # A wrapped heredoc body that names a write is a false deny, and its message says why and points
