@@ -420,10 +420,17 @@ internals where the outside behaviour is what matters, and those are examples, n
   save on disk or a browser's answer, which can really happen and is worth testing. The fix is to
   reach the state the way the game does, or to delete the test and the member with it.
   `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
-  nothing else under `src/` reads; a member only its own defining file and the tests use is internal,
-  so it gets the underscore and its tests go through what the class does outward (inbox #1098).
-  `tools/test_only_members.txt` lists the ones that stand and only shrinks; the pull request that
-  fixes one deletes its line.
+  nothing else under `src/` reads.
+- **A public function or var only its own file and the tests use is internal** (inbox #1098): it gets
+  the underscore, and its tests check what the class does from outside. A function stays public only
+  where nothing outside can confirm the behavior, with the reason written down: its line in the kept
+  group of `tools/test_only_members.txt` carries the reason (the fairness helpers
+  `Tuning.required_horn_time`, `required_horn_sight` and `sleepiness_gain_calm` are there, since the
+  relationship tests above rest on them). The same check enforces it. *Proposed by the orchestrator,
+  not asked for, open to the player's correction:* the rule does not reach constants, since a test
+  reading a constant to assert a relationship is what this policy wants; a constant is flagged only
+  when nothing under `src/` uses it, its own file included. The list only shrinks, and the check fails
+  on a line that has gone stale, so the pull request that fixes a member deletes its line.
 - **A duplicate test is deleted** (inbox #1097): the same behavior already tested by another suite
   is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
   before writing a test, and if a suite holds it, extend that one.

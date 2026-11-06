@@ -53,7 +53,8 @@ class DefinitionTests(unittest.TestCase):
         )
 
     def test_a_definition_in_a_comment_or_a_string_is_not_one(self) -> None:
-        self.assertEqual(members.members_of(THING, '# func gone()\nvar text := "\nfunc nope()"\n'), [])
+        text = '# func gone()\nvar text := "func nope()"\n'
+        self.assertEqual([m.name for m in members.members_of(THING, text)], ["text"])
 
 
 class TestOnlyTests(unittest.TestCase):
@@ -103,33 +104,56 @@ class ListTests(unittest.TestCase):
 
     def test_an_unlisted_test_only_member_fails_with_its_line_and_its_reader(self) -> None:
         src = dict(self.SRC, **{"src/ui/hud.gd": "func f(t):\n\tt.used()\n"})
-        failures, stale, _ = members.check(files(src, self.TESTS), set())
-        self.assertEqual(stale, [])
+        failures, _ = members.check(files(src, self.TESTS), set())
         self.assertEqual(len(failures), 1)
         self.assertIn(f"{THING}:2: func bump is read by tests (tests/test_thing.gd:2, 1 line(s))", failures[0])
 
     def test_a_listed_member_passes(self) -> None:
         src = dict(self.SRC, **{"src/ui/hud.gd": "func f(t):\n\tt.used()\n"})
-        self.assertEqual(members.check(files(src, self.TESTS), {(THING, "bump")})[:2], ([], []))
+        self.assertEqual(members.check(files(src, self.TESTS), {(THING, "bump")})[0], [])
 
-    def test_a_listed_member_that_gained_a_reader_is_a_line_to_remove_not_a_failure(self) -> None:
+    def test_a_listed_member_that_gained_a_reader_fails_as_a_line_to_remove(self) -> None:
         src = dict(self.SRC, **{"src/ui/hud.gd": "func f(t):\n\tt.used()\n\tt.bump()\n"})
-        failures, stale, _ = members.check(files(src, self.TESTS), {(THING, "bump")})
-        self.assertEqual(failures, [])
+        failures, _ = members.check(files(src, self.TESTS), {(THING, "bump")})
         gone = f"REMOVE from tools/test_only_members.txt: {THING} bump (now read by another file under src/)"
-        self.assertEqual(stale, [gone])
+        self.assertEqual(failures, [gone])
 
-    def test_a_listed_member_that_is_gone_or_unread_is_a_line_to_remove(self) -> None:
+    def test_a_listed_member_that_is_gone_or_unread_fails_as_a_line_to_remove(self) -> None:
         src = {THING: "class_name Thing\nfunc other() -> void:\n\tpass\n"}
-        failures, stale, _ = members.check(files(src, {}), {(THING, "bump"), (THING, "other")})
-        self.assertEqual(failures, [])
+        failures, _ = members.check(files(src, {}), {(THING, "bump"), (THING, "other")})
         self.assertEqual(
-            stale,
+            failures,
             [
                 f"REMOVE from tools/test_only_members.txt: {THING} bump (no longer defined)",
                 f"REMOVE from tools/test_only_members.txt: {THING} other (no longer read by a test)",
             ],
         )
+
+    def test_a_namesakes_definition_is_not_a_use_and_its_call_clears_the_member_it_reaches(self) -> None:
+        # a.gd's walks() returns b.walks(); a test calls walks(): b's is read by a, a's only by tests.
+        src = {
+            "src/sim/a.gd": "class_name A\nfunc walks() -> bool:\n\treturn b.walks()\n",
+            "src/sim/b.gd": "class_name B\nfunc walks() -> bool:\n\treturn true\n",
+        }
+        self.assertEqual(only(src, {"tests/test_a.gd": "func f(t):\n\tt.walks()\n"}), {("src/sim/a.gd", "walks")})
+
+    def test_a_constant_used_in_its_own_file_is_exempt_and_one_used_nowhere_is_not(self) -> None:
+        src = {THING: "class_name Thing\nconst USED := 1\nconst UNUSED := 2\nfunc f() -> int:\n\treturn USED\n"}
+        reads = {"tests/test_thing.gd": "func f():\n\tassert(Thing.USED < Thing.UNUSED)\n"}
+        self.assertEqual(only(src, reads), {(THING, "UNUSED")})
+
+    def test_the_list_is_read_from_the_tree_that_is_checked(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "src").mkdir()
+            (root / "tests").mkdir()
+            (root / "tools").mkdir()
+            (root / "src" / "thing.gd").write_text("func bump() -> void:\n\tpass\n")
+            (root / "tests" / "test_thing.gd").write_text("func f(t):\n\tt.bump()\n")
+            (root / "tools" / "test_only_members.txt").write_text("src/thing.gd bump  # kept\n")
+            self.assertEqual(
+                members.check(members.read_checkout(root), members.listed(members.read_checkout(root).allowlist))[0], []
+            )
 
     def test_the_list_file_is_read_with_comments_and_rejects_a_bad_line(self) -> None:
         self.assertEqual(members.listed("# why\n\nsrc/a.gd go  # tail\n"), {("src/a.gd", "go")})
