@@ -114,15 +114,6 @@ src/resistance/resistance_director.gd sets_a_trap_on_her
 src/resistance/resistance_director.gd swing_base
 src/resistance/resistance_director.gd touch_reach
 src/resistance/resistance_director.gd weighted_mast_index
-src/routes/closure_marker.gd cause_feet
-src/routes/closure_marker.gd cause_picture
-src/routes/corridor.gd walks_along
-src/routes/park_closure.gd to_along
-src/routes/region_planner.gd alley_mouth_ground_region
-src/routes/region_planner.gd region_of_segment
-src/routes/route_tree.gd lattice_grid
-src/routes/route_tree.gd trunk_used_the_spine
-src/routes/seal_planner.gd escape_candidates
 src/run/day_director.gd loss_cause
 src/run/run_calendar.gd is_checkpoint_day
 src/run/run_state_registry.gd rider_data
@@ -205,3 +196,5 @@ src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen hol
 src/city/city_generator.gd power_station_rank  # the order the generator tries the free horizontal pairs in for the power station (industrial ground, then half, then the nearest to it); a city keeps only the pair it picked and how many industrial blocks it stands on, never the ones it passed over, so the preference is visible only through the rank (tests/test_power_station.gd holds the order on constructed block sets)
 src/city/scenery_residency.gd ordinary_guard_preparations  # how many regions and pieces the guard prepared at once rather than in the ordinary stepped pass, a count of work done that no tile the ground lays carries; the frame-timing probes (tests/probes/ground_frames.gd, ground_frames_matched.gd, run by tools/measure-ground-frames.sh) zero and read it after a traversal, as they do SceneryGround.worst_step_usec
 src/interior/interior_scene.gd distant_flash_wait  # the wait between two far flashes from a uniform draw; its curve (bounds, mean, median and 95th percentile) needs thousands of draws, which the night makes one a second (an hour of ticks for the same sample), and the flash ticks the seeded stream makes are replayed through it (tests/test_interior.gd, the far windows' test); the real flashes over a minute are checked on real ticks beside it
+src/routes/closure_marker.gd cause_feet  # where a closure's cause picture stands relative to the street's middle; it exists only as the anchor handed to Sprites.draw_standing() in _draw_cause(), which a headless run draws to nothing and no node exposes (tests/test_closure_marker.gd: "a headless draw pass makes no pixels to read"), so the pictures' centring is read off the function
+src/routes/closure_marker.gd cause_picture  # which picture a closure's cause is drawn with for each axis; it exists only as the region name handed to the atlas in _draw_cause(), which a headless run draws to nothing and no node exposes, so the pictures' axes and sizes are read off the function

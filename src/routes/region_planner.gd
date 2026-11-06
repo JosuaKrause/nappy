@@ -239,7 +239,7 @@ static func _precinct_span_junctions(span: Vector4i) -> Array[Vector2i]:
 ## **Either or both may be absent** — a hard blocker can take either side independently of the
 ## alley — so a caller that needs a real street on both sides (`_assign_wall_ends`'s own nudge)
 ## checks `map.has_street()` itself; a caller asking what ground a mouth touches wants
-## `alley_mouth_ground_region` instead, which already knows what to do with an absent one.
+## `_alley_mouth_ground_region` instead, which already knows what to do with an absent one.
 static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 	if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 		return []
@@ -263,7 +263,7 @@ static func _alley_border_segments(map: CityMap, rect: Rect2i) -> Array:
 ## no stub at all; the two are told apart by which single end, if either, is still walkable) — an
 ## alley that cannot be read this way is left to the ordinary M64 sealing pass, exactly as one with
 ## fewer than two bordering streets already was.
-static func alley_mouth_ground_region(map: CityMap, segment: StreetNetwork.Segment) -> int:
+static func _alley_mouth_ground_region(map: CityMap, segment: StreetNetwork.Segment) -> int:
 	if map.has_street(segment.key()):
 		return ground_region_of(map, segment)
 	return _dead_end_ground_region(map, segment)
@@ -315,8 +315,8 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 		var segment_b: StreetNetwork.Segment = info[1]
 		if not map.has_street(segment_a.key()) or not map.has_street(segment_b.key()):
 			continue   # nothing to nudge without a real street on both sides to compare
-		var a_region := region_of_segment(map, segment_a)
-		var b_region := region_of_segment(map, segment_b)
+		var a_region := _region_of_segment(map, segment_a)
+		var b_region := _region_of_segment(map, segment_b)
 		if a_region >= 0 and b_region >= 0:
 			continue   # both interior; nothing to nudge, and no crossing either
 		if a_region >= 0 and b_region < 0:
@@ -529,7 +529,7 @@ static func region_of_junction(map: CityMap, junction: Vector2i) -> int:
 ## The region a segment belongs to when both its ends agree, or `-1` when it is absent from the
 ## lattice or is itself a boundary segment. Never confuse the two `-1`s without checking
 ## `map.has_street()` first — `boundary_segments()` already only ever offers real ones.
-static func region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> int:
+static func _region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> int:
 	if not segment or not map.has_street(segment.key()):
 		return -1
 	var ra := region_of_junction(map, segment.a)
@@ -537,11 +537,11 @@ static func region_of_segment(map: CityMap, segment: StreetNetwork.Segment) -> i
 	return ra if ra == rb else -1
 
 ## The region a segment's whole **ground** belongs to — the question the wall's mouth placement
-## makes meaningful where `region_of_segment` cannot answer at all. An interior segment's ground is
+## makes meaningful where `_region_of_segment` cannot answer at all. An interior segment's ground is
 ## simply its own region, the same answer either function gives. A boundary segment's wall stands
 ## one tile deep at one mouth (`CityMap.boundary_wall_at_a`), so the rest of its length — right up
 ## to that one-tile band — is walkable from the **far** end and unreachable from the near one; this
-## returns the far end's region. `-1` for an absent segment, same as `region_of_segment`.
+## returns the far end's region. `-1` for an absent segment, same as `_region_of_segment`.
 ##
 ## This is also what a through-alley's two mouths are compared against to decide whether it is a
 ## **crossing**: `plan_day` calls this on the real street at each end, and the alley is a crossing
@@ -579,7 +579,7 @@ static func home_region(map: CityMap) -> int:
 	var home := ClosurePlanner.home_street(map)
 	if not home:
 		return -1
-	return region_of_segment(map, home)
+	return _region_of_segment(map, home)
 
 # --------------------------------------------------------------------------- the day ---
 
@@ -617,8 +617,8 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
-		var ground_a := alley_mouth_ground_region(map, info[0])
-		var ground_b := alley_mouth_ground_region(map, info[1])
+		var ground_a := _alley_mouth_ground_region(map, info[0])
+		var ground_b := _alley_mouth_ground_region(map, info[1])
 		if ground_a < 0 or ground_b < 0 or ground_a == ground_b:
 			continue   # not a (detectable) crossing; the ordinary M64 sealing pass handles it
 		var on_tree := false

@@ -240,7 +240,6 @@ func _test_the_tree_itself_is_untouched(t) -> void:
 ## `SealPlanner`'s output, because the guarantee belongs to the tree and holds before any seal is
 ## placed at all.
 func _test_the_doorstep_reaches_the_corridor(t) -> void:
-	var used_the_spine := 0
 	var total := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -249,8 +248,6 @@ func _test_the_doorstep_reaches_the_corridor(t) -> void:
 			if tree.branches.is_empty():
 				continue
 			total += 1
-			if tree.trunk_used_the_spine:
-				used_the_spine += 1
 			var joined := false
 			for junction in [home.a, home.b]:
 				for segment in map.network.at_junction(junction):
@@ -259,11 +256,7 @@ func _test_the_doorstep_reaches_the_corridor(t) -> void:
 			t.check(joined,
 					"seed %d day %d: a street meeting the doorstep's own junctions is on the tree"
 					% [map.seed_used, day])
-	# Not a pass/fail bound — the fraction is a fact about the map (whether home was generated
-	# beside the main road), not about a defect: the trunk falls back to it only where every other
-	# way out of the home street is unreachable without it. Reported so the rate is visible.
-	t.check(total > 0, "%d of %d sampled days needed the main road to join the doorstep to the tree"
-			% [used_the_spine, total])
+	t.check(total > 0, "there were days with a tree to ask about (%d)" % total)
 
 # ------------------------------------------------------------------ winnability ---
 

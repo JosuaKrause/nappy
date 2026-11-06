@@ -292,23 +292,23 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 			for fence in fences:
 				t.check(fence.barrier_width() > 0.0, "seed %d %s: a run of %s has length"
 						% [map.seed_used, block, fence.segment.tile_rect()])
-				for end: Array in [[fence.joined_start, fence.from_along, 1.0],
-						[fence.joined_end, fence.to_along, -1.0]]:
+				# Where each rail ends (`rail_ends()`): on the corner a joined end turns, or on the
+				# fence's own post `ParkClosure.POST_HALF` in from an open end.
+				var ends := fence.rail_ends()
+				for end: Array in [[fence.joined_start, ends[0]], [fence.joined_end, ends[1]]]:
 					var joined: bool = end[0]
-					var along: float = end[1]
-					var inward: float = end[2]
-					var point := _on_the_line(fence, map, along)
+					var point: Vector2 = end[1]
 					if not joined:
 						open_ends += 1
-						t.check(posts.has(_on_the_line(fence, map, along + inward * ParkClosure.POST_HALF)),
+						t.check(posts.has(point),
 								"seed %d %s: the open end at %s ends on its own post"
 								% [map.seed_used, block, point])
 						continue
 					corners += 1
 					var meets := 0
 					for other in fences:
-						if other != fence and (_on_the_line(other, map, other.from_along) == point
-								or _on_the_line(other, map, other.to_along) == point):
+						if other != fence and (other.rail_ends()[0] == point
+								or other.rail_ends()[1] == point):
 							meets += 1
 					t.check(meets == 1, "seed %d %s: the run ending at %s meets exactly one "
 							% [map.seed_used, block, point] + "other run there (%d)" % meets)
@@ -317,13 +317,6 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 	t.check(corners > 0, "the sweep had corners to turn (%d)" % corners)
 	print("  fence corners: %d run ends turn a corner, %d end on a post of their own"
 			% [corners, open_ends])
-
-## The point `along` pixels down `fence`'s axis, on its fence line: the line's across coordinate is
-## its mouth centre's (`mouth_centres()`, the middle of the run on the line), the along coordinate is
-## `along`.
-func _on_the_line(fence: ParkClosure, map: CityMap, along: float) -> Vector2:
-	var middle := fence.mouth_centres(map)[0]
-	return Vector2(along, middle.y) if fence.outward.y != 0 else Vector2(middle.x, along)
 
 func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []

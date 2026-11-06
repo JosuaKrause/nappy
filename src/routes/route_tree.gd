@@ -90,7 +90,7 @@ extends RouteSource
 ## coin flip to the main road, the main road can end up the *only* street the join is protected on.
 ## `_grow_the_trunk()` runs once after every branch has grown: a plain BFS from the home nodes
 ## outward to the nearest cell already on the tree, tried first without the main road and only with
-## it if no other way out exists at all (`trunk_used_the_spine`). Adopted through the same
+## it if no other way out exists at all. Adopted through the same
 ## `_adopt()` every branch uses, under one of the merge point's own existing colours rather than a
 ## new one, so `is_on_the_tree()` — the fact `SealPlanner` and `ClosurePlanner` both build their
 ## guarantee on — is true of the join without either of them having to know the trunk exists.
@@ -132,12 +132,6 @@ var grid: ReachabilityGrid
 ## what each tile actually is, so a carriageway between two junctions can be told from a calm zone's
 ## absorbed street at the same offset. See `_is_off_the_growths_graph` and the class doc.
 var _map: CityMap
-
-## Whether `_grow_the_trunk()` had to allow the main road to connect the doorstep to the rest of
-## the tree at all, because every other way out of the home street was unreachable without it. See
-## the class doc, "The trunk". Kept as a field rather than only a local so a caller can measure it
-## directly instead of re-deriving it.
-var trunk_used_the_spine := false
 
 ## Node id -> the set of colours carried by that cell.
 var _colours := {}
@@ -248,7 +242,7 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
 	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
-			map.blocked_segments(), lattice_grid(map), rng)
+			map.blocked_segments(), _lattice_grid(map), rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
 		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
 	return tree
@@ -267,10 +261,10 @@ static func _growable_areas(map: CityMap) -> Array[ClosurePlanner.CalmArea]:
 	return areas
 
 ## The grid a tree is grown on: the permanent lattice as the tile types lay it, **without** the
-## precinct posts (`ReachabilityGrid.build()` over `Mover.ground()`). Every caller of `grow()` takes
-## its grid from here, so no tree is grown on a grid that sees the posts while `for_day()` grows on
-## one that does not.
-static func lattice_grid(map: CityMap) -> ReachabilityGrid:
+## precinct posts (`ReachabilityGrid.build()` over `Mover.ground()`). `for_day()` grows on it, and a
+## caller of `grow()` takes the same grid, so no tree is grown on a grid that sees the posts while
+## `for_day()` grows on one that does not.
+static func _lattice_grid(map: CityMap) -> ReachabilityGrid:
 	return ReachabilityGrid.build(map, Mover.ground())
 
 ## Grows the tree. `closed` is the merged set `CityMap.blocked_segments()` returns — the streets a
@@ -655,7 +649,6 @@ func _grow_the_trunk() -> void:
 		path = _trunk_path(false)
 		if path.is_empty():
 			return
-		trunk_used_the_spine = true
 	# `path` runs merge point first, home last (see `_trunk_path`) — the merge point is the end
 	# that already carries a colour; the home end never does.
 	_adopt(path, _any_colour_of(path[0]))
