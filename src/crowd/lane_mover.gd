@@ -653,15 +653,6 @@ static func make_lane_key(vertical: bool, corridor: int, lane: int, direction: f
 ## How many lanes (and so how many corridors) the packed key tells apart; both are far fewer.
 const _LANE_KEY_SLOTS := 64
 
-## The four parts a packed lane key was made from, in `make_lane_key()`'s argument order, for a
-## suite that stands a car in the lane a key names. The direction comes back as -1, 0 or 1.
-static func lane_key_parts(key: int) -> Array:
-	var direction := key % 4 - 1
-	var rest := key / 4
-	var vertical := rest % 2 == 1
-	rest /= 2
-	return [vertical, rest / _LANE_KEY_SLOTS - 1, rest % _LANE_KEY_SLOTS - 1, direction]
-
 ## How far along its own corridor it is, signed so that "ahead" is always *larger*. Only ever
 ## compared between two agents with the same `lane_key()`, where the direction is shared.
 func queue_position() -> float:

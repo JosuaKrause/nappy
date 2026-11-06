@@ -1386,7 +1386,8 @@ an alpha component written into one is simply stored opaque.
 
 What that costs is a diagnostic, recorded here rather than argued away: *a picture in which nothing
 is shared is a tree that has quietly become a star* is not readable at a glance from this picture.
-It is asserted directly instead, by `RouteTree.bundles()` and `tests/test_route_tree.gd`, which is
+It is asserted directly instead, by `tests/test_route_tree.gd` (the cells that more than one branch
+carries), which is
 the stronger place for it — but it is not something a person notices without looking for it.
 
 ### The hard blockers

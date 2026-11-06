@@ -117,9 +117,6 @@ class Branch extends RefCounted:
 				found[cell] = true
 		return found
 
-	func has_a_choice() -> bool:
-		return routes.size() >= 2
-
 
 ## The branches, in the order they were grown. A branch's index is its **colour**, which is what
 ## the sharing is recorded in.
@@ -1043,25 +1040,6 @@ func branches_on(tile: Vector2i) -> Array[int]:
 			found.append(colour)
 	found.sort()
 	return found
-
-## The cells carried by two or more branches — the trunk, and any stretch several ways out of the
-## city share before they separate.
-##
-## A bundle is what makes placement cheap: it narrows *how many places* a thing has to be in
-## order to be met. It never narrows it to one, and anything written as "the tile she must cross"
-## is wrong — see `covering_sites`.
-func bundles() -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for node: int in _colours:
-		if (_colours[node] as Dictionary).size() >= 2:
-			found.append(grid.cell_of(node))
-	return found
-
-func branch_for(area: Vector2i) -> Branch:
-	for branch in branches:
-		if branch.area == area:
-			return branch
-	return null
 
 ## The streets a set piece is placed on: the smallest set of **real streets** such that every
 ## route touches at least one of them.

@@ -15,6 +15,7 @@ extends RefCounted
 ## a test that waits for one is a test that usually asserts nothing.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
@@ -545,7 +546,7 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
 ## helper could not have known about before the turn was planned. `CrowdAgent.queue_position()` is
 ## `along * direction`, and therefore its own inverse for a direction of plus or minus one.
 func _place_a_car_in_lane(key: int, at: float) -> CrowdAgent:
-	var parts := CrowdAgent.lane_key_parts(key)
+	var parts := LANE_KEYS.parts_of(key)
 	var vertical: bool = parts[0]
 	var direction := float(parts[3])
 	var heading := Vector2(0.0, direction) if vertical else Vector2(direction, 0.0)
@@ -635,11 +636,11 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t) -> void:
 ## A signal decides the box where there is one, and a planned turn does not argue with it. The car
 ## may not be inside the junction while its own arm is red.
 func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
-	var signals := _city.crowd.signals_for_tests()
-	if not signals:
-		return
+	var signals := _city.signals
 	var box := Vector2i(_city.map.main_road, _junction.y)
-	if not signals.is_signalled(box):
+	t.check(signals != null and signals.is_signalled(box),
+			"the spine's junction in the rig is signalled, so there is a light to meet")
+	if signals == null or not signals.is_signalled(box):
 		return
 	_clear_the_holds()
 	_hold(StreetNetwork.Segment.new(box, false).key())

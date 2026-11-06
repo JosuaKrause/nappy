@@ -24,12 +24,6 @@ src/city/scenery_ground.gd get_cell_atlas_coords
 src/city/scenery_ground.gd get_cell_source_id
 src/city/scenery_ground.gd get_used_cells
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
-src/crowd/crowd.gd set_focus
-src/crowd/crowd.gd signals_for_tests
-src/crowd/crowd_excitement.gd jolt_swell
-src/crowd/crowd_lanes.gd quietest_pavement
-src/crowd/lane_mover.gd lane_key_parts
-src/crowd/traffic_index.gd entry_count
 src/dev/debug_layers.gd body_outline_count
 src/dev/rig_lock.gd has_a_deadline
 src/dev/walk_plan.gd smoothed_turns
@@ -46,9 +40,6 @@ src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
 src/player/stroller.gd indicator_sources
 src/resistance/resistance_director.gd mark_guard
-src/routes/route_tree.gd branch_for
-src/routes/route_tree.gd bundles
-src/routes/street_network.gd junction_distances
 src/telemetry/frame_ledger.gd DRAWS_HALOS
 src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
@@ -327,6 +318,7 @@ src/world/spawn_siting.gd seen_from
 src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so verify's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
 src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs; tests/test_tuning_fairness.gd and tests/crowd_rig.gd check CAR_HORN_SIGHT against it, the same fairness contract (crowd-traffic)
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind verify wants
+src/crowd/crowd.gd set_focus  # where the crowd's simulated patch is centred; the rigs tick the crowd with step(), which has no player half, so no stroller moves the field there, and real frames would add shoves, warnings and strikes to every check (record minty-quail-lilac-walrus)
 
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
