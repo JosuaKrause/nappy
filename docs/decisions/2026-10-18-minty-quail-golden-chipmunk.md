@@ -39,8 +39,10 @@ guard's way-past check skipped (4 of 67 moves blocked), the dawn contact drawn o
 of 8 one tile in), relocation over alley mouths (0 of 185), the view refusals removed (marks and
 guards on screen), uniform mast weights (near 18 against far 14, not more than twice), and a
 relocation put on the doorstep (the doorstep check, on all six cities). Dropping the legal-ground
-refusal from the relocation fails nothing: no mark tile lies within the doorstep's lethal reach, so
-that check holds by the city's own shape as well as by the placement.
+refusal (`CONTACT_GROUND`) from the relocation does not fail the doorstep check, since no mark tile
+lies within the doorstep's lethal reach, so that check holds by the city's own shape as well as by
+the placement; the walled-alley test holds the refusal (16 relocations into seed 2199579682's walled
+alley without it).
 
 **Removed as holding nothing** (curly-rabbit #1097): the "guard distance varies" check, since every
 through-alley the generator makes spans a one-block lot, 8 tiles (`CityGenerator._alley_rect()`;
