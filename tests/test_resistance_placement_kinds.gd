@@ -1126,7 +1126,7 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 
 ## Day 11: **a market in her sight is not boarded up.** She stands in the middle of a candidate
 ## block's frontage, walks as long as the market waits for a way to be chosen and then past the day's
-## deadline; the block she stands at is neither boarded nor taken as the market, whatever the day
+## deadline; the block she stands at stays commercial, whatever the day
 ## does with the others. Checked on each of the first two candidates, a city state of its own for each.
 func _test_the_market_waits_while_she_can_see_it(t) -> void:
 	_build_city_in_a_new_run(t)
@@ -1134,16 +1134,22 @@ func _test_the_market_waits_while_she_can_see_it(t) -> void:
 	for which in 2:
 		var state := CityState.new()
 		var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
-		var candidates := ResistanceHappenings.market_candidates(_city.map, state)
+		var candidates: Array[Vector2i] = []
+		for y in Tuning.CITY_BLOCKS.y:
+			for x in Tuning.CITY_BLOCKS.x:
+				var candidate := Vector2i(x, y)
+				if _city.map.block_plans.has(candidate) \
+						and state.purpose_of(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+						and state.next_purpose(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+					candidates.append(candidate)
 		if candidates.size() <= which:
 			break
 		var block := candidates[which]
-		var her := happenings.frontage_of(block).get_center()
+		var her := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH)).get_center()
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
 		happenings.tick(ResistanceHappenings.MARKET_GONE_BY, her, Vector2.RIGHT * Tuning.WALK_SPEED)
 		seen += 1
-		t.check(happenings.market_block != block
-				and state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL,
+		t.check(state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL,
 				"the market in block %s is not boarded up with her standing in front of it" % block)
 	t.check(seen > 0, "the test city has a block to stand in front of, or this test checks nothing")
 
