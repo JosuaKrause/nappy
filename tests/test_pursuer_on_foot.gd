@@ -764,8 +764,10 @@ func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: Cit
 	while elapsed < 60.0 and car.is_waiting() and not car.is_leaving and not car.is_finished:
 		car.player_at = her
 		# What the car notices her by, asked as it is about to step: inside its notice distance on
-		# a clear line. Still waiting after the step, having noticed her, is a car that stands in
-		# a junction box and so drives on rather than stopping.
+		# a clear line, the same condition `EventInvestigation` latches its `_seen_her` on while the
+		# car waits; a condition added there has to be added here too. Still waiting after the
+		# step, having noticed her, is a car that stands in a junction box and so drives on rather
+		# than stopping.
 		seen_her = seen_her or (car.global_position.distance_to(her) <= hot.notice_within()
 				and car.clear_line_to(her))
 		car.step(STEP)

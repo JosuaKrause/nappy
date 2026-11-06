@@ -31,6 +31,7 @@ and no recorder holds it.
 **Left.** `RoadblockLook.attach_nodes()` and `far_guard_node()`, `DrawLayer.layer_of()`,
 `EventPictures.boom_arm_span()`, `has_its_far_guard_posted()` and `plan_the_rest_again()`, which
 these suites no longer read but rigs and suites outside the build still do;
-`tests-unseen-reads.md` names them. A fresh car's "made standing" check is now "not driving",
+`tests-unseen-reads.md` names them and their owners, the escape rigs build for its three rigs and
+suites and a leftover readers build for the rest, which also takes what the atlas build left. A fresh car's "made standing" check is now "not driving",
 which is weaker, and `MarbleBag._take()` keeps a `keep_out` parameter that is now always empty;
 both are the builder's choices, open to overturn.
