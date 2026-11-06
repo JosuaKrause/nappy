@@ -12,10 +12,10 @@ extends RefCounted
 ## The event calls its look. In `setup()` it faces it (`face()`), and its tree callbacks hand it the
 ## drawing nodes to build, rebuild and let go of (`build_nodes()`, `enter_tree()`,
 ## `release_nodes()`; a look that has nodes puts them into the world on the idle frame after it
-## builds them), its `_draw()` draws through it (`draw()`), and its `_process()`, once a drawn frame, asks it to redraw if the picture changed
-## (`redraw_if_the_picture_changed()`, which also moves the drawing nodes and shows or hides the
-## scenery). Nothing that steps the event on the physics tick calls its look: the look reads on its
-## own frame what the last tick left.
+## builds them), its `_draw()` draws through it (`draw()`), and its `_process()`, once a drawn
+## frame, asks it to redraw if the picture changed (`redraw_if_the_picture_changed()`, which also
+## moves the drawing nodes and shows or hides the scenery). Nothing that steps the event on the
+## physics tick calls its look: the look reads on its own frame what the last tick left.
 
 ## The event this look draws.
 var event: EventInstance
