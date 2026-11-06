@@ -190,22 +190,37 @@ func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
 	_free_day(made)
 
 ## The guard keeps his distance from the mark (M213's floor and quiet-yak's "Two-thirds wins" weigh
-## exactly as before): a mark one tile in has him one tile further in than for a mark on the mouth.
+## exactly as before): a mark one tile in has him one tile further in than two-thirds through from the
+## mouth, the spot a mark on the mouth would have had, worked out from the map (`AlleyMarks`), so he
+## stands as far from the mark as he would from a mark on the mouth. The mark is pinned and its guard,
+## stood with it at dawn, read off the street.
 func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
+	var own_run: RunState = made[2]
 	var map := city.map
-	var rng := RandomNumberGenerator.new()
 	var at_mouth := map.tile_to_world(MOUTH)
 	var at_mark := map.tile_to_world(MARK)
-	var from_mouth := director.guard_position(rng, at_mouth, true, Vector2.INF, false)
-	var from_mark := director.guard_position(rng, at_mark, true, Vector2.INF, false)
-	t.check(from_mouth != Vector2.INF and from_mark != Vector2.INF, "both marks get a guard")
-	t.check(is_equal_approx(from_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)),
-			"at the same distance from the mark (%.1fpx, %.1fpx)"
-			% [from_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)])
-	t.check(from_mark.distance_to(from_mouth) > Tuning.TILE_SIZE * 0.9,
+	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0, at_mark)
+	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
+	var guards: Array[Vector2] = []
+	for instance in city.events.instances():
+		if instance.def.id == EventCatalogue.mark_guard().id and not instance.is_finished:
+			guards.append(instance.global_position)
+	var robbery := EventCatalogue.mark_guard()
+	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,
+			robbery.inner_radius + ContactPoint.REACH)
+	t.check(guards.size() == 1 and for_the_mouth != Vector2.INF, "the mark's guard stands in the street")
+	if guards.size() != 1:
+		_free_day(made)
+		return
+	var from_mark := guards[0]
+	t.check(absf(for_the_mouth.distance_to(at_mouth) - from_mark.distance_to(at_mark)) < 0.5,
+			"at the same distance from the mark as from a mark on the mouth (%.1fpx, %.1fpx)"
+			% [for_the_mouth.distance_to(at_mouth), from_mark.distance_to(at_mark)])
+	t.check(absf(from_mark.distance_to(for_the_mouth) - Tuning.TILE_SIZE) < 0.5
+			and (from_mark - for_the_mouth).dot(at_mark - at_mouth) > 0.0,
 			"one tile further in")
 	_free_day(made)
 
