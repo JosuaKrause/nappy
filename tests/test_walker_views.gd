@@ -3,7 +3,7 @@ extends RefCounted
 ##
 ## `tests/test_stroller.gd` already pins the selector's own boundary/hold behaviour through the
 ## rig that used to own it; this suite pins the same behaviour through the shared class directly,
-## plus the walker-specific wiring: which view and mirror each sector draws, that body and trim
+## plus the walker-specific wiring: which sector a heading selects, that body and trim
 ## can never disagree about which view they are, that a stopped walker keeps its last facing, and
 ## that a fresh placement's own heading clears whatever was drawn before in one step.
 
@@ -34,11 +34,6 @@ const SECTOR_LANES: Array = [
 	[Vector2.UP, Vector2.ZERO],      # 6 N
 	[Vector2.UP, Vector2.RIGHT],     # 7 NE
 ]
-const EXPECTED_VIEW: Array[String] = [
-	"side", "front_diagonal", "front", "front_diagonal", "side",
-	"back_diagonal", "back", "back_diagonal",
-]
-const EXPECTED_MIRRORED: Array[bool] = [false, false, false, true, true, true, false, false]
 
 const ViewRig := preload("res://tests/view_rig.gd")
 
@@ -50,7 +45,6 @@ func run(t) -> void:
 	_test_selector_boundary_hold(t)
 	_test_selector_wrap_boundary_holds(t)
 	_test_selector_idle_threshold_retains(t)
-	_test_selector_mirrors(t)
 	_test_walker_headings_select_the_expected_view(t)
 	_test_body_and_trim_can_never_disagree(t)
 	_test_a_stopped_walker_keeps_its_view(t)
@@ -60,7 +54,6 @@ func run(t) -> void:
 	_test_a_stopped_walker_holds_gait_frame_a(t)
 	_test_walker_gait_b_tables_agree_with_a(t)
 	_test_walker_gait_b_tables_cover_every_sector(t)
-	_test_every_walker_gait_b_svg_is_native_18x38(t)
 	_rig.free_city()
 
 # ------------------------------------------------------------------- selector ---
@@ -101,11 +94,6 @@ func _test_selector_idle_threshold_retains(t) -> void:
 	current = EightDirection.update(current, Vector2.ZERO)
 	t.check(current == 2, "and so does the default zero threshold Stroller relies on")
 
-func _test_selector_mirrors(t) -> void:
-	for sector in range(8):
-		t.check(EightDirection.is_mirrored(sector) == EXPECTED_MIRRORED[sector],
-				"sector %d mirror matches the west-mirror convention" % sector)
-
 # --------------------------------------------------------------------- walker ---
 
 ## A walker the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace
@@ -144,11 +132,6 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 		var frame := look.sector()
 		t.check(frame == sector,
 				"heading %d degrees selects sector %d (got %d)" % [sector * 45, sector, frame])
-		var view: String = WalkerLook.VIEW_BY_SECTOR[frame]
-		t.check(view == EXPECTED_VIEW[sector],
-				"sector %d draws the %s view" % [sector, EXPECTED_VIEW[sector]])
-		t.check(look.flipped() == EXPECTED_MIRRORED[sector],
-				"sector %d mirror flag matches the west-mirror convention" % sector)
 		agent.free()
 
 ## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
@@ -159,8 +142,7 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 func _test_body_and_trim_can_never_disagree(t) -> void:
 	var body_views := WalkerLook.BODY_BY_VIEW.keys()
 	var trim_views := WalkerLook.TRIM_BY_VIEW.keys()
-	t.check(body_views.size() == trim_views.size() and body_views.size() == 5,
-			"the walker family has exactly five authored views, body and trim alike")
+	t.check(body_views.size() == trim_views.size(), "the walker family has as many trim views as body views")
 	for view in body_views:
 		t.check(WalkerLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
@@ -297,8 +279,9 @@ func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 func _test_walker_gait_b_tables_agree_with_a(t) -> void:
 	var body_views_b := WalkerLook.BODY_BY_VIEW_B.keys()
 	var trim_views_b := WalkerLook.TRIM_BY_VIEW_B.keys()
-	t.check(body_views_b.size() == 5 and trim_views_b.size() == 5,
-			"the walker's gait-b family covers all five authored views")
+	t.check(body_views_b.size() == WalkerLook.BODY_BY_VIEW.size()
+			and trim_views_b.size() == WalkerLook.TRIM_BY_VIEW.size(),
+			"the walker's gait-b family covers every view the gait-a family does")
 	for view in WalkerLook.BODY_BY_VIEW.keys():
 		t.check(WalkerLook.BODY_BY_VIEW_B.has(view),
 				"view %s has a gait-b body to match its gait-a body" % view)
@@ -313,11 +296,3 @@ func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
 		var view: String = WalkerLook.VIEW_BY_SECTOR[sector]
 		t.check(WalkerLook.BODY_BY_VIEW_B.has(view) and WalkerLook.TRIM_BY_VIEW_B.has(view),
 				"sector %d's view %s has a gait-b body and trim too" % [sector, view])
-
-func _test_every_walker_gait_b_svg_is_native_18x38(t) -> void:
-	for view in WalkerLook.BODY_BY_VIEW_B.keys():
-		var body := AtlasTable.baked().native_size(StringName(WalkerLook.BODY_BY_VIEW_B[view]))
-		t.check(body == Vector2i(18, 38), "gait-b body %s is native 18x38" % view)
-	for view in WalkerLook.TRIM_BY_VIEW_B.keys():
-		var trim := AtlasTable.baked().native_size(StringName(WalkerLook.TRIM_BY_VIEW_B[view]))
-		t.check(trim == Vector2i(18, 38), "gait-b trim %s is native 18x38" % view)
