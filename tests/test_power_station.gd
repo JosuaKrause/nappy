@@ -14,8 +14,9 @@ const BASE_SEED := 7_140
 ## closures and the seals each — which is seconds a city rather than a quarter of one.
 const DAY_SEEDS := 10
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## Where the frame recorder of the yard-layer check writes its record on leaving the tree.
-const _SCRATCH_RECORD := "user://test_power_station_scratch_record.json"
+## The folder the frame recorder of the yard-layer check is handed to write its record in on leaving
+## the tree.
+const _SCRATCH_RECORDS := "user://test_power_station_scratch_records"
 
 var _maps: Array[CityMap] = []
 
@@ -365,12 +366,12 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	record.start(ledger)
 	var sitting := Sitting.new()
 	sitting.frame_timing = record
-	# Its saved record goes to a scratch path, and the run it names the file by is the test's own.
-	sitting.frame_record_path = _SCRATCH_RECORD
+	# Its saved record goes to a scratch folder, and the run it names the file by is the test's own.
 	var run := RunState.new()
 	var recorder := FrameRecorder.new()
 	t.add_child(recorder)
-	recorder.setup(func() -> bool: return false, null, null, null, run, sitting)
+	recorder.setup(func() -> bool: return false, null, null, null, run, sitting,
+			_SCRATCH_RECORDS)
 	var station := Building.new()
 	station.district = GameEnums.BlockPurpose.INDUSTRIAL
 	station.footprint = Vector2(96.0, 256.0)
@@ -397,6 +398,9 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 			"a yard layer built into a listening tree is counted as scenery")
 	station.free()
 	recorder.free()
+	var written := sitting.frame_record_path
 	sitting.free()
 	run.free()
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))
+	if written != "":
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
