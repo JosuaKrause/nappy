@@ -57,7 +57,8 @@ func run(t) -> void:
 	# pace, less that pace's own decay. The crash is the one row where running is the cheaper of
 	# the two — see that table's own note.
 	var crash := EventCatalogue.by_id("car_accident")
-	var mean := crash.mean_emission_along_the_line()
+	var mean := crash.walk_through_cost() / (crash.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+			+ Tuning.EXCITEMENT_DECAY_WALKING
 	print("COST TABLE car_accident: walk %+.1f, run %+.1f"
 			% [crash.walk_through_cost(),
 			(mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING)

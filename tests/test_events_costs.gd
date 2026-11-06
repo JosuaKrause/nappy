@@ -108,8 +108,11 @@ func _cost_to_walk_through(def: EventDef) -> float:
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (def.mean_emission_along_the_line() - Baby.EXCITEMENT_DECAY_RUNNING
-			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
+	# The mean emission along the line is what `walk_through_cost()` charges over the walking time,
+	# the walking decay added back.
+	var mean := def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+			+ Tuning.EXCITEMENT_DECAY_WALKING
+	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
 func _signature(planned: Array) -> String:
 	var parts: Array[String] = []

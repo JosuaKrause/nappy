@@ -454,7 +454,7 @@ func solid_reach() -> float:
 
 ## **How the row is sited and noticed from the day after its first appearance**, or null for a
 ## row that is the same every day — see `DaySwitch`. `charging_dog` is the one row that carries
-## it. Read through `spawn_mode_on()` and `notice_on()`, never by hand.
+## it. Read through `spawn_mode_on()` and `_notice_on()`, never by hand.
 @export var from_day_after: DaySwitch = null
 
 ## Which `SpawnMode` this row is sited in on `day`: `spawn_mode` through `from_day_after.after_day`,
@@ -467,19 +467,19 @@ func spawn_mode_on(day: int) -> SpawnMode:
 ## How this row notices her on `day`: `notice` through `from_day_after.after_day`, the switch's own
 ## past it. An instance reads `notice` off the def it was handed, so a placement past the switch is
 ## handed a copy carrying this (`for_day()`); a director-sited row keeps its own.
-func notice_on(day: int) -> NoticeSpec:
+func _notice_on(day: int) -> NoticeSpec:
 	if from_day_after and day > from_day_after.after_day:
 		return from_day_after.notice
 	return notice
 
-## A `MAP` placement's own answer to `notice_on(day)` — a derived copy for the same reason
+## A `MAP` placement's own answer to `_notice_on(day)` — a derived copy for the same reason
 ## `at_heat()`'s is one: the catalogue's rows are shared by every day of the run, so a placement
 ## past `from_day_after` cannot set the shared row's `notice` without changing what
 ## every other day sees. An instance reads `notice` off the def it was handed, so the
 ## day's answer arrives as a different def. This row itself for every row whose notice does not
 ## change by day.
 func for_day(day: int) -> EventDef:
-	var that_day := notice_on(day)
+	var that_day := _notice_on(day)
 	if that_day == notice:
 		return self
 	var variant: EventDef = duplicate()
@@ -622,7 +622,7 @@ func departure_speed() -> float:
 ## moment from the frame it exists (`charging_dog` sited ahead of her on the day it teaches the
 ## run); a row with one is a place that becomes a moment when she walks up to it, which is a
 ## different thing from both an obstacle and an ambush. Read off the def an instance was handed:
-## a row whose notice changes by day says so with `from_day_after` (`notice_on()`).
+## a row whose notice changes by day says so with `from_day_after` (`_notice_on()`).
 @export var notice: NoticeSpec = null
 
 ## **How this row hunts her once the resistance has heated it** (`HuntSpec`): a vehicle that lets
@@ -1724,7 +1724,7 @@ func field_reach() -> float:
 ## a property of the def rather than of the moment.
 func walk_through_cost() -> float:
 	if _cost_cache == INF:
-		_cost_cache = (mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
+		_cost_cache = (_mean_emission_along_the_line() - Tuning.EXCITEMENT_DECAY_WALKING) \
 				* (outer_radius * 2.0 / Tuning.WALK_SPEED)
 	return _cost_cache
 
@@ -1733,7 +1733,7 @@ var _cost_cache := INF
 ## Mean emission along a straight line through the centre. The only property of a field that either
 ## the walking or the running comparison depends on: both integrate this line and differ only in how
 ## long the crossing takes.
-func mean_emission_along_the_line() -> float:
+func _mean_emission_along_the_line() -> float:
 	var span := outer_radius * 2.0
 	var steps := 2000
 	var total := 0.0

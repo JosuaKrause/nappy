@@ -143,12 +143,6 @@ src/events/checkpoint_controller.gd set_a_guard_on_her
 src/events/checkpoint_controller.gd where_she_crossed
 src/events/event_catalogue.gd guardsmen_from_day
 src/events/event_catalogue.gd heat_levels
-src/events/event_def.gd emission_at
-src/events/event_def.gd lunge_is_inside_the_catch
-src/events/event_def.gd mean_emission_along_the_line
-src/events/event_def.gd minimum_telegraph
-src/events/event_def.gd notice_on
-src/events/event_def.gd warning_time
 src/events/event_director.gd route_rows_on
 src/events/event_director.gd siting_band
 src/events/event_footprints.gd picture_drop_of
@@ -332,3 +326,10 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+
+# [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
+# confirm what it does (inbox #1095 and #1098 in curly-rabbit; verify's testing policy). The reason is on each line.
+src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
+src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
+src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
+src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
