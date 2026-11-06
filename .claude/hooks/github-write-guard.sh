@@ -1917,24 +1917,38 @@ end
 
 JQ
 
-input=$(cat)
-
 # **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
 # nothing lets the command through in both Claude Code and Codex, so the guard never answers
-# "allow" by breaking: no jq at all, the program failing, and the answer failing to print are
-# each a deny. No text larger than a few kilobytes is ever an argument to another program -- the
-# program, git's answer, the command and the reason all go through stdin or a file -- since Linux
-# refuses any one argument over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is
-# exactly such a failure.
+# "allow" by breaking: the payload failing to read, no jq at all, the text failing to strip where
+# jq is missing, the program failing, and the answer failing to print are each a deny. A decision
+# is never the exit status of a pipe: under `pipefail` a pipe fails when any one of its programs
+# does, which a match does not stop (a reader that has matched and left gives the writer EPIPE
+# where SIGPIPE is ignored, as on GitHub's runners), so a pipe's text is first read into a
+# variable, its failure denies, and the variable is then tested with no pipe at all. No text larger
+# than a few kilobytes is ever an argument to another program -- the program, git's answer, the
+# command and the reason all go through stdin or a file -- since Linux refuses any one argument
+# over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is exactly such a failure.
 deny_unread() {
 	printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"$1\"}}"
 	exit 0
 }
+if ! input=$(cat); then
+	deny_unread "The write guard could not read the hook's payload, so this command is denied unread. See .claude/hooks/github-write-guard.sh."
+fi
 # With no jq the command cannot be read at all: one naming git, gh or a pushing script anywhere in
 # the hook's payload (quotes, backslashes and `$` taken out) is denied, and any other is let
-# through, so installing jq is not itself refused.
+# through, so installing jq is not itself refused. The match is bash's own (`nocasematch` makes it
+# any case), so only a clean no-match allows; a regex bash cannot compile denies.
 if ! command -v jq >/dev/null 2>&1; then
-	if printf '%s' "$input" | tr -d "\\\\\"'\$" | grep -qiE 'git|gh|release\.sh|prune-merged|land-prs|update-pr'; then
+	if ! stripped=$(printf '%s' "$input" | tr -d "\\\\\"'\$"); then
+		deny_unread "The write guard needs jq to read this command, jq is not installed, and the command's text could not be prepared for the search that stands in for it, so this command is denied unread. Install jq. See .claude/hooks/github-write-guard.sh."
+	fi
+	names_a_write_tool_re='git|gh|release\.sh|prune-merged|land-prs|update-pr'
+	shopt -s nocasematch
+	[[ $stripped =~ $names_a_write_tool_re ]]
+	matched=$?
+	shopt -u nocasematch
+	if [ "$matched" -ne 1 ]; then
 		deny_unread "The write guard needs jq to read this command, and jq is not installed, so a command naming git, gh or a pushing tools/ script is denied unread. Install jq. See .claude/hooks/github-write-guard.sh."
 	fi
 	exit 0
@@ -2119,14 +2133,17 @@ such writes refused instead, remove NAPPY_ASK_FOR_PLAYER_WRITES=1 from the envir
 starts with."
 fi
 
-# The reason goes in on stdin. If even this fails, a fixed deny is printed instead, never nothing.
-if ! printf '%s' "$reason" | jq -Rsc --arg decision "$decision" '{
+# The reason goes in on stdin, and the answer is built whole before any of it is printed. If even
+# this fails, a fixed deny is printed instead, never nothing -- and never after half an answer,
+# since two answers on stdout are no answer the harness can read.
+if ! answer=$(printf '%s' "$reason" | jq -Rsc --arg decision "$decision" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: $decision,
     permissionDecisionReason: .
   }
-}' 2>/dev/null; then
+}' 2>/dev/null) || [ -z "$answer" ]; then
 	deny_unread "The write guard could not print its own answer, so this command is denied unread. See .claude/hooks/github-write-guard.sh."
 fi
+printf '%s\n' "$answer"
 exit 0
