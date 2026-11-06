@@ -104,23 +104,26 @@ func _measure_day(day: int) -> Array[Dictionary]:
 ## day, and more than one day in this sweep shares a seed, so `started_at` (with a two-second
 ## grace for clock rounding) is what tells this run's folder from an earlier one for the same seed.
 func _find_log(started_at: float, seed_value: int) -> String:
-	var root := "user://telemetry/%s" % Time.get_date_string_from_system()
-	var dir := DirAccess.open(root)
-	if dir == null:
+	var base := DirAccess.open("user://telemetry")
+	if base == null:
 		return ""
 	var best := ""
 	var best_time := -1.0
-	dir.list_dir_begin()
-	var name := dir.get_next()
-	while name != "":
-		if dir.current_is_dir() and name.contains("-seed%d-" % seed_value):
+	# Every day folder, not today's alone: a run that crosses midnight writes into the day it began
+	# on, and the modification time is what tells this run's log from an older one.
+	for day in base.get_directories():
+		var root := "user://telemetry/%s" % day
+		var dir := DirAccess.open(root)
+		if dir == null:
+			continue
+		for name in dir.get_directories():
+			if not name.contains("-seed%d-" % seed_value):
+				continue
 			var candidate := "%s/%s/run.log" % [root, name]
 			var mtime := FileAccess.get_modified_time(candidate)
 			if mtime >= started_at - 2.0 and mtime > best_time:
 				best_time = mtime
 				best = candidate
-		name = dir.get_next()
-	dir.list_dir_end()
 	return best
 
 ## Every `route` line, in order — the exact sentences `RouteRig`'s own `Telemetry.note()` calls
