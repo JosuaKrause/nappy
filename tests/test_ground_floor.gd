@@ -1,17 +1,16 @@
 extends RefCounted
 ## M185's rule: a multi-story building's ground floor is shops or blank wall, never windows,
-## except her own. `Building.draws_window_at()` is the one place that decides whether row 0 draws
-## a window at all; `_build_windows()`/`_build_front()` still roll exactly the same streams they
-## always have, so what changed is only which of their rolls get painted at the ground floor,
+## except her own. The building decides in one place whether row 0 draws a window at all;
+## `_build_windows()`/`_build_front()` still roll exactly the same streams they always have, so what changed is only which of their rolls get painted at the ground floor,
 ## never what the rolls are. `Building.blank_ground_floor_cells()` is the accessor a later poster
-## slice pastes on. A multi-story front with no storefront and no portico has one entrance door
-## (`Building.entrance_door_col()`), rolled from a stream of its own so no other roll moves.
+## slice pastes on. A multi-story front with no storefront and no portico has one entrance door,
+## rolled from a stream of its own so no other roll moves.
 ##
 ## PLAYTEST-124's own finding is the one further exception: the ground-floor column(s) her front
 ## door's own footprint overlaps draw no window either, even on her own building —
 ## `Building.door_world_x_range` is the geometry fact `City._spawn_buildings()` hands the building
-## for it, and `column_under_door()` is the overlap test. A geometry fact, not a roll, so it moves
-## no RNG stream — only which of `draws_window_at()`'s already-computed answers gets painted where.
+## for it, and a column the door's footprint overlaps is the one that draws none. A geometry fact, not a roll, so it moves
+## no RNG stream — only which of the already-computed windows gets painted where.
 ##
 ## A covered column reaches the same columns for the opposite reason: where the tile directly
 ## south of a non-home front's own column is another building rather than walkable ground
@@ -21,8 +20,8 @@ extends RefCounted
 ## that covers it draws its own roof further north instead, up to exactly the covered building's
 ## own roof line (`Building.roof_extension_rows`, `City.assign_roof_extensions()`) — roof meets
 ## roof, so nothing is drawn on a wall nobody can stand in front of. Every roll runs as far on a
-## covered front as on an open one (`_pair_is_storefront()`, `portico_is_drawn()`,
-## `door_column_from()`'s own covered filter, the fire escape's drop in `_build_front()`); coverage
+## covered front as on an open one (the storefront pair, the portico, the door's own covered filter,
+## the fire escape's drop in `_build_front()`); coverage
 ## decides only which of the answers gets painted, or in the door's case which reachable column it
 ## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
 
@@ -294,11 +293,11 @@ func _test_the_accessor_returns_ground_floor_non_window_non_entrance_cells(t) ->
 
 # ------------------------------------------------------------------- RNG streams ---
 
-## Replays `_build_windows()`'s own RNG stream and `window_texture()`'s own style match, using only
-## the public consts `window_texture()` already returns — never the private `_WindowStyle` enum —
+## Replays `_build_windows()`'s own RNG stream and the window style match, using only
+## the public consts the windows are drawn with — never the private `_WindowStyle` enum —
 ## so this pins the *behaviour* `main` already has rather than an implementation detail of it. Run
 ## for both a home and a non-home building at the same seed, since the rule change reads
-## `is_home_building` only in `draws_window_at()` and must not have touched this roll at all.
+## `is_home_building` only in which cells draw a window and must not have touched this roll at all.
 func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t) -> void:
 	var buildings: Array[Building] = []
 	for is_home in [false, true]:
@@ -390,7 +389,7 @@ func _test_the_home_flag_changes_no_front_roll(t) -> void:
 	commercial_home.free()
 
 
-## What `Building.ground_floor_texture()` answers for `col` of a lived-in commercial front of `columns`
+## What the ground floor shows for `col` of a lived-in commercial front of `columns`
 ## columns on `day`, from the rolls its storefronts were replayed to: a pair's first column its
 ## storefront, plain or awning or, once the day's decay has passed its fixed severity, shuttered; the
 ## second column of a pair nothing; an odd last column plain wall.
@@ -875,9 +874,8 @@ func _test_the_flower_pot_varies_within_one_escape(t) -> void:
 ## The rule stated directly: a covered column draws no facade at all, not even a window row, and
 ## an uncovered column of the same front keeps its ground floor, since this fixture is
 ## `RESIDENTIAL` with no door rolled onto either uncovered column (checked below).
-## `draws_window_at()` does not read `covered_ground_cols`: `_draw()`'s own wall loop skips a
-## covered column's whole cell before that is asked, so its answer for a covered column is the
-## same as for an ordinary blank-wall one.
+## `_draw()`'s own wall loop skips a
+## covered column's whole cell, so a covered column shows no window at any floor.
 func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t) -> void:
 	var covered: Array[bool] = [true, false, true, false]
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0),
@@ -899,10 +897,9 @@ func _test_a_covered_column_draws_no_facade_and_an_uncovered_one_is_unchanged(t)
 					"column %d: an uncovered column of the same front keeps its plain-wall ground floor" % col)
 	building.free()
 
-## `roof_extension_rows` is a fixture-settable geometry fact, the same shape `covered_ground_cols`
-## already is: `extension_rows()` reads it back per column, and an index past the end — or a
-## building nobody ever told about one — reads as 0, the same "nobody told this building about
-## one" convention `is_covered()` and `_windows`' own out-of-range reads already use.
+## `roof_extension_rows` is a geometry fact the city hands each building, per column: a column's
+## roof is drawn that many rows taller than the building's own, and a building nobody told about one
+## draws only its own roof.
 func _test_the_roof_is_as_tall_as_its_extension_per_column(t) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
 	var plain = await _see(t, building)
@@ -918,7 +915,7 @@ func _test_the_roof_is_as_tall_as_its_extension_per_column(t) -> void:
 	building.free()
 
 
-## `Building.roof_cell_edges()` is what `_draw()` paints, so asking it is asking the picture. A front
+## The lips a roof cell is drawn with, read off the pictures. A front
 ## five rows deep with two wall rows has three roof rows of its own; columns 1 and 2 extend two rows
 ## further north, column 1 seamlessly (into another piece of its own courtyard) and column 2 into a
 ## separate building. The covered piece's first roof row is asked on both kinds of seam as well.
@@ -1014,7 +1011,7 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
 	covering.free()
 
 ## The furniture pool is exactly the lip-free interior, row by row: every cell from row 1 up to one
-## short of its column's own top, on every column but the two ends, whose `roof_cell_edges()` is 0
+## short of its column's own top, on every column but the two ends, whose drawn lips are none
 ## (the fixture's tallest extension is 4 rows). Asked
 ## of a stepped extension on a shallow roof and a deep one, so each has step cells beside a
 ## shorter column to leave out, and every unit rolled lands inside the pool.
@@ -1307,8 +1304,8 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 ## self-consistent. Every OTHER covered column (an ordinary front and back, two genuinely
 ## separate buildings) must NOT be seamless, or a real parapet step would silently vanish there too.
 ## A covered piece with no roof of its own is the one courtyard seam that still caps, since nothing
-## of its own carries on above the extension. Each seam is also asked what it *draws*, through
-## `Building.roof_cell_edges()`, on both sides: no lip on either side of a seamless one, a lip on
+## of its own carries on above the extension. Each seam is asked what it *draws*
+## on both sides: no lip on either side of a seamless one, a lip on
 ## both sides of an ordinary one — and both pieces of a courtyard seam carry the same roof tint.
 func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t) -> void:
 	var checked_courtyard := 0
@@ -1414,10 +1411,9 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
 
 # --------------------------------------------------------------------- the sweep ---
 
-## Every accessor cell a real building offers is plain wall (`ground_floor_texture()` says
-## `WALL_BASE`) and never one of `civic_entrance_cols()`'s own columns while the portico actually
-## draws (a portico dropped for a covered column frees the other one it straddled, which
-## `portico_is_drawn()` says) — the same two contracts
+## Every accessor cell a real building offers is plain wall (the ground floor shows
+## `WALL_BASE` there) and never one of the portico's own columns while the portico actually
+## draws (a portico dropped for a covered column frees the other one it straddled) — the same two contracts
 ## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
 ## again of whatever the generator actually builds.
 func _check_accessor_invariant(t, building: Building, front, seed_used: int) -> void:

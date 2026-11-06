@@ -108,7 +108,7 @@ const STOREFRONT_AWNING_TEXTURES: Array[StringName] = [
 ]
 ## A shuttered shopfront: always on a `BOARDED` block, and — beneath the curve's own threshold —
 ## on a share of ordinary `LIVED_IN` commercial ground too, the city's own services failing ahead
-## of any one block turning. See `ground_floor_texture()`.
+## of any one block turning. See `_ground_floor_texture()`.
 const STOREFRONT_SHUTTERED_TEXTURES: Array[StringName] = [
 	&"buildings/storefront_a_shuttered",
 	&"buildings/storefront_b_shuttered",
@@ -126,7 +126,7 @@ const FIRE_ESCAPE_PLATFORM_A := &"buildings/fire_escape_platform_a"
 const FIRE_ESCAPE_PLATFORM_B := &"buildings/fire_escape_platform_b"
 const CIVIC_PORTICO := &"props/civic_portico"
 ## The one way in a multi-story front with no storefront and no portico has — see
-## `entrance_door_col()`. 32×36px, a whole wall cell wide and rising four pixels into the row above
+## `_entrance_door_col()`. 32×36px, a whole wall cell wide and rising four pixels into the row above
 ## the way a storefront does, drawn standing on the ground line at its column's centre. An
 ## `INDUSTRIAL` front gets the heavier steel one; every other purpose that gets a door gets the
 ## plain one.
@@ -348,7 +348,7 @@ enum Condition {
 		queue_redraw()
 
 ## Whether this building is her own — the one exception to the ground floor's blank-wall-or-shops
-## rule (`draws_window_at()`) and to a `RESIDENTIAL` front's fire escape (`_build_front()`): every
+## rule (`_draws_window_at()`) and to a `RESIDENTIAL` front's fire escape (`_build_front()`): every
 ## other multi-story building's ground floor never shows a window, and a `RESIDENTIAL` front rolls
 ## one fire escape in `FIRE_ESCAPE_SHARE` of the time; her own building carries neither, since she
 ## has a stair inside instead (the player, PLAYTEST-128.md: "the home building shouldn't have a fire
@@ -521,7 +521,7 @@ var neighbor_taken := false:
 		condition = value
 		queue_redraw()
 
-## Today's day number, for the ambient-shutter roll in `ground_floor_texture()` — read against
+## Today's day number, for the ambient-shutter roll in `_ground_floor_texture()` — read against
 ## `Tuning.degradation_for(day)`, not stored anywhere the roll itself depends on, so changing it
 ## only ever needs a redraw rather than a full `_rebuild()` — and for whether the power station's
 ## hall is lit (`_clerestory_texture()`).
@@ -573,7 +573,7 @@ var _window_style := _WindowStyle.PLAIN
 var _storefront_variant: Array[int] = []
 var _storefront_awning: Array[bool] = []
 ## One fixed roll per two-column storefront, compared against `Tuning.degradation_for(day) *
-## AMBIENT_SHUTTER_SHARE` in `ground_floor_texture()` — a shop with a low roll here closes early
+## AMBIENT_SHUTTER_SHARE` in `_ground_floor_texture()` — a shop with a low roll here closes early
 ## in the run and stays shuttered, the same "fixed severity, the day decides how far it has been
 ## crossed" shape `GroundTiles._cracked()` uses for a crack.
 var _storefront_shutter_severity: Array[float] = []
@@ -586,7 +586,7 @@ var _fire_escape_cols: Array[int] = []
 ## than once for the whole escape (`FIRE_ESCAPE_POT_SHARE`). Empty wherever `_fire_escape_cols` is.
 var _fire_escape_pots: Dictionary = {}
 ## The ground-floor column an entrance door would stand in, rolled for every building by
-## `_build_entrance()` whether or not it ends up with one — `entrance_door_col()` is what decides
+## `_build_entrance()` whether or not it ends up with one — `_entrance_door_col()` is what decides
 ## that, so the home flag and the district's own entrance can change without rolling anything.
 var _door_col := 0
 ## The roof layout the roof layers draw (`roof_layout()`, one entry per unit), cached at build
@@ -925,7 +925,7 @@ static func _door_column_from(cols: int, escapes: Array[int], covered: Array[boo
 ## `_portico_is_drawn()`) rather than only whether one was rolled matters: a front whose only way
 ## in rolled entirely onto covered columns still needs its own door, on whatever reachable column
 ## `_door_col` already is.
-func entrance_door_col() -> int:
+func _entrance_door_col() -> int:
 	if power_station or is_home_building or wall_tiles() < 2:
 		return -1
 	if district == GameEnums.BlockPurpose.CIVIC and _portico_is_drawn():
@@ -935,12 +935,12 @@ func entrance_door_col() -> int:
 	return _door_col
 
 ## Where this front's way in stands, as a local x on its ground line: the entrance door's column
-## (`entrance_door_col()`), else the civic portico, centred on the facade (`_draw_front_overlay()`),
+## (`_entrance_door_col()`), else the civic portico, centred on the facade (`_draw_front_overlay()`),
 ## else the drawn storefront pair nearest `near` — and `near` itself on a front with none of them,
 ## a one-row facade, which keeps its windows and has no door. Day 8's task ends at the burnt
 ## building's door (`City.way_in_behind()`): *"or better to the door"* (sandy-egret).
 func way_in_local_x(near: float) -> float:
-	var door := entrance_door_col()
+	var door := _entrance_door_col()
 	if door >= 0:
 		return _cell(door, 0).x + TILE * 0.5
 	if _portico_is_drawn():
@@ -981,14 +981,14 @@ func _entrance_door_texture() -> StringName:
 ## asked at all for a covered column (`_is_covered()`)**: `_draw()`'s own wall loop skips one
 ## outright, facade and all, before this is ever called there — see the class doc's own section on
 ## the roof extension that stands in its place.
-func draws_window_at(row: int, col: int = 0) -> bool:
+func _draws_window_at(row: int, col: int = 0) -> bool:
 	if row == 0 and is_home_building and _column_under_door(col):
 		return false
 	return row > 0 or is_home_building or wall_tiles() < 2
 
 ## Whether ground-floor column `col`'s own world-space footprint overlaps `door_world_x_range`.
 ## The door is 26px wide against a `TILE` (32px) column, so it may straddle two of them; both then
-## draw plain wall instead of a window. Called only from `draws_window_at()`, and only once
+## draw plain wall instead of a window. Called only from `_draws_window_at()`, and only once
 ## `is_home_building` already is.
 func _column_under_door(col: int) -> bool:
 	var min_x := global_position.x + _cell(col, 0).x
@@ -1033,10 +1033,10 @@ func _draw() -> void:
 				continue
 			var at := _cell(col, row)
 			front_drawer.paint(self, WALL, at, wall_colour)
-			if draws_window_at(row, col):
+			if _draws_window_at(row, col):
 				var index := row * cols + col
 				var window_at := at
-				if row == 1 and (not _storefront_variant.is_empty() or entrance_door_col() >= 0):
+				if row == 1 and (not _storefront_variant.is_empty() or _entrance_door_col() >= 0):
 					# A 36px storefront or door rises four pixels into this row; lift every upper
 					# window two pixels so its sill remains visible, the whole row alike.
 					window_at.y -= 2.0
@@ -1056,7 +1056,7 @@ func _draw() -> void:
 	# to keep its bottom edge on the shared ground line; facades with only one wall row keep the
 	# ordinary wall base because there is not enough height for the complete entrance.
 	for col in range(hall.x, hall.y if not power_station else hall.x):
-		var ground_name := ground_floor_texture(col)
+		var ground_name := _ground_floor_texture(col)
 		if ground_name != &"":
 			var y_offset := TILE - atlas.region(ground_name).get_height()
 			front_drawer.paint(self, ground_name, _cell(col, 0) + Vector2(0.0, y_offset))
@@ -1212,7 +1212,7 @@ func _cell(col: int, row: int) -> Vector2:
 ## still shutters early once `Tuning.degradation_for(day) * AMBIENT_SHUTTER_SHARE` has passed the
 ## cell's own fixed roll — the city's services failing ahead of any one block's arc, which is why
 ## this reads `condition` and `day` as two separate questions rather than one.
-func ground_floor_texture(col: int) -> StringName:
+func _ground_floor_texture(col: int) -> StringName:
 	if _is_covered(col):
 		return &""
 	if _storefront_variant.is_empty():
@@ -1245,7 +1245,7 @@ func _pair_is_storefront(first: int) -> bool:
 
 ## Whether this `COMMERCIAL` front's storefront draws anywhere at all — every rolled pair checked
 ## through `_pair_is_storefront()`, since a storefront that rolled but landed entirely on covered
-## columns offers no way in after all, and `entrance_door_col()` reads this to decide whether
+## columns offers no way in after all, and `_entrance_door_col()` reads this to decide whether
 ## the front still needs its own door.
 func _has_visible_storefront() -> bool:
 	for store in _storefront_variant.size():
@@ -1255,7 +1255,7 @@ func _has_visible_storefront() -> bool:
 
 ## Whether this `CIVIC` front's portico actually draws: every column of `_civic_entrance_cols()`
 ## reachable, since one picture cannot show a door on one column and no facade at all on its
-## covered neighbour. `entrance_door_col()` reads this the same way it reads
+## covered neighbour. `_entrance_door_col()` reads this the same way it reads
 ## `_has_visible_storefront()`.
 func _portico_is_drawn() -> bool:
 	if district != GameEnums.BlockPurpose.CIVIC:
@@ -1271,7 +1271,7 @@ func _portico_is_drawn() -> bool:
 ## the same top-left convention `_cell()` already uses for every draw call in this file. Empty for
 ## the power station (it draws its own front), her own building (the blank-wall rule's one
 ## exception) and a one-row facade (not multi-story, so the rule never reaches it). A covered column
-## is excluded too, but needs no check of its own here: `ground_floor_texture()` already
+## is excluded too, but needs no check of its own here: `_ground_floor_texture()` already
 ## answers `&""` rather than `WALL_BASE` for one, so the loop below leaves it out on its own. Read by
 ## `PosterWalls` — it is the ground a poster crew pastes on.
 func blank_ground_floor_cells() -> Array[Rect2]:
@@ -1281,11 +1281,11 @@ func blank_ground_floor_cells() -> Array[Rect2]:
 	var entrance_cols: Array[int] = []
 	if _portico_is_drawn():
 		entrance_cols = _civic_entrance_cols()
-	var door_col := entrance_door_col()
+	var door_col := _entrance_door_col()
 	for col in columns():
 		if entrance_cols.has(col) or col == door_col or _fire_escape_cols.has(col):
 			continue
-		if ground_floor_texture(col) == WALL_BASE:
+		if _ground_floor_texture(col) == WALL_BASE:
 			result.append(_ground_cell(col))
 	return result
 
@@ -1351,7 +1351,7 @@ func window_texture(index: int) -> StringName:
 ## line `_cell`'s own row 0 already sits on, so `Sprites.draw_standing()`'s bottom-centre contract
 ## needs no offset math here.
 func _draw_front_overlay() -> void:
-	var door_col := entrance_door_col()
+	var door_col := _entrance_door_col()
 	if door_col >= 0:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
 		front_drawer.stand(self, _entrance_door_texture(), Vector2(door_x, 0.0))
@@ -1385,7 +1385,7 @@ func _fire_escape_landings() -> Array[int]:
 ## whole escape, so the two pictures mix within one escape and between the two on a wide front.
 ## `&""` where no balcony was rolled for that column and row — no escape stands there, which is every
 ## column of a front without one and every column but the escape's own — the way
-## `ground_floor_texture()` answers `&""` for a column nothing is drawn in.
+## `_ground_floor_texture()` answers `&""` for a column nothing is drawn in.
 func _fire_escape_texture(col: int, row: int) -> StringName:
 	var pots: Dictionary = _fire_escape_pots.get(col, {})
 	if not pots.has(row):

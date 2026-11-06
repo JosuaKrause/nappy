@@ -128,6 +128,26 @@ func window_cells() -> Array[Vector2i]:
 			found.append(Vector2i(entry.col, entry.row))
 	return found
 
+## How many wall cells show a lit window.
+func lit_windows() -> int:
+	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+	var count := 0
+	for entry in painted():
+		if lit.has(entry.picture):
+			count += 1
+	return count
+
+## The window picture of every wall cell the front draws one in, row by row and column by column
+## within a row: the style and which cells are lit, in one list.
+func window_pictures_in_order() -> Array[StringName]:
+	var found: Array[StringName] = []
+	for row in building.wall_tiles():
+		for col in building.columns():
+			var picture := window_at(col, row)
+			if picture != &"":
+				found.append(picture)
+	return found
+
 ## The picture the ground floor shows in column `col` (the plinth, or the shop whose pair starts
 ## there), or `&""` where it shows none: the second column of a pair, or one nothing is drawn in.
 func ground_floor_at(col: int) -> StringName:

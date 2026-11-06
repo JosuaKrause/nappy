@@ -67,9 +67,6 @@ src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
-src/city/building.gd draws_window_at
-src/city/building.gd entrance_door_col
-src/city/building.gd ground_floor_texture
 src/city/building.gd roof_equipment_scale
 src/city/building.gd roof_interior_cells
 src/city/building.gd roof_layout
