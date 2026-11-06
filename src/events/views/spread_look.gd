@@ -267,8 +267,8 @@ func _build_the_scenery_of(slice: Slice) -> void:
 	_sceneries.append(scenery)
 
 ## Puts the slices into the world at their feet, each ahead of the event in the tree, so at a
-## tie of feet its caret is drawn over its own picture. Idempotent, so a rig that never reaches the
-## idle frame can call it itself (`RoadblockLook._attach_the_band()`).
+## tie of feet its caret is drawn over its own picture. Done on the idle frame after the slices are
+## built, and again by a protest whose rank is sliced anew; idempotent.
 func _attach_the_slices() -> void:
 	if _slices.is_empty() or _slices[0].is_inside_tree() or not event.is_inside_tree() \
 			or event.get_parent() == null:
@@ -411,9 +411,6 @@ static func _cap_along(cap_size: Vector2) -> float:
 
 func build_nodes() -> void:
 	_build_the_slices()
-
-func attach_nodes() -> void:
-	_attach_the_slices()
 
 func enter_tree() -> void:
 	if _sliced and _slices.is_empty():

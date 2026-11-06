@@ -5,6 +5,7 @@ const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
+const PageLog := preload("res://tests/atlas_page_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const WATER_SEED := 4242
 
@@ -23,6 +24,7 @@ func run(t) -> void:
 ## a hundred thousand times its length always crosses it, so no check depends on how long a frame
 ## takes.
 func _test_roof_rotors(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
 	var drawer := RecordingRoofDrawer.new()
 	var scenery := RecordingSceneryDrawer.new()
@@ -96,7 +98,7 @@ func _test_roof_rotors(t) -> void:
 	t.remove_child(building)
 	t.check(drawer.standing().is_empty(),
 			"tree exit releases every roof object and moving child")
-	if not atlas.is_acquired(&"buildings"):
+	if not pages.held(&"buildings"):
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
 	var reentered := _rotors(drawer)
@@ -106,6 +108,7 @@ func _test_roof_rotors(t) -> void:
 	t.check(_rotors(drawer).is_empty() and not building.is_processing(),
 			"a roof without vents releases them and stops its animation callback")
 	building.free()
+	pages.stop()
 
 ## The turning rotor of every vent the drawer was told to stand and the building has not released.
 func _rotors(drawer: RecordingRoofDrawer) -> Array[SceneryLayer]:
@@ -169,7 +172,8 @@ func _test_event_parts(t) -> void:
 					Vector2.RIGHT, EastWestStreet.new() if vertical else WorldMap.open_ground())
 			t.add_child(instance)
 			t.check(instance.runs_vertically() == vertical, "%s stands on the axis asked for" % id)
-			instance.look.attach_nodes()
+			# The slices go into the world on the idle frame after the instance is made.
+			await t.get_tree().process_frame
 			instance.step(instance.def.telegraph_time + 0.01)
 			var sceneries := _sceneries_of(instance)
 			var moving: Array[SceneryLayer] = []
@@ -338,6 +342,8 @@ func _test_water_ownership(t) -> void:
 			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
 	# A surface of its own, handed no library, makes one when it enters the tree.
+	# Watched from here, so the only lines about the `ground` page are the ones its own library writes.
+	var pages := PageLog.new()
 	var other := SceneryWater.new()
 	city.scenery_ground.add_child(other)
 	other.configure(cells.slice(0, 1))
@@ -351,17 +357,18 @@ func _test_water_ownership(t) -> void:
 			and float((other.material as ShaderMaterial).get_shader_parameter("elapsed"))
 			== other.elapsed,
 			"two water surfaces keep independent animation clocks")
-	t.check(other.atlas.is_acquired(&"ground"), "a surface holds the ground page while it stands")
+	t.check(pages.held(&"ground"), "a surface holds the ground page while it stands")
 	var owner := other.get_parent()
 	owner.remove_child(other)
-	t.check(other.material == null and not other.atlas.is_acquired(&"ground"),
+	t.check(other.material == null and not pages.held(&"ground"),
 			"detaching water releases its atlas region and shader material")
 	var kept := other.elapsed
 	owner.add_child(other)
-	t.check(other.atlas.is_acquired(&"ground") and other.elapsed >= kept
+	t.check(pages.held(&"ground") and other.elapsed >= kept
 			and (other.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"reentry rebinds the region and shared shader without resetting its clock")
 	other.free()
+	pages.stop()
 	owner = water.get_parent()
 	owner.remove_child(water)
 	t.check(water.material == null, "detaching a city's water releases its shader material")
