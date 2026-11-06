@@ -1417,7 +1417,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## ever taken back. `_attempt` grows the regions once more afterwards, which gives the same answer
 ## for the accepted station since both growths see the same city.
 ##
-## **Industrial where it can be.** Candidates are tried in `_power_station_rank` order — both blocks
+## **Industrial where it can be.** Candidates are tried in `power_station_rank` order — both blocks
 ## `INDUSTRIAL`, then one, then the pair nearest industrial ground — and the pool's own shuffle
 ## breaks ties, so a seed with an eligible industrial pair gets one.
 ##
@@ -1463,7 +1463,7 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			return
 		before.restore(map, purposes, block_rects, between)
 
-## The pool's horizontal pairs, in the order the station tries them: `_power_station_rank` first and
+## The pool's horizontal pairs, in the order the station tries them: `power_station_rank` first and
 ## the pool's own shuffled order after it, so the preference is strict and the tie is the seed's.
 static func _power_station_candidates(pool: Array[Rect2i], industrial: Dictionary) -> Array[Rect2i]:
 	var ranked: Array = []
@@ -1522,17 +1522,17 @@ static func _door_blocks(map: CityMap, pair: Rect2i) -> Array[Vector2i]:
 		var street := map.network.beside_block(block, StreetNetwork.Side.SOUTH)
 		if not street or not map.has_street(street.key()):
 			continue
-		if blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
+		if _blocks_from_home(block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 			continue
 		found.append(block)
 	found.sort_custom(func(x: Vector2i, y: Vector2i) -> bool:
-		var dx := blocks_from_home(x)
-		var dy := blocks_from_home(y)
+		var dx := _blocks_from_home(x)
+		var dy := _blocks_from_home(y)
 		return dx < dy or (dx == dy and x.x < y.x))
 	return found
 
 ## The lattice (Manhattan) distance in blocks from the home block to `block`.
-static func blocks_from_home(block: Vector2i) -> int:
+static func _blocks_from_home(block: Vector2i) -> int:
 	var away := (block - home_block()).abs()
 	return away.x + away.y
 
@@ -1872,9 +1872,9 @@ static func _power_station_problem(map: CityMap) -> String:
 	# A segment key names the block it runs along the north edge of, so the block the door is on —
 	# the one the street runs along the south edge of — is one step north of it.
 	var door_block := Vector2i(street.key().x, street.key().y - 1)
-	if blocks_from_home(door_block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
+	if _blocks_from_home(door_block) < POWER_STATION_MIN_BLOCKS_FROM_HOME:
 		return "the power station's door is %d blocks from the home, need %d" % [
-			blocks_from_home(door_block), POWER_STATION_MIN_BLOCKS_FROM_HOME]
+			_blocks_from_home(door_block), POWER_STATION_MIN_BLOCKS_FROM_HOME]
 	if RegionPlanner.ground_region_of(map, street) == RegionPlanner.home_region(map):
 		return "the power station's door is in the home's region"
 	return ""

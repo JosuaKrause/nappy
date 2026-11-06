@@ -16,6 +16,8 @@ extends RefCounted
 ## reads or sets a global run, so nothing is put back for the suite that runs after it.
 
 const Boot := preload("res://tests/booted_main.gd")
+## What a city's state has recorded, read off the snapshot the save writes.
+const CityStateReads := preload("res://tests/city_state_reads.gd")
 
 const _SCRATCH_PATH := "user://test_save_scratch.json"
 
@@ -335,7 +337,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 			and (run.attempt_spend.scars[0]["position"] as Vector2).distance_to(Vector2(140.5, -30.25)) < 0.01
 			and run.attempt_spend.scars[0]["since_day"] == 4,
 			"a scar survives with its Vector2 position intact")
-	t.check(run.attempt_spend.city_state.changed_on(Vector2i(3, 4)) == 6,
+	t.check(CityStateReads.changed_on(run.attempt_spend.city_state, Vector2i(3, 4)) == 6,
 			"the city's own block-arc history survives — a fire that burned did happen")
 	t.check(run.resistance.carrying_package == true, "resistance_carrying_package survives")
 	t.check(run.settled.settled_in.get(5) == Vector2i(-2, 7)

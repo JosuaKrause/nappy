@@ -113,7 +113,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRunti
 	var street: StreetNetwork.Segment = null
 	for segment in city.map.network.segments():
 		if SealPlanner.may_seal(city.map, spec, city.route_tree(), segment) \
-				and RegionPlanner.region_of_segment(city.map, segment) >= 0 \
+				and city.map.has_street(segment.key()) \
 				and not RegionPlanner.boundary_segments(city.map).has(segment):
 			street = segment
 			break
@@ -143,7 +143,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRunti
 	var tiles := city.map.rect_tiles(street.tile_rect())
 	var shut := 0
 	for tile in tiles:
-		if city.map.is_soft_sealed(tile):
+		if not city.map.passable(tile, Mover.of(Mover.SOFT_SEALS)):
 			shut += 1
 	t.check(shut == 2 * Tuning.SIDEWALK_WIDTH,
 			"and both its sidewalks are shut to walkers there (%d tiles)" % shut)

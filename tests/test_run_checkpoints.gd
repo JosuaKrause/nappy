@@ -22,6 +22,8 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const UI := preload("res://tests/ui_screens.gd")
+## Her street door and the building it stands in front of, read off the city's nodes.
+const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 const _SCRATCH_PATH := "user://test_run_checkpoints_scratch.json"
 const _SEED := 712044
 ## The height of a phone held landscape, in points (an iPhone 15, 852x393).
@@ -351,7 +353,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 		await Boot.press_continue(t, main)
 	t.check(run.header.day == 11 and run.calendar.checkpoint_day() == 8,
 			"day 11 is under way, with day 8 the checkpoint")
-	var boarded := Boot.city(main).home_door_building()
+	var boarded := HomeDoorReads.building(Boot.city(main))
 	t.check(boarded != null and boarded.neighbor_window_col >= 0,
 			"day 11 boarded the neighbor's window")
 
@@ -379,7 +381,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	t.check(reloads.size() == 1, "the continue reloads the scene rather than repainting this one")
 	t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
 			"she plays day 8 with every nerve")
-	var building := Boot.city(playing.main).home_door_building()
+	var building := HomeDoorReads.building(Boot.city(playing.main))
 	t.check(building != null and building.neighbor_window_col < 0,
 			"and the neighbor's window is not boarded on day 8")
 	t.check(not Boot.title(playing.main).is_open() and not t.get_tree().paused,

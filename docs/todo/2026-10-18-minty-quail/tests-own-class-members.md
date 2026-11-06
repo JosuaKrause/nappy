@@ -24,8 +24,7 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the
-resistance director's guard and contact spots and nearest alleys, the figures' picture lists, and
-one drawing helper.
+resistance director's guard and contact spots and nearest alleys, and one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate.
 

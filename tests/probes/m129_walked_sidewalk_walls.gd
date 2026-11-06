@@ -404,7 +404,11 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 	for band: Rect2i in Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal):
 		if not band.has_point(tile):
 			continue
-		return not corridor.walks_along(band)
+		# A band is walked when the corridor keeps it among its walked sidewalks.
+		for walked: Array in corridor.walked_sidewalks(map):
+			if walked[1] == band:
+				return false
+		return true
 	return false
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter

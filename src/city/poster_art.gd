@@ -78,7 +78,7 @@ static func sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Textu
 
 ## `kind` torn the `tear`th way, or the intact sheet if `prepare()` could not compose it — a torn
 ## sheet drawn whole is a wrong picture, never a missing one.
-func torn(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
+func _torn_sheet(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
 	var key := _CROSSED_TORN + tear if _crossed(kind, neighbor_taken) else kind * TEARS + tear
 	var composed: Texture2D = _torn.get(key)
 	return composed if composed else sheet(atlas, kind, neighbor_taken)
@@ -119,7 +119,7 @@ func prepare(atlas: AtlasLibrary) -> void:
 ## notice crossed out when `neighbor_taken`.
 func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
 	return sheet(atlas, kind, neighbor_taken) if tear == PosterState.INTACT \
-			else torn(atlas, kind, tear, neighbor_taken)
+			else _torn_sheet(atlas, kind, tear, neighbor_taken)
 
 ## The recipe, per pixel: the poster's colour with its alpha multiplied by the mask's, then the
 ## overlay drawn over the result with ordinary source-over blending. All three images are the same

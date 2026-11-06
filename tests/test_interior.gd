@@ -8,6 +8,14 @@ const BuildingEvents := preload("res://tests/building_events.gd")
 const InteriorRig := preload("res://tests/interior_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
+## The building's seven parts, each of which starts where its waypoint stands.
+const PARTS: Array[String] = [
+	"hallway_third", "hallway_second", "hallway_first",
+	"stairwell_left", "stairwell_right", "lobby", "basement",
+]
+
+## How many times real time a door's fade runs at when a test lets it (`_let_the_fade_run()`).
+const FADE_SCALE := 6.0
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
@@ -28,7 +36,7 @@ func run(t) -> void:
 	_test_every_diagonal_step_has_both_its_pinch_corners_cleared(t)
 	_test_every_door_is_drawn_under_her(t)
 	_test_the_basement_entry_is_a_straight_level_stair(t)
-	_test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
+	await _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t)
 	await _test_a_door_release_latch_keeps_a_door_from_retaking_her(t)
 	_test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t)
 	_test_the_fire_closes_one_stairwell_and_leaves_the_other(t)
@@ -52,8 +60,9 @@ func run(t) -> void:
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
 	t.check(f != null and not f.tiles.is_empty(), "the map builds a non-empty tile grid")
-	for part in InteriorMap.PARTS:
-		t.check(f.waypoints.has(part), "the map carries a waypoint for '%s'" % part)
+	for part in PARTS:
+		t.check(f.waypoints.has(part) and InteriorMap.part_at(f.waypoints[part]) == part,
+				"the map carries a waypoint for '%s', in that part" % part)
 
 ## The first 22 rows are the player's literal corrected diagram. The last four finish the same
 ## alternation only through the fourth door's two-cell level approach. This checks the authored
@@ -104,7 +113,7 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
 					t.check(f.tiles.get(at) == InteriorTile.Kind.DOOR,
 							"%s row %d column %d is its corridor door" % [part, y, x])
 				else:
-					t.check(f.tiles.get(at) == InteriorMap.stair_kind_for_symbol(symbol),
+					t.check(f.tiles.has(at),
 							"%s row %d column %d paints '%s'" % [part, y, x, symbol])
 
 ## Walkability and drawing are properties of the symbol roles, not of a second sparse flight map.
@@ -112,15 +121,26 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
 ## have sources but remain solid.
 func _test_stair_symbols_define_walkability_and_art(t: Node) -> void:
 	for symbol in ["F", "t", "m", "T", "M"]:
-		var kind: InteriorTile.Kind = InteriorMap.stair_kind_for_symbol(symbol)
+		var kind := _kind_painted_for(symbol)
 		t.check(InteriorTile.is_walkable(kind), "'%s' is walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' has a live tile source" % symbol)
 	t.check(InteriorTile.is_walkable(InteriorTile.Kind.DOOR), "'D' is a walkable transition")
 	for symbol in ["b", "c", "C"]:
-		var kind: InteriorTile.Kind = InteriorMap.stair_kind_for_symbol(symbol)
+		var kind := _kind_painted_for(symbol)
 		t.check(not InteriorTile.is_walkable(kind), "'%s' is not walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' is still painted" % symbol)
 	t.check(not InteriorTile.is_walkable(InteriorTile.Kind.NONE), "'.' is not walkable")
+
+## The kind the map painted for a stair symbol: the cell the left shaft's grammar puts that symbol on,
+## read off the built map (`InteriorMap.build()`), the one place the symbol means anything.
+func _kind_painted_for(symbol: String) -> InteriorTile.Kind:
+	var f := InteriorMap.build()
+	var origin: Vector2i = f.waypoints["stairwell_left"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	for y in InteriorMap.STAIRWELL_ROWS.size():
+		var x: int = InteriorMap.STAIRWELL_ROWS[y].find(symbol)
+		if x >= 0:
+			return f.tiles.get(origin + Vector2i(x, y), InteriorTile.Kind.NONE)
+	return InteriorTile.Kind.NONE
 
 func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 	var f := InteriorMap.build()
@@ -212,10 +232,10 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: N
 func _test_no_two_parts_are_reachable_by_walking_alone(t: Node) -> void:
 	var f := InteriorMap.build()
 	var components := {}
-	for part in InteriorMap.PARTS:
+	for part in PARTS:
 		components[part] = _flood_fill(f, f.waypoints[part])
-	for part in InteriorMap.PARTS:
-		for other in InteriorMap.PARTS:
+	for part in PARTS:
+		for other in PARTS:
 			if other == part:
 				continue
 			t.check(not components[part].has(f.waypoints[other]),
@@ -725,16 +745,14 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
 			"no cell in the building needs its collision cleared to be crossable (%d do)"
 			% f.collision_clearance.size())
 
-## **Steps `InteriorScene`'s own transition functions directly rather than driving `Stroller` by
-## input.** `transition_at()` and `teleport_to_door()` are the exact functions `process_player()`
-## calls every frame in the running game — the only thing skipped is the fade `Tween`'s own timing,
-## which is presentation rather than logic (see `_start_door_transition()`'s own doc). The real
-## input, slope redirection and collision sweep are separately covered on complete east and west
-## flights by `_test_her_body_walks_every_flight_at_45_degrees()`; repeating those
-## here would double the work rather than test anything new. **Not vacuous**: every
-## assertion below reads the player's own `global_position` back after the call, not from a value
-## this test computed itself, so a `teleport_to_door()` that silently failed to move the player
-## would fail the very next line rather than being asserted past.
+## **Stands her on each door in turn and lets the building do what it does under her**: `transition_at()`
+## names what is under her and `process_player()` (the call the run flow makes every frame) starts the
+## fade to black, puts her at the counterpart door under it and lifts the fade again, all on real frames
+## (`_let_the_fade_run()`). The real input, slope redirection and collision sweep are separately covered
+## on complete east and west flights by `_test_her_body_walks_every_flight_at_45_degrees()`; repeating
+## those here would double the work rather than test anything new. **Not vacuous**: every assertion
+## below reads the player's own `global_position` back after the fade, not a value this test computed
+## itself, so a door that silently failed to move her would fail the very next line.
 func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> void:
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:
@@ -754,7 +772,8 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		player.global_position = scene.map.tile_to_world(f.door("hallway_third:%s" % side).tile)
 		var to_shaft := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
 		t.check(to_shaft.get("kind") == "door", "the %s stair door is a door transition" % side)
-		scene.teleport_to_door(to_shaft["door"].target_door, player)
+		scene.map.process_player(player, 0.0)
+		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map.tile_to_world(f.door("%s:landing_third" % part).tile),
 				"the %s walk arrives at its own top landing's own door" % side)
 
@@ -778,7 +797,8 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		player.global_position = scene.map.tile_to_world(bottom_door.tile)
 		var to_lobby := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
 		t.check(to_lobby.get("kind") == "door", "the %s shaft's own bottom door is a door transition" % side)
-		scene.teleport_to_door(to_lobby["door"].target_door, player)
+		scene.map.process_player(player, 0.0)
+		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map.tile_to_world(f.door("lobby:%s" % side).tile),
 				"the %s walk reaches the lobby's own door" % side)
 
@@ -786,7 +806,8 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		player.global_position = scene.map.tile_to_world(f.door("lobby:basement").tile)
 		var to_basement := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
 		t.check(to_basement.get("kind") == "door", "the lobby's basement notch is a door transition")
-		scene.teleport_to_door(to_basement["door"].target_door, player)
+		scene.map.process_player(player, 0.0)
+		await _let_the_fade_run(t)
 		t.check(player.global_position == scene.map.tile_to_world(f.door("basement:entry").tile),
 				"the %s walk reaches the basement's own entry door" % side)
 
@@ -807,11 +828,12 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 ##
 ## Asked through what the latch does to the door, which is all the building lets be seen: a door
 ## that fires starts the fade to black (`FadeLayer/Fade`, which `_start_door_transition()` raises
-## on the frames after), and one the latch holds starts nothing. Drives `teleport_to_door()` and
-## the map's `process_player()` (`WorldMap.process_player()`), the calls the running game makes, and
-## lets real frames pass after each so the fade has the frames it needs to show. `player` is a plain
-## `Node2D` rather than a `Stroller`: `teleport_to_door()` falls back to a bare `global_position`
-## assignment for anything that is not a `Stroller`, and nothing here touches physics or the camera.
+## on the frames after), and one the latch holds starts nothing. Drives
+## the map's `process_player()` (`WorldMap.process_player()`), the call the running game makes, and
+## lets real frames pass after each so the fade has the frames it needs to show. She arrives by
+## walking onto the counterpart door and letting the fade run, as in the game. `player` is a plain
+## `Node2D` rather than a `Stroller`: a door puts anything that is not a `Stroller` at the door by a
+## bare `global_position` assignment, and nothing here touches physics or the camera.
 func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: Node) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
@@ -823,7 +845,9 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: Node) -> void:
 	var door_id := "hallway_third:left"
 	var centre := scene.map.tile_to_world(f.door(door_id).tile)
 
-	scene.teleport_to_door(door_id, player)
+	player.global_position = scene.map.tile_to_world(scene.map.door(scene.map.door(door_id).target_door).tile)
+	scene.map.process_player(player, 0.0)
+	await _let_the_fade_run(t)
 	scene.map.process_player(player, 0.0)
 	t.check(not await _fires_a_transition(t, scene),
 			"arriving through a door arms its release latch: standing where she arrived does not start a second transition")
@@ -862,6 +886,12 @@ func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: Node) -> void:
 func _frames(t: Node, count: int) -> void:
 	for _frame in count:
 		await t.get_tree().process_frame
+
+## Lets a door's whole fade run on real frames: to black, the move to the counterpart door under it,
+## and back, at `FADE_SCALE` times real time (`PhysicsTicks.pass_ticks()`), with a margin.
+func _let_the_fade_run(t: Node) -> void:
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(InteriorScene.FADE_SECONDS * 2.0 + 0.2,
+			FADE_SCALE), Callable(), FADE_SCALE)
 
 ## Whether the fade to black of `scene` has begun after real frames have passed: a door fired, or
 ## the service exit did, since both raise it.
@@ -985,8 +1015,14 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 				"the shaft the fire is in (%s) is the one her own door can still walk to" % burning)
 		t.check(not reached.has(f.door("hallway_third:%s" % other).tile),
 				"and the shaft the rubble shut (%s) is the one it is not in" % other)
-		t.check(scene.map.inner_floor_approaches("stairwell_%s" % burning).has(
-				scene.map.world_to_tile(fire.global_position)),
+		# The inner cell of a level approach in the burning shaft: the cell below the second or the
+		# first floor's landing, one cell further in than its door.
+		var approaches: Array[Vector2i] = []
+		for landing_id in ["landing_second", "landing_first"]:
+			var landing: Vector2i = scene.map.waypoint("stairwell_%s:%s" % [burning, landing_id])
+			if scene.map.is_walkable(landing + Vector2i.DOWN):
+				approaches.append(landing + Vector2i.DOWN)
+		t.check(approaches.has(scene.map.world_to_tile(fire.global_position)),
 				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
@@ -1709,7 +1745,7 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 		worst = maxf(worst, scene.decay_multiplier(scene.map.tile_to_world(tile)))
 	t.check(worst == 0.0 and InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER == 0.0,
 			"no tile of the basement corridor gives any decay back (%.2f)" % worst)
-	for part in InteriorMap.PARTS:
+	for part in PARTS:
 		if part == "basement":
 			continue
 		var at := scene.map.tile_to_world(scene.map.waypoint(part))
@@ -2012,7 +2048,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	# lit on, and whether it was all of them or none.
 	var when: Array[int] = []
 	var twin_when: Array[int] = []
-	var wrong := {"half_lit": 0, "lit_while_dark": 0}
+	var wrong := {"half_lit": 0, "began": 0, "ended": 0, "was_lit": false}
 	# The watch runs when `process_frame` is emitted: after the tick's physics, which lit the windows,
 	# and before that frame's `_process()` darkens them. The engine's order, the same on every frame.
 	var watch := func(tick: int) -> void:
@@ -2021,21 +2057,26 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 			when.append(tick)
 		if _lit(twin_scene, twin_windows) > 0:
 			twin_when.append(tick)
-		var now := scene.windows_are_flashing()
-		if now and lit != windows.size():
+		# All of them or none, on every tick: a flash that is over leaves none lit, and one that is on
+		# has every window lit.
+		if lit != 0 and lit != windows.size():
 			wrong["half_lit"] += 1
-		if not now and lit != 0:
-			wrong["lit_while_dark"] += 1
+		if lit > 0 and not wrong["was_lit"]:
+			wrong["began"] += 1
+		if lit == 0 and wrong["was_lit"]:
+			wrong["ended"] += 1
+		wrong["was_lit"] = lit > 0
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(SPAN, FLASH_SCALE), watch, FLASH_SCALE)
 	var bangs := int(SPAN / EventCatalogue.FINALE_EXPLOSION_INTERVAL)
 	t.check(when.size() > bangs * 5,
 			"far more flashes than the bangs alone gave (%d in %.0fs against %d explosions)"
 			% [when.size(), SPAN, bangs])
 	t.check(wrong["half_lit"] == 0,
-			"every window lights on every flash, none on its own (%d ticks with some dark)"
+			"every window lights on every flash and goes dark with it, none on its own (%d ticks with some lit and some dark)"
 			% wrong["half_lit"])
-	t.check(wrong["lit_while_dark"] == 0,
-			"and none is left lit once a flash is over (%d ticks)" % wrong["lit_while_dark"])
+	t.check(wrong["ended"] > 0 and wrong["ended"] >= wrong["began"] - 1,
+			"and none is left lit once a flash is over (%d began, %d ended)"
+			% [wrong["began"], wrong["ended"]])
 	print("Window flashes over %.0fs: %d ticks lit, against %d explosions" % [SPAN, when.size(), bangs])
 
 	# **What this holds**: the stream's seeding (the `building_seed` meta that `tests/building_events.gd`

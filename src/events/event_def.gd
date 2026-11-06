@@ -1073,7 +1073,7 @@ enum Role {
 @export var abduction: AbductionSpec = null
 
 ## The name its charges are counted under when it is not its own id (`EventInstance.
-## charger_name()`): `task_guard` for the task guard sent from out of her view, whose charges are
+## _charger_name()`): `task_guard` for the task guard sent from out of her view, whose charges are
 ## the task guard's. `""` for every other row.
 @export var counts_charges_as := ""
 

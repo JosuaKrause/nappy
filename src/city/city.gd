@@ -204,7 +204,7 @@ var events: EventManager
 ## The crowd on this city's streets (`Crowd`), built with the city.
 var crowd: Crowd
 ## The last night's blackout, which puts out every window, light and mast at once. See `Blackout`.
-var blackout: Blackout
+var _blackout: Blackout
 var _daylight: CanvasModulate
 var _act := 1
 ## Today's day number, read by `_paint_ground()` for the crack level `GroundTiles` picks —
@@ -404,12 +404,12 @@ func build(city_map: CityMap) -> void:
 	crowd.setup(self, map, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
 	excitement_sources = [events.sources, crowd.sources]
-	blackout = Blackout.new()
-	blackout.name = "Blackout"
-	blackout.forced = blackout_forced
-	blackout.dark_from_the_start = dark_from_the_start
-	add_child(blackout)
-	blackout.setup(self, _buildings)
+	_blackout = Blackout.new()
+	_blackout.name = "Blackout"
+	_blackout.forced = blackout_forced
+	_blackout.dark_from_the_start = dark_from_the_start
+	add_child(_blackout)
+	_blackout.setup(self, _buildings)
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -573,12 +573,6 @@ func seal_home_door() -> void:
 	if _home_door:
 		_home_door.picture = SEALED_DOOR_TEXTURE
 
-## Whether her street door shows the sealed picture: the raid has come (or a boot's scars say it
-## has), and no lost day has given the scar back. Stays true while the door's texture is unloaded
-## with the scenery around it, since it is the picture that is kept, not the resident texture.
-func home_door_is_sealed() -> bool:
-	return _home_door != null and _home_door.picture == SEALED_DOOR_TEXTURE
-
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
 ## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
@@ -591,7 +585,7 @@ func _door_world_x_range() -> Vector2:
 
 ## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
 ## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
-## door notch actually stands in front of (`home_door_building()`). Her own floor, the top one at
+## door notch actually stands in front of (`_home_door_building()`). Her own floor, the top one at
 ## this height, down the hall from her own door. It stands above the top of the screen at the
 ## normal camera on her doorstep, facing away down the street — turning to face the building
 ## brings it into frame (PLAYTEST-134, statement 4 revisited). Idempotent, so
@@ -599,7 +593,7 @@ func _door_world_x_range() -> Vector2:
 ## set. That building always has at least four wall rows (`HOME_BUILDING_WALL_ROWS`), fixed rather
 ## than rolled, so there is no shorter front here for a topmost row to stand in for it.
 func board_neighbor_window() -> void:
-	var building := home_door_building()
+	var building := _home_door_building()
 	if not building or building.neighbor_window_col >= 0:
 		return
 	var door_centre_x := (_door_world_x_range().x + _door_world_x_range().y) * 0.5
@@ -619,7 +613,7 @@ func board_neighbor_window() -> void:
 ## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
 ## out of every other one (`_spawn_buildings()`'s own doc), so only this lot's world footprint
 ## overlaps `_door_world_x_range()`.
-func home_door_building() -> Building:
+func _home_door_building() -> Building:
 	var x_range := _door_world_x_range()
 	for building in _buildings:
 		if not building.is_home_building:
@@ -1062,7 +1056,7 @@ func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## `HOME_BUILDING_WALL_ROWS` for the one lot the door's own world-space span stands in front of,
 ## `HOME_FLANKING_WALL_ROWS` for the other home-block lots — fixed, never rolled, so
 ## `_height_for()`'s home branch moves no RNG stream at all. `is_door_building` repeats
-## `home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
+## `_home_door_building()`'s own overlap test on the rect directly, because `_spawn_buildings()`
 ## sets every building's height before `_spawn_home()` builds the door sprite it would otherwise
 ## read (see `build()`'s own ordering note) — `_door_world_x_range()` itself only needs
 ## `map.home_rect`, already fixed by the generator by the time this runs. The lot depth this is
@@ -1365,12 +1359,12 @@ func _spawn_closure(closure: RoadClosure) -> void:
 ## closure and one calm area's own edge for a `ParkClosure` — so a run longer or shorter than a
 ## street's mouth still tiles panels edge to edge across its own real length rather than a fixed
 ## one, with no overlap and no gap to overshoot a corner with. The panels run the barrier's own
-## footprint end to end (`barrier_footprint()`, `DrawLayer.run_of()`), and a park's fence post to
+## footprint end to end (`_barrier_footprint()`, `DrawLayer.run_of()`), and a park's fence post to
 ## post (`ParkClosure.rail_ends()`).
 func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 	var across := closure.barrier_runs_across()
 	var width := closure.barrier_width()
-	var footprint := barrier_footprint(closure)
+	var footprint := _barrier_footprint(closure)
 	var picture_width := width
 	var picture_at := at
 	var run := DrawLayer.run_of(footprint, at)
@@ -1423,7 +1417,7 @@ func _spawn_barrier(closure: RoadClosure, at: Vector2) -> void:
 ## at the line's middle. Its body stops her (`_spawn_barrier()`); its tiles are closed ground, since
 ## the line stands on a mouth the closure takes (`CityMap.close_streets()`), so every other mover is
 ## stopped by the same line.
-static func barrier_footprint(closure: RoadClosure) -> Footprint:
+static func _barrier_footprint(closure: RoadClosure) -> Footprint:
 	var width := closure.barrier_width()
 	var size := Vector2(width, Tuning.CLOSURE_BARRIER_DEPTH) if closure.barrier_runs_across() \
 			else Vector2(Tuning.CLOSURE_BARRIER_DEPTH, width)
@@ -1481,7 +1475,7 @@ func _dress_the_stretch() -> void:
 ## broken under soot, the door boarded, the parapet charred) for the scheduled `BURNT_OUT` block
 ## purpose above too — the same look for a different, per-building reason.
 ##
-## **The lookup is the shape of `board_neighbor_window()`/`home_door_building()`**: a fixed fact
+## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
 ## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
 ## carried on the building itself. `burning_building` only ever catches on a wall this file actually
 ## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the

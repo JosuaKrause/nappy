@@ -417,11 +417,6 @@ func seal_soft_tile(tile: Vector2i) -> void:
 	soft_sealed_tiles[tile] = true
 	day_record_version += 1
 
-## Whether a tile is shut to walkers by today's soft seals. False for anything a soft seal never
-## stood on, cars included — a soft seal never asks this on their behalf.
-func is_soft_sealed(tile: Vector2i) -> bool:
-	return soft_sealed_tiles.has(tile)
-
 # The day's stationary solid bodies are the base's record (`WorldMap.obstructed_tiles`,
 # `obstruct_tiles()`), filled by `EventManager.start_day` from the day's whole plan and by
 # `EventSpawner.create` for anything placed later, and read by `CrowdAgent` so the crowd goes round
@@ -651,10 +646,6 @@ func post_positions() -> Array[Vector2]:
 				positions.append(Vector2(across_px, along_px) if vertical
 						else Vector2(along_px, across_px))
 	return positions
-
-## Whether a precinct's post stands on `tile`.
-func is_post(tile: Vector2i) -> bool:
-	return blocked.posts.has(tile)
 
 ## Whether the city as built lets a mover stopped by `layers` onto `tile`: the ground's own type,
 ## a post, and street ground, as `layers` asks.
@@ -1195,16 +1186,16 @@ func reach_count(field: PackedInt32Array) -> int:
 			total += 1
 	return total
 
-func count_walkable() -> int:
+func _count_walkable() -> int:
 	var total := 0
 	for type in tiles:
 		total += _WALKABLE[type]
 	return total
 
-## `count_walkable()` less the tiles a post stands on, which are walkable ground nobody can stand
+## `_count_walkable()` less the tiles a post stands on, which are walkable ground nobody can stand
 ## on (`post_tiles()`): what a sweep from the home (`walk_field()`) can reach at most.
 func count_standable() -> int:
-	var total := count_walkable()
+	var total := _count_walkable()
 	for tile: Vector2i in blocked.posts:
 		if in_bounds(tile):
 			total -= _WALKABLE[tiles[tile.y * size.x + tile.x]]

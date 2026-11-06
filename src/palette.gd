@@ -34,8 +34,7 @@ static func act_tint(act: int) -> Color:
 ## The light inside her building on the night of the escape, which is the night of the blackout:
 ## nothing in it has power. *(The player, 2026-09-20: "it can be gloomy in the hallways and
 ## basement and maybe emergency (red?) lighting in the stairs".)* Multiplied over the whole part she
-## is standing in, her included, since she is standing in the same dark. See `InteriorScene.
-## lighting_at()`.
+## is standing in, her included, since she is standing in the same dark. See `InteriorScene._lighting_at()`.
 ##
 ## The hallways and the lobby: what comes in through the windows from a dark city, cold and dim.
 const ESCAPE_GLOOM := Color(0.46, 0.48, 0.62)

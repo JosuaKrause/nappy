@@ -405,7 +405,8 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 	t.check(decals.drawer != null, "the city hands its decals the drawer they lay their beds through")
 	var recorder := RecordingSceneryDrawer.new()
 	decals.drawer = recorder
-	city.scenery.update(city.scenery.camera_view(), true)
+	city.scenery.update(Rect2(map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0), true)
 	decals.refresh_street_tree_pits()
 	var whole := Rect2(Vector2.ZERO, map.world_size()).grow(
 			SceneryGround.CHUNK_TILES * Tuning.TILE_SIZE)

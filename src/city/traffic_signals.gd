@@ -80,7 +80,7 @@ func is_signalled(junction: Vector2i) -> bool:
 func main_arm_is_vertical(_junction: Vector2i) -> bool:
 	return true
 
-func phase_of(junction: Vector2i) -> Phase:
+func _phase_of(junction: Vector2i) -> Phase:
 	var main_green := Tuning.signal_main_green_seconds()
 	var side_green := Tuning.SIGNAL_SIDE_GREEN_SECONDS
 	var amber := Tuning.SIGNAL_AMBER_SECONDS
@@ -97,7 +97,7 @@ func phase_of(junction: Vector2i) -> Phase:
 ## stop must stop for it, which is what `stopping_for` decides.
 func green_for(junction: Vector2i, vertical: bool) -> bool:
 	var main := main_arm_is_vertical(junction) == vertical
-	var phase := phase_of(junction)
+	var phase := _phase_of(junction)
 	return phase == Phase.MAIN_GREEN if main else phase == Phase.SIDE_GREEN
 
 ## Whether the light is telling this arm to stop — red, or the amber that precedes its own red.
@@ -105,7 +105,7 @@ func green_for(junction: Vector2i, vertical: bool) -> bool:
 ## amber may carry on if it cannot stop, and a person must never step out on one.
 func amber_for(junction: Vector2i, vertical: bool) -> bool:
 	var main := main_arm_is_vertical(junction) == vertical
-	var phase := phase_of(junction)
+	var phase := _phase_of(junction)
 	return phase == Phase.MAIN_AMBER if main else phase == Phase.SIDE_AMBER
 
 ## How far along the wave a junction sits: one junction's travelling time per junction down the

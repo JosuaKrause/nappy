@@ -994,7 +994,7 @@ func _plan_the_finale_city() -> void:
 			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, summary])
 	_the_trace().note("plan", "finale: %s" % summary)
 
-## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto the `InteriorMap.PARTS` waypoint to
+## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
 ## not recognise, which covers both "not given" and a typo alike; `InteriorScene.part_world_
 ## position()` falls back the same way for a part name it does not recognise, so the two defaults

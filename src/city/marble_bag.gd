@@ -14,7 +14,7 @@ extends RefCounted
 ## normally it's just one and once its empty a new bag is created but for special events we can
 ## create a new bag with the desired distribution and then the current bag gets queue to be used
 ## again once the new bag is empty".)* Ordinarily there is one, the **ordinary** set, filled again
-## whenever it runs empty. `put_in_front()` puts a special bag ahead of it, and `rig()` makes one out
+## whenever it runs empty. `_put_in_front()` puts a special bag ahead of it, and `rig()` makes one out
 ## of the marbles a caller wants ensured and the bag being drawn from; the bag it interrupts keeps
 ## the marbles it had left and is drawn from again once the special one is empty. A
 ## **pre-bag** is the first such bag, put in front before the first draw: the tears' one "no
@@ -170,7 +170,7 @@ func _peek_the_marble() -> Variant:
 ## Puts a bag of `marbles` in front of the one being drawn from, which keeps what it has left and is
 ## drawn from again once this one is empty. A marble already chosen by `peek()` from the bag being
 ## interrupted goes back into it untaken.
-func put_in_front(marbles: Array) -> void:
+func _put_in_front(marbles: Array) -> void:
 	if marbles.is_empty():
 		return
 	_picked = -1
@@ -193,7 +193,7 @@ func put_in_front(marbles: Array) -> void:
 ## leaves it in the bag it stands in — so the rigged bag holds `size` plain marbles and its ensured
 ## one comes within `size` draws ("x defines how soon we want to get the guaranteed event").
 func rig(ensured: Array, size: int) -> void:
-	put_in_front(ensured + _take(size - ensured.size(), []))
+	_put_in_front(ensured + _take(size - ensured.size(), []))
 
 ## Takes `count` marbles at random out of the bag being drawn from and the bags behind it, in queue
 ## order, leaving any that is one of `keep_out` where it is, and answers them. An empty queue is

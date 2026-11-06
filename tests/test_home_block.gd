@@ -27,6 +27,8 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
+## Her street door and the building it stands in front of, read off the city's nodes.
+const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 ## The seed PLAYTEST-134 found with only two wall rows on her own building, before this fix.
 const SHORT_SEED := 4242
 ## A second seed with nothing else in common with the first, for the cross-seed comparisons.
@@ -214,7 +216,7 @@ func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> v
 	for i in CITY_SWEEP_SEEDS:
 		var seed_value := 500_000 + i * 104_729
 		var city := _city_for(t, seed_value)
-		var building: Building = city.home_door_building()
+		var building: Building = HomeDoorReads.building(city)
 		t.check(building != null,
 				"seed %d: the door notch stands in front of a home-block building" % seed_value)
 		if building:
