@@ -20,9 +20,15 @@ hold nothing, "let's make sure those tests also won't enter the codebase again" 
 - `tools/check_test_only_members.py`, in CI's `gates` job, fails a test that reads a public member
   no other file under `src/` uses: a function only as a call, a caller under `src/dev` counting and
   one in the member's own file not, a small set of engine member names never taken as a read.
-  `tools/test_only_members.txt` lists those that stand in four groups: no reader and own file only,
-  which only shrink and fail on a stale line, and two kept groups whose lines carry their reasons
-  (the three fairness helpers of Tuning; eleven dependency hand-ins). Its docstring says what it can
+  `tools/test_only_members.txt` lists those that stand in groups, each opened by a `# [tag]` header:
+  no reader and own file only, which only shrink and fail on a stale line, and kept groups whose
+  lines carry their reasons (the three fairness helpers of Tuning; eleven dependency hand-ins; an
+  empty one for a function nothing outside can confirm or a line the check misreads). With
+  `--base <commit>`, which CI gives the pull request's base (the commit before, on `main`), a line
+  added to a shrinking group fails, and a kept line with no reason fails always; the base's own list
+  being absent, as on the pull request that introduced the check, compares nothing, which is how the
+  merges' two lines below stand. Constants, vars and signals with no use anywhere stay in the no
+  reader group as the orchestrator's proposal. Its docstring says what it can
   miss and where it can accuse falsely. It has a test of its own, run by `tools/pycheck.sh`, and a
   row in the **using-tools** catalogue.
 - The merges of `main` added `Blackout.go_dark()` (a patrol test now calls it, and only the

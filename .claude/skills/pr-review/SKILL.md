@@ -85,7 +85,9 @@ touches (the path table in `CLAUDE.md`). Look for:
   **verify**'s Testing policy names (an unreachable setup, a design decision read back, a check that
   cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
   first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
-  inbox #1098 in curly-rabbit, and fails CI on a new one; the rest is the reviewer's to find. Where the PR claims a
+  inbox #1098 in curly-rabbit. It fails CI on a new one and on a line added to the list's no reader
+  or own file only group (against the PR's base), and on a kept line with no reason; whether a kept
+  line's reason holds is the reviewer's to read, and so is the rest. Where the PR claims a
   test fails before the fix, check that claim, by reading or by running that one suite on the
   pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense

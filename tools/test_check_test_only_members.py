@@ -16,6 +16,7 @@ from typing import ClassVar
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import check_layers
 import check_test_only_members as members
 
 THING = "src/sim/thing.gd"
@@ -170,17 +171,89 @@ class ListTests(unittest.TestCase):
             (root / "tools").mkdir()
             (root / "src" / "thing.gd").write_text("func bump() -> void:\n\tpass\n")
             (root / "tests" / "test_thing.gd").write_text("func f(t):\n\tt.bump()\n")
-            (root / "tools" / "test_only_members.txt").write_text("src/thing.gd bump  # kept\n")
+            (root / "tools" / "test_only_members.txt").write_text("# [kept] why\nsrc/thing.gd bump  # kept\n")
             self.assertEqual(
                 members.check(members.read_checkout(root), members.listed(members.read_checkout(root).allowlist))[0], []
             )
 
     def test_the_list_file_is_read_with_comments_and_rejects_a_bad_line(self) -> None:
-        self.assertEqual(members.listed("# why\n\nsrc/a.gd go  # tail\n"), {("src/a.gd", "go")})
-        with self.assertRaises(members.MembersError):
-            members.listed("src/a.gd\n")
-        with self.assertRaises(members.MembersError):
-            members.listed("src/a.gd go\nsrc/a.gd go\n")
+        self.assertEqual(members.listed("# [no reader] why\n\nsrc/a.gd go  # tail\n"), {("src/a.gd", "go")})
+        for bad in (
+            "# [kept] k\nsrc/a.gd\n",
+            "# [kept] k\nsrc/a.gd go\nsrc/a.gd go\n",
+            "src/a.gd go  # r\n",
+            "# [nope] k\nsrc/a.gd go\n",
+        ):
+            with self.assertRaises(members.MembersError, msg=bad):
+                members.listed(bad)
+
+    def test_a_line_belongs_to_the_group_above_it_and_keeps_its_reason(self) -> None:
+        text = "# [no reader] a\nsrc/a.gd one\n# [own file only] b\nsrc/a.gd two\n# [kept] c\nsrc/a.gd three  # why\n"
+        got = [(e.name, e.group, e.reason, e.number) for e in members.entries_of(text)]
+        self.assertEqual(
+            got, [("one", "no reader", "", 2), ("two", "own file only", "", 4), ("three", "kept", "why", 6)]
+        )
+
+    def test_a_kept_line_with_no_reason_fails_in_any_state_of_the_base(self) -> None:
+        entries = members.entries_of("# [kept] c\nsrc/a.gd one\nsrc/a.gd two  # why\n")
+        failures = members.list_failures(entries, None)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("test_only_members.txt:2: src/a.gd one is in a kept group with no reason", failures[0])
+
+    def test_a_line_added_to_a_shrinking_group_fails_against_the_base_and_nothing_else_does(self) -> None:
+        base = members.entries_of("# [no reader] a\nsrc/a.gd old\n# [own file only] b\nsrc/a.gd own\n")
+        now = members.entries_of(
+            "# [no reader] a\nsrc/a.gd new\nsrc/a.gd own\n# [own file only] b\nsrc/a.gd old\nsrc/a.gd added\n"
+            "# [kept] c\nsrc/a.gd fresh  # why\n"
+        )
+        failures = members.list_failures(now, base)
+        self.assertEqual(len(failures), 2)
+        self.assertIn("src/a.gd new is added to the [no reader] group", failures[0])
+        self.assertIn("src/a.gd added is added to the [own file only] group", failures[1])
+        self.assertEqual(members.list_failures(now, None), [])
+
+    def test_a_member_moved_to_a_kept_group_is_not_an_addition_to_a_shrinking_one(self) -> None:
+        base = members.entries_of("# [no reader] a\nsrc/a.gd old\n")
+        now = members.entries_of("# [kept] c\nsrc/a.gd old  # why\n")
+        self.assertEqual(members.list_failures(now, base), [])
+        back = members.entries_of("# [kept] c\nsrc/a.gd old  # why\n")
+        self.assertEqual(
+            members.list_failures(members.entries_of("# [own file only] b\nsrc/a.gd old\n"), back),
+            [
+                "test_only_members.txt:2: src/a.gd old is added to the [own file only] group, which only shrinks; "
+                "give the game a reader, or test through what the class does outward, or, where it must stay "
+                "public, put the line in a kept group with its reason"
+            ],
+        )
+
+    def test_a_stale_line_names_its_real_cause(self) -> None:
+        src = {
+            THING: (
+                "class_name Thing\nconst K := 1\nfunc enabled() -> bool:\n\treturn true\n"
+                "func run() -> int:\n\treturn K\n"
+            )
+        }
+        reads = {"tests/test_thing.gd": "func f(t):\n\tt.K\n\tt.enabled()\n"}
+        failures, _ = members.check(files(src, reads), {(THING, "K"), (THING, "enabled")})
+        self.assertEqual(
+            failures,
+            [
+                f"REMOVE from tools/test_only_members.txt: {THING} K (a constant used in its own file is exempt)",
+                f"REMOVE from tools/test_only_members.txt: {THING} enabled (enabled is an engine member name in "
+                "ENGINE_MEMBERS, never taken as a read)",
+            ],
+        )
+
+    def test_a_call_on_another_instance_of_the_class_is_no_own_use(self) -> None:
+        src = {
+            THING: (
+                "class_name Thing\nfunc total(other: Thing) -> int:\n\treturn other.inner()\n"
+                "func inner() -> int:\n\treturn 1\n"
+            )
+        }
+        found, _ = members.test_only(files(src, {"tests/test_thing.gd": "func f(t):\n\tt.inner()\n"}))
+        _, stands = members.scan(files(src, {}))
+        self.assertEqual([members.group_of(stands[m.key]) for m in found], ["no reader"])
 
 
 class ReadTests(unittest.TestCase):
@@ -210,6 +283,33 @@ class ReadTests(unittest.TestCase):
             self.assertEqual(list(read.tests), ["tests/test_thing.gd"])
             self.assertIn("bump", read.src[THING])
             self.assertIn("other", members.read_checkout(repo).src[THING])
+
+    def test_the_base_list_is_read_from_a_commit_and_a_base_without_one_compares_nothing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+
+            def run(*args: str) -> None:
+                subprocess.run(
+                    ["git", "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
+                    cwd=repo,
+                    check=True,
+                    capture_output=True,
+                )
+
+            run("init", "-q", "-b", "main")
+            (repo / "tools").mkdir()
+            (repo / "README").write_text("x\n")
+            run("add", ".")
+            run("commit", "-q", "-m", "none")
+            (repo / "tools" / "test_only_members.txt").write_text("# [no reader] a\nsrc/a.gd go\n")
+            run("add", ".")
+            run("commit", "-q", "-m", "list")
+            self.assertIsNone(members.read_base("HEAD~1", repo))
+            base = members.read_base("HEAD", repo)
+            assert base is not None
+            self.assertEqual([e.key for e in base], [("src/a.gd", "go")])
+            with self.assertRaises(check_layers.LayerError):
+                members.read_base("no-such-rev", repo)
 
 
 if __name__ == "__main__":

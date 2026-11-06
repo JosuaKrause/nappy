@@ -419,27 +419,36 @@ internals where the outside behaviour is what matters, and those are examples, n
   weight kept alive by the test. The exception is input the game does not control, such as a corrupted
   save on disk or a browser's answer, which can really happen and is worth testing. The fix is to
   reach the state the way the game does, or to delete the test and the member with it.
-- **A public member only tests read is deleted, and its test hands in a fake or reads what the game
-  shows** (inbox #1095 in curly-rabbit). It stays only when both hold: the information cannot be had another way, and
-  the test needs it to confirm the behavior; such a case may hint that its module's design is
-  suboptimal. Its line goes in the kept group of `tools/test_only_members.txt` with the reason (the
-  fairness helpers `Tuning.required_horn_time`, `required_horn_sight` and `sleepiness_gain_calm` are
-  there, since the relationship tests above rest on them).
+- **A public function only tests read is deleted, and its test hands in a fake or reads what the
+  game shows** (inbox #1095 in curly-rabbit). It stays only when both hold: the information cannot
+  be had another way, and the test needs it to confirm the behavior; such a case may hint that its
+  module's design is suboptimal. Its line goes in a kept group of `tools/test_only_members.txt` with
+  the reason (the fairness helpers `Tuning.required_horn_time`, `required_horn_sight` and
+  `sleepiness_gain_calm` are there, since the relationship tests above rest on them).
   `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
-  nothing else under `src/` reads.
+  nothing else under `src/` reads. *Proposed by the orchestrator, not asked for, open to the player's
+  correction:* the rule also reaches a var, a signal or a constant with no use anywhere under `src/`,
+  a constant nothing reads being the same dead weight.
 - **A public function only its own file and the tests use is internal** (inbox #1098 in curly-rabbit): it gets the
   underscore, and its tests check what the class does from outside. A function stays public only where
-  nothing outside can confirm the behavior, with the reason written down on its line in the kept
+  nothing outside can confirm the behavior, with the reason written down on its line in a kept
   group of the list. The same check enforces it. *Proposed by the orchestrator, not asked for, open
   to the player's correction:* the rule also reaches vars and signals, and not constants, since a test
   reading a constant to assert a relationship is what this policy wants; a constant is flagged only
   when nothing under `src/` uses it, its own file included.
 - *Proposed by the orchestrator, not asked for, open to the player's correction:* a **hand-in**, a
-  `use_*` setter that hands the object what it depends on, stays public and sits in the kept group
+  `use_*` setter that hands the object what it depends on, stays public and sits in a kept group
   with that reason, since the game uses its default and a test hands in a fake (dependency injection,
   minty-lemur #794; mocking, inbox #1095 in curly-rabbit).
-- The first two groups of the list only shrink, and the check fails on a line that has gone stale, so
-  the pull request that fixes a member deletes its line; a kept group takes a new line with its reason.
+- **What the list enforces, and nothing more.** Its `[no reader]` and `[own file only]` groups only
+  shrink: with `--base <the pull request's base>`, which CI passes, the check fails a line added to
+  either, so a builder answers its failure by fixing the member, never by listing it. A line gone
+  stale (the member gained a reader in another file, lost its test, is a constant used in its own file,
+  or is gone) fails as a `REMOVE` line, so the pull request that fixes a member deletes its line. A
+  `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
+  reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
+  read. The check cannot see a member whose name is also a word in another file, one a game reader
+  reaches only through a string, or a test of an unreachable setup; those stay review's.
 - **A duplicate test is deleted** (inbox #1097 in curly-rabbit): the same behavior already tested by another suite
   is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
   before writing a test, and if a suite holds it, extend that one.

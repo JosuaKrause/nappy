@@ -1,10 +1,14 @@
 # The public members only tests read, which tools/check_test_only_members.py lets stand: one
-# "<file> <member>" per line, sorted within a group. The first two groups only shrink, and the check
-# fails on a line that has gone stale: a member that gained a reader in another file, lost its tests,
-# or is gone. The pull request that fixes a member deletes its line. The kept groups take a new line,
-# with its reason on it, where a member must stay public or the check misreads it.
+# "<file> <member>" per line, sorted within a group. A group starts at a header comment whose first
+# word is its tag in brackets. The [no reader] and [own file only] groups only shrink: the check fails
+# a line added to either (against the pull request's base) and a line that has gone stale, a member
+# that gained a reader in another file, lost its tests, or is gone. The pull request that fixes a
+# member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
+# after its '#'.
 
-# No reader anywhere under src/, constants included (inbox #1095 in curly-rabbit). Each gets a reader in the game,
+# [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
+# proposal, not asked for and open to the player's correction: vars, signals and constants with no
+# use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/autoload/game_save.gd FILE_KEYS
@@ -94,7 +98,7 @@ src/world/chase_way.gd sweep_under_way
 src/world/draw_layer.gd layer_of
 src/world/world_context.gd total_excitement_at
 
-# Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
+# [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
@@ -363,14 +367,14 @@ src/world/excitement_sources.gd sources_at
 src/world/spawn_siting.gd is_out_of_sight
 src/world/spawn_siting.gd seen_from
 
-# Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
+# [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
 # line.
 src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so verify's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
 src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs; tests/test_tuning_fairness.gd and tests/crowd_rig.gd check CAR_HORN_SIGHT against it, the same fairness contract (crowd-traffic)
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind verify wants
 
-# Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
+# [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
 # what it depends on, the game using its default and a test handing in a fake.
 src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
@@ -384,3 +388,7 @@ src/ui/mode_button.gd use_clock  # a hand-in: the game uses its default, a test 
 src/ui/return_window.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/ui/title_screen.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+
+# [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
+# because the check misreads the line (name how: a game reader through a string, a test's own fake, an
+# engine member of that name). The reason is on each line.

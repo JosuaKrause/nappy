@@ -219,11 +219,22 @@ jobs:
 
       # The tests hold something the game can reach: no test reads a public member that no other file
       # under src/ names (a use in its own file does not count), except those tools/test_only_members.txt
-      # lists, and a listed line whose member gained a reader, lost its test or is gone fails too.
-      # Read as text, so it needs no engine and runs on every run, docs-only included.
+      # lists, and a listed line whose member gained a reader, lost its test or is gone fails too. The
+      # no reader and own file only groups of that list only shrink: --base is the commit the list is
+      # compared with, so a line added to either fails. A pull request's base is the tip of the branch it
+      # targets; a push to main compares with the commit before it (all zeros on a first push, which
+      # leaves it out). This job fetches the whole history, so the base's list can be read with git
+      # show. Read as text, so it needs no engine and runs on every run, docs-only included.
       - name: No test reads a member only tests read
         if: ${{ !cancelled() }}
-        run: uv run python tools/check_test_only_members.py
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          args=()
+          if [ -n "$BASE" ] && git rev-parse --verify --quiet "$BASE^{commit}" > /dev/null; then
+            args=(--base "$BASE")
+          fi
+          uv run python tools/check_test_only_members.py "${args[@]}"
 
       # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
       # so it needs no engine and runs on a docs-only pull request too.

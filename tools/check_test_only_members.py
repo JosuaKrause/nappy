@@ -25,25 +25,35 @@ constant to assert a relationship is what the testing policy wants, so a constan
 with no use anywhere under `src/`. Reaching vars, signals and the exemption of constants is a
 proposal of the orchestrator, not asked for, open to the player's correction.
 
-`tools/test_only_members.txt` (one `<file> <member>` per line, `#` for comments) lists the members
-that stand, in groups: no reader, own file only, and **kept**: a member that stays public, each line
-carrying its reason after a `#` (the player's exception: the information cannot be had another way
-and the test needs it to confirm the behavior, inbox #1095 in curly-rabbit; a hand-in; a member the check misreads).
-Every group but the kept one only shrinks, and the check enforces it both ways:
+`tools/test_only_members.txt` (one `<file> <member>` per line, `#` for a reason or a comment) lists the
+members that stand, in groups, each opened by a header comment whose first word is its tag: `# [no reader]`,
+`# [own file only]`, and any number of `# [kept]` (a member that stays public, each line carrying its reason
+after a `#`: the player's exception, the information cannot be had another way and the test needs it to
+confirm the behavior, inbox #1095 in curly-rabbit, or nothing outside can confirm what the function does,
+inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check enforces:
 
 - a test-only member not on the list **fails**: give the game a reader, or test through what the
-  class does outward, or (a kept member, with its reason) add the line to the kept group;
-- a listed member that now has a reader in another file, no longer has a test reading it, or no
-  longer exists **fails** too, as a `REMOVE` line to delete from the list, so a stale line cannot
-  re-admit a member later. A pull request that deletes or fixes a member deletes its line; one open
-  beside it merges `main` and deletes its own lines.
+  class does outward, or (a kept member, with its reason) add the line to a kept group;
+- a listed member that now has a reader in another file, no longer has a test reading it (or is a constant
+  or an engine name, which are exempt), or no longer exists **fails** too, as a `REMOVE` line to delete from
+  the list, so a stale line cannot re-admit a member later. A pull request that deletes or fixes a member
+  deletes its line; one open beside it merges `main` and deletes its own lines;
+- a `[kept]` line with no reason after its `#` **fails**;
+- with `--base REV`, a line in the `[no reader]` or `[own file only]` group that `REV`'s list did not hold in
+  either of them **fails**: those two groups only shrink. CI passes the pull request's base commit, and on a
+  push to `main` the commit before it, so a builder cannot answer the check's failure by listing the
+  member; only a kept line, with its reason, is added, and review reads the reason. A `REV` without the list
+  yet compares nothing.
 
 **What it can miss and where it can accuse falsely.** A member is judged by its word, never by its
 class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose method this
 reproduces, spot-checked names by hand for the same reason. It can *miss* a test-only member when an
 unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
 of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it
-does not see members of an inner class. It can *accuse falsely* in three ways: a test calling `.name`
+does not see members of an inner class. Because the own-file count is a word count, a call on another
+instance of the file's own class (`other.name()`) is not an own use either, so a member only that call and a
+test use lands in `[no reader]` although its own class does call it; the remedy is then the underscore
+of inbox #1098 (it is not dead code), not deleting it. It can *accuse falsely* in three ways: a test calling `.name`
 on its own fake (an inner class of the test with a method of that name) reads as a test reading the
 member; a test reading an engine member of the same name that `ENGINE_MEMBERS` does not list (a
 `.size` on a Control, a `.enabled` on a camera) does too, and a function is told apart only by the
@@ -79,6 +89,9 @@ SKIPPED_TESTS = frozenset({"tests/shared_state.gd", "tests/test_prediction_reuse
 # A top-level member: at the margin, after any annotations (`@export`, `@onready var`).
 DEFINITION = re.compile(r"^(?:@\w+(?:\([^)]*\))?[ \t]+)*(?:static[ \t]+)?(func|var|const|signal)[ \t]+([A-Za-z]\w*)")
 WORD = re.compile(r"\w+")
+GROUP_TAG = re.compile(r"^#\s*\[([a-z ]+)\]")
+KEPT = "kept"
+GROUPS = frozenset({"no reader", "own file only", KEPT})
 READ = re.compile(r"\.\s*([A-Za-z]\w*)")
 CALL = re.compile(r"\.\s*([A-Za-z]\w*)\s*\(")
 # A word used in its own file other than as a member of another object: not after a `.`; `self.name` and the
@@ -244,19 +257,76 @@ def test_only(files: Files) -> tuple[list[Member], Readings]:
     return [m for m in members if is_test_only(m, stands[m.key], readings)], readings
 
 
-def listed(text: str) -> set[tuple[str, str]]:
-    entries: set[tuple[str, str]] = set()
+@dataclass(frozen=True)
+class Entry:
+    """One `<file> <member>` line of the list, the group its header put it in, and the reason after its `#`."""
+
+    path: str
+    name: str
+    group: str
+    reason: str
+    number: int
+
+    @property
+    def key(self) -> tuple[str, str]:
+        return (self.path, self.name)
+
+
+def entries_of(text: str) -> list[Entry]:
+    """The lines of the list. A comment line starting `# [group]` opens a group (`no reader`, `own file only` or
+    `kept`) that the lines under it belong to; a line before the first one, or under an unknown one, is an error."""
+    entries: list[Entry] = []
+    seen: set[tuple[str, str]] = set()
+    group = ""
     for number, raw in enumerate(text.splitlines(), start=1):
-        line = raw.split("#", 1)[0].strip()
-        if not line:
+        tag = GROUP_TAG.match(raw.strip())
+        if tag:
+            group = tag.group(1)
+            if group not in GROUPS:
+                raise MembersError(
+                    f"{ALLOWLIST_NAME}:{number}: unknown group [{group}]; expected one of {sorted(GROUPS)}"
+                )
             continue
-        parts = line.split()
+        body, _, reason = raw.partition("#")
+        if not body.strip():
+            continue
+        parts = body.split()
         if len(parts) != 2:
             raise MembersError(f"{ALLOWLIST_NAME}:{number}: expected '<file> <member>', got {raw!r}")
-        if (parts[0], parts[1]) in entries:
+        if not group:
+            raise MembersError(
+                f"{ALLOWLIST_NAME}:{number}: {parts[0]} {parts[1]} is above the first '# [group]' header"
+            )
+        if (parts[0], parts[1]) in seen:
             raise MembersError(f"{ALLOWLIST_NAME}:{number}: {parts[0]} {parts[1]} is listed twice")
-        entries.add((parts[0], parts[1]))
+        seen.add((parts[0], parts[1]))
+        entries.append(Entry(parts[0], parts[1], group, reason.strip(), number))
     return entries
+
+
+def listed(text: str) -> set[tuple[str, str]]:
+    return {entry.key for entry in entries_of(text)}
+
+
+def list_failures(entries: list[Entry], base: list[Entry] | None) -> list[str]:
+    """What the list's own lines fail: a kept line with no reason, and, against the base's list, a line added to
+    the no reader or own file only group (those only shrink). A line in a shrinking group that the base's list
+    held in either of them is not an addition, so a member that moves from one to the other is not one."""
+    failures = [
+        f"{ALLOWLIST_NAME}:{e.number}: {e.path} {e.name} is in a kept group with no reason after a '#'"
+        for e in entries
+        if e.group == KEPT and not e.reason
+    ]
+    if base is not None:
+        before = {e.key for e in base if e.group != KEPT}
+        failures.extend(
+            f"{ALLOWLIST_NAME}:{e.number}: {e.path} {e.name} is added to the [{e.group}] group, which only shrinks; "
+            "give the game a reader, or test through what the class does outward, or, where it must stay public, "
+            "put the line in a kept group with its reason"
+            for e in entries
+            if e.group != KEPT and e.key not in before
+        )
+    return failures
 
 
 def check(files: Files, allowed: set[tuple[str, str]]) -> tuple[list[str], list[Member]]:
@@ -274,15 +344,21 @@ def check(files: Files, allowed: set[tuple[str, str]]) -> tuple[list[str], list[
                 "src/; give the game a reader, or make it internal with an underscore and test through what the "
                 "class does outward"
             )
-    defined = {member.key for member in members}
     standing = {member.key for member in only}
     for path, name in sorted(allowed):
         if (path, name) in standing:
             continue
-        if (path, name) not in defined:
+        listed_member = next((m for m in members if m.key == (path, name)), None)
+        if listed_member is None:
             why = "no longer defined"
         elif stands[(path, name)].elsewhere > 0:
             why = "now read by another file under src/"
+        elif name in ENGINE_MEMBERS:
+            why = f"{name} is an engine member name in ENGINE_MEMBERS, never taken as a read"
+        elif listed_member.kind == "const" and stands[(path, name)].own > 0:
+            why = "a constant used in its own file is exempt"
+        elif listed_member.kind == "func" and name in readings.reads and name not in readings.calls:
+            why = "no test calls it, only reads or passes it"
         else:
             why = "no longer read by a test"
         failures.append(f"REMOVE from tools/{ALLOWLIST_NAME}: {path} {name} ({why})")
@@ -328,6 +404,14 @@ def read_rev(rev: str, root: Path = ROOT) -> Files:
     )
 
 
+def read_base(rev: str, cwd: Path) -> list[Entry] | None:
+    """The list as `rev` held it, or None when `rev` has no list yet (the check is not on that commit)."""
+    check_layers.git("rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}", cwd=cwd)
+    if not check_layers.git("ls-tree", "--name-only", rev, "--", ALLOWLIST, cwd=cwd).strip():
+        return None
+    return entries_of(check_layers.git("show", f"{rev}:{ALLOWLIST}", cwd=cwd).decode("utf-8"))
+
+
 def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_test_only_members.py",
@@ -348,6 +432,15 @@ def parse(argv: list[str]) -> argparse.Namespace:
         "--root", type=Path, default=None, help="read the checkout at this path, and its list, instead of this one"
     )
     parser.add_argument(
+        "--base",
+        default=None,
+        metavar="REV",
+        help=(
+            "also fail a line added since REV's list to the no reader or own file only group (CI passes the pull"
+            " request's base commit, and on main the previous one); a REV with no list yet compares nothing"
+        ),
+    )
+    parser.add_argument(
         "--list", action="store_true", help="print every test-only member, listed or not, and every line to remove"
     )
     return parser.parse_args(argv)
@@ -357,8 +450,11 @@ def main(argv: list[str]) -> int:
     args = parse(argv)
     try:
         files = read_rev(args.rev) if args.rev else read_checkout(args.root or ROOT)
-        allowed = listed(files.allowlist)
+        entries = entries_of(files.allowlist)
+        allowed = {entry.key for entry in entries}
         failures, only = check(files, allowed)
+        base = read_base(args.base, args.root or ROOT) if args.base else None
+        failures.extend(list_failures(entries, base))
         _, stands = scan(files)
     except (check_layers.LayerError, MembersError, OSError) as error:
         print(f"tools/check_test_only_members.py: {error}", file=sys.stderr)
@@ -368,7 +464,7 @@ def main(argv: list[str]) -> int:
             mark = "listed" if member.key in allowed else "NEW"
             print(f"{mark:6} {member.path}:{member.line}: {member.kind} {member.name} [{group_of(stands[member.key])}]")
         for line in failures:
-            if line.startswith("REMOVE"):
+            if line.startswith(("REMOVE", ALLOWLIST_NAME)):
                 print(line)
         print(f"{len(only)} test-only member(s), {len(failures)} failure(s)")
         return 0
