@@ -39,7 +39,7 @@ func stand_with_her() -> void:
 		event._be_done()
 
 ## After his chase's step (`EventPursuit`): **his catch, made a stop** — chasing, within his
-## catch's own reach of her and along a clear line, the very test a catch that ends the day asks —
+## catch's own reach of her and along a clear line (`clear_line_to()`, the sight, which differs from a catch's strict line only for a body of his own, and his row has none) —
 ## and the next point of his trail; once he has stopped her, standing with her instead. **A man
 ## who would stop her waits outside a door's hold** (`EventInstance.she_is_held`): a stop is a cost
 ## on the meter, and inside a hold nothing but the door's toll reaches her, so he keeps after her

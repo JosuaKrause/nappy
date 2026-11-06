@@ -1795,6 +1795,11 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t) -> void:
 				"section %d: it opens on its brief" % section)
 		t.check(title.text == words,
 				"section %d: titled with the section's own words ('%s')" % [section, title.text])
+		if section == DaySpec.Section.CITY:
+			# The player's own words for the second screen (*"something along 'Escape the
+			# building' and ... 'Escape the city'"*), as a literal: the building's brief is
+			# asserted so in the handover and booted-escape cases below.
+			t.check(title.text == "Escape the city", "and the city's brief reads 'Escape the city'")
 		t.check(body.text.contains("Nerves left: %s" % Texts.nerve_stars(nerves)),
 				"section %d: and carrying the nerve line, as stars ('%s')" % [section, body.text])
 		t.check(t.get_tree().paused and is_equal_approx(Boot.day(main).time_remaining, length),
@@ -1947,9 +1952,7 @@ func _free_the_escape(t, escape: Escape) -> void:
 	escape.run.free()
 
 ## `main` hands each section its `DaySpec` (`escape_section_spec()`), and each section is counted as
-## a day of its own after the last. The briefs' titles are asserted where the booted brief is read
-## (`_test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome`), the player's own words for
-## the two screens (*"something along 'Escape the building' and ... 'Escape the city'"*).
+## a day of its own after the last.
 func _test_the_two_sections_are_the_two_days_after_the_last(t) -> void:
 	var building := _section(DaySpec.Section.BUILDING)
 	var city := _section(DaySpec.Section.CITY)

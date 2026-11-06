@@ -22,6 +22,7 @@ func run(t) -> void:
 	await _test_the_barrier_rim_survives_the_departure(t)
 	await _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
 	_test_a_posted_guard_sees_and_charges_her_across_his_own_band(t)
+	_test_his_catch_does_not_reach_through_his_own_band(t)
 
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
@@ -349,8 +350,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 ## "a guard sees out of the band he stands in".)* A band streamed in as a day's is has its body on
 ## the map's record, and the guard who steps out to his post on her side is then off the band's
 ## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
-## band. He still charges; a second band's body between them still hides her, and his catch still
-## reaches through nothing.
+## band. He still charges, and a second band's body between them still hides her.
 func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	var post := Vector2(2128.0, 80.0)
@@ -358,16 +358,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
 	var guard := stage.stand(EventScheduler.Planned.new(_hot_roadblock(), post))
 	var body := guard.body_position()
 	t.check(map.is_obstructed(map.world_to_tile(body)), "the band's body is on the map's record")
-	var near := Vector2.INF
-	for bearing in 16:
-		var toward := Vector2.from_angle(TAU * float(bearing) / 16.0) * 100.0
-		var a := body + toward
-		var b := body - toward
-		if map.is_walkable(map.world_to_tile(a)) and map.is_walkable(map.world_to_tile(b)) \
-				and not map.is_obstructed(map.world_to_tile(a)) \
-				and not map.is_obstructed(map.world_to_tile(b)) \
-				and map.clear_line(body, a) and map.clear_line(body, b) and near == Vector2.INF:
-			near = a
+	var near := _open_ground_either_side(map, body)
 	t.check(near != Vector2.INF, "there is open ground either side of the band")
 	if near == Vector2.INF:
 		stage.close()
@@ -394,4 +385,55 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
 		RoadblockRig.tick(made, far, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)
+	stage.close()
+
+## A bearing from the band's body along which 100px either way is open, walkable ground it has a
+## clear line to, and no body's: the point on one side (the other is its mirror), or `INF`.
+func _open_ground_either_side(map: CityMap, body: Vector2) -> Vector2:
+	for bearing in 16:
+		var toward := Vector2.from_angle(TAU * float(bearing) / 16.0) * 100.0
+		var a := body + toward
+		var b := body - toward
+		if map.is_walkable(map.world_to_tile(a)) and map.is_walkable(map.world_to_tile(b)) \
+				and not map.is_obstructed(map.world_to_tile(a)) \
+				and not map.is_obstructed(map.world_to_tile(b)) \
+				and map.clear_line(body, a) and map.clear_line(body, b):
+			return a
+	return Vector2.INF
+
+## **His catch reaches through nothing, his own band included.** The sight above is exempt from his
+## own band's body; the catch is not (`EventInstance.is_lethal_at()`). A roadblock's arms are
+## shorter than its band is thick, so the case gives the row longer arms: a point within them, on
+## the far side of the band's body from his post, is no catch while the sight across it is clear.
+func _test_his_catch_does_not_reach_through_his_own_band(t) -> void:
+	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
+	# The catalogue's own row, its arms lengthened for the case and put back after it.
+	var def := _hot_roadblock()
+	var arms := def.pursuit.catch_reach
+	def.pursuit.catch_reach = 90.0
+	var stage := RoadblockRig.Stage.new(t, map)
+	var guard := stage.stand(EventScheduler.Planned.new(def, Vector2(2128.0, 80.0)))
+	var body := guard.body_position()
+	var near := _open_ground_either_side(map, body)
+	t.check(near != Vector2.INF, "there is open ground either side of the band")
+	if near == Vector2.INF:
+		def.pursuit.catch_reach = arms
+		stage.close()
+		return
+	var made: Array[EventInstance] = [guard]
+	var frames := 0
+	while not guard.is_chasing() and frames < int((def.pursuit.warns_for + 3.0) / STEP):
+		RoadblockRig.tick(made, near, false)
+		frames += 1
+	t.check(guard.is_chasing(), "he charges (%d frames)" % frames)
+	var reach := def.lethal_reach()
+	var across := guard.global_position + (body - guard.global_position).normalized() * (reach - 1.0)
+	t.check(guard.global_position.distance_to(across) < reach
+			and not map.is_obstructed(map.world_to_tile(across))
+			and not map.is_obstructed(map.world_to_tile(guard.global_position))
+			and guard.global_position.distance_to(across) > guard.global_position.distance_to(body) + 16.0,
+			"the point is within his reach and beyond his band's body")
+	t.check(guard.clear_line_to(across), "he sees it across his own band")
+	t.check(not guard.is_lethal_at(across), "and his catch does not reach through his own band")
+	def.pursuit.catch_reach = arms
 	stage.close()
