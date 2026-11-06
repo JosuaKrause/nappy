@@ -9,6 +9,17 @@ extends RefCounted
 ## stretch is recorded as obstructed (`WorldMap.obstructed_tiles`), which is what shuts the park to
 ## anyone walking (`is_shut()`).
 
+## The park's calm ground in world space: what the cordon is closing, read off the map as the
+## ground it is.
+static func park_ground(map: CityMap, park: Vector2i) -> Rect2:
+	return map.tile_rect_to_world(ClosurePlanner.calm_area_rect(map, park))
+
+## The rectangle the tape stands on: the park's ground, half a barrier's depth in, where the tape's
+## bodies lie (the suites that read the tape's bodies hold it to them). She is shut in when she is
+## inside it as the last gap is taped.
+static func tape_line(map: CityMap, park: Vector2i) -> Rect2:
+	return park_ground(map, park).grow(-Tuning.CLOSURE_BARRIER_DEPTH * 0.5)
+
 ## The cordon's officers standing in the city now.
 static func officers(city: City) -> Array[CordonOfficer]:
 	var found: Array[CordonOfficer] = []
