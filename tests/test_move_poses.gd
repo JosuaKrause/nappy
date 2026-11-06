@@ -71,6 +71,10 @@ func run(t) -> void:
 ## with `--seed` and `--day`, walked from the title's joystick button, with the mark read.
 func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
+	# The boot and the title take as many physics ticks as the wall clock gives them frames, so the
+	# game stands still through them (a tick of no game time) and the walk starts from the same dawn.
+	var clock := Engine.time_scale
+	Engine.time_scale = 0.0
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
 	await Boot.press_title(t, booted.main, "Right")
 	var summary := Boot.summary(booted.main)
@@ -79,6 +83,7 @@ func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	var mark := Boot.resistance(booted.main).contact()
 	if mark:
 		mark.complete_now()
+	Engine.time_scale = clock
 	return booted
 
 func _walk_the_day(t, seed_value: int) -> void:

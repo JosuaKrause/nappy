@@ -18,8 +18,7 @@ established: a held `pause` action does not fail `test_touch.gd`'s own checks.
 **What is left.** The runner fails a suite that leaves shared state changed, and the leaks it found
 are fixed (the isolated half). The runner shuffles and repeats suites (`--shuffle SEED`, `--repeat N`), and every CI shard runs
 in a shuffled order it prints with the command that replays it, so an order dependence shows on any
-pull request. The flaky half left: three green full runs on the head, and making deterministic every
-check whose result changes between runs. The suites that boot `main` declare `t.gives_back_observers()`
+pull request, and a re-run draws another order. The suites that boot `main` declare `t.gives_back_observers()`
 for the observers' count of a run, which the `Telemetry` and `VisitCounter` autoloads hold and no
 suite can hold a copy of; giving each its own teardown, once that count is held by something a
 suite is handed, removes the declaration.
