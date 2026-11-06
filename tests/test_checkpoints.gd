@@ -528,11 +528,9 @@ func _manager(t) -> EventManager:
 	t.add_child(manager)
 	return manager
 
-## Frees the manager with the run it was handed, and every event it has made.
+## Frees the manager and every event it has made.
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	manager.free()
-	run.free()
 
 func _real_stroller(t) -> Stroller:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")

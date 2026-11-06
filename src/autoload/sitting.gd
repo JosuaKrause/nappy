@@ -35,13 +35,10 @@ extends Node
 ## The name `main` gives it, and what the next boot looks for on the tree's root.
 const NODE_NAME := "Sitting"
 
-## The name the run takes when the sitting starts one of its own (`take_the_run()`).
-const RUN_NODE_NAME := "Run"
-
 ## The run this sitting plays (`RunState`): the seed, the calendar, the nerves and the
 ## resistance's progress. `main` takes it once a boot (`take_the_run()`) and hands it to every
 ## reader it builds, so it outlives each reload exactly as long as the sitting does. Null until
-## handed one or asked for one; a caller that hands one in owns it.
+## handed one or asked for one.
 var run: RunState
 
 ## Set by `main` just before a reload that carries a normal run on from its checkpoint, and read
@@ -85,14 +82,12 @@ var ground_recipe := GroundRecipe.new()
 var atlas := AtlasLibrary.new()
 
 ## The run this sitting plays: the one it holds, or, when it holds none yet (a sitting's first
-## boot), a fresh one of its own, held as its child so it is parked across every reload with the
-## sitting and freed with it. Its seed is not yet chosen: the boot that takes it starts it
-## (`RunState.start_run()`) or puts a saved one back.
+## boot), a fresh one of its own, held so it is parked across every reload with the sitting. Its
+## seed is not yet chosen: the boot that takes it starts it (`RunState.start_run()`) or puts a
+## saved one back.
 func take_the_run() -> RunState:
 	if not run:
 		run = RunState.new()
-		run.name = RUN_NODE_NAME
-		add_child(run)
 	return run
 
 ## Stamps the held restart's reload — see `restarted_at_msec`.

@@ -34,7 +34,7 @@ extends RefCounted
 ## read (`WorldMap.moves`), and the movers' poses off the nodes the game draws: an event's and a
 ## crowd body's position, and the cordon's officers' figures (`CordonOfficer`).
 ##
-## Every seed plays a run of its own (`tests/seat.gd`), freed with its boot, and every boot is handed
+## Every seed plays a run of its own (`tests/seat.gd`), and every boot is handed
 ## a save at a scratch path (`main.use_save()`), so nothing here leaks into the next suite or
 ## reaches the player's save.
 

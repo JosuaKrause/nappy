@@ -31,14 +31,13 @@ class Watcher extends Node:
 ## Where the probe's saves are kept: a scratch file, never the player's, since a policy that broke
 ## would write here rather than to the player's save.
 const _SCRATCH_SAVE := "user://test_scene_recipe_runtime_scratch.json"
-## A run of the probe's own, freed with it, which every runtime below is handed.
+## A run of the probe's own, which every runtime below is handed.
 var _run := RunState.new()
 ## A scripted recipe's configuration, which is what the runtime probes below are handed.
 func _scripted() -> RunConfig:
 	return RunConfig.parse(PackedStringArray(["--recipe", "probe.json", "--recipe-mode", "scripted"]),
 			"", true)
 func _ready() -> void:
-	add_child(_run)
 	var config := RunConfig.at_boot()
 	var save := GameSave.new(_SCRATCH_SAVE)
 	save.configure(config)
@@ -261,7 +260,6 @@ func _test_a_held_departure_places_its_move(t) -> void:
 	runtime.free()
 	player.free()
 	city.free()
-	own_run.free()
 
 ## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
 ## no radius to skip and for one that sets off beside her on its own clock.
@@ -402,7 +400,6 @@ func _test_heat_installs_the_heated_row(t) -> void:
 			% EventDef.HEAT_INVESTIGATE_WITHIN)
 	player.free()
 	city.free()
-	own_run.free()
 
 ## A task gone after she read the mark is one of two things. Placed and then gone, it expired as a
 ## played day's task can (the thing it rode on finishing, day 10's neighbor home first): the manifest
@@ -571,7 +568,6 @@ func _test_inputs(t) -> void:
 	runtime.free()
 	t.check(not Input.is_action_pressed("move_right") and not Input.is_action_pressed("move_up")
 			and not Input.is_action_pressed("run"), "runtime cleanup releases its held input")
-	own_run.free()
 
 ## Lets real physics frames pass until the scene's own clock reads `seconds`.
 func _until_elapsed(t, runtime: SceneRecipeRuntime, seconds: float) -> void:

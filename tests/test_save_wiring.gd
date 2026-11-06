@@ -93,7 +93,6 @@ func _on_disk() -> Dictionary:
 	var resumed := _save.try_resume(reader)
 	if not resumed.is_empty():
 		resumed["nerves"] = reader.header.nerves
-	reader.free()
 	return resumed
 
 var _operation := 5000
@@ -120,21 +119,19 @@ class Calls:
 class Parked:
 	var home := Node.new()
 	var sitting := Sitting.new()
-	var run := RunState.new()
 	var timeline := SaveIndicator.Showing.new()
 	var indicator: SaveIndicator
 
 	func _init(t) -> void:
 		t.add_child(home)
 		sitting.name = Sitting.NODE_NAME
-		sitting.run = run
+		sitting.run = RunState.new()
 		home.add_child(sitting)
 		indicator = SaveIndicator.new(timeline)
 		sitting.add_child(indicator)
 
 	func free_all() -> void:
 		home.free()
-		run.free()
 
 ## Every node under `root` that is a `type_name`: a script class by its `class_name` (the scene
 ## root of a screen is one), anything else by the engine's class.
@@ -180,7 +177,7 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	return main
 
 ## What the observers held before each boot still standing, given back as it is shut, so none
-## keeps a run a test frees (`tests/booted_main.gd`).
+## keeps the run of a boot that is gone (`tests/booted_main.gd`).
 var _observers: Array[Dictionary] = []
 
 func _shut(t, main: Node2D) -> void:
@@ -237,7 +234,6 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 
 	_shut(t, main)
 	home.free()
-	run.free()
 	_save.clear()
 
 ## **The review finding this test exists for.** The day's start used to write its own dawn
@@ -361,7 +357,6 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 		EventBus.save_written.disconnect(hear)
 		Telemetry.end_run()
 		home.free()
-		run.free()
 		return
 	await Boot.press_title(t, first, "Tap")
 	t.check(ids.size() >= 1, "the first boot's save, found under the sitting, wrote (%s)" % [ids])
@@ -388,7 +383,6 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	parked.clear()
 	Telemetry.end_run()
 	home.free()
-	run.free()
 
 ## *"either it saves with one less nerve and a cleared "during active game" flag. or you defer
 ## saving to the actual day start"* — a game closed between days charged nothing when it was
@@ -403,7 +397,6 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t) -> void:
 	closed.header.day = 4
 	closed.calendar.begin_day()
 	t.check(_saved(closed, false), "the save the end-of-day message wrote")
-	closed.free()
 	t.check(_on_disk().get("day_under_way") == false, "the load finds the day not under way")
 	var before := FileAccess.get_file_as_string(_SCRATCH_PATH)
 	var heard: Array[int] = []
@@ -451,8 +444,6 @@ func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -
 
 	_shut(t, main)
 	home.free()
-	played.free()
-	run.free()
 	_save.clear()
 
 ## The title→day-brief path with nothing charged: the save was written at a day's own summary or at
@@ -468,7 +459,6 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 	run.header.day = 7
 	run.header.nerves = 5
 	_saved(run, false)
-	run.free()
 	var main := await _boot(t, _windowed(), Calls.new())
 
 	await Boot.press_title(t, main, "Tap")
@@ -495,7 +485,6 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 	var run := RunState.new()
 	run.start_run(235)
 	_saved(run, true)
-	run.free()
 	var main := await _boot(t, _windowed(), Calls.new())
 
 	await Boot.press_title(t, main, "Tap")
@@ -524,7 +513,6 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 	closed.header.nerves = 1
 	closed.calendar.begin_day()
 	t.check(_saved(closed, true), "the hard run's save, closed with its day under way, is on disk")
-	closed.free()
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var main := await _boot(t, _windowed(), Calls.new(), home)
@@ -545,7 +533,6 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 
 	_shut(t, main)
 	home.free()
-	run.free()
 
 ## **The day-14 hand-over's reload to the escape, through the summary's own continue.** Day 14's own
 ## save (A) is written as its summary appears and may still be waiting for the browser when the player
@@ -623,7 +610,6 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_shut(t, escape_boot)
 	parked.free_all()
 	home.free()
-	run.free()
 	_save.clear()
 
 ## The whole path through `main`'s write: a run the save refuses — here the headless

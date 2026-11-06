@@ -40,7 +40,8 @@ const REACTION := 2.0
 const _SCRATCH_PATH := "user://test_park_return_scratch.json"
 
 ## What the case in progress booted (`_day_twelve()`): the boot with its scratch save, the home the
-## suite's sitting is parked in, and the run that sitting holds, freed by `_finish()`.
+## suite's sitting is parked in, and the run that sitting holds; `_finish()` frees the boot and the
+## home.
 var _booted: Boot.Booted
 var _home: Node
 var _run: RunState
@@ -72,7 +73,6 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	save.configure(RunConfig.parse(PackedStringArray(), "", false, false, {}, false))
 	save.write(written, true)
 	save.free()
-	written.free()
 	_run = RunState.new()
 	_home = Boot.home_playing(t, _run)
 	# A run with no flag at all, whatever this process's own command line says.
@@ -211,7 +211,6 @@ func _finish(t) -> void:
 	Telemetry.end_run()
 	_booted.free_all()
 	_home.free()
-	_run.free()
 
 # -------------------------------------------------------------------- cases ---
 

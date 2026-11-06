@@ -32,9 +32,8 @@ func _rig(t) -> DayController:
 	day.set_process(false)
 	# No map: `_is_home()` guards on it being null, and nothing in this suite reaches the return
 	# phase, so a real `CityMap` would only cost time nothing here asks about.
-	# A run of its own for each rig, freed with the rest of what the suite added.
+	# A run of its own for each rig.
 	var run := RunState.new()
-	t.add_child(run)
 	day.setup(null, player, run)
 	return day
 

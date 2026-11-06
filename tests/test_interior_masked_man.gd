@@ -18,7 +18,6 @@ func run(t) -> void:
 	await _test_she_has_to_run_to_the_first_floor_door(t)
 	await _test_the_edge_badge_points_at_the_masked_man_from_his_run(t)
 	await _test_another_masked_man_comes_up_the_same_shaft(t)
-	_rig.free_all()
 
 ## **Her body walks the flight's 45 degrees, not only her steering** *(inbox #783 in minty-lemur)*. A real carrying
 ## rig holds one sideways action from a landing tile's centre until she stands on the next landing,

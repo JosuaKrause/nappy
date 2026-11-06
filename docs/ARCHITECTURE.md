@@ -779,8 +779,9 @@ builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save(
 `ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
 puts no run back between suites; the visit counter autoload holds only the sitting's run that `main`
-hands it, and holds none otherwise, and then sends nothing. `RunState` is a `Node` so the `Sitting` can
-hold it as a child and free it with itself; nothing in the game otherwise needs it to be one.
+hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
+`Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
+the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day

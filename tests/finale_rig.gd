@@ -829,7 +829,6 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	manager.use_player(null)
 	manager.free()
 	holder.free()
-	run.free()
 
 ## A stroller at `at` that `manager` watches (`EventManager.use_player()`), its own physics off.
 func _stand_her_at(t, manager: EventManager, at: Vector2) -> Stroller:
@@ -1144,7 +1143,6 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 # ------------------------------------------------------- the day's own rules ---
 
@@ -1751,7 +1749,6 @@ func _test_the_clock_reads_hundredths_only_in_the_finale(t) -> void:
 	# Freed rather than queued for the same reason the cities are: nothing here yields a frame, and
 	# a HUD left listening to `EventBus.day_time_changed` answers the next suite's emit as well.
 	hud.free()
-	run.free()
 
 # ------------------------------------------------------------- the sections ---
 
@@ -1940,7 +1937,6 @@ func _free_the_escape(t, escape: Escape) -> void:
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
 			"freeing the escape leaves the keys bound to their actions")
 	escape.home.free()
-	escape.run.free()
 
 ## `main` hands each section its `DaySpec`, read off the day's clock of a booted escape, and each
 ## section is counted as a day of its own after the last.
@@ -1985,8 +1981,6 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	run.header.day = Tuning.RUN_LENGTH_DAYS - 1
 	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
 			"and nor does a won day before the last one")
-
-	run.free()
 
 ## Every part word `--start-escape` recognises has to actually move her, onto ground she can
 ## stand on: the real `main` booted on each word, her position read off the building it builds.
@@ -2274,7 +2268,6 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	closed.facts.escape_section = DaySpec.Section.BUILDING
 	t.check(save.write(closed, false) == GameSave.Result.CONFIRMED,
 			"a save closed inside the building is on disk")
-	closed.free()
 	save.free()
 	# A fresh page: nothing of the escape on the run it plays, only in the file.
 	var run := RunState.new()
@@ -2312,7 +2305,6 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
 			"freeing the escape leaves the keys bound to their actions")
 	home.free()
-	run.free()
 
 ## `--route` booted into the building: the building's own walker presses the building's brief
 ## (`BuildingWalker`, the rig a route builds with the building), there is no city rig yet, and once

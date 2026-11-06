@@ -242,7 +242,6 @@ func _test_the_guard_never_lands_inside_a_building(t) -> void:
 						"seed %d: the guard for the mark at %s never stands inside a footprint"
 						% [seed_value, tile])
 		director.free()
-	run.free()
 	t.check(checked > 0, "some mark was actually checked (%d draws, %d found no ground)"
 			% [checked, unguarded])
 
@@ -267,7 +266,6 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 	t.check(guard_at == Vector2.INF,
 			"a band with no walkable ground anywhere in it draws no guard at all")
 	director.free()
-	run.free()
 
 ## feathery-marmot, "a mark's alley is chosen by its mouth" — *"Mouth only"* (the player,
 ## 2026-10-03, quiet-yak, inbox #486, asked whether a mark may sit in the middle of its alley), and
@@ -309,7 +307,6 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
 				if _is_one_in_from_a_mouth(map, map.world_to_tile(to)):
 					moved_to_a_mouth += 1
 		director.free()
-	run.free()
 	t.check(drawn > 0 and drawn_at_a_mouth == drawn,
 			"every dawn mark is drawn one tile in from an alley's mouth (%d of %d)"
 			% [drawn_at_a_mouth, drawn])
@@ -377,7 +374,6 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 				under_the_trigger += 1
 			distances.append(mark.distance_to(guard_at))
 		director.free()
-	run.free()
 	t.check(checked > 0, "some mark was actually checked (%d)" % checked)
 	t.check(under_the_trigger > 0,
 			("the short case is met: two-thirds wins under %.0fpx of the mark on %d of %d marks")
@@ -428,7 +424,6 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
 			if _stays_asleep_walking_in_and_out(robbery, guard_at, outside, touch):
 				asleep += 1
 		director.free()
-	run.free()
 	t.check(checked > 0, "some guarded mark was actually checked (%d, %d left him asleep)"
 			% [checked, asleep])
 
@@ -483,7 +478,6 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 			if at != Vector2.INF and map.world_to_tile(at) not in through:
 				drawn_in_a_passage += 1
 		director.free()
-	run.free()
 	t.check(passages > 0 and guarded == passages,
 			"every courtyard passage mark is guarded (%d of %d)" % [guarded, passages])
 	t.check(drawn_in_a_passage > 0 and relocated_to_a_passage > 0,
@@ -577,7 +571,6 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 							("seed %d day %d: the guard standing in the mark's own alley is " +
 							"not within lethal reach of the doorstep either") % [seed_value, day])
 			director.free()
-	run.free()
 	t.check(checked > 0, "some (seed, day) actually placed something to check (%d)" % checked)
 
 ## The reported run, replayed at the same seed and day — no longer byte-for-byte, since the

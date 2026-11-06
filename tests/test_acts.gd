@@ -99,7 +99,6 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 			if plan.def.id == "burnt_shell":
 				t.close_to(plan.position.distance_to(where), 0.0,
 						"and it is on the same corner", 1.0)
-	run.free()
 
 ## **The fire only catches where there is a building to burn, and burns on that building alone.**
 ## Every tile `burning_building`'s own placement (`AT_THE_FRONT`) offers has one of the city's
@@ -308,7 +307,6 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),
 				"day %d leaves a walkable route from home to a park" % day)
-	run.free()
 
 ## Whether the grid still finds a way from the home to some calm tile with today's closures and
 ## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`, the set

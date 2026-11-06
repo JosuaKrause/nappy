@@ -234,7 +234,6 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 					"seed %d: the guard for the mark at %s never lands within his own reach of her"
 					% [seed_value, tile])
 		director.free()
-	run.free()
 	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)
 
 ## brisk-wombat, both halves: *"I just had one appear out of nowhere while I was walking through an
@@ -289,7 +288,6 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
 						her), "seed %d: a task's guard at %s is not on screen from %s"
 						% [seed_value, map.world_to_tile(task_guard), through[i]])
 		director.free()
-	run.free()
 	t.check(relocations > 0 and tasks > 0,
 			"marks were relocated (%d) and task guards drawn (%d)" % [relocations, tasks])
 

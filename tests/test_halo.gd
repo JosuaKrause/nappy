@@ -117,7 +117,7 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
-## its map is drawn in, a child of the manager. `_free_manager()` frees it with the run.
+## its map is drawn in, a child of the manager. `_free_manager()` frees it.
 func _manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(1)
@@ -132,9 +132,7 @@ func _manager(t) -> EventManager:
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	manager.free()
-	run.free()
 
 func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()

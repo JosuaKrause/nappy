@@ -823,7 +823,7 @@ func _task_guard() -> EventInstance:
 			return instance
 	return null
 
-## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, freed with the city), so
+## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, held by the city), so
 ## the steps done and the alleys used are this test's and gone with it.
 func _build_city(t, seed_value: int) -> City:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

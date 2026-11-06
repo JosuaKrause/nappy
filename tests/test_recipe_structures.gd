@@ -69,7 +69,6 @@ func run(t) -> void:
 	runtime.free()
 	player.free()
 	city.free()
-	own_run.free()
 
 ## **An authored checkpoint stands as the day's own door does**: the recipe selects one of the day's
 ## street doors (`RegionPlanner.plan_day()`), and the plan it installs holds that door, its three

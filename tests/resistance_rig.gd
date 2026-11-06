@@ -66,8 +66,6 @@ func _step_a_frame(t) -> void:
 	await t.get_tree().process_frame
 
 var _city: City
-## The run `_city` stands in (`_build_city_in_a_new_run()`), freed with the city.
-var _own_run: RunState
 
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires the
 ## "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
@@ -81,22 +79,19 @@ var _own_run: RunState
 ## sets whatever else the day it asks about needs on it. Returns the run.
 func _build_city_in_a_new_run(t, seed_value := SEED) -> RunState:
 	_free_city()
-	_own_run = RunState.new()
-	_own_run.start_run(RUN_SEED)
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
 	_city = CITY_SCENE.instantiate()
-	_city.run = _own_run
+	_city.run = run
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
-	return _own_run
+	return run
 
-## Frees the test city and the run it stands in when the suite built it one.
+## Frees the test city when the suite built it one.
 func _free_city() -> void:
 	if _city != null:
 		_city.free()
 	_city = null
-	if _own_run != null:
-		_own_run.free()
-	_own_run = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
 ## `set_sight(_city.events.sees)` and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.

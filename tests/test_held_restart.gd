@@ -43,9 +43,8 @@ func run(t) -> void:
 ## An open pause screen on a platform, its restart button on `clock`, laid out.
 func _open_pause(t, touch: bool, clock: UI.FakeClock) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
-	# A run of its own, held as the screen's child so freeing the screen frees it.
+	# A run of its own.
 	var run := RunState.new()
-	pause.add_child(run)
 	pause.use_run(run)
 	pause.use_platform(touch, true)
 	t.add_child(pause)
@@ -62,7 +61,6 @@ func _open_summary(t, touch: bool, clock: UI.FakeClock) -> CanvasLayer:
 	t.add_child(summary)
 	UI.button(summary, "Restart").use_clock(clock.read)
 	var run := RunState.new()
-	summary.add_child(run)
 	summary.show_summary(SummaryModel.day_over(run,
 			UI.ended(GameEnums.DayResult.LOST_TIMEOUT)), RunFlow.Mode.DAY_OVER)
 	await UI.frames(t)

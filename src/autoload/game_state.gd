@@ -1,5 +1,5 @@
 class_name RunState
-extends Node
+extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
 ##
 ## Determinism contract (docs/ARCHITECTURE.md): nothing gameplay-relevant may call the
@@ -18,8 +18,9 @@ extends Node
 ## it builds, so a test hands a reader whichever run it built; the resistance is handed it with
 ## its city (`City.run`) or by `ResistanceDirector.setup()`.
 ##
-## **It is a `Node` so the sitting can hold it as a child and free it with itself**; nothing in the
-## game needs a node otherwise, and no autoload registers it.
+## **A plain `RefCounted`, not a node**: the sitting holds it by reference, and it goes when the
+## last holder lets it go, so no test frees one. It reaches nothing in the scene tree, and no
+## autoload registers it.
 var run_parts := RunStateRegistry.new()
 var header: RunHeader = run_parts.register(RunHeader.new())
 var resistance: ResistanceRunState = run_parts.register(ResistanceRunState.new())

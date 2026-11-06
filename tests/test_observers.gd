@@ -113,7 +113,6 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 
 	booted.free_all()
 	home.free()
-	run.free()
 	counter.free()
 	t.get_tree().paused = saved_paused
 	return lines
@@ -201,7 +200,6 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 
 	booted.free_all()
 	home.free()
-	run.free()
 	counter.free()
 	t.get_tree().paused = saved_paused
 	return lines
@@ -297,7 +295,6 @@ func _test_endings_and_checkpoints(t) -> void:
 			"nappy-ending-good", "nappy-ending-neutral"],
 			"a checkpoint and each ending send exactly these (%s)" % [counter.sent])
 	counter.free()
-	run.free()
 
 ## A run begun fresh, one picked back up from the save, and the same run coming back on a reload
 ## the page itself made, which sends nothing.
@@ -319,4 +316,3 @@ func _test_a_fresh_run_a_resume_and_a_reload(t) -> void:
 	t.check(fresh.sent == ["nappy-run-fresh", "nappy-run-fresh"],
 			"a fresh run is counted every time one begins (%s)" % [fresh.sent])
 	fresh.free()
-	run.free()

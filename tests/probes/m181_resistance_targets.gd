@@ -101,7 +101,6 @@ func run(t) -> void:
 			director.free()
 		city.free()
 	print("%d of %d placements unreachable or nowhere" % [failures, cases])
-	own_run.free()
 
 func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

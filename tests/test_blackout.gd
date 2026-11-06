@@ -38,7 +38,7 @@ func run(t) -> void:
 	await _test_the_escape_is_dark_from_its_first_frame(t)
 	await _test_the_building_is_dark_too(t)
 
-## A city on the last day, over a run of its own (held by the city, so `_end()` frees both), with
+## A city on the last day, over a run of its own (held by the city, which `_end()` frees), with
 ## the sabotage not yet done.
 func _begin(t) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
