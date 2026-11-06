@@ -70,9 +70,9 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
 
 ## **The day-3 lesson's dog is a row of its own**, `charging_dog_tutorial`, so its charging counter
 ## and its seen and lost-day counts tell it from the up to three that day's `max_per_day` lets the
-## director send (`EventDirector._teach_the_run()` hands it out; `charger_name()`, docs/TELEMETRY.md,
-## "The page counts visits"). What the manager makes of each row is named by the row alone, on the
-## day the run is taught as on any other.
+## director send (`EventDirector._teach_the_run()` hands it out; docs/TELEMETRY.md, "The page counts
+## visits", and `tests/test_visit_counter.gd` for what its counter sends). What the manager makes of
+## each row is named by the row alone, on the day the run is taught as on any other.
 func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 	var events := _city.events
 	var dog := EventCatalogue.by_id("charging_dog")
@@ -85,10 +85,6 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 	t.check(lesson.id == "charging_dog_tutorial" and lesson != dog
 			and lesson.pursuit != null and lesson.look == dog.look,
 			"the lesson's dog is a row of its own, drawn and chasing as the dog does")
-	t.check(first.charger_name() == "charging_dog_tutorial" and second.charger_name() == "charging_dog"
-			and robber.charger_name() == "alley_robbery",
-			"and it is counted apart (%s, %s, %s)"
-			% [first.charger_name(), second.charger_name(), robber.charger_name()])
 	t.check(first.logged_name() == "charging_dog_tutorial" and second.logged_name() == "charging_dog",
 			"and seen apart (%s, %s)" % [first.logged_name(), second.logged_name()])
 	t.check(EventCatalogue.lesson_of(robber.def) == robber.def,

@@ -900,7 +900,7 @@ var _notice := Warning.new()
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
 ## no wait (`is_waiting()` never true) starts chasing on its very first `EventPursuit` call rather than
 ## on a notice, so whether it has begun is the record's `began`.
-var _charge := ChargeRecord.new(Callable(self, &"charger_name"), EventBus)
+var _charge := ChargeRecord.new(Callable(self, &"_charger_name"), EventBus)
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
 ## (`CheckpointController.warn_at_the_doors()`, which sets it every frame); once the crossing's
@@ -919,7 +919,7 @@ func counts_a_charge() -> bool:
 ## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
 ## from out of her view counts as `task_guard`), otherwise the row's own `def.id` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
-func charger_name() -> String:
+func _charger_name() -> String:
 	return def.counts_charges_as if def.counts_charges_as != "" else def.id
 
 ## **Its charge caught her**, said once: by `EventManager.check_hard_fails()` when its catch ends

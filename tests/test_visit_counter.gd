@@ -769,7 +769,6 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	var day := counter.run.header.day
 	var def := EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog"))
 	var lesson := _charger(t, def)
-	t.check(lesson.charger_name() == "charging_dog_tutorial", "the lesson's dog is named apart")
 	_walk(lesson, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
 	lesson.report_the_catch()
 	t.check(counter.sent == ["nappy-day-%d-dog-tutorial-chased" % day,
