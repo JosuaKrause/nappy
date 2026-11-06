@@ -15,7 +15,6 @@ src/autoload/game_save.gd FILE_KEYS
 src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
-src/city/building.gd VENT_ROTOR_SOURCE_RECT
 src/city/city.gd home_door_is_sealed
 src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
@@ -56,10 +55,6 @@ src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
-src/city/building.gd roof_equipment_scale
-src/city/building.gd roof_interior_cells
-src/city/building.gd roof_layout
-src/city/building.gd window_texture
 src/city/city.gd barrier_footprint
 src/city/city.gd blackout
 src/city/city.gd home_door_building
@@ -267,6 +262,7 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+src/city/building.gd window_texture  # the picture each wall cell's window shows, lit or dark by the roll; tests/test_scenery_residency.gd compares it across a prepared building's condition changes, eviction and return, all inside synchronous scenery.update() calls it makes by hand, and the front's pictures are drawn only in frames (tests/front_reads.gd waits two) whose residency maintenance would move the view that suite sets (tests-own-class-members.md: that suite runs without the frames a drawn read needs); every other suite reads windows off the drawn front
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
 src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)

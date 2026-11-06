@@ -6,9 +6,10 @@ extends RefCounted
 const CITY := preload("res://scenes/world/city.tscn")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RoofReads := preload("res://tests/roof_reads.gd")
 
 ## The recording drawer each building was handed, building to drawer: what a building drew is read
-## off its own, since a building's roof is placed by `Building.roof_layout()` and drawn through
+## off its own, since a building's roof is placed by its own rolls and drawn through
 ## `Building.roof_drawer`, as the city hands it.
 var _drawers := {}
 
@@ -74,8 +75,9 @@ func _test_residency_follows_the_view(t, seed_value: int) -> void:
 	var windows := _window_pictures(building)
 	t.check(_lit_windows(building) > 0, "the building watched has lit windows to compare")
 	var roof := _drawer_of(building).drawn()
-	t.check(roof == RecordingRoofDrawer.placed(building.roof_layout()) and not roof.is_empty(),
-			"a prepared building draws the roof its layout places")
+	t.check(not roof.is_empty(), "a prepared building draws a roof")
+	t.check(_drawer_of(building).layout().map(_cell_and_picture) == RoofReads.units_of(building).map(_cell_and_picture),
+			"the roof a prepared building tells its drawer to draw is the roof that stands in the layer")
 	var layers: Array[Building.RoofObject] = []
 	for entry in _drawer_of(building).standing():
 		layers.append(entry.object)
@@ -219,12 +221,16 @@ func _record_the_roofs(city: City) -> void:
 			building.set_scenery_resident(false)
 			building.set_scenery_resident(true)
 
-## The first building whose roof places units, so what it draws is something to compare.
+## The first prepared building whose roof draws units, so what it draws is something to compare.
 func _a_building_with_a_roof(city: City) -> Building:
 	for building in city.buildings():
-		if not building.roof_layout().is_empty():
+		if building.scenery_resident and not _drawer_of(building).standing().is_empty():
 			return building
 	return city.buildings()[0]
+
+## One roof unit as its cell and its picture, the shape two reads of a roof are compared in.
+func _cell_and_picture(unit: Dictionary) -> Array:
+	return [unit.cell, unit.texture]
 
 func _drawer_of(building: Building) -> RecordingRoofDrawer:
 	return _drawers[building]

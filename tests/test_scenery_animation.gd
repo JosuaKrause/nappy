@@ -12,7 +12,7 @@ const WATER_SEED := 4242
 
 func run(t) -> void:
 	await _test_roof_rotors(t)
-	_test_rotor_registration_matches_authored_crops(t)
+	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
 	await _test_water_ownership(t)
 
@@ -130,10 +130,9 @@ func _picture_on(scenery: RecordingSceneryDrawer, layer: SceneryLayer) -> Textur
 func _rotor_picture(atlas: AtlasLibrary, frame_b: bool) -> Texture2D:
 	return atlas.region(Building.VENT_ROTOR_B if frame_b else Building.VENT_ROTOR)
 
-## The registered rectangle comes from the editable vector sources, whose viewBoxes retain their
-## coordinates in the complete housing canvas. This compares two files' contract rather than
-## repeating the same crop literal in a test.
-func _test_rotor_registration_matches_authored_crops(t) -> void:
+## Both rotor frames are cropped out of the housing canvas from their editable vector sources, whose
+## viewBoxes must agree, or the second frame would jump when the rotor turns.
+func _test_both_rotor_phases_share_one_registration(t) -> void:
 	var authored: Array[Rect2] = []
 	for path in ["res://art/props/industrial_vent_rotor.svg",
 			"res://art/props/industrial_vent_rotor_b.svg"]:
@@ -148,9 +147,6 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 					float(found.get_string(3)), float(found.get_string(4))))
 	t.check(authored.size() == 2 and authored[0] == authored[1],
 			"both rotor phases share one registration in the housing canvas")
-	if authored.size() == 2:
-		t.check(Building.VENT_ROTOR_SOURCE_RECT == authored[0],
-				"the runtime names the authored source crop shared by both rotor phases")
 
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
 ## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's. The

@@ -1,7 +1,7 @@
 class_name RoofDrawer
 extends RefCounted
-## What a building draws its roof units through: one `draw()` call per unit its roof layout places
-## (`Building.roof_layout()`), told which layer, which cell, which picture, where its foot stands,
+## What a building draws its roof units through: one `draw()` call per unit its roof layout places,
+## told which layer, which cell, which picture, where its foot stands,
 ## and how a duct section joins. The city builds one over its atlas and hands it to every building
 ## it builds (`City._spawn_buildings()`); a building nobody handed one (a developer's preview rig)
 ## makes its own over its own atlas when it first enters the tree.

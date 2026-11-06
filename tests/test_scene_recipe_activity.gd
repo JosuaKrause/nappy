@@ -3,6 +3,7 @@ extends RefCounted
 
 const PROBE := """extends Node
 const BootedMain := preload("res://tests/booted_main.gd")
+const RoofReads := preload("res://tests/roof_reads.gd")
 func _ready() -> void:
 	# The recipe the boot plays, loaded as `main` loads it (`SceneRecipeRuntime.load_recipe()`): its
 	# data and the places it names. The booted game's parts are read off its scene tree.
@@ -109,8 +110,8 @@ const ROOF_TEXTURE_OF_KIND := {
 	"SERVICE_BULKHEAD": Building.SERVICE_BULKHEAD, "EXHAUST_FAN": Building.EXHAUST_FAN,
 	"PIPE_MANIFOLD": Building.PIPE_MANIFOLD,
 }
-## Whether the roof the building draws from (`roof_layout()`) stands the authored fixtures: one
-## picture per cell, a duct straight taking its cell and the one east of it.
+## Whether the roof the building stands (read off where its roof objects stand) carries the
+## authored fixtures: one picture per cell, a duct straight taking its cell and the one east of it.
 func roof_matches(building: Building, fixtures: Array) -> bool:
 	var expected := {}
 	for fixture: Dictionary in fixtures:
@@ -119,7 +120,8 @@ func roof_matches(building: Building, fixtures: Array) -> bool:
 		expected[cell] = ROOF_TEXTURE_OF_KIND.get(kind, &"")
 		if kind == "DUCT_STRAIGHT":
 			expected[cell + Vector2i.RIGHT] = Building.DUCT_RUN
-	var layout := building.roof_layout()
+	building.set_scenery_resident(true)
+	var layout := RoofReads.units_of(building)
 	if layout.is_empty() or expected.size() != layout.size():
 		return false
 	for entry: Dictionary in layout:

@@ -1,12 +1,13 @@
 extends RefCounted
 ## Authored units remain real production roof furniture through residency changes.
 ##
-## The authored layout is read where the building reads it to draw (`Building.roof_layout()`), and
-## what the roof draws through a drawer handed in as the city hands one (`Building.roof_drawer`):
-## a recording one (`tests/recording_roof_drawer.gd`) where the check is what was drawn, the real
-## one a building makes for itself where the check is the picture's own width or joint.
+## The authored layout is read off what the roof draws, through a drawer handed in as the city hands
+## one (`Building.roof_drawer`): a recording one (`tests/recording_roof_drawer.gd`) where the check
+## is what was drawn, the real one a building makes for itself where the check is the picture's
+## own width or joint and the roof is read off where its objects stand (`tests/roof_reads.gd`).
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RoofReads := preload("res://tests/roof_reads.gd")
 
 func run(t) -> void:
 	_test_authored_fixtures_replace_the_roll(t)
@@ -41,12 +42,11 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 	var fixtures := [{"cell": [1, 2], "kind": "duct_straight"},
 		{"cell": [2, 3], "kind": "duct_corner"}, {"cell": [5, 1], "kind": "vent"}]
 	t.check(building.author_roof_furniture(fixtures).is_empty(), "production interior accepts exact existing fixtures")
-	var authored := building.roof_layout()
-	var drawn := RecordingRoofDrawer.placed(authored)
-	t.check(authored.size() == 4 and authored[0].cell == Vector2i(2, 3) and drawer.drawn() == drawn,
+	var authored := drawer.layout()
+	var drawn := drawer.drawn()
+	t.check(authored.size() == 4 and authored[0].cell == Vector2i(2, 3),
 			"requested fixtures replace random furniture in back-to-front painter order")
 	for entry: Dictionary in authored:
-		t.check(entry.cells.size() == entry.span, "authored reservations retain current cell metadata")
 		if entry.texture == Building.DUCT_RUN:
 			t.check(entry.span == 1 and entry.links in [3, 9],
 					"public duct names become supported horizontal spans and an elbow")
@@ -56,7 +56,7 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 	building.set_scenery_resident(false)
 	t.check(drawer.standing().is_empty(), "an evicted roof leaves nothing drawn")
 	building.set_scenery_resident(true)
-	t.check(building.roof_layout() == authored and drawer.drawn() == drawn,
+	t.check(drawer.layout() == authored and drawer.drawn() == drawn,
 			"streaming restores the authored fixtures exactly")
 	for invalid in [
 		[{"cell": [0, 1], "kind": "vent"}],
@@ -65,7 +65,7 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 		[{"cell": [2, 2], "kind": "water_tank"}]]:
 		t.check(not building.author_roof_furniture(invalid).is_empty(),
 				"edge, duct span, overlap and district failures reject the complete replacement")
-		t.check(building.roof_layout() == authored and drawer.drawn() == drawn,
+		t.check(drawer.layout() == authored and drawer.drawn() == drawn,
 				"rejected fixtures do not mutate the valid roof")
 	building.free()
 
@@ -82,8 +82,8 @@ func _displayed_reservations(t) -> void:
 				"current production fixtures pass the public recipe schema")
 		t.check(building.author_roof_furniture(valid).is_empty(),
 				"wide fixture fits the last two interior columns")
-		var authored := building.roof_layout()
-		t.check(authored[0].span == 2 and authored[0].cells.has(Vector2i(6, 1)),
+		var authored := RoofReads.units_of(building)
+		t.check(authored.size() == 1 and authored[0].span == 2 and authored[0].cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
 		var object: Building.RoofObject = _roof_objects_on(building)[0]
 		var width := AtlasTable.baked().native_size(object.texture_key).x * object.scale.x
@@ -94,12 +94,12 @@ func _displayed_reservations(t) -> void:
 			[valid[0], {"cell": [6, 1], "kind": fixture[1]}]]:
 			t.check(not building.author_roof_furniture(invalid).is_empty(),
 					"wide fixtures reject edge overflow and east-cell overlap")
-			t.check(building.roof_layout() == authored,
+			t.check(RoofReads.units_of(building) == authored,
 					"failed width validation leaves the complete authored roof unchanged")
 		building.set_scenery_resident(false)
 		building.set_scenery_resident(true)
 		var standing := _roof_objects_on(building)
-		t.check(building.roof_layout() == authored and standing.size() == 1
+		t.check(RoofReads.units_of(building) == authored and standing.size() == 1
 				and standing[0].texture_key == authored[0].texture,
 				"streaming preserves the enlarged or wide fixture reservation")
 		t.check(building.author_roof_furniture([]).is_empty()

@@ -7,6 +7,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const GroundCells := preload("res://tests/ground_cells.gd")
+const RoofReads := preload("res://tests/roof_reads.gd")
 const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
 const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
@@ -108,14 +109,18 @@ func _coverage(city: City) -> void:
 		for col in building.columns():
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
 				(building.roof_extension_rows[col] if col < building.roof_extension_rows.size() else 0) * 32.0)
-		# The roof furniture each stands feet-anchored on its roof cell (`Building.roof_layout()`,
-		# which `_build_roof_layers()` draws from): its picture rises from the floor line of its row
-		# by the region's height at the equipment's scale, and how far that clears the lot's north
-		# edge (-footprint.y) is the overhang.
-		for unit: Dictionary in building.roof_layout():
+		# The roof furniture each stands feet-anchored on its roof cell (read off where its roof
+		# objects stand, the building made resident for the read and handed back as it was): its
+		# picture rises from the floor line of its row by the region's height at the equipment's
+		# scale, and how far that clears the lot's north edge (-footprint.y) is the overhang.
+		var was_resident := building.scenery_resident
+		building.set_scenery_resident(true)
+		var units := RoofReads.units_of(building)
+		building.set_scenery_resident(was_resident)
+		for unit: Dictionary in units:
 			roof_layers += 1
 			var picture := _atlas.region(unit["texture"])
-			var rise := picture.get_height() * Building.roof_equipment_scale(unit["texture"])
+			var rise := picture.get_height() * RoofReads.equipment_scale(unit["texture"])
 			var foot := -float(building.wall_tiles() + (unit["cell"] as Vector2i).y) * 32.0
 			max_roof_north_overhang = maxf(max_roof_north_overhang,
 					-(foot - rise) - building.footprint.y)
