@@ -5,7 +5,7 @@
 #   tools/test.sh crowd balance   only the suites whose file name contains one of these
 #   tools/test.sh --serial        everything, in one process (what a shard failure is debugged in)
 #   tools/test.sh --plan          print the shard split and run nothing
-#   tools/test.sh --shard 3/12     run only shard 3 of 12 -- what one CI matrix leg runs
+#   tools/test.sh --shard 3/12    run only shard 3 of 12 -- what one CI matrix leg runs
 #   tools/test.sh --shuffle 7 ... the suites in an order drawn from seed 7 (any mode above takes it);
 #                                  the runner prints the order and a command that replays it
 #   tools/test.sh --repeat 3 ...  the chosen suites three times in one process (any mode but

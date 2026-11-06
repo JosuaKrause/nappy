@@ -78,10 +78,10 @@ env:
   FFMPEG_SHA256: 97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79
   # How many matrix legs split the headless suite. The planner packs suites onto shards from the
   # measured costs, so each leg's share falls in proportion to the count (`tools/test.sh --plan`
-  # at this count shows the split) until the longest single suite -- about two minutes -- sets a
+  # at this count shows the split) until the longest single suite -- under two minutes -- sets a
   # floor no split can beat, which twelve legs are still well above. Each added leg costs a
   # runner's start-up and checkout again, so the count is what the player chose for wall time
-  # against runner minutes (ci-speed, inbox #1130), not the most the floor would allow.
+  # against runner minutes (inbox #1130 in brisk-moose), not the most the floor would allow.
   # The count is also spelled out in three places below that this value cannot reach: the `shards`
   # matrix (`shard: [1..12]`), the twelve job outputs `costs_1` to `costs_12` and the matching
   # COSTS_1 to COSTS_12 in `costs`' env. Change all of them together; `costs` refuses to save
