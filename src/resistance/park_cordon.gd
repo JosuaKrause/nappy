@@ -94,7 +94,7 @@ const PARK_CLOSING_WARNING := 2.0
 ## is seen to appear.
 const OFFICER_ROW := "policeman_giving_chase"
 ## The hard fail being shut in the park sends, and the name the day's end and the page's counter
-## give it (`Texts.HARD_FAIL_TEXT`, `LossCause.hard_fail_suffix()`).
+## give it (`Texts.HARD_FAIL_TEXT`, `LossCause.of()`).
 const TRAPPED := "park_cordon"
 ## How far outside the tape the officers walk round it, off the park's own ground and on the
 ## sidewalk's edge, so they finish outside the cordon they made.

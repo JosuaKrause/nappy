@@ -270,14 +270,15 @@ func _test_meters_from_query(t) -> void:
 		"non-numeric words refuse the whole value")
 
 func _test_day_length_from_query(t) -> void:
-	t.check(_page("?debug=1&daylength=45").day_length_override == 45.0,
-		"a plain length is read back")
-	t.check(_page("?debug=1&daylength=0.1").day_length_override == 1.0,
+	t.check(_page("?debug=1&daylength=45").day_length_for(3) == 45.0,
+		"a plain length is the day's length")
+	t.check(_page("?debug=1&daylength=0.1").day_length_for(3) == 1.0,
 		"a length under one second clamps up to one, the same as --day-length")
-	t.check(_page("?debug=1").day_length_override == -1.0, "an absent value is not given")
-	t.check(_page("?debug=1&daylength=abc").day_length_override == -1.0,
+	t.check(_page("?debug=1").day_length_for(3) == Tuning.day_length(3),
+		"an absent value leaves the day its own length")
+	t.check(_page("?debug=1&daylength=abc").day_length_for(3) == Tuning.day_length(3),
 		"a non-numeric value refuses the flag rather than a garbage length")
-	t.check(_page("?debug=1&daylength=-4").day_length_override == -1.0,
+	t.check(_page("?debug=1&daylength=-4").day_length_for(3) == Tuning.day_length(3),
 		"a non-positive value refuses the flag")
 
 func _test_ending_from_query(t) -> void:

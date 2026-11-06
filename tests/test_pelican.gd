@@ -439,7 +439,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	# The day's end as the director writes it (`DayDirector`): the cause is what struck her, and the
 	# lost line names what was nearest.
 	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL,
-			LossCause.hard_fail_suffix(def.id, events.what_struck_her()))
+			LossCause.of(GameEnums.DayResult.LOST_HARD_FAIL, def.id,
+				events.what_struck_her()))
 
 	var lines: Array[String] = Telemetry.current_log().lines
 	var ahead := false

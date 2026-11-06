@@ -80,6 +80,11 @@ static func _drawn(halo: EntityHalo) -> Color:
 	var drawn: Variant = halo.get_instance_shader_parameter("halo_colour")
 	return drawn if drawn is Color else Color(1.0, 1.0, 1.0, 0.0)
 
+## Whether `halo` draws exactly `alpha` now, which is where a glow told `alpha` stops easing: the
+## fade-in has arrived.
+static func _is_drawn_at(halo: EntityHalo, alpha: float) -> bool:
+	return is_equal_approx(_drawn(halo).a, alpha)
+
 ## Lets real frames pass until `done` answers true or `seconds` of frame time have passed on
 ## `clock`, and answers whether `done` came true. Bounded in frames too, so a tree that stopped
 ## processing ends the wait rather than hanging the suite.
@@ -447,7 +452,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(halo.has_settled() and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
 			and traced[0] - traced_before == frames * EntityHalo.HALO_OFFSETS,
 			"a rim holding a steady target is settled *and* drawn, and traced afresh every frame "
 			+ "(%d copies over %d frames), because the body under a steady glow moves"
@@ -473,11 +478,11 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	halo.free()
 	clock.free()
 
-## `has_settled()` reads a hair of alpha above a target of zero as arrived, so a rim whose fade-out
-## stopped a hair short -- which the frame lengths a fade is stepped by can leave -- would be left
-## showing, and re-traced every frame, for good. The hair is reached with real frames and public
-## calls: fade in, a target of 5e-6 (which `move_toward` lands on exactly), then zero in the same
-## colour, so the rim reads settled while it is still showing.
+## A rim reads a hair of alpha above a target of zero as arrived, so a rim whose fade-out stopped a
+## hair short -- which the frame lengths a fade is stepped by can leave -- would be left showing, and
+## re-traced every frame, for good. The hair is reached with real frames and public calls: fade in,
+## a target of 5e-6 (which `move_toward` lands on exactly), then zero in the same colour, so the
+## rim reads arrived while it is still showing.
 func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
 	var traced := [0]
 	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
@@ -761,13 +766,15 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	t.add_child(clock)
 	(flock.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = flock.rim()
-	await _frames_until(t, clock, halo.has_settled, EntityHalo.FADE_IN_SECONDS + 1.0)
+	await _frames_until(t, clock, func() -> bool:
+		return _is_drawn_at(halo, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	var drawn := [0]
 	halo.draw.connect(func() -> void: drawn[0] += 1)
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(halo.has_settled() and halo.is_showing() and frames > 0 and drawn[0] == frames,
+	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+			and drawn[0] == frames,
 			"the flock's own rim is settled, lit and drawn again on every frame (%d of %d) while "
 			% [drawn[0], frames] + "its birds keep moving, where it once held the freeze frame the "
 			+ "player reported")
@@ -888,7 +895,8 @@ func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
 	t.check(instance.rim() != null and rim_of.is_held(),
 			"its first nonzero glow builds the rim")
 	var rim: EntityHalo = instance.rim()
-	await _frames_until(t, clock, rim.has_settled, EntityHalo.FADE_IN_SECONDS + 1.0)
+	await _frames_until(t, clock, func() -> bool:
+		return _is_drawn_at(rim, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	rim_of.set_strength(0.0, Palette.HALO_WEAK)
 	t.check(instance.rim() == rim,
 			"told zero, the rim stays to fade out rather than vanishing on the spot")
@@ -1018,7 +1026,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	# Lit fully before the halo is in the tree, so each fade is a whole FADE_OUT_SECONDS.
 	await _frames_until(t, clock, func() -> bool:
 		for instance in held:
-			if not instance.rim().has_settled():
+			if not _is_drawn_at(instance.rim(), ExcitementHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	# Far from every one of them: all told zero, all still fading, all counted.
@@ -1134,16 +1142,18 @@ static func _sets(manager: EventManager, crowd: Crowd = null) -> Array[Excitemen
 ## Returns the sources.
 func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.FrameClock) -> Array:
 	var fading: Array = []
+	var told: Array[float] = []
 	for i in EntityHalo.RIM_BUDGET:
 		var source := ChurnSource.new()
 		events.add_child(source)
 		events.list.append(source)
-		source.rim.set_strength(ExcitementHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
-				/ float(2 * EntityHalo.RIM_BUDGET), Palette.HALO_STRONG)
+		told.append(ExcitementHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
+				/ float(2 * EntityHalo.RIM_BUDGET))
+		source.rim.set_strength(told[i], Palette.HALO_STRONG)
 		fading.append(source)
 	await _frames_until(t, clock, func() -> bool:
-		for source: ChurnSource in fading:
-			if not source.rim.entity_halo().has_settled():
+		for i in fading.size():
+			if not _is_drawn_at(fading[i].rim.entity_halo(), told[i]):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	return fading
@@ -1420,12 +1430,13 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 		others.append(source)
 	await _frames_until(t, clock, func() -> bool:
 		for source: ChurnSource in others:
-			if not source.rim.entity_halo().has_settled():
+			if not _is_drawn_at(source.rim.entity_halo(), ExcitementHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	t.add_child(halo)
-	await _frames_until(t, clock, func() -> bool:
-		return rim.is_lit() and rim.entity_halo().has_settled(), EntityHalo.FADE_IN_SECONDS + 1.0)
+	await _frames_until(t, clock, rim.is_lit, EntityHalo.FADE_IN_SECONDS + 1.0)
+	# Its glow eases in from the frame it is lit: a whole fade-in later it has arrived.
+	await _frames_for(t, clock, EntityHalo.FADE_IN_SECONDS + STEP)
 	t.check(rim.is_lit(), "picked beside her, the event holds a lit rim")
 
 	# Out of the list, but not freed and not queued for deletion; and a new pick that wants a block.

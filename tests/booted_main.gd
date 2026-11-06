@@ -115,6 +115,17 @@ static func home_playing(t, run: RunState) -> Node:
 	home.add_child(sitting)
 	return home
 
+## Whether `layer` carries the rotation a portrait touch window presents screen furniture under:
+## it sends the corners and the centre of the 1280x720 design box to where
+## `ScreenOrientation.to_presented_space()` says they belong once rotated.
+static func carries_the_rotation(layer: CanvasLayer) -> bool:
+	for point in [Vector2.ZERO, ScreenOrientation.DESIGN_SIZE, ScreenOrientation.DESIGN_SIZE * 0.5,
+			Vector2(300.0, 40.0)]:
+		if not (layer.transform * point).is_equal_approx(
+				ScreenOrientation.to_presented_space(point, true)):
+			return false
+	return true
+
 ## A debug build's configuration from command-line `words`, unsaved and uncounted.
 static func config(words: Array) -> RunConfig:
 	var given := PackedStringArray(["--no-save", "--no-telemetry"])

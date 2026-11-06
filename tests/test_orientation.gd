@@ -88,7 +88,7 @@ func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: Node) 
 	t.check(mapped.is_equal_approx(ScreenOrientation.ROTATED_SIZE * 0.5),
 			"the centre of the 1280x720 box lands on the centre of the 720x1280 one")
 
-## **A relationship, not a value**: whatever `rotation_transform()` actually is, going out and
+## **A relationship, not a value**: whatever the rotation actually is, going out and
 ## back must be the identity, for several points including ones outside the design box (where a
 ## touch on the letterboxed edge of a non-16:9 window would land).
 func _test_the_transform_round_trips(t: Node) -> void:
@@ -153,7 +153,7 @@ func _test_a_rotated_touch_outside_the_button_still_sets_a_direction(t: Node) ->
 ## **The one hard part of the two-focus scheme, proven under actual rotation.** *(Playtest 29
 ## finding 6: "the focal points are in design space and the heading has to end up in world space
 ## ... the presentation rotates on a portrait phone".)* `main._apply_orientation()` rotates the
-## camera the opposite way `ScreenOrientation.rotation_transform()` rotates the presentation
+## camera the opposite way `ScreenOrientation.apply_to_layer()` rotates the presentation
 ## (`ScreenOrientation.apply_to_camera()`: `camera.rotation = -90°`), so the two cancel and a
 ## design-space direction survives the round trip unchanged. Proven here by giving a bare rig the
 ## same compensating camera rotation `main.gd` would, rather than assuming `canvas_transform` is
@@ -221,7 +221,7 @@ func _test_pin_to_design_box_gives_a_fixed_rect_regardless_of_any_parent(t: Node
 	parent.free()
 
 ## The not-rotated case is exactly identity — no rotation and no recentring — and the rotated case
-## is exactly `rotation_transform()`, so `main._apply_orientation()` reads as the one call
+## is exactly the rotation every layer shares, so `main._apply_orientation()` reads as the one call
 ## `apply_to_layer()` is for rather than an `if rotate: ... else: IDENTITY` at every layer.
 func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t: Node) -> void:
 	var layer := CanvasLayer.new()
@@ -231,8 +231,8 @@ func _test_apply_to_layer_is_identity_unrotated_and_the_rotation_when_rotated(t:
 			"not rotated is exactly identity, nothing partial")
 
 	ScreenOrientation.apply_to_layer(layer, true)
-	t.check(layer.transform == ScreenOrientation.rotation_transform(),
-			"rotated is exactly the one rotation every layer of screen furniture shares")
+	t.check(Boot.carries_the_rotation(layer),
+			"rotated is the one rotation every layer of screen furniture shares")
 
 	layer.free()
 
@@ -291,7 +291,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
 	window.size = Vector2i(400, 900)
 	await UI.frames(t, 4)
 	for layer in layers:
-		t.check(layer.transform == ScreenOrientation.rotation_transform(),
+		t.check(Boot.carries_the_rotation(layer),
 				"once the window turns portrait, '%s' carries the one rotation every layer of "
 				% layer.name + "screen furniture shares")
 	for expected in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:

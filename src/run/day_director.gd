@@ -209,7 +209,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	if result == GameEnums.DayResult.WON and player and city and spec.goal == DaySpec.Goal.HOME:
 		city.events.light_what_she_never_met(player.global_position)
 	# What ended the day, read once in the frame it ended (see `landed_by_group()`).
-	end.cause = loss_cause(result)
+	end.cause = _loss_cause(result)
 	# Every charge still running ends for the page's charging counter, cut short by the day, on the
 	# day it was charged — a section she walks out of or loses as much as a day.
 	if events:
@@ -251,7 +251,7 @@ func hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 
 ## What ended a crying or hard-fail day, or "" for a win or a timeout. Reads the world only for the
 ## result that needs it; the rules are `LossCause`'s.
-func loss_cause(result: GameEnums.DayResult) -> String:
+func _loss_cause(result: GameEnums.DayResult) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
 			return LossCause.of(result, day.hard_fail_reason,
@@ -260,7 +260,7 @@ func loss_cause(result: GameEnums.DayResult) -> String:
 			return LossCause.of(result, "", "", landed_by_group())
 	return ""
 
-## The impure half `LossCause.crying_suffix()` is named for: every live event's own `landed()`
+## The impure half `LossCause.of()`'s crying cause is named for: every live event's own `landed()`
 ## grouped by its catalogue id, or `pelican` for a pelican, every live crowd agent's grouped by
 ## `crowd` (a walker) or `traffic` (a car), and the baby's own running/alley share under `self` —
 ## all over the same `ExcitementSource.WINDOW` the halo itself reads. Only positive shares are kept,

@@ -140,7 +140,7 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 
 	await Boot.until_booted(t, main)
 	t.check(Boot.touch_controls(main).rotated, "the finished boot has turned the whole presentation")
-	t.check(Boot.title(main).transform == ScreenOrientation.rotation_transform(),
+	t.check(Boot.carries_the_rotation(Boot.title(main)),
 			"including the title it opens on")
 
 	_end_the_boot(boot, observers)

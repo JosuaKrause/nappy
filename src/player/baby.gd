@@ -187,13 +187,6 @@ func _ready() -> void:
 	assert(_stroller != null, "Baby must be a child of the Stroller rig")
 	sleepiness = starting_sleepiness
 
-## The stroller she rides in, told rather than discovered: `_ready()` takes her parent, and whoever
-## builds the rig out of the tree (a test, a data-level stand-in) hands her the `Stroller` she is
-## a child of, so she can be stepped before she ever enters it. **Only tests call this**: in the
-## game she is a child of the rig in the scene and `_ready()` takes the stroller from her parent.
-func set_stroller(stroller: Stroller) -> void:
-	_stroller = stroller
-
 ## The world she is in, told rather than discovered: whoever places her (`main`, as it puts her
 ## into each world, `WorldMap.world`; a test, for a stand-in) hands her the `WorldContext` she asks
 ## about excitement, calm ground, alleys and decay, and hands her the next one when the world
