@@ -64,7 +64,7 @@ a test; `test_events_costs.gd:553` (`spoiled_days >= 10` of 13) may be seed-sens
 **Kept on purpose, not findings:** guards that a sweep was not vacuous, orderings between two
 constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_memory_log()` setup
 (kept with its reason in `tests-unseen-reads.md`), and the atlas library's accounting, which
-`tests-unseen-reads.md`'s atlas build handles.
+`tests-unseen-reads.md` says what is left of.
 
 ## The findings, by suite
 
@@ -97,19 +97,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_acts.gd`**
 
 - `test_acts.gd:330` and `:335` | "act %d has its own cast", "act III is cooler than act I" | restates a design decision | Palette tints per act are colour/look, which verify's policy says is checked by eye ("Not tested: layout, colour"). Goes red only when the palette is retuned. Line 330 (all four tints distinct) is the milder case | medium
-
-**`test_atlas_events.gd`**
-
-- `test_atlas_events.gd:154` | "the normal dog and the gallop draw fifteen and ten pictures (%d)" (`pictures.size() == 25`) | restates a design decision | A literal picture count of two looks; red only when a frame is added or removed. The next loop (every listed picture has a transfer file) is the real claim | medium
-
-**`test_atlas_loading.gd`**
-
-- `test_atlas_loading.gd:87` | "the indicators name the UI's own group" (`Stroller.INDICATOR_ATLAS == &"ui"`) | restates a design decision | Constant against its literal. The property that matters, "the indicators' regions are baked on the UI's page", is asserted on line 93 via `group_of(name) == &"ui"`, so this one only goes red when the name is changed. | high
-- `test_atlas_loading.gd:62` and `:78` | "the rig's pictures are spread over three groups (%d)" / "the pram's five views are the shared group" | restates a design decision | Counts of groups and of pram views against literals; the neighbouring checks (every source baked, on exactly one page, equal parent counts) hold the property, and adding a sixth pram view would fail 78 without breaking anything. | medium
-
-**`test_atlas_stroller_crowd.gd`**
-
-- `test_atlas_stroller_crowd.gd:156` | `body != trim` / `body_b != trim_b` for every walker view, and `:163` for every car view | CANNOT-FAIL (table check) | Compares two constant tables (`WalkerLook.BODY_BY_VIEW` vs `TRIM_BY_VIEW`, `CarLook.*`) for inequality of region names. The comment's concern (a bake folding body and trim into one region) is not what this checks: two different names can still be one region, and one name per table cannot be equal by accident. It would only fail on a typo that copies a name between the tables. | medium
 
 **`test_baby_world.gd`**
 
@@ -242,11 +229,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_home_block.gd:157` | `_test_her_building_is_the_same_across_two_seeds` | DUPLICATE | `_test_every_home_block_building_is_the_same_across_two_seeds` (test_home_block.gd:188) compares floor count, variant, window pictures, scenery residency and roof furniture for all three home-block lots, her lot included. Only `columns()` and the "roof too shallow" explanation are extra. | medium
 - `test_home_block.gd:145` | `short_rects.size() == 3` | RESTATES | The count of lots the home block carves into; the equality of the rect lists on the next line is the property. | medium
-
-**`test_interior.gd`**
-
-- test_interior.gd:162-166 (in `_test_the_exit_and_the_entrance_are_what_they_claim`) | "the map records exactly one barricaded entrance", "the barricaded entrance is not a walkable kind at all" | restates a design decision | `entrance_tiles.size() == 1` and `not InteriorTile.is_walkable(ENTRANCE_DOOR)` read the map's authoring back. `_test_collision_blocks_exactly_the_non_walkable_ground` (:256) and `_test_every_walkable_tile_is_reachable...` (:179) test what walkability is for. | medium
-- test_interior.gd:1642-1665 `_test_one_blow_of_steam_costs_forty_to_fifty_points` | "one blow costs 40 to 50 points awake at %.0fpx" | restates a design decision | A band on a balance outcome (`cost >= 40 and <= 50`); it goes red when steam or the telegraph is rebalanced, not when what the number is for breaks (the nearby `_test_no_pocket_between_two_vents_outlasts_the_noise` and `_test_a_vent_never_closes_around_her` hold the fairness reasons). It also prints rather than relating the cost to a meter limit. | medium
 
 **`test_interior_masked_man.gd`**
 
