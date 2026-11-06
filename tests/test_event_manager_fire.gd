@@ -138,7 +138,7 @@ func _walk(t, rig: Stroller, route: PackedVector2Array, until := Callable()) -> 
 	_walker_node.route = route
 	_walker_node.next = _nearest_on(route, rig.global_position)
 	while _walker_node.next < route.size() and _walk_clock < WALK_SECONDS:
-		await PhysicsTicks.pass_ticks(t, 1, Callable(), Rig.WALK_SCALE)
+		await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
 		_walk_clock += Rig.WALK_STEP
 		if until.is_valid() and until.call():
 			break
@@ -561,7 +561,7 @@ func _test_the_fire_she_did_not_choose_leaves_her_a_way_out(t) -> void:
 		var her_at := rig.global_position
 		while _city.events.pending_warnings().has(warning) \
 				and warning.shown < Tuning.WARNING_ALONE_MAX + 5.0:
-			await PhysicsTicks.pass_ticks(t, 1, Callable(), Rig.WALK_SCALE)
+			await PhysicsTicks.pass_ticks_faster(t, 1, PhysicsTicks.FASTER, Callable(), Rig.WALK_SCALE)
 		# To the tick: `put_up()` adds nothing to `shown`, only `tick()` does, so the badge is over on
 		# the first tick that takes it to a second, at most one tick past it.
 		t.check(warning.shown <= Tuning.WARNING_ALONE_MAX + Rig.WALK_STEP + 0.001,

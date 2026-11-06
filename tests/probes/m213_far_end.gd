@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/m213_far_end.gd
 ##
 ## **The walk.** Every `ALLEY` tile of six cities stands in for a mark. She walks in from the
-## alley's near end (`ResistanceDirector.alley_ends()`), starting one and a half tiles outside its
+## alley's near end (`ResistanceDirector._alley_ends()`), starting one and a half tiles outside its
 ## mouth, up to 34px short of the mark on its near side — inside `ContactPoint.REACH` (36px), so the
 ## mark is read — and back out the way she came, in 8px steps. A bare `alley_robbery` stands where
 ## a draw put him; the walk counts as reaching the mark when he is still `is_waiting()` at the end.
@@ -21,7 +21,7 @@ extends RefCounted
 ## screen, and a relocation that leaves the mark unguarded.
 ##
 ## **The task guard.** Day 13 of the same six cities, on a real `City` — the roadblock, the one task
-## guarded where it waits (`ResistanceDirector.keeps_a_waiting_guard()`): she stands on the day's
+## guarded where it waits (`ResistanceDirector._keeps_a_waiting_guard()`): she stands on the day's
 ## mark and reads it, and the guard the task stands at its own contact (`_task_guard`) is counted
 ## when none is placed and when his body shows on her screen.
 
@@ -126,7 +126,7 @@ func _reachability(t) -> void:
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
-			var ends := director.alley_ends(mark)
+			var ends := director._alley_ends(mark)
 			if ends.is_empty():
 				continue
 			var kind := "through" if _in_a_through_alley(map, tile) else "passage"
@@ -140,10 +140,10 @@ func _reachability(t) -> void:
 				var guard_at := Vector2.INF
 				match i:
 					0:
-						guard_at = director.draw_guard_position(rngs[i], mark, Vector2.INF,
+						guard_at = director._draw_guard_position(rngs[i], mark, Vector2.INF,
 								min_distance, max_distance)
 					1:
-						guard_at = director.draw_guard_position(rngs[i], mark, far,
+						guard_at = director._draw_guard_position(rngs[i], mark, far,
 								min_distance, max_distance)
 					2:
 						guard_at = director._draw_guard_position_near_far_mouth(rngs[i], mark,

@@ -22,7 +22,7 @@ extends RefCounted
 ##
 ## **What is timed**, in milliseconds of wall clock in the debug build the test runner uses:
 ##
-## - **choice**: `retarget_the_arrow()` with her at each position — what `tick()` runs twice a
+## - **choice**: `_retarget_the_arrow()` with her at each position — what `tick()` runs twice a
 ##   second. On the per-target fields (`WalkField`) it is a lookup, plus starting the sweep of the
 ##   one it now points at when it moved the arrow.
 ## - **tick while sweeping**: one of the director's physics ticks (`ResistanceDirector.tick()`, one
@@ -73,7 +73,7 @@ func run(t) -> void:
 			var spots := _positions(city, director)
 			# The first sweep from nothing, a tick's slice at a time, as `tick()` runs it.
 			player.global_position = spots[0]
-			director.retarget_the_arrow()
+			director._retarget_the_arrow()
 			frames.append(_sweep_to_the_end(director, slices))
 			# And the same sweep at once, for scale.
 			var started := Time.get_ticks_usec()
@@ -86,7 +86,7 @@ func run(t) -> void:
 			for at in spots:
 				player.global_position = at
 				var chose := Time.get_ticks_usec()
-				director.retarget_the_arrow()
+				director._retarget_the_arrow()
 				ticks.append(Time.get_ticks_usec() - chose)
 				# A choice that moved the arrow starts the sweep of the one it now points at.
 				frames.append(_sweep_to_the_end(director, slices))

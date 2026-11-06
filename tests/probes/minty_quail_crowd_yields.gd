@@ -205,7 +205,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
 	var happenings: ResistanceHappenings = director._happenings
-	if happenings.send_the_column(her) == null:
+	if happenings._send_the_column(her) == null:
 		_take_out(city, before)
 		return
 	for tick in TICKS * 2:

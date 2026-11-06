@@ -12,6 +12,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
+const ContactTouches := preload("res://tests/contact_touches.gd")
 const SEED := 1
 const DAY := 8
 
@@ -41,7 +42,7 @@ func run(t) -> void:
 		# The tiles she can stand on within the door's reach, by the rule the director applies
 		# (held ground is ground), each a tile centre below the facade.
 		var stand_tiles: Array[Vector2i] = []
-		var reach := ResistanceReads.home_reach(city.map, director.reach_obstruction())
+		var reach := ResistanceReads.day_reachability(city)
 		for across in [-1, 0, 1]:
 			var tile: Vector2i = frontage + Vector2i(across, 0)
 			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
@@ -60,9 +61,13 @@ func run(t) -> void:
 					"front %s: touched under the door reach" % fronts[i])
 			# Standing on each tile she can stand on within reach completes it, the side tiles
 			# a door's own frontage tile under a café's tables leaves her too.
+			var places: Array[Vector2] = []
 			for tile in stand_tiles:
-				t.check(director.contact().would_complete_at(city.map.tile_to_world(tile)),
-						"front %s: a touch from the frontage tile %s counts" % [fronts[i], tile])
+				places.append(city.map.tile_to_world(tile))
+			var touched := await ContactTouches.touches_from(t, director, places)
+			for k in stand_tiles.size():
+				t.check(touched[k],
+						"front %s: a touch from the frontage tile %s counts" % [fronts[i], stand_tiles[k]])
 			if tile_is_taken(city, frontage):
 				from_the_side += 1
 			if city.map.is_held_at(frontage) and tip.is_equal_approx(door):

@@ -5,9 +5,13 @@
 #               queue-only, docs-only and touches-code, flags every later job reads. A push to main
 #               is none of them, so everything runs on it.
 #   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
-#               test_cli_help.sh, test_rules_hooks.sh, test_lib_agent_role.sh, test_agent_setup.sh,
-#               pycheck.sh, the layer check, the telemetry table's check, and on a pull request the
-#               checks that read its files and its description.
+#               test_cli_help.sh, test_lib_agent_role.sh, test_agent_setup.sh, pycheck.sh, the
+#               layer check, the telemetry table's check, and on a pull request the checks that
+#               read its files and its description.
+#   hooks       test_rules_hooks.sh, the rule-loading hooks' check, on every run, beside `gates`
+#               rather than inside it: it is the longest single step of the repository's
+#               consistency, and a job of its own keeps it from setting the run's length.
+#               Needs nothing but bash and a throwaway repository.
 #   cost-table  cost-table.sh --check, the one consistency check that needs Godot, on every run:
 #               docs/COSTS.md against the code it is generated from.
 #   game        the game's own gates, skipped on a docs-only pull request: check.sh's boot check,
@@ -20,11 +24,11 @@
 #               committed tests/suite_costs.txt. Needs no Godot; skipped on a docs-only pull
 #               request.
 #   shards      the headless suite, one matrix job per shard, each running tools/test.sh --shard
-#               I/8 -- planned from plan's frozen copy, so all eight plan the same split; a local
+#               I/12 -- planned from plan's frozen copy, so all twelve plan the same split; a local
 #               run plans from the committed tests/suite_costs.txt instead (to reproduce a CI
 #               shard, point TEST_SUITE_COSTS at the table plan printed). Skipped on a docs-only
 #               pull request. Each leg hands back its own suites' timings as a job output.
-#   costs       once every shard has passed, folds the eight shards' timings into the frozen file
+#   costs       once every shard has passed, folds the twelve shards' timings into the frozen file
 #               (tools/ci-costs-merge.sh) and saves it as the cache the next run's plan restores.
 #               A problem in any of its steps is a warning annotation and nothing else
 #               (continue-on-error on each): the job, the run and `test` stay green, since a cache
@@ -33,7 +37,7 @@
 #               before it publishes (.github/actions/web-browser-check); skipped on a docs-only
 #               pull request.
 #   test        what main's ruleset actually requires (a check named exactly `test`): it fails if
-#               any job that ran failed (`costs` almost cannot: only a timeout or a lost runner fails it), or if `game`, `plan`, `shards` or `browser` did not run on
+#               any job that ran failed (`hooks` and `gates` run on every run; `costs` almost cannot: only a timeout or a lost runner fails it), or if `game`, `plan`, `shards` or `browser` did not run on
 #               anything classify did not call docs-only, so the ruleset's own required-check name
 #               still means "everything this pull request owes passed" without the ruleset itself
 #               changing.
@@ -76,16 +80,17 @@ env:
   FFMPEG_RELEASE: autobuild-2026-09-30-13-08
   FFMPEG_BUILD: ffmpeg-n8.1.3-9-g29e619e767-linux64-gpl-8.1
   FFMPEG_SHA256: 97ce978979194b5cf7e06a5e68020dbdaa7a4f3294c5452b6a1bc347100dbb79
-  # The longest row of the cost file (see `plan`) alone sets the floor no split can beat,
-  # so this is a shard count that brings every other shard down to or under that same floor
-  # rather than leaving it carrying idle neighbours -- `tools/test.sh --plan` at this count shows
-  # the split. Fewer shards each carry more of the suites above that floor; more shards would only
-  # wait on the same longest suite while paying for idle runners.
+  # How many matrix legs split the headless suite. The planner packs suites onto shards from the
+  # measured costs, so each leg's share falls in proportion to the count (`tools/test.sh --plan`
+  # at this count shows the split) until the longest single suite -- under two minutes -- sets a
+  # floor no split can beat, which twelve legs are still well above. Each added leg costs a
+  # runner's start-up and checkout again, so the count is what the player chose for wall time
+  # against runner minutes (inbox #1130 in brisk-moose), not the most the floor would allow.
   # The count is also spelled out in three places below that this value cannot reach: the `shards`
-  # matrix (`shard: [1..8]`), the eight job outputs `costs_1` to `costs_8` and the matching
-  # COSTS_1 to COSTS_8 in `costs`' env. Change all of them together; `costs` refuses to save
+  # matrix (`shard: [1..12]`), the twelve job outputs `costs_1` to `costs_12` and the matching
+  # COSTS_1 to COSTS_12 in `costs`' env. Change all of them together; `costs` refuses to save
   # and warns if the outputs it reads are not SHARD_COUNT many.
-  SHARD_COUNT: 8
+  SHARD_COUNT: 12
 
 jobs:
   # A pull request is sorted by its files, never by its title, which the agent writes and can get
@@ -151,9 +156,6 @@ jobs:
       # stubs GODOT) -- so it runs this early, before either is set up.
       - name: Check --help/-h and rejection on every shell tool
         run: ./tools/test_cli_help.sh
-
-      - name: Check the rule-loading hooks
-        run: ./tools/test_rules_hooks.sh
 
       # Needs nothing but bash and a real throwaway git repo -- it stubs uv and gh itself, so it
       # runs here too, before uv is installed.
@@ -296,6 +298,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_pr_questions.py --base "origin/${GITHUB_BASE_REF}"
+
+  # The rule-loading hooks' check (.claude/hooks/*.sh fed synthetic hook JSON), the longest step
+  # the repository's consistency has. It stubs everything it calls, so it needs nothing but bash,
+  # jq, perl and a real throwaway repository, all on the runner image: no uv, no Godot, no ffmpeg.
+  # It reads the hooks, the skills they inject and the docs the lint hook reads, so it takes the
+  # same sparse checkout as `gates`, without the history `gates` fetches for the pull request's
+  # own checks. Runs on every run, docs-only included, beside `gates`.
+  hooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+            /docs/evidence/**/*.svg
+
+      - name: Check the rule-loading hooks
+        run: ./tools/test_rules_hooks.sh
 
   # The one check of the repository's consistency that needs the engine, so it runs on every run
   # with a Godot of its own, beside `gates` rather than after it. cost-table.sh bakes the atlases
@@ -540,7 +564,7 @@ jobs:
     outputs:
       # One output per leg, with distinct names: legs of a matrix share one set of job outputs,
       # and two legs writing the same name overwrite each other. A leg sets only its own; `costs`
-      # refuses to save, and warns, if any of the eight is missing.
+      # refuses to save, and warns, if any of the twelve is missing.
       costs_1: ${{ steps.timings.outputs.costs_1 }}
       costs_2: ${{ steps.timings.outputs.costs_2 }}
       costs_3: ${{ steps.timings.outputs.costs_3 }}
@@ -549,12 +573,16 @@ jobs:
       costs_6: ${{ steps.timings.outputs.costs_6 }}
       costs_7: ${{ steps.timings.outputs.costs_7 }}
       costs_8: ${{ steps.timings.outputs.costs_8 }}
+      costs_9: ${{ steps.timings.outputs.costs_9 }}
+      costs_10: ${{ steps.timings.outputs.costs_10 }}
+      costs_11: ${{ steps.timings.outputs.costs_11 }}
+      costs_12: ${{ steps.timings.outputs.costs_12 }}
     strategy:
       # One slow shard should not cancel the rest -- each shard's log is its own evidence, and
       # cancelling the others would throw away timing data from a run that is otherwise fine.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     steps:
       # Same partial clone as `gates` above, minus the full history and the SVG re-include: no
       # suite `tools/test.sh` runs reads a file under docs/evidence/ -- it only appears in doc
@@ -597,7 +625,7 @@ jobs:
           fi
           echo "timings sha256 $(sha256sum "$RUNNER_TEMP/suite_costs.txt" | cut -d' ' -f1)"
 
-      # The whole split, printed by every leg: eight identical blocks and one hash are the proof
+      # The whole split, printed by every leg: twelve identical blocks and one hash are the proof
       # that the shards agree.
       - name: Split
         shell: bash
@@ -690,7 +718,7 @@ jobs:
       # tools/agent-status.sh and hides the run from tools/ci-costs.sh, which lists only successful
       # runs): both steps below carry continue-on-error and the last one turns a failure of either
       # into a warning annotation.
-      - name: Merge the eight shards' timings into the plan's
+      - name: Merge the twelve shards' timings into the plan's
         id: merge
         continue-on-error: true
         env:
@@ -703,6 +731,10 @@ jobs:
           COSTS_6: ${{ needs.shards.outputs.costs_6 }}
           COSTS_7: ${{ needs.shards.outputs.costs_7 }}
           COSTS_8: ${{ needs.shards.outputs.costs_8 }}
+          COSTS_9: ${{ needs.shards.outputs.costs_9 }}
+          COSTS_10: ${{ needs.shards.outputs.costs_10 }}
+          COSTS_11: ${{ needs.shards.outputs.costs_11 }}
+          COSTS_12: ${{ needs.shards.outputs.costs_12 }}
         run: |
           printf '%s\n' "$FROZEN" > "$RUNNER_TEMP/frozen.txt"
           : > "$RUNNER_TEMP/measured.txt"
@@ -789,7 +821,7 @@ jobs:
   # pass here without the game's tests and the browser check. The `version tags` ruleset requires
   # this same check before a `v*` tag, so a commit that fails in the browser cannot be released.
   test:
-    needs: [classify, gates, cost-table, game, plan, shards, costs, browser]
+    needs: [classify, gates, hooks, cost-table, game, plan, shards, costs, browser]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -799,6 +831,7 @@ jobs:
           DOCS_ONLY: ${{ needs.classify.outputs.docs_only }}
           CLASSIFY: ${{ needs.classify.result }}
           GATES: ${{ needs.gates.result }}
+          HOOKS: ${{ needs.hooks.result }}
           COST_TABLE: ${{ needs.cost-table.result }}
           GAME: ${{ needs.game.result }}
           PLAN: ${{ needs.plan.result }}
@@ -806,9 +839,9 @@ jobs:
           COSTS: ${{ needs.costs.result }}
           BROWSER: ${{ needs.browser.result }}
         run: |
-          echo "classify: $CLASSIFY, gates: $GATES, cost-table: $COST_TABLE, game: $GAME, plan: $PLAN, shards: $SHARDS, costs: $COSTS, browser: $BROWSER, docs-only: ${DOCS_ONLY:-false}"
+          echo "classify: $CLASSIFY, gates: $GATES, hooks: $HOOKS, cost-table: $COST_TABLE, game: $GAME, plan: $PLAN, shards: $SHARDS, costs: $COSTS, browser: $BROWSER, docs-only: ${DOCS_ONLY:-false}"
           failed=0
-          for pair in "classify=$CLASSIFY" "gates=$GATES" "cost-table=$COST_TABLE"; do
+          for pair in "classify=$CLASSIFY" "gates=$GATES" "hooks=$HOOKS" "cost-table=$COST_TABLE"; do
             if [[ "${pair#*=}" != "success" ]]; then
               echo "FAILED: ${pair%%=*} is ${pair#*=}, and it runs on every pull request" >&2
               failed=1

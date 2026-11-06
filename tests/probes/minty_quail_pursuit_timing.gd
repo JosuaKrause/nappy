@@ -179,7 +179,7 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 	var before := city.events.instances().duplicate()
 	if day == 13:
 		director._set_the_task_guard_on_her()
-	elif ResistanceDirector.sets_a_trap_on_her(task):
+	elif ResistanceDirector._sets_a_trap_on_her(task):
 		director._set_the_trap_on_her(task)
 	else:
 		_print("%s trap none" % label)
@@ -247,7 +247,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller,
 	_stand(city, player, her)
 	var before := city.events.instances().duplicate()
 	var happenings: ResistanceHappenings = director._happenings
-	if happenings.send_the_column(her) == null:
+	if happenings._send_the_column(her) == null:
 		_print("%s column none" % label)
 		return
 	var run := Run.new(before)

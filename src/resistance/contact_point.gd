@@ -42,7 +42,7 @@ var is_done := false
 var reach := REACH
 ## Non-zero for a touch that is an area on the ground rather than a circle: the semi-axes of an
 ## ellipse centred on this contact, which her body has to overlap — day 12's swing, whose base it
-## is (`ResistanceDirector.swing_base()`).
+## is (`ResistanceDirector._swing_base()`).
 var touch_ellipse := Vector2.ZERO
 ## True for a task completed by doing something rather than by being near a place — day 9's
 ## crossing, which `ResistanceDirector` completes (`complete_now()`) the moment she is through the
@@ -102,12 +102,12 @@ func _physics_process(delta: float) -> void:
 	# touched.
 	if not _player or not is_instance_valid(_player) or not _player.is_in_group("player"):
 		return
-	if would_complete_at(_player.global_position):
+	if _would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()
 
 ## Whether her standing at `her` completes this contact — the one question `_physics_process()`
-## asks, pure, so a test or a sweep can ask it of any point:
+## asks, pure:
 ##
 ## - **a crossing** (`by_crossing`, day 9) never completes on where she stands;
 ## - **day 6's note** (`ResistanceSteps.Step.completes_at_inner_radius`) completes within the man's
@@ -118,7 +118,7 @@ func _physics_process(delta: float) -> void:
 ## - **an area on the ground** (`touch_ellipse`, the swing's base) completes the moment her body
 ##   overlaps it (`overlaps_the_ellipse()`);
 ## - anything else within `reach` of this contact.
-func would_complete_at(her: Vector2) -> bool:
+func _would_complete_at(her: Vector2) -> bool:
 	if by_crossing:
 		return false
 	if _rider and step and step.completes_at_inner_radius:
@@ -165,7 +165,7 @@ static func has_a_body(instance: EventInstance) -> bool:
 ## for the van (22 + 14 + 36), 110px for a roadblock's band (60 + 14 + 36). One circle round the
 ## body's centre rather than a band round its outline, so it reaches past the body by at least
 ## `within` on every side, its ends included, and is the same circle an any-instance task already
-## retargeted onto a look-alike from (`ResistanceDirector.touch_reach()`).
+## retargeted onto a look-alike from (`ResistanceDirector._touch_reach()`).
 static func body_reach(instance: EventInstance, within := REACH) -> float:
 	return instance.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + within
 

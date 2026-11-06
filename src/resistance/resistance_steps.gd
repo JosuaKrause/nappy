@@ -110,16 +110,16 @@ class Step extends RefCounted:
 	var completes_at_inner_radius := false
 	## **A roadblock's task** (day 13): its row is placed near the mark the moment she reads it,
 	## under the day's own rules, and its own guard waits in a band round it rather than being sent
-	## after her (`ResistanceDirector.keeps_a_waiting_guard()`).
+	## after her (`ResistanceDirector._keeps_a_waiting_guard()`).
 	var is_a_guarded_band := false
-	## The row a done task sends after her from off screen (`ResistanceDirector.sets_a_trap_on_her()`):
+	## The row a done task sends after her from off screen (`ResistanceDirector._sets_a_trap_on_her()`):
 	## the robber, or the van's own guard for the van, whose package is what he comes for.
 	var trap_row := "robber_giving_chase"
 	## Who `trap_row` is, as the run log names him when he is sent (`ResistanceDirector.
 	## _note_the_trap()`): a robber, or a guard for the van's guard.
 	var trap_noun := "a robber"
 	## Whether the task's target is a door on a building's front, where she stands on the sidewalk
-	## below the facade (`ResistanceDirector.is_at_a_front_door()`): the burnt building's, and the
+	## below the facade (`ResistanceDirector._is_at_a_front_door()`): the burnt building's, and the
 	## power station's, which its `TargetKind.STATION_DOOR` already says.
 	var at_a_front_door := false
 	## Whether its rider stays and keeps shouting for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS`

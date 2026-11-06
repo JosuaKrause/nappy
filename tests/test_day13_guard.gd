@@ -803,7 +803,7 @@ func _her_way_to_another_roadblock(director: ResistanceDirector, player: Strolle
 					return roadblock
 	return null
 
-## Runs the arrow to rest the way the game does: it chooses (`retarget_the_arrow()`), then the
+## Runs the arrow to rest the way the game does: the
 ## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a time,
 ## choosing again as each finishes (`ResistanceReads.settle()`).
 func _settle_the_arrow(director: ResistanceDirector) -> void:

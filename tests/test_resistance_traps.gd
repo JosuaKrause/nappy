@@ -138,7 +138,8 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 
 	# Near the first — inside the director's reach of him, outside `ContactPoint.REACH` of the
 	# note — so she has come near him without handing it over.
-	var near := ResistanceDirector.touch_reach(first) - 4.0
+	# A figure with no body is touched from her own body's radius and `ContactPoint.REACH` past it.
+	var near := Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH - 4.0
 	t.check(near > ContactPoint.REACH, "there is ground near him that is not the handover")
 	var player := _rig_player(t, first_at + Vector2(near, 0.0))
 	director.use_player(player)
@@ -200,9 +201,7 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t, day: int, perform
 	var task_guards := _live(EventCatalogue.task_guard().id)
 	_read_the_mark(director)
 	var task := director.current_step()
-	t.check(task != null and task.index == 2 * (day - 6) + 2
-			and ResistanceDirector.sets_a_trap_on_her(task),
-			"%s is active, and it is a task whose trap comes to her" % perform)
+	t.check(task != null and task.index == 2 * (day - 6) + 2, "%s is active" % perform)
 	t.check(_robbers_on_the_street() == robbers_before,
 			"activating it stands no %s at %s (%d before, %d after)"
 			% [who, at, robbers_before, _robbers_on_the_street()])
@@ -243,9 +242,6 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 				("the roadblock's guard stands %.0fpx from its band's centre, outside his catch " +
 				"of everywhere it is touched from (%.0fpx)")
 				% [from_body, robbery.inner_radius + touched_within])
-	t.check(ResistanceDirector.keeps_a_waiting_guard(step)
-			and not ResistanceDirector.sets_a_trap_on_her(step),
-			"the roadblock's trap does not come to her")
 	t.check(task_guard != null and is_instance_valid(task_guard),
 			"it is guarded where it waits, like a mark, with its own fresh guard")
 	if mark_guard:
@@ -284,9 +280,6 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 		if task == null:
 			director.free()
 			continue
-		t.check(ResistanceDirector.sets_a_trap_on_her(task)
-				and not ResistanceDirector.keeps_a_waiting_guard(task),
-				"day %d: a task whose trap comes to her" % day)
 		var marks_guard := 1 if mark_guard else 0
 		t.check(_live(EventCatalogue.task_guard().id).is_empty()
 				and _robbers_on_the_street() == before + marks_guard,
@@ -294,7 +287,8 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 				% [day, before, _robbers_on_the_street(), marks_guard])
 		t.check(_live(task.trap_row).is_empty(), "day %d: nobody is sent before she does it" % day)
 
-		var front_door := ResistanceDirector.is_at_a_front_door(task)
+		var front_door := task.target_kind == ResistanceSteps.TargetKind.STATION_DOOR \
+				or task.at_a_front_door
 		if day == 9:
 			_check_day_nines_trap_from_where_she_is_let_out(t, director)
 			continue
@@ -389,7 +383,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirecto
 func _check_no_start_was_passed_over(t, her: Vector2, label: String) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var siting := _city.spawn_siting
-	var asked := siting.ask(EventFootprints.footprint_of(def), ResistanceDirector.pursuer_walker(), her)
+	var asked := siting.ask(EventFootprints.footprint_of(def), Mover.on_foot(EventInstance.FIGURE_RADIUS), her)
 	for candidate in _fixed_starts(def, her):
 		t.check(not (siting.allows(SpawnSiting.Rule.LEGAL_GROUND, asked, candidate)
 				and siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked, candidate)),
@@ -485,7 +479,7 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 	var start := chaser.global_position
 	var view := VisibleView.around(her, null)
 	var siting := _city.spawn_siting
-	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), ResistanceDirector.pursuer_walker(),
+	var asked := siting.ask(EventFootprints.footprint_of(chaser.def), Mover.on_foot(EventInstance.FIGURE_RADIUS),
 			her)
 	var beside := asked.beside
 	var dist := start.distance_to(her)

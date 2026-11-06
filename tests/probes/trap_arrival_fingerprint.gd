@@ -107,7 +107,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 		_lines.clear()
 		if day == 13:
 			director._set_the_task_guard_on_her()
-		elif ResistanceDirector.sets_a_trap_on_her(task):
+		elif ResistanceDirector._sets_a_trap_on_her(task):
 			director._set_the_trap_on_her(task)
 		printed += _run_out(city, director, player, "%s own trap" % label, Vector2.ZERO)
 	var robber := EventCatalogue.by_id("robber_giving_chase")

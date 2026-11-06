@@ -5,7 +5,7 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
+## (`spine_x()`, `tick()`). The ground a row is offered is asked of
 ## `EventScheduler.open_ground_for()`, the next day's masts of the day the manager plans, the
 ## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` puts her stroller in
 ## the tree with the baby a child of it, as the scene has them.
@@ -152,8 +152,8 @@ func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirec
 ## The contact at the door completes from the near half of the sidewalk in front of it — the whole
 ## tile below the door, out to its bottom corners — and not from its far half or past it. Called
 ## last, since the touch that completes it hands the task over. Her touch is a real physics frame
-## with her standing where the test puts her; the two corner touches are asked of the contact itself
-## (`ContactPoint.would_complete_at()`, the question a frame's touch asks), so they hand nothing over.
+## with her standing where the test puts her; the two corner touches are asked of twins of the contact
+## (`ContactTouches.touches_from()`), so they hand nothing over.
 func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDirector) -> void:
 	var contact := director.contact()
 	var door := director.contact_position()
@@ -177,12 +177,14 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 	await _step_a_frame(t)
 	t.check(not contact.is_done, "nor one from the far half, %.0fpx from the door"
 			% door.distance_to(far))
+	var corners: Array[Vector2] = []
 	for side in [-1.0, 1.0]:
-		var corner := foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0),
-				sidewalk * 0.5 - 1.0)
-		t.check(contact.would_complete_at(corner),
+		corners.append(foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0), sidewalk * 0.5 - 1.0))
+	var touched := await ContactTouches.touches_from(t, director, corners)
+	for k in corners.size():
+		t.check(touched[k],
 				("a touch from a bottom corner of the tile below the door, %.1fpx from it, " +
-				"completes it") % door.distance_to(corner))
+				"completes it") % door.distance_to(corners[k]))
 	player.global_position = near
 	await _step_a_frame(t)
 	t.check(contact.is_done, "a touch from the near half, %.0fpx from the door, completes it"
@@ -471,7 +473,6 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	var the_day := _start_the_day(t, 9, director)
 	var mark_contact := director.contact()
 	var guards := _live("alley_robbery")
-	var mark_guard := director.mark_guard()
 	t.check(mark_contact != null, "day 9's mark has its own contact before it is touched")
 
 	# The same signal a real touch fires (`ContactPoint._complete()`, already connected to
@@ -489,8 +490,6 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 	for guard in guards:
 		t.check(not guard.is_finished and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
-	if mark_guard != null:
-		t.check(director.mark_guard() == mark_guard, "still tracked as the mark's own")
 	t.check(_live(EventCatalogue.task_guard().id).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
 
@@ -502,13 +501,11 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 			"the read mark still stands once the task it unlocked has expired")
 
 	# The day is retried (the same shape a new day takes): the read mark is freed outright. The day
-	# is not given back, so it offers no mark and no new guard: the old guard, still standing in the
-	# street (`EventManager.clear()` retires it in the real game), is no longer tracked as today's.
+	# is not given back, so it offers no mark and no new guard: the old guard stays standing in the
+	# street (`EventManager.clear()` retires it in the real game).
 	director.start_day(9, _rng(9, "resistance"), 300.0)
 	t.check(mark_contact.is_queued_for_deletion(), "the read mark is freed at the day's end")
 	t.check(director.read_mark() == null, "and no mark is tracked as read")
-	if mark_guard != null:
-		t.check(director.mark_guard() == null, "and the old guard is no longer tracked as today's")
 
 	# The same day given back with the lost day places its own mark, with a guard of its own: a
 	# fresh one, once the old one is retired as the real game's clear does.
@@ -912,18 +909,20 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
+	var before := _street()
 	var door := _city.map.doorstep_world_position()
 	happenings.tick(STEP, door, Vector2.ZERO)
-	t.check(happenings.raid.is_empty(), "nothing arrives while she is at her door")
+	t.check(_raid_since(before).is_empty(), "nothing arrives while she is at her door")
 	_look_at(Rect2(door - Vector2(400.0, 400.0), Vector2(800.0, 800.0)))
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(happenings.raid.is_empty(), "or while any of it would be on screen")
+	t.check(_raid_since(before).is_empty(), "or while any of it would be on screen")
 	_look_at(Rect2())
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	var vans := 0
 	var patrols := 0
 	var door_tile := _city.map.world_to_tile(door)
-	for instance in happenings.raid:
+	var raid := _raid_since(before)
+	for instance in raid:
 		if instance.def.id == "night_raid":
 			vans += 1
 			t.check(instance.def.pursuit == null, "a van at her door does not hunt")
@@ -936,11 +935,12 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 			t.check(instance.def.shape != null, "the patrol car keeps its shape")
 	t.check(vans == 2 and patrols == 1, "two vans and a patrol at her building (%d, %d)"
 			% [vans, patrols])
-	for instance in happenings.raid:
+	for instance in raid:
 		_city.events.retire(instance)
+	before = _street()
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(happenings.raid.is_empty(), "and only on day 10")
+	t.check(_raid_since(before).is_empty(), "and only on day 10")
 
 ## Her street door: ordinary at day 10's start, sealed live the moment the raid actually arrives
 ## (PLAYTEST-131), and the scar it leaves is what every later day and a reloaded save read it
@@ -955,6 +955,7 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
 	t.check(not HomeDoorReads.is_sealed(_city), "the door is ordinary at day 10's start")
+	var before := _street()
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(HomeDoorReads.is_sealed(_city), "and sealed the moment the raid arrives, out of her sight")
 	var sealed := false
@@ -962,7 +963,7 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
 			sealed = true
 	t.check(sealed, "which leaves a scar for every later day to read")
-	for instance in happenings.raid:
+	for instance in _raid_since(before):
 		_city.events.retire(instance)
 
 ## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
@@ -991,9 +992,10 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
+	var before := _street()
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(HomeDoorReads.is_sealed(_city), "sealed once the raid arrives")
-	for instance in happenings.raid:
+	for instance in _raid_since(before):
 		_city.events.retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
 	# the run's `run_parts.give_back()` restores every scar a lost day left.
@@ -1073,17 +1075,26 @@ func _test_the_market_is_found_gone(t) -> void:
 	var state := CityState.new()
 	var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
 	var door := _city.map.doorstep_world_position()
-	var candidates := ResistanceHappenings.market_candidates(_city.map, state)
+	# The blocks whose arc is waiting to board up: commercial today, boarded up next.
+	var candidates: Array[Vector2i] = []
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			var candidate := Vector2i(x, y)
+			if _city.map.block_plans.has(candidate) \
+					and state.purpose_of(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.COMMERCIAL \
+					and state.next_purpose(_city.map.block_plans, candidate) == GameEnums.BlockPurpose.BOARDED_UP:
+				candidates.append(candidate)
 	t.check(not candidates.is_empty(),
 			"the test city has a block waiting to board up, or this test checks nothing")
 	happenings.tick(STEP, door, Vector2.ZERO)
-	t.check(happenings.market_block.x < 0, "nothing is gone before she has walked anywhere")
+	t.check(_boarded_among(state, candidates).is_empty(), "nothing is gone before she has walked anywhere")
 	# She walks for as long as the market waits for a way to be chosen, and it has been that long.
 	happenings.tick(ResistanceHappenings.MARKET_GONE_BY, door, Vector2.RIGHT * Tuning.WALK_SPEED)
-	var block := happenings.market_block
-	t.check(block in candidates, "by then a block waiting to board up is gone (%s)" % block)
+	var gone := _boarded_among(state, candidates)
+	t.check(gone.size() == 1, "by then a block waiting to board up is gone (%s)" % [gone])
+	var block := gone[0] if gone.size() == 1 else Vector2i(-1, -1)
 	if block.x >= 0:
-		var frontage := happenings.frontage_of(block)
+		var frontage := _city.map.tile_rect_to_world(_city.map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 		t.check(_distance_to_rect(door, frontage) >= Tuning.OUT_OF_SIGHT,
 				"out of her sight")
 		t.check(state.purpose_of(_city.map.block_plans, block)
@@ -1103,7 +1114,15 @@ func _test_the_market_is_found_gone(t) -> void:
 		t.check(state.purpose_of(_city.map.block_plans, block)
 				== GameEnums.BlockPurpose.BOARDED_UP, "and it stays boarded")
 	happenings.tick(STEP, door, Vector2.ZERO)
-	t.check(happenings.market_block == block, "and the market is gone once")
+	t.check(_boarded_among(state, candidates) == gone, "and the market is gone once")
+
+## The blocks of `candidates` the city state has boarded up.
+func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vector2i]:
+	var boarded: Array[Vector2i] = []
+	for block in candidates:
+		if state.purpose_of(_city.map.block_plans, block) == GameEnums.BlockPurpose.BOARDED_UP:
+			boarded.append(block)
+	return boarded
 
 ## Day 11: **a market in her sight is not boarded up.** She stands in the middle of a candidate
 ## block's frontage, walks as long as the market waits for a way to be chosen and then past the day's

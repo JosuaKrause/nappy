@@ -24,40 +24,15 @@ src/autoload/telemetry.gd begin_memory_log
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
-src/resistance/resistance_director.gd mark_guard
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/resistance/contact_point.gd draws_a_mark
-src/resistance/contact_point.gd would_complete_at
-src/resistance/happenings.gd cordon
-src/resistance/happenings.gd frontage_of
-src/resistance/happenings.gd market_block
-src/resistance/happenings.gd market_candidates
-src/resistance/happenings.gd raid
-src/resistance/happenings.gd send_the_column
-src/resistance/resistance_director.gd alley_ends
-src/resistance/resistance_director.gd draw_guard_position
-src/resistance/resistance_director.gd draw_reachable
 src/resistance/resistance_director.gd guard_position
-src/resistance/resistance_director.gd guard_spot
-src/resistance/resistance_director.gd is_alley_mouth
-src/resistance/resistance_director.gd is_at_a_front_door
-src/resistance/resistance_director.gd is_mark_tile
-src/resistance/resistance_director.gd keeps_a_waiting_guard
-src/resistance/resistance_director.gd mark_tile_of
 src/resistance/resistance_director.gd nearest_alley_among
 src/resistance/resistance_director.gd nearest_alley_within
 src/resistance/resistance_director.gd place_contact
-src/resistance/resistance_director.gd pointable_objective
-src/resistance/resistance_director.gd pursuer_walker
-src/resistance/resistance_director.gd reach_obstruction
-src/resistance/resistance_director.gd retarget_the_arrow
-src/resistance/resistance_director.gd sets_a_trap_on_her
-src/resistance/resistance_director.gd swing_base
-src/resistance/resistance_director.gd touch_reach
 src/resistance/resistance_director.gd weighted_mast_index
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
@@ -108,6 +83,8 @@ src/ui/mode_button.gd hold_progress  # the fraction of the restart disc's radial
 src/ui/return_window.gd on_web_event  # the decision half of the page's focus, blur and visibilitychange events: their callback is made by JavaScriptBridge, which exists only in a web export, so no desktop run can send the browser's event and the suite hands the kind and the visibility the callback reads
 src/city/building.gd window_texture  # the picture each wall cell's window shows, lit or dark by the roll; tests/test_scenery_residency.gd compares it across a prepared building's condition changes, eviction and return, all inside synchronous scenery.update() calls it makes by hand, and the front's pictures are drawn only in frames (tests/front_reads.gd waits two) whose residency maintenance would move the view that suite sets (tests-own-class-members.md: that suite runs without the frames a drawn read needs); every other suite reads windows off the drawn front
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
+src/resistance/contact_point.gd draws_a_mark  # whether the chalk picture is drawn at all, `_draw()`'s one question: a pickup is a chalk mark, a perform's contact is invisible untouched or done so that a rider looks like the ordinary row it rides on; it exists only as the guard before `draw_texture()` in `_draw()`, which a headless run draws to nothing and no node exposes, so nothing outward can read what a contact draws (tests/test_destination_drawing.gd asks it for every day's mark and task)
+src/resistance/happenings.gd cordon  # the handle on day 12's police cordon (`ParkCordon`) that tests/test_park_cordon.gd and tests/test_park_return.gd take from the happenings the director's swing touch (or the suite) started, so the cordon they read is the one the happenings run; they stand her at its `last_gap` (kept public: the world shows the gap only once the tapers meet at it) and ask whether it has closed; tests/park_cordon_sweep.gd builds cordons of its own and reads this one only to compare, so it could move off it, as could the two suites by building `ParkCordon` themselves (open to overturn)
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
 src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)
 src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the focus opposite the steering one in the joystick scheme, none in the tap scheme; the disc is drawn and nothing else reads its place, and the booted-main suites (tests/test_main.gd, tests/test_run_checkpoints.gd, tests/test_visible_view.gd) ask it while the title or a brief holds the tree paused, when a press reaches nothing; which half holds Run is confirmed by real presses in tests/test_touch.gd
