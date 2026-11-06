@@ -374,7 +374,6 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	if not man:
 		events.free()
 		scene.free()
-		run.free()
 		return
 	var player := Stroller.new()
 	player.global_position = scene.start_world_position()
@@ -459,7 +458,6 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	city.free()
 	events.free()
 	scene.free()
-	run.free()
 
 ## *"A retried escape section holds its automatic snapshots back until the new clock passes the
 ## time of the last shot, because a section's clock restarts at zero."* A clock pushed back with

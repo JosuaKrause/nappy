@@ -101,7 +101,6 @@ class Rig:
 	func free_all() -> void:
 		viewport.free()
 		city.free()
-		run.free()
 
 ## Lets `count` physics ticks pass with her standing at `at` for each. The coroutine resumes as a
 ## tick begins and before the nodes' own physics step of it, so the position set here is the one the

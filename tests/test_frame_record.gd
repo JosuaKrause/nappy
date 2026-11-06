@@ -517,7 +517,6 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			"and writes the record on the desktop as the scene exits")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))
 	home.free()
-	run.free()
 
 ## Whether the readout's label, which the readout fills a few times a second while the day is
 ## walked, shows the recorder's line, the one that begins `slow` (what follows it changes with each
@@ -776,20 +775,17 @@ func _rig(t, record: FrameRecord) -> _Rig:
 	rig.sitting = Sitting.new()
 	rig.sitting.frame_timing = record
 	rig.sitting.frame_record_path = _SCRATCH_RECORDER
-	rig.run = RunState.new()
 	rig.recorder = FrameRecorder.new()
 	t.add_child(rig.recorder)
-	rig.recorder.setup(func() -> bool: return false, null, null, null, rig.run, rig.sitting)
+	rig.recorder.setup(func() -> bool: return false, null, null, null, RunState.new(), rig.sitting)
 	return rig
 
 class _Rig extends RefCounted:
 	var recorder: FrameRecorder
 	var sitting: Sitting
-	var run: RunState
 
 	func free_all() -> void:
 		# Leaving the tree writes the record to the sitting's path.
 		recorder.free()
 		sitting.free()
-		run.free()
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_frame_record_scratch_recorder.json"))

@@ -1014,7 +1014,6 @@ func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 	t.check(HomeDoorReads.is_sealed(city),
 			"a boot whose scars already carry the seal starts the door sealed")
 	city.free()
-	run.free()
 
 ## A lost day 10 gives the scar back (the run's `run_parts.give_back()`) and the
 ## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
@@ -1077,7 +1076,6 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	var reloaded_building := HomeDoorReads.building(reloaded)
 	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
 	reloaded.free()
-	run.free()
 
 ## Plans `day` on the test city through the real day order (the closures and the events) with
 ## `state` as the run's own city state, which the happenings read, and hands back the happenings of

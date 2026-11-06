@@ -327,7 +327,7 @@ touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`
 the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
 `tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
 `<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca; read as: two branches building at once
-draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR**,
+draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR, after the record is drawn** (`new-name.sh --entry` finds the entry by its folder, so a record drawn once the folder is deleted fails),
 because the queue holds open work only and the entry stops being open the moment the PR merges.
 Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
 as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an

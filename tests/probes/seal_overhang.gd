@@ -42,7 +42,6 @@ func run(t) -> void:
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)
 	_print("escape", escape_rows)
-	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,

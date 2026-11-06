@@ -9,9 +9,8 @@ extends Node
 ## pure policy and format (the `Result` words, `_file_data()`, `moment_result()`) stay `static`. **It is
 ## handed the run it reads or writes** (`run: RunState`) on every call that touches one — `main` hands
 ## the run it plays, a test whichever run it built, and `RunState` itself for its checkpoint — and
-## names no autoload for it. Lives beside `RunState`, the one thing it reads
-## and writes, rather than under `src/ui/` with the symbol that announces a write — a save module is
-## data, the symbol is presentation, and the two only meet through `EventBus`.
+## names no autoload for it. Kept apart from the symbol that announces a write (`src/ui/`): a save
+## module is data, the symbol is presentation, and the two only meet through `EventBus`.
 ##
 ## **The save is the run, never the moment inside a day.** The run's registered parts
 ## (`RunState.run_parts`) say what a run holds and where in the file each part sits; this file

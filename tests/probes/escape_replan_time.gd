@@ -40,7 +40,6 @@ func run(t) -> void:
 	print("ESCAPE_REPLAN | %d seeds | first %d-%d ms, median %d | restarts %d-%d ms, median %d"
 			% [SEEDS.size(), firsts[0], firsts[-1], firsts[firsts.size() / 2], restarts[0],
 			restarts[-1], restarts[restarts.size() / 2]])
-	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 ## The escape city's section spec, the one the run flow walks the city under.

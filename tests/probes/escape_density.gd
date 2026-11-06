@@ -45,7 +45,6 @@ func run(t) -> void:
 		parts.append("%s %d" % [id, int(totals.get(id, 0))])
 	print("ESCAPE_DENSITY | %d seeds | %d streets | %s" % [SEEDS.size(),
 			int(totals.get("streets", 0)), ", ".join(parts)])
-	own_run.free()
 	t.check(true, "a probe asserts nothing")
 
 ## The escape city's section spec, the one the run flow walks the city under.

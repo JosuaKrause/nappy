@@ -931,7 +931,7 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
-## its map is drawn in, a child of the manager. `_free_manager()` frees it with the run.
+## its map is drawn in, a child of the manager. `_free_manager()` frees it.
 func _manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(1)
@@ -945,9 +945,7 @@ func _manager(t) -> EventManager:
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	manager.free()
-	run.free()
 
 ## The danger carets `instance` asks its drawer for, drawn in a real frame: it is put in the tree,
 ## asked to redraw, and what the recording drawer holds for that draw is read back. One entry for a

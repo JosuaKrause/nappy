@@ -33,7 +33,6 @@ func run(t) -> void:
 		hard_fail_end.elapsed_seconds = 600.0
 		var line := SummaryModel.day_over(hard_fail_run, hard_fail_end).title
 		_check_label(t, line, title, "the day summary title for %s" % reason)
-	hard_fail_run.free()
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")
 	summary.queue_free()
 
@@ -66,7 +65,6 @@ func run(t) -> void:
 		if step.is_pickup and step.brief != "":
 			_check_help(t, step.brief, teach, "the chalk mark's message \"%s\"" % step.title)
 	hud.free()
-	run.free()
 
 ## The label as the screen lays it out: the width it asks for, as the box it sits in gives it.
 func _check_label(t, source: String, label: Label, what: String) -> void:

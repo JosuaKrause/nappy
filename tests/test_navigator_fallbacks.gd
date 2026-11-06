@@ -31,7 +31,6 @@ func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t) -> void:
 	t.check(her_tile != Vector2i(-1, -1), "the city has open sidewalk to stand her on")
 	if her_tile == Vector2i(-1, -1):
 		city.free()
-		own_run.free()
 		return
 	var here := city.map.tile_to_world(her_tile)
 	city.crowd.start_day(DAY, own_run.calendar.day_rng(DAY, "crowd"), here, false)
@@ -67,7 +66,6 @@ func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t) -> void:
 				+ "(%.1fpx aside on the first frame, a push of %.1fpx)" % [first_frame, push])
 	player.free()
 	city.free()
-	own_run.free()
 
 ## A walker placed through the crowd's own entry (`Crowd.add_recipe_actor()`) on the lane centre
 ## nearest `here`, heading along either axis, at a pace drawn from his kind's (`-1.0`), which is the
