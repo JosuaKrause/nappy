@@ -82,14 +82,6 @@ func groups() -> Array[StringName]:
 func has_group(group: StringName) -> bool:
 	return _pages.has(group)
 
-## Every region name in the table, sorted. The sweep a test walks.
-func region_names() -> Array[StringName]:
-	var names: Array[StringName] = []
-	for name: String in _regions.keys():
-		names.append(StringName(name))
-	names.sort()
-	return names
-
 ## Whether the bake knows this name.
 func has_region(name: StringName) -> bool:
 	return _regions.has(String(name))
