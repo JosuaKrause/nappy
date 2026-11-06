@@ -243,17 +243,6 @@ src/run/summary_model.gd resistance_tally
 src/run_config.gd day_length_override
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
-src/telemetry/frame_ledger.gd last_slow
-src/telemetry/frame_ledger.gd overwritten
-src/telemetry/frame_ledger.gd slow_frames
-src/telemetry/frame_ledger.gd top_costs
-src/telemetry/frame_recorder.gd calibrate
-src/telemetry/frame_recorder.gd clock_resolution
-src/telemetry/frame_recorder.gd draw_kind
-src/telemetry/frame_recorder.gd fits_the_readout
-src/telemetry/frame_recorder.gd report_text
-src/telemetry/frame_recorder.gd save_on_exit
-src/telemetry/frame_recorder.gd view_size
 src/telemetry/telemetry_map.gd role_mark
 src/telemetry/telemetry_observer.gd spikes_on
 src/ui/badge_model.gd announces

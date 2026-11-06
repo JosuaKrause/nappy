@@ -14,6 +14,8 @@ const SPENT_US := 2000
 const _SCRATCH_SAVE := "user://test_frame_record_scratch.json"
 ## Where the boot's recorder writes its record on the desktop, kept on the test's sitting.
 const _SCRATCH_RECORD := "user://test_frame_record_scratch_record.json"
+## Where the other recorders of this suite write theirs, saved or on leaving the tree.
+const _SCRATCH_RECORDER := "user://test_frame_record_scratch_recorder.json"
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -23,17 +25,15 @@ func run(t) -> void:
 	_test_a_headless_frame_draws_nothing(t)
 	_test_draw_splits_at_the_renderers_pre_draw(t)
 	_test_the_ring_keeps_the_latest_frames(t)
-	_test_top_costs_order_and_leave_out_the_wait(t)
 	_test_the_readout_line(t)
-	_test_the_view_size(t)
-	_test_the_environment_carries_the_view(t)
+	_test_the_readout_says_the_view(t)
+	_test_the_environment_carries_the_view_and_the_clock(t)
 	_test_the_report_round_trips(t)
 	_test_the_record_charges_its_ledger(t)
 	_test_draws_are_counted_by_listening(t)
 	_test_the_flag_and_its_page_word(t)
 	_test_the_deferred_scenery_window(t)
 	_test_slow_frames_outside_callbacks_and_with_scenery(t)
-	_test_the_clock_resolution(t)
 	await _test_the_recorder_in_a_real_main(t)
 	await _test_a_timed_body_runs_once(t)
 
@@ -90,7 +90,7 @@ func _test_slow_frames_are_marked(t) -> void:
 	t.check(rows[0][FrameLedger.SLOW] == 0 and rows[1][FrameLedger.SLOW] == 1
 			and rows[2][FrameLedger.SLOW] == 0,
 			"only the frame past one and a half budgets is slow; one exactly at it is not")
-	t.check(ledger.slow_frames == 1 and ledger.last_slow[FrameLedger.FRAME] == 40000,
+	t.check(ledger.report().slow_frames_ever == 1 and ledger.readout_line().begins_with("slow 40.0/"),
 			"the last slow frame is kept for the readout")
 
 func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
@@ -164,24 +164,11 @@ func _test_the_ring_keeps_the_latest_frames(t) -> void:
 	for i in 40:
 		_drive(long, i * 20000, 10000, FrameRecord.CROWD, 1000)
 	long.process_start(40 * 20000)
-	t.check(long.rows().size() == 2 and long.overwritten == 38,
+	t.check(long.rows().size() == 2 and long.report().overwritten == 38,
 			"a full ring never grows: forty frames through two cells keep two and count thirty-eight over")
-	t.check(rows.size() == 2 and ledger.overwritten == 1
+	t.check(rows.size() == 2 and ledger.report().overwritten == 1
 			and rows[0][FrameLedger.START] == 10000 and rows[1][FrameLedger.START] == 21000,
 			"a full ring keeps the latest frames, oldest first, and counts what it overwrote")
-
-func _test_top_costs_order_and_leave_out_the_wait(t) -> void:
-	var row := PackedInt64Array()
-	row.resize(FrameLedger.WIDTH)
-	row[FrameLedger.FIRST_BUCKET + FrameRecord.CROWD] = 9000
-	row[FrameLedger.FIRST_BUCKET + FrameRecord.EVENTS] = 7000
-	row[FrameLedger.FIRST_BUCKET + FrameRecord.DRAW] = 5000
-	row[FrameLedger.FIRST_BUCKET + FrameRecord.SCENERY] = 2000
-	row[FrameLedger.FIRST_BUCKET + FrameRecord.WAIT] = 20000
-	var top := FrameLedger.top_costs(row)
-	t.check(top.size() == 3 and top[0][0] == FrameRecord.CROWD and top[1][0] == FrameRecord.EVENTS
-			and top[2][0] == FrameRecord.DRAW,
-			"the three largest costs, largest first, without the wait")
 
 func _test_the_readout_line(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
@@ -202,7 +189,25 @@ func _test_the_readout_line(t) -> void:
 			and rest > draw and not line.contains("scenery"),
 			"the readout names the slow frame, its work and its three largest costs in order (%s)"
 			% line)
-	t.check(FrameRecorder.fits_the_readout(line), "and it fits the readout's width (%s)" % line)
+	t.check(_fits_the_readout(line), "and it fits the readout's width (%s)" % line)
+	# The wait is not a cost: a slow frame that mostly waited names the three largest of what it did.
+	var waited := FrameLedger.new(8, 16667)
+	waited.process_start(0)
+	waited.enter(FrameRecord.CROWD, 100)
+	waited.switch_to(FrameRecord.EVENTS, 9100)
+	waited.switch_to(FrameRecord.DRAW, 16100)
+	waited.switch_to(FrameRecord.SCENERY, 21100)
+	waited.switch_to(FrameRecord.PROCESS_REST, 23100)
+	waited.keep = true
+	waited.process_end(23200)
+	waited.pre_draw(23300)
+	waited.drawn(23400)
+	waited.process_start(60000)
+	var waiting_line := waited.readout_line()
+	t.check(waiting_line.contains("crowd 9.0") and waiting_line.contains("events 7.0")
+			and waiting_line.contains("draw 5.") and not waiting_line.contains("scenery")
+			and not waiting_line.contains("wait"),
+			"and the three largest costs leave the wait out (%s)" % waiting_line)
 	# Three-digit costs under the longest short names: the line drops to the costs that fit.
 	var wide := FrameLedger.new(8, 16667)
 	wide.process_start(0)
@@ -213,10 +218,14 @@ func _test_the_readout_line(t) -> void:
 	wide.keep = true
 	wide.process_end(650200)
 	wide.process_start(650300)
-	var squeezed := wide.readout_line(FrameRecorder.fits_the_readout)
-	t.check(FrameRecorder.fits_the_readout(squeezed) and squeezed.contains("scenery 300.0")
+	var wide_record := FrameRecord.new()
+	wide_record.start(wide)
+	var rig := _rig(t, wide_record)
+	var squeezed := rig.recorder.readout_line()
+	t.check(_fits_the_readout(squeezed) and squeezed.contains("scenery 300.0")
 			and squeezed.contains("events 200.0"),
 			"a line too wide for three costs keeps the largest ones that fit (%s)" % squeezed)
+	rig.free_all()
 
 func _test_the_report_round_trips(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
@@ -250,8 +259,6 @@ func _test_the_record_charges_its_ledger(t) -> void:
 	var after_leaving := _row_so_far(ledger)
 	t.check(after_leaving[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= SPENT_US,
 			"leave goes back to it: the time after it is charged to the bucket that was running")
-	t.check(FrameRecorder.calibrate() >= 0.0 and record.ledger == ledger,
-			"calibrating the timer's cost leaves the live record in place")
 	record.stop()
 	t.check(not record.on and record.ledger == ledger, "stopping switches it off and keeps its ledger")
 	var none := FrameTiming.new()
@@ -287,12 +294,7 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	var ledger := FrameLedger.new(2)
 	record.start(ledger)
 	ledger.process_start(0)
-	var recorder := FrameRecorder.new()
-	recorder.save_on_exit = false
-	t.add_child(recorder)
-	var sitting := Sitting.new()
-	sitting.frame_timing = record
-	recorder.setup(func() -> bool: return false, null, null, null, null, sitting)
+	var rig := _rig(t, record)
 	var prop := Prop.new()
 	t.add_child(prop)
 	var label := Label.new()
@@ -320,17 +322,28 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	prop.draw.emit()
 	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_SCENERY] == 0,
 			"a record that is off counts nothing")
+	record.on = true
+	# Each node of a counted class lands on the counter of its kind when it draws; one that is
+	# not counted (a label) lands on none. Every node enters the tree, as the game's do.
 	var kinds := {Prop.new(): FrameTiming.Draw.SCENERY, SceneryLayer.new(): FrameTiming.Draw.SCENERY,
 		SceneryWater.new(): FrameTiming.Draw.SCENERY, TrafficLight.new(): FrameTiming.Draw.OTHER,
 		ParkFenceMarker.new(): FrameTiming.Draw.OTHER, MeterBar.new(): FrameTiming.Draw.OTHER,
 		HomeArrow.new(): FrameTiming.Draw.OTHER, ModeButton.new(): FrameTiming.Draw.OTHER,
-		DangerEdge.new(): FrameTiming.Draw.BADGES, Label.new(): -1, Node.new(): -1}
+		DangerEdge.new(): FrameTiming.Draw.BADGES, Label.new(): -1}
 	for node: Node in kinds:
-		t.check(FrameRecorder.draw_kind(node) == kinds[node],
-				"%s is counted as kind %d" % [node.get_class(), kinds[node]])
+		t.add_child(node)
+		_row_so_far(ledger)
+		node.draw.emit()
+		var row := _row_so_far(ledger)
+		var landed := -1
+		for kind: String in FrameTiming.Draw.keys():
+			if row[counters + FrameLedger.COUNTER_NAMES.find("draws_" + kind.to_lower())] > 0:
+				landed = FrameTiming.Draw[kind]
+		t.check(landed == kinds[node], "%s is counted as kind %d (landed on %d)"
+				% [node.get_class(), kinds[node], landed])
+		t.remove_child(node)
 		node.free()
-	recorder.free()
-	sitting.free()
+	rig.free_all()
 	for node in [prop, label, chunk, marker]:
 		node.free()
 
@@ -406,10 +419,6 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
 			and summary.slow_frames_without_scenery_jobs == 2
 			and summary.largest_cost_in_slow_frames_without_scenery_jobs.get("crowd", 0) == 1,
 			"the summary names waiting frames apart and splits slow frames by scenery jobs")
-
-func _test_the_clock_resolution(t) -> void:
-	var step := FrameRecorder.clock_resolution()
-	t.check(step >= 1 and step < 2000, "the clock's smallest step is measured (%dus)" % step)
 
 ## The recorder in a real boot of `main` (`tests/booted_main.gd`) under `--frame-record`: `main`
 ## hands the sitting's record to every timed system and sets the recorder up from it, its markers
@@ -729,30 +738,58 @@ func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: in
 	ledger.process_end(start + 200 + spent)
 
 
-func _test_the_view_size(t) -> void:
-	var view := FrameRecorder.view_size()
-	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
-		# A headless window reports 0 by 0, so only the keys and the ratio are pinned.
-		t.check(view.has(key), "the view size carries %s" % key)
-	t.check(view["device_pixel_ratio"] > 0.0, "the ratio is never 0")
+## The readout says the window and what is drawn, each line within the readout's width.
+func _test_the_readout_says_the_view(t) -> void:
 	var lines := FrameRecorder.view_lines()
 	t.check(lines.size() == 2 and lines[0].begins_with("window") and lines[1].begins_with("drawn"),
 			"the readout says the window and what is drawn")
 	for line in lines:
-		t.check(FrameRecorder.fits_the_readout(line), "the line fits the readout: %s" % line)
+		t.check(_fits_the_readout(line), "the line fits the readout: %s" % line)
 
-## The record's environment carries the pixels the page draws, as the file a phone hands over.
-func _test_the_environment_carries_the_view(t) -> void:
-	var recorder := FrameRecorder.new()
-	recorder.save_on_exit = false
-	t.add_child(recorder)
-	var sitting := Sitting.new()
-	sitting.frame_timing = FrameRecord.new()
-	var run := RunState.new()
-	recorder.setup(func() -> bool: return false, null, null, null, run, sitting)
-	var environment: Dictionary = JSON.parse_string(recorder.report_text())["environment"]
+## Whether `line` is no wider than the readout, at the font the readout uses.
+func _fits_the_readout(line: String) -> bool:
+	return ThemeDB.fallback_font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			FrameRecorder.READOUT_FONT_SIZE).x <= FrameRecorder.READOUT_WIDTH
+
+## The record's environment carries the pixels the page draws, as the file a phone hands over, and
+## what the timer costs on the device: the smallest step its clock takes and what a timing pair
+## costs. Read off the file a save writes.
+func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
+	var rig := _rig(t, FrameRecord.new())
+	rig.recorder.save()
+	var environment: Dictionary = JSON.parse_string(
+			FileAccess.get_file_as_string(rig.sitting.frame_record_path))["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
+		# A headless window reports 0 by 0, so only the keys and the ratio are pinned.
 		t.check(environment.has(key), "the record's environment carries %s" % key)
-	recorder.free()
-	sitting.free()
-	run.free()
+	t.check(environment["device_pixel_ratio"] > 0.0, "the ratio is never 0")
+	var step: float = environment["timer_resolution_usec"]
+	t.check(step >= 1 and step < 2000, "the clock's smallest step is measured (%.0fus)" % step)
+	t.check(environment["timer_pair_usec"] >= 0.0, "and so is what a timing pair costs")
+	rig.free_all()
+
+## A recorder in the tree on `record`, set up as `main` sets one up with no world to count, and its
+## sitting's saved record at a scratch path so that a save, or leaving the tree, writes there and not
+## under the player's own records. `free_all()` frees it all and removes the file.
+func _rig(t, record: FrameRecord) -> _Rig:
+	var rig := _Rig.new()
+	rig.sitting = Sitting.new()
+	rig.sitting.frame_timing = record
+	rig.sitting.frame_record_path = _SCRATCH_RECORDER
+	rig.run = RunState.new()
+	rig.recorder = FrameRecorder.new()
+	t.add_child(rig.recorder)
+	rig.recorder.setup(func() -> bool: return false, null, null, null, rig.run, rig.sitting)
+	return rig
+
+class _Rig extends RefCounted:
+	var recorder: FrameRecorder
+	var sitting: Sitting
+	var run: RunState
+
+	func free_all() -> void:
+		# Leaving the tree writes the record to the sitting's path.
+		recorder.free()
+		sitting.free()
+		run.free()
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_frame_record_scratch_recorder.json"))
