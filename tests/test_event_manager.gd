@@ -75,11 +75,10 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
 ## day the run is taught as on any other.
 func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 	var events := _city.events
-	var day_before := events.world.day
 	var dog := EventCatalogue.by_id("charging_dog")
 	var lesson := EventCatalogue.lesson_of(dog)
 	var at := _city.map.doorstep_world_position()
-	events.world.day = Tuning.RUN_TAUGHT_DAY
+	_start(Tuning.RUN_TAUGHT_DAY)
 	var robber := events.spawner.create(EventCatalogue.by_id("alley_robbery"), at)
 	var first := events.spawner.create(lesson, at)
 	var second := events.spawner.create(dog, at)
@@ -96,7 +95,6 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 			"no other row has a lesson's row of its own")
 	for instance: EventInstance in [robber, first, second]:
 		instance.queue_free()
-	events.world.day = day_before
 
 ## The page's own lifetime, and that every look a row can carry has pictures on it, are
 ## `tests/test_atlas_events.gd`: with one baked page for the whole catalogue there is no

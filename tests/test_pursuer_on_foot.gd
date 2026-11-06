@@ -46,7 +46,10 @@ func _city_with_her(t, day: int, seed_value := SEED, on_map: CityMap = null) -> 
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
 	city.build(map)
-	city.events.world.day = day
+	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
+	# checks plant what they watch themselves, and no day's seals or doors come with it.
+	var no_plans: Array[EventScheduler.Planned] = []
+	city.events.start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
 	var her := CharacterBody2D.new()
 	her.add_to_group("player")
 	city.events.use_player(her)
@@ -189,7 +192,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 	EventBus.poster_pursuit_sent.connect(on_sent)
 	var before := city.events.instances().size()
 	var account: Array[String] = []
-	city.events.world.trace = RunTrace.recording(account)
+	city.events.trace = RunTrace.recording(account)
 	city.events.send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := city.events.pending_warnings()

@@ -79,18 +79,11 @@ manager (`EventStreaming.take(plans)`), not a bypass of the list.
 
 ### 2.2 `EventWorld` / `EventManager` fields written to skip `setup_world()` / `start_day()`
 
-The game sets these in `EventManager.setup_world()` and `setup()` or never. Tests still overwrite:
-`world.map = CityMap.new()` (`test_event_behaviours.gd`), `world.signals = null` (`test_patrol_vanish.gd`),
-`world.day = day` (`test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_event_manager.gd`), `world.trace = ...`
-(`test_pursuer_on_foot.gd`) and `world.noise = 50.0` (`test_invincible.gd`). `stream_radius =` is a seam (`main.gd`
-writes it), and so is the manager's own `trace` setter (`events.trace =` in `test_pelican.gd`). Verdict per field:
-`map`, `run`, `signals` go through `setup_world(map, run)` or `use_run(run)`; `day` through
-`start_day(DaySpec.for_day(day), ...)`; `player` and `noise` through `EventManager.use_player()` or what the world
-builds; `trace` through `manager.trace`.
-`test_excitement_source.gd` writes `world.excitement_sources` twice. That field is the baby's `WorldContext`'s, and
-handing it the manager's sources is the hand-in `main.gd` and `City` make (`test_checkpoints.gd` and
-`test_events_chat.gd` make it too); whether `test_excitement_source.gd`'s two writes are that hand-in or a list of
-its own is for its builder to check.
+No test writes an `EventWorld` field: suites hand the manager its world through `setup_world()`,
+`setup()`, `use_run()` and `use_player()`, its day through `start_day()` or `start_recipe()`, and its trace
+through the manager's own `trace` setter. Two writes of the baby's `WorldContext` stay:
+`test_invincible.gd` sets `noise` on its own fake world, a test double's state no game path sets, and
+`test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and `City` make.
 
 ### 2.3 `CityMap` tile state written by hand
 
@@ -182,7 +175,6 @@ The line numbers in the blackout and scenery residency suites are from before th
 
 Files in a build are those in the tables above. Builds with disjoint file sets can run in parallel; a shared helper (`finale_rig.gd`, `crowd_rig.gd`, `resistance_rig.gd`, `event_manager_rig.gd`) belongs to exactly one build.
 
-2. **World/manager fields through `setup_world`/`start_day`/`use_run`** (section 2.2). Files: `test_event_behaviours.gd`, `test_patrol_vanish.gd`, `test_pursuer_on_foot.gd`, `test_excitement_source.gd`, `test_event_manager.gd`, `test_invincible.gd`.
 3. **Map tile state through the map's own writers** (section 2.3): the five fixtures it lists, each open as it says. Files: `test_turns.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`.
 4. **Escape rigs** (the finale rig's hand-built `Planned`/guard/bands, `RoadblockRig`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, the `far_guard_node`/`layer_of`/`attach_nodes` reads): `finale_rig.gd`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, `test_barrier_stays.gd`.
 6. **Zero-reader members: resistance and checkpoint owners** (`ResistanceDirector` arrow/door/trap/mark accessors, `CheckpointController`, `Happenings`, `CordonTape`). Files: `test_resistance_arrow.gd`, `test_resistance_crossing.gd`, `test_resistance_alley_siting.gd`, `test_resistance_replacement.gd`, `test_resistance_traps.gd`, `test_resistance_reach_*.gd` (narrow, relocated, contacts), `test_burnt_door.gd`, `test_day13_guard.gd`, `test_park_cordon.gd`, `test_park_return.gd`, `park_cordon_sweep.gd`, `resistance_rig.gd`.
