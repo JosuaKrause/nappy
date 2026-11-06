@@ -40,11 +40,11 @@ static func tile(at: Vector2i) -> String:
 ## Which way something is pointing, as a compass bearing in whole degrees rather than a word.
 ## +y is south — the city is drawn from above — so the bearing runs clockwise from north (-y)
 ## at 0°, through east (+x) at 90°, south (+y) at 180° and west (-x) at 270°, the same way a
-## real compass reads. A press sets an arbitrary unit vector
-## (`TouchControls.heading_to()`), so most headings are diagonal, and a word would either lose
-## the difference between two headings a player can tell apart or invent a ninth word for every
-## one of them; the bearing is exact instead. `nowhere` stays for a genuinely zero vector — the
-## absence of a direction, not a rounded one.
+## real compass reads. A press sets an arbitrary unit vector (the touch controls' heading toward
+## it), so most headings are diagonal, and a word would either lose the difference between two
+## headings a player can tell apart or invent a ninth word for every one of them; the bearing is
+## exact instead. `nowhere` stays for a genuinely zero vector — the absence of a direction, not
+## a rounded one.
 static func compass(direction: Vector2) -> String:
 	if direction.length_squared() < 0.0001:
 		return "nowhere"

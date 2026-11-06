@@ -24,14 +24,13 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the building's
-ground-floor and roof pieces (20 and more, read by the ground-floor suite), the touch controls'
-geometry (which way a touch points her, the dead zone, double taps, the run focus, the screen's
-halves), the frame recorder's ledger, the park cordon (its stretches, officers, last gap, when it
-closed, whether she is trapped, whether it was laid again), the event scheduler's plan helpers, the
+ground-floor and roof pieces (20 and more, read by the ground-floor suite), the event scheduler's
+plan helpers, the
 resistance director's guard and contact spots and nearest alleys, the title screen's hard-mode
 controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
-"about 250" was an estimate.
+"about 250" was an estimate. The touch controls, the park cordon and the frame recorder and its
+ledger are done (record minty-quail-dappled-sparrow).
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing `tests-hold-nothing.md`'s findings in the files
