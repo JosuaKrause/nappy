@@ -298,9 +298,6 @@ from anything that comes after" · "the lesson is not paid for. why would it be?
 marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
 behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
 first of the events the dawn bought for her route is drawn from it, at `LESSON_DELAY`.
-**A rig that must not come sooner** takes the two-bag shape
-(`MarbleBag.rig_spaced()`): a bag of what comes first, none of it the ensured marble, then a bag of
-the ensured marble; nothing uses it today.
 
 **A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
 into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "this makes it very unlikely that two events from the

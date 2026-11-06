@@ -18,10 +18,6 @@ func is_taking() -> bool:
 func walked_for() -> float:
 	return event.age - _taken_at
 
-## Starts the walk now, for a rig that drives the scene by hand.
-func take_now() -> void:
-	_taken_at = event.age
-
 ## Stops the walk, for a rig that drives the scene by hand.
 func stop() -> void:
 	_taken_at = INF

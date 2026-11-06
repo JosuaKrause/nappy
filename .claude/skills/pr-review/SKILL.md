@@ -81,8 +81,18 @@ Read the changed code in context at the PR's head, under the skills that govern 
 touches (the path table in `CLAUDE.md`). Look for:
 
 - a correctness bug, with a concrete input that shows it;
-- a test that cannot fail, or does not test what its name says. Where the PR claims a test fails
-  before the fix, check that claim, by reading or by running that one suite on the pre-fix code;
+- a test that does not test what its name says, or holds nothing in one of the four ways
+  **verify**'s Testing policy names (an unreachable setup, a design decision read back, a check that
+  cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
+  first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
+  inbox #1098 in curly-rabbit. It fails CI on a new one and on a line added to the list's no reader
+  or own file only group (against the PR's base), and on a kept line with no reason; whether a kept
+  line's reason holds is the reviewer's to read, and so is the rest, including any change to the
+  check's own exemptions in the tool: `ENGINE_MEMBERS` (a name never counted as a read, which exempts
+  it everywhere) and `SKIPPED_TESTS` (a test file not scanned), since each switches the check off
+  with no list line and no reason. Where the PR claims a
+  test fails before the fix, check that claim, by reading or by running that one suite on the
+  pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
   docs, names are content);
 - a design that breaks **orchestrating**'s "Code is designed by layer": a dependency pointing up a

@@ -1067,13 +1067,6 @@ static func open_tile_for(purpose: GameEnums.BlockPurpose) -> GameEnums.TileType
 func recompute_calm(state: CityState) -> void:
 	_recompute_calm(state)
 
-## Sets `tile`'s ground during the day and forgets the per-type tile lists that were built from
-## the old ground. What `repaint()` does for the whole map at dawn, for the few tiles a happening
-## changes in front of her.
-func repaint_tile(tile: Vector2i, type: GameEnums.TileType) -> void:
-	set_tile(tile, type)
-	_tiles_by_type.clear()
-
 ## Only `fenced_park` is left out of the calm, and so is its playground — a merely-`shut_calm` area
 ## stays calm ground, spoiled rather than gone (see `shut_calm`'s own doc).
 func _recompute_calm(state: CityState) -> void:

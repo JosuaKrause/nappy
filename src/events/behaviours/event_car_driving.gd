@@ -91,10 +91,6 @@ var _was_leaving := false
 func _init() -> void:
 	steps_each_tick = false
 
-## Whether the car is standing — see `_standing`.
-func is_standing() -> bool:
-	return _standing
-
 ## Stands it for her: a car that stood for its men, say (`EventInvestigation`), pulls away only
 ## once she is out of its way.
 func stand() -> void:
@@ -308,7 +304,7 @@ func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> f
 	return event.def.shape.distance_to_spine(local) - event.def.shape.radius - radius
 
 ## Whether this car is driving right now: the one state its warning and its strike are live in. On
-## its route (`drives_its_route()`) and not standing (`is_standing()`).
+## its route (`drives_its_route()`) and not standing (`_standing`).
 func is_driving() -> bool:
 	return drives_its_route() and not _standing
 

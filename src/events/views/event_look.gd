@@ -473,6 +473,15 @@ func mark_rect() -> Rect2:
 ## street fire's whole burning front and smoke). What `tests/test_no_pop_in.gd` checks against the
 ## view on a thing's first frame: the caret is measured from the drawing's own numbers, not from
 ## `EventFootprints.footprint_of()`'s worst case, so a footprint that leaves it out fails there.
+##
+## **Public though no game class calls it, because nothing else can say what the first frame
+## covers.** The suites that read it confirm that a thing that arrives is wholly off the screen on
+## the frame it exists, and the extent they need is the union of the pictures, the shadow, the
+## caret and the halo margin: the caret is drawn straight onto the event (`Sprites.draw_caret()`)
+## and a headless run draws no pixels, so no recording drawer holds it, and the pictures a drawer
+## does hold are the ones named by the look's view for that heading rather than the worst case a
+## thing that turns can reach. The look is what knows all of it, which the game asks only in
+## pieces (`_drawn_reach()`, `mark_rect()`).
 func drawn_rect_now() -> Rect2:
 	var rect := event.drawn_box()
 	for picture in EventPictures.family_sources(event.def.look):

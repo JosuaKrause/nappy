@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## Run in each revision's checkout and compare the `EVENT_CAR_TRACE_JSON` lines run for run:
 ## `tools/test.sh probes/event_car_give_way_trace.gd`. Reads only what both revisions have
-## (`EventInstance.step()`, `car.is_standing()`, `signals`, `player_at`, `pram_at`).
+## (`EventInstance.step()`, whether the step moved the car, `signals`, `player_at`, `pram_at`).
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 478156010]
 const TICKS := 600
@@ -217,8 +217,10 @@ func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 			var junction: Vector2i = rig["junction"]
 			while not signals.green_for(junction, rig.get("vertical", false)):
 				signals.elapsed += 0.25
+		var was_at := car.position
 		car.step(STEP)
-		var standing: bool = car.car.is_standing()
+		# Standing is what a car held for her shows: the step left it where it was.
+		var standing: bool = car.position.is_equal_approx(was_at)
 		held += 1 if standing else 0
 		flips += 1 if standing != was_standing else 0
 		was_standing = standing
