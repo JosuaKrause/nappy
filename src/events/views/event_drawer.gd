@@ -15,7 +15,8 @@ extends RefCounted
 ## picture looks like on the canvas. Kept apart so each is tested apart: a test hands an instance a
 ## drawer that records what it is told to paint instead of painting it, and checks the pictures the
 ## event was drawn with, without reading what the look holds. What is not an atlas picture is drawn
-## by the look itself, as before: a ground shadow, a dog's lead, a muzzle flash, the caret.
+## by the look itself, as before: a ground shadow, a dog's lead, a muzzle flash. The danger caret goes
+## through `caret()`, so a recording drawer holds its colour and width.
 
 var _atlas: AtlasLibrary
 ## What the scenery this builds lays its pictures through (`SceneryDrawer`, `EventScenery.drawer`):
@@ -54,3 +55,8 @@ func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 	built.drawer = _scenery
 	built.configure(picture, extent, anchor, shadow, band)
 	return built
+
+## Draws one danger caret (`Sprites.draw_caret()`) on `canvas`: its tip at `at`, `width` across,
+## in `colour`. The look calls it once for a costly mark and twice, stacked, for a lethal one.
+func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void:
+	Sprites.draw_caret(canvas, at, width, colour)

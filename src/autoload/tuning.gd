@@ -104,7 +104,7 @@ const CHAT_EXCITEMENT := 25.0
 ## The rule is about **expected impact**, not about whether a danger changes over time or what a
 ## row is declared to cost on paper — asking either of those marks a burning building and not the
 ## fire engine that made it, or a pedestrian who never does. See
-## `ExcitementSource.expected_impact_at()` and `EventLook.wants_a_mark()`.
+## `ExcitementSource.expected_impact_at()` and `EventLook._wants_a_mark()`.
 const EXPECTED_IMPACT_POINTS := METER_MAX * 0.4
 
 ## How far forward a source's own motion is projected for the caret, and — the same figure read
@@ -1194,7 +1194,7 @@ const FINALE_DISTANT_FLASH_MEAN_SECONDS := 1.3
 # --------------------------------------------------------------------- masts ---
 # M180, posters she notices, and loudspeakers that are somewhere: a loudspeaker is a mast on a
 # street with a field, not a floor under the whole city. See `MastSites`, `EventScheduler.
-# place_masts()` and `EventManager`'s own broadcast clock.
+# _place_masts()` and `EventManager`'s own broadcast clock.
 
 ## How many masts a city carries. The orchestrator's own number, open to overturn: enough that one
 ## is never far from a route without turning every street into one.

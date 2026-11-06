@@ -257,7 +257,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ##
 ## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the
 ## director calls this for today and records `EventScheduler.SILENCED_MAST` at the foot, which
-## `EventScheduler.place_masts()` reads on every later day. The id is `MastSites.Site.id`, stable
+## `EventScheduler._place_masts()` reads on every later day. The id is `MastSites.Site.id`, stable
 ## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false

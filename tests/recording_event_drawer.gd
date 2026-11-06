@@ -11,7 +11,7 @@ extends EventDrawer
 ## pictures through the real drawer's own, or through `scenery_drawer` when a test hands one.
 
 ## Every picture the look asked for, in order: `{"canvas", "kind", "picture", "foot", "size",
-## "rect", "mirrored", "colour", "band", "pass", "frame"}`. `kind` is `&"stand"`, `&"paint"`,
+## "rect", "mirrored", "colour", "band", "pass", "frame"}`. `kind` is `&"stand"`, `&"paint"`, `&"caret"` (a danger caret: `foot` is its tip, `size` its width twice over, `colour` its colour),
 ## `&"band"` or `&"scenery"`; `rect` is where the picture lands in `canvas`'s own space: a standing
 ## picture's box, its bottom edge centred on `foot` at `size` (its own size when it was asked for at
 ## zero), a painted one's rectangle, and a band's or a scenery's whole picture; `band` is the part a
@@ -42,6 +42,10 @@ func paint(canvas: CanvasItem, picture: String, rect: Rect2, colour := Color.WHI
 
 func paint_band(canvas: CanvasItem, picture: String, whole: Rect2, band: Rect2) -> void:
 	_record(canvas, &"band", picture, whole, whole.position, whole.size, false, Color.WHITE, band)
+
+func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void:
+	_record(canvas, &"caret", "", Rect2(at - Vector2(width, width * 0.8), Vector2(width * 2.0, width * 1.3)),
+			at, Vector2(width, width), false, colour)
 
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:

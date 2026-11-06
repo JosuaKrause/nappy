@@ -113,7 +113,7 @@ nobody.
 - **A colour is the wrong channel for a phase.** `EVENT_STREAM_RADIUS` is 900px and a telegraph
   lasts a few seconds, so an "amber means telegraphing" rule would only ever be seen on the rows
   sited in front of her and would read as *near*. **The flash carries the phase.**
-- **Cache the projection once a frame.** `wants_a_mark()`, `mark_colour()` and the drawing all ask
+- **Cache the projection once a frame.** `_wants_a_mark()`, `_mark_colour()` and the drawing all ask
   in the same frame; `ExcitementSource.caret_strength()` computes it once, keyed on the entity's
   own clock, and for an event on where she is too.
 
