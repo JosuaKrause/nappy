@@ -94,7 +94,6 @@ ticks give, and is kept with its reason:
   remove by handing it the run.
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
   `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
-- **The frame recorder's desktop file name** wants the records folder handed to the recorder.
 - **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a
   task scene of several targets on a stretch), free play past its whole duration (it wants a clock
   the scene is handed), the runtime suite's boundary probe writing the runtime's named world (it

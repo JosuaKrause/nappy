@@ -28,21 +28,5 @@ or frames starts its walk from a crowd that is a few ticks apart from run to run
 `test_frame_record.gd` and `test_run_checkpoints.gd`; they hold the boot still the same way when a
 check of theirs reads a position or a crowd state.
 
-**Tests touch nothing real.** A test overwrote the player's desktop save, and asked whether tests
-should be made unable to touch it at all, by a guard in the save that refuses the real path while
-the test runner runs, the player: "so a) tests shouldn't touch anything real. all of that should be
-mocked out or handled in a test state only matter b) are you talking about preventing such a thing
-from happening at all? how would that work? if you write a bad test it will happen. don't write bad
-tests" (inbox #984 in brisk-pelican).
-
-**Read as:** every test hands in what it touches, a fake or a state made for the test (a scratch-path
-save, never `user://save.json`), and a test that reaches anything real is a bad test; no runtime
-guard is built. *Proposed, not asked for:* review is where a bad test is stopped. What is left:
-`test_scene_recipe_activity.gd` boots `scenes/main.tscn` without handing it a save, leaving it to
-`GameSave._uses_save()`'s refusal of a headless run, so it gets a scratch-path save through
-`tests/booted_main.gd`; and the frame recorder's desktop file name is checked once the records folder
-is handed to the recorder rather than named under the player's `user://frame-records/`
-(`src/telemetry/frame_recorder.gd`).
-
 This item sits beside `tests-public-seams.md` (tests drive public seams and real frames), whose
 fakes injected instead of patched statics remove part of the same shared state.
