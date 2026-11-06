@@ -113,7 +113,8 @@ func _test_the_two_chains_part_at_the_door_and_never_meet_again(t) -> void:
 		var built := _plan_for(seed_value)
 		var plan: FinalePlanner.Plan = built["plan"]
 		t.check(plan.chains.size() == 2, "seed %d plans two chains" % seed_value)
-		var door: Vector2i = FinalePlanner.service_exit_tile(built["map"]) \
+		var exit_map: CityMap = built["map"]
+		var door: Vector2i = exit_map.world_to_tile(FinalePlanner.service_exit_world_position(exit_map)) \
 				/ ReachabilityGrid.CELL
 		var shared: Array[Vector2i] = []
 		for cell: Vector2i in plan.chains[0].cells:
@@ -205,7 +206,7 @@ func _test_every_street_off_the_chains_is_sealed(t) -> void:
 		# The one exempt street is the one she is standing in, not the one the front door opens
 		# onto: on the last night she comes out of the service exit and never uses that door.
 		var hers := map.network.segment_containing(
-				FinalePlanner.service_exit_tile(map))
+				map.world_to_tile(FinalePlanner.service_exit_world_position(map)))
 		var open_and_unsealed := 0
 		var closed := 0
 		for segment in map.network.segments():
@@ -240,7 +241,7 @@ func _test_both_exits_are_reachable_through_the_open_cells_alone(t) -> void:
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
 		var grid := ReachabilityGrid.build(map)
-		var start := grid.node_at(FinalePlanner.service_exit_tile(map))
+		var start := grid.node_at(map.world_to_tile(FinalePlanner.service_exit_world_position(map)))
 		t.check(start >= 0, "seed %d: the service exit is walkable ground" % seed_value)
 		var reached := {start: true}
 		var queue: Array[int] = [start]
@@ -288,7 +289,7 @@ func _test_both_exits_are_reachable_past_every_body_the_escape_stands(t) -> void
 		var blocked := {}
 		bodies += _block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
-				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+				FinalePlanner.service_exit_world_position(map))
 		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
@@ -317,7 +318,7 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 		_block_every_body(t, map, placements, blocked)
 		reaches += _block_every_standing_reach(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
-				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+				FinalePlanner.service_exit_world_position(map))
 		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
@@ -375,7 +376,7 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
 		_block_every_body(t, map, whole, blocked)
 		_block_every_standing_reach(t, map, whole, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
-				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+				FinalePlanner.service_exit_world_position(map))
 		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
@@ -1097,7 +1098,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		var blocked := {}
 		_block_every_body(t, map, placements, blocked)
 		var reached := _flood_past_the_bodies(map, blocked,
-				map.tile_to_world(FinalePlanner.service_exit_tile(map)))
+				FinalePlanner.service_exit_world_position(map))
 		for kind in [CityEdge.Kind.TUNNEL, CityEdge.Kind.BRIDGE]:
 			var exit := map.tile_to_world(FinalePlanner.exit_tile(map, kind))
 			var at := Vector2i(roundi(exit.x / BODY_FLOOD_STEP), roundi(exit.y / BODY_FLOOD_STEP))
@@ -1448,7 +1449,7 @@ func _test_the_service_exit_is_beside_the_home_block(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		_paint_day_one(map)
-		var tile := FinalePlanner.service_exit_tile(map)
+		var tile := map.world_to_tile(FinalePlanner.service_exit_world_position(map))
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
 		var lot := CityMap.blocks_tile_rect(map.lot_blocks(map.home_block))
 		var beside := tile.x == lot.position.x - 1 or tile.x == lot.end.x
@@ -1476,7 +1477,7 @@ const SPAWN_SEEDS := [4242, 1, 77, 9001, 5, 1234, 31337, 808, 6, 27]
 ## **A 14px body at the spawn overlaps no static body**, and in this scene that is exactly the two
 ## sources checked below, because nothing else in a finale city has one: the props and the street
 ## trees are plain `Node2D`s with no collision at all, a `Building` stands on block ground and
-## `service_exit_tile()` answers with walkable ground, the boundary walls are outside the map, and
+## `service_exit_world_position()` answers with walkable ground, the boundary walls are outside the map, and
 ## the crowd is cleared before the plan is made. An event's obstruction body and a seal's are what
 ## is left — both arrive as `EventScheduler.Planned`, and a burst's crater arrives as one of those
 ## spawning its successor where it stood, which is asked about too.

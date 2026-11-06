@@ -86,7 +86,6 @@ src/events/views/pursuer_look.gd robber_pictures
 src/events/views/roadblock_look.gd chaser_pictures
 src/events/walk_ground.gd held_by
 src/events/walk_ground.gd solids_of
-src/finale/finale_planner.gd service_exit_tile
 src/interior/interior_map.gd stair_kind_for_symbol
 src/interior/interior_map_plan.gd shortest_walk
 src/interior/interior_map_plan.gd walk_avoiding
