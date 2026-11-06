@@ -20,7 +20,7 @@ extends RefCounted
 ## `ARRIVED` px of the roadblock's body. Each city stands in a run of its own
 ## (`RunCity.with_own_run()`); she is handed to the director and the events as `main` hands her; the
 ## guard is the live `task_guard` among the city's instances, and the arrow's roadblock the instance
-## its `arrow_key()` names.
+## its `_arrow_key` names.
 ##
 ## **On arrival** the guard is counted as:
 ## - **guarding** the roadblock the arrow points at: in its band (`inner_radius` plus its touch reach
@@ -135,7 +135,7 @@ func _nearest_on_foot(day: Dictionary) -> Array[Vector2i]:
 	var director: ResistanceDirector = day["director"]
 	var map: CityMap = day["city"].map
 	var by_length: Array = []
-	for target: Dictionary in director.arrow_targets():
+	for target: Dictionary in _arrow_targets(director):
 		var roadblock := _live_instance(target["key"])
 		if roadblock == null:
 			continue
@@ -182,7 +182,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var city: City = day["city"]
 	var map: CityMap = city.map
 	var target: EventInstance = null
-	for candidate: Dictionary in director.arrow_targets():
+	for candidate: Dictionary in _arrow_targets(director):
 		var roadblock := _live_instance(candidate["key"])
 		if roadblock and map.world_to_tile(roadblock.body_position()) == tile:
 			target = roadblock
@@ -217,7 +217,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 				moves += 1
 				guard = _task_guard(city)
 				guard_at = guard.global_position if guard else Vector2.INF
-			var arrow := _live_instance(director.arrow_key())
+			var arrow := _live_instance(director._arrow_key)
 			var her := player.global_position
 			if guard and arrow and her.distance_to(arrow.body_position()) \
 					> ResistanceDirector.touch_reach(arrow):
@@ -235,7 +235,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var result := _what_he_guards(city, director, moves)
 	result["noticed"] = noticed
 	result["nearest"] = nearest
-	result["way"] = _a_way_past_from(map, _task_guard(city), _live_instance(director.arrow_key()),
+	result["way"] = _a_way_past_from(map, _task_guard(city), _live_instance(director._arrow_key),
 			day["mark"])
 	return result
 
@@ -275,7 +275,7 @@ static func _a_way_past_from(map: CityMap, guard: EventInstance, roadblock: Even
 
 func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Dictionary:
 	var guard := _task_guard(city)
-	var arrow := _live_instance(director.arrow_key())
+	var arrow := _live_instance(director._arrow_key)
 	if guard == null or arrow == null:
 		return {"kind": "none", "from_arrow": -1.0, "clear": false, "moves": moves}
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -312,7 +312,7 @@ static func _live_instance(key: Variant) -> EventInstance:
 static func _settle_the_arrow(director: ResistanceDirector) -> void:
 	director.retarget_the_arrow()
 	var ticks := 0
-	while director.arrow_sweeping() and ticks < 1200:
+	while _arrow_sweeping(director) and ticks < 1200:
 		director.tick(1.0 / Engine.physics_ticks_per_second)
 		ticks += 1
 
@@ -358,3 +358,17 @@ func _tear_down(day: Dictionary) -> void:
 	(day["player"] as Stroller).free()
 	(day["director"] as ResistanceDirector).free()
 	(day["city"] as City).free()
+
+## `ResistanceDirector`'s places that answer today's task, as the arrow chooses among them
+## (`_arrow_candidates()`): empty with no step on offer or one a single place answers. The probe
+## reads the director's private state, which the director offers no query of.
+static func _arrow_targets(director: ResistanceDirector) -> Array[Dictionary]:
+	var step := director.current_step()
+	if step == null or not ResistanceSteps.answers_at_several_places(step):
+		var none: Array[Dictionary] = []
+		return none
+	return director._arrow_candidates(step)
+
+## Whether a sweep of the arrow's walking fields is under way (`ResistanceDirector._arrow_*_next`).
+static func _arrow_sweeping(director: ResistanceDirector) -> bool:
+	return director._arrow_nearest_next != null or director._arrow_own_next != null

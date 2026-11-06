@@ -18,7 +18,7 @@ extends RefCounted
 ## (`ResistanceDirector.retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
 ## under way), and again from each of `WALK_STOPS` points on her straight line toward the task's
 ## roadblock, to see whether the arrow stays on it as she walks there; what it points at is its
-## `arrow_key()`.
+## `_arrow_key`.
 ##
 ## **Before and after in one file.** `FallbackDirector` refuses every placement under the day's
 ## rules, which is the spawn on the circle's edge every other task near its mark takes — the
@@ -88,10 +88,10 @@ func _measure(t, fallback: bool) -> void:
 		var distance := own.body_position().distance_to(mark_at)
 		distances.append(distance)
 		_settle_the_arrow(director)
-		var found := director.arrow_targets()
+		var found := _arrow_targets(director)
 		live_counts.append(found.size())
 		var own_key := own.get_instance_id()
-		var first_own := _same_key(director.arrow_key(), own_key)
+		var first_own := _same_key(director._arrow_key, own_key)
 		if first_own:
 			own_from_mark += 1
 		var stayed := 0
@@ -103,7 +103,7 @@ func _measure(t, fallback: bool) -> void:
 			player.global_position = at
 			_settle_the_arrow(director)
 			stops += 1
-			if _same_key(director.arrow_key(), own_key):
+			if _same_key(director._arrow_key, own_key):
 				own_on_the_way += 1
 				stayed += 1
 		print("DAY13_ROADBLOCK %s seed %d: %s, %.0fpx from the mark, %d live roadblocks, arrow on it from the mark: %s, on the way %d" % [
@@ -151,7 +151,7 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 static func _settle_the_arrow(director: ResistanceDirector) -> void:
 	director.retarget_the_arrow()
 	var ticks := 0
-	while director.arrow_sweeping() and ticks < 1200:
+	while _arrow_sweeping(director) and ticks < 1200:
 		director.tick(1.0 / Engine.physics_ticks_per_second)
 		ticks += 1
 
@@ -180,3 +180,17 @@ func _worst(values: Array[float]) -> float:
 	for v in values:
 		worst = maxf(worst, v)
 	return worst
+
+## `ResistanceDirector`'s places that answer today's task, as the arrow chooses among them
+## (`_arrow_candidates()`): empty with no step on offer or one a single place answers. The probe
+## reads the director's private state, which the director offers no query of.
+static func _arrow_targets(director: ResistanceDirector) -> Array[Dictionary]:
+	var step := director.current_step()
+	if step == null or not ResistanceSteps.answers_at_several_places(step):
+		var none: Array[Dictionary] = []
+		return none
+	return director._arrow_candidates(step)
+
+## Whether a sweep of the arrow's walking fields is under way (`ResistanceDirector._arrow_*_next`).
+static func _arrow_sweeping(director: ResistanceDirector) -> bool:
+	return director._arrow_nearest_next != null or director._arrow_own_next != null

@@ -5,7 +5,7 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`raid_vans()`, `frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
+## (`frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
 ## `EventScheduler.open_ground_for()`, the next day's masts of `EventScheduler.place_masts()`, the
 ## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` hands the baby its
 ## stroller with `Baby.set_stroller()`.

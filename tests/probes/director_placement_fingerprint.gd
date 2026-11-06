@@ -122,14 +122,14 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 		return printed + 1
 	var contact := director.contact_position()
 	_print("%s task %s contact %s guard %s mast %s arrow %s" % [label, task.index, _point(contact),
-			_guard_at(_task_guard(city)), director.mast_in_play(),
+			_guard_at(_task_guard(city)), director._mast_id,
 			_point(director.red_arrow_target())])
 	printed += 1
 	# The task placed again from a fresh stream, as the day's order draws it.
 	var again := _rng(seed_value, day, "placed-again")
 	var placed := director.place_contact(task, again, mark)
-	_print("%s task %s placed again %s rng %d fell back %s" % [label, task.index,
-			_point(placed), again.state, director.fell_back()])
+	_print("%s task %s placed again %s rng %d" % [label, task.index,
+			_point(placed), again.state])
 	printed += 1
 	if contact != Vector2.INF:
 		printed += _the_guard_spots(city, director, label, contact, false, doorstep)
@@ -215,8 +215,8 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 ## (let through).
 func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label: String) -> int:
 	var happenings := director._happenings
-	var vans := happenings.raid_vans()
-	var beat := happenings.raid_beat()
+	var vans: PackedVector2Array = happenings._raid_vans
+	var beat: PackedVector2Array = happenings._raid_beat
 	_print("%s raid plans vans %s beat %s" % [label, vans, beat])
 	var far := city.map.tile_to_world(Vector2i(city.map.size.x - 4, 3))
 	var printed := 1

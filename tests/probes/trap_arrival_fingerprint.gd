@@ -153,7 +153,10 @@ func _run_out(city: City, director: ResistanceDirector, player: Stroller, label:
 				_stand(city, player, her)
 		city.events.warnings.run(STEP, her)
 		shown += STEP
-	var sent: EventInstance = director.trap()
+	var sent: EventInstance = null
+	for instance in city.events.instances():
+		if instance.def.id == warning.def.id and not instance.is_finished:
+			sent = instance
 	var made := "nobody (withdrawn)" if warning.withdrawn else "nobody"
 	if sent != null and is_instance_valid(sent):
 		made = "%s at %s %s" % [sent.def.id, _point(sent.global_position),

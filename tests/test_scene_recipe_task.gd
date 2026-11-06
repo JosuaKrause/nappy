@@ -7,6 +7,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 ## The context city every task scene is built on, so a mark here is a mark there.
 const CONTEXT := 1917501
 ## An alley mouth of that city, the mark most task scenes start at.
@@ -260,8 +261,9 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
 	t.check(director.scene_task_errors().is_empty() and director.current_step() != null
 			and not director.current_step().is_pickup,
 			"and its task finds a mast with none standing: %s" % [director.scene_task_errors()])
-	var foot := city.events.mast_foot(director.mast_in_play())
-	t.check(director.mast_in_play() != "" and foot != Vector2.INF
+	var mast := ResistanceReads.mast_at(director, city.events)
+	var foot := city.events.mast_foot(mast)
+	t.check(mast != "" and foot != Vector2.INF
 			and foot.distance_to(mark) >= ResistanceDirector.NEAR_THE_MARK,
 			"a mast put up for it on the circle round her")
 	_free_day(made)

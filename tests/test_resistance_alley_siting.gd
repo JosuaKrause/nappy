@@ -78,7 +78,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 	# Chosen without the avoidance: tiles that are their own nearest with nothing used and have
 	# another mark tile within `NOTICE_RADIUS`, so that using one leaves another in reach.
 	var eligible: Array[Vector2i] = []
-	for tile in scout.mark_tiles():
+	for tile in _mark_tiles():
 		var at := _city.map.tile_to_world(tile)
 		if scout.nearest_alley_within(at).distance_to(at) <= 0.5:
 			eligible.append(tile)
