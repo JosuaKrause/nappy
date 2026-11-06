@@ -285,6 +285,10 @@ var _mover: Mover
 ## may drive and not what it can see. A car that investigates notices her in an alley mouth or on
 ## a square as a figure would.
 var _sight: Mover
+## The tiles of its own solid body, and where that body stood when they were worked out
+## (`_own_body_tiles()`).
+var _own_tiles := {}
+var _own_tiles_at := Vector2.INF
 ## The solid body `_build_obstruction()` made, or `null` before it exists and after
 ## its step has dropped it. See `is_solid()`.
 var _obstruction: StaticBody2D
@@ -1732,7 +1736,8 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ## around. A roadblock is that row: the node is the man once he leaves the post, and what he
 ## reaches with is a pair of arms rather than the width of the barrier he left standing.
 ##
-## **A pursuer catches her only by touching her**, so its catch also needs `clear_line_to()` her:
+## **A pursuer catches her only by touching her**, so its catch also needs a clear line to her (the strict one, `_navigator.clear_line()` with
+## no own tiles):
 ## within reach across a building's corner is not a catch. *(freckled-goose, #544: "Even then the
 ## distance would not physically connect so counting it as caught would be unfair. Only if the
 ## Robert touches the player should it end instantly".)* The reach is unchanged; what is added is
@@ -1753,18 +1758,37 @@ func is_lethal_at(world_position: Vector2) -> bool:
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
-	return def.pursuit == null or clear_line_to(world_position)
+	return def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
 
 ## Whether the straight line from this node to `world_position` crosses only ground this figure
-## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question a pursuer's catch asks, since a
-## catch across a wall, a barrier or a café is a man reaching through it, and the one its notice
-## and its lunge ask in `EventPursuit`, since he can neither see nor go for her through one.
+## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question its notice
+## and its lunge ask in `EventPursuit`, since he can neither see nor go for her through a wall, a
+## barrier or a café. A catch asks the strict line instead, since a catch across one is a man
+## reaching through it (`is_lethal_at()`).
 ## `WorldMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
 ## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
 ## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
 ## built without a map, exactly as `_step()` is.
+##
+## **Seeing out of his own band is not reaching through it.** The line a guard notices her along and
+## lunges along does not ask the tiles of his own body (`_own_body_tiles()`), because he steps out to
+## his post on her side and she may stand on the band's far side; the catch above asks every body,
+## his own included, and every other body's tile stops either question.
 func clear_line_to(world_position: Vector2) -> bool:
-	return _navigator.clear_line(global_position, world_position, _sight)
+	return _navigator.clear_line(global_position, world_position, _sight, _own_body_tiles())
+
+## The tiles this event's own solid body is recorded on (`EventSpawner.obstructed_footprint()`, the
+## record the planned body and the live one are written from), as a set; empty for a row with no
+## body. Worked out once for where the body stands.
+func _own_body_tiles() -> Dictionary:
+	var at := body_position()
+	if _own_tiles_at != at:
+		_own_tiles_at = at
+		_own_tiles.clear()
+		for tile in EventSpawner.obstructed_footprint(_map, def, at, _heading):
+			_own_tiles[tile] = true
+	return _own_tiles
+
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:

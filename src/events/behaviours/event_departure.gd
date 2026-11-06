@@ -115,11 +115,6 @@ func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
 func walks_a_way() -> bool:
 	return _walks_a_way
 
-## Drops the way planned on past the end of its given way, so the next tick plans it again from
-## where she is then.
-func plan_the_rest_again() -> void:
-	_way_on = PackedVector2Array()
-
 ## What is left of the way `along()` gave, in order; empty once it is walked, or for any other
 ## departure. The way planned on from its end is not part of it.
 func way_left() -> PackedVector2Array:

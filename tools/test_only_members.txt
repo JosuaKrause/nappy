@@ -33,8 +33,6 @@ src/crowd/traffic_index.gd entry_count
 src/dev/debug_layers.gd body_outline_count
 src/dev/rig_lock.gd has_a_deadline
 src/dev/walk_plan.gd smoothed_turns
-src/events/behaviours/event_barrier_post.gd has_its_far_guard_posted
-src/events/behaviours/event_departure.gd plan_the_rest_again
 src/events/checkpoint_controller.gd crossing_door
 src/events/checkpoint_controller.gd guard_after_her
 src/events/event_instance.gd charger_name
@@ -44,7 +42,6 @@ src/events/views/event_look.gd attach_nodes
 src/events/views/event_look.gd drawn_rect_now
 src/events/views/event_pictures.gd boom_arm_span
 src/events/views/roadblock_look.gd attach_nodes
-src/events/views/roadblock_look.gd far_guard_node
 src/events/views/spread_look.gd attach_nodes
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
@@ -81,7 +78,6 @@ src/visuals/atlas_library.gd reference_count
 src/visuals/atlas_library.gd region_name_for
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
-src/world/draw_layer.gd layer_of
 src/world/world_context.gd total_excitement_at
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
@@ -172,7 +168,6 @@ src/dev/still_watch.gd facing_a_red_light
 src/dev/trailer_text.gd opacity_at
 src/dev/zoom_out_camera.gd overview_zoom
 src/dev/zoom_out_camera.gd pose_at
-src/events/behaviours/event_barrier_post.gd come_back_as_the_barrier
 src/events/behaviours/event_car_driving.gd is_driving
 src/events/behaviours/event_car_driving.gd room_to_its_line
 src/events/checkpoint_controller.gd guard_is_after_her
@@ -200,7 +195,6 @@ src/events/event_scheduler.gd is_spoiled
 src/events/event_scheduler.gd place_masts
 src/events/event_scheduler.gd room_around
 src/events/event_scheduler.gd street_bag
-src/events/event_spawner.gd obstructed_footprint
 src/events/events_ahead.gd a_pursuer_is_after_her
 src/events/views/event_look.gd mark_colour
 src/events/views/event_look.gd mark_swell

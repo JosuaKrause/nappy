@@ -52,12 +52,6 @@ func chaser_side() -> int:
 func is_spent() -> bool:
 	return event.phase == EventInstance.Phase.SPENT or (event.is_leaving and has_left_its_body())
 
-## Whether a guard still stands at the band's far post: the band's own drawing while both are
-## posted, and after his partner has set off, until he leaves too.
-func has_its_far_guard_posted() -> bool:
-	return not far.has_left() \
-			and event.def.guard_sides.any(func(side: int) -> bool: return side != _chaser_side)
-
 ## **Pins the body at the place the guard is walking away from**, the frame he stops waiting, and
 ## keeps it there every frame he moves. **The body is a child node, so it moves with him unless
 ## something holds it** — `keep_the_body()`, run every frame rather than reparenting, since a

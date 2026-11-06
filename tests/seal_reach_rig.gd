@@ -15,6 +15,8 @@ extends RefCounted
 ## is a picture standing in front of whatever is behind it, as every figure in the street does, and
 ## is not ground.
 
+const ReachStage := preload("res://tests/escape_roadblock_rig.gd").Stage
+
 ## The deepest any solid piece of `plan` reaches into a building tile, in px; 0 when none does.
 static func body_overhang(map: CityMap, ground: WalkGround,
 		plan: EventScheduler.Planned) -> float:
@@ -30,14 +32,15 @@ static func drawing_overhang(map: CityMap, plan: EventScheduler.Planned) -> floa
 	var box := EventFootprints.box_of(def)
 	if not box.has_area():
 		return 0.0
-	# Set up the way the scheduler's placement sets a row up: `setup()` centres a stationary,
-	# unpinned row on the sidewalk band and decides which way its spread runs from the street it
-	# stands on, so the rig reads the instance's own position and `runs_vertically()`.
-	var instance := EventInstance.new()
-	instance.setup(def, plan.position, plan.path, Vector2.RIGHT, map)
+	# Made the way the day's streaming makes it (`EventStreaming.stream_in()`), which centres a
+	# stationary, unpinned row on the sidewalk band and decides which way its spread runs from the
+	# street it stands on, so the rig reads the instance's own position and `runs_vertically()`.
+	# In no tree: nothing here is drawn or stepped.
+	var stage := ReachStage.new(null, map)
+	var instance := stage.stand(plan)
 	var at := instance.position
 	var vertical := instance.runs_vertically()
-	instance.free()
+	stage.close()
 	var ground := Rect2(at.x - box.size.x * 0.5, at.y, box.size.x, 0.0)
 	if def.has_a_spread:
 		var half := maxf(11.0, def.obstructs_radius)

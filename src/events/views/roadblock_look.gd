@@ -235,10 +235,6 @@ func _shows_its_nodes(reach: Rect2) -> bool:
 ## his post and once he is gone.
 var _far_node: FarGuard
 
-## The node the far guard is drawn on while he walks, or null.
-func far_guard_node() -> Node2D:
-	return _far_node
-
 ## Keeps the far guard's node at his feet while he walks, shown while the event is and redrawn: made
 ## the first time he is found walking, freed once he is not.
 func _move_the_far_guard() -> void:
