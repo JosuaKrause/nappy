@@ -13,8 +13,6 @@
 # deleted.
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
-src/city/city_map.gd is_post
-src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/event_instance.gd charger_name
@@ -36,7 +34,6 @@ src/world/world_context.gd total_excitement_at
 src/build_info.gd commit_text
 src/city/city_generator.gd blocks_from_home
 src/city/city_generator.gd power_station_rank
-src/city/city_map.gd count_walkable
 src/city/marble_bag.gd put_in_front
 src/city/poster_art.gd torn
 src/city/scenery_residency.gd camera_view
