@@ -163,8 +163,8 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 ## states that differ in nothing else still draw different pictures and must not share a key. The
 ## charging dog has one stepping picture per view, so the same two states are one key for it.
 ##
-## **The two states are reached by walking the event on by hand** (`walk_on_by_hand()`, as a scene
-## recipe walks a held event), to the ground a half-stride apart whose bobs are the same: the bob is
+## **The two states are reached by sending the event off and stepping it** (`leave_for_a_completed_task()`,
+## then `step()` as its manager steps it), to the ground a half-stride apart whose bobs are the same: the bob is
 ## `|sin|` of the ground covered over 34px, so a walk that ends at the top of the bob (17px) and one
 ## that goes on a half-turn of the stride further (`PI / GAIT_RATE`, 34.9px) both lift the body the
 ## same, to the eighth of a pixel the key reads it. The engine's own count of times it drew the event
@@ -177,20 +177,20 @@ func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
 		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id(id), false)
 		var drawn := [0]
 		instance.draw.connect(func() -> void: drawn[0] += 1)
-		instance.held_by_hand = true
+		instance.leave_for_a_completed_task()
 		var speed := instance.departure.speed()
-		t.check(speed > 0.0, "%s walks on by hand" % id)
+		t.check(speed > 0.0, "%s walks on once sent off" % id)
 		if speed <= 0.0:
 			instance.free()
 			continue
-		instance.walk_on_by_hand(to_the_top_of_the_bob / speed)
+		instance.step(to_the_top_of_the_bob / speed)
 		await DrawnEvent.frames(t)
 		var first := _the_dog_drawn(instance)
 		var bob := instance.look.current_bob()
 		var first_half := instance.look.gait_is_second_half()
 		var stepping := instance.look.gait_is_stepping()
 		var before: int = drawn[0]
-		instance.walk_on_by_hand(half_a_turn / speed)
+		instance.step(half_a_turn / speed)
 		await DrawnEvent.frames(t)
 		var opposite := _the_dog_drawn(instance)
 		var moved_it: bool = drawn[0] > before
