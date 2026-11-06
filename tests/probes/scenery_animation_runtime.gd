@@ -99,10 +99,32 @@ func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 		for scenery in slice.get_children():
 			if not scenery is EventScenery:
 				continue
-			for layer in (scenery as EventScenery).static_layers:
+			var split := _split_by_animation(scenery as EventScenery)
+			for layer: SceneryLayer in split[1]:
 				_watch(layer, id + "_static")
-			for layer in (scenery as EventScenery).moving_layers:
+			for layer: SceneryLayer in split[0]:
 				_watch(layer, id + "_motion")
+
+## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its `set_frame()`
+## turns to their alternate frame, the still ones the rest. The frame it had is put back.
+func _split_by_animation(scenery: EventScenery) -> Array:
+	var layers: Array[SceneryLayer] = []
+	for child in scenery.get_children():
+		if child is SceneryLayer:
+			layers.append(child)
+	var had := {}
+	for layer in layers:
+		had[layer] = layer.frame_b
+	scenery.set_frame(true)
+	var turned_on: Array[SceneryLayer] = []
+	turned_on.assign(layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b))
+	scenery.set_frame(false)
+	var moving: Array[SceneryLayer] = []
+	moving.assign(turned_on.filter(func(l: SceneryLayer) -> bool: return not l.frame_b))
+	var still: Array[SceneryLayer] = []
+	still.assign(layers.filter(func(l: SceneryLayer) -> bool: return not moving.has(l)))
+	scenery.set_frame(not moving.is_empty() and had[moving[0]])
+	return [moving, still]
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0

@@ -236,12 +236,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
 		director.start_day(day, plans, rng)
-		var weights := {}
-		for row in EventDirector.route_rows_on(day, 0):
-			weights[row.id] = row.weight
 		var expected := {}
-		for marble: String in MarbleBag.in_proportion(weights, EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT,
-				EventDirector.ROUTE_BAG_MARBLES_OF):
+		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:

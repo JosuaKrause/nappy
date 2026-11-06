@@ -41,7 +41,7 @@ extends EventBehaviour
 ##   of the warning she is owed (minty-hedgehog).
 ## - **A car that has stood drives on only once she is out of its way**: on its route it goes on
 ##   standing while she is in its lane within its warning, so it never pulls away into her.
-## - **It gives way where the crowd's cars do** (`room_to_its_line()`): short of a zebra she is
+## - **It gives way where the crowd's cars do** (`_room_to_its_line()`): short of a zebra she is
 ##   waiting at on a street whose traffic gives way, and at a red light. A step past that line is
 ##   refused and the car stands, so the zebra stays the safe way over and the light the main road's
 ##   contract.
@@ -102,7 +102,7 @@ func note_the_pose(at: Vector2) -> void:
 	_travelled = event._path_travelled
 	_gait_phase = event._gait_phase
 	_was = gap_to_her(at, _heading_was)
-	_line = room_to_its_line(at, _heading_was)
+	_line = _room_to_its_line(at, _heading_was)
 	# Never further than the end of a route it stops at (`route_left()`): it never stands for her,
 	# nor turns onto her, where it cannot reach her.
 	_left = route_left(_travelled)
@@ -155,7 +155,7 @@ func check(move: MoveProposal, ends_its_route: bool) -> bool:
 ## within `PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it
 ## stops at. What `EventInstance.is_lethal_at()` answers for a car.
 func strikes(her: Vector2) -> bool:
-	return is_driving() and meets_her(event.global_position, event._heading, her,
+	return _is_driving() and meets_her(event.global_position, event._heading, her,
 			short_of_its_stop(PATROL_STRIKE_LEAD, route_left(event._path_travelled)))
 
 ## **Whether it will strike her if she stays where she is**: driving now, and her in front of its
@@ -163,11 +163,11 @@ func strikes(her: Vector2) -> bool:
 ## ahead, only as far as the line it gives way at and the end of a route it stops at. What
 ## `EventExcitement.will_be_lethal()` answers for a car.
 func will_strike(her: Vector2) -> bool:
-	if not is_driving():
+	if not _is_driving():
 		return false
 	var speed: float = event.def.speed
 	var horizon := speed * Tuning.EXPECTED_IMPACT_HORIZON
-	var line := room_to_its_line(event.global_position, event._heading)
+	var line := _room_to_its_line(event.global_position, event._heading)
 	if line < INF:
 		horizon = minf(horizon, maxf(line, 0.0))
 	var left := route_left(event._path_travelled)
@@ -199,7 +199,7 @@ func will_strike(her: Vector2) -> bool:
 ##
 ## Only on its route and along a street's own axis, which is every route a patrol drives, and only
 ## on a map laid out on the street lattice (`WorldMap.has_street_lattice()`).
-func room_to_its_line(at: Vector2, heading: Vector2) -> float:
+func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	if not event._map.has_street_lattice() or not drives_its_route():
 		return INF
 	var vertical := absf(heading.y) > absf(heading.x)
@@ -249,12 +249,12 @@ func room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	return room
 
 ## `seconds` of the car's travel past the touch, cut to what it can cover before the line it gives
-## way at (`room_to_its_line()`) and before the end of a route it stops at (`route_left()`): a
+## way at (`_room_to_its_line()`) and before the end of a route it stops at (`route_left()`): a
 ## car that will stand at a red light or a zebra short of her, or park short of her, neither warns
 ## her nor reads as lethal to her, since it never reaches her.
 func short_of_its_line(seconds: float) -> float:
 	var cut := short_of_its_stop(seconds, route_left(event._path_travelled))
-	var line := room_to_its_line(event.global_position, event._heading)
+	var line := _room_to_its_line(event.global_position, event._heading)
 	if line == INF or event.def.speed <= 0.0:
 		return cut
 	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / event.def.speed)
@@ -305,7 +305,7 @@ func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> f
 
 ## Whether this car is driving right now: the one state its warning and its strike are live in. On
 ## its route (`drives_its_route()`) and not standing (`_standing`).
-func is_driving() -> bool:
+func _is_driving() -> bool:
 	return drives_its_route() and not _standing
 
 ## Whether the car is on its route rather than in any other state: not standing still through a
@@ -365,5 +365,5 @@ func _on_the_carriageway(at: Vector2) -> bool:
 ## while a line it gives way at, or the end of a route it parks at, stands between them
 ## (`short_of_its_line()`): it will stop there.
 func closes_on(her: Vector2) -> bool:
-	return is_driving() and meets_her(event.global_position, event._heading, her,
+	return _is_driving() and meets_her(event.global_position, event._heading, her,
 			short_of_its_line(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))

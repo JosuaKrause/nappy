@@ -290,7 +290,8 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 		if player.move_and_collide(Vector2.RIGHT * Tuning.WALK_SPEED * STEP) != null:
 			touched = true
 	t.check(not struck, "a truck driving away from her never strikes her behind it")
-	t.check(engine.car.is_driving(), "and it was driving")
+	t.check(engine.global_position.x > 41.0, "and it was driving (%.0fpx along)"
+			% engine.global_position.x)
 	player.free()
 	engine.free()
 	# Standing beside its line, it passes her without a strike.
@@ -318,8 +319,8 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
-	t.check(not engine.car.is_driving() and not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
-			"and a parked truck is not driving")
+	t.check(not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
+			"and a parked truck is not lethal ahead of it")
 	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)
 	t.check(engine.is_solid() and _body_of(engine) != null, "and its body is still there")
@@ -510,6 +511,6 @@ func _test_its_picture_stands_over_its_body(t) -> void:
 			shape.half_length * absf(engine.solid_axis().y) + shape.radius
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
-	t.check(EventFootprints.picture_drop_of(_truck()) > shape.reach(),
+	t.check(EventFootprints.footprint_of(_truck()).end.y > shape.reach(),
 			"and the drawn box allows for the lowered picture")
 	engine.free()

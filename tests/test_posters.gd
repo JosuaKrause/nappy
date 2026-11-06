@@ -638,18 +638,20 @@ func _tear_one_sheet_each(t, tiles: Array, count: int) -> Array[bool]:
 		await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 2.0)
 		sent.append(_seen["pursuit"] > pursuits)
 		if sent[-1]:
-			t.check(_city.events.ahead.a_pursuer_is_after_her(), "the pursuer a tear sent is after her")
-			await _let_the_pursuer_go(t)
+			await _let_the_pursuer_go(t, true)
 	return sent
 
 ## Waits for the pursuer a tear sent to be in the world, takes him out of it, and lets a tick pass.
-func _let_the_pursuer_go(t) -> void:
+## `expected` says one was sent, so that he must come into the world within the wait.
+func _let_the_pursuer_go(t, expected := false) -> void:
 	var def := EventCatalogue.on_foot_on(_city.events.world.day)
 	var found: Array[EventInstance] = []
 	await _wait_until(t, func() -> bool:
 		found.assign(_city.events.instances().filter(func(e: EventInstance) -> bool:
 				return e.def == def))
-		return not found.is_empty() or not _city.events.ahead.a_pursuer_is_after_her(), 3.0)
+		return not found.is_empty(), 3.0)
+	if expected:
+		t.check(not found.is_empty(), "the pursuer a tear sent comes into the world")
 	for pursuer in found:
 		_city.events.retire(pursuer)
 	await PhysicsTicks.pass_ticks(t, 2, Callable(), SCALE)
