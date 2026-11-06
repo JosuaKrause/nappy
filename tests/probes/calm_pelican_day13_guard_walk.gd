@@ -220,7 +220,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 			var arrow := _live_instance(director._arrow_key)
 			var her := player.global_position
 			if guard and arrow and her.distance_to(arrow.body_position()) \
-					> ResistanceDirector.touch_reach(arrow):
+					> ResistanceDirector._touch_reach(arrow):
 				var off := her.distance_to(guard.global_position)
 				nearest = minf(nearest, off)
 				if off <= notice and map.clear_line(guard.global_position, her):
@@ -247,7 +247,7 @@ static func _a_way_past_from(map: CityMap, guard: EventInstance, roadblock: Even
 	if guard == null or roadblock == null:
 		return true
 	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
-	var reach := ResistanceDirector.touch_reach(roadblock)
+	var reach := ResistanceDirector._touch_reach(roadblock)
 	var body := roadblock.body_position()
 	var start := map.world_to_tile(from)
 	var seen := {start: true}
@@ -279,7 +279,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	if guard == null or arrow == null:
 		return {"kind": "none", "from_arrow": -1.0, "clear": false, "moves": moves}
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var reach := ResistanceDirector.touch_reach(arrow)
+	var reach := ResistanceDirector._touch_reach(arrow)
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
 	var clear := city.map.clear_line(guard.global_position, arrow.body_position())
 	var kind := "elsewhere"
@@ -310,7 +310,7 @@ static func _live_instance(key: Variant) -> EventInstance:
 ## Runs the arrow to rest the way the game does: it chooses, then the physics ticks `main` runs sweep
 ## its walking fields a slice at a time, choosing again as each finishes, until none is under way.
 static func _settle_the_arrow(director: ResistanceDirector) -> void:
-	director.retarget_the_arrow()
+	director._retarget_the_arrow()
 	var ticks := 0
 	while _arrow_sweeping(director) and ticks < 1200:
 		director.tick(1.0 / Engine.physics_ticks_per_second)

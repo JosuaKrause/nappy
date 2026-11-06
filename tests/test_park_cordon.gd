@@ -9,6 +9,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 ## How long a check waits for the cordon to close before calling it stuck.
@@ -51,8 +52,8 @@ func run(t) -> void:
 ## runs before she reaches the swing. Answers the director, the happenings, the park, the swing and
 ## the city state; `_end()` frees the director, the city and the run.
 ##
-## **By default the park is taken by happenings of the suite's own**, handed what the director hands
-## its own when the swing is reached (`take_the_park()` with `reach_obstruction()`), so the cordon
+## **By default the park is taken by happenings of the suite's own**, handed the day's obstruction as the
+## director hands it to its own when the swing is reached (`ResistanceReads.day_reachability()`), so the cordon
 ## is read off `ResistanceHappenings.cordon` without the director's tick or its other duties.
 ## `through_the_director` reaches the swing through the director as play does, which takes the park
 ## in the director's own happenings; `happenings` is then null and the cordon is read off the world
@@ -95,7 +96,7 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 		happenings = ResistanceHappenings.new()
 		happenings.setup(_city, _city.map)
 		happenings.start_day(day, false)
-		happenings.take_the_park(director.reach_obstruction())
+		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
 			"park": CityGenerator.swing_park(_city.map), "swing": swing, "day": day}
 
@@ -183,7 +184,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
 		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
-				director.reach_obstruction())
+				ResistanceReads.day_reachability(_city)[1])
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
 		var drawn := siting.ask_of_drawing(box)
@@ -493,7 +494,7 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
 			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
-					_city.spawn_siting, director.reach_obstruction())
+					_city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				_look(_city, null)

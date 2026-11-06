@@ -2,7 +2,7 @@ class_name WalkField
 extends RefCounted
 ## **How far a figure on foot walks to the places a sweep is begun from, from every tile at once**:
 ## the red arrow's measure of "closest" for a task several places answer
-## (`ResistanceDirector.retarget_the_arrow()`), and the walk a chaser follows to her round the
+## (`ResistanceDirector._retarget_the_arrow()`), and the walk a chaser follows to her round the
 ## buildings (`ChaseWay`). World ground: the one sweep both are handed, over the map they walk. *(Inbox #561 in coral-bunny, the player:
 ## "closest here always means path closeness not crow closeness".)*
 ##

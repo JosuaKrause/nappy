@@ -5,7 +5,7 @@ func run(t) -> void:
 	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t)
-	_test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
+	await _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
 	_test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t)
 	_test_the_director_hands_the_draw_its_own_predicates(t)
 	_free_city()
@@ -206,7 +206,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 								"reachable ground at %s") % [seed_value, day, task_step.index,
 								task_tile])
 					else:
-						t.check(_touched_from_standable_ground(director,
+						t.check(await _touched_from_standable_ground(t, director,
 								director.contact_position()),
 								("seed %d day %d: step %d's contact at %s is touched from " +
 								"walkable, unobstructed, reachable ground") % [seed_value, day,
@@ -215,80 +215,28 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 			director.free()
 	t.check(checked > 0, "the sweep actually checked something (%d)" % checked)
 
-## The first `RandomNumberGenerator.seed` whose first `randi_range(0, pool_size - 1)` answers
-## `wanted_index` — found by trying seeds in order rather than inverted by hand, since nothing here
-## needs a *particular* seed, only one that reproduces a chosen draw so the next test can control
-## which pool entry a fresh RNG picks.
-func _seed_that_draws(pool_size: int, wanted_index: int) -> int:
-	for seed_value in range(1, 100000):
-		var rng := RandomNumberGenerator.new()
-		rng.seed = seed_value
-		if rng.randi_range(0, pool_size - 1) == wanted_index:
-			return seed_value
-	return -1
-
 ## **A placement that is valid today stays exactly where it is; only a candidate the new check
-## rejects is replaced.** The director's draw (`ResistanceDirector.draw_reachable()`, which
-## `_pick_reachable()` hands today's legal ground and whether a drawn tile is open to it) draws one
-## index over the whole pool exactly as it did before `is_obstructed()` was ever checked, and only
-## asks the question of the tile the draw actually landed on — so a pool with nothing obstructed in
-## it, or a draw that lands on a tile that never was, answers exactly what a bare
-## `pool[rng.randi_range(...)]` would.
-##
-## Proven directly rather than inferred from a sweep's own before/after numbers: two real, legal
-## alley tiles of the test city's map as the whole pool, no alley used, open meaning no body
-## recorded on the tile (`CityMap.is_obstructed()`), and one seed engineered to draw each index
-## first (`_seed_that_draws()`). Neither candidate obstructed draws candidate_a exactly;
-## candidate_a obstructed replaces it with candidate_b, the pool's only other legal tile, never a
-## third, nonexistent one; and the seed that would have drawn candidate_b anyway still draws it,
-## unmoved by an obstruction on a *different* candidate it was never going to answer with.
+## rejects is replaced.** The director's draw (`_pick_reachable()`) draws one index over the whole
+## pool exactly as it did before `is_obstructed()` was ever checked, and only asks the question of
+## the tile the draw actually landed on — so a body on some other tile of the pool leaves the mark
+## where the draw put it. Proven through a real director's dawn: day 6's mark falls on a tile; the
+## same dawn on an identical city with a body recorded on a different mark tile puts it on the same.
 func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
-	var map := CityGenerator.generate(SEED)
-	var legal: Array[Vector2i] = []
-	for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
-		if map.is_walkable(tile) and not map.is_closed(tile) \
-				and not map.is_held_at(tile) and not map.is_on_home_block(tile):
-			legal.append(tile)
-		if legal.size() >= 2:
+	var fell_on := _dawn_mark_tile(t, 6, null)
+	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")
+	var elsewhere: Array[Vector2i] = []
+	for tile in _mark_tiles():
+		if tile != fell_on:
+			elsewhere.append(tile)
 			break
-	t.check(legal.size() >= 2, "the test city has at least two legal alley candidates")
-	if legal.size() < 2:
+	t.check(not elsewhere.is_empty(), "the test city has a second mark tile to put a body on")
+	if elsewhere.is_empty():
 		return
+	t.check(_dawn_mark_tile(t, 6, elsewhere) == fell_on,
+			"a body on a different mark tile leaves the dawn's mark exactly where it fell")
 
-	var candidate_a: Vector2i = legal[0]
-	var candidate_b: Vector2i = legal[1]
-	var candidates: Array[Vector2i] = [candidate_a, candidate_b]
-	var seed_for_a := _seed_that_draws(candidates.size(), 0)
-	var seed_for_b := _seed_that_draws(candidates.size(), 1)
-	var stands := func(_tile: Vector2i) -> bool: return true
-	var open := func(tile: Vector2i) -> bool: return not map.is_obstructed(tile)
-	var none_used: Array[Vector2i] = []
-
-	var rng_a := RandomNumberGenerator.new()
-	rng_a.seed = seed_for_a
-	t.check(ResistanceDirector.draw_reachable(candidates, rng_a, stands, open, none_used)
-			== candidate_a,
-			"neither candidate obstructed: the draw lands exactly where it always would")
-
-	var obstruction: Array[Vector2i] = [candidate_a]
-	map.obstruct_tiles(self.get_instance_id(), obstruction)
-	var rng_a2 := RandomNumberGenerator.new()
-	rng_a2.seed = seed_for_a
-	t.check(ResistanceDirector.draw_reachable(candidates, rng_a2, stands, open, none_used)
-			== candidate_b,
-			"candidate_a obstructed: the same draw is replaced by the pool's only other " +
-			"legal candidate")
-
-	var rng_b := RandomNumberGenerator.new()
-	rng_b.seed = seed_for_b
-	t.check(ResistanceDirector.draw_reachable(candidates, rng_b, stands, open, none_used)
-			== candidate_b,
-			"a draw whose own candidate was never obstructed still lands exactly there, " +
-			"unmoved by an obstruction on the other one")
-
-## What the draw above is handed is the director's: `_pick_reachable()` hands `draw_reachable()` the
-## day's legal ground (`stands`) and whether a drawn tile is open to it and reachable from home
-## (`open`). Proven through a real director's dawn rather than by reading the wiring: day 6's mark
+## What the draw is handed is the director's: `_pick_reachable()` hands it the day's legal ground
+## and whether a drawn tile is open to it and reachable from home. Proven through a real director's dawn rather than by reading the wiring: day 6's mark
 ## is dawned once as it falls, then the same dawn is run again on an identical city with a body
 ## recorded on the tile it fell on. The mark must land on another tile, one that is legal ground
 ## with no body on it, so an `open` that did not refuse the occupied tile lets the first tile stand

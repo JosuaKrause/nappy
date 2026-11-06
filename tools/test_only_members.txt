@@ -29,7 +29,6 @@ src/events/views/event_look.gd drawn_rect_now
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
-src/resistance/resistance_director.gd mark_guard
 src/telemetry/frame_ledger.gd DRAWS_HALOS
 src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
@@ -144,27 +143,6 @@ src/interior/interior_scene.gd lighting_at
 src/interior/interior_scene.gd teleport_to_door
 src/interior/interior_scene.gd windows_are_flashing
 src/player/baby.gd overflow_mass
-src/resistance/resistance_director.gd alley_ends
-src/resistance/resistance_director.gd draw_guard_position
-src/resistance/resistance_director.gd draw_reachable
-src/resistance/resistance_director.gd guard_position
-src/resistance/resistance_director.gd guard_spot
-src/resistance/resistance_director.gd is_alley_mouth
-src/resistance/resistance_director.gd is_at_a_front_door
-src/resistance/resistance_director.gd is_mark_tile
-src/resistance/resistance_director.gd keeps_a_waiting_guard
-src/resistance/resistance_director.gd mark_tile_of
-src/resistance/resistance_director.gd nearest_alley_among
-src/resistance/resistance_director.gd nearest_alley_within
-src/resistance/resistance_director.gd place_contact
-src/resistance/resistance_director.gd pointable_objective
-src/resistance/resistance_director.gd pursuer_walker
-src/resistance/resistance_director.gd reach_obstruction
-src/resistance/resistance_director.gd retarget_the_arrow
-src/resistance/resistance_director.gd sets_a_trap_on_her
-src/resistance/resistance_director.gd swing_base
-src/resistance/resistance_director.gd touch_reach
-src/resistance/resistance_director.gd weighted_mast_index
 src/routes/closure_marker.gd cause_feet
 src/routes/closure_marker.gd cause_picture
 src/routes/corridor.gd walks_along
@@ -240,6 +218,11 @@ src/ui/return_window.gd on_web_event  # the decision half of the page's focus, b
 src/city/building.gd window_texture  # the picture each wall cell's window shows, lit or dark by the roll; tests/test_scenery_residency.gd compares it across a prepared building's condition changes, eviction and return, all inside synchronous scenery.update() calls it makes by hand, and the front's pictures are drawn only in frames (tests/front_reads.gd waits two) whose residency maintenance would move the view that suite sets (tests-own-class-members.md: that suite runs without the frames a drawn read needs); every other suite reads windows off the drawn front
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/contact_point.gd draws_a_mark  # whether the chalk picture is drawn at all, `_draw()`'s one question: a pickup is a chalk mark, a perform's contact is invisible untouched or done so that a rider looks like the ordinary row it rides on; it exists only as the guard before `draw_texture()` in `_draw()`, which a headless run draws to nothing and no node exposes, so nothing outward can read what a contact draws (tests/test_destination_drawing.gd asks it for every day's mark and task)
+src/resistance/resistance_director.gd guard_position  # where a guard would stand for a contact, without spawning him: the day-13 suites (tests/test_day13_guard.gd) ask the spot a *move* of the roadblock's guard would take (`or_any` false) from places she is not (far past the detour, ringed in by seals or bodies), and the world cannot tell a move refused for want of a spot from no move, since a guard who already guards the roadblock stays put either way; the chalk-mark placement sweeps (tests/test_resistance_alley_siting.gd, tests/test_resistance_replacement.gd) ask it for every alley tile of six generated maps with the director built the way a rig with no city builds it, where a built City per probe would be needed to stand a real guard (open to overturn)
+src/resistance/resistance_director.gd nearest_alley_among  # the relocation's choice among a list of mouths, which `nearest_alley_within()` hands the director's own; tests/test_resistance_replacement.gd hands it one mouth at a time to ask whether the covered corner of the joystick scheme refuses that mouth alone, which a tick of the director cannot isolate since the nearest of all the mouths to her wins (open to overturn)
+src/resistance/resistance_director.gd nearest_alley_within  # where a relocation would move the mark for a place she stands on: tests/test_resistance_alley_siting.gd, tests/test_resistance_reach_relocated.gd and tests/test_resistance_replacement.gd ask it from every other through-alley tile of two to six generated maps (the screen and the guard checks of each answer), and the world performs one relocation per tick of a director over a built City, each also retiring and spawning a guard (open to overturn)
+src/resistance/resistance_director.gd place_contact  # the dawn draw of a contact as a pure function of map, run and stream: tests/test_resistance_alley_siting.gd draws forty marks on each of six generated maps and checks each stands one tile in from an alley's mouth, and a real dawn (`start_day()`) rebuilds the day's reachability grid for every draw and needs a built City for each map (open to overturn)
+src/resistance/resistance_director.gd weighted_mast_index  # the draw among the masts day 11 found reachable, weighted by 1/d^2 from her: a small test city offers one reachable mast at most (tests/test_resistance_placement_kinds.gd says so), too few for any day to compare a near draw with a far one, so the test hands the draw a near and a far tile and counts 300 draws
 src/resistance/happenings.gd cordon  # the one handle on day 12's police cordon (`ParkCordon`): the cordon suites (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd) stand her at its `last_gap`, which stays public because the world shows the gap only once the tapers meet at it, and read its gap stretches, tape line, area and clock, which the park cordon pass leaves public for the same suites; taking the cordon off the happenings would need those suites to find it some other way, and the world holds only its officers and tape, not the object (open to overturn with the cordon pass of record minty-quail-dappled-sparrow)
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
 src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)

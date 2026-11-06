@@ -2,6 +2,7 @@ extends RefCounted
 ## Exercise the actual runtime and argv readers. A tiny child scene isolates exit-status
 ## assertions without booting Main, constructing another city or quitting the suite's tree.
 
+const AlleyMarks := preload("res://tests/alley_marks.gd")
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
 const PROBE := """extends Node
 class World extends Node2D:
@@ -498,7 +499,7 @@ func _task_scene(t, day: int, task: Dictionary) -> Dictionary:
 	var mark := map.tile_to_world(MARK)
 	var pinned := {"mark": [mark.x, mark.y]}
 	if task.get("neighbor", false):
-		mark = map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
+		mark = map.tile_to_world(AlleyMarks.mark_tile_of_mouth(map, Vector2i(66, 146)))
 		var near := map.tile_to_world(NEAR_HOME)
 		pinned = {"mark": [mark.x, mark.y], "neighbor": [near.x, near.y]}
 	var start := map.tile_to_world(MOUTH)

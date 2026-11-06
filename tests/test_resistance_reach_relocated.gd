@@ -31,7 +31,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 		var player: Stroller = read[2]
 		var circle := _edge_of_her_circle(director, mark)
 		var site_near := false
-		var reach := ResistanceReads.home_reach(_city.map, director.reach_obstruction())
+		var reach := ResistanceReads.day_reachability(_city)
 		# The task's mast, by the public link: the contact stands on its foot.
 		var added_plan: EventScheduler.Planned = null
 		for plan in _city.events.plans():

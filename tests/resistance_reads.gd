@@ -14,16 +14,17 @@ extends RefCounted
 ## (`tests/probes/plush_moose_arrow_cost.gd` measures it), so after this many the arrow is at rest.
 const SETTLE_TICKS := 240
 
-## Runs the arrow to rest the way the game does: it chooses (`retarget_the_arrow()`), then the
-## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a
-## time, choosing again as each finishes, for `SETTLE_TICKS` ticks. A choice made once more after
-## them must leave the tip where it is, or the arrow had not settled and the assert fails loudly.
+## Runs the arrow to rest the way the game does: the physics ticks `main` runs
+## (`ResistanceDirector.tick()`) choose it and sweep the walking fields a slice at a time, choosing
+## again as each finishes, for `SETTLE_TICKS` ticks. A choice made again after them (the arrow chooses
+## every `ResistanceDirector.ARROW_RETARGET_SECONDS`) must leave the tip where it is, or the arrow had
+## not settled and the assert fails loudly.
 static func settle(director: ResistanceDirector, step_seconds: float) -> void:
-	director.retarget_the_arrow()
 	for i in SETTLE_TICKS:
 		director.tick(step_seconds)
 	var tip := director.red_arrow_target()
-	director.retarget_the_arrow()
+	for i in ceili(ResistanceDirector.ARROW_RETARGET_SECONDS / step_seconds) + 2:
+		director.tick(step_seconds)
 	assert(director.red_arrow_target() == tip, "the arrow had not settled after %d ticks" % SETTLE_TICKS)
 
 ## The live instances that answer a task several places answer (a man shouting, a roadblock): the
@@ -55,8 +56,36 @@ static func mast_at(director: ResistanceDirector, events: EventManager) -> Strin
 			return plan.mast_id
 	return ""
 
-## The tiles her paths reach from home under `blocked` (the day's obstruction as the director took
-## it when it placed its first contact, `ResistanceDirector.reach_obstruction()`), as
+## The day's reachability answer as `ResistanceDirector._reachable_from_home()` builds it
+## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
+## home), built independently here so a sweep is not just asking the director to grade its own
+## homework. A region door's own bodies are excluded, the same way the director excludes them: they
+## are doors she walks through, not a block. The soft seals' bands (`CityMap.soft_sealed_tiles`) are
+## blocked on top, as the director blocks them: the red arrow reads a band as ground she cannot walk,
+## so a place reached only through one is not a place the arrow can lead her to. `[grid, blocked,
+## reached]`, the shape `home_reach()` answers and `reaches_home()` takes. Plans standing within a
+## tile and a half of a point in `except_near` are left out: a task's own body, placed after the day's
+## first placement asked, does not shut its own tile.
+static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Array:
+	var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
+	var blockers: Array[EventScheduler.Planned] = []
+	for plan in city.events.plans():
+		if not plan.is_placed() or plan in door_bodies:
+			continue
+		var excepted := false
+		for point in except_near:
+			excepted = excepted or plan.position.distance_to(point) < Tuning.TILE_SIZE * 1.5
+		if excepted:
+			continue
+		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+			blockers.append(plan)
+	var grid := ReachabilityGrid.build(city.map)
+	var blocked := EventScheduler.blocked_by(city.map, blockers)
+	blocked.merge(city.map.soft_sealed_tiles)
+	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+
+## The tiles her paths reach from home under `blocked` (the day's obstruction), as
 ## `[grid, blocked, reached]` for `reaches_home()`: the same `ReachabilityGrid` flood from the home
 ## block that the director's placements are asked of.
 static func home_reach(map: CityMap, blocked: Dictionary) -> Array:
