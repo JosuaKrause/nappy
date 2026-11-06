@@ -67,7 +67,9 @@ func _play_a_run(t, seed_value: int) -> void:
 
 		# The excitement field must be finite and sane wherever the player could stand.
 		var at_home := city.map.home_world_position()
-		var here := city.total_excitement_at(at_home)
+		var here := 0.0
+		for pair in city.excitement_sources_at(at_home):
+			here += pair[1]
 		t.check(here >= 0.0 and here < 200.0,
 				"seed %d day %d: excitement at home is a sane number (%.1f)"
 				% [seed_value, day, here])

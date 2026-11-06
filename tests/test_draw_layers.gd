@@ -85,7 +85,7 @@ static func _files_under(directory: String, suffix: String) -> PackedStringArray
 
 ## Each ordering is a reason the list states, not its numbers.
 func _test_the_layers_keep_their_reasons(t) -> void:
-	var z := func(layer: int) -> int: return DrawLayer.z_of(layer)
+	var z := func(layer: int) -> int: return _z_asked_onto(layer)
 	t.check(z.call(DrawLayer.Layer.GROUND) == 0,
 			"the ground draws at the engine's default z, where a world's own ground nodes draw")
 	t.check(z.call(DrawLayer.Layer.BACKDROP) < z.call(DrawLayer.Layer.GROUND),
@@ -106,6 +106,14 @@ func _test_the_layers_keep_their_reasons(t) -> void:
 				or z.call(layer) < z.call(DrawLayer.Layer.DEBUG),
 				"the debug view is over %s" % DrawLayer.Layer.keys()[layer])
 
+## The `z_index` a node asked onto `layer` draws at (`DrawLayer.draw_on()`, which the game calls).
+func _z_asked_onto(layer: int) -> int:
+	var node := Node2D.new()
+	DrawLayer.draw_on(node, layer)
+	var z := node.z_index
+	node.free()
+	return z
+
 func _test_a_world_adds_a_node_on_its_layer(t) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
@@ -122,10 +130,10 @@ func _test_a_world_adds_a_node_on_its_layer(t) -> void:
 	var raised := Node2D.new()
 	world.add_entity(raised)
 	DrawLayer.draw_on(raised, DrawLayer.Layer.WARNING)
-	t.check(raised.z_index == DrawLayer.z_of(DrawLayer.Layer.WARNING) and not raised.z_as_relative,
+	t.check(raised.z_index == _z_asked_onto(DrawLayer.Layer.WARNING) and not raised.z_as_relative,
 			"a node asked onto another layer where it stands is drawn on that one")
 	DrawLayer.draw_on(raised, DrawLayer.Layer.ENTITIES)
-	t.check(raised.z_index == DrawLayer.z_of(DrawLayer.Layer.ENTITIES) and not raised.z_as_relative,
+	t.check(raised.z_index == _z_asked_onto(DrawLayer.Layer.ENTITIES) and not raised.z_as_relative,
 			"and put back, it is drawn with the rest of its layer again")
 	world.free()
 
