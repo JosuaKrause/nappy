@@ -25,7 +25,6 @@ var _sampled_cars := 0
 var _her: Stroller
 ## How many times the city said it went dark (`EventBus.city_gone_dark`) since `_begin()`.
 var _went_dark := 0
-var _on_dark := func() -> void: _went_dark += 1
 
 func run(t) -> void:
 	await _test_nothing_goes_dark_without_the_sabotage(t)
@@ -47,13 +46,16 @@ func _begin(t) -> void:
 	_run.resistance.sabotage_done = false
 	_run.facts.escape_section = DaySpec.Section.NONE
 	_went_dark = 0
-	EventBus.city_gone_dark.connect(_on_dark)
+	EventBus.city_gone_dark.connect(_count_dark)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_start_the_last_day()
 
+func _count_dark() -> void:
+	_went_dark += 1
+
 func _end() -> void:
-	EventBus.city_gone_dark.disconnect(_on_dark)
+	EventBus.city_gone_dark.disconnect(_count_dark)
 	_city.free()
 	_city = null
 	_run = null
