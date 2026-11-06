@@ -40,6 +40,7 @@ func run(t) -> void:
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
 	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)
 	_test_the_open_edge_shrinks_to_one_gap_nearest_her(t)
+	_test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t)
 	_test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t)
 	_test_walking_out_from_the_swing_gets_her_out_in_time(t)
 	_test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t)
@@ -63,7 +64,11 @@ func run(t) -> void:
 ## `through_the_director` reaches the swing through the director as play does, which takes the park
 ## in the director's own happenings; `happenings` is then null and the cordon is read off the world
 ## (`CordonInTheWorld`).
-func _at_the_swing(t, before_the_touch := Callable(), through_the_director := false) -> Dictionary:
+##
+## `before_the_day` runs once the day is planned and before the director reads the day's obstruction
+## (`ResistanceDirector.reach_obstruction()`), so what it closes is part of that obstruction.
+func _at_the_swing(t, before_the_touch := Callable(), through_the_director := false,
+		before_the_day := Callable()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	_city = RunCity.in_run(CITY_SCENE, _run)
@@ -80,6 +85,8 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	if before_the_day.is_valid():
+		before_the_day.call()
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
@@ -343,6 +350,82 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 	t.check(last_distance <= nearest + Tuning.TILE_SIZE * 1.5,
 			"the last stretch taped is beside the edge nearest the swing (%.0fpx, nearest %.0fpx)"
 			% [last_distance, nearest])
+	_end(fixture)
+
+## **The last gap opens onto ground that still reaches home under the day's obstruction**, which the
+## director hands the cordon when she reaches the swing. The longest side of the swing's park that
+## needs tape is walled off from home by closures the day made before the director read its
+## obstruction: the ground just outside that side is walkable and level with her, but it is a pocket
+## nothing leads home from. She stands there and the cordon is played through the director; the last
+## stretch taped is far from her, on ground that leads home. A cordon handed no obstruction tapes the
+## pocket's side last, the stretch nearest her.
+func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t) -> void:
+	var side := {}
+	var seal := func() -> void:
+		var park := CityGenerator.swing_park(_city.map)
+		var by_side := {}
+		for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map, park):
+			var run: Array = by_side.get(entry[1], [])
+			run.append(entry[0])
+			by_side[entry[1]] = run
+		var outward := Vector2i.ZERO
+		for candidate: Vector2i in by_side:
+			if outward == Vector2i.ZERO or by_side[candidate].size() > by_side[outward].size():
+				outward = candidate
+		var along := Vector2i(absi(outward.y), absi(outward.x))
+		var rect := ClosurePlanner.calm_area_rect(_city.map, park)
+		var run: Array = by_side[outward]
+		var first: Vector2i = run[0]
+		var last: Vector2i = run[0]
+		for tile: Vector2i in run:
+			if tile.x + tile.y < first.x + first.y:
+				first = tile
+			if tile.x + tile.y > last.x + last.y:
+				last = tile
+		var tile := first - along
+		while tile != last + along * 2:
+			_city.map.closed_tiles[tile + outward * 2] = true
+			tile += along
+		for end in [first - along, last + along]:
+			_city.map.closed_tiles[end + outward] = true
+			if not rect.has_point(end):
+				_city.map.closed_tiles[end] = true
+		side.pocket = _city.map.tile_to_world((first + last) / 2 + outward)
+		side.outward = Vector2(outward)
+	var fixture := _at_the_swing(t, Callable(), true, seal)
+	var director: ResistanceDirector = fixture.director
+	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	player.add_child(camera)
+	t.add_child(player)
+	player.set_physics_process(false)
+	player.global_position = (side.pocket as Vector2) + (side.outward as Vector2) * Tuning.TILE_SIZE * 0.5
+	director.use_player(player)
+	var last_tape: CordonTape = null
+	var seen := {}
+	var waited := 0.0
+	_look(_city, player.global_position)
+	director.tick(STEP)
+	var park: Vector2i = fixture.park
+	while CordonInTheWorld.open_gaps(_city.map, park) > 0 and waited < PATIENCE:
+		_look(_city, player.global_position)
+		director.tick(STEP)
+		for tape in CordonInTheWorld.tapes(_city):
+			if not seen.has(tape):
+				seen[tape] = true
+				last_tape = tape
+		waited += STEP
+	t.check(CordonInTheWorld.open_gaps(_city.map, park) == 0 and last_tape != null,
+			"the cordon tapes the whole edge")
+	if last_tape != null:
+		var ends := CordonInTheWorld.ends(last_tape)
+		var far := ((ends[0] + ends[1]) * 0.5).distance_to(player.global_position)
+		t.check(far > Tuning.TILE_SIZE * 2.5,
+				"the last stretch taped is not the walled-off one beside her (%.0fpx from her)" % far)
+	director.use_player(null)
+	player.free()
 	_end(fixture)
 
 ## Standing at the swing: the last gap is taped with her inside — on this seed's small park, where
