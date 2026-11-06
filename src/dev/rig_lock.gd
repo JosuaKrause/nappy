@@ -60,10 +60,6 @@ func setup(config: RunConfig) -> void:
 	else:
 		_quit_deadline_msec = Time.get_ticks_msec() + int(_limit_seconds * 1000.0)
 
-## Whether a deadline is armed, wall clock or game seconds.
-func has_a_deadline() -> bool:
-	return _quit_deadline_msec != 0 or _quit_game_seconds != 0.0
-
 func _process(delta: float) -> void:
 	if _quit_deadline_msec != 0 and Time.get_ticks_msec() >= _quit_deadline_msec:
 		printerr("[Main] a rig's own wall-clock limit (%.1fs) passed with the run still going; quitting"
@@ -79,20 +75,19 @@ func _process(delta: float) -> void:
 
 ## Marks every real event handled while the run is locked out, so none reaches the game's own
 ## handlers. **A rig's own press gets through by a tag on the event, not by its class** — see
-## `is_the_rigs_own_press()`. It cannot pre-empt a sibling's `_input()` in the same phase
+## `_is_the_rigs_own_press()`. It cannot pre-empt a sibling's `_input()` in the same phase
 ## (`TouchControls`), since `set_input_as_handled()` only silences the phases after `_input`; the
 ## window flag above is what keeps a pointer from reaching the window in the first place.
 func _input(event: InputEvent) -> void:
-	if locked_out and not is_the_rigs_own_press(event):
+	if locked_out and not _is_the_rigs_own_press(event):
 		get_viewport().set_input_as_handled()
 
 ## Whether `event` is one a rig made itself. `AutoScreenshot._tap()` sets
 ## `event.device = InputEvent.DEVICE_ID_EMULATION` (Godot's `-1`, distinct from the keyboard's `16`
 ## and the mouse's `32`) before handing it to `Input.parse_input_event()`, which leaves the tag
 ## untouched on its way to every handler. Gating on the event's class instead would let a real key
-## through, since `key:` presses are the same `InputEventKey` a real key is. Static and pure, so a
-## test asks it without booting a `main`.
-static func is_the_rigs_own_press(event: InputEvent) -> bool:
+## through, since `key:` presses are the same `InputEventKey` a real key is.
+static func _is_the_rigs_own_press(event: InputEvent) -> bool:
 	return event.device == InputEvent.DEVICE_ID_EMULATION
 
 ## Every action `project.godot`'s `[input]` table defines, read live off `InputMap` so a new binding

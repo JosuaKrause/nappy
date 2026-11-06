@@ -99,7 +99,7 @@ window can no longer reach the rig either way, on top of that — see README.md'
 planning a verification around one. `shot.sh` runs Godot *without* `--headless` on purpose, so a
 process with no window server to open a window against falls back to the null display server, where
 no frame is ever drawn and there is no viewport texture to save. `AutoScreenshot._capture()` says so
-and quits non-zero rather than waiting — `can_photograph(DisplayServer.get_name())` is the guard,
+and quits non-zero rather than waiting — `_capture()`'s check of `DisplayServer.get_name()` is the guard,
 and `"headless"` is the name Godot gives that null server.
 
 **Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
@@ -338,7 +338,7 @@ somewhere.
   re-presses, so a rig restarting the game loops for ever — read the boot lines rather than waiting
   for the PNG.
 - **`--spawn corner:nw|ne|sw|se`** points the camera where two border bands meet. It stands a couple
-  of tiles inside the corner, on the pavement — `DevRig.nearest_walkable` (`src/dev/dev_rig.gd`,
+  of tiles inside the corner, on the pavement — the dev rig's nearest-walkable search (`src/dev/dev_rig.gd`,
   the closest walkable point to a target) will otherwise happily leave her on the boundary
   carriageway.
 - **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
