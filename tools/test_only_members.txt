@@ -151,11 +151,6 @@ src/events/event_manager.gd planner
 src/events/event_manager.gd step_the_encounters
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
-src/events/event_scheduler.gd budget_for
-src/events/event_scheduler.gd is_spoiled
-src/events/event_scheduler.gd place_masts
-src/events/event_scheduler.gd room_around
-src/events/event_scheduler.gd street_bag
 src/events/events_ahead.gd a_pursuer_is_after_her
 src/events/views/event_look.gd mark_colour
 src/events/views/event_look.gd mark_swell
@@ -333,3 +328,4 @@ src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_t
 src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
 src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
 src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
+src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for

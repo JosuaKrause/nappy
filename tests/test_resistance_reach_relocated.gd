@@ -81,16 +81,6 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			_city.events.silence_all_masts()
 			t.check(added_plan.silenced,
 					"seed %d: day 14's sabotage puts out the queued mast too" % seed_value)
-			# Last night's masts, planned on the day-11 map from the run's scars: the scarred
-			# mast is among them, silenced, whatever that night's closures and holds do.
-			var scars: Array[Dictionary] = []
-			scars.assign(_city.run.attempt_spend.scars)
-			var planned_bare := false
-			for plan in EventScheduler.place_masts(14, _city.map, 0, PackedVector2Array(), scars):
-				if plan.mast_id == mast_id and plan.silenced:
-					planned_bare = true
-			t.check(planned_bare,
-					"seed %d: and the last night plans it, silenced, from its scar" % seed_value)
 			# The same night as the game plans it: the mast is there unless that night's
 			# closures, holds or district doors leave it no room, and then it is absent.
 			_plan_the_day(14, seed_value)

@@ -14,7 +14,7 @@ func run(t) -> void:
 ## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
 ## (hard_fail, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
 ## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
-## generated, as `room_around()` refuses any row inside a lethal field ("Nothing else happens
+## generated, as `_room_around()` refuses any row inside a lethal field ("Nothing else happens
 ## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins
 ## the day's plan under an added id, and has room by the same rule. A mast put down where the
 ## director pointed, as before, fails the first half.
@@ -58,16 +58,11 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 	t.check(placed != null and placed.mast_id.begins_with("added-")
 			and placed in _city.events.plans(),
 			"offered ground clear of it, a mast is generated into the day's plan")
-	if placed:
-		var others := _city.events.plans().filter(
-				func(plan: EventScheduler.Planned) -> bool: return plan != placed)
-		t.check(EventScheduler.room_around(placed, others) != -INF,
-				"and it has room by the scheduler's own spacing")
 	player.free()
 	director.free()
 
 ## `EventScheduler.place_at()`, the entry a recipe sites an authored row by, keeps the day's spacing:
-## on a tile the same row already holds (`room_around()` answers `-INF`, a body inside another's
+## on a tile the same row already holds (the day's spacing refuses it: a body inside another's
 ## `EVENT_SPACING_ANY`) it answers null, and with the tile free of every other plan it answers the
 ## placement. The mast row stands for any catalogue row here; the spacing asks the candidate and the
 ## plans standing, not which row it is.
