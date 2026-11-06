@@ -18,8 +18,6 @@ src/events/event_instance.gd charger_name
 src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
-src/interior/interior_map.gd PARTS
-src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
 src/resistance/resistance_director.gd mark_guard
 src/visuals/ground_recipe.gd reads
@@ -86,14 +84,6 @@ src/events/views/pursuer_look.gd robber_pictures
 src/events/views/roadblock_look.gd chaser_pictures
 src/events/walk_ground.gd held_by
 src/events/walk_ground.gd solids_of
-src/interior/interior_map.gd stair_kind_for_symbol
-src/interior/interior_map_plan.gd shortest_walk
-src/interior/interior_map_plan.gd walk_avoiding
-src/interior/interior_scene.gd distant_flash_wait
-src/interior/interior_scene.gd flash_windows
-src/interior/interior_scene.gd lighting_at
-src/interior/interior_scene.gd teleport_to_door
-src/interior/interior_scene.gd windows_are_flashing
 src/player/baby.gd overflow_mass
 src/resistance/contact_point.gd draws_a_mark
 src/resistance/contact_point.gd would_complete_at
@@ -214,3 +204,4 @@ src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
 src/city/city_generator.gd power_station_rank  # the order the generator tries the free horizontal pairs in for the power station (industrial ground, then half, then the nearest to it); a city keeps only the pair it picked and how many industrial blocks it stands on, never the ones it passed over, so the preference is visible only through the rank (tests/test_power_station.gd holds the order on constructed block sets)
 src/city/scenery_residency.gd ordinary_guard_preparations  # how many regions and pieces the guard prepared at once rather than in the ordinary stepped pass, a count of work done that no tile the ground lays carries; the frame-timing probes (tests/probes/ground_frames.gd, ground_frames_matched.gd, run by tools/measure-ground-frames.sh) zero and read it after a traversal, as they do SceneryGround.worst_step_usec
+src/interior/interior_scene.gd distant_flash_wait  # the wait between two far flashes from a uniform draw; its curve (bounds, mean, median and 95th percentile) needs thousands of draws, which the night makes one a second (an hour of ticks for the same sample), and the flash ticks the seeded stream makes are replayed through it (tests/test_interior.gd, the far windows' test); the real flashes over a minute are checked on real ticks beside it

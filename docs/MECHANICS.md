@@ -1727,7 +1727,7 @@ up; `tests/probes/escape_stairs_heading.gd` prints both.
 **The building is dark, because it is the night of the blackout.** *(The player, 2026-09-20: "it
 can be gloomy in the hallways and basement and maybe emergency (red?) lighting in the stairs".)*
 Nothing in it has power: the wall lamps and the chandeliers are drawn unlit, and the part she is in
-is multiplied by one light, her included (`InteriorScene.lighting_at()`) — a cold gloom in the
+is multiplied by one light, her included (`InteriorScene._lighting_at()`) — a cold gloom in the
 hallways and the lobby, darker in the windowless basement, and the red of the emergency lighting in
 the two stairwells. The light changes only when she changes part, which is under a door's fade to
 black. The city she walks out into is the same night, with every window and traffic light dark

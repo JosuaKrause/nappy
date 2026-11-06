@@ -477,7 +477,7 @@ static func _escape_from_query(query: String) -> bool:
 ## `floor:N` or `city` — so a rig or a person can start anywhere in the escape: the six part words
 ## choose where in the building she starts, and `city` boots the escape's second section with no
 ## building built. "" for a bare flag (her own door on the third floor) or none; mapping the word
-## onto an `InteriorMap.PARTS` name is `main._escape_part_for()`'s. Read only right after
+## onto a building part's name is `main._escape_part_for()`'s. Read only right after
 ## `--start-escape`, and never a word that starts with `--`, so the next flag is not swallowed.
 func start_escape_at() -> String:
 	if not _recipe.is_empty():
