@@ -922,7 +922,7 @@ func counts_a_charge() -> bool:
 func charger_name() -> String:
 	return def.counts_charges_as if def.counts_charges_as != "" else def.id
 
-## **Its charge caught her**, said once: by `EventManager._check_hard_fails()` when its catch ends
+## **Its charge caught her**, said once: by `EventManager.check_hard_fails()` when its catch ends
 ## the day, ahead of `hard_fail_triggered`, and by a patrol car's man the frame he stops her
 ## (`EventOfficer`), whose catch does not. Telemetry only: it sends
 ## `EventBus.pursuit_caught` and keeps `_be_done()` from also sending `pursuit_ended`, so a charge

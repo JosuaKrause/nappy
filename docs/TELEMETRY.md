@@ -93,7 +93,7 @@ The events:
   same event. A hard fail names the row that struck her — `car` for the
   one that is not an event row (`EventBus.hard_fail_triggered("car_strike")`,
   `Crowd._strike()`), otherwise the row id off whichever row's own `is_lethal_at()` fired
-  (`EventManager._check_hard_fails()`), hyphenated the same way every other name here is — a
+  (`EventManager.check_hard_fails()`), hyphenated the same way every other name here is — a
   caught `charging_dog` is `lost-hard-fail-charging-dog`, the day-3 lesson's dog
   `lost-hard-fail-charging-dog-tutorial` and day 13's task guard `lost-hard-fail-task-guard` or,
   sent at her, `lost-hard-fail-task-guard-sent` — and a pelican is `pelican` rather than
@@ -179,7 +179,7 @@ The events:
   (`EventSpawner.report_the_pelicans_in_view()`, the same test as an encounter's `seen` below:
   80% of its drawn box visible to her, `VisibleView`); the first share of her meter its field lands, inside its 90px
   (its source's first-landing callback, `EventSpawner._ride_as_a_pelican()`); and its lethal reach, 33px, covering her
-  (`EventManager._check_hard_fails()`). The cyclist's contact does those two different things to
+  (`EventManager.check_hard_fails()`). The cyclist's contact does those two different things to
   her — its field fills the meter, its reach ends the day — so each is an event of its own. A
   `pelican-hit` is sent just ahead of the day's own `lost-hard-fail-pelican`.
 - `nappy-day-N-seen-<event>` / `nappy-day-N-influenced-<event>` /
