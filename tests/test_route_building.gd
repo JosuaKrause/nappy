@@ -17,6 +17,7 @@ const POLL_MSEC := 500
 
 func run(t) -> void:
 	var started_at := Time.get_unix_time_from_system()
+	var started_on := Time.get_date_string_from_system()
 	var pid := OS.create_process(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--",
 			"--start-escape", "--seed", str(SEED), "--route", "tunnel", "--no-save", "--no-title"]), false)
@@ -24,12 +25,12 @@ func run(t) -> void:
 	var log := PackedStringArray()
 	var waited := 0.0
 	while pid > 0 and waited < TIMEOUT_SECONDS:
-		log = _route_lines(started_at)
+		log = _route_lines(started_at, started_on)
 		if _has(log, "section ended (LOST") or _in_the_city(log) or not OS.is_process_running(pid):
 			break
 		OS.delay_msec(POLL_MSEC)
 		waited += POLL_MSEC / 1000.0
-	log = _route_lines(started_at)
+	log = _route_lines(started_at, started_on)
 	if pid > 0 and OS.is_process_running(pid):
 		OS.kill(pid)
 	t.check(not log.is_empty(), "the run leaves route lines in its run log")
@@ -44,23 +45,31 @@ func run(t) -> void:
 func _in_the_city(lines: PackedStringArray) -> bool:
 	return _has(lines, "day 16:")
 
-## The `route` lines of the newest run log of `SEED`'s run written since `started_at`, text only.
-func _route_lines(started_at: float) -> PackedStringArray:
+## The `route` lines of the newest run log of `SEED`'s run written since `started_at`, text only. The
+## run's folder is named by the day the game started, which a run that crosses midnight leaves behind
+## the clock, so every day folder from `started_on` on is read, not today's alone.
+func _route_lines(started_at: float, started_on: String) -> PackedStringArray:
 	var lines := PackedStringArray()
-	var root := "user://telemetry/%s" % Time.get_date_string_from_system()
-	var dir := DirAccess.open(root)
-	if dir == null:
+	var base := DirAccess.open("user://telemetry")
+	if base == null:
 		return lines
 	var best := ""
 	var best_time := -1.0
-	for name in dir.get_directories():
-		if not name.contains("-seed%d-" % SEED):
+	for day in base.get_directories():
+		if day < started_on:
 			continue
-		var candidate := "%s/%s/run.log" % [root, name]
-		var modified := FileAccess.get_modified_time(candidate)
-		if modified >= started_at - 2.0 and modified > best_time:
-			best_time = modified
-			best = candidate
+		var root := "user://telemetry/%s" % day
+		var dir := DirAccess.open(root)
+		if dir == null:
+			continue
+		for name in dir.get_directories():
+			if not name.contains("-seed%d-" % SEED):
+				continue
+			var candidate := "%s/%s/run.log" % [root, name]
+			var modified := FileAccess.get_modified_time(candidate)
+			if modified >= started_at - 2.0 and modified > best_time:
+				best_time = modified
+				best = candidate
 	if best == "":
 		return lines
 	var file := FileAccess.open(best, FileAccess.READ)
