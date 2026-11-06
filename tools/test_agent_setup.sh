@@ -23,7 +23,8 @@
 #     fetch writes FETCH_HEAD between its fetch and its read
 #   - a headroom shortfall refuses before anything is made
 #   - --agent appends one line per agent, newest last, and not the same id twice; --release adds
-#     "cleanup: ready" once; both refuse a branch with no brief
+#     "cleanup: ready" once, both even when the line already sits early in a header longer than a
+#     pipe holds; both refuse a branch with no brief
 #
 # Needs nothing but bash and git. Bash 3.2-safe, like the rest of tools/.
 set -uo pipefail
@@ -280,6 +281,20 @@ same "agent lines stay in the header" "" "$(sed -n 6p "$brief")"
 "$tool" --release feature/alpha >/dev/null 2>&1
 same "cleanup: ready added once" 1 "$(grep -c '^cleanup: ready$' "$brief")"
 same "the header still ends at the first blank line" 6 "$(sed '/^$/q' "$brief" | grep -c .)"
+# A header far larger than a pipe holds, its agent and cleanup lines first: a search piped from
+# sed that matches and leaves while sed still writes would fail the pipe and read as a miss.
+big_brief="$briefs/feature-big.md"
+{
+    printf 'branch: feature/big\nagent: id-big\ncleanup: ready\n'
+    for i in $(seq 1 20000); do printf 'note-%05d: padding\n' "$i"; done
+    printf '\n# Task\n'
+} > "$big_brief"
+check "--agent with its line early in a long header says it is already there" \
+    bash -c "'$tool' --agent feature/big id-big | grep -q 'already in'"
+same "--agent does not add that line twice" 1 "$(grep -c '^agent: id-big$' "$big_brief")"
+check "--release with its line early in a long header says it is already there" \
+    bash -c "'$tool' --release feature/big | grep -q 'already says'"
+same "--release does not add that line twice" 1 "$(grep -c '^cleanup: ready$' "$big_brief")"
 refuse "--agent with no brief refused" "$tool" --agent feature/nothing id
 refuse "--release with no brief refused" "$tool" --release feature/nothing
 
