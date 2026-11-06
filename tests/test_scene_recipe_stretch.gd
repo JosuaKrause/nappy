@@ -10,6 +10,10 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
+const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
+
+## Where each recipe is written and loaded, and what loading it answers.
+var _errors := RecipeErrors.new()
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
@@ -397,7 +401,7 @@ func _test_the_schema(t, data: Dictionary) -> void:
 			"a street tree is listed under trees, the shared placement source")
 	var crowd := data.duplicate(true)
 	crowd.setup["background"] = {"crowd": true}
-	t.check("\n".join(SceneRecipeRuntime.validate_runtime(crowd)).contains("authored actors"),
+	t.check("\n".join(_errors.errors_of(t, crowd)).contains("authored actors"),
 			"a stretch's crowd is its listed starting population, never a rolled one")
 
 func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
@@ -523,12 +527,12 @@ func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 	t.check(director.route_bag().peek() == "cat_dash", "and the pre-bag is drawn first")
 	var place := data.duplicate(true)
 	place.setup.route_bag = {"marbles": ["burning_building"]}
-	t.check("\n".join(SceneRecipeRuntime.validate_runtime(place)).contains("not a row the director sites"),
+	t.check("\n".join(_errors.errors_of(t, place)).contains("not a row the director sites"),
 			"a marble names a row the director sites that day")
 	var asked := data.duplicate(true)
 	(asked.playback.observations as Array).append(
 			{"tick": 1, "subject": "mark", "condition": "crowd", "walkers": 1})
-	t.check("\n".join(SceneRecipeRuntime.validate_runtime(asked)).contains("round the player"),
+	t.check("\n".join(_errors.errors_of(t, asked)).contains("round the player"),
 			"a crowd observation asks about the picture round her")
 
 func _test_the_city_draws_the_stretch_alone(t, map: CityMap) -> void:
