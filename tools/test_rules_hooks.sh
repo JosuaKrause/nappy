@@ -155,7 +155,9 @@
 #     a chain is followed, an alias's own refspec is read, a lone ; in it stays a word), a ! alias,
 #     a looping one, one with no value and one starting with git's own options deny, an alias to
 #     a read and a built-in an alias cannot shadow allow, a built-in write an alias is named after
-#     stays the write even where git's list of its built-ins cannot be read, a coder's wrapper
+#     stays the write even where git's list of its built-ins cannot be read, a command naming git
+#     denies where git's aliases cannot be listed (git config failing other than with its exit 1
+#     and nothing listed, which still reads as no alias), a coder's wrapper
 #     exempts each and a reviewer's does not exempt a push or an unreadable one, and where no
 #     identity can work an
 #     alias is asked about or denied as what it stands for; an alias set on the command line
@@ -1214,7 +1216,8 @@ write_guard_gitconfig="$write_guard_no_aliases"
 # shim fail outright on a call with an argument holding that text, for the fail-closed cases;
 # `write_guard_fail_jq_late` makes it do its work, print its answer, and only then fail, the way a
 # pipe fails after its text is through; `write_guard_fail_git` makes the git shim fail outright
-# on a call with an argument holding its text.
+# on a call with an argument holding its text, with exit status `write_guard_fail_git_status`
+# (1 when unset).
 write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
 mkdir -p "$write_guard_shims"
 for write_guard_tool in jq git; do
@@ -1231,7 +1234,7 @@ for write_guard_tool in jq git; do
         printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ_LATE"*) late=1 ;; esac\n'
         printf '    fi\n'
         printf '    if [ -n "${WRITE_GUARD_FAIL_GIT:-}" ] && [ "%s" = git ]; then\n' "$write_guard_tool"
-        printf '        case "$a" in *"$WRITE_GUARD_FAIL_GIT"*) echo "git: made to fail" >&2; exit 1 ;; esac\n'
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_GIT"*) echo "git: made to fail" >&2; exit "${WRITE_GUARD_FAIL_GIT_STATUS:-1}" ;; esac\n'
         printf '    fi\n'
         printf 'done\n'
         printf 'if [ -n "$late" ]; then %q "$@"; echo "jq: made to fail after printing" >&2; exit 5; fi\n' "$write_guard_real"
@@ -1243,11 +1246,13 @@ write_guard_path=""
 write_guard_fail_jq=""
 write_guard_fail_jq_late=""
 write_guard_fail_git=""
+write_guard_fail_git_status=""
 write_guard_env() {
     env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
         PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
         ${write_guard_fail_jq_late:+WRITE_GUARD_FAIL_JQ_LATE=$write_guard_fail_jq_late} \
         ${write_guard_fail_git:+WRITE_GUARD_FAIL_GIT=$write_guard_fail_git} \
+        ${write_guard_fail_git_status:+WRITE_GUARD_FAIL_GIT_STATUS=$write_guard_fail_git_status} \
         GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
 }
 write_guard_payload() {
@@ -2411,6 +2416,17 @@ write_guard_fail_git="--list-cmds=builtins"
 assert_write_guard "built-ins unlisted: git push (push = status) -> deny, the push it is" deny 'git push origin main'
 assert_write_guard "built-ins unlisted: git ci (ci = commit) -> deny" deny 'git ci -m wip'
 assert_write_guard "built-ins unlisted: git st (status -sb) -> allow" allow 'git st'
+# Where git's aliases cannot be listed, a command naming git is denied unread, since an alias it
+# cannot see may stand for a write; git's own exit 1 with nothing listed is how it says no alias
+# is set, and still reads as none.
+write_guard_fail_git="--get-regexp"
+write_guard_fail_git_status=128
+assert_write_guard "aliases unlisted (git config exits 128): git ci (ci = commit) -> deny" deny 'git ci -m x'
+assert_write_guard "aliases unlisted (git config exits 128): git status -> deny, unread" deny 'git status'
+assert_write_guard "aliases unlisted (git config exits 128): ls, which names no git -> allow" allow 'ls -la'
+write_guard_fail_git_status=1
+assert_write_guard "no aliases (git config exits 1, nothing listed): git ci -> allow, an unknown word" allow 'git ci -m x'
+write_guard_fail_git_status=""
 write_guard_fail_git=""
 write_guard_path=""
 assert_write_guard "git ci, wrapped as a coder -> allow" allow \

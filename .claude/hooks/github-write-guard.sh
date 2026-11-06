@@ -1920,18 +1920,18 @@ JQ
 # **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
 # nothing lets the command through in both Claude Code and Codex, so the guard never answers
 # "allow" by breaking: the payload failing to read, no jq at all, the text failing to strip where
-# jq is missing, the program failing, its findings failing to read back, and the answer failing to
-# print are each a deny. The one input whose failure does not deny is git's own table
-# (`git_table`): aliases git cannot list leave the command read as written, and built-ins it cannot
-# list leave the writing ones counted all the same. A decision is never the exit status of a pipe:
-# under `pipefail` a pipe fails when any one of its programs does, which a match does not stop (a
-# reader that has matched and left gives the writer EPIPE where SIGPIPE is ignored, as on GitHub's
-# runners), so a pipe's text is first read into a variable, its failure denies, and the variable is
-# then tested with no pipe at all -- the closing ask among them, whose test reads a flag read back
-# with the others rather than a pipe's status. No text larger
-# than a few kilobytes is ever an argument to another program -- the program, git's answer, the
-# command and the reason all go through stdin or a file -- since Linux refuses any one argument
-# over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is exactly such a failure.
+# jq is missing, git's aliases failing to list, the program failing, its findings failing to read
+# back, and the answer failing to print are each a deny. The one input whose failure does not deny
+# is git's list of its built-ins (`git_table`), since the writing ones are counted all the same.
+# A decision is never the exit status of a pipe: under `pipefail` a pipe fails when any one of its
+# programs does, which a match does not stop (a reader that has matched and left gives the writer
+# EPIPE where SIGPIPE is ignored, as on GitHub's runners), so a pipe's text is first read into a
+# variable, its failure denies, and the variable is then tested with no pipe at all -- the closing
+# ask among them, whose test reads a flag read back with the others rather than a pipe's status.
+# No text larger than a few kilobytes is ever an argument to another program -- the program, git's
+# answer, the command and the reason all go through stdin or a file -- since Linux refuses any one
+# argument over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is exactly such a
+# failure.
 deny_unread() {
 	printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"$1\"}}"
 	exit 0
@@ -1963,14 +1963,16 @@ fi
 # player's global aliases, the repository's own and any file they include all count. Only a
 # command of the two guarded tools that names git, with quotes, backslashes, `$` and newlines
 # taken out as the reading takes them out, and that is short enough to be read at all, asks;
-# every other command reads with no aliases, and so does any command where git or its config
-# cannot answer. The built-ins are asked for only when there is an alias to tell them from, and
-# the ones that write (`write_builtins`, the subcommands `is_write_name` lists) are always among
-# them, whether git's own list reads or not: every git has them and never runs an alias in their
-# place, and a list that failed to read would otherwise let an alias named after one (`push` =
-# `status`, which git ignores) read as the read it stands for.
+# every other command reads with no aliases, and so does one where git is not installed. Where
+# git's config cannot answer -- any failure but git's own exit 1 with nothing listed, which is how
+# it says no alias is set -- the command is denied unread, since an alias it cannot see may stand
+# for a write (`ci` = `commit`). The built-ins are asked for only when there is an alias to tell
+# them from, and the ones that write (`write_builtins`, the subcommands `is_write_name` lists) are
+# always among them, whether git's own list reads or not: every git has them and never runs an
+# alias in their place, and a list that failed to read would otherwise let an alias named after
+# one (`push` = `status`, which git ignores) read as the read it stands for.
 git_table() {
-	local dir aliases builtins
+	local dir aliases builtins alias_status
 	local write_builtins='{"push":true,"commit":true,"merge":true,"rebase":true,"pull":true,"cherry-pick":true,"revert":true,"am":true}'
 	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
 	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
@@ -1982,13 +1984,24 @@ git_table() {
 		end' 2>/dev/null) || { printf 'null'; return; }
 	if [ "$dir" = "-" ]; then printf 'null'; return; fi
 	[ -d "$dir" ] || dir=.
+	# git's own exit status is kept apart from jq's (`-z` output holds NULs, which a shell variable
+	# cannot): 1 with nothing listed is git's "no such key", and any other failure of either is an
+	# alias table that cannot be read.
 	aliases=$(git -C "$dir" config -z --get-regexp '^alias\.' 2>/dev/null | jq -Rsc '
 		[split("\u0000")[] | select(length > 0)
 		 | (index("\n")) as $k
 		 | if $k == null then {key: .[6:], value: null} else {key: .[6:$k], value: .[$k + 1:]} end
 		 | .key |= ascii_downcase]
-		| from_entries' 2>/dev/null) || aliases='{}'
-	[ -n "$aliases" ] || aliases='{}'
+		| from_entries' 2>/dev/null
+		statuses=("${PIPESTATUS[@]}")
+		[ "${statuses[1]:-1}" = 0 ] || exit 2
+		exit "${statuses[0]:-2}")
+	alias_status=$?
+	if [ "$alias_status" = 1 ] && [ "$aliases" = '{}' ]; then
+		:
+	elif [ "$alias_status" != 0 ] || [ -z "$aliases" ]; then
+		return 3
+	fi
 	if [ "$aliases" = '{}' ]; then
 		printf '{"aliases":{},"builtins":{}}'
 		return
@@ -1999,7 +2012,9 @@ git_table() {
 	[ -n "$builtins" ] || builtins=$write_builtins
 	printf '{"aliases":%s,"builtins":%s}' "$aliases" "$builtins"
 }
-git_json=$(git_table)
+if ! git_json=$(git_table); then
+	deny_unread "The write guard could not read git's aliases (git config failed), so this command, which names git, is denied unread: an alias it cannot see may stand for a write. See .claude/hooks/github-write-guard.sh."
+fi
 
 # The writes the closing ask may put to the player rather than deny (see the end of this script).
 askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
