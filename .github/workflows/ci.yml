@@ -95,7 +95,7 @@ jobs:
   # the branch started (three dots); `filter: blob:none` keeps that to commits and trees, and the
   # checkout is only tools/ and the files at the top, which is all this job reads.
   classify:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       queue_only: ${{ steps.classify.outputs.queue_only }}
@@ -123,7 +123,7 @@ jobs:
 
   gates:
     needs: classify
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # `filter: blob:none` is a partial clone: commits and trees come down up front, blob
@@ -301,7 +301,7 @@ jobs:
   # with a Godot of its own, beside `gates` rather than after it. cost-table.sh bakes the atlases
   # and runs the import pass itself, the same preamble tools/test.sh runs on a fresh shard.
   cost-table:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # Same partial clone as `shards` below: nothing here reads docs/evidence/.
@@ -341,7 +341,7 @@ jobs:
   game:
     needs: classify
     if: needs.classify.outputs.docs_only != 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       # Same partial clone as `shards` below: nothing here reads docs/evidence/.
@@ -487,7 +487,7 @@ jobs:
   plan:
     needs: classify
     if: needs.classify.outputs.docs_only != 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       costs: ${{ steps.freeze.outputs.costs }}
@@ -535,7 +535,7 @@ jobs:
   shards:
     needs: [classify, plan]
     if: needs.classify.outputs.docs_only != 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
       # One output per leg, with distinct names: legs of a matrix share one set of job outputs,
@@ -672,7 +672,7 @@ jobs:
   costs:
     needs: [plan, shards]
     if: needs.shards.result == 'success'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       # continue-on-error like the steps after it: a failed checkout leaves the merge step nothing
@@ -749,7 +749,7 @@ jobs:
   browser:
     needs: classify
     if: needs.classify.outputs.docs_only != 'true'
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       # Same partial clone as `shards` above: nothing here reads docs/evidence/.
@@ -791,7 +791,7 @@ jobs:
   test:
     needs: [classify, gates, cost-table, game, plan, shards, costs, browser]
     if: always()
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every check that ran passed (costs warns; only a timeout or a lost runner fails it), and the game's tests ran unless the pull request is docs-only
