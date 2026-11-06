@@ -28,4 +28,7 @@ updates that deliberately run without the frames a drawn read needs.
 **Open to overturn.** The ground layers' 45-degree fallback check went, since it needs a doctored
 recipe and makes the compositor raise an engine error; and the hand-made-image check that an empty
 overlay pixel leaves the base alone went, the composed-sources check holding it on the real kerb
-tile.
+tile. The atlas suite holds its own statement of the aspect formula, which the library's comment
+once avoided as a second copy kept in step by hand. The frame-timing probe's eviction count now
+counts only regions resident before whose layer changed or went, so a region prepared and freed in
+one walk no longer counts, and its numbers differ from earlier frame reports.
