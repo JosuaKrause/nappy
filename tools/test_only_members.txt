@@ -181,10 +181,6 @@ src/routes/route_tree.gd trunk_used_the_spine
 src/routes/seal_planner.gd escape_candidates
 src/telemetry/telemetry_map.gd role_mark
 src/telemetry/telemetry_observer.gd spikes_on
-src/ui/badge_model.gd announces
-src/ui/badge_model.gd approach_speed
-src/ui/danger_edge.gd arrows_drawn
-src/ui/danger_edge.gd subject_for_def
 src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
@@ -242,3 +238,4 @@ src/visuals/atlas_library.gd region_name_for  # the bake calls it: tools/bake_at
 src/ui/entity_halo.gd trace_offsets  # the ring of offsets the rim's body is re-drawn at around its owner; it exists only as the loop _on_draw() runs through to call draw_set_transform_matrix() on the halo itself, and a headless run draws to nothing and no node or recorder exposes a canvas's transform, so tests/test_halo.gd (the mirrored copies land on the ring) and tests/test_car_views.gd (the traced rim is the ring around the drawn picture) compare the pictures asked for during the halo's own draw pass against it
 src/sprites.gd mirrored_transform  # where a mirrored draw_standing() puts its texture: the transform it hands the canvas through draw_set_transform_matrix() inside a draw pass, which cannot be read back from a canvas, headless or not, and no recorder reaches (Sprites is static and draws on whatever canvas it is handed), so tests/test_halo.gd, tests/test_car_views.gd read the function the flipped branch itself calls; the cues skill names it
 src/sprites.gd base_transform_of  # the offset the rim's halo told Sprites its current copy stands at (set_base_transform(), by EntityHalo._on_draw()), which draw_standing() composes under its mirror; it is canvas metadata of a draw pass that ends with the pass (identity is stored back), so only a read inside the pass sees it: tests/test_car_views.gd's TracingAtlas reads it from region(), the call the pass makes, to note where each copy of a rim stands
+src/ui/danger_edge.gd subject_for_def  # the game's mapping of an event row to the facts the screen-edge badge reads (whether a row earns an arrow, how fast it closes, whether it pursues). Open to overturn: tests/test_danger.gd and tests/test_events_catalogue.gd ask which rows earn an arrow and could ask a DangerEdge over a pending warning, but tests/probes/m207_warning_lead.gd (which tests/test_events_pursuit.gd runs as the pursuit's identical walk) steps a BadgeModel by hand over simulated time with its own view and needs the row's Subject, which no edge on live frames can be handed
