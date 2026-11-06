@@ -474,6 +474,21 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 ## Recovering from an interruption
 
+**In-flight state is kept where a fresh session finds it** (inbox #986 in brisk-pelican): the
+repository, the pull requests and issues, the board, the briefs, and the local
+`.claude/restart-prompt.md` for the orchestrator's own working state (which pull request waits on
+what, which review is next, what a builder was told). That file is written during the session
+whenever it is cheap, not only at the handover (**session-cleanup**, step 8); the board is the
+player's information and answer channel, updated in batches (**board**). A session cleared,
+compacted or cut off must be able to carry on from these alone.
+
+*Proposed, not asked for, open to the player's correction:* **an agent a restart stopped is resumed,
+not rebriefed, while it is warm.** `SendMessage` addressed to the id on the newest `agent:` line of
+its brief resumes it with its context, and its worktree still holds its uncommitted work.
+`tools/agent-status.sh` prints that id per worktree only when it finds the agent's transcript, and
+reports warm or cold. A cold one is replaced as step 4 says, with a fresh agent briefed from the
+brief and the worktree's state ("A finished agent is not resumed after it has gone cold").
+
 **A limit or an outage stops every agent at once, and the pause's length decides what happens
 next.** The player usually tries to hand the session off before a limit hits, so the next one starts
 fresh at the reset, but not every limit is seen coming (woolly-finch 26).
