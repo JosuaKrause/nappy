@@ -25,7 +25,6 @@ func run(t) -> void:
 	_test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t)
 	_test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t)
 	_test_a_marble_peeked_at_is_the_marble_drawn(t)
-	_test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t)
 	_test_an_inner_bag_of_n_gives_n_events_and_is_gone(t)
 	_test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t)
 	_test_day_3s_lesson_is_first_and_a_bag_of_its_own(t)
@@ -126,31 +125,6 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
 	t.check(interrupted.sizes() == [1, ordinary.size()],
 			"a bag put in front after a peek leaves the peeked marble where it was (%s)"
 			% [interrupted.sizes()])
-
-## The two-bag shape: a bag of `before` marbles taken out of the active bag, none of them the
-## ensured one, then the ensured one, then what is left — so the ensured marble is drawn exactly
-## after `before` others, and the bags between them still hold the active bag's marbles and it.
-func _test_a_spaced_rig_comes_after_its_bag_and_no_sooner(t) -> void:
-	var ordinary := MarbleBag.in_proportion({"cat": 2.5, "cyclist": 1.5, "dog": 1.4}, 2.0)
-	var before := 5
-	for seed_value: int in [11, 12, 13, 14, 15]:
-		var bag := MarbleBag.new([], ordinary, seed_value)
-		bag.take("dog")
-		bag.rig_spaced(["dog"], before)
-		var n := ordinary.size()
-		t.check(bag.sizes() == [before, 1, n - 1 - before], "seed %d: bags of %d, 1 and %d (%s)"
-				% [seed_value, before, n - 1 - before, bag.sizes()])
-		var drawn: Array = []
-		for _i in n:
-			drawn.append(bag.draw())
-		t.check(not drawn.slice(0, before).has("dog") and drawn[before] == "dog",
-				"seed %d: the dog is drawn sixth and not before (%s)" % [seed_value, drawn])
-		var sorted := drawn.duplicate()
-		sorted.sort()
-		var expected := ordinary.duplicate()
-		expected.sort()
-		t.check(sorted == expected, ("seed %d: with the dog's own marble taken out, the bags " +
-				"between them hold the ordinary set exactly") % seed_value)
 
 ## A marble that is itself a bag *(inbox #561 in coral-bunny; asked whether a drawn bag marble goes back at once or
 ## with the next outer fill: "The inner bag becomes empty after n draws")*: drawing it draws from

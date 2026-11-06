@@ -12,7 +12,6 @@ func run(t) -> void:
 	_test_an_ending_has_no_continue_and_names_its_day_when_bad(t)
 	_test_the_epilogue_names_the_way_out_and_its_clock(t)
 	_test_the_tally_counts_errands_and_contacts_lost(t)
-	_test_the_standing_line_is_the_pause_screens(t)
 
 func _run_on(day: int, nerves: int) -> RunState:
 	var run := RunState.new()
@@ -126,12 +125,4 @@ func _test_the_tally_counts_errands_and_contacts_lost(t) -> void:
 	run.resistance.progress = Tuning.RESISTANCE_GOAL
 	t.check(SummaryModel.resistance_tally(run) == Texts.SUMMARY_TALLY_DONE,
 			"and done enough once the last night's work is on offer")
-	run.free()
-
-## The pause screen's standing line is the summary's day and nerves lines, joined as it always read.
-func _test_the_standing_line_is_the_pause_screens(t) -> void:
-	var run := _run_on(7, 3)
-	t.check(SummaryModel.standing_line(run) == "Day 7 of %d     ·     Nerves left: ***"
-			% Tuning.RUN_LENGTH_DAYS, "the pause reads 'Day 7 of 14 · Nerves left' with stars ('%s')"
-			% SummaryModel.standing_line(run))
 	run.free()

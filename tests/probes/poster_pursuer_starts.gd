@@ -64,7 +64,10 @@ func run(t) -> void:
 				while not city.events.pending_warnings().is_empty() and shown < 5.0:
 					city.events.warnings.run(STEP, her)
 					shown += STEP
-				var sent := city.events.ahead.sent_pursuer()
+				var sent: EventInstance = null
+				for instance in city.events.instances():
+					if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
+						sent = instance
 				var made := "nobody"
 				if sent:
 					made = "%s at (%s, %s)" % [sent.def.id, var_to_str(sent.global_position.x),

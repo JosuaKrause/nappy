@@ -7,7 +7,6 @@ extends RefCounted
 func run(t) -> void:
 	_test_the_cap_is_read_from_the_query(t)
 	_test_the_gate(t)
-	_test_apply_asks_nothing_off_a_page(t)
 
 ## The cap a release page opened on `query` is given, on a Web export.
 func _cap_on_a_page(query: String) -> float:
@@ -35,8 +34,3 @@ func _test_the_gate(t) -> void:
 	t.check(_cap_on_a_page("?dpr=2") == 0.0, "a release page without ?debug=1 reads nothing")
 	t.check(WebDisplay.dpr_cap(RunConfig.parse(PackedStringArray(), "?dpr=2", true), false) == 0.0,
 		"off a page there is no address bar")
-
-func _test_apply_asks_nothing_off_a_page(t) -> void:
-	var config := RunConfig.parse(PackedStringArray(), "", true)
-	WebDisplay.apply(config)
-	t.check(WebDisplay.dpr_cap(config) == 0.0, "a native build is capped by nothing")

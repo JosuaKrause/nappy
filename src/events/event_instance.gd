@@ -973,17 +973,6 @@ func let_out(officer: EventInstance) -> void:
 	if investigation:
 		investigation.let_out(officer)
 
-## The first man this vehicle let out who is still in the world, or null.
-func its_officer() -> EventInstance:
-	var out := its_officers()
-	return out[0] if not out.is_empty() else null
-
-## Every man this vehicle let out who is still in the world.
-func its_officers() -> Array[EventInstance]:
-	if investigation == null:
-		return [] as Array[EventInstance]
-	return investigation.its_officers()
-
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
 func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:

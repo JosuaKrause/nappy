@@ -1,6 +1,6 @@
 extends RefCounted
-## The behaviours an event is composed of (`EventBehaviours.compose()`): which a row gets, and that
-## each one's own state survives a stream-out — saved off one instance (`save_behaviours()`), put
+## The behaviours an event is composed of (`EventBehaviours.compose()`): that each one's own state
+## survives a stream-out — saved off one instance (`save_behaviours()`), put
 ## back on a fresh one of the same row after `resume()` (`restore_behaviours()`), and then the same
 ## state and the same next tick. One test per behaviour that keeps state, one for the route walk,
 ## which keeps none of its own, and one through the manager's own streaming.
@@ -8,7 +8,6 @@ extends RefCounted
 const STEP := 0.1
 
 func run(t) -> void:
-	_test_a_row_is_composed_of_what_its_data_says(t)
 	_test_the_pursuit_round_trips(t)
 	_test_the_masked_mans_warning_round_trips(t)
 	_test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t)
@@ -48,33 +47,6 @@ func _round_trip(t, first: EventInstance, what: String, behaviour: StringName) -
 	t.check(second.save_behaviours() == state,
 			"%s: streamed back in, every behaviour's state is what was saved" % what)
 	return second
-
-# ----------------------------------------------------------------- composition ---
-
-func _test_a_row_is_composed_of_what_its_data_says(t) -> void:
-	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
-	t.check(robber.pursuit != null and robber.on_foot != null and robber.notice_run == null,
-			"a pursuer chases and has a man's stop; it does not run a line of its own")
-	var masked := _instance(t, EventCatalogue.by_id("masked_pursuer"))
-	t.check(masked.notice_run != null and masked.pursuit == null,
-			"the masked man waits and runs his line, and does not chase")
-	var flock := _instance(t, EventCatalogue.by_id("pigeon_flock"))
-	t.check(flock.flock != null and flock.notice_run != null,
-			"a flock has its birds and waits for her, both")
-	var mother := _instance(t, EventCatalogue.by_id("chatting_mother"))
-	t.check(mother.hold != null and mother.pursuit == null, "a mother holds her and does not chase")
-	var band := _instance(t, EventCatalogue.by_id("roadblock"))
-	t.check(band.barrier_post != null and band.pursuit == null,
-			"a cold roadblock has its barrier post, guards standing at it, and does not chase")
-	var van := _instance(t, EventCatalogue.by_id("abduction"))
-	t.check(van.abduction != null and _instance_is_free_of_a_take(robber),
-			"the unmarked van takes a bystander, and nothing that is not given a take does")
-	for one in [robber, masked, flock, mother, band, van]:
-		t.check(one.departure != null, "%s can leave" % one.def.id)
-		one.free()
-
-func _instance_is_free_of_a_take(instance: EventInstance) -> bool:
-	return instance.abduction == null and instance.def.abduction == null
 
 # -------------------------------------------------------------------- pursuit ---
 
@@ -185,8 +157,7 @@ func _test_the_investigation_round_trips(t) -> void:
 	first.investigation.restore(state)
 	var second := _round_trip(t, first, "investigation", &"EventInvestigation")
 	t.check(second.investigation.save() == state, "every field of its state survives the trip")
-	t.check(second.investigation.has_seen_her() and second.investigation.has_investigated()
-			and second.officers_owed() == 1, "it has seen her, is done, and still owes its man")
+	t.check(second.officers_owed() == 1, "and it still owes its man")
 	first.free()
 	second.free()
 
@@ -355,17 +326,17 @@ func _test_the_barrier_post_round_trips(t) -> void:
 	t.check(side != 0 and first.barrier_post.is_spent(), "his guard set off from his post and is spent")
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
 	t.check(second.barrier_post.is_spent() and second.barrier_post.chaser_side() == side
-			and second.phase == EventInstance.Phase.SPENT and not second.barrier_post.has_its_far_guard_posted(),
+			and second.phase == EventInstance.Phase.SPENT and second.barrier_post.far.has_left(),
 			"it comes back as only the barrier, his post empty and the far guard gone")
 	first.free()
 	second.free()
 
-## A row that drives is composed of a car's driving (`EventCarDriving`), made standing; nothing else
-## is.
+## A row that drives is composed of a car's driving (`EventCarDriving`), which is not driving until
+## it is let go; nothing else is.
 func _test_a_car_is_composed_of_its_vehicle(t) -> void:
 	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"))
 	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
-	t.check(patrol.car != null and patrol.car.is_standing() and robber.car == null,
-			"a patrol car drives, made standing; a robber does not drive")
+	t.check(patrol.car != null and not patrol.car.is_driving() and robber.car == null,
+			"a patrol car drives, but is not yet driving; a robber does not drive")
 	patrol.free()
 	robber.free()

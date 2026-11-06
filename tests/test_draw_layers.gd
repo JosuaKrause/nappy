@@ -14,7 +14,7 @@ func run(t) -> void:
 	_test_the_layers_keep_their_reasons(t)
 	_test_a_world_adds_a_node_on_its_layer(t)
 	_test_slices_stand_at_their_own_feet(t)
-	_test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t)
+	await _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t)
 	await _test_every_long_picture_is_drawn_in_slices(t)
 	await _test_the_slices_go_with_their_event(t)
 
@@ -113,19 +113,19 @@ func _test_a_world_adds_a_node_on_its_layer(t) -> void:
 	var overhead := Node2D.new()
 	world.add_entity(standing)
 	world.add_entity(overhead, DrawLayer.Layer.OVERHEAD)
-	t.check(DrawLayer.layer_of(standing) == DrawLayer.Layer.ENTITIES
+	t.check(standing.get_parent() == world.layers().node(DrawLayer.Layer.ENTITIES)
 			and (standing.get_parent() as Node2D).y_sort_enabled,
 			"a node added with no layer named stands in the y-sorted entity layer")
-	t.check(DrawLayer.layer_of(overhead) == DrawLayer.Layer.OVERHEAD
+	t.check(overhead.get_parent() == world.layers().node(DrawLayer.Layer.OVERHEAD)
 			and not (overhead.get_parent() as Node2D).y_sort_enabled,
 			"and one added on another layer is drawn on it")
 	var raised := Node2D.new()
 	world.add_entity(raised)
 	DrawLayer.draw_on(raised, DrawLayer.Layer.WARNING)
-	t.check(DrawLayer.layer_of(raised) == DrawLayer.Layer.WARNING,
+	t.check(raised.z_index == DrawLayer.z_of(DrawLayer.Layer.WARNING) and not raised.z_as_relative,
 			"a node asked onto another layer where it stands is drawn on that one")
 	DrawLayer.draw_on(raised, DrawLayer.Layer.ENTITIES)
-	t.check(DrawLayer.layer_of(raised) == DrawLayer.layer_of(standing),
+	t.check(raised.z_index == DrawLayer.z_of(DrawLayer.Layer.ENTITIES) and not raised.z_as_relative,
 			"and put back, it is drawn with the rest of its layer again")
 	world.free()
 
@@ -166,7 +166,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 		instance.setup(def, Vector2(200.0, 200.0), PackedVector2Array(), Vector2.RIGHT,
 				_ground_in(world, vertical))
 		world.add_entity(instance)
-		instance.look.attach_nodes()
+		await t.get_tree().process_frame
 		var slices := _slices_of(instance)
 		t.check(slices.size() > 1, "%s: the spread is drawn in slices (%d)" % [what, slices.size()])
 		var ahead := true
@@ -175,7 +175,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 			ahead = ahead and slice.get_parent() == instance.get_parent() \
 					and slice.get_index() < instance.get_index()
 			on_its_layer = on_its_layer \
-					and DrawLayer.layer_of(slice) == DrawLayer.Layer.ENTITIES
+					and slice.get_parent() == world.layers().node(DrawLayer.Layer.ENTITIES)
 		t.check(ahead and on_its_layer,
 				"%s: every slice stands in the entity layer ahead of its instance" % what)
 		var last := slices[slices.size() - 1].global_position
@@ -213,7 +213,7 @@ func _test_the_slices_go_with_their_event(t) -> void:
 	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
 			PackedVector2Array(), Vector2.RIGHT, _open_ground_in(world))
 	world.add_entity(instance)
-	instance.look.attach_nodes()
+	await t.get_tree().process_frame
 	var layer := world.layers().node(DrawLayer.Layer.ENTITIES)
 	t.check(_slices_in(layer) > 1, "the event stands in its world in slices (%d)" % _slices_in(layer))
 	instance.free()
@@ -283,7 +283,7 @@ func _test_every_long_picture_is_drawn_in_slices(t) -> void:
 			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0), PackedVector2Array(),
 					Vector2.RIGHT, _ground_in(world, vertical))
 			world.add_entity(instance)
-			instance.look.attach_nodes()
+			await t.get_tree().process_frame
 			var slices := _slices_of(instance)
 			var ahead := slices.size() > 1
 			for slice in slices:

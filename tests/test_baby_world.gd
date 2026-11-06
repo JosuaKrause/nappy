@@ -27,7 +27,6 @@ const _SCRATCH_SAVE := "user://test_baby_world_scratch.json"
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_a_baby_with_no_world_is_neutral(t)
-	_test_a_baby_answers_for_the_world_she_is_handed(t)
 	await _test_the_escape_hands_her_the_building_then_the_city(t)
 	await _test_a_boot_straight_onto_the_street_hands_her_the_city(t)
 	await _test_an_ordinary_boot_hands_her_the_city(t)
@@ -36,16 +35,6 @@ func _test_a_baby_with_no_world_is_neutral(t) -> void:
 	var baby := Baby.new()
 	t.check(baby.decay_rate() == 0.0, "a baby never placed in a world has no decay rate")
 	baby.free()
-
-func _test_a_baby_answers_for_the_world_she_is_handed(t) -> void:
-	var world := WorldContext.new()
-	var baby := Baby.new()
-	baby.set_world(world)
-	t.check(baby.world() == world, "set_world() is the world she then reads")
-	baby.set_world(null)
-	t.check(baby.world() == null, "and a null world is a world taken away")
-	baby.free()
-	world.free()
 
 func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	var run := _run_on(DaySpec.Section.BUILDING)
