@@ -185,7 +185,7 @@ static func full_contribution(map: CityMap, agent: CrowdAgent, at: Vector2, jolt
 			Tuning.PEDESTRIAN_INNER_RADIUS, Tuning.PEDESTRIAN_OUTER_RADIUS)
 	var jolt := agent.excitement
 	if jolt.is_startled():
-		total += Field.falloff(distance, jolt_intensity * jolt.jolt_swell(),
+		total += Field.falloff(distance, jolt_intensity * jolt.jolt_swell_after(0.0),
 			jolt.jolt_radii().x, jolt.jolt_radii().y)
 	# A building between them silences the whole of it; asked of every body, never only the near
 	# ones, so the oracle stays the unfiltered calculation on a real map too.

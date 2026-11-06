@@ -227,13 +227,3 @@ static func pick_corridor_in_range(rng: RandomNumberGenerator, map: CityMap, ver
 static func arterial_pavement(map: CityMap) -> Vector2:
 	var x := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return map.tile_to_world(Vector2i(x, map.size.y / 2))
-
-## The same, for whichever north-south corridor this city made the quietest.
-static func quietest_pavement(map: CityMap) -> Vector2:
-	var count := corridor_count(Tuning.CITY_BLOCKS.x)
-	var quietest := 0
-	for index in count:
-		if busyness(map, true, index) < busyness(map, true, quietest):
-			quietest = index
-	var x := quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
-	return map.tile_to_world(Vector2i(x, map.size.y / 2))

@@ -77,7 +77,12 @@ func _legs(city: City) -> Array:
 	var legs: Array = []
 	var height := float(map.size.y) * Tuning.TILE_SIZE
 
-	var quiet := CrowdLanes.quietest_pavement(map)
+	var quietest := 0
+	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
+		if CrowdLanes.busyness(map, true, index) < CrowdLanes.busyness(map, true, quietest):
+			quietest = index
+	var quiet := map.tile_to_world(Vector2i(
+			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size.y / 2))
 	legs.append({"name": "quiet pavement", "from": Vector2(quiet.x, height * 0.3),
 			"to": Vector2(quiet.x, height * 0.7)})
 

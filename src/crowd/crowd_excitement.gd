@@ -156,13 +156,9 @@ func is_startled() -> bool:
 func jolt_radii() -> Vector2:
 	return Vector2(_jolt_inner, _jolt_outer)
 
-## What is left of the jolt, from 1 the moment it starts down to 0, and 1 while none is running: what
-## a car's caret breathes with (`CrowdAgent._draw_mark()`).
-func jolt_swell() -> float:
-	return (_jolt / _jolt_for) if _jolt > 0.0 else 1.0
-
-## `jolt_swell()` as it will stand `seconds` from now with nothing startling it again: what the
-## caret breathes with on a drawn frame between two ticks (`CrowdAgent._draw_mark()`). Draw-only:
+## What is left of the jolt `seconds` from now with nothing startling it again, from 1 the moment it
+## starts down to 0, and 1 while none is running: what the caret breathes with on a drawn frame
+## between two ticks (`CrowdAgent._draw_mark()`), and with `0.0` what is left right now. Draw-only:
 ## nothing in the simulation calls it and it changes nothing.
 func jolt_swell_after(seconds: float) -> float:
 	return clampf((_jolt - seconds) / _jolt_for, 0.0, 1.0) if _jolt > 0.0 else 1.0

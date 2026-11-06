@@ -475,9 +475,6 @@ func recipe_coverage() -> Dictionary:
 				local.moving_cars += 1
 	return result
 
-func traffic() -> TrafficIndex:
-	return _traffic
-
 ## Where the traffic cannot get out of today. Public so a suite can ask whether the pocket it has
 ## just sealed is actually a pocket before asserting anything about who is standing in it.
 func pockets() -> CrowdPockets:
@@ -490,10 +487,6 @@ func pockets() -> CrowdPockets:
 func _rebuild_the_crossable_segments() -> void:
 	_crossable_segments = _home_segments.duplicate()
 	_crossable_segments.merge(_door_segments)
-
-## The lights, for a suite that has a `Crowd` and wants to ask what the junction ahead is doing.
-func signals_for_tests() -> TrafficSignals:
-	return _signals
 
 func clear() -> void:
 	for agent in _agents:

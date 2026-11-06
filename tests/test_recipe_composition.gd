@@ -1,6 +1,7 @@
 extends RefCounted
 ## Authored scenery shares the production tree source, and pedestrian overrides end with a day.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 
 func run(t) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
@@ -45,7 +46,7 @@ func run(t) -> void:
 			cars += 1
 			continue
 		# The agent's own lane key says its axis, corridor, lane and heading.
-		var parts := LaneMover.lane_key_parts(agent.lane_key())
+		var parts := LANE_KEYS.parts_of(agent.lane_key())
 		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
 		counts[key] = int(counts.get(key, 0)) + 1
 		var lane := "%s:%s" % [key, parts[2]]
