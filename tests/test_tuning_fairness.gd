@@ -77,8 +77,9 @@ func _test_the_side_streets_green_clears_the_carriageway(t) -> void:
 # -------------------------------------------------------------- return patrols ---
 
 ## The return leg's own pacing is fair by construction as long as its shape holds: an interval that
-## is ordered and strictly shorter than `AHEAD_INTERVAL`'s on both ends — the rows this owes have to be able to land inside the return leg they were sized against, not
-## merely inside "the day" the ordinary pacing still covers.
+## is ordered and strictly shorter than `AHEAD_INTERVAL`'s on both ends — the rows this owes have to
+## be able to land inside the return leg they were sized against, not merely inside "the day" the
+## ordinary pacing still covers.
 func _test_the_return_patrols_keep_their_shape(t) -> void:
 	t.check(EventDirector.RETURN_PATROL_INTERVAL.x <= EventDirector.RETURN_PATROL_INTERVAL.y,
 			"RETURN_PATROL_INTERVAL is not ordered: %s" % EventDirector.RETURN_PATROL_INTERVAL)

@@ -44,13 +44,14 @@ func run(t) -> void:
 ## blockers go on the route… to make it more challenging."* That one is a **weight**
 ## (`EVENT_CORRIDOR_WEIGHT`, four copies of an on-corridor tile in the roll). Its upper bound is
 ## asserted: a corridor carrying nearly all of it would mean every street off the route is empty,
-## which reads as a set rather than as a city. **No floor is asserted**, because the share depends on
-## the city: three rules take corridor ground away from a row (a row covering a whole crossing is
-## refused it, `_leaves_the_route_junctions_open`; one that would close the route's sidewalk,
-## `_leaves_the_routes_sidewalk_open`; a pacing row with no way off its sidewalk,
-## `_a_pacing_beat_walls_a_sidewalk`), and a floor measured on one city (37% of the costly rows, 38%
-## of the narrow ones) is 33% and 30% on others, which is a different city rather than a broken
-## weight. `tests/probes/m64_measure.gd` measures the share over many seeds.
+## which reads as a set rather than as a city. **The floor is a relation, not a number**: the share
+## depends on the city (three rules take corridor ground away from a row: one covering a whole
+## crossing is refused it, `_leaves_the_route_junctions_open`; one that would close the route's
+## sidewalk, `_leaves_the_routes_sidewalk_open`; a pacing row with no way off its sidewalk,
+## `_a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
+## what a draw without the weight would put there: for each, the corridor's share of the ground
+## `EventScheduler.open_ground_for()` offers that row, summed. With the weight at 1 the placed count
+## falls under that sum; with it on, it stands well over it on every city tried.
 ##
 ## **The whole share sits under its own natural ceiling because `delivery_van` counts as a wall in
 ## this tally while its own ground is weighted exactly like friction.** `delivery_van` is a wall by
@@ -94,6 +95,9 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	var walls_across_the_street := 0
 	var friction_on_the_route := 0
 	var friction := 0
+	# What a draw with no weight would put on the corridor: per friction row, the corridor's share of
+	# the ground that row may stand on.
+	var friction_on_the_route_unweighted := 0.0
 	var narrow := 0
 	var deep := {true: 0, false: 0}
 	var placed := {true: 0, false: 0}
@@ -110,6 +114,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 		for key in tree.gaps():
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
+		var ground := {}
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
 			if not plan.is_placed():
 				continue
@@ -140,6 +145,12 @@ func _test_the_day_is_placed_by_role(t) -> void:
 				friction += 1
 				if away == 0:
 					friction_on_the_route += 1
+				var offered := EventScheduler.open_ground_for(plan.def, map, ground)
+				var on_it := 0
+				for offered_tile in offered:
+					if corridor.depth(offered_tile) == 0:
+						on_it += 1
+				friction_on_the_route_unweighted += float(on_it) / maxf(1.0, float(offered.size()))
 				# The rows small enough to stand beside a crossing without taking it.
 				if plan.def.line_reach() <= _A_JUNCTION_BOXES_HALF_WIDTH:
 					narrow += 1
@@ -155,6 +166,10 @@ func _test_the_day_is_placed_by_role(t) -> void:
 	t.check(friction > 0, "and friction at all (%d)" % friction)
 	t.check(narrow > 50, "and enough of it narrow enough to stand beside a crossing (%d)" % narrow)
 	var share := float(friction_on_the_route) / maxf(1.0, float(friction))
+	t.check(friction_on_the_route > friction_on_the_route_unweighted,
+			("the weight puts more costly rows on the corridor (%d) than a draw over the ground "
+			+ "they may stand on would (%.1f of %d)")
+			% [friction_on_the_route, friction_on_the_route_unweighted, friction])
 	t.check(share < 0.9, "and the streets off it are not empty (%.0f%% on it)" % (share * 100.0))
 	crew.on_her_way = crew_way
 
