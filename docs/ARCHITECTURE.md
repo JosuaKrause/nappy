@@ -33,7 +33,6 @@ src/
 	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-	game_state.gd         the run (`RunState`), as a registry of its parts; held by the `Sitting`
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
 	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
@@ -42,6 +41,7 @@ src/
 	                                                       (autoload: VisitCounter)
   run/                  the run's state, a domain model — one registered list of sub-states —
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
+	run_state.gd          the run (`RunState`), as a registry of its parts; held by the `Sitting`
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
 	run_calendar.gd       the run's calendar: day and act, a day begun and ended, the mode and checkpoint, the day's RNG
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk

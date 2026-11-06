@@ -1,7 +1,7 @@
 extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle.
 
-const STATE_SCRIPT = preload("res://src/autoload/game_state.gd")
+const STATE_SCRIPT = preload("res://src/run/run_state.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
