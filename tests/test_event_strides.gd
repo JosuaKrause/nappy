@@ -157,7 +157,9 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 ## has no second frame of its own at all. A cat the game would never see striding while it crouches
 ## is walked on by hand, as a scene recipe's held event is (`walk_on_by_hand()`, which advances the
 ## stride by the ground covered), until its stride is on a step, and drawn on real frames: the
-## pictures it tells its drawer to stand are the crouched ones.
+## pictures it tells its drawer to stand are the crouched ones. The hand stays here: a crouching
+## cat covers no ground under its manager's step, so no step the game takes puts its stride on a
+## step, and the guard is for the state the game cannot reach.
 func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cat_dash"), false)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
@@ -267,9 +269,9 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 
 ## Standing still is the rest pose, not a step held mid-air: before a dog walker has covered any
 ## ground, and whenever the last tick saw none, whatever half of the stride the phase happens to be
-## sitting in. The walker is walked on by hand (`walk_on_by_hand()`, a scene recipe's way of
-## walking a held event) until its stride is on a step in each half, then given a tick that covers no
-## ground (a walk of no time), and the dog it draws on real frames is on its rest picture.
+## sitting in. The walker is sent off (`leave_for_a_completed_task()`) and stepped the way its
+## manager steps it until its stride is on a step in each half, then given a tick that covers no
+## ground (a step of no time), and the dog it draws on real frames is on its rest picture.
 func _test_a_standing_normal_dog_rests(t) -> void:
 	# The heading each view is drawn from.
 	var headings := {"side": Vector2.RIGHT, "front": Vector2.DOWN, "back": Vector2.UP,
@@ -278,7 +280,7 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 	for view: String in headings:
 		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("dog_walker"),
 				false, null, null, DrawnEvent.AT, headings[view])
-		instance.held_by_hand = true
+		instance.leave_for_a_completed_task()
 		var rest: String = EventPictures.dog_picture(view, false, false)
 		t.check(_the_dog_drawn(instance) == [rest],
 				"a %s dog that has not moved stands in its rest pose" % view)
@@ -287,14 +289,14 @@ func _test_a_standing_normal_dog_rests(t) -> void:
 			var walked := 0
 			while not (instance.look.gait_is_stepping()
 					and instance.look.gait_is_second_half() == second_half) and walked < 2000:
-				instance.walk_on_by_hand(STEP)
+				instance.step(STEP)
 				walked += 1
 			t.check(instance.look.gait_is_stepping() and instance.look.gait_is_second_half() == second_half,
 					"the %s stride is on a step in its %s half" % [view, half])
 			await DrawnEvent.frames(t)
 			t.check(not _the_dog_drawn(instance).has(rest),
 					"a %s dog mid-step in the %s half is not on its rest picture" % [view, half])
-			instance.walk_on_by_hand(0.0)
+			instance.step(0.0)
 			await DrawnEvent.frames(t)
 			t.check(not instance.look.gait_is_stepping(), "a tick with no ground covered is not a step")
 			t.check(_the_dog_drawn(instance) == [rest],
