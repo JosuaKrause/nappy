@@ -2135,6 +2135,9 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 				return _map.tile_to_world(added[0])
 			if offered.is_empty():
 				return Vector2.INF
+			trace.note("contact", ("no mast stands where a path reaches the %.0fpx circle round her and "
+					+ "none could be put up; the nearest live one is %.0fpx from the mark") % [
+					NEAR_THE_MARK, offered[nearest].position.distance_to(mark)])
 			near_plans.append(offered[nearest])
 			near_beside.append(beside[nearest])
 		offered = near_plans

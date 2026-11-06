@@ -16,11 +16,15 @@ const SETTLE_TICKS := 240
 
 ## Runs the arrow to rest the way the game does: it chooses (`retarget_the_arrow()`), then the
 ## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a
-## time, choosing again as each finishes, for `SETTLE_TICKS` ticks.
+## time, choosing again as each finishes, for `SETTLE_TICKS` ticks. A choice made once more after
+## them must leave the tip where it is, or the arrow had not settled and the assert fails loudly.
 static func settle(director: ResistanceDirector, step_seconds: float) -> void:
 	director.retarget_the_arrow()
 	for i in SETTLE_TICKS:
 		director.tick(step_seconds)
+	var tip := director.red_arrow_target()
+	director.retarget_the_arrow()
+	assert(director.red_arrow_target() == tip, "the arrow had not settled after %d ticks" % SETTLE_TICKS)
 
 ## The live instances that answer a task several places answer (a man shouting, a roadblock): the
 ## city's instances of the task's row that are not finished, the places the arrow may point at.

@@ -407,7 +407,9 @@ func _on_the_named_door(director: ResistanceDirector, instance: EventInstance) -
 ## The door day 9 names, as the arrow has it: the boom (or, on a door with no boom today, the
 ## first gatehouse) of the district door whose segment holds the gatehouse the contact stands on
 ## (`region_plan().doors`, `door_bodies`), as `[position, street axis]`, or `[Vector2.INF,
-## Vector2.ZERO]` where the contact is on no door.
+## Vector2.ZERO]` where the contact is on no door. **A deliberate copy of the rule in
+## `ResistanceDirector._a_gatehouse_of_the_door_at()`**, kept as an oracle: a change to one finds
+## the other, since a drift turns the named-door walk red.
 func _named_door(director: ResistanceDirector) -> Array:
 	var house := director.contact_position()
 	var region_plan := _city.region_plan()
@@ -463,7 +465,8 @@ func _robber_after_her(events: EventManager) -> EventInstance:
 
 ## Whether a crossing is warning her: a gatehouse's guard has his hand raised at her
 ## (`EventInstance.guard_warns_her`), as the manager sets it every frame
-## (`CheckpointController.warn_at_the_doors()`).
+## (`CheckpointController.warn_at_the_doors()`). Calls it first, which sets the hands and counts a
+## raised one once: idempotent against the manager's own per-frame call, so a drive and not only a read.
 func _a_guard_warns_her(events: EventManager) -> bool:
 	events.checkpoints.warn_at_the_doors()
 	for instance in events.instances():

@@ -179,10 +179,6 @@ static func _arrow_targets(director: ResistanceDirector) -> Array[Dictionary]:
 		return none
 	return director._arrow_candidates(step)
 
-## Whether a sweep of the arrow's walking fields is under way (`ResistanceDirector._arrow_*_next`).
-static func _arrow_sweeping(director: ResistanceDirector) -> bool:
-	return director._arrow_nearest_next != null or director._arrow_own_next != null
-
 ## The key of the target closest on foot from `tile` in the director's finished sweep of every
 ## target, or null (`ResistanceDirector._arrow_nearest`, which the director offers no query of).
 static func _arrow_nearest_at(director: ResistanceDirector, tile: Vector2i) -> Variant:

@@ -1,7 +1,6 @@
 extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
 
-const ResistanceReads := preload("res://tests/resistance_reads.gd")
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -56,13 +55,11 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 					if circle[0].has(tile) or (mast and circle[1].has(tile)) or wider.has(tile):
 						on_it = true
 				# The nearest place stands in when nothing qualified: the director's run log says so
-				# (`_pick_near()`), and for day 11 the task is on a mast the city already had
-				# (the mast put up near the mark has an `added-` id).
+				# (`_pick_near()` for a mark's task, `_place_at_a_mast()` for day 11's).
 				var fell_back_here := false
 				for line in lines:
-					fell_back_here = fell_back_here or "nothing qualifies where a path reaches" in line
-				var mast_id := ResistanceReads.mast_at(director, _city.events) if mast else ""
-				fell_back_here = fell_back_here or (mast_id != "" and not mast_id.begins_with("added-"))
+					fell_back_here = fell_back_here or "nothing qualifies where a path reaches" in line \
+							or "no mast stands where a path reaches" in line
 				t.check(on_it or fell_back_here,
 						("seed %d day %d: the task stands where her path reaches the circle's " +
 						"edge (day 13: or the wider reach its roadblock is offered next), or " +

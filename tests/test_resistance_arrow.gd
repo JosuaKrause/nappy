@@ -168,6 +168,18 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
 		_city.map.release_obstruction(owner)
+		_settle_the_arrow(director)
+		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) < 1.0,
+				"the wall taken down, the arrow goes back to the nearer one")
+		# The same wall as the day's soft seals: a change to the day's records
+		# (`CityMap.day_record_version`) rather than to the standing bodies, which the arrow's
+		# cached ground must also notice.
+		for tile in wall:
+			_city.map.seal_soft_tile(tile)
+		_settle_the_arrow(director)
+		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
+				"a wall of soft seals sent up after it has chosen sends the arrow to the one she can walk to")
+		_city.map.clear_day_soft_seals()
 	player.free()
 	director.free()
 	_free_city()
