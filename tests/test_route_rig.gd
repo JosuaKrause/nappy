@@ -25,8 +25,9 @@ const DAY := 6
 ## The seed of the run each city stands in. Which ground the rig's targets resolve to depends on it.
 ## The checks hold on the other seeds tried (1 to 12). On `PINCHED_RUN_SEEDS` a second stationary
 ## body stands beside the first kerb site the clearance test would park a van at and shuts the
-## carriageway's second lane and the far sidewalk, so no plan can go round the van and crossing a
-## tile of its clearance is right; `_site_is_quiet()` keeps the site off such ground, and
+## carriageway's second lane and the far sidewalk, so the way round the van is long, and the planner,
+## which prices a tile of a body's clearance at `RouteRigPlanner._CLEARANCE_STEP_COST`, takes the one
+## tile through it as the cheaper; `_site_is_quiet()` keeps the site off such ground, and
 ## `_test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van` runs on those seeds too.
 const RUN_SEED := 4
 ## The run seeds whose day-6 events put a second body beside the first kerb site.
