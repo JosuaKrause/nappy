@@ -45,11 +45,10 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), consumed)
 
-	var done: Array[int] = []
+	# The days behind her, completed the way the game completes them.
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
-			done.append(step.index)
-	city.run.resistance.completed_steps.assign(done)
+			city.run.complete_resistance_step(step.index, step.grants_progress)
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
