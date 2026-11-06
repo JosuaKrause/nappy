@@ -511,6 +511,6 @@ func _test_its_picture_stands_over_its_body(t) -> void:
 			shape.half_length * absf(engine.solid_axis().y) + shape.radius
 			+ float(EventPictures.FIRE_ENGINE_CANVAS_BOTTOM_MARGIN["side"])),
 			"the side view's bottom lands on the body's southern edge")
-	t.check(EventFootprints.picture_drop_of(_truck()) > shape.reach(),
+	t.check(EventFootprints.footprint_of(_truck()).end.y > shape.reach(),
 			"and the drawn box allows for the lowered picture")
 	engine.free()
