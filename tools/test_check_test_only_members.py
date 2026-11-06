@@ -138,7 +138,7 @@ class ListTests(unittest.TestCase):
         }
         self.assertEqual(only(src, {"tests/test_a.gd": "func f(t):\n\tt.walks()\n"}), {("src/sim/a.gd", "walks")})
 
-    def test_a_call_on_a_namesake_is_not_an_own_use_so_the_member_has_no_reader(self) -> None:
+    def test_a_call_on_a_namesake_in_the_file_is_an_own_use(self) -> None:
         src = {
             "src/sim/a.gd": "class_name A\nfunc walks() -> bool:\n\treturn b.walks()\n",
             "src/sim/b.gd": "class_name B\nfunc walks() -> bool:\n\treturn true\n",
@@ -148,7 +148,7 @@ class ListTests(unittest.TestCase):
         found, _ = members.test_only(files(src, reads))
         _, stands = members.scan(files(src, reads))
         groups = {m.key: members.group_of(stands[m.key]) for m in found}
-        self.assertEqual(groups, {("src/sim/a.gd", "walks"): "no reader", (THING, "bump"): "own file only"})
+        self.assertEqual(groups, {("src/sim/a.gd", "walks"): "own file only", (THING, "bump"): "own file only"})
 
     def test_a_function_is_read_only_as_a_call_and_an_engine_name_is_never_read(self) -> None:
         src = {THING: "class_name Thing\nfunc enabled() -> bool:\n\treturn true\nfunc bump() -> void:\n\tpass\n"}
@@ -244,7 +244,7 @@ class ListTests(unittest.TestCase):
             ],
         )
 
-    def test_a_call_on_another_instance_of_the_class_is_no_own_use(self) -> None:
+    def test_a_call_on_another_instance_of_the_class_is_an_own_use(self) -> None:
         src = {
             THING: (
                 "class_name Thing\nfunc total(other: Thing) -> int:\n\treturn other.inner()\n"
@@ -253,7 +253,24 @@ class ListTests(unittest.TestCase):
         }
         found, _ = members.test_only(files(src, {"tests/test_thing.gd": "func f(t):\n\tt.inner()\n"}))
         _, stands = members.scan(files(src, {}))
-        self.assertEqual([members.group_of(stands[m.key]) for m in found], ["no reader"])
+        self.assertEqual([members.group_of(stands[m.key]) for m in found], ["own file only"])
+
+    def test_a_line_that_moves_with_its_member_is_not_an_addition(self) -> None:
+        base = members.entries_of("# [no reader] a\nsrc/a.gd old\nsrc/b.gd keep\n# [own file only] b\nsrc/c.gd own\n")
+        moved = members.entries_of("# [no reader] a\nsrc/x.gd old\nsrc/b.gd keep\n# [own file only] b\nsrc/c.gd own\n")
+        renamed = members.entries_of(
+            "# [no reader] a\nsrc/a.gd new\nsrc/b.gd keep\n# [own file only] b\nsrc/c.gd own\n"
+        )
+        self.assertEqual(members.list_failures(moved, base), [])
+        self.assertEqual(members.list_failures(renamed, base), [])
+        other_group = members.entries_of(
+            "# [no reader] a\nsrc/b.gd keep\n# [own file only] b\nsrc/c.gd own\nsrc/x.gd old\n"
+        )
+        self.assertEqual(len(members.list_failures(other_group, base)), 1)
+        unrelated = members.entries_of(
+            "# [no reader] a\nsrc/x.gd new\nsrc/b.gd keep\n# [own file only] b\nsrc/c.gd own\n"
+        )
+        self.assertEqual(len(members.list_failures(unrelated, base)), 1)
 
 
 class ReadTests(unittest.TestCase):

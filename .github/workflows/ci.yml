@@ -233,6 +233,8 @@ jobs:
           args=()
           if [ -n "$BASE" ] && git rev-parse --verify --quiet "$BASE^{commit}" > /dev/null; then
             args=(--base "$BASE")
+          else
+            echo "::warning::The shrink comparison of the test-only member list was skipped: the base '$BASE' is empty or not a commit in this checkout."
           fi
           uv run python tools/check_test_only_members.py "${args[@]}"
 
