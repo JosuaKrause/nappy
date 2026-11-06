@@ -389,7 +389,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	# Run's disc is drawn at the focus opposite the one the joystick steers from.
 	var controls := Boot.touch_controls(playing.main)
 	t.check(controls.controls_mode() == ControlsMode.Mode.JOYSTICK
-			and controls.run_button_center() == TouchControls.run_focus_for(TouchControls.FOCUS_RIGHT),
+			and controls.run_button_center() == TouchControls.FOCUS_LEFT,
 			"with the joystick the title chose, steered from the right, as before")
 	t.check(run.calendar.hard_mode == false, "in the mode the title chose")
 	t.check(back == [[8, 11]], "the checkpoint restart was counted once (%s)" % [back])

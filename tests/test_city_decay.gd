@@ -9,6 +9,8 @@ extends RefCounted
 
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
+## What a building's front shows, read off the pictures it was drawn with.
+const FrontReads := preload("res://tests/front_reads.gd")
 
 const BASE_SEED := 40200
 const SEEDS := 3
@@ -21,10 +23,10 @@ func run(t) -> void:
 	_test_litter_grows_with_the_day(t)
 	_test_sacks_wait_for_the_curve_then_alleys_before_fronts(t)
 	_test_the_mouse_prefers_a_pile(t)
-	_test_boarded_storefronts_and_windows_shutter(t)
+	await _test_boarded_storefronts_and_windows_shutter(t)
 	await _test_a_burnt_building_shows_nothing_intact(t)
-	_test_ambient_shuttering_waits_for_the_curve(t)
-	_test_storefront_variants_use_seeded_bags(t)
+	await _test_ambient_shuttering_waits_for_the_curve(t)
+	await _test_storefront_variants_use_seeded_bags(t)
 
 # ---------------------------------------------------------------------- the curve ---
 
@@ -199,27 +201,32 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 # ---------------------------------------------------------------------- buildings ---
 
 func _test_boarded_storefronts_and_windows_shutter(t) -> void:
-	var building := Building.new()
+	var building := FrontReads.new_building()
 	building.district = GameEnums.BlockPurpose.COMMERCIAL
 	building.footprint = Vector2(96.0, 96.0)
 	building.height = 64.0
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
-	t.check(_variants(building).size() == building.columns() / 2,
+	await UI.frames(t, 2)
+	var front = FrontReads.look(building)
+	t.check(_variants(front).size() == building.columns() / 2,
 			"a three-column facade has one storefront variant per complete pair")
-	t.check(building.ground_floor_texture(1) == &"",
+	t.check(front.ground_floor_at(1) == &"",
 			"the second column of a storefront pair draws no duplicate texture")
-	t.check(building.ground_floor_texture(2) == Building.WALL_BASE,
+	t.check(front.ground_floor_at(2) == Building.WALL_BASE,
 			"an odd final commercial column keeps the ordinary wall base")
 	for col in range(0, building.columns() - 1, 2):
-		var texture := building.ground_floor_texture(col)
+		var texture: StringName = front.ground_floor_at(col)
 		t.check(Building.STOREFRONT_SHUTTERED_TEXTURES.has(texture),
 				"a boarded commercial ground floor shows a shuttered storefront")
-	for index in building.columns() * building.wall_tiles():
-		var texture := building.window_texture(index)
-		t.check(texture == Building.WINDOW_SHUTTERED_DARK,
+	var windows := 0
+	for cell: Vector2i in front.window_cells():
+		windows += 1
+		t.check(front.window_at(cell.x, cell.y) == Building.WINDOW_SHUTTERED_DARK,
 				"a boarded building's windows are shuttered and dark, never lit")
+	t.check(windows == building.columns() * (building.wall_tiles() - 1),
+			"and every upper floor's cell draws one (%d)" % windows)
 	building.free()
 
 ## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
@@ -269,16 +276,15 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 				% [building.columns(), parapets])
 		# What was drawn is asked alone: how many cells and whether a door column are the front's
 		# layout, and the mock says what each was drawn with.
-		var window_cells := 0
-		for row in building.wall_tiles():
-			for col in building.columns():
-				window_cells += int(building.draws_window_at(row, col))
+		# Every cell above the ground floor, on a front that is not hers.
+		var window_cells := (building.wall_tiles() - 1) * building.columns()
 		var burnt_windows := drawn.count(Building.WINDOW_BURNT)
 		t.check(window_cells > 0 and burnt_windows == window_cells,
 				"a burnt front is drawn with a burnt window in each of its %d window cells (%d)"
 				% [window_cells, burnt_windows])
 		var door_drawn := drawn.count(Building.ENTRANCE_DOOR_BURNT)
-		t.check(door_drawn == int(building.entrance_door_col() >= 0),
+		# A shop is a commercial front's way in, so only it has no door of its own.
+		t.check(door_drawn == int(building.district != GameEnums.BlockPurpose.COMMERCIAL),
 				"a burnt front with a door column is drawn with its burnt door, once (%d)" % door_drawn)
 		windows += burnt_windows
 		shops += drawn.count(Building.STOREFRONT_BURNT)
@@ -295,8 +301,9 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 	var any_shuttered_late := false
 	var any_shuttered_early := false
+	var buildings: Array[Building] = []
 	for i in range(0, 24):
-		var building := Building.new()
+		var building := FrontReads.new_building()
 		building.district = GameEnums.BlockPurpose.COMMERCIAL
 		building.footprint = Vector2(96.0, 96.0)
 		building.height = 64.0
@@ -304,12 +311,19 @@ func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 		t.add_child(building)
 		building.condition = Building.Condition.LIVED_IN
 		building.day = 1
+		buildings.append(building)
+	await UI.frames(t, 2)
+	for building in buildings:
+		var front = FrontReads.look(building)
 		for col in building.columns():
-			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building.ground_floor_texture(col)):
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(front.ground_floor_at(col)):
 				any_shuttered_early = true
 		building.day = Tuning.RUN_LENGTH_DAYS
+	await UI.frames(t, 2)
+	for building in buildings:
+		var front = FrontReads.look(building)
 		for col in building.columns():
-			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(building.ground_floor_texture(col)):
+			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(front.ground_floor_at(col)):
 				any_shuttered_late = true
 		building.free()
 	t.check(not any_shuttered_early, "a lived-in block shows no shuttered storefront on day 1")
@@ -321,14 +335,32 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	var first_orders := {}
 	var bag_width := Building.STOREFRONT_TEXTURES.size()
 	for i in 16:
-		var building := Building.new()
+		var building := FrontReads.new_building()
 		building.district = GameEnums.BlockPurpose.COMMERCIAL
 		building.footprint = Vector2(512.0, 96.0)
 		building.height = 64.0
 		building.position = Vector2(7000.0 + i * 137.0, 7100.0 + i * 89.0)
 		t.add_child(building)
 		sampled.append(building)
-		var variants := _variants(building)
+	var same_seed := FrontReads.new_building()
+	same_seed.district = GameEnums.BlockPurpose.COMMERCIAL
+	same_seed.footprint = Vector2(512.0, 96.0)
+	same_seed.height = 64.0
+	same_seed.position = sampled[0].position
+	t.add_child(same_seed)
+	var odd := FrontReads.new_building()
+	odd.district = GameEnums.BlockPurpose.COMMERCIAL
+	odd.footprint = Vector2(160.0, 96.0)
+	odd.height = 64.0
+	t.add_child(odd)
+	var shallow := FrontReads.new_building()
+	shallow.district = GameEnums.BlockPurpose.COMMERCIAL
+	shallow.footprint = Vector2(160.0, 32.0)
+	shallow.height = 32.0
+	t.add_child(shallow)
+	await UI.frames(t, 2)
+	for building in sampled:
+		var variants := _variants(FrontReads.look(building))
 		for storefront_index in variants.size():
 			if storefront_index > 0:
 				t.check(variants[storefront_index] != variants[storefront_index - 1],
@@ -349,51 +381,36 @@ func _test_storefront_variants_use_seeded_bags(t) -> void:
 	t.check(first_orders.size() > 1,
 			"different building seeds produce more than one storefront bag order")
 
-	var same_seed := Building.new()
-	same_seed.district = GameEnums.BlockPurpose.COMMERCIAL
-	same_seed.footprint = Vector2(512.0, 96.0)
-	same_seed.height = 64.0
-	same_seed.position = sampled[0].position
-	t.add_child(same_seed)
-	t.check(_variants(sampled[0]) == _variants(same_seed),
+	t.check(_variants(FrontReads.look(sampled[0])) == _variants(FrontReads.look(same_seed)),
 			"a storefront variant bag is reproducible from the building seed")
-	var variants_before_state_changes := _variants(sampled[0]).duplicate()
+	var variants_before_state_changes := _variants(FrontReads.look(sampled[0])).duplicate()
 	sampled[0].height = 96.0
 	sampled[0].height = 64.0
 	sampled[0].day = Tuning.RUN_LENGTH_DAYS
 	sampled[0].condition = Building.Condition.BOARDED
-	t.check(_variants(sampled[0]) == variants_before_state_changes,
+	await UI.frames(t, 2)
+	t.check(_variants(FrontReads.look(sampled[0])) == variants_before_state_changes,
 			"day and condition changes preserve storefront variants")
 
-	var odd := Building.new()
-	odd.district = GameEnums.BlockPurpose.COMMERCIAL
-	odd.footprint = Vector2(160.0, 96.0)
-	odd.height = 64.0
-	t.add_child(odd)
-	t.check(_variants(odd).size() == 2,
+	t.check(_variants(FrontReads.look(odd)).size() == 2,
 			"an odd-width facade leaves its final wall column without a storefront")
-	var shallow := Building.new()
-	shallow.district = GameEnums.BlockPurpose.COMMERCIAL
-	shallow.footprint = Vector2(160.0, 32.0)
-	shallow.height = 32.0
-	t.add_child(shallow)
-	t.check(_variants(shallow).is_empty(),
+	t.check(_variants(FrontReads.look(shallow)).is_empty(),
 			"a one-row commercial facade keeps its ordinary wall base")
-	t.check(shallow.ground_floor_texture(0) == Building.WALL_BASE,
-			"a one-row commercial facade returns its ordinary wall base")
+	t.check(FrontReads.look(shallow).ground_floor_at(0) == Building.WALL_BASE,
+			"a one-row commercial facade draws its ordinary wall base")
 	for building in sampled:
 		building.free()
 	same_seed.free()
 	odd.free()
 	shallow.free()
 
-## The storefront variant behind each drawn storefront of `building`, left to right: the index of the
-## picture `Building.ground_floor_texture()` hands the drawing for the first column of each
-## storefront pair, in whichever of the plain, awning or shuttered sets it comes from.
-func _variants(building: Building) -> Array[int]:
+## The storefront variant behind each drawn storefront of the front `front` reads, left to right: the
+## index of the picture the ground floor shows in the first column of each storefront pair, in
+## whichever of the plain, awning or shuttered sets it comes from.
+func _variants(front) -> Array[int]:
 	var found: Array[int] = []
-	for col in range(0, building.columns(), 2):
-		var texture := building.ground_floor_texture(col)
+	for col in range(0, front.building.columns(), 2):
+		var texture: StringName = front.ground_floor_at(col)
 		for set: Array in [Building.STOREFRONT_TEXTURES, Building.STOREFRONT_AWNING_TEXTURES,
 				Building.STOREFRONT_SHUTTERED_TEXTURES]:
 			if set.has(texture):

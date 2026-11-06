@@ -10,6 +10,8 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
+## What a building's front shows, read off the pictures it was drawn with.
+const FrontReads := preload("res://tests/front_reads.gd")
 const SEED := 4242
 
 ## The city and its run the test now running stands in: `_begin()` builds both afresh at the top of
@@ -117,9 +119,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	_begin(t)
 	t.check(_mast_plans().size() > 0, "day %d carries masts to stop (%d)"
 			% [Tuning.RUN_LENGTH_DAYS, _mast_plans().size()])
-	var lit_windows := 0
-	for building in _buildings():
-		lit_windows += _lit_windows(building)
+	var lit_windows := await _lit_windows(t)
 	t.check(lit_windows > 0, "there were lit windows to put out (%d)" % lit_windows)
 	var quiet: Array[bool] = []
 	var handler := func() -> void: quiet.append(true)
@@ -141,9 +141,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	_go_dark()
 
 	t.check(_city.blackout.is_dark, "past the distance, with the sabotage done, the city is dark")
-	var still_lit := 0
-	for building in _buildings():
-		still_lit += _lit_windows(building)
+	var still_lit := await _lit_windows(t)
 	t.check(still_lit == 0, "every lit window went out in the same call (%d left)" % still_lit)
 	t.check(not _city.signals.is_signalled(_spine_junction()),
 			"the spine's lights decide nothing")
@@ -163,14 +161,15 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	EventBus.city_went_quiet.disconnect(handler)
 	_end()
 
-## How many of a building's windows are drawn showing a light: the lit variants of the window
-## textures `Building.window_texture()` hands the drawing for each wall cell.
-func _lit_windows(building: Building) -> int:
-	var lit := [Building.WINDOW_LIT, Building.WINDOW_SHUTTERED_LIT, Building.WINDOW_TALL_LIT]
+## How many windows the city's buildings are drawn showing a light, once each has been handed a
+## drawer that records and drawn through it.
+func _lit_windows(t) -> int:
+	for building in _buildings():
+		FrontReads.watch(building)
+	await UI.frames(t, 2)
 	var count := 0
-	for index in building.columns() * building.wall_tiles():
-		if building.window_texture(index) in lit:
-			count += 1
+	for building in _buildings():
+		count += FrontReads.look(building).lit_windows()
 	return count
 
 func _test_it_stays_dark_walking_back(t) -> void:
@@ -189,9 +188,7 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 	_city.blackout.update(_south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _city.blackout.is_dark, "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
-	var lit_windows := 0
-	for building in _buildings():
-		lit_windows += _lit_windows(building)
+	var lit_windows := await _lit_windows(t)
 	t.check(lit_windows > 0, "and the same windows are lit again (%d)" % lit_windows)
 	_end()
 

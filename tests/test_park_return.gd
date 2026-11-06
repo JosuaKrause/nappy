@@ -17,8 +17,8 @@ extends RefCounted
 ## suite or reaches the player's save, and nothing is put back afterwards.
 ##
 ## **Who takes the park.** The two cases that walk out through the last gap need to know where it
-## is, which only the cordon holds (`ParkCordon.last_gap`; the world shows the gap only once it has
-## closed), so they take the park with happenings of their own, handed what the director hands its
+## is, which only the cordon holds (`ParkCordon.last_gap`, kept public for it; the world shows the gap
+## only once it has closed), so they take the park with happenings of their own, handed what the director hands its
 ## own at the swing (`take_the_park(director.reach_obstruction())`) and ticked by the suite with the
 ## day's clock; the director's own task for the swing is left open, since finishing it would send
 ## the task's pursuer after her too. The case that stands in the park until the day is lost has no
@@ -231,8 +231,8 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> voi
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	_walk_out_through_the_gap(main, swing, shows)
 	_wait_for_the_close(main, shows)
-	t.check(_happenings.cordon.is_closed() and not _happenings.cordon.trapped,
-			"%s: the gap closes behind her, with her outside" % label)
+	t.check(_happenings.cordon.is_closed() and Boot.day(main).is_running(),
+			"%s: the gap closes behind her, with her outside, and the day goes on" % label)
 	t.check(Boot.day(main).is_running() and results.is_empty(),
 			"%s: the day is still on, the baby asleep (%s)" % [label, results])
 	t.check(Boot.baby(main).state == GameEnums.BabyState.ASLEEP, "%s: and still asleep" % label)
@@ -252,8 +252,8 @@ func _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value: int) -
 	var swing := _touch_the_swing(t, main)
 	_walk_out_through_the_gap(main, swing, shows)
 	_wait_for_the_close(main, shows)
-	t.check(_happenings.cordon.is_closed() and not _happenings.cordon.trapped,
-			"%s: the park is taped with her outside" % label)
+	t.check(_happenings.cordon.is_closed() and Boot.day(main).is_running(),
+			"%s: the park is taped with her outside, and the day goes on" % label)
 	var results: Array = []
 	Boot.day(main).day_finished.connect(func(r: GameEnums.DayResult) -> void: results.append(r))
 	Boot.baby(main).force_sleep()

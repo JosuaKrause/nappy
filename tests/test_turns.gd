@@ -22,6 +22,18 @@ const STEP := 1.0 / 60.0
 var _city: City
 var _junction := Vector2i(-1, -1)
 
+## The owner a scenario's barrier is recorded under (`WorldMap.obstruct_tiles()` takes an
+## `Object.get_instance_id()`): one barrier at a time, and each scenario's city is its own.
+func _barrier_owner() -> int:
+	return get_instance_id()
+
+## Stands a stationary solid body on `tiles`, the way a café, a construction band or a kerbed van
+## stands on them (`WorldMap.obstruct_tiles()`): a car meets it as it meets a closure
+## (`CarStrategy.cannot_go_on()`), and the game writes it, where no street closure covers tiles
+## inside a junction box or leaves lane stubs short of a half turn.
+func _stand_a_body_on(tiles: Array[Vector2i]) -> void:
+	_city.map.obstruct_tiles(_barrier_owner(), tiles)
+
 ## What watching a car through a manoeuvre measures.
 class Manoeuvre extends RefCounted:
 	## The furthest it moved between two frames, and the sharpest its heading turned, in px and
@@ -44,7 +56,7 @@ func run(t) -> void:
 	var scenarios: Array[Callable] = [
 		_test_a_car_turns_into_each_arm_from_every_approach,
 		_test_a_car_turns_round_when_every_arm_is_shut,
-		_test_a_car_turns_round_in_the_street_short_of_a_closure,
+		_test_a_car_turns_round_in_the_street_short_of_a_barrier,
 		_test_a_car_waits_for_the_lane_its_half_turn_lands_in,
 		_test_a_car_with_no_road_either_way_stands_rather_than_flickering,
 		_test_a_car_against_a_barrier_is_not_shunted_later,
@@ -160,25 +172,23 @@ func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
 					"about-face %s: and in the other lane, which is the one on its own right now"
 					% name)
 
-## The about-face with no junction to take it in: a closure across the mouth of the street, so the
+## The about-face with no junction to take it in: a body standing across the mouth of the street, so the
 ## car has to turn round short of it. **This is the one manoeuvre whose swept body crosses a kerb**
 ## — a half turn between two lanes 32px apart is a 16px arc and the body's corners reach 40px from
-## the centre of it — so the road check here is the looser one. Nothing else is relaxed: the closure
+## the centre of it — so the road check here is the looser one. Nothing else is relaxed: the barrier
 ## itself is still refused, which is what "never drive through a barrier" means.
-func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
+func _test_a_car_turns_round_in_the_street_short_of_a_barrier(t) -> void:
 	_clear_the_holds()
-	var closed := _close_the_junction_band()
+	_bar_the_junction_band()
 	var car := _place_a_car(true, 1.0)
 	var watched := _watch(car, 12.0, true)
 	t.check(watched.turned and watched.finished,
-			"a car meeting a closed junction turns round in the street (%.2fs)" % watched.seconds)
+			"a car meeting a barred junction turns round in the street (%.2fs)" % watched.seconds)
 	_check_the_path(t, watched, "street about-face")
 	t.check(_direction_of(car) == -1.0 and car.travelling_vertically(),
 			"and comes out heading back the way it came")
-	# That it never reached the closure is `off_the_road` above: closed ground fails the same check
-	# the pavement does, which is what *never drive through a barrier* means here.
-	for tile in closed:
-		_city.map.closed_tiles.erase(tile)
+	# That it never reached the barrier is `off_the_road` above: ground a body stands on fails the
+	# same check the pavement does, which is what *never drive through a barrier* means here.
 
 ## **A car that cannot turn *this frame* waits and asks again; it does not give up and spin round.**
 ##
@@ -193,7 +203,7 @@ func _test_a_car_turns_round_in_the_street_short_of_a_closure(t) -> void:
 ## taken.
 func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 	_clear_the_holds()
-	var closed := _close_the_junction_band()
+	_bar_the_junction_band()
 	var car := _place_a_car(true, 1.0)
 	# Where the car will come to rest, and therefore where its half turn will land: its brake aims a
 	# half turn plus the geometry's own slack short of the barrier, and the arc ends level with the
@@ -237,8 +247,6 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 			+ "rather than finding it empty")
 	t.check(not flipped, "it did not reverse on the spot while the landing was taken")
 	t.check(turned, "and it took the arc once the lane cleared")
-	for tile in closed:
-		_city.map.closed_tiles.erase(tile)
 	_clear_the_holds()
 
 ## **And a car with no road either way stands still rather than shaking its head.**
@@ -258,12 +266,11 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 	var band := _junction.y * CityMap.period()
 	var here := floori((float(band * Tuning.TILE_SIZE) - 4.0 * float(Tuning.TILE_SIZE))
 			/ float(Tuning.TILE_SIZE))
-	var closed: Array[Vector2i] = []
+	var stubs: Array[Vector2i] = []
 	for step in [-2, 2]:
 		for lane in CrowdLanes.ROAD_OFFSETS:
-			closed.append(Vector2i(_junction.x * CityMap.period() + lane, here + step))
-	for tile in closed:
-		_city.map.closed_tiles[tile] = true
+			stubs.append(Vector2i(_junction.x * CityMap.period() + lane, here + step))
+	_stand_a_body_on(stubs)
 	# Standing in the middle of the stub, at rest: there is less than a half turn's road at either
 	# end of it, which is the state being asked about rather than one to be driven into. Placed
 	# there as the entry places a car, and brought to rest as a collision brings one (`crashed_into()`).
@@ -291,8 +298,6 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 			"it keeps the heading and the lane it had, so nothing slides it across the carriageway")
 	t.check(swings < 1.0, "and it does not drift across its own street (%.1fpx in a frame)" % swings)
 	t.check(car.strategy.nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
-	for tile in closed:
-		_city.map.closed_tiles.erase(tile)
 	# Guards against a scenario that proved nothing: the stub really was short at both ends.
 	t.check(band >= 0, "the rig had a junction band to build the stub against")
 
@@ -304,14 +309,14 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 ## jump on whichever later frame the leader has pulled far enough ahead for the full slide to be
 ## legal — a frame nobody chooses, so possibly one she is watching. On the morning that is the
 ## probe's `behind a car already there on the first frame` row: a car placed in the stub of road
-## just past a closure, unpacked on the second frame instead of before the first.
+## just past a barrier, unpacked on the second frame instead of before the first.
 ##
-## The rig is two cars heading away from a closed junction, the follower a little past the barrier
+## The rig is two cars heading away from a barred junction, the follower a little past the barrier
 ## and the leader a fraction of a car's length in front of it. The first frame is the resolve; every
 ## frame after it may move the follower no further than it could drive in one.
 func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
 	_clear_the_holds()
-	var closed := _close_the_junction_band()
+	_bar_the_junction_band()
 	var past_the_barrier := float((_junction.y * CityMap.period() + Tuning.STREET_WIDTH)
 			* Tuning.TILE_SIZE)
 	# The follower is placed a little past the barrier and the leader a safe gap ahead of it; the
@@ -328,7 +333,7 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
 	t.check(first <= past_the_barrier + 1.0,
 			"the frame the overlap arises, the follower goes back as far as the barrier lets it "
 			+ "(%.1fpx past the barrier's edge)" % (first - past_the_barrier))
-	t.check(not _city.map.is_closed(_city.map.world_to_tile(follower.position)),
+	t.check(not _city.map.is_obstructed(_city.map.world_to_tile(follower.position)),
 			"and not onto it")
 	var a_frames_travel := Tuning.CAR_SPEED.y * STEP + 0.01
 	var worst := 0.0
@@ -345,21 +350,17 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
 	t.check(worst <= a_frames_travel,
 			"and no frame after it moves the follower further than it could drive in one (worst "
 			+ "%.1fpx, against %.1fpx)" % [worst, a_frames_travel])
-	for tile in closed:
-		_city.map.closed_tiles.erase(tile)
 	_clear_the_holds()
 
-## Closes both lanes of the junction band ahead, which is the barrier a car has to turn round short
-## of. Returns the tiles so the caller can open them again.
-func _close_the_junction_band() -> Array[Vector2i]:
+## Stands a body across both lanes of the junction band ahead, which is the barrier a car has to
+## turn round short of.
+func _bar_the_junction_band() -> void:
 	var band := _junction.y * CityMap.period()
-	var closed: Array[Vector2i] = []
+	var barred: Array[Vector2i] = []
 	for offset in range(0, Tuning.STREET_WIDTH):
 		for lane in CrowdLanes.ROAD_OFFSETS:
-			closed.append(Vector2i(_junction.x * CityMap.period() + lane, band + offset))
-	for tile in closed:
-		_city.map.closed_tiles[tile] = true
-	return closed
+			barred.append(Vector2i(_junction.x * CityMap.period() + lane, band + offset))
+	_stand_a_body_on(barred)
 
 ## An arm with a plug two tiles in is refused rather than turned into.
 ##
@@ -375,8 +376,7 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
 	for offset in range(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH + 2):
 		for lane in CrowdLanes.ROAD_OFFSETS:
 			plug.append(Vector2i(band + offset, _junction.y * CityMap.period() + lane))
-	for tile in plug:
-		_city.map.closed_tiles[tile] = true
+	_stand_a_body_on(plug)
 	var car := _place_a_car(true, 1.0)
 	var watched := _watch(car, 12.0, true)
 	var inside := 0
@@ -388,8 +388,6 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
 	t.check(_direction_of(car) == -1.0 or not car.travelling_vertically(),
 			"and leaves by the arm that is open or by the way it came")
 	_check_the_path(t, watched, "plugged arm")
-	for tile in plug:
-		_city.map.closed_tiles.erase(tile)
 
 ## `LaneMover.heading()` is what everything downstream of a car reads — the strike box, the horn, the shadow
 ## and, once it is bound, the picture. So it has to be the direction the car is **actually** going,
@@ -674,7 +672,7 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 	t.check(turned, "then takes the turn once it has the green")
 
 ## Out of bounds is a wall to everybody but a car on the spine, so a car heading for the edge turns
-## at the last junction — the boundary case of the same rule a closure exercises.
+## at the last junction — the boundary case of the same rule a barrier exercises.
 func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
 	_clear_the_holds()
 	# The outermost street that is an ordinary one, the map's corner: its last junction has one arm to
@@ -761,7 +759,8 @@ func _the_body_is_on_drivable_ground(car: CrowdAgent, over_the_kerb: bool) -> bo
 			var tile := _city.map.world_to_tile(car.position
 					+ forward * (along * Tuning.CAR_STRIKE_HALF_LENGTH)
 					+ side * (across * Tuning.CAR_STRIKE_HALF_WIDTH))
-			if _city.map.is_closed(tile) or _city.map.is_held_at(tile):
+			if _city.map.is_closed(tile) or _city.map.is_obstructed(tile) \
+					or _city.map.is_held_at(tile):
 				return false
 			if not _city.map.in_bounds(tile):
 				return false

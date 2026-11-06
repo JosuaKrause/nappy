@@ -911,8 +911,8 @@ func _covered_ground_cols(rect: Rect2i) -> Array[bool]:
 ## index to whichever courtyard's own `map.lot_rect(block)` encloses it, or -1
 ## (`_courtyard_lot_of()`). Both sides of a seamless seam are marked — the covering piece's column
 ## in `roof_extension_seamless`, the covered piece's in `seamless_cover_cols` — and
-## `Building.roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at all
-## is never seamless: nothing of its own carries on above the extension, so the extension caps.
+## `Building._roof_cell_edges()` withholds both lips there. A covered piece with no roof rows at
+## all is never seamless: nothing of its own carries on above the extension, so the extension caps.
 func assign_roof_extensions(buildings: Array[Building], courtyard_of: Array[int]) -> void:
 	var tile_to_index := {}
 	for i in map.building_rects.size():

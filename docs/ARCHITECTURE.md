@@ -662,10 +662,10 @@ her instead. `Mode.JOYSTICK` instead aims from `_steering_focus`, `FOCUS_LEFT` o
 `set_mode()` was told by the title, and nothing in play changes it — the ring at `RING_RADIUS` has
 a knob (the dot) at the currently-held direction, which at rest sits on the focus. The dead zone
 (`DEAD_ZONE_RADIUS`, 16 design px) is not drawn and never takes the buttons' 5% catch;
-`TAP_STOP_RADIUS` is half of it in world px, the same 16px on screen. It is stopped by a press in that dead zone (`in_dead_zone()`) or in the stop band at
-the steering half's edge (`is_in_stop_band()`), never by a press near her own position. The edge,
-`boundary_x()`, is `STEERING_REACH` (two thirds) of the way from the steering focus to Run's;
-everything beyond it is Run's (`is_on_run_side()`). Either way the direction locked in is walked
+`TAP_STOP_RADIUS` is half of it in world px, the same 16px on screen. It is stopped by a press in that dead zone (`_in_dead_zone()`) or in the stop band at
+the steering half's edge (`_is_in_stop_band()`), never by a press near her own position. The edge,
+`_boundary_x()`, is `STEERING_REACH` (two thirds) of the way from the steering focus to Run's;
+everything beyond it is Run's (`_is_on_run_side()`). Either way the direction locked in is walked
 with nothing held down until the next press changes it, and a double press holds `run` until the
 next press changes or releases it. `run_button_center()` puts Run's disc on the other focus from
 the first frame of play, or returns no disc in `Mode.TAP`. `_on_pointer()` gives Run every press
@@ -673,7 +673,7 @@ that begins on Run's side, tracking its owners in `_run_touches` until release w
 travel; `_run_held` and the double press's `_run_active` independently hold the same run action.
 A steering drag keeps steering from the same focus wherever it travels, and never acquires Run;
 its release re-aims at the lift point in `Mode.JOYSTICK`, so a swipe that ends outside the dead
-zone walks toward where it ended. `set_direction()` always normalizes, so every steering path gives
+zone walks toward where it ended. `_set_direction()` always normalizes, so every steering path gives
 a full-speed heading. Pause, hiding controls, and a change of mode or side release pointer holds.
 
 `ButtonGeometry` shares the 1.05 visible-radius multiplier, the least a button catches; no catch is
@@ -704,7 +704,7 @@ where "two thirds of the way to Run" means what it says — the steering focus t
 design→presented→world trip a raw touch's own position already takes, in reverse, before it can be
 used as the heading's own origin. **The pause button's own corner and Run's side are other places
 this remap is needed**: a new press there is subtracted from the aiming surface, against
-`PAUSE_CENTRE` while the controls are drawn, or `is_on_run_side()`. Mouse clicks use the same
+`PAUSE_CENTRE` while the controls are drawn, or `_is_on_run_side()`. Mouse clicks use the same
 path.
 
 A real touch device emulates a mouse click from every tap it makes, so every mouse branch in

@@ -179,41 +179,71 @@ func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, labe
 
 ## The ground every sweep of the red arrow starts from (`WalkField.ground_for()`, which the
 ## director's `_ground_for_the_arrow()` lays out once for each state of what blocks her and the
-## day-13 guard's walk reads too) is the authored street's, not the hidden context's.
-func _test_the_arrow_stays_on_the_stretch(t, _map: CityMap) -> void:
-	# A U-shaped authored street: from the left tip, target A is five tiles along the visible
-	# ground. Target B is twelve tiles along it, but only four through the hidden context between
-	# the two tips. A raw-context sweep therefore picks B; the scene's real walk must pick A.
-	var map := CityMap.new(Vector2i(5, 5))
-	map.tiles.fill(GameEnums.TileType.SIDEWALK)
-	map.stretch.resize(map.tiles.size())
-	map.stretch.fill(0)
-	for y in map.size.y:
-		for x in map.size.x:
-			if x == 0 or x == map.size.x - 1 or y == map.size.y - 1:
-				map.stretch[y * map.size.x + x] = 1
-	map.stretch_active = true
-	var targets: Array[Dictionary] = [
-		{"key":"near_on_stretch", "at":map.tile_to_world(Vector2i(1, 4)),
-				"reach":0.0, "beat":PackedVector2Array()},
-		{"key":"near_through_void", "at":map.tile_to_world(Vector2i(4, 0)),
-				"reach":0.0, "beat":PackedVector2Array()}
-	]
+## day-13 guard's walk reads too) is the authored street's, not the hidden context's. On the
+## scene's own map: the streets the stretch was cut from go on under the void, as walkable ground
+## in its saved context. A target standing on that hidden ground, nearer to her than one on the
+## stretch by the context's walk, is the counterexample: a sweep of the raw context picks it, and the
+## scene's real walk must pick the one on the street she can walk to.
+func _test_the_arrow_stays_on_the_stretch(t, map: CityMap) -> void:
 	var raw_ground := PackedInt32Array()
 	raw_ground.resize(map.tiles.size())
 	raw_ground.fill(WalkField.UNREACHED)
-	var raw := WalkField.start(map, targets, Vector2i.ZERO)
-	while not raw.done:
-		raw.advance(map, raw_ground, map.tiles.size())
-	var ground := WalkField.ground_for(map)
-	var authored := WalkField.start(map, targets, Vector2i.ZERO)
-	while not authored.done:
-		authored.advance(map, ground, map.tiles.size())
-	var start := Vector2i(0, 0)
-	t.check(raw.nearest_at(start) == "near_through_void",
-			"the counterexample's raw context chooses the target across its hidden shortcut")
-	t.check(authored.nearest_at(start) == "near_on_stretch",
-			"the task arrow chooses the target actually nearer along the authored U-shaped street")
+	var start := Vector2i.ZERO
+	for y in map.size.y:
+		for x in map.size.x:
+			if start == Vector2i.ZERO and map.in_stretch(Vector2i(x, y)) \
+					and map.is_walkable(Vector2i(x, y)):
+				start = Vector2i(x, y)
+	var from_her: Array[Dictionary] = [{"key": "her", "at": map.tile_to_world(start),
+			"reach": 0.0, "beat": PackedVector2Array()}]
+	var raw := _swept(map, from_her, raw_ground)
+	var authored := _swept(map, from_her, WalkField.ground_for(map))
+	# The hidden ground nearest her by the context's walk, a tile clear of the stretch's own (a
+	# target seeds the tiles within a tile of it, which would reach the stretch from the edge).
+	var through_void := Vector2i(-1, -1)
+	var nearest_hidden := INF
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if not map.is_cut_off(tile) or raw.length_at(tile) < 0 \
+					or raw.length_at(tile) >= nearest_hidden:
+				continue
+			var clear := true
+			for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				clear = clear and not map.in_stretch(tile + step)
+			if clear:
+				through_void = tile
+				nearest_hidden = raw.length_at(tile)
+	t.check(through_void.x >= 0, "the scene's stretch has hidden ground the context walks to")
+	if through_void.x < 0:
+		return
+	# The stretch's tile farthest from her by the authored walk, which the context's walk puts
+	# farther than the hidden ground too.
+	var on_stretch := start
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if map.in_stretch(tile) and authored.length_at(tile) > authored.length_at(on_stretch):
+				on_stretch = tile
+	t.check(raw.length_at(on_stretch) > raw.length_at(through_void),
+			"and it is nearer her through the context than the far end of the street is")
+	var targets: Array[Dictionary] = [
+		{"key": "near_on_stretch", "at": map.tile_to_world(on_stretch),
+				"reach": 0.0, "beat": PackedVector2Array()},
+		{"key": "near_through_void", "at": map.tile_to_world(through_void),
+				"reach": 0.0, "beat": PackedVector2Array()}
+	]
+	t.check(_swept(map, targets, raw_ground).nearest_at(start) == "near_through_void",
+			"the scene's raw context chooses the target on the hidden ground")
+	t.check(_swept(map, targets, WalkField.ground_for(map)).nearest_at(start) == "near_on_stretch",
+			"the task arrow chooses the target on the authored street she can walk to")
+
+## A finished sweep from `targets` over `ground`.
+func _swept(map: CityMap, targets: Array[Dictionary], ground: PackedInt32Array) -> WalkField:
+	var field := WalkField.start(map, targets, Vector2i.ZERO)
+	while not field.done:
+		field.advance(map, ground, map.tiles.size())
+	return field
 
 func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 	var original := RecipeCityBuilder.build(data)

@@ -71,8 +71,8 @@ func _play(city: City, happenings: ResistanceHappenings, swing: Vector2, walks: 
 	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
 	var printed := 0
-	_print("%s gap %s deadline %.3f in_view %.3f exit %s" % [label, cordon.last_gap,
-			cordon.deadline, cordon.first_in_view, cordon._exit])
+	_print("%s gap %s deadline %.3f exit %s" % [label, cordon.last_gap,
+			cordon._deadline, cordon._exit])
 	printed += 1
 	if walks:
 		her[0] = cordon.last_gap + (cordon.last_gap - cordon.area.get_center()).normalized() \
@@ -85,13 +85,13 @@ func _play(city: City, happenings: ResistanceHappenings, swing: Vector2, walks: 
 		frame += 1
 		if frame % SAMPLE_EVERY == 0 or cordon.is_closed():
 			var parts: Array[String] = []
-			for officer in cordon.officers:
+			for officer in cordon._officers:
 				parts.append("%d@%s" % [officer.phase, officer.at])
-			_print("%s f%d closed %.3f %s" % [label, frame, cordon.closed_at, " ".join(parts)])
+			_print("%s f%d closed %.3f %s" % [label, frame, cordon._closed_at, " ".join(parts)])
 			printed += 1
 		if cordon.is_closed():
 			var all_gone := true
-			for officer in cordon.officers:
+			for officer in cordon._officers:
 				all_gone = all_gone and officer.phase == ParkCordon.Officer.Phase.GONE
 			gone_for += 1
 			if all_gone or gone_for > 600:
