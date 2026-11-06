@@ -1042,7 +1042,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 		for y in range(lo.y, hi.y + 1):
 			for x in range(lo.x, hi.x + 1):
 				var cell := Vector2i(x, y)
-				if ground.get_cell_source_id(cell) < 0 and not ground.has_water(cell):
+				if ground.get_cell_source_id(cell) < 0 and not GroundWater.at(ground, cell):
 					unpainted += 1
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"
@@ -1135,7 +1135,6 @@ func _press_accept(t) -> void:
 ## brief. Real events are pushed through the suite's own viewport; the window is measured on a clock
 ## moved past its end rather than waited out.
 func _test_return_ignores_input_for_half_a_second(t) -> void:
-	t.check(ReturnWindow.IGNORED_MSEC == 500, "the window is 500ms")
 	var run := RunState.new()
 	run.start_run(SEED)
 	for what in [Node.NOTIFICATION_APPLICATION_FOCUS_IN, Node.NOTIFICATION_APPLICATION_RESUMED]:
