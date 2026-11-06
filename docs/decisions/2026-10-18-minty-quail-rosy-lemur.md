@@ -5,7 +5,7 @@
 minty-quail's `tests-unseen-reads.md`, the save, run, telemetry and screen build (the last numbered
 build), under the player's answer that a public member only tests call is deleted where possible,
 the tests going through a fake or what the game shows, and one kept only when nothing else can give
-the information and the test needs it (inbox #1095).
+the information and the test needs it (inbox #1095 in curly-rabbit).
 
 **Built.**
 - Deleted from `src/`, each with its tests moved: `RunState.save_snapshot()` (the game writes a
@@ -24,7 +24,7 @@ the information and the test needs it (inbox #1095).
   run and outbox files name what the game calls.
 - One check is gone with `penalise_resistance()`: that resistance progress never goes negative,
   which no game path can make happen; the player called it pointless and was glad it went
-  (inbox #1097). The visit counter suite gains seventeen
+  (inbox #1097 in curly-rabbit). The visit counter suite gains seventeen
   checks, the outbox gate's sixteen input combinations checked one by one and one more of its truth
   table; every other count is unchanged.
 
