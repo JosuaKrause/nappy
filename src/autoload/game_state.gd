@@ -13,10 +13,10 @@ extends RefCounted
 ##
 ## **The `Sitting` is where the run lives** (`Sitting.run`), since the sitting outlives the
 ## scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint); a
-## held restart starts a fresh run in it (`start_run()`). `main`, the composition root, takes it
-## off the sitting once a boot and hands it, typed `RunState`, to `GameSave` and to every reader
-## it builds, so a test hands a reader whichever run it built; the resistance is handed it with
-## its city (`City.run`) or by `ResistanceDirector.setup()`.
+## held restart hands the sitting a fresh one, which the next boot starts (`start_run()`). `main`,
+## the composition root, takes it off the sitting once a boot and hands it, typed `RunState`, to
+## `GameSave` and to every reader it builds, so a test hands a reader whichever run it built; the
+## resistance is handed it with its city (`City.run`) or by `ResistanceDirector.setup()`.
 ##
 ## **A plain `RefCounted`, not a node**: the sitting holds it by reference, and it goes when the
 ## last holder lets it go, so no test frees one. It reaches nothing in the scene tree, and no

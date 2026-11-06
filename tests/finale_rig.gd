@@ -2390,8 +2390,8 @@ func _test_a_handover_does_not_open_on_the_title(t) -> void:
 ## for real on the city section, with the reload handed to a counter (`main.use_reload()`), since a
 ## real one would throw away the runner's own scene. Both of the escape's own screens reach the
 ## restart, the same as a day's two: the pause screen's restart signal and the section brief's own
-## restart button's (`DaySummary.restart_requested`); and the run the restart reloads into has no
-## escape section, so the next boot starts a fresh run rather than opening the escape again. Its
+## restart button's (`DaySummary.restart_requested`); and each hands the sitting a fresh run, with
+## no escape section, so the next boot starts it rather than opening the escape again. Its
 ## `_save.clear()` is exercised, at a scratch path, by `tests/test_save_wiring.gd`.
 func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	var reloads := [0]
@@ -2404,12 +2404,15 @@ func _test_the_held_restart_from_the_escape_clears_the_section(t) -> void:
 	Boot.pause(main).close()
 	t.get_tree().paused = false
 	t.check(reloads[0] == 1, "the escape's own pause screen reaches the held restart, same as a day's")
-	escape.run.facts.escape_section = DaySpec.Section.CITY
+	var sitting := escape.home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
+	var after_the_pause := sitting.run
 	Boot.summary(main).restart_requested.emit()
 	t.check(reloads[0] == 2,
 			"and so does the section brief's own restart button — the same DaySummary a day uses")
-	t.check(escape.run.facts.escape_section == DaySpec.Section.NONE,
-			"a fresh run has no escape section — the run the restart reloads into is a fresh one")
+	t.check(sitting.run != escape.run and sitting.run != after_the_pause
+			and sitting.run.facts.escape_section == DaySpec.Section.NONE,
+			"each restart hands the sitting a fresh run, with no escape section — the run the "
+			+ "next boot starts")
 	_free_the_escape(t, escape)
 
 ## The escape city's section spec, the one the run flow walks the city under.

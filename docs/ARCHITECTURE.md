@@ -761,9 +761,10 @@ save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a s
 beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
 (`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
 an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
-scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and the
-boot after a held restart starts a fresh run in it (`start_run()`). `main`, the composition root,
-takes it off the sitting once a boot and hands it, typed `RunState`, to every reader it builds — the
+scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and a
+held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
+(`start_run()`). `main`, the composition root, takes it off the sitting once a boot and hands it,
+typed `RunState`, to every reader it builds — the
 `City` (which hands it to its `PosterWalls`, which hands each `Building` whether the neighbor was
 taken, the one thing `PosterArt` draws from the run), the HUD, the pause and title screens,
 `RunSession` and its `TelemetryObserver`, the frame trace and recorder, `DayController`,

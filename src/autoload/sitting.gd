@@ -21,8 +21,9 @@ extends Node
 ##
 ## **It holds the run** (`run`, a `RunState`), which `main` takes off it once a boot and hands
 ## down: the day-14 hand-over and a run carried to its checkpoint keep it across their reloads,
-## and the boot after a held restart starts a fresh run in it (`RunState.start_run()`). A test
-## hands a sitting the run it built before handing the sitting on.
+## and a held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
+## (`RunState.start_run()`). A test hands a sitting the run it built before handing the sitting
+## on.
 ##
 ## **It is the home of the save too** (`GameSave`, a child node `main` makes on the first boot and
 ## finds there after): the web flush's page-side objects, the operation ids and the file's path
