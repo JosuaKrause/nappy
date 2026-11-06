@@ -412,22 +412,22 @@ internals where the outside behaviour is what matters, and those are examples, n
   or passes only on the seed it was written against, it is not holding anything.
 - **A check that asserts back what the test just set holds nothing**: it sets a field, then reads
   the field; it hands a fake a value, then reads the value off the fake. It can only be true, so
-  it cannot fail (inbox #1097).
-- **A test whose setup the game cannot reach holds nothing the player can meet** (inbox #1097). The
+  it cannot fail (inbox #1097 in curly-rabbit).
+- **A test whose setup the game cannot reach holds nothing the player can meet** (inbox #1097 in curly-rabbit). The
   shape is a state only the test can create, such as a field set through a method that only that
   test calls: the check passes on a situation that never happens in play, and the method is dead
   weight kept alive by the test. The exception is input the game does not control, such as a corrupted
   save on disk or a browser's answer, which can really happen and is worth testing. The fix is to
   reach the state the way the game does, or to delete the test and the member with it.
 - **A public member only tests read is deleted, and its test hands in a fake or reads what the game
-  shows** (inbox #1095). It stays only when both hold: the information cannot be had another way, and
+  shows** (inbox #1095 in curly-rabbit). It stays only when both hold: the information cannot be had another way, and
   the test needs it to confirm the behavior; such a case may hint that its module's design is
   suboptimal. Its line goes in the kept group of `tools/test_only_members.txt` with the reason (the
   fairness helpers `Tuning.required_horn_time`, `required_horn_sight` and `sleepiness_gain_calm` are
   there, since the relationship tests above rest on them).
   `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
   nothing else under `src/` reads.
-- **A public function only its own file and the tests use is internal** (inbox #1098): it gets the
+- **A public function only its own file and the tests use is internal** (inbox #1098 in curly-rabbit): it gets the
   underscore, and its tests check what the class does from outside. A function stays public only where
   nothing outside can confirm the behavior, with the reason written down on its line in the kept
   group of the list. The same check enforces it. *Proposed by the orchestrator, not asked for, open
@@ -437,10 +437,10 @@ internals where the outside behaviour is what matters, and those are examples, n
 - *Proposed by the orchestrator, not asked for, open to the player's correction:* a **hand-in**, a
   `use_*` setter that hands the object what it depends on, stays public and sits in the kept group
   with that reason, since the game uses its default and a test hands in a fake (dependency injection,
-  minty-lemur #794; mocking, inbox #1095).
+  minty-lemur #794; mocking, inbox #1095 in curly-rabbit).
 - The first two groups of the list only shrink, and the check fails on a line that has gone stale, so
   the pull request that fixes a member deletes its line; a kept group takes a new line with its reason.
-- **A duplicate test is deleted** (inbox #1097): the same behavior already tested by another suite
+- **A duplicate test is deleted** (inbox #1097 in curly-rabbit): the same behavior already tested by another suite
   is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
   before writing a test, and if a suite holds it, extend that one.
 - **An identity is not the property.** Asserting a relationship that is *true* but is not the

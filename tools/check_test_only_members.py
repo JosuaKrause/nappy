@@ -2,7 +2,7 @@
 """Fails when a test reads a public member of the game's code that no other file of the game reads.
 
 A member only a test calls is state or a hook the game never reaches: a check on it holds nothing
-the player can meet (inbox #1097). For every public member -- a `func`, `var`, `const` or `signal`
+the player can meet (inbox #1097 in curly-rabbit). For every public member -- a `func`, `var`, `const` or `signal`
 at the top level of a `.gd` file under `src/`, its name not starting with `_` -- this finds:
 
 - **read by a test**: a file under `tests/` calls a function as `.name(`, or reads a var, const or
@@ -12,12 +12,12 @@ at the top level of a `.gd` file under `src/`, its name not starting with `_` --
 - **read by the game**: a word occurrence of the name in code in another file under `src/`, counting
   every other file's uses less its own definitions of the name. A caller under `src/dev` (the rigs and
   the scene-recipe runtime are the composition root) counts, so does an assignment to it or an emit of
-  it. A use in the member's own defining file does not count (inbox #1098), and in that file only a use
+  it. A use in the member's own defining file does not count (inbox #1098 in curly-rabbit), and in that file only a use
   that is not a member of another object counts: a call `other.name()` on a namesake is not a use of
   this member, a plain `name` or `self.name` or the file's own `ClassName.name` is.
 
 A member read by a test is test-only, and belongs to one of two groups of the list: **no reader**
-(no use in its own file either; inbox #1095) or **own file only** (used by its own file, so
+(no use in its own file either; inbox #1095 in curly-rabbit) or **own file only** (used by its own file, so
 internal: it gets the underscore and its tests go through what the class does outward; inbox
 #1098). The group, like the test, is a word count. The own-file rule applies to functions, vars and
 signals, **not to constants**: the player's words on it are about functions, and a test reading a
@@ -28,7 +28,7 @@ proposal of the orchestrator, not asked for, open to the player's correction.
 `tools/test_only_members.txt` (one `<file> <member>` per line, `#` for comments) lists the members
 that stand, in groups: no reader, own file only, and **kept**: a member that stays public, each line
 carrying its reason after a `#` (the player's exception: the information cannot be had another way
-and the test needs it to confirm the behavior, inbox #1095; a hand-in; a member the check misreads).
+and the test needs it to confirm the behavior, inbox #1095 in curly-rabbit; a hand-in; a member the check misreads).
 Every group but the kept one only shrinks, and the check enforces it both ways:
 
 - a test-only member not on the list **fails**: give the game a reader, or test through what the

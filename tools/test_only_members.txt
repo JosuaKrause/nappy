@@ -4,7 +4,7 @@
 # or is gone. The pull request that fixes a member deletes its line. The kept groups take a new line,
 # with its reason on it, where a member must stay public or the check misreads it.
 
-# No reader anywhere under src/, constants included (inbox #1095). Each gets a reader in the game,
+# No reader anywhere under src/, constants included (inbox #1095 in curly-rabbit). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/autoload/game_save.gd FILE_KEYS
@@ -104,7 +104,7 @@ src/world/world_context.gd total_excitement_at
 
 # Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
-# the class does outward (inbox #1098; vars and signals are the orchestrator's extension). The pass
+# the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
 src/autoload/game_save.gd file_data
 src/autoload/game_save.gd has_save
@@ -370,7 +370,7 @@ src/world/excitement_sources.gd sources_at
 src/world/spawn_siting.gd is_out_of_sight
 src/world/spawn_siting.gd seen_from
 
-# Kept public (inbox #1095): the information cannot be had another way and the test needs it to
+# Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
 # line.
 src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so verify's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
@@ -378,7 +378,7 @@ src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs;
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind verify wants
 
 # Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
-# (dependency injection, minty-lemur #794, and the mocking in inbox #1095): each hands the object
+# (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
 # what it depends on, the game using its default and a test handing in a fake.
 src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)

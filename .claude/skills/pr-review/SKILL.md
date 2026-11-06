@@ -83,9 +83,9 @@ touches (the path table in `CLAUDE.md`). Look for:
 - a correctness bug, with a concrete input that shows it;
 - a test that does not test what its name says, or holds nothing in one of the four ways
   **verify**'s Testing policy names (an unreachable setup, a design decision read back, a check that
-  cannot fail, a duplicate; inbox #1097). `tools/check_test_only_members.py` covers part of the
+  cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
   first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
-  inbox #1098, and fails CI on a new one; the rest is the reviewer's to find. Where the PR claims a
+  inbox #1098 in curly-rabbit, and fails CI on a new one; the rest is the reviewer's to find. Where the PR claims a
   test fails before the fix, check that claim, by reading or by running that one suite on the
   pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense

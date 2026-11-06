@@ -16,7 +16,8 @@ the player's:** seven read-only agents of the orchestrator's read every suite on
 wrote each line, and the player has ruled only on the four cases next. So a builder checks each
 finding against the suite before acting on it, removes it if it holds, tightens it where the line
 says so (a sweep guard that cannot fail becomes one that can), and keeps it, saying why in its
-record, where it does not hold. Keeping the four kinds out from now on is `tests-kept-out.md`.
+record, where it does not hold. Keeping the four kinds out from now on is **verify**'s testing policy and the CI check of
+test-only members (record minty-quail-gentle-hare).
 
 **The player's rulings on the four cases the audit could not settle** (curly-rabbit #1100, #1102):
 
