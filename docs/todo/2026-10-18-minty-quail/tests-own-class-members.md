@@ -22,9 +22,13 @@ least as long as the fairness floor needs") is what **verify**'s testing policy 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** The CI check of test-only members lists the owners one by one; its own-file group holds
-no line, every member it lists being internal or kept with its reason. What is left is the members
-the check cannot see.
+**Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
+only]` group holds nine members, each of which gets the underscore as this item's work: `BuildingShadows.compute`,
+`PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
+`DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
+`[no reader]` group holds `Stroller.family_sources` and `Navigator.open_ground` beside the older lines, each given a
+reader in the game, tested through what the game shows, or deleted. What is left beyond the list is the members the
+check cannot see, below.
 
 **What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
 judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local
@@ -36,7 +40,7 @@ taken for the whole file, not per function. Three members have no test reader: `
 listed as `[no reader]` and are dead code to delete, and `Main.use_sitting` is a hand-in no test calls (the tests'
 `use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
-**Build.** Each of those members becomes internal, its tests moving to what the class does outward,
+**Build.** Each member of those two groups becomes internal, its tests moving to what the class does outward,
 or takes a `[kept]` line with its reason, owner by owner (or several small owners together) in a
 pull request each, each also removing a check that holds nothing once its member is gone
 (curly-rabbit #1097). A builder deletes the member's line from the CI check's list as it turns

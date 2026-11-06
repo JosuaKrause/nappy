@@ -43,7 +43,9 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
   either of them **fails**: those two groups only shrink, unless the same diff changes this checker (a better
   checker surfaces members the old one could not see). CI passes the pull request's base commit, and on a
   push to `main` the commit before it, so a builder cannot answer the check's failure by listing the
-  member; only a kept line, with its reason, is added, and review reads the reason. A line that moves with its
+  member (only a kept line, with its reason, is added, and review reads the reason), unless the diff changes this
+  checker, when review runs the base's checker on the head tree and reads each added line as a member it saw as read
+  elsewhere. A line that moves with its
   member passes: an added line passes when a line of the same group that the pull request removes has the
   same member name and git reports the file as renamed from the removed line's file to the added line's file in the
   same diff (a file move carries its lines, each removed line pairing with one added line; a renamed member is
@@ -645,7 +647,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
             "Fails when a test reads a public func, var, const or signal defined under src/ that no other word under"
             " src/ names, unless tools/test_only_members.txt lists it, and fails on a listed line that has gone"
             " stale (the member has a reader in another file, no test reads it, or it is gone). A caller in the"
-            " member's own file is not a reader; constants are exempt unless used nowhere."
+            " member's own file is not a reader; a name more than one file defines is told by the reader's type where"
+            " it is known; constants are exempt unless used nowhere."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -663,7 +666,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         metavar="REV",
         help=(
             "also fail a line added since REV's list to the no reader or own file only group (CI passes the pull"
-            " request's base commit, and on main the previous one); a REV with no list yet compares nothing"
+            " request's base commit, and on main the previous one), unless the diff also changes this checker; a REV"
+            " with no list yet compares nothing"
         ),
     )
     parser.add_argument(
