@@ -25,4 +25,5 @@ each in its own fixture; with the old site choice those seeds fail two checks ea
 
 **Open to overturn.** Keeping the planner's price rather than raising it so the rig never presses
 against a van; the 8-tile radius, and testing for any event rather than only hazards; and no
-test of its own for the sealed street, where a plan must cross exactly one clearance tile.
+test of its own for a street where going round is longer than the price, so the plan crosses one
+clearance tile.
