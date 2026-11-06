@@ -14,12 +14,14 @@ reader left is deleted (curly-rabbit #1095).
 `_siting_band`, `EventFootprints._picture_drop_of`, the event scenery's layer lists,
 `EventsAhead._a_pursuer_is_after_her`, and the figure and roadblock looks' picture lists. The dog,
 roadblock-guard and pelican suites read the pictures drawn after real frames through the recording
-drawer; the scenery suite splits layers by what `set_frame(true)` turns; the route-bag,
-return-patrol and siting suites read `ordinary_route_marbles` and a band from `Tuning`; the poster
+drawer; the scenery suite splits layers by what `set_frame(true)` turns; the route-bag and
+return-patrol suites read `ordinary_route_marbles`, and the siting suite holds the band of every ask
+the director really makes on a walk to the stream radius and her walking sight; the poster
 suite waits for the pursuer among the instances; the car, fire-truck and footprint suites read
 positions and `footprint_of`. Removed as holding nothing or repeated (curly-rabbit #1097): three
 read-backs of a charger's name, which the visit counter's suite holds through the lines it sends;
-two "not driving" conjuncts; one standing-car check in the heat suite.
+a "not yet driving" half with no outward form, a car with no route staying where it stands
+instead; the heat suite's standing car checked as striking nobody ahead of it rather than read back.
 
 **Kept public**, each with its reason beside its line in the list, open to overturn:
 `EventCatalogue.heat_levels`, the range every heated shape of every row is validated over, which
