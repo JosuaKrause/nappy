@@ -436,7 +436,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "ResistanceHappenings",
-        "the run's registry keeps the resistance's happenings as one of its parts",
+        "the run reads the day of the neighbor's raid (NEIGHBOR_DAY) to say whether she was taken",
         ("src/run/run_state.gd",),
     ),
     Exception_(

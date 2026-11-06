@@ -74,7 +74,7 @@ static func format_clock_seconds(seconds: float) -> String:
 	return "%d:%02d" % [total_seconds / 60, total_seconds % 60]
 
 ## Hands the run the trace its facts are written to, and the city's arcs with it. `main` hands the
-## run session's at every boot; the test runner hands a silent one back between suites.
+## run session's at every boot; a run nobody hands one, as a test's own run is, writes nowhere.
 func use_trace(sink: RunTrace) -> void:
 	calendar.use_trace(sink)
 	attempt_spend.city_state.trace = sink

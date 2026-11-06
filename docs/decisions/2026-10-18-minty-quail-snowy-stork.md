@@ -30,10 +30,13 @@ out of `src/autoload/`.
   restart-then-hand-over walk reads the run the reloaded boot plays off the seat's sitting.
 - `src/autoload/game_state.gd` is `src/run/run_state.gd` (class `RunState`), its `.uid` with it,
   beside the parts in the model's folder. `tools/layer_map.py` loses the file entry that placed it
-  on the model's layer from the observers' folder, and its one exception (the registry keeps
-  `ResistanceHappenings` as a part) names the new path; `test_player_presentation.gd`, the one
-  file that preloaded the path, names the class instead, and `docs/ARCHITECTURE.md`'s listing and
-  `GameSave`'s doc follow.
+  on the model's layer from the observers' folder, and its one exception names the new path, with
+  a reason that says what the code does (the run reads `ResistanceHappenings.NEIGHBOR_DAY`, the day
+  of the neighbor's raid, in `neighbor_was_taken()`; the happenings are no part of the run);
+  `test_player_presentation.gd`, the one file that preloaded the path, names the class instead,
+  and `docs/ARCHITECTURE.md`'s listing and `GameSave`'s doc follow. `use_trace()`'s doc no longer
+  says the runner hands a silent trace back between suites: a test's own run is handed none and
+  writes nowhere.
 - No skill sentence named the file, the node or the restart's reuse, so no skill changed.
 
 **Verified.** `./tools/check.sh`; `./tools/lint.sh`; `tools/check_layers.py`; the touched suites
