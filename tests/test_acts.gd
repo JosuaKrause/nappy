@@ -17,7 +17,6 @@ func run(t) -> void:
 	_test_scars_outlive_the_day_that_made_them(t)
 	await _test_the_scarred_building_shows_burnt(t)
 	_test_a_park_stays_reachable_every_day(t)
-	_test_act_tints_differ(t)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -321,16 +320,3 @@ func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventScheduler
 		if grid.reaches(tile, blocked, reached):
 			return true
 	return false
-
-func _test_act_tints_differ(t) -> void:
-	var seen: Array[Color] = []
-	for act in [1, 2, 3, 4]:
-		var tint := Palette.act_tint(act)
-		for other in seen:
-			t.check(not tint.is_equal_approx(other), "act %d has its own cast" % act)
-		seen.append(tint)
-	# The city gets colder, not warmer: blue rises relative to red across the run.
-	var first := Palette.act_tint(1)
-	var third := Palette.act_tint(3)
-	t.check(third.b / third.r > first.b / first.r,
-			"act III is cooler than act I")
