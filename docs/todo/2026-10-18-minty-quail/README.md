@@ -74,6 +74,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    `run-state-handed-in.md` beside them too: each wave moves its suites onto a fresh run state
    handed in, after the one PR that moves the run onto the `Sitting` (inbox #985 in round-egret).
    `tests-own-class-members.md` follows `tests-unseen-reads.md`'s builds.
+   `ci-speed.md` beside the test items: three heavy sweeps trimmed (inbox #1130 in brisk-moose).
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
