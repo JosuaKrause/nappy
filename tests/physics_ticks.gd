@@ -38,11 +38,12 @@ static func pass_ticks(t, ticks: int, each := Callable(), scale := 1.0) -> void:
 ## tick still steps the game by the same `1 / physics_ticks_per_second` seconds (a tick's delta is
 ## `time_scale / physics_ticks_per_second`) and a walk of `ticks` ticks covers the same game time
 ## and the same positions, the engine only taking the ticks `factor` times as often in real time.
+## `scale` is the game-time speed of each tick as in `pass_ticks()`, kept per tick whatever `factor` is.
 ## Both settings are put back, and the runner's shared-state check compares both.
-static func pass_ticks_faster(t, ticks: int, factor: int, each := Callable()) -> void:
+static func pass_ticks_faster(t, ticks: int, factor: int, each := Callable(), scale := 1.0) -> void:
 	var rate := Engine.physics_ticks_per_second
 	Engine.physics_ticks_per_second = rate * factor
-	await pass_ticks(t, ticks, each, Engine.time_scale * factor)
+	await pass_ticks(t, ticks, each, Engine.time_scale * scale * factor)
 	Engine.physics_ticks_per_second = rate
 
 ## **First, in a suite's `run()`**: lets the frame the runner started the suite in end. That frame

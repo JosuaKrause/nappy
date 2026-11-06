@@ -11,6 +11,9 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
+## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time.
+const TICK_FACTOR := 8
 ## The game-time speed the long stretches run at (`PhysicsTicks.pass_ticks()`'s `scale`): each tick
 ## then covers `SPEED` times `STEP`, and every stretch is counted in the seconds it covers.
 const SPEED := 4.0
@@ -109,7 +112,7 @@ func _lane_rig(t, def: EventDef) -> Array:
 ## instance, with her running while `running` says so; it covers `SPEED` times `STEP`.
 func _frame(t, city: City, running := false) -> void:
 	(city.events.world.player as _Her).running = running
-	await PhysicsTicks.pass_ticks(t, 1, Callable(), SPEED)
+	await PhysicsTicks.pass_ticks_faster(t, 1, TICK_FACTOR, Callable(), SPEED)
 
 ## Whether `car` is out of the world: finished, or handed to `queue_free()` by a retirement or a
 ## stream-out.

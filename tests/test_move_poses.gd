@@ -45,6 +45,9 @@ const _SCRATCH_SAVE := "user://test_move_poses_scratch.json"
 const SEEDS: Array[int] = [4242, 1]
 ## How many times real time the walk runs, so a physics tick carries 1/30 s.
 const SCALE := 2.0
+## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time.
+const TICK_FACTOR := 8
 ## How long she walks the day before the swing, in seconds.
 const BEFORE_THE_SWING := 25.0
 ## How long the walk goes on once the swing is touched, in seconds: the cordon's whole close.
@@ -104,7 +107,7 @@ func _walk_the_day(t, seed_value: int) -> void:
 		_check_the_tick(t, main, seed_value, ran - 1, counts, seen, last)
 		if ran < ticks:
 			_before_the_tick(t, main, seed_value, ran, swing_tick, swing, counts, seen, last)
-	await PhysicsTicks.pass_ticks(t, ticks, after_each, SCALE)
+	await PhysicsTicks.pass_ticks_faster(t, ticks, TICK_FACTOR, after_each, SCALE)
 	t.check(day.is_running(), "seed %d: the day still runs at the walk's end" % seed_value)
 	t.check(counts["wrong"] == 0, "seed %d: every live mover's move stands at its pose at the end "
 			% seed_value + "of every one of %d ticks (%d wrong: %s)"

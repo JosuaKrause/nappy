@@ -28,6 +28,9 @@ const RUN_SEED := 2
 ## ticks is that much longer, so a hold takes a third of the ticks. The checks made over it are
 ## stated in the seconds it covers.
 const WAIT_SCALE := 3.0
+## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time.
+const TICK_FACTOR := 8
 ## How close `_test_the_hold_charges_only_its_toll()` reads the toll — a frame or two of the
 ## Baby's own stepping either side of exactly `Tuning.CHAT_EXCITEMENT`. Named because the same
 ## number is what decides how loud the field beside the door has to be for that rig to be worth
@@ -593,8 +596,8 @@ func _free_door_rig(rig: Dictionary) -> void:
 ## `EventHold`, only runs down inside `EventInstance.step()`) and then start and release, and hers
 ## run the input lock down. `seconds` of ticks and two more, for the tick the release lands on.
 func _pass_the_hold(t, seconds: float) -> void:
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(seconds, WAIT_SCALE) + 2, Callable(),
-			WAIT_SCALE)
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, WAIT_SCALE) + 2,
+			TICK_FACTOR, Callable(), WAIT_SCALE)
 
 ## The core rig: she walks into a hut, is detained for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`, and
 ## comes out the other side, outside the band, on the same pavement lane — the mirror of where she
@@ -721,7 +724,7 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 						Input.action_release(&"move_left")
 					else:
 						UIScreens.push(controls, UIScreens.touch_at(finger_at, false, 7))
-				await PhysicsTicks.pass_ticks(t, 1, Callable(), WAIT_SCALE)
+				await PhysicsTicks.pass_ticks_faster(t, 1, TICK_FACTOR, Callable(), WAIT_SCALE)
 				if not hut.is_chatting():
 					break
 			t.check(not hut.is_chatting(), "%s: and let out" % label)
@@ -1465,7 +1468,7 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 ## hold, and her tick moves her camera, in the order a real tick runs them. A camera fault is
 ## visible to a check made after any of them.
 func _advance_hold(t, seconds: float, scale := 1.0) -> void:
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(seconds, scale), Callable(), scale)
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, scale), TICK_FACTOR, Callable(), scale)
 
 ## The whole hold, end to end, against the four faults PLAYTEST-57 reported in it: *"the camera
 ## makes a huge jump from somewhere to the checkpoint. the checkpoint house disappears. the camera

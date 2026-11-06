@@ -11,6 +11,9 @@ const WALK_STEP := 1.0 / 10.0
 ## The walks go at this many times real time (`PhysicsTicks`), so each tick is `WALK_STEP` long and
 ## a walk of a minute takes ten seconds of the run.
 const WALK_SCALE := 6.0
+## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time.
+const TICK_FACTOR := 8
 
 ## A city of the suite's seed in a run of its own, added to `t`, so no test leans on what an
 ## earlier one left behind. Streaming is let reach the whole map: with no player in the rig nothing

@@ -13,6 +13,9 @@ const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
 const SEED := 4242
+## How many times faster than the project's tick rate the engine takes real ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time.
+const TICK_FACTOR := 8
 
 ## The city and its run the test now running stands in: `_begin()` builds both afresh at the top of
 ## every test and `_end()` frees them at its bottom, so no test reads what an earlier one left.
@@ -320,7 +323,7 @@ func _spine_traffic(t) -> Vector2:
 			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
 				totals.stopped += 1
 		return false
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(40.0, 1.0), sample)
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), TICK_FACTOR, sample)
 	_city.crowd.use_player(null)
 	her.free()
 	_sampled_cars = totals.samples
