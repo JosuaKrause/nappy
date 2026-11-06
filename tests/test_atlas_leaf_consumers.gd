@@ -8,9 +8,14 @@ extends RefCounted
 ## silent until somebody looked at a screenshot; and a group a freed consumer leaves acquired
 ## forever, which nothing else would ever notice either. This suite checks both, plus that every
 ## consumer sharing a group counts references rather than loading a second page — each check on a
-## library of its own that it hands every consumer it builds, as the city and `main` hand theirs.
+## library of its own that it hands every consumer it builds, as the city and `main` hand theirs,
+## and each lifetime read off the run log's load and release lines for the page
+## (`tests/atlas_page_log.gd`): one load however many consumers share it, and one release, once the
+## last of them is gone.
 
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
+const BakedRegions := preload("res://tests/baked_regions.gd")
+const PageLog := preload("res://tests/atlas_page_log.gd")
 
 func run(t) -> void:
 	_test_every_building_region_is_baked_on_its_group(t)
@@ -66,31 +71,34 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 	names.append_array([Building.WINDOW_BURNT, Building.ENTRANCE_DOOR_BURNT,
 			Building.STOREFRONT_BURNT])
 	names.append_array(Building.ROOF_EDGE_S_BURNT)
-	names.append_array(PosterArt.region_names())
+	# The posters a building's wall carries, every picture `PosterArt` can hand it.
+	names.append_array(PosterArt.SHEETS.values())
+	names.append(PosterArt.WANTED_CROSSED)
+	names.append_array(PosterArt.TEAR_MASKS)
+	names.append_array(PosterArt.TEAR_OVERLAYS)
 	_check_regions(t, names, &"buildings", "Building")
 
 ## Acquired the moment a building enters the tree, shared by reference count rather than a page
 ## per building, and released only once the last one is gone.
 func _test_building_acquires_and_releases_buildings(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
-	t.check(not atlas.is_acquired(&"buildings"),
-			"nothing holds the buildings group before any building exists")
 	var a := Building.new()
 	a.atlas = atlas
 	t.add_child(a)
-	t.check(atlas.reference_count(&"buildings") == 1, "the first building counts one")
+	t.check(pages.held(&"buildings"), "the first building takes the page")
 	var b := Building.new()
 	b.atlas = atlas
 	t.add_child(b)
-	t.check(atlas.reference_count(&"buildings") == 2,
-			"a second building sharing the group counts two, not a second page")
+	t.check(pages.loads(&"buildings") == 1,
+			"a second building shares the page rather than reading a second one")
 	a.free()
-	t.check(atlas.reference_count(&"buildings") == 1, "freeing one building drops one reference")
+	t.check(pages.releases(&"buildings") == 0,
+			"freeing one building leaves the page to the other")
 	b.free()
-	t.check(atlas.reference_count(&"buildings") == 0,
-			"freeing the last building releases the group")
-	t.check(not atlas.is_acquired(&"buildings"),
-			"and the group holds nothing once its last user is gone")
+	t.check(pages.releases(&"buildings") == 1,
+			"freeing the last building releases the group, with no reference left over")
+	pages.stop()
 
 # ---------------------------------------------------------------- street kit ---
 
@@ -110,53 +118,53 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 
 ## `ClosureMarker`, `TrafficLight` and `CityEdge` each acquire `street_kit` independently, from
 ## three different files, and the group still counts references rather than loading three pages.
+##
+## Freed one at a time, each of the first three leaves the page to the rest, so a consumer that took
+## no reference of its own, and drew on the others' page, would drop it early; and a consumer that
+## never gave its reference back would leave it held after the last.
 func _test_street_kit_consumers_share_one_reference_count(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
-	t.check(not atlas.is_acquired(&"street_kit"),
-			"nothing holds street_kit before any of its consumers exist")
 	var marker := ClosureMarker.new()
 	marker.atlas = atlas
 	t.add_child(marker)
-	t.check(atlas.reference_count(&"street_kit") == 1, "the closure marker counts one")
+	t.check(pages.held(&"street_kit"), "the closure marker takes the page")
 	var light := TrafficLight.new()
 	light.atlas = atlas
 	t.add_child(light)
-	t.check(atlas.reference_count(&"street_kit") == 2,
-			"the traffic light shares the same group rather than acquiring a second page")
 	var edge := CityEdge.new()
 	edge.atlas = atlas
 	t.add_child(edge)
-	t.check(atlas.reference_count(&"street_kit") == 3,
-			"the city edge is a third reference on the same group")
 	var park := ParkFenceMarker.new()
 	park.atlas = atlas
 	t.add_child(park)
-	t.check(atlas.reference_count(&"street_kit") == 4,
-			"the park fence shares the street kit through its inherited lifecycle")
+	t.check(pages.loads(&"street_kit") == 1,
+			"the traffic light, the city edge and the park fence share the same page rather than "
+			+ "reading a second")
 	park.free()
 	marker.free()
 	light.free()
+	t.check(pages.releases(&"street_kit") == 0,
+			"each consumer holds a reference of its own: three freed leave the page to the fourth")
 	edge.free()
-	t.check(atlas.reference_count(&"street_kit") == 0,
-			"freeing every street-kit consumer releases the group")
-	t.check(not atlas.is_acquired(&"street_kit"), "and it holds nothing left over")
+	t.check(pages.releases(&"street_kit") == 1,
+			"freeing every street-kit consumer releases the group, with nothing left over")
+	pages.stop()
 
 ## The city edge is the one consumer with two groups — see `city_edge.gd`'s own doc for why it
 ## acquires `ground` itself rather than relying on anything else to have done so.
 func _test_city_edge_also_holds_ground(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
-	t.check(not atlas.is_acquired(&"ground"),
-			"nothing holds ground before any city edge exists")
 	var edge := CityEdge.new()
 	edge.atlas = atlas
 	t.add_child(edge)
-	t.check(atlas.reference_count(&"street_kit") == 1,
-			"the city edge holds street_kit on its own")
-	t.check(atlas.reference_count(&"ground") == 1,
-			"and holds ground alongside it, for the mountain tile")
+	t.check(pages.held(&"street_kit"), "the city edge holds street_kit on its own")
+	t.check(pages.held(&"ground"), "and holds ground alongside it, for the mountain tile")
 	edge.free()
-	t.check(atlas.reference_count(&"street_kit") == 0, "freeing it drops street_kit")
-	t.check(atlas.reference_count(&"ground") == 0, "and drops ground with it")
+	t.check(pages.releases(&"street_kit") == 1, "freeing it drops street_kit")
+	t.check(pages.releases(&"ground") == 1, "and drops ground with it")
+	pages.stop()
 
 # ------------------------------------------------------------------------ ui ---
 
@@ -166,7 +174,7 @@ func _test_city_edge_also_holds_ground(t) -> void:
 ## asked for each symbol, since `icon` is what it hands to the engine.
 func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 	var names: Array = []
-	for name in AtlasTable.baked().region_names():
+	for name in BakedRegions.names():
 		if String(name).begins_with("ui/"):
 			names.append(name)
 	_check_regions(t, names, &"ui", "the UI")
@@ -181,27 +189,31 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 
 ## `ModeButton`, `TouchControls` and `SaveIndicator` all acquire `ui` — the whole run's own group,
 ## including the title screen where no city exists — from three different files.
+##
+## Freed one at a time, as the street kit's are, so each is seen to hold a reference of its own.
 func _test_ui_consumers_share_one_reference_count(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
-	t.check(not atlas.is_acquired(&"ui"), "nothing holds ui before any of its consumers exist")
 	var button := ModeButton.new()
 	button.atlas = atlas
 	t.add_child(button)
-	t.check(atlas.reference_count(&"ui") == 1, "the mode button counts one")
+	t.check(pages.held(&"ui"), "the mode button takes the page")
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	controls.atlas = atlas
 	t.add_child(controls)
-	t.check(atlas.reference_count(&"ui") == 2,
-			"touch controls share the same group rather than acquiring a second page")
 	var indicator := SaveIndicator.new()
 	indicator.atlas = atlas
 	t.add_child(indicator)
-	t.check(atlas.reference_count(&"ui") == 3, "the save indicator is a third reference")
+	t.check(pages.loads(&"ui") == 1,
+			"touch controls and the save indicator share the same page rather than reading a second")
 	button.free()
 	controls.free()
+	t.check(pages.releases(&"ui") == 0,
+			"each consumer holds a reference of its own: two freed leave the page to the third")
 	indicator.free()
-	t.check(atlas.reference_count(&"ui") == 0, "freeing every UI consumer releases the group")
-	t.check(not atlas.is_acquired(&"ui"), "and it holds nothing left over")
+	t.check(pages.releases(&"ui") == 1,
+			"freeing every UI consumer releases the group, with nothing left over")
+	pages.stop()
 
 # ------------------------------------------------------------------ interior ---
 
@@ -219,29 +231,54 @@ func _test_every_interior_region_is_baked_on_its_group(t) -> void:
 	]
 	_check_regions(t, names, &"interior", "InteriorScene")
 
+## Every ground kind the interior's `TileSet` carries a source for draws a region of the `interior`
+## page: a source over the page that addresses exactly one of its regions. A region name the bake
+## never wrote would leave its kind with no source at all, since `InteriorTileSet.build()` skips a
+## region `AtlasLibrary.region()` cannot answer.
 func _test_interior_tileset_regions_are_baked_on_the_interior_group(t) -> void:
-	var names: Array = []
-	for kind in InteriorTile.Kind.values():
-		var name := InteriorTileSet.region_name_for(kind)
-		if name != &"":
-			names.append(name)
-	_check_regions(t, names, &"interior", "InteriorTileSet")
+	var atlas := AtlasLibrary.new()
+	atlas.acquire(&"interior")
+	var tile_set := InteriorTileSet.build(atlas)
+	var rects: Dictionary = {}
+	for name in BakedRegions.on(&"interior"):
+		rects[AtlasTable.baked().region_rect(name)] = name
+	var page: Texture2D = atlas.region(InteriorScene.BRICK_WALL).atlas
+	var kinds := 0
+	var strays: Array[String] = []
+	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
+		var id := InteriorTileSet.source_id_for(kind)
+		if id < 0:
+			continue
+		kinds += 1
+		var source: TileSetAtlasSource = null
+		if tile_set.has_source(id):
+			source = tile_set.get_source(id) as TileSetAtlasSource
+		if source == null or source.texture != page \
+				or not rects.has(source.get_tile_texture_region(Vector2i.ZERO)):
+			strays.append(str(InteriorTile.Kind.find_key(kind)))
+	t.check(strays.is_empty(), "InteriorTileSet: every ground kind draws a region of the "
+			+ "'interior' page (not: %s)" % ", ".join(strays.slice(0, 5)))
+	t.check(kinds > 0, "InteriorTileSet: there were ground kinds to check at all (%d)" % kinds)
+	tile_set = null
+	atlas.release(&"interior")
 
 ## `InteriorScene` acquires `interior` in `_enter_tree()`, before `_ready()` builds anything that
 ## draws from it, and releases it in `_exit_tree()`.
+##
+## A second reference `build()` took and never gave back would leave the page held once the scene is
+## freed, so the one release line at the end is what says building again took none.
 func _test_interior_scene_acquires_and_releases_interior(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
-	t.check(not atlas.is_acquired(&"interior"),
-			"nothing holds interior before any InteriorScene exists")
 	var scene := InteriorScene.new()
 	scene.atlas = atlas
 	t.add_child(scene)
-	t.check(atlas.reference_count(&"interior") == 1,
+	t.check(pages.held(&"interior"),
 			"the interior scene acquires its group as it enters the tree")
 	scene.build()
-	t.check(atlas.reference_count(&"interior") == 1,
-			"building the map again does not acquire a second reference")
+	t.check(pages.loads(&"interior") == 1 and pages.releases(&"interior") == 0,
+			"building the map again keeps the page it holds, reading nothing more")
 	scene.free()
-	t.check(atlas.reference_count(&"interior") == 0,
-			"freeing the scene releases the group")
-	t.check(not atlas.is_acquired(&"interior"), "and it holds nothing left over")
+	t.check(pages.releases(&"interior") == 1,
+			"freeing the scene releases the group, with nothing left over")
+	pages.stop()
