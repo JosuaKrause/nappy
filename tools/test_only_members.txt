@@ -70,8 +70,6 @@ src/crowd/crowd_lanes.gd busyness
 src/crowd/lane_mover.gd end_the_frame
 src/crowd/walker_look.gd heading_now
 src/crowd/walker_strategy.gd door_answer_for
-src/day/loss_cause.gd crying_suffix
-src/day/loss_cause.gd hard_fail_suffix
 src/dev/auto_screenshot.gd can_photograph
 src/dev/auto_screenshot.gd recording_frame_needs_force
 src/dev/debug_layers.gd collision_nodes_under
@@ -181,7 +179,6 @@ src/routes/region_planner.gd region_of_segment
 src/routes/route_tree.gd lattice_grid
 src/routes/route_tree.gd trunk_used_the_spine
 src/routes/seal_planner.gd escape_candidates
-src/run/day_director.gd loss_cause
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
 src/telemetry/telemetry_map.gd role_mark
