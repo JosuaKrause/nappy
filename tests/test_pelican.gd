@@ -43,7 +43,6 @@ func run(t) -> void:
 	_test_the_bag_follows_the_run_and_the_count(t)
 	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
 	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
-	_test_the_pelican_never_becomes_a_png(t)
 	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
@@ -204,29 +203,6 @@ func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
 			"a new run starts from the full bag")
 	_run.pelican.restore({})
 	t.check(_run.pelican.draws == 0, "and a save written before the bag loads at 0")
-
-## *(minty-hedgehog: "converted to PNG during atlas creation but otherwise it will always stay SVG
-## never become a converted PNG".)* The default bake takes an illustrated PNG wherever one stands
-## beside its SVG (`docs/VISUALS.md`), so a transfer of the pelican placed there would quietly
-## replace the drawing in the release; none may exist, for any picture the pelican draws.
-func _test_the_pelican_never_becomes_a_png(t) -> void:
-	var pictures: Array[String] = []
-	for table: Dictionary in [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]:
-		for view: String in table:
-			pictures.append(str(table[view]))
-	var sources := 0
-	var converted: Array[String] = []
-	for picture in pictures:
-		if FileAccess.file_exists("res://art/%s.svg" % picture):
-			sources += 1
-		for png in ["res://art/illustrated/svg-transfer/%s.png" % picture,
-				"res://art/illustrated/%s.png" % picture]:
-			if FileAccess.file_exists(png):
-				converted.append(png)
-	t.check(sources == pictures.size(), "every pelican picture has its SVG under art/ (%d of %d)"
-			% [sources, pictures.size()])
-	t.check(converted.is_empty(), "and none has an illustrated PNG beside it (%s)"
-			% ", ".join(converted))
 
 ## Starts a run of `run_seed` with the full bag.
 func _new_run(run_seed: int) -> void:

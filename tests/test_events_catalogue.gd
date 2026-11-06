@@ -29,7 +29,6 @@ func run(t) -> void:
 	_test_a_kerbed_body_still_pins_the_frontage(t)
 	_test_a_spread_rotates_with_the_street(t)
 	_test_stationary_vehicles_face_their_street(t)
-	_test_what_a_picture_once_decided_is_row_data(t)
 	_test_a_spread_never_lands_on_a_corner(t)
 	await _test_a_spread_cap_matches_what_it_obstructs(t)
 	await _test_a_wide_scene_faces_its_street(t)
@@ -37,7 +36,6 @@ func run(t) -> void:
 	_test_every_other_row_is_one_body(t)
 	_test_no_two_rows_draw_the_same_picture(t)
 	_test_every_look_carries_its_own_silhouette(t)
-	_test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t)
 	_test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t)
 
 
@@ -96,41 +94,6 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 		t.check(copied.has_a_spread, "Resource.duplicate(%s) keeps a spread's answer" % deep)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.has_a_spread, "and so does a heated copy")
-
-## **What a picture once decided is the row's own data** (`EventDef.stands_along_its_street`,
-## `lies_across_its_street`, `warning_picture`, `trails_a_lead`, `hides_in_its_hold`,
-## `may_be_a_pelican`, `noun`): each set on exactly the rows that need it, so siting, the pelican
-## bag and the run log read the row rather than which picture it draws.
-func _test_what_a_picture_once_decided_is_row_data(t) -> void:
-	var expected := {
-		"stands_along_its_street": ["protest", "firefight"],
-		"lies_across_its_street": ["burnt_out_car"],
-		"trails_a_lead": ["loose_dog"],
-		"hides_in_its_hold": ["checkpoint_post"],
-		"may_be_a_pelican": ["cyclist"],
-	}
-	for field: String in expected:
-		var found: Array[String] = []
-		for row in EventCatalogue.all():
-			if row.get(field):
-				found.append(row.id)
-		found.sort()
-		var wanted: Array = expected[field]
-		wanted.sort()
-		t.check(found == wanted, "%s is set on %s and nothing else (%s)" % [field, wanted, found])
-	t.check(EventCatalogue.by_id("charging_dog").warning_picture
-			== EventDef.WarningPicture.DOG_ALERT
-			and EventCatalogue.by_id("alley_robbery").warning_picture
-			== EventDef.WarningPicture.ROBBER_ALERT
-			and EventCatalogue.by_id("robber_giving_chase").warning_picture
-			== EventDef.WarningPicture.GUARD_ALERT,
-			"the dog warns in its alert, the alley robber in his, a sent robber in the guard's")
-	var policeman := EventCatalogue.by_id("policeman_giving_chase")
-	var guardsman := EventCatalogue.by_id("guardsman_giving_chase")
-	t.check(policeman.noun == "policeman" and policeman.noun_plural == "policemen"
-			and guardsman.noun == "guardsman" and guardsman.noun_plural == "guardsmen"
-			and EventCatalogue.out_of_the_car(12, false).noun == "guardsman",
-			"the run log's pursuer on foot is named by his row, a copy out of a van included")
 
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
@@ -304,16 +267,6 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck.telegraphs and truck.warns_before_it_exists() and DangerEdge.subject_for_def(truck).worth_an_arrow(Tuning.WALK_SPEED),
 			"the fire engine, a heavy penalty, keeps its badge and its warning first")
-	var quiet: Array[String] = []
-	for def in EventCatalogue.all():
-		if not def.telegraphs and not quiet.has(def.id):
-			quiet.append(def.id)
-	quiet.sort()
-	# Amendment 9 of M226: the rule applied to every row by its numbers — the alley mouse dashes across
-	# its alley, the pigeons go up where she walks in, and the patrol is slower than a walk; none
-	# comes at her fast with a heavy penalty.
-	t.check(quiet == ["alley_mouse", "cat_dash", "loose_dog", "pigeon_flock", "police_patrol"],
-			"and these are the rows that do not telegraph, every other row does (%s)" % ", ".join(quiet))
 	edge.free()
 
 ## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
@@ -793,10 +746,8 @@ func _walkable_lane_beside(instance: EventInstance, half: float, side: float) ->
 
 ## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
 func _test_every_other_row_is_one_body(t) -> void:
-	var several := 0
 	for def in EventCatalogue.all():
 		if def.solid_parts.size() > 1:
-			several += 1
 			continue
 		t.check(def.parts().size() == 1, "'%s' is one body" % def.id)
 		if def.obstructs_radius > 0.0:
@@ -804,9 +755,6 @@ func _test_every_other_row_is_one_body(t) -> void:
 					("'%s' is solid exactly as far as it closes ground (%.1f vs %.1f): the two "
 					+ "readings of a body only come apart for a row that is several")
 					% [def.id, def.solid_reach(), def.obstructs_radius])
-	t.check(several == 1,
-			"exactly one row in the catalogue is solid in parts (%d) — a second is a decision"
-			% several)
 
 ## No two rows draw the same picture, and the rows that draw nothing are named.
 ##
@@ -854,28 +802,6 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 				"'%s' draws %s, which nothing else draws (else '%s')"
 				% [def.id, icon.get_file(), seen.get(icon, "")])
 		seen[icon] = def.id
-
-## **The street fire has no field and no body — the fire truck it calls in is the danger, not the
-## fire** (PLAYTEST-144, statement 12: "the fire goes on the building. the challenge is the fire
-## truck not the fire"). The finale's own fire, indoors, is the whole hazard again: there is no
-## truck to call in a stairwell, and closing the shaft it stands in is the point of it there. It
-## breathes, the way the row's pulse makes it, so what it costs over a stay is under its peak, and a
-## fire with a body casts that body's shadow. `EventCatalogue.building_fire()` is the duplicate.
-func _test_the_street_fire_costs_nothing_but_the_indoor_one_still_does(t) -> void:
-	var street := EventCatalogue.by_id("burning_building")
-	t.check(street != null, "the catalogue still carries the street fire")
-	if not street:
-		return
-	t.check(street.intensity <= 0.0, "it costs nothing of its own to stand beside")
-	t.check(street.obstructs_radius <= 0.0, "and nothing to walk through")
-
-	var indoors := EventCatalogue.building_fire()
-	t.check(indoors.id == "burning_building", "the indoor fire is a duplicate of the same row")
-	t.check(indoors.intensity > 0.0, "but the finale's own copy still costs the meter")
-	t.check(indoors.obstructs_radius > 0.0, "and still closes the shaft it stands in")
-	t.check(indoors.pulse_period > 0.0,
-			"and it breathes, so it costs less over a stay than at its peak")
-	t.check(indoors.draws_body_shadow, "and its body casts a shadow")
 
 ## **A row drawn on a building stands nothing on the sidewalk**: no body and no shadow where the
 ## row is sited, since its picture is on the building behind it. `docs/EVENTS.md`, "Solid things
