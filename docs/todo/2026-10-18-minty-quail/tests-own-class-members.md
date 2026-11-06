@@ -23,11 +23,17 @@ least as long as the fairness floor needs") is what **verify**'s testing policy 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the event
-scheduler's plan helpers, the resistance director's guard and contact spots and nearest alleys,
-the figures' and pursuers' picture lists, and one drawing helper.
+**Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the
+resistance director's guard and contact spots and nearest alleys, the figures' picture lists, and
+one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate.
+
+*Proposed by the orchestrator, from a review, not asked for:* the CI check of test-only members
+counts a member as read by the game when any other class has a member of the same name, so a
+member whose name collides (`ParkCordon.gap`, whose reason stands as a comment on it, record
+minty-quail-grassy-squirrel) can take no `[kept]` line; the check qualifies a member by its class
+where the reader's type is known, or takes a `[kept]` line for a colliding name.
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing a check that holds nothing once its member is

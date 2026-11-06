@@ -169,7 +169,7 @@ func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked
 		if block == swing:
 			continue
 		var rect := ClosurePlanner.calm_area_rect(city.map, block)
-		if EventScheduler.is_spoiled(city.map, catalogue, rect):
+		if SpoiledGround.by(city.map, catalogue, rect):
 			continue
 		for tile in city.map.rect_tiles(rect):
 			if Tile.is_calm(city.map.tile_at(tile)) and grid.reaches(tile, blocked, reached):

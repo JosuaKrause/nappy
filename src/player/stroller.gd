@@ -718,7 +718,7 @@ var outright_moves := 0
 ## Velocity and the shove are both zeroed, not merely left to run out: `_shove`'s own friction is
 ## keyed to wherever the last contact pushed it, and a residual one now points at the pavement she
 ## was just standing on — inside the band she is being released from — so letting it run out would
-## carry her straight back in. See `CheckpointController.release_finished_holds()`, the only
+## carry her straight back in. See `CheckpointController._release_finished_holds()`, the only
 ## caller.
 func teleport_to(where: Vector2) -> void:
 	global_position = where

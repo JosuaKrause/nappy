@@ -245,7 +245,7 @@ one hold. The escape scene's own doors reuse the same class.
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
 stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
 on the far side of the door so being let out reads as being let through
-(`CheckpointController.release_finished_holds()`).
+(`CheckpointController._release_finished_holds()`).
 
 **Going in and coming out are owned by different halves, and that asymmetry is the whole of why
 she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
