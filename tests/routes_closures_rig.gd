@@ -256,18 +256,51 @@ func case_calm_ground_is_still_walkable_to(t) -> void:
 ## so sampling days would sample the closures unevenly.
 func case_closures_land_where_a_wall_belongs(t) -> void:
 	var total := 0
+	# What an unbiased pick would land, summed over the same days: each closure is as likely to
+	# be on a turning off the corridor (or in a gap) as that kind is common among the streets off
+	# the corridor. The planner's own preference has to beat it, whatever the preference is set to.
+	var on_the_rim := 0
+	var in_a_gap := 0
+	var rim_unbiased := 0.0
+	var gap_unbiased := 0.0
 	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			# Today's city before today's corridor: which blocks are calm is what the tree grows
 			# from, and a repaint moves them. Growing one against yesterday's paint is a tree the
 			# planner has never seen, which is what the first version of this test did.
 			var tree := _todays_tree(map, day)
-			for closure in _plan(map, day):
+			var rim := {}
+			for key in tree.rim():
+				rim[key] = true
+			var gap := {}
+			for key in tree.gaps():
+				gap[key] = true
+			var off := 0
+			var off_rim := 0
+			var off_gap := 0
+			for segment in map.network.segments():
+				var key := segment.key()
+				if map.has_street(key) and not tree.is_on_the_tree(key):
+					off += 1
+					off_rim += 1 if rim.has(key) else 0
+					off_gap += 1 if gap.has(key) else 0
+			var closures := _plan(map, day)
+			if off > 0:
+				rim_unbiased += float(closures.size() * off_rim) / off
+				gap_unbiased += float(closures.size() * off_gap) / off
+			for closure in closures:
 				total += 1
+				on_the_rim += 1 if rim.has(closure.segment.key()) else 0
+				in_a_gap += 1 if gap.has(closure.segment.key()) else 0
 				t.check(not tree.is_on_the_tree(closure.segment.key()),
 						"seed %d day %d: the closure at %s is off the corridor"
 						% [map.seed_used, day, closure.segment.key()])
 	t.check(total > 0, "the planner shuts streets at all (%d over %d seeds)" % [total, SEEDS])
+	t.check(on_the_rim > rim_unbiased * 1.5,
+			"closures land on a turning off the corridor more than chance would (%d against %.0f)"
+			% [on_the_rim, rim_unbiased])
+	t.check(in_a_gap > gap_unbiased * 1.5,
+			"and in a gap more than chance would (%d against %.0f)" % [in_a_gap, gap_unbiased])
 
 ## **The payoff rule.** A closure never lands on a calm area's own access street: never beside a
 ## park, since a barrier there closes nothing the ground itself does not already leave open on
