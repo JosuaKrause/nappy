@@ -52,8 +52,6 @@ src/events/event_def.gd mean_emission_along_the_line
 src/events/event_def.gd minimum_telegraph
 src/events/event_def.gd notice_on
 src/events/event_def.gd warning_time
-src/events/event_director.gd route_rows_on
-src/events/event_director.gd siting_band
 src/events/event_footprints.gd picture_drop_of
 src/events/event_manager.gd check_hard_fails
 src/events/event_manager.gd planner

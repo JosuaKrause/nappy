@@ -240,7 +240,8 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 	var map := _map()
 	var limited: EventDef = null
-	for def in EventDirector.route_rows_on(RETURN_DAY, 0):
+	for id: String in EventDirector.ordinary_route_marbles(RETURN_DAY, 0):
+		var def := EventCatalogue.by_id(id)
 		if limited == null or def.max_per_day < limited.max_per_day:
 			limited = def
 	var marbles := []
