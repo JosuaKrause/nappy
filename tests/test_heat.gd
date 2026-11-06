@@ -396,6 +396,8 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 		instance.step(STEP)
 	t.check(instance.position == stopped_at and not instance.is_leaving,
 			"it stands where it stopped while he is after her")
+	var ahead := instance.global_position + instance.facing_now() * 30.0
+	t.check(not instance.is_lethal_at(ahead), "and a standing car strikes nobody just ahead of it")
 	officer.give_up_the_chase()
 	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
 	instance.player_at = her

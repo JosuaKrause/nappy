@@ -336,7 +336,9 @@ func _test_the_barrier_post_round_trips(t) -> void:
 func _test_a_car_is_composed_of_its_vehicle(t) -> void:
 	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"))
 	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
-	t.check(patrol.car != null and robber.car == null,
-			"a patrol car is composed of a car's driving; a robber does not drive")
+	patrol.player_at = Vector2(0.0, 5000.0)
+	_advance(patrol, 0.5)
+	t.check(patrol.car != null and robber.car == null and patrol.global_position == Vector2.ZERO,
+			"a patrol car drives, but stays put with no route to drive; a robber does not drive")
 	patrol.free()
 	robber.free()

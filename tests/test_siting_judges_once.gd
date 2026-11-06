@@ -206,6 +206,15 @@ func _test_one_offer_per_look(t) -> void:
 			toward = route[i] - at
 	t.check(owed == copies, "the day owes the fires the test added (%d)" % owed)
 	t.check(looks > 0, "there were looks (%d)" % looks)
+	# The band the director sites a walk's events in: its near edge is outside the streaming
+	# radius with its hysteresis (nothing is created in view), and its far edge is the walking
+	# `ON_HER_WAY_SIGHT` seconds beyond that.
+	var band_held := not siting.bands.is_empty()
+	for band in siting.bands:
+		band_held = band_held \
+				and is_equal_approx(band.x, Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS) \
+				and is_equal_approx(band.y - band.x, Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT)
+	t.check(band_held, "every ask the director made sites between the streaming edge and a walk's sight beyond it (%d asks)" % siting.bands.size())
 	t.check(judging > 0, "there were looks that judged a candidate (%d)" % judging)
 	t.check(one_offer == looks,
 			"a look works out what it offers once, for %d copies (%d of %d looks)"
@@ -368,6 +377,8 @@ class SpySiting extends EventScheduler.WalkSiting:
 	## One entry per call, in order: `["begin"]`, `["ask", the plan asked about was placed, it was
 	## sited]`, `["forget"]` or `["end"]`.
 	var calls: Array = []
+	## The `Vector2(near, far)` band of every ask the director made.
+	var bands: Array[Vector2] = []
 	## The plans the director is handed, to tell which one an ask is about: the one `already`
 	## leaves out.
 	var plans: Array[EventScheduler.Planned] = []
@@ -382,6 +393,7 @@ class SpySiting extends EventScheduler.WalkSiting:
 		for plan in plans:
 			if not others.has(plan):
 				placed = plan.is_placed()
+		bands.append(Vector2(near, far))
 		var sited := super.ahead_of(def, rng, already, at, heading, near, far)
 		calls.append(["ask", placed, sited != null])
 		return sited

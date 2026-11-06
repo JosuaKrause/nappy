@@ -7,7 +7,7 @@ extends RefCounted
 ## What a picture cannot show: that a run meets at most one pelican, that the bag is the run's own
 ## and comes from its seed, that a lost day and a resumed save draw the same cyclists and pelican the
 ## day first did, that the draw is one marble per cyclist from a bag nothing else touches, that a
-## rider created as the pelican rides as one to the end, and that the pelican is the cyclist row in
+## rider created as the pelican rides as one throughout, and that the pelican is the cyclist row in
 ## everything a player can feel — and that the telemetry tells the pelican apart from its warning to
 ## its hit, which the page's counter (`tests/test_visit_counter.gd`) and the loss cause
 ## (`tests/test_loss_cause.gd`) then name. Whether it reads as a pelican is the drawing's review sheet,
@@ -50,7 +50,7 @@ func run(t) -> void:
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
 	_record_the_drawing()
-	await _test_a_pelican_rides_as_one_to_the_end(t)
+	await _test_a_pelican_rides_as_one_throughout(t)
 	await _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	await _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)
 	_city.free()
@@ -242,9 +242,9 @@ func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 	return answers
 
 ## A rider created as the pelican, through the path every cyclist takes (`spawn_warned()`, handed
-## the roll its warning made), is drawn as the pelican on its first frame and on its last; one
+## the roll its warning made), is drawn as the pelican on its first frame and late in its ride; one
 ## created as the kid stays the kid.
-func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
+func _test_a_pelican_rides_as_one_throughout(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var events := _city.events
 	var pelican := events.spawn_warned(def, _ride(), true)
