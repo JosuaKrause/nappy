@@ -28,8 +28,9 @@ window and roof pieces (`window_texture`, `roof_layout`, `roof_interior_cells`,
 `roof_equipment_scale`, read by `test_roof_entities.gd`, `test_recipe_roofs.gd`,
 `test_scene_recipe_activity.gd`, `test_scenery_residency.gd` and the `lazy_scenery_measure.gd`
 probe, the residency suite running without the frames a drawn read needs; record
-minty-quail-misty-badger), the event scheduler's plan helpers, the resistance director's guard
-and contact spots and nearest alleys, the title screen's hard-mode controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
+minty-quail-misty-badger), the resistance director's guard and contact spots and nearest alleys,
+the title screen's hard-mode controls, the save's has-a-save, the figures' picture lists, and one
+drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate. The park cordon's `gap`, `line`, `area`, `elapsed` and
 `walk_to_the_gap` are in scope too, though the CI check misses them since other classes have
