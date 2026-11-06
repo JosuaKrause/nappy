@@ -102,7 +102,7 @@ jobs:
       docs_only: ${{ steps.classify.outputs.docs_only }}
       touches_code: ${{ steps.classify.outputs.touches_code }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           fetch-depth: 0
@@ -110,7 +110,7 @@ jobs:
             tools
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
 
@@ -132,7 +132,7 @@ jobs:
       # by the preflight regression. Full profiler evidence stays excluded --
       # see docs/DECISIONS.md, M201, a CI job does not download the evidence. `fetch-depth: 0`
       # brings origin/<base>, which the pull request's own checks below diff against.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           fetch-depth: 0
@@ -170,7 +170,7 @@ jobs:
       # job still run and one push shows every failure at once.
       - name: Install uv
         if: ${{ !cancelled() }}
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
 
@@ -183,7 +183,7 @@ jobs:
       # before it is unpacked.
       - name: Cache ffmpeg
         id: ffmpeg-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/ffmpeg
           key: ${{ env.FFMPEG_BUILD }}
@@ -305,7 +305,7 @@ jobs:
     timeout-minutes: 15
     steps:
       # Same partial clone as `shards` below: nothing here reads docs/evidence/.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -315,7 +315,7 @@ jobs:
 
       - name: Cache Godot
         id: godot-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/godot
           key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
@@ -345,7 +345,7 @@ jobs:
     timeout-minutes: 15
     steps:
       # Same partial clone as `shards` below: nothing here reads docs/evidence/.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -355,7 +355,7 @@ jobs:
 
       - name: Cache Godot
         id: godot-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/godot
           key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
@@ -493,7 +493,7 @@ jobs:
       costs: ${{ steps.freeze.outputs.costs }}
       exact: ${{ steps.restore.outputs.cache-hit }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout: |
@@ -501,7 +501,7 @@ jobs:
 
       - name: Restore the newest saved timings
         id: restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: suite-costs-cache
           key: suite-costs-v1-${{ github.sha }}
@@ -560,7 +560,7 @@ jobs:
       # suite `tools/test.sh` runs reads a file under docs/evidence/ -- it only appears in doc
       # comments naming where a probe (never run in CI; see the verify skill) writes its own
       # output. docs/DECISIONS.md, M201.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -570,7 +570,7 @@ jobs:
 
       - name: Cache Godot
         id: godot-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/godot
           key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
@@ -677,7 +677,7 @@ jobs:
     steps:
       # continue-on-error like the steps after it: a failed checkout leaves the merge step nothing
       # to run, which it reports and the closing step turns into a warning.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         continue-on-error: true
         with:
           filter: blob:none
@@ -730,7 +730,7 @@ jobs:
         id: save
         if: steps.merge.outcome == 'success' && needs.plan.outputs.exact != 'true'
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: suite-costs-cache
           key: suite-costs-v1-${{ github.sha }}
@@ -753,7 +753,7 @@ jobs:
     timeout-minutes: 60
     steps:
       # Same partial clone as `shards` above: nothing here reads docs/evidence/.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -775,7 +775,7 @@ jobs:
       # Chrome that never answers) is when the screenshots and result.json are wanted most.
       - name: Keep the browser evidence
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-browser-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/browser-result

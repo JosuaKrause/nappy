@@ -79,7 +79,7 @@ jobs:
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
       # Web export read nothing under docs/evidence/ (docs/ carries a .gdignore, so the import
       # pass never sees it either). docs/DECISIONS.md, M201, a CI job does not download the evidence.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           sparse-checkout-cone-mode: false
@@ -110,7 +110,7 @@ jobs:
 
       - name: Keep browser verification evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-web-browser
           path: ${{ runner.temp }}/browser-result
@@ -128,7 +128,7 @@ jobs:
         run: cp art/social-card.png build/web/social-card.png
 
       - name: Upload the Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: build/web
 
@@ -144,7 +144,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # The native form of a release: a GitHub Release on the tag, published only once the site
   # itself is live, from `tools/release-notes.py` -- deterministic from git alone, no model and
@@ -160,7 +160,7 @@ jobs:
       # Full history and every tag, unlike `build`'s partial clone above: tools/release-notes.py's
       # own `git tag --merged` and `git log --first-parent` walk back through every earlier
       # release tag and every commit between them, not just the one this workflow tagged.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           filter: blob:none
           fetch-depth: 0
@@ -170,7 +170,7 @@ jobs:
       # 3.14 and runs every repository script through `uv run python`, the same as ci.yml's
       # `gates` job does for its own Python steps.
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
 
