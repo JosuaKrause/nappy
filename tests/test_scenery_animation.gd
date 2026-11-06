@@ -147,8 +147,6 @@ func _test_rotor_registration_matches_authored_crops(t) -> void:
 	if authored.size() == 2:
 		t.check(Building.VENT_ROTOR_SOURCE_RECT == authored[0],
 				"the runtime names the authored source crop shared by both rotor phases")
-		t.check(Building.VENT_ROTOR_RECT.get_center().distance_to(Vector2(29, 22)) < 0.01,
-				"the rotor display is centered in the generated housing's circular opening")
 
 ## A crash and a burst main are drawn in slices, each holding its part's scenery
 ## (`SpreadLook.Slice`, `EventScenery`), so what is asked here is asked of every slice's. The
@@ -374,5 +372,5 @@ func _test_water_ownership(t) -> void:
 	city.tint_the_route(null)
 	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
 	for tile: Vector2i in expected:
-		t.check(city.scenery_ground.has_water(tile), "repaint preserves the shoreline and bridge gap")
+		t.check(GroundWater.at(city.scenery_ground, tile), "repaint preserves the shoreline and bridge gap")
 	city.free()

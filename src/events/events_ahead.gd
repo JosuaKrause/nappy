@@ -248,10 +248,6 @@ func a_pursuer_is_after_her() -> bool:
 	return is_instance_valid(_sent_after_her) and not _sent_after_her.is_finished \
 			and not _sent_after_her.is_leaving
 
-## The torn poster's pursuer in the world, or null — for the tests.
-func sent_pursuer() -> EventInstance:
-	return _sent_after_her if is_instance_valid(_sent_after_her) else null
-
 ## How far either side of straight up or straight down a start is tried, in radians — the robber's
 ## own cone (`ResistanceDirector.ARRIVAL_CONE`), stepped rather than rolled.
 const SENT_CONE := PI / 6.0
@@ -639,9 +635,14 @@ func light_what_she_never_met(at: Vector2) -> bool:
 	return false
 
 ## The day's placement context for the row it left for her walk, or `null` on a day that left none.
-## No game class asks; the suites and probes that need the day's siting read it here, for the
-## refusals a long wait was made of (`tests/probes/m179_fire_on_her_way.gd`) and for sitings asked
-## from points along a route.
+## **Public though no game class asks, because nothing else can say what the day's siting did.**
+## `EventsAhead` makes the siting itself from the day's tree, the calendar and the streamed plans and
+## keeps it to itself, so a test cannot hand it one; and the suites that read this confirm the work
+## it did: how many tiles it asked whether a mast may stand there (`WalkSiting.mast_checks`, which
+## `tests/test_route_bag.gd` holds to a few of a route's tiles, never the city's ground), and the
+## refusals a long wait was made of (`tests/probes/m179_fire_on_her_way.gd`). A suite that asks a
+## siting a question of its own (where a cell stands, whether a point is still ahead of her) builds
+## one over the day's tree.
 func walk_siting() -> EventScheduler.WalkSiting:
 	return _siting
 

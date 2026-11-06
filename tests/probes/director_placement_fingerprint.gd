@@ -319,7 +319,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 		var owed := van.officers_owed()
 		city.events.ahead.let_the_officers_out()
 		var men: Array[String] = []
-		for man in van.its_officers():
+		for man in MenLetOut.of(city.events, van):
 			men.append(_point(man.global_position))
 			city.events.retire(man)
 		city.events.retire(van)

@@ -33,6 +33,7 @@ extends RefCounted
 ## makes it unreachable: that the page holds exactly what the recipe asks for, here, and that
 ## every base and component the recipe names is on the page, in `tests/test_ground_layers.gd`.
 
+const BakedRegions := preload("res://tests/baked_regions.gd")
 const AUTHORED_PATH := "res://assets/ground_tileset.tres"
 const AUTHORED_GROUND: TileSet = preload(AUTHORED_PATH)
 const MANIFEST_PATH := "res://assets/ground_layers.json"
@@ -143,9 +144,8 @@ func _test_the_page_holds_what_this_bake_draws(t) -> void:
 		expected[source.resource_name] = true
 		whole += 1
 	var actual: Dictionary = {}
-	for name: StringName in AtlasTable.baked().region_names():
-		if AtlasTable.baked().group_of(name) == GroundLayers.ATLAS_GROUP:
-			actual[String(name)] = true
+	for name: StringName in BakedRegions.on(GroundLayers.ATLAS_GROUP):
+		actual[String(name)] = true
 	var extra: Array[String] = []
 	for name: String in actual.keys():
 		if not expected.has(name):

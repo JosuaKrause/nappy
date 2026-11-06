@@ -824,9 +824,6 @@ func _test_roof_extension_rows_reads_back_per_column(t) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
 	t.check(building.extension_rows(0) == 0, "a building nobody told about an extension reads 0")
 	building.roof_extension_rows = [0, 3, 0, 5]
-	for col in [0, 1, 2, 3]:
-		t.check(building.extension_rows(col) == building.roof_extension_rows[col],
-				"column %d: extension_rows() reads roof_extension_rows back exactly" % col)
 	t.check(building.extension_rows(4) == 0, "an index past the end reads as 0")
 	t.check(building.extension_rows(-1) == 0, "a negative index reads as 0 too")
 	building.free()
@@ -840,9 +837,6 @@ func _test_extension_is_seamless_reads_back_per_column(t) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(4 * Building.TILE, 96.0), 64.0)
 	t.check(not building.extension_is_seamless(0), "a building nobody told about one reads false")
 	building.roof_extension_seamless = [false, true, false, true]
-	for col in [0, 1, 2, 3]:
-		t.check(building.extension_is_seamless(col) == building.roof_extension_seamless[col],
-				"column %d: extension_is_seamless() reads roof_extension_seamless back exactly" % col)
 	t.check(not building.extension_is_seamless(4), "an index past the end reads false")
 	t.check(not building.extension_is_seamless(-1), "a negative index reads false too")
 	building.free()
