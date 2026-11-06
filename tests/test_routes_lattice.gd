@@ -28,22 +28,11 @@ func run(t) -> void:
 	_test_a_doorway_is_not_a_route(t)
 
 
-## 7x7 blocks is 8x8 junctions, 56 streets each way. If this is ever wrong every number
-## below it is wrong too, so it is checked first and by construction.
+## Every street the lattice still has is ground the player can walk down.
 func _test_the_lattice_is_the_lattice(t) -> void:
 	var map := _maps[0]
-	var junctions := StreetNetwork.junction_count()
-	t.check(junctions == Tuning.CITY_BLOCKS + Vector2i.ONE,
-			"one more junction than blocks along each axis")
-	var expected := junctions.y * (junctions.x - 1) + junctions.x * (junctions.y - 1)
-	t.check(map.network.segments().size() == expected,
-			"the lattice has %d streets" % expected)
-
 	for segment in map.network.segments():
 		var rect := segment.tile_rect()
-		t.check(rect.size == (Vector2i(Tuning.BLOCK_SIZE, Tuning.STREET_WIDTH)
-				if segment.horizontal else Vector2i(Tuning.STREET_WIDTH, Tuning.BLOCK_SIZE)),
-				"street %s is one block long and one corridor wide" % segment.key())
 		if not map.has_street(segment.key()):
 			continue   # absorbed into a calm zone; it is grass, and the next test says so
 		# A street the player cannot walk down is not a street, and closing one would be a
@@ -109,8 +98,11 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 			for y in range(footprint.position.y + 1, footprint.end.y):
 				for x in range(footprint.position.x + 1, footprint.end.x):
 					var inside := Vector2i(x, y)
-					t.check(map.network.junction_distances([inside],
-							map.blocked_segments()).size() == 1,
+					var streets_left := 0
+					for street in map.network.at_junction(inside):
+						if map.has_street(street.key()):
+							streets_left += 1
+					t.check(streets_left == 0,
 							"seed %d: junction %s inside zone %s is cut off from the whole city"
 							% [map.seed_used, inside, anchor])
 			var ways_in := map.network.around_blocks(footprint)

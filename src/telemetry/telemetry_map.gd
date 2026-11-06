@@ -225,7 +225,7 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 ## a colour that hides everything beneath it, and it made the shared trunk read as the subject of
 ## the picture rather than as a property of it. What is lost with it is a diagnostic — *a picture
 ## in which nothing is shared is a tree that has quietly become a star* — and that has to be read
-## somewhere else now: `RouteTree.bundles()` and `tests/test_route_tree.gd`, which assert the
+## somewhere else now: `tests/test_route_tree.gd`, which asserts the
 ## sharing directly rather than by eye.
 static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 	if not tree:

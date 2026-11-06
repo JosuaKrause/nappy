@@ -180,29 +180,6 @@ static func node_total() -> int:
 	var count := junction_count()
 	return count.x * count.y
 
-## Junctions within reach of `sources`, as node -> distance in streets. `closed` is a set of
-## segment keys, which is what a day does to the lattice.
-func junction_distances(sources: Array[Vector2i], closed: Dictionary) -> Dictionary:
-	var links := _adjacency
-	var distances := {}
-	var queue: Array[int] = []
-	for junction in sources:
-		var node := node_of(junction)
-		if distances.has(node):
-			continue
-		distances[node] = 0
-		queue.append(node)
-	var head := 0
-	while head < queue.size():
-		var node: int = queue[head]
-		head += 1
-		for link: Array in links[node]:
-			if closed.has(link[1] as Vector3i) or distances.has(link[0] as int):
-				continue
-			distances[link[0]] = int(distances[node]) + 1
-			queue.append(link[0])
-	return distances
-
 ## How many distinct routes lead from the doorstep street to a calm area today, counted up
 ## to `cap` — asking for more than the invariant needs is wasted work.
 ##

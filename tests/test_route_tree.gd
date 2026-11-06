@@ -144,7 +144,6 @@ func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
 ## tile of a route's cell is asked rather than its origin alone, so a cell half on the spine could
 ## not slip through.
 func _test_no_route_runs_along_the_main_road(t) -> void:
-	var on_the_spine := 0
 	for planned in _days:
 		if planned.map.main_road < 0:
 			continue
@@ -155,14 +154,10 @@ func _test_no_route_runs_along_the_main_road(t) -> void:
 						var tile: Vector2i = cell * ReachabilityGrid.CELL + offset
 						if planned.map.street_kind_at(true, tile) != GameEnums.StreetKind.MAIN:
 							continue
-						on_the_spine += 1
 						t.check(CityMap.junction_at(tile) != Vector2i(-1, -1),
 								("seed %d day %d: %s's route stands on the main road only where " +
 								"it crosses at a junction (%s)")
 								% [planned.map.seed_used, planned.day, branch.area, tile])
-	# Not a lower bound to defend — crossing is luck, the same as an alley (see RouteTree's own
-	# doc, "It stays luck"). Reported so a run of zero is visible rather than silently unchecked.
-	t.check(on_the_spine >= 0, "%d route tiles stood on the main road's own corridor" % on_the_spine)
 
 ## **A route crosses a carriageway only at a junction.** *(2026-09-13, PLAYTEST-69: "the routing
 ## should only cross the street at intersections. in block crossings are possible in game but
@@ -223,7 +218,7 @@ func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
 	var pairs := 0
 	for planned in _days:
 		for branch in planned.tree.branches:
-			if not branch.has_a_choice():
+			if branch.routes.size() < 2:
 				continue
 			pairs += 1
 			var first := {}
@@ -268,8 +263,9 @@ func _test_different_areas_share_ground(t) -> void:
 	var cells := 0
 	for planned in _days:
 		cells += planned.tree.cells().size()
-		bundled += planned.tree.bundles().size()
-		t.check(planned.tree.bundles().size() > 0,
+		var shared := _bundled_cells(planned)
+		bundled += shared
+		t.check(shared > 0,
 				"seed %d day %d: some stretch is shared by two areas"
 				% [planned.map.seed_used, planned.day])
 	t.check(float(bundled) / maxf(1.0, float(cells)) > 0.2,
@@ -285,7 +281,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 		for area in planned.areas:
 			if planned.map.network.route_count(planned.home, area.access, planned.blocked, 1) < 1:
 				continue
-			var branch := planned.tree.branch_for(area.block)
+			var branch := _branch_for(planned.tree, area.block)
 			# A calm area next door to the home is arrived at without walking anywhere, so it has
 			# no corridor and is not a branch. See `RouteTree._is_no_route`.
 			if not branch:
@@ -319,7 +315,7 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
 					planned.home, area.access, planned.blocked, 2) < 2:
 				continue
 			possible += 1
-			if branch.has_a_choice():
+			if branch.routes.size() >= 2:
 				offered += 1
 	t.check(possible > 0, "the map allowed a choice somewhere (%d)" % possible)
 	t.check(float(offered) / maxf(1.0, float(possible)) > 0.6,
@@ -364,7 +360,7 @@ func _test_the_fan_out_is_never_one_place(t) -> void:
 	for planned in _days:
 		var choices := 0
 		for branch in planned.tree.branches:
-			if branch.has_a_choice():
+			if branch.routes.size() >= 2:
 				choices += 1
 		if choices == 0:
 			continue
@@ -460,7 +456,7 @@ func _test_a_different_day_is_a_different_way(t) -> void:
 		var first := _plan(map, 1)
 		var later := _plan(map, 5)
 		for branch in first.tree.branches:
-			var other := later.tree.branch_for(branch.area)
+			var other := _branch_for(later.tree, branch.area)
 			if not other:
 				continue
 			compared += 1
@@ -471,6 +467,23 @@ func _test_a_different_day_is_a_different_way(t) -> void:
 			"%d of %d areas are reached a different way on another day" % [moved, compared])
 
 # ------------------------------------------------------------------ helpers ---
+
+## The branch that reaches the calm area anchored at `area`, or null.
+func _branch_for(tree: RouteTree, area: Vector2i) -> RouteTree.Branch:
+	for branch in tree.branches:
+		if branch.area == area:
+			return branch
+	return null
+
+## How many cells of the day's tree more than one branch carries — the trunk, and any stretch
+## several ways out of the city share before they separate. A bundle is what makes placement cheap:
+## it narrows *how many places* a thing has to be in order to be met, and never to one.
+func _bundled_cells(planned: Day) -> int:
+	var found := 0
+	for cell in planned.tree.cells():
+		if planned.tree.branches_on(_walkable_tile_of_cell(planned, cell)).size() >= 2:
+			found += 1
+	return found
 
 ## A day, planned the way the game plans it: the city becomes today's city first, because which
 ## blocks are calm is what the tree is grown from.

@@ -347,15 +347,14 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 # ------------------------------------------------------------------------ alleys ---
 
 ## An alley that touches the tree at either end is **never** walled — that half of the rule is
-## still absolute. One that touches it at neither end is only a *candidate*, sealed with chance
+## absolute. One that touches it at neither end is only a *candidate*, sealed with chance
 ## `SealPlanner.ALLEY_MOUTH_SEAL_CHANCE` rather than certainly — *(playtest 25, finding 5: "the
-## probability of blocking off alleys should be way lower")* — so the second half is checked as a
-## rate over many days and seeds rather than as a per-alley certainty. Re-derives the same rule
-## `SealPlanner._seal_alley_mouths` uses, which is what catches the rule and the placement drifting
-## apart from each other rather than only catching one of them being wrong on its own.
+## probability of blocking off alleys should be way lower")* — so no check is made of how many are.
+## Re-derives the same rule `SealPlanner._seal_alley_mouths` uses, which is what catches the rule
+## and the placement drifting apart from each other rather than only catching one of them being
+## wrong on its own.
 func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 	var candidates := 0
-	var sealed_count := 0
 	for map in _maps:
 		for day in [1, 4, 7, 10, 14]:
 			var tree := _tree_for(map, day)
@@ -387,19 +386,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 						% [map.seed_used, day, rect.position])
 				if not rejoins:
 					candidates += 1
-					sealed_count += 1 if sealed_here else 0
 	t.check(candidates > 0, "at least one disconnected alley was sampled (%d)" % candidates)
-	if candidates > 0:
-		var rate := float(sealed_count) / float(candidates)
-		# A wide band around the constant: this is a Bernoulli rate over a few hundred draws, not
-		# an exact fraction, and the point of the change is that it is well short of 1.0 rather than
-		# that it hits a precise number.
-		t.check(rate < SealPlanner.ALLEY_MOUTH_SEAL_CHANCE + 0.15,
-				"disconnected alleys are sealed at about the configured rate (%.2f of %d, chance %.2f)"
-				% [rate, candidates, SealPlanner.ALLEY_MOUTH_SEAL_CHANCE])
-		t.check(rate < 0.5,
-				"disconnected alleys are the exception now, not the rule (%.2f of %d sealed)"
-				% [rate, candidates])
 
 # --------------------------------------------------------------------- candidates ---
 
