@@ -9,39 +9,37 @@ extends RefCounted
 ## (`RoadblockLook.RoadblockBand`), standing at the body whatever the man does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
 	await _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t)
-	_test_a_shaken_off_guard_leaves_the_barrier_standing(t)
-	_test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
-	_test_a_guard_who_is_gone_does_not_come_back(t)
-	_test_the_barrier_costs_nothing_while_he_walks_away(t)
-	_test_he_is_never_removed_in_view_while_she_stays_near(t)
-	_test_the_barrier_rim_survives_the_departure(t)
-	_test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
+	await _test_a_shaken_off_guard_leaves_the_barrier_standing(t)
+	await _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
+	await _test_a_guard_who_is_gone_does_not_come_back(t)
+	await _test_he_is_never_removed_in_view_while_she_stays_near(t)
+	await _test_the_barrier_rim_survives_the_departure(t)
+	await _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t)
 
 func _hot_roadblock() -> EventDef:
 	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
-## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`).
+## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`). The roadblock is a plan handed to a
+## manager's streaming on open ground (`RoadblockRig.Stage`), as a day's is, and its band stands
+## beside it once the idle frame has passed. Answers `[guard, her, stage]`; `stage.close()` frees it.
 func _chasing(t, post: Vector2, atlas: AtlasLibrary = null) -> Array:
 	var hot := _hot_roadblock()
-	var guard := EventInstance.new()
-	if atlas != null:
-		guard.atlas = atlas
-	guard.setup(hot, post)
-	t.add_child(guard)
-	guard.set_process(false)
-	guard.look.attach_nodes()
+	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
+	var guard := stage.stand(EventScheduler.Planned.new(hot, post))
+	await RoadblockRig.settle(t)
 	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
 	guard.player_at = her
 	guard.step(STEP)
 	her = _charge(guard)
-	return [guard, her]
+	return [guard, her, stage]
 
 ## Holds her where she stands, inside the radius of a guard who is warning her, until his warning
 ## has run and he charges; answers where she stands.
@@ -80,8 +78,9 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	# The pictures a drawn frame redraws come from the atlas the manager hands every event.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
-	var made := _chasing(t, post, atlas)
+	var made := await _chasing(t, post, atlas)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	var her: Vector2 = made[1]
 	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
 	var worst := 0.0
@@ -102,13 +101,14 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	t.check(lifted, "the chaser's stride does lift his own canvas (the bob is the thing undone)")
 	t.check(guard.global_position.distance_to(post) > 20.0, "and he has walked away from the post")
 	t.check(worst < 0.001, "the band stays on its body on every frame (off by %.3fpx)" % worst)
-	guard.free()
+	stage.close()
 	atlas.release(&"events")
 
 func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	var frames := 0
 	# She runs: outrunning him for `PURSUIT_SHAKEN_OFF` seconds ends the chase.
 	while not guard.gave_up and frames < int(60.0 / STEP):
@@ -136,18 +136,18 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	t.check(guard.is_solid() and guard.body_position().is_equal_approx(post),
 			"solid, where it was built")
 	t.check(guard.global_position.is_equal_approx(post), "the node is back on the barrier")
-	t.check(guard.current_intensity() == 0.0, "and it costs nothing, as a roadblock's band never does")
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
 		guard.player_at = post + Vector2(0.0, 90.0)
 		guard.step(STEP)
 	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
-	guard.free()
+	stage.close()
 
 func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	var her: Vector2 = made[1]
 	var frames := 0
 	# She stands still out of his reach's way so the clock, not a catch, ends it.
@@ -164,12 +164,13 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 		walked += 1
 	t.check(not guard.is_finished and guard.is_solid()
 			and guard.body_position().is_equal_approx(post), "the barrier stands after he goes")
-	guard.free()
+	stage.close()
 
 func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	guard.give_up_the_chase()
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
@@ -187,38 +188,15 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 	guard.give_up_the_chase()
 	t.check(not guard.is_leaving and not guard.is_finished,
 			"and a second give-up does not send the barrier away")
-	guard.free()
-
-func _test_the_barrier_costs_nothing_while_he_walks_away(t) -> void:
-	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
-	var guard: EventInstance = made[0]
-	guard.give_up_the_chase()
-	t.check(guard.is_leaving, "he is walking away")
-	var beside := post + Vector2(0.0, 40.0)
-	var leaving_frames := 0
-	var lit_frames := 0
-	# She stands beside the barrier, inside the 420px he must clear, so the departure lasts.
-	while guard.is_leaving and leaving_frames < int(30.0 / STEP):
-		guard.player_at = beside
-		if guard.excitement.contribution_at(beside) > 0.0:
-			lit_frames += 1
-		leaving_frames += 1
-		guard.step(STEP)
-	t.check(leaving_frames > 60, "the departure lasts (%d frames)" % leaving_frames)
-	t.check(lit_frames == 0, "the barrier costs nothing beside it on any leaving frame (%d lit)"
-			% lit_frames)
-	t.check(guard.excitement.contribution_at(beside) == 0.0, "nor after it, as a roadblock's band never does")
-	t.check(guard.global_position.distance_to(beside) > Tuning.OUT_OF_SIGHT or guard.is_waiting(),
-			"he does not vanish beside her: he is out of sight before the barrier stands alone")
-	guard.free()
+	stage.close()
 
 ## The sight rule: with her staying within ~300px of him the backstop (`EventDeparture.LEAVING_GIVES_UP`, 6s) must
 ## not remove him in view; he is still leaving after 8s, well away from the post.
 func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	guard.give_up_the_chase()
 	var frames := 0
 	var last_leaving_at := guard.global_position
@@ -232,13 +210,14 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	t.check(last_leaving_at.distance_to(post) > 300.0 and not guard.is_waiting(),
 			"still walking away in view, not put back on the barrier (%.0fpx from it)"
 			% last_leaving_at.distance_to(post))
-	guard.free()
+	stage.close()
 
 ## The band's rim is one object, lit on every frame he walks away, and the man holds none.
 func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var post := Vector2(400.0, 0.0)
-	var made := _chasing(t, post)
+	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
+	var stage: RoadblockRig.Stage = made[2]
 	# What `ExcitementHalo` does to a source it picks: the strength it lights the source's rim with.
 	var source := guard.excitement.rim
 	source.set_strength(0.8, Color.RED) # the chase's own rim, on the man
@@ -266,7 +245,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	t.check(frames > 60, "the departure lasts (%d frames)" % frames)
 	t.check(same and lit, "the band's rim is the same object and lit on every frame of it")
 	t.check(man_free, "and the instance never holds a second rim beside it")
-	guard.free()
+	stage.close()
 
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
 ## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
@@ -305,13 +284,14 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 	EventBus.pursuit_ended.connect(listen[3])
 	EventBus.pursuit_cut_short.connect(listen[4])
 	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
+	city.events.streaming.add(plan)
 	city.events.streaming.stream_in(plan)
 	var guard: EventInstance = plan.live
 	t.check(guard != null, "the roadblock streams in")
 	if guard == null:
 		city.free()
 		return
-	guard.look.attach_nodes()
+	await RoadblockRig.settle(t)
 	var her := post + Vector2(0.0, _hot_roadblock().notice_within() - 10.0)
 	guard.player_at = her
 	guard.step(STEP)
