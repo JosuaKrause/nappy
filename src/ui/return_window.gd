@@ -63,7 +63,7 @@ func use_clock(clock: Callable) -> void:
 	_clock = clock
 
 ## Whether the window is still running.
-func ignoring_input() -> bool:
+func _ignoring_input() -> bool:
 	return _clock.call() < _ignored_until_msec
 
 func _process(_delta: float) -> void:
@@ -100,7 +100,7 @@ func _arm() -> void:
 
 ## Puts input back once the window has passed, or at once with `force`.
 func end(force := false) -> void:
-	if _ignored_until_msec == 0 or (not force and ignoring_input()):
+	if _ignored_until_msec == 0 or (not force and _ignoring_input()):
 		return
 	_ignored_until_msec = 0
 	if _viewport != null and is_instance_valid(_viewport):

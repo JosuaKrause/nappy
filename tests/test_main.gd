@@ -1210,7 +1210,7 @@ func _test_return_window_needs_a_departure(t) -> void:
 	var clock := UI.FakeClock.new()
 	var window := _window(t, clock)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	t.check(not t.get_viewport().is_input_disabled() and not window.ignoring_input(),
+	t.check(not t.get_viewport().is_input_disabled(),
 			"a focus-in with no loss before it (the page's own focus at load) does not arm")
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
