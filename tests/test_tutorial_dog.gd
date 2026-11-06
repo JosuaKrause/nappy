@@ -9,7 +9,7 @@ extends RefCounted
 ## her heading or off it. See `EventScheduler._place_one()` and `EventDirector.start_day()`.
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
-## her rather than announcing itself the moment it streams in — `EventDef.notice_on(day)`,
+## her rather than announcing itself the moment it streams in — `EventDef.for_day(day)`,
 ## the same day-keyed switch answered a different way, and `EventDef.for_day()` is where a
 ## placement past it gets a copy carrying that answer. **And the day-3 shape does not retire** —
 ## *(2026-09-13, PLAYTEST-68: "we can sprinkle the day 3 charging dog in every now and then,
@@ -128,23 +128,23 @@ func _test_day_4_is_never_owed_to_the_director(t) -> void:
 				("seed %d: a MAP-mode plan changes nothing about what is owed — only the sprinkle, " +
 						"rolled identically with or without it, may put the dog in the queue") % seed)
 
-## The def itself, the same direct question `_test_spawn_mode_switches_after_the_teaching_day` asks
-## of `spawn_mode_on()` — `EventDef.notice_on()` is the same day-keyed switch, read for the trigger
+## The notice a placement on a day is handed, the same question `_test_spawn_mode_switches_after_the_teaching_day`
+## asks of `spawn_mode_on()` — `EventDef.for_day()` carries the same day-keyed switch, for the trigger
 ## rather than the siting.
 func _test_the_notice_switches_after_the_teaching_day(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
 		return
-	t.check(def.notice_on(Tuning.RUN_TAUGHT_DAY) == null,
+	t.check(def.for_day(Tuning.RUN_TAUGHT_DAY).notice == null,
 			"on the teaching day itself it still charges the moment it streams in")
-	var waiting: float = def.notice_on(Tuning.RUN_TAUGHT_DAY + 1).within
+	var waiting: float = def.for_day(Tuning.RUN_TAUGHT_DAY + 1).notice.within
 	t.check(waiting > 0.0, "the day after, it waits for her to come within its own field")
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.inner_radius)
 	t.check(waiting < def.outer_radius and waiting > standoff,
 			"inside its own outer radius, an 'on sight' band before the trigger — alley_robbery's " +
 					"shape — and past the stand-off, or the notice would be spent standing still")
-	t.check(is_equal_approx(def.notice_on(Tuning.RUN_TAUGHT_DAY + 11).within, waiting),
+	t.check(is_equal_approx(def.for_day(Tuning.RUN_TAUGHT_DAY + 11).notice.within, waiting),
 			"and it stays the waiting shape for every day after that")
 
 ## The waiting itself, on the copy `EventDef.for_day()` hands a `MAP` placement past the

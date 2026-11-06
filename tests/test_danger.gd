@@ -13,18 +13,18 @@ extends RefCounted
 
 func run(t) -> void:
 	_atlas.acquire(&"events")
-	_test_a_stationary_thing_she_stands_in_is_unmarked(t)
+	await _test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
 	_test_the_caret_matches_the_halo_after_the_horizon(t)
 	_test_the_caret_follows_a_pulse_across_its_horizon(t)
 	_test_two_sources_share_the_decay_the_way_the_halo_does(t)
-	_test_a_cat_dashing_at_her_is_unmarked(t)
-	_test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
-	_test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
+	await _test_a_cat_dashing_at_her_is_unmarked(t)
+	await _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t)
+	await _test_a_telegraphing_lethal_thing_on_course_is_still_red(t)
 	_test_a_car_on_course_is_red_one_beside_her_line_is_not(t)
 	_test_a_walker_brushing_past_is_unmarked(t)
 	_test_the_arterial_at_ordinary_density_marks_nobody(t)
-	_test_the_mark_still_breathes(t)
+	await _test_the_mark_still_breathes(t)
 	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
@@ -38,6 +38,8 @@ func run(t) -> void:
 	_test_the_babys_cue_only_steps_aside_for_something(t)
 	_test_the_carried_babys_cue_stays_over_her_head(t)
 	_atlas.release(&"events")
+
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 const STEP := 1.0 / 60.0
 
@@ -59,7 +61,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 		return
 	var instance := _instance(def)
 	instance.excitement.set_player_at(instance.global_position)
-	t.check(not instance.look.wants_a_mark(),
+	t.check((await _carets(t, instance)).is_empty(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
 
@@ -298,7 +300,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
 	instance.excitement.set_player_at(Vector2(def.outer_radius, 0.0))
-	t.check(not instance.look.wants_a_mark(),
+	t.check((await _carets(t, instance)).is_empty(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
 
@@ -320,7 +322,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
 	on_course.excitement.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(on_course.look.wants_a_mark() and on_course.look.mark_colour() == Palette.MARK_LETHAL,
+	t.check(_is_the_doubled_red(await _carets(t, on_course)),
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
@@ -351,10 +353,10 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
 		cyclist.excitement.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
-		t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
+		t.check(_is_the_doubled_red(await _carets(t, cyclist)),
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
-		t.check(cyclist.look.mark_swell() < 1.0,
+		t.check((await _carets(t, cyclist))[0]["size"].x < EventPictures.MARK_WIDTH,
 				"and the swell still reads the telegraph's own damping — the flash, not the " +
 						"colour, is what says this has not happened yet")
 		cyclist.free()
@@ -367,7 +369,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
 		dog.excitement.set_player_at(dog.global_position + Vector2(60.0, 0.0))
-		t.check(dog.look.wants_a_mark() and dog.look.mark_colour() == Palette.MARK_LETHAL,
+		t.check(_is_the_doubled_red(await _carets(t, dog)),
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
 		dog.free()
@@ -378,7 +380,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
 		robber.excitement.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
-		t.check(not robber.look.wants_a_mark(),
+		t.check((await _carets(t, robber)).is_empty(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
 
@@ -481,14 +483,19 @@ func _test_the_mark_still_breathes(t) -> void:
 
 	var lowest := INF
 	var highest := 0.0
+	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
 	for i in int(round(def.pulse_period / STEP)):
 		instance.step(STEP)
-		lowest = minf(lowest, instance.look.mark_swell())
-		highest = maxf(highest, instance.look.mark_swell())
-	t.check(highest > lowest * 1.5,
-			"the mark has a real swing between beats (%.2f to %.2f)" % [lowest, highest])
+		instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+		var carets := await _carets(t, instance)
+		var width: float = carets[0]["size"].x if not carets.is_empty() else 0.0
+		lowest = minf(lowest, width)
+		highest = maxf(highest, width)
+	t.check(highest > lowest * 1.2,
+			"the mark has a real swing between beats (%.2f to %.2f px wide)" % [lowest, highest])
 	t.check(lowest > 0.0, "and never shrinks to nothing, which would read as flickering")
-	t.check(highest <= 1.0, "and never overstates what the event is emitting")
+	t.check(highest <= EventPictures.MARK_WIDTH,
+			"and never overstates what the event is emitting")
 	instance.free()
 
 # ------------------------------------------------------- the cue over the player ---
@@ -941,6 +948,28 @@ func _free_manager(manager: EventManager) -> void:
 	var run := manager.world.run
 	manager.free()
 	run.free()
+
+## The danger carets `instance` asks its drawer for, drawn in a real frame: it is put in the tree,
+## asked to redraw, and what the recording drawer holds for that draw is read back. One entry for a
+## costly mark, two stacked for a lethal one (`colour`, and `size.x` its width), none when no mark
+## is wanted.
+func _carets(t, instance: EventInstance) -> Array[Dictionary]:
+	var drawer := RecordingEventDrawer.new(_atlas)
+	instance.drawer = drawer
+	if not instance.is_inside_tree():
+		t.add_child(instance)
+	instance.queue_redraw()
+	await t.get_tree().process_frame
+	var found: Array[Dictionary] = []
+	for entry in drawer.shown():
+		if entry["kind"] == &"caret":
+			found.append(entry)
+	return found
+
+## Whether `carets` are the doubled red: two chevrons, both the lethal colour.
+func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
+	return carets.size() == 2 and carets.all(func(each: Dictionary) -> bool:
+			return each["colour"] == Palette.MARK_LETHAL)
 
 func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()

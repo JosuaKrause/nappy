@@ -762,7 +762,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## rules": *"the seals `SealPlanner` places before the scheduler runs reach crossings the rules
 ## never see, the same question one step out"*) was invisible to the very rule written to keep a
 ## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
-## wall's own bodies into the three rules — not into `room_around`'s spacing, which stays asked
+## wall's own bodies into the three rules — not into `_room_around`'s spacing, which stays asked
 ## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
 ##
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`

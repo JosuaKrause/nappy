@@ -16,7 +16,7 @@ extends RefCounted
 ## - for a door on a facade, on the sidewalk tile straight below it, inside its reach;
 ## - for day 9's district door, where an inspection lets her out: the gatehouse the arrow names,
 ##   `obstructs_radius + PLAYER_BODY_RADIUS + CHECKPOINT_RELEASE_MARGIN` (54px) past the door's line
-##   along the street, once on each side (`CheckpointController.release_finished_holds()`), so
+##   along the street, once on each side (`CheckpointController._release_finished_holds()`), so
 ##   day 9 counts two cases a city.
 ##
 ## From there `ResistanceDirector._draw_arrival_position()` — the same call `_set_the_trap_on_her()`
@@ -26,7 +26,7 @@ extends RefCounted
 ## with one, a legal
 ## start with no clear run at all, and no legal start; and, independently of the director, whether
 ## his straight run at her passes through a district door's line
-## (`CheckpointController.where_she_crossed()` over each door body).
+## (`CheckpointController._where_she_crossed()` over each door body).
 ##
 ## **Walking away.** From each start a `robber_giving_chase` is walked against her for his whole
 ## notice and chase (`EventInstance.step()` at 60 steps a second): once with her standing still,
@@ -181,8 +181,8 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 	if not plan:
 		return false
 	for body in plan.door_bodies:
-		if CheckpointController.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
-				start, her) != Vector2.INF:
+		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+				start, her):
 			return true
 	return false
 

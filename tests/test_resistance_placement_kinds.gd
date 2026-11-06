@@ -6,7 +6,7 @@ extends "res://tests/resistance_rig.gd"
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
 ## (`frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
-## `EventScheduler.open_ground_for()`, the next day's masts of `EventScheduler.place_masts()`, the
+## `EventScheduler.open_ground_for()`, the next day's masts of the day the manager plans, the
 ## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` puts her stroller in
 ## the tree with the baby a child of it, as the scene has them.
 const UI := preload("res://tests/ui_screens.gd")
@@ -736,11 +736,17 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 	t.check(others_live, "and only that mast")
 
 	# The next morning, planned from the run's own scars.
-	var tomorrow := EventScheduler.place_masts(day + 1, _city.map, 0,
-			PackedVector2Array(), run.attempt_spend.scars)
+	var next_state := CityState.new()
+	run.attempt_spend.city_state = next_state
+	next_state.begin_day(_city.map.block_plans, day + 1)
+	_city.start_day(next_state, day + 1, _rng(day + 1, "closures"))
+	_city.events.start_day(DaySpec.for_day(day + 1), _rng(day + 1, "events"), [],
+			_city.map.doorstep_world_position())
 	var quiet_tomorrow := false
 	var live_tomorrow := false
-	for plan in tomorrow:
+	for plan in _city.events.plans():
+		if plan.mast_id == "":
+			continue
 		if plan.mast_id == mast_id:
 			quiet_tomorrow = plan.silenced
 		elif not plan.silenced:

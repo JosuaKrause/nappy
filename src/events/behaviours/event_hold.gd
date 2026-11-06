@@ -37,7 +37,7 @@ func stop() -> void:
 ## One tick of a running hold: only its clock runs. **A door's body stays where it is when its hold
 ## ends**, still solid and ready to be armed again the instant she is released and clear; a
 ## mother's conversation ending is what starts her departure. **Nothing here shows her again**:
-## the release that moves her (`CheckpointController.release_finished_holds()`), later on the same
+## the release that moves her (`CheckpointController._release_finished_holds()`), later on the same
 ## physics tick as this step, shows her as it moves her.
 func step(delta: float) -> void:
 	_seconds_left = maxf(0.0, _seconds_left - delta)

@@ -175,12 +175,12 @@ func _protest_pose() -> int:
 func _picture_key() -> Vector4i:
 	# The caret's strength is cached against `age` and where she is
 	# (`ExcitementSource.caret_strength()`) and was already asked once per draw through
-	# `wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
+	# `_wants_a_mark()`, so asking it here costs a frame exactly what it always cost.
 	var caret := event.excitement.caret_strength()
 	var swell := 0.0
 	var flashed_off := false
 	if caret > 0:
-		swell = mark_swell()
+		swell = _mark_swell()
 		# The flash is the mark's telegraph phase and takes it off the screen for part of every
 		# beat, so it is part of the picture rather than of the mark's size.
 		flashed_off = event.is_telegraphing() \
@@ -390,7 +390,7 @@ func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 ## **A stationary thing never earns a caret.** Held still, nothing about it changes under the
 ## projection — see `expected_impact_at()` — which is the halo's job from the moment she is in its
 ## field, not the caret's.
-func wants_a_mark() -> bool:
+func _wants_a_mark() -> bool:
 	return event.excitement.caret_strength() > 0
 
 ## How hard the mark is breathing, 0..1, from what the event is emitting right now.
@@ -399,7 +399,7 @@ func wants_a_mark() -> bool:
 ## load-bearing: a pulsing event can be timed and slipped past between beats, and a mark that
 ## sat there at a constant size would turn the pulse envelope from something to play against
 ## into something random.
-func mark_swell() -> float:
+func _mark_swell() -> float:
 	if event.def.intensity <= 0.0:
 		return 1.0
 	return clampf(event.current_intensity() / event.def.intensity, 0.0, 1.0)
@@ -422,14 +422,14 @@ func mark_swell() -> float:
 ##
 ## So the colour is the scale and the **flash** — visible whether or not she was there when the
 ## event started — is what says it has not happened yet. See `_draw_mark`.
-func mark_colour() -> Color:
+func _mark_colour() -> Color:
 	return Palette.MARK_LETHAL if event.excitement.caret_strength() == 2 else Palette.MARK_COSTLY
 
 ## A caret over anything worth looking at, breathing with what it is currently emitting.
 ##
 ## What is deliberately *not* here: any drawing of where the danger reaches. Nothing draws a field.
 func _draw_mark() -> void:
-	if not wants_a_mark():
+	if not _wants_a_mark():
 		return
 	# **The flash is the phase**, and the only channel that can carry it: it flashes while
 	# telegraphing — *this has not happened yet* — and is steady once it has. The colour cannot do
@@ -439,24 +439,24 @@ func _draw_mark() -> void:
 			1.0) > 0.55:
 		return
 
-	var swell := mark_swell()
+	var swell := _mark_swell()
 	# Never all the way to nothing: between beats the mark shrinks, it does not vanish, or a
 	# pulsing event would read as flickering in and out of existence.
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
-	Sprites.draw_caret(event, at, EventPictures.MARK_WIDTH * scale, mark_colour())
+	event.drawer.caret(event, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
 	if event.excitement.caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		Sprites.draw_caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
-				EventPictures.MARK_WIDTH * scale, mark_colour())
+		event.drawer.caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
+				EventPictures.MARK_WIDTH * scale, _mark_colour())
 
 ## The rectangle, in the event's own space, the caret `_draw_mark()` would draw this frame — its one
 ## or two chevrons at their swell, outline included — or an empty one when no mark is wanted. The
 ## same arithmetic the drawing does, so a test can ask what is actually drawn.
 func mark_rect() -> Rect2:
-	if not wants_a_mark():
+	if not _wants_a_mark():
 		return Rect2()
-	var swell := mark_swell()
+	var swell := _mark_swell()
 	var width := EventPictures.MARK_WIDTH * (0.55 + 0.45 * swell)
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
 	var top := at.y - width * 0.8

@@ -188,15 +188,10 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 				shadow = shadow.expand(point)
 			shadow.position.y += 0.0 if not wheels.is_empty() else bob
 			parts.append(shadow)
-	if instance.look.wants_a_mark() and not (instance.is_telegraphing() \
-			and fmod(instance.age * instance.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
-		var swell: float = instance.look.mark_swell()
-		var width: float = instance.MARK_WIDTH * (0.55 + 0.45 * swell)
-		var at: float = -(instance.MARK_HEIGHT + 10.0 * swell)
-		for mark in (2 if instance.excitement.caret_strength() == 2 else 1):
-			parts.append(Rect2(-width - 1.0, at - width * 0.8 - 1.0,
-					width * 2.0 + 2.0, width * 1.3 + 2.0))
-			at -= width * 0.85
+	var mark: Rect2 = instance.look.mark_rect()
+	if mark.has_area() and not (instance.is_telegraphing() \
+			and fmod(instance.age * EventPictures.MARK_FLASHES_PER_SECOND, 1.0) > 0.55):
+		parts.append(mark)
 	return parts
 
 static func _picture_rect(instance: EventInstance, picture: String, bob: float) -> Rect2:

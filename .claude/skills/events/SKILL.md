@@ -151,7 +151,7 @@ reason something else is not warned first.** What stands in the way of it is `do
 ## The contract is per event and the player experiences the sum
 
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
-`outer_radius` clear of every other event at placement (`EventScheduler.room_around()`), and it is
+`outer_radius` clear of every other event at placement (`EventScheduler._room_around()`), and it is
 the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph.
 

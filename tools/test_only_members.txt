@@ -6,6 +6,15 @@
 # member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
 # after its '#'.
 
+# [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
+# confirm what it does (inbox #1095 and #1098 in curly-rabbit; verify's testing policy). The reason is on each line.
+src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
+src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
+src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
+src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
+src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
+src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the danger-caret suite reads the caret's colour and chevrons off a recording drawer, but the arrival sweep (tests/test_no_pop_in.gd, hundreds of arrivals) and the redraw suite ask only whether a mark has an area, and drawing each of those arrivals through a recording drawer would add a real frame and a drawer per arrival to the slowest suites for a check that reads only the area
 # [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
 # proposal, not asked for and open to the player's correction: vars, signals and constants with no
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
@@ -17,7 +26,6 @@ src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
-src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
 src/interior/interior_map.gd PARTS
@@ -41,30 +49,6 @@ src/city/poster_art.gd torn
 src/city/scenery_residency.gd camera_view
 src/city/scenery_residency.gd ordinary_guard_preparations
 src/city/traffic_signals.gd phase_of
-src/events/checkpoint_controller.gd guard_is_after_her
-src/events/checkpoint_controller.gd release_finished_holds
-src/events/checkpoint_controller.gd set_a_guard_on_her
-src/events/checkpoint_controller.gd where_she_crossed
-src/events/event_def.gd emission_at
-src/events/event_def.gd lunge_is_inside_the_catch
-src/events/event_def.gd mean_emission_along_the_line
-src/events/event_def.gd minimum_telegraph
-src/events/event_def.gd notice_on
-src/events/event_def.gd warning_time
-src/events/event_manager.gd check_hard_fails
-src/events/event_manager.gd planner
-src/events/event_manager.gd step_the_encounters
-src/events/event_scheduler.gd budget_for
-src/events/event_scheduler.gd is_spoiled
-src/events/event_scheduler.gd place_masts
-src/events/event_scheduler.gd room_around
-src/events/event_scheduler.gd street_bag
-src/events/views/event_look.gd mark_colour
-src/events/views/event_look.gd mark_swell
-src/events/views/event_look.gd wants_a_mark
-src/events/views/pursuer_look.gd masked_pursuer_pictures
-src/events/views/pursuer_look.gd policeman_pictures
-src/events/views/pursuer_look.gd robber_pictures
 src/finale/finale_planner.gd service_exit_tile
 src/interior/interior_map.gd stair_kind_for_symbol
 src/interior/interior_map_plan.gd shortest_walk
@@ -186,3 +170,5 @@ src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen hol
 src/events/event_catalogue.gd heat_levels  # the number of heat levels a run can reach (the goal plus the cold one), which all() validates every heated shape of every row over; the heat, shapes, pursuit-on-foot and resistance-trap suites loop every level of every row to hold the fairness contracts to each shape, and a test that wrote the goal plus one itself would pass when the table's range moved; nothing outward carries the range, since a run reaches one level at a time
 src/events/walk_ground.gd held_by  # the ground a placement holds the walk off for its whole length: its body and, for a van that stands and takes her, the disc of its lethal reach; the scheduler's judge reads it only as accepts()'s yes or no, and the finale rigs (tests/finale_rig.gd, escape_roadblock_rig.gd, seal_reach_rig.gd and the probes that print their tables) flood the walk with exactly these discs to hold the promise that both exits stay reachable past every body and every standing lethal reach, which no placement or instance carries as a whole; open to overturn (the real instances' solid_part_* could replace the bodies, not the reach discs)
 src/events/walk_ground.gd solids_of  # the body pieces a placement stands for the whole walk, at the place EventInstance.setup() will put them (successor included); held_by() and stand() build on it, and the finale rigs read each piece's spine and its stops_her_at() to hold that no escape body reaches over a building and that her line past a roadblock fits at its place; the same discs the judge counts, so a rig that read an instance's bodies instead would not test the judge's own prediction; open to overturn
+src/events/event_manager.gd check_hard_fails  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it
+src/events/event_manager.gd step_the_encounters  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it

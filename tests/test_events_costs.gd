@@ -108,8 +108,11 @@ func _cost_to_walk_through(def: EventDef) -> float:
 ## The same integral at running pace, with the running penalty in place of the walking decay.
 func _cost_to_run_through(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (def.mean_emission_along_the_line() - Baby.EXCITEMENT_DECAY_RUNNING
-			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
+	# The mean emission along the line is what `walk_through_cost()` charges over the walking time,
+	# the walking decay added back.
+	var mean := def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+			+ Tuning.EXCITEMENT_DECAY_WALKING
+	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
 func _signature(planned: Array) -> String:
 	var parts: Array[String] = []
@@ -396,7 +399,7 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 ## **The third case of the clearance rule, pinned over `EventDef.pursuit` rather than over
 ## either row that carries it today.** A lethal field that follows her is neither on the
 ## corridor nor off it, so placement cannot keep it clear of anything — `charging_dog` never
-## reaches `room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
+## reaches `_room_around` at all on `Tuning.RUN_TAUGHT_DAY`, when it is still `AHEAD_OF_PLAYER`
 ## and sited with no tile, and `alley_robbery` (and `charging_dog` again, past the teaching day,
 ## once `spawn_mode_on()` answers `MAP`) is exempt only because `hard_fail` always classifies a
 ## `MAP`-placed `RECURRING`/`SCRIPTED` row `WALL` before `_role_for` ever asks whether it
