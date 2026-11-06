@@ -19,8 +19,14 @@ information stays local.
 
 **Observed 2026-11-06.** When the player respawned the orchestrating session, every running
 sub-agent stopped; each resumed with its context intact on a `SendMessage` to its id, and its
-worktree held its uncommitted work. The filer's proposal, open to overturn.
+worktree held its uncommitted work. The agents were warm, which is why the resume was cheap; the
+skill gates the rule on warm, as the cold-resume rule requires. The filer's proposal, open to overturn.
 
 **Options weighed.** Putting the restart-prompt rule only in session-cleanup (rejected: the moment
 is the orchestrator's working, so orchestrating states it and session-cleanup points at it); a new
 skill (rejected: the three existing ones govern these moments).
+
+Review of the PR moved the resume rule under the cold-resume rule (warm only, newest `agent:` line,
+id printed only when the transcript is found), marked both resume sentences as proposals, made
+Settling's Running-table moves follow the batch rule, and added the board to the list of places
+state is kept.

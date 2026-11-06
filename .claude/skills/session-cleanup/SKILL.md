@@ -203,8 +203,10 @@ the next session knows what the player has written and nobody has filed yet (**i
 Nappy board's last read `rev` and last comment `seq` for each of its two tabs, Main and Review, so
 the next session reads only what changed since (**board**). Restate the scope fences that matter. If
 delegation should continue, say to start fresh agents with self-contained briefs rather than
-resuming the session's agents, except that an agent stopped by a restart is resumed by a message to
-the id on its brief (**orchestrating**, "Recovering from an interruption"). Keep the prompt self-contained and current at the moment of handover;
+resuming the session's agents, and the next session is not required to resume
+one. *Proposed, not asked for, open to the player's correction:* it may resume an agent a restart
+stopped, by a message to the id on its brief, while `tools/agent-status.sh` reports it warm
+(**orchestrating**, "Recovering from an interruption"). Keep the prompt self-contained and current at the moment of handover;
 the final report may summarize it, but the file must stand on its own.
 
 **The restart prompt never records a merge or release permission** (polite-marten). The
