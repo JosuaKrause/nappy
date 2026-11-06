@@ -70,7 +70,8 @@ func _test_its_door_is_a_reasonable_walk_from_home(t) -> void:
 	var spread := {}
 	for map in _maps:
 		var key := map.power_station_door_key
-		var away := CityGenerator.blocks_from_home(Vector2i(key.x, key.y - 1))
+		var offset := (Vector2i(key.x, key.y - 1) - map.home_block).abs()
+		var away := offset.x + offset.y
 		spread[away] = spread.get(away, 0) + 1
 		t.check(away >= CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME,
 				"seed %d: the door is %d blocks from the home, at least %d"
@@ -232,8 +233,8 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 		_repaint_for(map, day)
 		var with_spur := RouteTree.for_day(map, day)
 		var without := RouteTree.grow(map, ClosurePlanner.home_street(map),
-				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
-				_routes_rng(map, day))
+				ClosurePlanner.calm_areas(map), map.blocked_segments(),
+				ReachabilityGrid.build(map, Mover.ground()), _routes_rng(map, day))
 		# Asked of the cells the trees cover (`RouteTree.cells()`, what the dusk map draws), one entry
 		# per node, so a cell two nodes share is counted twice and the question stays the nodes'.
 		var kept := 0
@@ -250,8 +251,8 @@ func _test_no_other_day_is_bent_toward_it(t) -> void:
 		var before := Tuning.POWER_STATION_DAY - 1
 		_repaint_for(map, before)
 		var plain := RouteTree.grow(map, ClosurePlanner.home_street(map),
-				ClosurePlanner.calm_areas(map), map.blocked_segments(), RouteTree.lattice_grid(map),
-				_routes_rng(map, before))
+				ClosurePlanner.calm_areas(map), map.blocked_segments(),
+				ReachabilityGrid.build(map, Mover.ground()), _routes_rng(map, before))
 		t.check(RouteTree.for_day(map, before).cells().size() == plain.cells().size(),
 				"seed %d day %d: an ordinary day's corridor has no spur" % [map.seed_used, before])
 

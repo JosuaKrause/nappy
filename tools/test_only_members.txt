@@ -31,8 +31,6 @@ src/world/world_context.gd total_excitement_at
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
 src/build_info.gd commit_text
-src/city/city_generator.gd blocks_from_home
-src/city/city_generator.gd power_station_rank
 src/city/marble_bag.gd put_in_front
 src/city/poster_art.gd torn
 src/city/scenery_residency.gd camera_view
@@ -220,3 +218,4 @@ src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [r
 src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
 src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
+src/city/city_generator.gd power_station_rank  # the order the generator tries the free horizontal pairs in for the power station (industrial ground, then half, then the nearest to it); a city keeps only the pair it picked and how many industrial blocks it stands on, never the ones it passed over, so the preference is visible only through the rank (tests/test_power_station.gd holds the order on constructed block sets)
