@@ -92,10 +92,25 @@ The game writes a map's tile state through `close_streets()`, `seal_soft_tile()`
 minty-quail-misty-badger).
 
 ### 2.4 Run and city state written by hand
-`run.attempt_spend.scars.append({...})` (`test_acts.gd:292`), `run.attempt_spend.consumed_one_shots.append(...)` (`test_day_loop.gd:807,823`),
-`run.resistance.completed_steps.assign/clear` (`test_day6_yeller_met.gd:53`, `test_day7_van.gd:52`, `test_resistance_placement_kinds.gd:545`),
-`_run.resistance.sabotage_done = true` (`test_blackout.gd`, the game sets it at `resistance_director.gd:3122`),
-`building.powered/day/condition` writes on hand-built `Building.new()` (`test_blackout.gd`, `test_city_decay.gd`). These are fixture state on `RunState`, whose public fields the game also writes; verdict SEAM where the game's writer is a callable (`ResistanceDirector`'s completing a step, `Blackout.go_dark()`), otherwise accepted fixture.
+
+Where the game has a callable writer the tests go through it: a scar through `RunState.add_scar()`,
+a completed step through `RunState.complete_resistance_step()` with the step's own `grants_progress`,
+a day's give-back through `ResistanceRunState.give_back()`, and the sabotage through the last night's
+contact completing under a director (`test_blackout.gd`). What stays is fixture state on public
+fields no game writer reaches alone:
+
+- `run.attempt_spend.consumed_one_shots.append("burning_building")` (`test_day_loop.gd`): the
+  scheduler appends it as it places the one-shot, and a test of the give-back needs it spent without
+  planning a day.
+- `run.resistance.sabotage_done = true` in `test_blackout.gd`'s escape test, `test_day_loop.gd`,
+  `test_day_director.gd`, `test_observers.gd`, `test_main.gd`, `test_save.gd`, `test_save_wiring.gd`,
+  `test_atlas_loading.gd`, `test_run_state.gd`, `test_run_checkpoints.gd`, `finale_rig.gd` and
+  `scene_recipe_lifecycle.gd`: the state the suite needs the run to be in, where playing the finale
+  to reach it is not what the suite tests.
+- `building.powered`, `day` and `condition` on a hand-built `Building.new()` or a sampled building
+  (`test_blackout.gd`, `test_city_decay.gd`, `test_scenery_residency.gd`): the city writes them for
+  every building at once (`City` dressing a day, `Blackout`), and these suites test what one
+  building draws or does given its state.
 
 ### 2.5 `Crowd`
 Agents are placed through `add_recipe_actor()` already. Remaining: `city.crowd.clear()` (about 30 sites in `crowd_closures_rig.gd`, `crowd_rig.gd`, `test_atlas_*`, `test_crowd_*`) is the game's own call (`day_director.gd:181`), fine. No test appends to the agent list. `set_focus()` stays with its reason (section 3).
@@ -112,12 +127,12 @@ Grouped by owner. Each line: `member` (src file:line) -> tests that read it -> s
 
 **Resistance and checkpoint owners:** none of the members only tests read is left (record minty-quail-sunny-marmot); the happenings', the contact point's and the director's members only they and the tests used are internal, but for `ResistanceHappenings.cordon` and `ContactPoint.draws_a_mark`, kept with their reasons; the director's five placement queries are internal too, their sweeps relocating marks in built cities (record minty-quail-golden-chipmunk); the park cordon's are internal or kept with their reasons (records minty-quail-dappled-sparrow and minty-quail-grassy-squirrel).
 **Events: EventsAhead (`src/events/events_ahead.gd`):** `walk_siting` stays, its reason written on it (record minty-quail-olive-sparrow): `test_route_bag.gd` reads the mast checks it sites, and `EventsAhead` builds that siting itself, so no test can hand it one. Its other readers are `test_resistance_arrow.gd` and the probes `m179_fire_on_her_way.gd` and `m180_crews_on_her_way.gd`.
-**Events: EventInstance behaviours and look:** `walk_on_by_hand` (only the dev runtime; `test_event_strides`, `test_event_redraw`, `test_scene_recipe_runtime`). GAP: read the phase, position or drawn picture over real frames.
+**Events: EventInstance behaviours and look:** `walk_on_by_hand` stays: the dev runtime calls it, which counts as a game caller under the first reading. `test_event_strides` and `test_event_redraw` send the event off (`leave_for_a_completed_task()`) and step it as its manager does, and `test_scene_recipe_runtime` reads the runtime's own walk over real frames. One hand stays in `test_event_strides`: the crouched cat, whose stride no manager step puts on a step while it crouches.
 **Events: RoadblockLook / EventLook / EventPictures / DrawLayer:** `EventLook.drawn_rect_now` stays, its reason written on it (record minty-quail-olive-sparrow): the caret is drawn straight onto the event and no recorder holds it; `test_drawn_view`, `test_no_pop_in` and `test_resistance_traps` read it. `attach_nodes` and `EventPictures.boom_arm_span` are gone (record minty-quail-leafy-walrus).
 **Crowd:** `Crowd.set_focus` stays, its reason written on it (record minty-quail-lilac-walrus): the crowd's field follows the player only in the player half of its live tick, which also shoves, warns and strikes, while the rigs tick with `step()`, which has none; so a stroller handed through `use_player()` moves no field there, real frames would add bumps and strikes to every check, and recycling would drop the cars and walkers under test. Its readers: `crowd_rig.gd`, `crowd_closures_rig.gd`, `test_turns.gd`, `test_recipe_crowd.gd`, `test_crowd_yields.gd`, `test_crowd_bodies.gd`, `test_scene_recipe_stretch_crowd.gd`, `test_checkpoints.gd` and probes. Open, a change to `src/` and so a question first: hand the crowd a focus source, so that where the simulated patch stands is a game input apart from who she is, which would let `set_focus` go. `Crowd.recipe_coverage` has a dev caller; `space_out_the_traffic` stays public with its reason, since no `step()` isolates the separation pass it measures, and `CrowdLanes.busyness` is internal (record minty-quail-silver-stork).
 **City (`src/city/city.gd`):** `home_door_is_sealed` is gone, the placement suite reading the home door off the city's nodes (record minty-quail-spotted-lynx). `close_ground` and `has_water` are gone (record minty-quail-tawny-squirrel).
 **RouteTree (`src/routes/route_tree.gd`):** `trunk_used_the_spine` is gone (record minty-quail-spotted-lynx); the route tree suite reads branches, shared cells and route counts through members the planner uses (record minty-quail-lilac-walrus).
-**Dev tools (zero-reader):** the debug layers', the walk plan's, the rig lock's, the auto-screenshot's and the frame graph's members only tests read are internal, gone, or kept with their reasons (record minty-quail-downy-rabbit). Left: `RunConfig.rig_quit_seconds` and `FrameCost.*`, tools each tested through what it does elsewhere in the same suite; low priority.
+**Dev tools (zero-reader):** the debug layers', the walk plan's, the rig lock's, the auto-screenshot's and the frame graph's members only tests read are internal, gone, or kept with their reasons (record minty-quail-downy-rabbit).
 **Atlas library (`src/visuals/atlas_library.gd`):** the atlas suites read the library's load and release through the run log's page lines (record minty-quail-freckled-walrus). `is_acquired` and `reference_count` are gone (record minty-quail-leafy-walrus). `region_name_for` and `illustrated_path_for` stay: the bake calls them.
 **Stroller / Baby:** `Stroller.indicator_sources` and `Baby.set_stroller` are gone (records minty-quail-sandy-lark and minty-quail-breezy-raven).
 **Telemetry:** `Telemetry.begin_memory_log` (`telemetry.gd`), read by `test_telemetry.gd` and about 30 other sites, stays: it is the one way a test gets a live run log with no file on disk. Its reason is the design the player's answer points at (inbox #1095 in curly-rabbit): the autoload owns the log and where it lives, and only `RunSession` is handed its log, while the observer and the gameplay classes call the autoload by name, so a test cannot hand them a fake log. Open: handing the log to those classes, which would let it go.
@@ -132,7 +147,7 @@ Grouped by owner. Each line: `member` (src file:line) -> tests that read it -> s
 
 ## 4. The crowd's, the events' and RouteTree's privates in the three city suites; `test_rig_press.gd`
 
-**The city suites** (`test_city_decay.gd`, `test_blackout.gd`, `test_scenery_residency.gd`) read none of the crowd's, the events' or `RouteTree`'s privates (record minty-quail-tawny-squirrel). One hand call stays open: `test_blackout.gd` starts the events' day itself (`_city.events.start_day(DaySpec.for_day(day), rng, [], power_station_door_position())`), duplicating the call the day director makes, where the stable form is `city.start_day()` followed by `events.start_day()` as `Boot.day(main)` does; its `_city.events.plans()` read is public and stays. Otherwise what is left there is members only their own class uses, `tests-own-class-members.md`'s. The only `RouteTree` readers in tests are `test_route_tree.gd` (`branches`, `branches_on()`, a branch's `routes`), and `test_power_station.gd` (`cells()`, and `grow()` for the station day's corridor without its spur, which no day's own corridor gives, so `grow()` stays public).
+**The city suites** (`test_city_decay.gd`, `test_blackout.gd`, `test_scenery_residency.gd`) read none of the crowd's, the events' or `RouteTree`'s privates (record minty-quail-tawny-squirrel). `test_blackout.gd` starts the city's day and then the events' day, the order the day director runs them in, and its `_city.events.plans()` read is public and stays. Otherwise what is left there is members only their own class uses, `tests-own-class-members.md`'s. The only `RouteTree` readers in tests are `test_route_tree.gd` (`branches`, `branches_on()`, a branch's `routes`), and `test_power_station.gd` (`cells()`, and `grow()` for the station day's corridor without its spur, which no day's own corridor gives, so `grow()` stays public).
 
 **`test_rig_press.gd`:** reads no `_tap()` (grep finds only a comment in `test_touch.gd:194` naming it). It builds the rig with `AutoScreenshot.from_config(RunConfig.parse(words, "", true))`, sets `rig.simulation_clock = clock.read` (public field the rig reads) and lets real frames pass; the only other member is `RigLock.locked_out =` (public field); the rig lock's own-press predicate is internal and its direct test gone, the real-frames tests covering what `RigLock._input()` applies (record minty-quail-downy-rabbit).
 
