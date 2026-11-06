@@ -9,31 +9,37 @@ dependency the game's own code hands in, and where the game has no reader the te
 what the game exposes. File and line references are to `main` when the item was filed; a builder
 re-reads them.
 
-**Readings of the rule.** The first two, open to the player's overturn, rest on the Build
-paragraph's wording and leave the two weaker tiers below unscheduled; the third is a question on
-the Nappy board (members-no-reader), and builds 6, 7 and 10 wait for its answer; the fourth
-follows from the Build paragraph alone:
+**Readings of the rule.** The first, open to the player's overturn, rests on the Build
+paragraph's wording and leaves the DEV-only tier below unscheduled; the second and third are the
+player's; the fourth follows from the Build paragraph alone:
 
 - **A caller under `src/dev` counts as a game caller.** The rigs and the scene-recipe runtime are
   the composition root in `tools/layer_map.py`'s layering (**orchestrating**, "Code is designed by
   layer"), and `tests-public-seams.md` already accepts `Crowd.add_recipe_actor()` (only the recipe
   runtime calls it) as a seam. About 55 names stand on this reading.
-- **A caller in the member's own class counts.** It rests on the Build paragraph's wording, "a
-  caller among the game's own classes", which the defining class meets; minty-quail-47's "each used
-  by the game or by its own owner" is about a hand-in a field's owner writes, and minty-quail-44's
-  `Building` queries had callers in other classes too (`City`, the posters), so neither record
-  decides it. About 250 names stand on this reading.
-- **Whether a member with no reader at all stays is the player's to answer** (board question
-  members-no-reader). Records minty-quail-busy-swan (`mast_in_play()` and the `arrow_*` queries)
-  and minty-quail-downy-marten (`door_position()`, `door_axis()`, `trap()`) added queries that only
-  tests read, and `tests-public-seams.md`'s resistance sentence lists `ResistanceDirector`'s `arrow_*`, `door_*`, `trap()`,
-  `mast_in_play()`, `mark_tiles()`, `reaches_from_home()` and `fell_back()` among the seams the
-  resistance suites drive; none has a caller under `src/` (section 3). The Build paragraph says a
-  public member only a test reads is not a seam, which those records' queries are. *Proposed, not
-  asked for:* the Build paragraph wins, so each is tested through what the game exposes (the drawn
-  arrow, the plans, the world) and then removed or made private, superseding those two records'
-  choice; the same would hold for the atlas library's accounting (`is_acquired()`,
-  `reference_count()`) and `EventsAhead.walk_siting()`.
+- **A caller in the member's own class is no caller.** Told that about 250 public members are
+  called only by their own class and the tests, the player asked "so basically they're not part of
+  the API but tests use them to probe the state? so they're kind of a loophole", then answered "we
+  should add the underscore", and of the pick that each becomes internal, its tests checking what
+  the class does from outside, one staying public only where nothing outside can confirm the
+  behavior, with its reason written down, "yes, that's cleaner" (curly-rabbit #1098). That pass is
+  `tests-own-class-members.md`. This overturns the reading that the defining class counts as "a
+  caller among the game's own classes".
+- **A member with no reader at all goes.** Records minty-quail-busy-swan (`mast_in_play()` and the
+  `arrow_*` queries) and minty-quail-downy-marten (`door_position()`, `door_axis()`, `trap()`) added
+  queries that only tests read, and `tests-public-seams.md`'s resistance sentence lists
+  `ResistanceDirector`'s `arrow_*`, `door_*`, `trap()`, `mast_in_play()`, `mark_tiles()`,
+  `reaches_from_home()` and `fell_back()` among the seams the resistance suites drive; none has a
+  caller under `src/` (section 3). Asked whether such members go, the player: "delete them if
+  possible. most cases should allow similar things via mocking the affected object. if it is
+  absolutely not possible to get this information otherwise *and* this information is necessary for
+  the test to make sense / confirm the desired behavior we can keep it. although those cases might
+  be hints that the design of that module is suboptimal" (curly-rabbit #1095). **Read as:** each is
+  tested through a fake handed in or through what the game exposes (the drawn arrow, the plans, the
+  world) and then removed, superseding those two records' choice, and the same for the atlas
+  library's accounting (`is_acquired()`, `reference_count()`) and `EventsAhead.walk_siting()`; one
+  stays only where both conditions hold, and its builder writes down why and what about the module
+  makes it so.
 - **A hand-built checkpoint's facing and gate state go through a plan** (`Planned` with `facing`
   and `gate_state`, handed to `EventStreaming.add()`), not a new `spawn_extra()` parameter that only
   tests would pass.
@@ -52,24 +58,12 @@ or the member is removed/needs a design decision.
 
 ## 1. Private members reached by a route the count misses
 
-| # | file:line | expression | what it does | replacement |
-|---|---|---|---|---|
-| 1a | `tests/crowd_rig.gd:1522` | `Crowd._LINE_BUCKET` | reads the private 128px bucket width (`const _LINE_BUCKET := 128.0`, `crowd.gd:962`) to place a hut/gate across a bucket edge. The count regex needs a lowercase letter after `._`, so an upper-case constant slips by | GAP. Nothing but `Crowd` reads the width. Test through behaviour: place the gate by the corridor geometry the test already knows (a gate 4 tiles = 4*TILE_SIZE from the line, a tile either side of every multiple) and assert the car stops; drop the `bucket ==` equality check, which only pins a private. |
-| 1b | `tests/test_atlas_leaf_consumers.gd:164-166` | `[ModeButton._RESTART_ICON, ModeButton._CONTINUE_ICON, ModeButton._JOYSTICK_ICON, ModeButton._TAP_ICON, TouchControls._PAUSE_ICON, SaveIndicator._ICON]` | private region-name constants read to ask the atlas whether the ui page bakes them | GAP/decision. Each is drawn by its node via `atlas.region(_ICON)`; a test can ask what the node draws (a recording drawer, or the texture the node's `draw` used) rather than the constant. Alternative: ask `AtlasTable.baked().region_names()` for every `ui/` region and check the page-wide sweep (`test_atlas_events.gd` already does the whole-page walk for events). |
-| 1c | `tests/test_atlas_loading.gd:94` | `AtlasTable.baked().group_of(SaveIndicator._ICON)` | same private constant | same as 1b: drop it and rely on the sweep (`group_of("ui/save")` as a literal is a name the player never sees; the node's draw is the contract). |
-| 1d | `tests/test_scene_recipe_activity.gd:111,113,115` | `Building._Furniture.DUCT_RUN` and `Building._Furniture[kind]` (`kind` = upper-cased string from the recipe JSON, `.to_upper()`) | private enum (`building.gd:248`) indexed by a name built at run time, to compare against `building.recipe_roof_furniture` | GAP. `Building.roof_layout()` (public, drawn from; `test_recipe_roofs.gd` already reads it) and a recording `roof_drawer` give the units and textures the roof draws; compare those to the recipe's fixtures instead of the enum. |
-| 1e | `tests/test_touch.gd:813` | `TouchControls._FOCUS_KNOB_OFFSET`, `_FOCUS_KNOB_RADIUS` | already named in `tests-public-seams.md` (no reader but the drawing) | GAP: read the knob from what `TouchControls` draws (recording `draw`), or leave as a named exception. |
-| 1f | `tests/test_event_redraw.gd:610-615` (`_copy_of`, used `:293`) | `for property in def.get_property_list(): if property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE: copy.set(property.name, def.get(property.name))` | copies **every script variable of `EventDef`, privates included** (`_default_parts` at `event_def.gd:351`, `_cost_cache` at `:1731`) by name held in a variable | SEAM-ish: build the second def the way the catalogue does, e.g. a catalogue constructor / `EventCatalogue.by_id()` then a public field edit on a fresh `EventDef.new()`, or add a game-used `EventDef.duplicate_for_row()` only if something in `src/` would call it (nothing does: GAP -> test would write the public fields it needs onto `EventDef.new()`). |
-| 1g | `tests/test_resistance_placement_kinds.gd:410-412` | same loop over `ResistanceSteps.by_index(8).get_property_list()` copying into a `ResistanceSteps.Step.new()` | copies every script variable of `Step` (`resistance_steps.gd:52`; no private variables found, so currently only the by-name copy is hidden) | SEAM: `ResistanceDirector.use_steps()` is the game-used hand-in; build the timed step with `Step.new()` and set the public fields it needs (`deadline_fraction`), or add the field to `ResistanceSteps` as a catalogue row. |
-| 1h | `tests/test_main.gd:701` | `_one(main, "ResistanceDirector").has_method("_process")` | asserts a private engine virtual is absent (the director has no frame hook so its clock cannot run on a drawn frame) | GAP / decision. This is a structural assertion, not a seam. Behavioural replacement: boot, raise `Engine.time_scale`/`Engine.max_fps` variation, assert the director's clock advances only per physics tick (the item's frame-length claim), or accept as an exception. |
-| 1i | `tests/test_atlas_loading.gd:247-253`, `:373-376`; `tests/test_main.gd:122-125` | `"atlas" in node`, `node.get("atlas")`, `node.get_script().get_global_name()` | tree walks that find nodes by class name / property name string. `atlas` is a public field, so not private; flagged only because they are variable-name reads | no change needed (public member, found by class name). |
-| 1j | `tests/test_events_catalogue.gd:115` | `row.get(field)` over `stands_along_its_street`, `lies_across_its_street`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | reads public `@export` fields of `EventDef` by name | no change (public; could be written as direct `row.field` via a match, cosmetic). |
-| 1k | `tests/test_atlas_events.gd:55` | `load("res://src/events/views/event_pictures.gd").get_script_constant_map()` | walks every constant of `event_pictures.gd`, including any `_PRIVATE` ones | acceptable by design (its comment: the sweep exists to catch a picture named anywhere in the table); only a decision if a private constant in that file should be excluded. |
-
-Everything else in `get/set/call/callv/has_method/Callable/obj[name]/"_" + ...` scans was either a `Callable` the test
-itself holds, a dictionary `.get`, the test's own `_test_*` names (`crowd_rig.gd:41-85`, `finale_rig.gd:36-43`,
-`Callable(self, case_name)` at `crowd_rig.gd:95`), or JSON data (`snapshot["_dawn_brief"]` at `test_save.gd:688` is a
-legacy save key, not a member). No `get_indexed`, `callv`, `set_deferred`, `"_" +` string concatenation or `get/set("_x")` exists.
+No test reads a private member by a route the count misses, apart from one kept read:
+`tests/test_touch.gd` reads `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS`, since the
+knob is a `draw_circle()` straight onto the control with no drawer to record it and a headless run
+draws no pixels; the comment beside the read says so. Reads of a public member by a name held in a
+variable (`node.get("atlas")`, `row.get(field)` over the catalogue's flags, the picture table's
+constant sweep in `test_atlas_events.gd`) need no change.
 
 ---
 
@@ -98,12 +92,23 @@ handing it the manager's sources is the hand-in `main.gd` and `City` make (`test
 `test_events_chat.gd` make it too); whether `test_excitement_source.gd`'s two writes are that hand-in or a list of
 its own is for its builder to check.
 
-### 2.3 `CityMap` tile state written by hand (the game uses `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()`, `obstruct_tiles(id, tiles)` and its release)
-- `closed_tiles[tile] = true / erase / clear`: `finale_rig.gd:1270`, `test_scene_recipe_task.gd:367,369`, `test_world_passability.gd:74`, `test_turns.gd:180,240,265,294,348,360,378,391`, `routes_closures_rig.gd:138,163,244`. SEAM: `map.close_streets(Array[RoadClosure])` (`city_map.gd:862`, the only game writer); un-close via building a fresh map or `clear_day_holds()`.
-- `soft_sealed_tiles[soft] = true` (`test_world_passability.gd:75`) / `.erase` (`test_day13_guard.gd:411`): SEAM `map.seal_soft_tile()` and `clear_day_soft_seals()`.
-- `obstructed_tiles[tile] = 1 / erase`: `test_day13_guard.gd:413,418`, `test_route_rig.gd:768,775`, `test_spawn_siting.gd:252`. SEAM `obstruct_tiles(owner_id, tiles)` and its release (`park_cordon.gd:1317` calls it).
-- `alley_rects.append(rect)`: `test_event_views.gd:416-417`, `test_resistance_alley_siting.gd:425`. The game writes it only in `CityGenerator` (`city_generator.gd:1050`): GAP for a standalone map; use a generated map or `CityGenerator`'s block layout, or hand in a one-block generated city.
-- `map.building_rects = rects` (`test_ground_floor.gd:1052`), `map.main_road = i` (`test_still_watch.gd:268`), `map.stretch_active = true` (`test_scene_recipe_stretch.gd:195`): fixtures on a bare map; `recipe_city_builder.gd:171` writes `building_rects`, so the stretch/recipe path is the SEAM.
+### 2.3 `CityMap` tile state written by hand
+
+The game writes a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
+`obstruct_tiles(owner_id, tiles)` with `release_obstruction()`, and the tests do too, apart from five fixtures on a
+bare or hand-made map that no game writer can make:
+- `test_turns.gd` closes a junction box's lane tiles, a two-tile plug in an arm and lane stubs four tiles apart by
+  writing `closed_tiles`. `close_streets()` closes only the ground a street segment's two mouths cut off, so it makes
+  none of these, and closing the segment beyond the box instead changes what each check asserts. Open: re-author the
+  scenarios around a real segment closure, or a map-level hand-in for lane stubs, which only tests would call.
+- `test_resistance_alley_siting.gd` appends a 16-tile alley to `alley_rects`; no generated alley is longer than 8
+  tiles.
+- `test_ground_floor.gd` writes `building_rects` for hand-placed buildings; the recipe path writes it only from a
+  full saved scene context.
+- `test_still_watch.gd` writes `main_road = 0`, which the generator never picks (it picks among the middle
+  corridors) and only a recipe context can set.
+- `test_scene_recipe_stretch.gd` writes `stretch_active` on a 5x5 U-shaped map made as a counterexample; the test
+  is already handed the real scene's map (unused) as `_map`.
 
 ### 2.4 Run and city state written by hand
 `run.attempt_spend.scars.append({...})` (`test_acts.gd:292`), `run.attempt_spend.consumed_one_shots.append(...)` (`test_day_loop.gd:807,823`),
@@ -146,9 +151,9 @@ Verdict GAP for the arrow family: the game draws the arrow (`red_arrow_target()`
 **Tuning:** `required_horn_time` (1019), `required_horn_sight` (1024), `sleepiness_gain_calm` (62) -> `crowd_rig`, `test_blackout`, `test_police_car`, `test_fire_truck_body`, `test_tuning_fairness`, `test_meters`, `scenes`. These are functions of the tunables used only to assert fairness contracts (public, balance skill). Decision: leave (a test reading a balance helper is the design).
 **Other:** `MarbleBag.rig_spaced` (204; `test_route_bag.gd:139`, the name says it), `Crowd`/`EventScheduler.Planned` items listed in the README as having callers are SELF/DEV (below). `GroundRecipe.reads` (45; `test_ground_layers.gd`), `InteriorMapPlan.inner_floor_approaches` (351; `test_interior.gd`), `Blackout.update/distance_from_station` are called by `Blackout._physics_process` (`update` has a game caller: the blackout suite could use a stroller instead of calling `update(point)`).
 
-### Two weaker tiers (counts, for scope, not for fixing yet)
+### Two weaker tiers (counts, for scope)
 - **DEV-only readers** (the only `src/` caller is under `src/dev`, the scene-recipe/rig tools): about 55 names including `Crowd.add_recipe_actor` and `recipe_coverage`, `City.set_region_plan`, `ResistanceDirector.read_mark/start_recipe_task/scene_task_errors`, `EventManager.start_recipe`, `EventScheduler.place_at/recipe_placement`, `EventInstance.walk_on_by_hand/solid_part_centres/solid_part_shapes/is_solid`, `WorldMap.is_obstructed`, `VisibleView.visible_share`. The README already treats the recipe runtime as a game caller; the first reading above counts `src/dev` among the game's own classes (the item's own seams `add_recipe_actor`, `place_at`, `read_mark` depend on it).
-- **SELF-only readers** (public, but the only caller is the defining file itself): about 250 names, dominated by `Building` (ground-floor and roof family used by `test_ground_floor.gd`: `ground_floor_texture`, `window_texture`, `entrance_door_col`, `extension_rows`, `portico_is_drawn`, `roof_layout`, `fire_escape_*`, 20+ members), `TouchControls` geometry (`heading_to`, `in_dead_zone`, `is_double_tap`, `run_focus_for`, `boundary_x`), `FrameRecorder`/`FrameLedger` (`ledger` alone has 34 test reads), `ParkCordon` (`stretches` 34, `officers` 11, `last_gap` 7, `closed_at`, `trapped`, `relaid`), `EventScheduler.Planned` helpers (`gap_to`, `counts_against_the_line`, `denies`, `reach_touches`, `keeps_its_field_clear`, which the item names as asked "what the scheduler asks"), `ResistanceDirector` (`guard_position`, `guard_spot`, `draw_reachable`, `place_contact`, `nearest_alley_*`), `TitleScreen.hard_mode_*`, `GameSave.has_save/fail/file_data`, `FigureLook`/`PursuerLook` `*_pictures()`, `Sprites.base_transform_of`. By the Build paragraph's letter a same-class caller is a game caller, so these pass; they are internals made public for tests. If the player reads the rule more strictly (a *different* game class calls it), this tier is the main remaining body of work and should be its own sizing pass.
+- **SELF-only readers** (public, but the only caller is the defining file itself): about 250 names, dominated by `Building` (ground-floor and roof family used by `test_ground_floor.gd`: `ground_floor_texture`, `window_texture`, `entrance_door_col`, `extension_rows`, `portico_is_drawn`, `roof_layout`, `fire_escape_*`, 20+ members), `TouchControls` geometry (`heading_to`, `in_dead_zone`, `is_double_tap`, `run_focus_for`, `boundary_x`), `FrameRecorder`/`FrameLedger` (`ledger` alone has 34 test reads), `ParkCordon` (`stretches` 34, `officers` 11, `last_gap` 7, `closed_at`, `trapped`, `relaid`), `EventScheduler.Planned` helpers (`gap_to`, `counts_against_the_line`, `denies`, `reach_touches`, `keeps_its_field_clear`, which the item names as asked "what the scheduler asks"), `ResistanceDirector` (`guard_position`, `guard_spot`, `draw_reachable`, `place_contact`, `nearest_alley_*`), `TitleScreen.hard_mode_*`, `GameSave.has_save/fail/file_data`, `FigureLook`/`PursuerLook` `*_pictures()`, `Sprites.base_transform_of`. They are internals made public for tests, which the player ruled a loophole (the second reading above); `tests-own-class-members.md` is the pass that makes them internal.
 
 ---
 
@@ -177,13 +182,12 @@ The line numbers in the blackout and scenery residency suites are from before th
 Files in a build are those in the tables above. Builds with disjoint file sets can run in parallel; a shared helper (`finale_rig.gd`, `crowd_rig.gd`, `resistance_rig.gd`, `event_manager_rig.gd`) belongs to exactly one build.
 
 2. **World/manager fields through `setup_world`/`start_day`/`use_run`** (section 2.2). Files: `test_event_behaviours.gd`, `test_patrol_vanish.gd`, `test_pursuer_on_foot.gd`, `test_excitement_source.gd`, `test_event_manager.gd`, `test_invincible.gd`.
-3. **Map tile state through the map's own writers** (section 2.3). Files: `test_turns.gd`, `test_world_passability.gd`, `test_scene_recipe_task.gd`, `test_day13_guard.gd`, `test_route_rig.gd`, `test_spawn_siting.gd`, `routes_closures_rig.gd`, `test_event_views.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`, `finale_rig.gd` line 1270 (assign to build 4's owner). Disjoint from 1 (except `finale_rig.gd`) and from 4-6.
+3. **Map tile state through the map's own writers** (section 2.3): the five fixtures it lists, each open as it says. Files: `test_turns.gd`, `test_resistance_alley_siting.gd`, `test_ground_floor.gd`, `test_still_watch.gd`, `test_scene_recipe_stretch.gd`.
 4. **Escape rigs** (the finale rig's hand-built `Planned`/guard/bands, `RoadblockRig`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, the `far_guard_node`/`layer_of`/`attach_nodes` reads): `finale_rig.gd`, `escape_roadblock_rig.gd`, `seal_reach_rig.gd`, `test_barrier_stays.gd`.
-5. **Private-member routes the count misses** (section 1: `Crowd._LINE_BUCKET`, the `_ICON` constants, `Building._Furniture`, the by-name property copies). Files: `crowd_rig.gd` (1522), `test_atlas_leaf_consumers.gd`, `test_atlas_loading.gd`, `test_scene_recipe_activity.gd`, `test_event_redraw.gd`, `test_resistance_placement_kinds.gd`, `test_main.gd` (701), `test_touch.gd` (813). Small; disjoint from all but build 6/7 on `crowd_rig.gd`, `test_resistance_placement_kinds.gd`: run before them or fold.
-6. **Zero-reader members: resistance and checkpoint owners** (`ResistanceDirector` arrow/door/trap/mark accessors, `CheckpointController`, `Happenings`, `CordonTape`). Files: `test_resistance_arrow.gd`, `test_resistance_crossing.gd`, `test_resistance_alley_siting.gd`, `test_resistance_replacement.gd`, `test_resistance_traps.gd`, `test_resistance_reach_*.gd` (narrow, relocated, contacts), `test_burnt_door.gd`, `test_day13_guard.gd`, `test_park_cordon.gd`, `test_park_return.gd`, `park_cordon_sweep.gd`, `resistance_rig.gd`. Waits for the board question members-no-reader.
-7. **Zero-reader members: events and look owners** (`EventsAhead.walk_siting/sent_pursuer`, behaviour predicates, `RoadblockLook`/`EventLook`/`EventPictures`/`DrawLayer`). Files: `test_event_behaviours.gd`, `test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_route_bag.gd`, `test_event_manager_fire.gd`, `test_halo_behind.gd`, `test_event_views.gd`, `test_draw_layers.gd`, `test_drawn_view.gd`, `test_no_pop_in.gd`, `test_event_strides.gd`, `test_car_driving.gd`, `test_police_car.gd`, `test_fire_truck_body.gd`. Overlaps build 2 on `test_pursuer_on_foot.gd`/`test_patrol_vanish.gd`/`test_event_behaviours.gd`, and build 5 on `test_event_redraw.gd`; sequence after them.
-8. **Zero-reader members: crowd and RouteTree** (`set_focus`, `signals_for_tests`, `lane_key_parts`, `entry_count`, `jolt_swell`, `quietest_pavement`; `branch_for`, `bundles`, `has_a_choice`, `trunk_used_the_spine`, `junction_distances`). Files: `crowd_rig.gd`, `crowd_closures_rig.gd`, `test_car_front.gd`, `test_crowd_contributions.gd`, `test_turns.gd`, `test_recipe_composition.gd`, `test_recipe_crowd.gd`, `test_route_tree.gd`, `test_seals.gd`, `test_power_station.gd`, `test_routes_lattice.gd`. `set_focus` in `test_blackout.gd` goes with build 9. Overlap with build 3 on `test_turns.gd` and 5 on `crowd_rig.gd`.
+6. **Zero-reader members: resistance and checkpoint owners** (`ResistanceDirector` arrow/door/trap/mark accessors, `CheckpointController`, `Happenings`, `CordonTape`). Files: `test_resistance_arrow.gd`, `test_resistance_crossing.gd`, `test_resistance_alley_siting.gd`, `test_resistance_replacement.gd`, `test_resistance_traps.gd`, `test_resistance_reach_*.gd` (narrow, relocated, contacts), `test_burnt_door.gd`, `test_day13_guard.gd`, `test_park_cordon.gd`, `test_park_return.gd`, `park_cordon_sweep.gd`, `resistance_rig.gd`.
+7. **Zero-reader members: events and look owners** (`EventsAhead.walk_siting/sent_pursuer`, behaviour predicates, `RoadblockLook`/`EventLook`/`EventPictures`/`DrawLayer`). Files: `test_event_behaviours.gd`, `test_pursuer_on_foot.gd`, `test_patrol_vanish.gd`, `test_route_bag.gd`, `test_event_manager_fire.gd`, `test_halo_behind.gd`, `test_event_views.gd`, `test_draw_layers.gd`, `test_drawn_view.gd`, `test_no_pop_in.gd`, `test_event_strides.gd`, `test_car_driving.gd`, `test_police_car.gd`, `test_fire_truck_body.gd`. Overlaps build 2 on `test_pursuer_on_foot.gd`/`test_patrol_vanish.gd`/`test_event_behaviours.gd`; sequence after it.
+8. **Zero-reader members: crowd and RouteTree** (`set_focus`, `signals_for_tests`, `lane_key_parts`, `entry_count`, `jolt_swell`, `quietest_pavement`; `branch_for`, `bundles`, `has_a_choice`, `trunk_used_the_spine`, `junction_distances`). Files: `crowd_rig.gd`, `crowd_closures_rig.gd`, `test_car_front.gd`, `test_crowd_contributions.gd`, `test_turns.gd`, `test_recipe_composition.gd`, `test_recipe_crowd.gd`, `test_route_tree.gd`, `test_seals.gd`, `test_power_station.gd`, `test_routes_lattice.gd`. `set_focus` in `test_blackout.gd` goes with build 9. Overlaps build 3 on `test_turns.gd`.
 9. **City/Building/scenery** (`close_ground`, `has_water`, `home_door_is_sealed`, `Building` ground-floor family, the hand-built `Building.new()` fixtures with writes to `powered/day/condition`). Files: `test_scenery_residency.gd`, `test_blackout.gd`, `test_city_decay.gd`, `test_ground_floor.gd`, `test_scenery_animation.gd`, `test_main.gd`. `test_ground_floor.gd` overlaps build 3.
-10. **Atlas library accounting** (`is_acquired`, `reference_count`, `is_resident`, `last_load_moment`, `region_name_for`): files `test_atlas_*.gd`, `test_visuals.gd`, `test_interior.gd`. Waits for the board question members-no-reader.
+10. **Atlas library accounting** (`is_acquired`, `reference_count`, `is_resident`, `last_load_moment`, `region_name_for`): files `test_atlas_*.gd`, `test_visuals.gd`, `test_interior.gd`.
 
-Parallel groups: {2, 3, 5, 10} are pairwise file-disjoint except as noted; 6, 7, 8 follow 2, 3 and 5; 6, 7 and 10 wait for the board question members-no-reader; the SELF-only and DEV-only tiers are not scheduled (the first two readings).
+Parallel groups: {2, 3, 10} are pairwise file-disjoint except as noted; 6, 7, 8 follow 2 and 3; the DEV-only tier is not scheduled (the first reading), and the SELF-only tier is `tests-own-class-members.md`'s.
