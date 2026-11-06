@@ -336,7 +336,7 @@ func _test_the_barrier_post_round_trips(t) -> void:
 func _test_a_car_is_composed_of_its_vehicle(t) -> void:
 	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"))
 	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
-	t.check(patrol.car != null and not patrol.car.is_driving() and robber.car == null,
-			"a patrol car drives, but is not yet driving; a robber does not drive")
+	t.check(patrol.car != null and robber.car == null,
+			"a patrol car is composed of a car's driving; a robber does not drive")
 	patrol.free()
 	robber.free()

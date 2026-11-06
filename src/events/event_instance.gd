@@ -647,7 +647,7 @@ func _become_solid_once_it_starts() -> void:
 # drives — `EventCarDriving`, which answers for the car below.
 
 ## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, so a car
-## that drives stops where they stop (`EventCarDriving.room_to_its_line()`). Null in a rig with no
+## that drives stops where they stop (`EventCarDriving._room_to_its_line()`). Null in a rig with no
 ## city, which then has no red light to stop at.
 var signals: TrafficSignals = null
 
@@ -1745,7 +1745,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ##
 ## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands (`EventCarDriving.is_driving()`). A body touching her is
+## else — not behind it, not beside it, not while it stands (`EventCarDriving._is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the
 ## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
 ## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to

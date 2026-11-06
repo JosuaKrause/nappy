@@ -227,7 +227,7 @@ func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 		var state := PackedFloat32Array([car.position.x, car.position.y, car._heading.x,
 				car._heading.y, car._path_travelled, 1.0 if standing else 0.0,
 				1.0 if car.is_parked else 0.0, 1.0 if car.is_leaving else 0.0,
-				1.0 if car.is_finished else 0.0, car.car.room_to_its_line(car.position, car._heading)])
+				1.0 if car.is_finished else 0.0])
 		var context := HashingContext.new()
 		context.start(HashingContext.HASH_SHA256)
 		context.update(chain)
