@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
 	_test_every_badge_is_listed_soonest_arrival_first(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
+	_test_the_lead_window_is_a_time_and_not_a_distance(t)
 	_test_what_is_worth_an_arrow(t)
 
 ## The view as the model asks it: `margin_px` screen px past the edge are in sight too, at the
@@ -72,6 +73,23 @@ func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(
 			t.check(_up(model, "fire_truck"), "and stays up on frame %d until it is in view" % frames)
 	t.check(first_up > 0, "a fire-engine-fast thing closing from off screen is announced")
 	t.check(not _up(model, "fire_truck"), "and the badge is off once it is in view")
+
+## The range limit is a window rather than a distance: the same 800px of clear ground is a fire
+## engine at 190px/s, four seconds away and announced, and a dawdler at 40px/s, twenty seconds away
+## and somebody else's problem for now. Nothing slower than a stroll is announced at any distance.
+## Each is closed in on for a second, long enough for the badge's smoothed approach to settle.
+func _test_the_lead_window_is_a_time_and_not_a_distance(t) -> void:
+	for case: Array in [[190.0, 800.0, true], [40.0, 800.0, false],
+			[BadgeModel.CLOSING_SPEED - 1.0, 400.0, false]]:
+		var model := BadgeModel.new()
+		var thing := _vehicle(1, Vector2(case[1], 0.0), case[0])
+		thing.logged_name = "thing"
+		for i in 60:
+			thing.position.x -= thing.speed * STEP
+			_step(model, [thing])
+		t.check(_up(model, "thing") == case[2],
+				"something doing %.0fpx/s with %.0fpx to go is %s" % [case[0], case[1],
+				"announced" if case[2] else "not announced"])
 
 func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 	var model := BadgeModel.new()
@@ -173,17 +191,20 @@ func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 			"only the one that came into sight is dropped")
 
 ## The drawing, not only the model: six warnings up at once, and after a real draw the control has put
-## six arrows on the edge. Fails if the drawing limits how many it shows.
+## six arrows on the edge. Fails if the drawing limits how many it shows. An arrow draws its event's
+## picture from the atlas the control is handed, so the pictures asked for in one draw pass are the
+## arrows drawn.
 func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
-	var atlas := AtlasLibrary.new()
+	var atlas := _PictureAtlas.new()
 	atlas.acquire(&"events")
 	var source := _Source.new()
 	t.add_child(source)
 	var player := Node2D.new()
 	t.add_child(player)
+	var def := EventCatalogue.by_id("fire_truck")
 	for i in 6:
 		var at := Vector2(400.0 + 10.0 * i, -60.0 + 24.0 * i)
-		var warning := PendingWarning.new(EventCatalogue.by_id("fire_truck"),
+		var warning := PendingWarning.new(def,
 				func(_her: Vector2) -> Vector2: return at, func(_p: Vector2, _her: Vector2) -> bool: return true)
 		warning.put_up(Vector2.ZERO)
 		source.warnings.append(warning)
@@ -192,14 +213,38 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
 	edge.size = Vector2(1280.0, 720.0)
 	t.add_child(edge)
 	edge.setup(source, player)
-	for i in 3:
+	atlas.watch(edge)
+	for i in 4:
 		await t.get_tree().process_frame
 	t.check(edge.announcing().size() == 6, "six badges listed (%d)" % edge.announcing().size())
-	t.check(edge.arrows_drawn == 6, "and six arrows drawn (%d)" % edge.arrows_drawn)
+	var body := StringName(EventPictures.icon_for(def.look))
+	var drawn := 0
+	if not atlas.passes.is_empty():
+		for name: StringName in atlas.passes[atlas.passes.size() - 1]:
+			drawn += 1 if name == body else 0
+	t.check(drawn == 6, "and six arrows drawn in the last whole draw pass (%d)" % drawn)
 	edge.free()
 	player.free()
 	source.free()
 	atlas.release(&"events")
+
+## An atlas that notes the pictures a control asks for in each of its draw passes. The control's
+## `draw` signal comes before its `_draw()` in a pass, so a pass is closed by the next one's signal.
+class _PictureAtlas extends AtlasLibrary:
+	## The finished passes, each the list of region names asked for in it.
+	var passes: Array = []
+	var _asked: Array[StringName] = []
+
+	func watch(control: Control) -> void:
+		control.draw.connect(_close_the_pass)
+
+	func region(name: StringName) -> AtlasTexture:
+		_asked.append(name)
+		return super.region(name)
+
+	func _close_the_pass() -> void:
+		passes.append(_asked)
+		_asked = []
 
 ## An event source with nothing in the world and the warnings it is given.
 class _Source extends Node:

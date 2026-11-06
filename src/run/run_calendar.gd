@@ -118,7 +118,7 @@ func choose_mode(hard: bool) -> void:
 ## Whether `for_day` is one of the days a normal run keeps a checkpoint at: the first day of every
 ## act after the first, read off `Tuning.ACT_START_DAYS` (days 4, 8 and 12). Day 1 is checkpoint
 ## zero, which the registry's reset rebuilds rather than anything storing it — see `checkpoint`.
-static func is_checkpoint_day(for_day: int) -> bool:
+static func _is_checkpoint_day(for_day: int) -> bool:
 	return for_day > 1 and for_day in Tuning.ACT_START_DAYS
 
 ## The day the run goes back to when a normal run spends its last nerve: the latest checkpoint day
@@ -142,7 +142,7 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 ## hard mode**, which has none. The escape's sections never reach this: they begin no calendar day
 ## (`begin_day()`), since the run is still on its last one.
 func _keep_a_checkpoint_if_one_is_due() -> void:
-	if hard_mode or not is_checkpoint_day(header.day) or header.day <= checkpoint_day():
+	if hard_mode or not _is_checkpoint_day(header.day) or header.day <= checkpoint_day():
 		return
 	checkpoint = run_parts.run_data()
 	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % header.day)

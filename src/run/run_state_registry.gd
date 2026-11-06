@@ -37,7 +37,7 @@ func give_back() -> void:
 		part.give_back()
 
 ## The flat `"state"` snapshot: every `STATE` part's keys merged.
-func state_data() -> Dictionary:
+func _state_data() -> Dictionary:
 	var state := {}
 	for part in _parts:
 		if part.slot() == RunSubState.Slot.STATE:
@@ -46,7 +46,7 @@ func state_data() -> Dictionary:
 
 ## The keys a `"state"` snapshot must carry to be complete: whatever the `STATE` parts write.
 func state_keys() -> Array:
-	return state_data().keys()
+	return _state_data().keys()
 
 func restore_state(state: Dictionary) -> void:
 	for part in _parts:
@@ -55,7 +55,7 @@ func restore_state(state: Dictionary) -> void:
 
 ## What the save carries beside `"state"`: the `RIDER` parts' keys flat, the `NESTED` parts each
 ## under its own key.
-func rider_data() -> Dictionary:
+func _rider_data() -> Dictionary:
 	var riders := {}
 	for part in _parts:
 		match part.slot():
@@ -79,13 +79,13 @@ func restore_riders(data: Dictionary) -> void:
 				if nested is Dictionary:
 					part.restore(nested)
 
-## The registry's parts in the shape a save carries them: `state_data()` under `"state"` and the
+## The registry's parts in the shape a save carries them: `_state_data()` under `"state"` and the
 ## riders beside it. This is also exactly what a checkpoint is, so the save and the checkpoint
 ## never carry two different ideas of what a run is (`GameSave._file_data()` adds the file's
 ## own keys).
 func run_data() -> Dictionary:
-	var data := rider_data()
-	data["state"] = state_data()
+	var data := _rider_data()
+	data["state"] = _state_data()
 	return data
 
 ## The other half of `run_data()`: puts every part back from a save read off disk or from a

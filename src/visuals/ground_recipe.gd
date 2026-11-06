@@ -21,7 +21,6 @@ const PATH := "res://assets/ground_layers.json"
 
 var _manifest: Dictionary = {}
 var _read := false
-var _reads := 0
 
 ## The recipe, or `{}` when the file is missing, unreadable or not a version 1 recipe.
 func manifest() -> Dictionary:
@@ -31,7 +30,6 @@ func manifest() -> Dictionary:
 	return _manifest
 
 func _read_file() -> Dictionary:
-	_reads += 1
 	if not FileAccess.file_exists(PATH):
 		return {}
 	var parser := JSON.new()
@@ -40,7 +38,3 @@ func _read_file() -> Dictionary:
 		return {}
 	var data: Variant = parser.data
 	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
-
-## How many times this object has read the file. A suite asks that it stays at one.
-func reads() -> int:
-	return _reads
