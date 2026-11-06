@@ -22,6 +22,7 @@ extends RefCounted
 ## balancing; these must not.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 ## The rig of `test_crowd_bodies.gd`: agents placed on a straight stretch of this city's street through
@@ -1224,7 +1225,6 @@ func _test_a_precinct_stops_the_street_that_crosses_it(t) -> void:
 func _test_cars_do_not_enter_a_junction_they_cannot_leave(t) -> void:
 	var focus := CrowdLanes.arterial_pavement(_city.map)
 	_city.crowd.start_day(1, _rng(1), focus)
-	_city.crowd.set_focus(focus)
 	var frames := 0
 	var overlapping := 0
 	for i in int(60.0 / STEP):
@@ -1792,6 +1792,13 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 	t.check(rearmost.size() > 0 and stale == 0,
 			"ten seconds on, no lane's index reaches behind the cars and turns in it rather than a "
 			+ "day's worth of places (%d of %d lanes)" % [stale, rearmost.size()])
+	# And a lane nobody is in or turning into holds no place at all.
+	var haunted := 0
+	for key in LANE_KEYS.all_keys():
+		if not rearmost.has(key) and index.rearmost(key) != INF:
+			haunted += 1
+	t.check(haunted == 0,
+			"and no lane with nobody in it or turning into it still holds a place (%d do)" % haunted)
 
 ## The tightest two cars sharing a lane got, in px.
 func _closest_two_cars_in_a_lane() -> float:

@@ -112,7 +112,6 @@ func _the_day_ends_with_her_ahead(city: City, car: CrowdAgent, gap: float, secon
 	city.crowd.use_player(her)
 	_fails.clear()
 	for frame in int(round(seconds / STEP)):
-		city.crowd.set_focus(car.global_position)
 		await city.get_tree().physics_frame
 	city.crowd.use_player(null)
 	her.free()
