@@ -95,7 +95,6 @@ func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	_events.append(event)
 	_watch(event, id + "_owner")
 	# The scene is drawn in slices beside the event, each with its part's scenery.
-	event.look.attach_nodes()
 	for slice in (event.look as SpreadLook).slices():
 		for scenery in slice.get_children():
 			if not scenery is EventScenery:
