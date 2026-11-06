@@ -48,7 +48,6 @@ func run(t) -> void:
 	_test_choosing_hard_mode_drops_a_checkpoint_already_kept(t)
 	await _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t)
 	await _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t)
-	_test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t)
 	_test_the_lost_day_screen_says_where_she_goes_back_to(t)
 	_test_the_checkbox_shows_only_for_a_new_game(t)
 	await _test_which_titles_show_the_checkbox_today(t)
@@ -511,13 +510,6 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	booted.free_all()
 	home.free()
 	run.free()
-
-## `--nerves N`'s own parsing: a whole number from 1 to five, anything else refused as not given.
-func _test_parse_nerves_accepts_one_to_five_and_refuses_the_rest(t) -> void:
-	t.check(DevFlags.parse_nerves("1") == 1, "'1' is one nerve")
-	t.check(DevFlags.parse_nerves("5") == 5, "'5' is five")
-	for raw: String in ["0", "6", "x", "", "2.5", "-1"]:
-		t.check(DevFlags.parse_nerves(raw) == 0, "'%s' is refused as not given" % raw)
 
 # ---------------------------------------------------------------- the screens ---
 

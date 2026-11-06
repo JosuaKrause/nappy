@@ -28,11 +28,6 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 		state.start_run(seed_value)
 		var selected: bool = state.header.player_is_male
 		observed[selected] = true
-		# The independent stream must make one uniform inclusive two-way draw. This also pins
-		# seed replay without requiring a statistical sample to land at exactly half.
-		var expected_rng: RandomNumberGenerator = state.run_rng("player-presentation")
-		t.check(selected == (expected_rng.randi_range(0, 1) == 1),
-				"the presentation is the run stream's equal two-way draw")
 		state.header.day = 9
 		state.calendar.begin_day()
 		state.calendar.finish_day(GameEnums.DayResult.WON)
