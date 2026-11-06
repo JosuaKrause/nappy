@@ -186,7 +186,7 @@ func will_strike(her: Vector2) -> bool:
 ##
 ## - **A red light**, at a signalled junction ahead whose arm is not green
 ##   (`TrafficSignals.green_for()`; amber is not green, as it is not for a crowd car): the nose stops
-##   `Tuning.CAR_STOP_LINE_SETBACK` short of the junction box, where `Crowd.give_way_at_junctions()`
+##   `Tuning.CAR_STOP_LINE_SETBACK` short of the junction box, where `Crowd._give_way_at_junctions()`
 ##   holds the crowd's cars.
 ## - **A zebra she is waiting at**, on a street whose traffic gives way (not the main road, whose
 ##   crossings the light keeps), within `Tuning.CAR_ZEBRA_SIGHT` ahead, her within half a street of

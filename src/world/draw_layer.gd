@@ -46,13 +46,13 @@ enum Layer { BACKDROP, GROUND, BUILDINGS, DOORS, GROUND_MARKS, HALO, ENTITIES, W
 ## `layer` is an `int` rather than a `Layer` here and in every function below, because an enum
 ## named from another script does not match its own type as a parameter (the **godot** skill, "a
 ## cross-script enum is not the same type as itself").
-static func z_of(layer: int) -> int:
+static func _z_of(layer: int) -> int:
 	return layer - Layer.GROUND
 
 ## Draws `item` on `layer`, wherever it stands in the tree. Written only when it changes, so asking
 ## every frame costs no canvas update.
 static func draw_on(item: CanvasItem, layer: int) -> void:
-	var z := z_of(layer)
+	var z := _z_of(layer)
 	if item.z_as_relative or item.z_index != z:
 		item.z_as_relative = false
 		item.z_index = z

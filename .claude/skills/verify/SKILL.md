@@ -450,7 +450,8 @@ internals where the outside behaviour is what matters, and those are examples, n
   same diff and git reports its file as renamed to the added line's file, each removed line pairing with
   one added line; before a commit git sees the move only once the moved file is tracked (`git mv`,
   or `git add` it first). A listed member that is renamed is the moment to fix it (or to put it in a kept line
-  with its reason), never to carry its line. A
+  with its reason), never to carry its line. A merge of `main` that conflicts in the list is
+  resolved by `tools/merge-test-only-members.py`, which replays the branch's own added and removed lines on main's file. A
   `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
   reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
   read. The check cannot see a member whose name is also a word in another file or a test of an

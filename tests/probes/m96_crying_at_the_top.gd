@@ -42,8 +42,6 @@ class FakeWorld extends WorldContext:
 		return 1.0
 	func is_alley(_world_position: Vector2) -> bool:
 		return false
-	func total_excitement_at(_world_position: Vector2) -> float:
-		return noise
 	var _noise := ExcitementSource.new(self)
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []

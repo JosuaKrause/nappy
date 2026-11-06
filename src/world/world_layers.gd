@@ -14,7 +14,7 @@ func _init(world: Node2D) -> void:
 	_world = world
 
 ## Makes `node`, one of the world's own children or a new one added under it here, the world's node
-## for `layer` (`layer` an `int` for the reason `DrawLayer.z_of()` gives).
+## for `layer` (`layer` an `int` for the reason `DrawLayer._z_of()` gives).
 func hold(layer: int, node: Node2D, y_sorted := false) -> Node2D:
 	DrawLayer.adopt(node, layer, y_sorted)
 	if node.get_parent() == null:

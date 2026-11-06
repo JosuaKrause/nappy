@@ -170,17 +170,24 @@ func _test_a_held_door_is_the_whole_answer(t) -> void:
 	var street := Fixed.new()
 	street.pairs = [[ExcitementSource.new(street_body), 3.0]]
 	world.excitement_sources = [door, street]
-	t.close_to(world.total_excitement_at(Vector2.ZERO), 10.0,
+	t.close_to(_total_at_the_origin(world), 10.0,
 			"with nobody held, every set's pairs are summed", 0.0001)
 	t.check(world.excitement_sources_at(Vector2.ZERO).size() == 2
 			and world.excitement_sources_at(Vector2.ZERO)[0] == door.pairs[0],
 			"in the sets' own order")
 	door.alone = true
-	t.close_to(world.total_excitement_at(Vector2.ZERO), 7.0,
+	t.close_to(_total_at_the_origin(world), 7.0,
 			"inside a held door its toll is the whole answer", 0.0001)
 	world.excitement_sources = [street, door]
-	t.close_to(world.total_excitement_at(Vector2.ZERO), 7.0,
+	t.close_to(_total_at_the_origin(world), 7.0,
 			"whichever order the sets are handed in", 0.0001)
 	door_body.free()
 	street_body.free()
 	world.free()
+
+## What the meter would be charged at the origin: every pair the world answers, summed.
+func _total_at_the_origin(world: WorldContext) -> float:
+	var total := 0.0
+	for pair in world.excitement_sources_at(Vector2.ZERO):
+		total += pair[1]
+	return total

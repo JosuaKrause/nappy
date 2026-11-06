@@ -448,7 +448,7 @@ const CAR_STOPPED_SPEED := 5.0
 ## impossible"*.
 ##
 ## **The honest answer to "the main road is too quiet" has twice been something other than more
-## cars.** The spine's share is decided by `CrowdLanes.busyness` and by the axis roll, not by the
+## cars.** The spine's share is decided by `CrowdLanes._busyness` and by the axis roll, not by the
 ## population: with the arterial weight spent on one axis rather than split across a phantom
 ## east-west one, the spine holds more of the same total and adding cars only puts junction
 ## contention over the rate the suite allows.

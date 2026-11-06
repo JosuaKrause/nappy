@@ -99,10 +99,17 @@ func _test_the_turn_constants_hold_their_relationships(t) -> void:
 			+ "(%.0f over %.0f)" % [CarTurn.CAR_TURN_RADIUS_MIN, Tuning.CAR_STRIKE_HALF_WIDTH])
 	# The far-side arm is three times the radius of the near-side one, and both are fixed by where
 	# the lanes are. If a lane ever moves, these move with it rather than being re-chosen.
-	var near := absf(CrowdLanes.lane_centre(0, CrowdLanes.ROAD_OFFSETS[0])
-			- CarTurn.carriageway_edge(0, 1.0))
-	var far := absf(CrowdLanes.lane_centre(0, CrowdLanes.ROAD_OFFSETS[1])
-			- CarTurn.carriageway_edge(0, 1.0))
+	# The arc into each arm, as a car plans it from an east-bound lane: the turn away from its own
+	# kerb waits for the tail to clear it and takes a tighter arc, so the arm's own radius is the
+	# larger of its two turns'.
+	var in_lane := CrowdLanes.lane_centre(0, CrowdLanes.road_lane(false, 1.0))
+	var near := 0.0
+	var far := 0.0
+	for turning in [1.0, -1.0]:
+		near = maxf(near, CarTurn.into_an_arm(false, 1.0, 0, in_lane, 0,
+				CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO).radius)
+		far = maxf(far, CarTurn.into_an_arm(false, 1.0, 0, in_lane, 0,
+				CrowdLanes.ROAD_OFFSETS[1], turning, Vector2i.ZERO).radius)
 	t.check(near >= CarTurn.CAR_TURN_RADIUS_MIN and far > near,
 			"the near-side arm is the tightest arc the lanes allow and the far-side one is wider "
 			+ "(%.0f and %.0f px)" % [near, far])

@@ -15,10 +15,9 @@ extends Node2D
 ## that rule exists to stop.
 ##
 ## **`excitement_sources_at()` is the one exception, and it generalises rather than sits beside.**
-## It returns the same bodies `total_excitement_at()` sums, broken into `[source, contribution]`
-## pairs so `Baby` can trace what actually lands on the meter back to whichever body put it
-## there — `total_excitement_at()` is kept only because a page of existing callers want a bare
-## number and summing the pairs themselves would be the same loop repeated at every call site.
+## It returns every body that charges her at a point as `[source, contribution]` pairs, so `Baby`
+## can sum them for the meter and trace what actually lands on it back to whichever body put it
+## there.
 ##
 ## **How loud it is here is answered by what stands in the world, never summed by the world**: the
 ## sets of things that charge her (`excitement_sources`, each an `ExcitementSources`), the events'
@@ -51,17 +50,9 @@ func is_alley(_world_position: Vector2) -> bool:
 ## debug world.
 var excitement_sources: Array[ExcitementSources] = []
 
-## Summed excitement per second from every active source at this point.
-func total_excitement_at(world_position: Vector2) -> float:
-	var total := 0.0
-	for pair in excitement_sources_at(world_position):
-		total += pair[1]
-	return total
-
 ## Every active source contributing at this point, as `[source, contribution]` pairs
-## (`ExcitementSource`) — the same sources `total_excitement_at()` sums, broken out so `Baby` can
-## trace each point that lands on the meter back to whatever put it there, for `ExcitementHalo`'s
-## colour. Events and the crowd are the same kind of quantity to the baby, so their pairs simply
+## (`ExcitementSource`), so `Baby` can sum them for the meter and trace each point that lands on it
+## back to whatever put it there, for `ExcitementHalo`'s colour. Events and the crowd are the same kind of quantity to the baby, so their pairs simply
 ## concatenate, **unless she is inside a held door, where its toll is the whole answer**
 ## (`ExcitementSources.all_at()`, which states that rule once). Empty for a world with no sets.
 func excitement_sources_at(world_position: Vector2) -> Array:
@@ -72,7 +63,7 @@ func excitement_sources_at(world_position: Vector2) -> Array:
 # manager and its events, the crowd, the resistance, `main` putting her down.
 
 ## Adds `node` to this world, drawn on `layer` (`DrawLayer.Layer`; an `int` for the reason
-## `DrawLayer.z_of()` gives): `ENTITIES`, the y-sorted layer everything standing on the ground
+## `DrawLayer._z_of()` gives): `ENTITIES`, the y-sorted layer everything standing on the ground
 ## sorts in at its feet, unless the caller asks for another.
 func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
 	layers().node(layer).add_child(node)

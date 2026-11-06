@@ -25,9 +25,6 @@ class FakeWorld extends WorldContext:
 	func is_alley(_world_position: Vector2) -> bool:
 		return alley
 
-	func total_excitement_at(_world_position: Vector2) -> float:
-		return noise
-
 	## `Baby` sums `excitement_sources_at()` and traces each pair's own share back to its source's
 	## `accumulate_landed()`. This fake has no real body to attribute `noise` to, so it hands out a
 	## source of no field of its own standing on itself — no test here reads a colour, only the
