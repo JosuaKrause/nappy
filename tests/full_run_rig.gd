@@ -15,6 +15,10 @@ const SIMULATED_SECONDS := 25.0
 ## on a tick, so a different step could change what the suite sees, and nothing here shows it cannot.
 ## A day takes 250 ticks.
 const SIMULATION_SCALE := 6.0
+## How many times faster than the project's rate the engine takes those ticks (`PhysicsTicks.pass_ticks_faster()`):
+## each tick steps the game as long as before, only sooner in real time. Held near 4 because a tick of a played
+## day costs the CPU several milliseconds.
+const TICK_FACTOR := 4
 
 ## Plays the run of `seed_value` (the parts of this suite are one seed each, so none runs two minutes
 ## serial).
@@ -80,8 +84,8 @@ func _play_a_run(t, seed_value: int) -> void:
 		var placed := {}
 		for instance in city.events.instances():
 			placed[instance] = instance.global_position
-		await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
-				Callable(), SIMULATION_SCALE)
+		await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
+				TICK_FACTOR, Callable(), SIMULATION_SCALE)
 		for instance in placed.keys():
 			if is_instance_valid(instance) and instance.global_position != placed[instance]:
 				events_that_moved += 1

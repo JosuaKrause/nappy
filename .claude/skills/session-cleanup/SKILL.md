@@ -187,8 +187,9 @@ player's correction:
 A handover writes one row per open thread, and a thread whose pull request merged or was dropped
 has no row, since the pull request and its record hold it. Nothing is carried over as a log, so the
 file stays short enough to read whole, and a top that still describes finished work would read as
-work in flight. Keeping the file current between handovers is the queued entry sunny-alpaca (work
-survives an interruption), not this step. Do not require the next session to have read this
+work in flight. The file is also kept current during the session, whenever that is cheap, so a session
+cut off without a handover leaves a file a fresh one can reorient from; this step rewrites it whole
+(inbox #986 in brisk-pelican). Do not require the next session to have read this
 conversation or to resume an old agent transcript. The prompt tells it to fetch and inspect live PR
 state (`gh pr list`, `tools/agent-status.sh`) and the inbox (`uv run python tools/inbox.py list`),
 then read `CLAUDE.md` and `docs/TODO.md`, run `tools/queue.sh`, and
@@ -202,7 +203,10 @@ the next session knows what the player has written and nobody has filed yet (**i
 Nappy board's last read `rev` and last comment `seq` for each of its two tabs, Main and Review, so
 the next session reads only what changed since (**board**). Restate the scope fences that matter. If
 delegation should continue, say to start fresh agents with self-contained briefs rather than
-resuming the session's agents. Keep the prompt self-contained and current at the moment of handover;
+resuming the session's agents, and the next session is not required to resume
+one. *Proposed, not asked for, open to the player's correction:* it may resume an agent a restart
+stopped, by a message to the id on its brief, while `tools/agent-status.sh` reports it warm
+(**orchestrating**, "Recovering from an interruption"). Keep the prompt self-contained and current at the moment of handover;
 the final report may summarize it, but the file must stand on its own.
 
 **The restart prompt never records a merge or release permission** (polite-marten). The

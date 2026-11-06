@@ -592,7 +592,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 			door_rng.seed = hash("%d:door:%d:%d" % [seed_value, day, draw])
 			# The day's own draws, from the door stream: the mark, then the door its touch sends her
 			# to — each draw a day of its own, as a retried day is, with the run as the dawn left it.
-			run.resistance.completed_steps.clear()
+			run.resistance.give_back()
 			run.facts.completed_resistance_alley_tiles = []
 			director.start_day(day, door_rng, 300.0)
 			_read_the_mark(director)

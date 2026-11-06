@@ -26,7 +26,8 @@ The post-edit lint hook does not replace `./tools/lint.sh` before committing a g
 
 **The orchestrating Claude Code session has the player's standing permission to merge a pull
 request** once **committing**'s merge gates hold (its review ready against the head, or a delta
-review of what came after; green CI); a release still needs its own go-ahead (inbox #1063 in gentle-walrus).
+review of what came after; green CI); a release still needs its own go-ahead (inbox #1063 in gentle-walrus). **committing**'s "Merging" says where that permission has to live for Claude Code's auto-mode classifier to act on it (the
+player's `~/.claude/settings.json`) and what is done on a refusal (the filer's proposal, curly-rabbit #1094).
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under

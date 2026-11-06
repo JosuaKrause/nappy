@@ -63,8 +63,23 @@ func _end() -> void:
 
 ## The city after the sabotage is done and she has walked far enough south of the station.
 func _go_dark(t) -> void:
-	_run.resistance.sabotage_done = true
+	_do_the_sabotage()
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
+
+## The sabotage done the way the game does it: the last night's contact at the power station
+## completed (`ContactPoint.complete_now()`) under a director over the city, which sets the run's
+## flag, after every errand before it is completed (`RunState.complete_resistance_step()`) so the
+## finale is on offer. The director is freed with the city.
+func _do_the_sabotage() -> void:
+	for step in ResistanceSteps.all():
+		if not step.needs_goal:
+			_run.complete_resistance_step(step.index, step.grants_progress)
+	var director := ResistanceDirector.new()
+	_city.add_child(director)
+	director.set_process(false)
+	director.setup(_city, _city.map)
+	director.start_day(Tuning.RUN_LENGTH_DAYS, _rng("resistance"), 300.0)
+	director.contact().complete_now()
 
 ## She stands at `point` for two physics ticks, which is how often the blackout looks at where she
 ## is: a stroller of the city's with its own physics off, so nothing moves her.
@@ -137,7 +152,7 @@ func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 ## The station must be off screen before it goes, so the moment is the city going dark round her.
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
 	_begin(t)
-	_run.resistance.sabotage_done = true
+	_do_the_sabotage()
 	await _she_stands_at(t, _city.map.power_station_door_position())
 	t.check(not _is_dark(), "at the door she has just touched, nothing is off yet")
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
@@ -215,7 +230,7 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 	_begin(t)
 	await _go_dark(t)
 	t.check(_is_dark(), "the power was off before the retry")
-	_run.resistance.sabotage_done = false
+	_run.resistance.give_back()
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _is_dark(), "with the sabotage given back, the power is back")
 	t.check(_city.signals.is_signalled(_spine_junction()), "and the lights decide the spine again")
@@ -353,7 +368,7 @@ func _spine_traffic(t) -> Vector2:
 			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
 				totals.stopped += 1
 		return false
-	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(40.0, 1.0), sample)
+	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(40.0, 1.0), PhysicsTicks.FASTER, sample)
 	_city.crowd.use_player(null)
 	her.free()
 	_sampled_cars = totals.samples

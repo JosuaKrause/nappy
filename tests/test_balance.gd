@@ -108,7 +108,7 @@ func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 		var note := func(ran: int) -> void:
 			if settled[0] < 0.0 and _baby.state == GameEnums.BabyState.ASLEEP:
 				settled[0] = (before + ran) * STEP * TIME_SCALE
-		await PhysicsTicks.pass_ticks(t, chunk, note, TIME_SCALE)
+		await PhysicsTicks.pass_ticks_faster(t, chunk, PhysicsTicks.FASTER, note, TIME_SCALE)
 		ticked += chunk
 	return settled[0]
 
