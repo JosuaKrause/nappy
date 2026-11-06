@@ -187,7 +187,6 @@ src/run/run_state_registry.gd rider_data
 src/run/run_state_registry.gd state_data
 src/run/summary_model.gd clock_line
 src/run/summary_model.gd resistance_tally
-src/run_config.gd day_length_override
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
 src/telemetry/telemetry_map.gd role_mark
