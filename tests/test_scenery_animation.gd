@@ -176,8 +176,9 @@ func _test_event_parts(t) -> void:
 			var moving: Array[SceneryLayer] = []
 			var still: Array[SceneryLayer] = []
 			for scenery: EventScenery in sceneries:
-				moving.append_array(scenery.moving_layers)
-				still.append_array(scenery.static_layers)
+				var split := _split_by_animation(scenery)
+				moving.append_array(split[0])
+				still.append_array(split[1])
 			t.check(sceneries.size() > 1 and not moving.is_empty(),
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := _body_of(instance)
@@ -236,7 +237,7 @@ func _test_event_parts(t) -> void:
 			await t.get_tree().process_frame
 			var rebound := false
 			for scenery in _sceneries_of(instance):
-				rebound = rebound or not scenery.moving_layers.is_empty()
+				rebound = rebound or not _split_by_animation(scenery)[0].is_empty()
 			t.check(rebound, "reentry rebinds event scenery regions")
 			var again := _sceneries_of(instance)
 			instance.free()
@@ -261,6 +262,27 @@ func _all_differ(a: Array[Texture2D], b: Array[Texture2D]) -> bool:
 	return true
 
 ## The scenery behind each of `instance`'s slices, in the slices' order.
+## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its `set_frame()`
+## turns to their alternate frame, the still ones the rest (its contact shadow and its static spans).
+## The frame it had is put back.
+func _split_by_animation(scenery: EventScenery) -> Array:
+	var layers: Array[SceneryLayer] = []
+	for child in scenery.get_children():
+		if child is SceneryLayer:
+			layers.append(child)
+	var had := {}
+	for layer in layers:
+		had[layer] = layer.frame_b
+	scenery.set_frame(true)
+	var turned_on: Array[SceneryLayer] = layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b)
+	scenery.set_frame(false)
+	var moving: Array[SceneryLayer] = turned_on.filter(
+			func(l: SceneryLayer) -> bool: return not l.frame_b)
+	var still: Array[SceneryLayer] = layers.filter(
+			func(l: SceneryLayer) -> bool: return not moving.has(l))
+	scenery.set_frame(not moving.is_empty() and had[moving[0]])
+	return [moving, still]
+
 func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
 	var found: Array[EventScenery] = []
 	for slice in (instance.look as SpreadLook).slices():

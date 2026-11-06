@@ -55,8 +55,6 @@ src/events/event_def.gd warning_time
 src/events/event_manager.gd check_hard_fails
 src/events/event_manager.gd planner
 src/events/event_manager.gd step_the_encounters
-src/events/event_scenery.gd moving_layers
-src/events/event_scenery.gd static_layers
 src/events/event_scheduler.gd budget_for
 src/events/event_scheduler.gd is_spoiled
 src/events/event_scheduler.gd place_masts
