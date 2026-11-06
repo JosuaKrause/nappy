@@ -13,7 +13,7 @@ at the top level of a `.gd` file under `src/`, its name not starting with `_` --
   it. A caller in the member's own defining file does not (inbox #1098).
 
 A member read by a test is test-only, and belongs to one of two groups of the list: **no reader**
-(no other word of the name anywhere in its own file either; inbox #1097) or **own file only** (used
+(no other word of the name anywhere in its own file either; inbox #1095) or **own file only** (used
 by its own file, so internal: it gets the underscore and its tests go through what the class does
 outward; inbox #1098). The own-file rule applies to functions, vars and signals, **not to
 constants**: a test reading a constant to assert a relationship is what the testing policy wants, so a

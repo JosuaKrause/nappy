@@ -4,7 +4,7 @@
 # gone. The pull request that fixes a member deletes its line. A new test-only member is added only
 # to the kept group, with its reason.
 
-# No reader anywhere under src/, constants included (inbox #1097). Each gets a reader in the game,
+# No reader anywhere under src/, constants included (inbox #1095). Each gets a reader in the game,
 # or its tests go through what the game exposes, or it is deleted.
 src/autoload/game_save.gd FILE_KEYS
 src/autoload/game_state.gd penalise_resistance
@@ -53,10 +53,6 @@ src/events/views/spread_look.gd attach_nodes
 src/interior/interior_map_plan.gd inner_floor_approaches
 src/interior/interior_map.gd PARTS
 src/interior/interior_tileset.gd region_name_for
-src/main.gd use_quit
-src/main.gd use_reload
-src/main.gd use_save
-src/main.gd use_sitting_home
 src/player/baby.gd set_stroller
 src/player/stroller.gd indicator_sources
 src/resistance/cordon_tape.gd body_rect
@@ -75,7 +71,6 @@ src/resistance/resistance_director.gd mark_tiles
 src/resistance/resistance_director.gd mast_in_play
 src/resistance/resistance_director.gd reaches_from_home
 src/resistance/resistance_director.gd trap
-src/resistance/resistance_director.gd use_steps
 src/routes/route_tree.gd branch_for
 src/routes/route_tree.gd bundles
 src/routes/street_network.gd junction_distances
@@ -87,12 +82,8 @@ src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/telemetry/run_session.gd observer
 src/ui/frame_graph.gd classes
-src/ui/mode_button.gd use_clock
-src/ui/return_window.gd use_clock
 src/ui/save_indicator.gd shows_struck
 src/ui/title_screen.gd mode_name_shown
-src/ui/title_screen.gd use_clock
-src/ui/touch_controls.gd use_clock
 src/visuals/atlas_library.gd illustrated_path_for
 src/visuals/atlas_library.gd is_acquired
 src/visuals/atlas_library.gd is_resident
@@ -219,7 +210,6 @@ src/events/event_footprints.gd picture_drop_of
 src/events/event_manager.gd check_hard_fails
 src/events/event_manager.gd planner
 src/events/event_manager.gd step_the_encounters
-src/events/event_manager.gd use_the_spec
 src/events/event_manager.gd walks_under_a_boom
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
@@ -254,7 +244,6 @@ src/interior/interior_scene.gd windows_are_flashing
 src/main.gd day_spec
 src/main.gd escape_part_for
 src/main.gd escape_section_spec
-src/main.gd use_sitting
 src/player/baby.gd overflow_mass
 src/player/stroller.gd baby_cue_aside
 src/player/stroller.gd baby_cue_lift
@@ -383,3 +372,16 @@ src/world/spawn_siting.gd seen_from
 src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so verify's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
 src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs; tests/test_tuning_fairness.gd and tests/crowd_rig.gd check CAR_HORN_SIGHT against it, the same fairness contract (crowd-traffic)
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind verify wants
+
+# Kept public as hand-ins (inbox #1098): each hands the object what it depends on, the default being the real one.
+src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_reload  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_save  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_sitting  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_sitting_home  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/resistance/resistance_director.gd use_steps  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/mode_button.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/return_window.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/title_screen.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)

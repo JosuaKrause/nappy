@@ -426,7 +426,9 @@ internals where the outside behaviour is what matters, and those are examples, n
   where nothing outside can confirm the behavior, with the reason written down: its line in the kept
   group of `tools/test_only_members.txt` carries the reason (the fairness helpers
   `Tuning.required_horn_time`, `required_horn_sight` and `sleepiness_gain_calm` are there, since the
-  relationship tests above rest on them). The same check enforces it. *Proposed by the orchestrator,
+  relationship tests above rest on them), and so is a hand-in: a `use_*` setter that hands the
+  object what it depends on, the game using its default and a test handing in a fake (dependency
+  injection). The same check enforces it. *Proposed by the orchestrator,
   not asked for, open to the player's correction:* the rule does not reach constants, since a test
   reading a constant to assert a relationship is what this policy wants; a constant is flagged only
   when nothing under `src/` uses it, its own file included. The list only shrinks, and the check fails
