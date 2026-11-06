@@ -149,7 +149,7 @@ mode and change no shard plan: which suites a shard runs is the cost table's, on
 its process is the seed's. CI's shards use the run's id as the seed, so an order dependence between
 two suites shows on any pull request: **a shard that fails in CI is replayed by copying the `REPLAY`
 line out of that shard's log** (it names the suites in the order they ran and needs no cost table),
-or with `TEST_SUITE_COSTS=<the plan job's table> tools/test.sh --shard I/8 --shuffle <run id>`, the
+or with `TEST_SUITE_COSTS=<the plan job's table> tools/test.sh --shard I/12 --shuffle <run id>`, the
 line the shard's log prints first. An order-dependent failure is fixed in its own pull request, not
 by pinning the order. `--repeat 2 --shuffle N` on a few suites is the cheap way to look for a leak
 between passes (a `static var`, an autoload field) before CI does.
