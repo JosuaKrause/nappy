@@ -6,6 +6,8 @@ extends Node
 
 signal sampled(row: Dictionary)
 const CITY: PackedScene = preload("res://scenes/world/city.tscn")
+## The world rectangle the camera shows, read off the viewport rather than asked of the residency.
+const CameraWorldView := preload("res://tests/probes/camera_world_view.gd")
 const EXTENT := Vector2(640, 360)
 var _city: City
 var _camera: Camera2D
@@ -79,7 +81,7 @@ func _finish_frame() -> void:
 	var ended := Time.get_ticks_usec()
 	var ground := _city.scenery_ground
 	var gaps := 0
-	if not _city.scenery.camera_view().is_equal_approx(_request.view):
+	if not CameraWorldView.of(_city.get_viewport()).is_equal_approx(_request.view):
 		_failures.append("camera geometry differs from coverage geometry")
 	for key in ground.keys_in(_request.view):
 		gaps += int(not ground.chunks.has(key))
