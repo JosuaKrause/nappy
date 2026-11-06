@@ -7,9 +7,9 @@ extends RefCounted
 ## rectangle `AtlasLibrary.region()` hands a draw call.
 ##
 ## Every sweep below is over every region the bake wrote (`tests/baked_regions.gd`) and carries a
-## count with it, because a sweep that silently finds nothing is the way this file has failed before: its predecessor walked
-## `event_instance.gd`'s constants for `Texture2D`s, and passed vacuously on an empty map the day
-## those constants became region names.
+## count with it, because a sweep that silently finds nothing is the way this file has failed
+## before: its predecessor walked `event_instance.gd`'s constants for `Texture2D`s, and passed
+## vacuously on an empty map the day those constants became region names.
 ##
 ## **Three of the rules are the illustrated transfer's own, and are asked of the default bake
 ## alone.** A redrawn picture owes its source the same registration — the same anchor, the same

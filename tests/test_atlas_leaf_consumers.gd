@@ -22,9 +22,11 @@ func run(t) -> void:
 	_test_building_acquires_and_releases_buildings(t)
 	_test_every_street_kit_region_is_baked_on_its_group(t)
 	_test_street_kit_consumers_share_one_reference_count(t)
+	_test_each_street_kit_consumer_holds_its_own_reference(t)
 	_test_city_edge_also_holds_ground(t)
 	_test_every_ui_region_is_baked_on_its_group(t)
 	_test_ui_consumers_share_one_reference_count(t)
+	_test_each_ui_consumer_holds_its_own_reference(t)
 	_test_every_interior_region_is_baked_on_its_group(t)
 	_test_interior_tileset_regions_are_baked_on_the_interior_group(t)
 	_test_interior_scene_acquires_and_releases_interior(t)
@@ -116,12 +118,14 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 	t.check(AtlasTable.baked().group_of(CityEdge.MOUNTAIN) == &"ground",
 			"the city edge's mountain tile is on the ground page, not street_kit")
 
-## `ClosureMarker`, `TrafficLight` and `CityEdge` each acquire `street_kit` independently, from
-## three different files, and the group still counts references rather than loading three pages.
+## `ClosureMarker`, `TrafficLight`, `CityEdge` and `ParkFenceMarker` each acquire `street_kit`
+## independently, from different files, and the group still counts references rather than loading
+## four pages.
 ##
-## Freed one at a time, each of the first three leaves the page to the rest, so a consumer that took
-## no reference of its own, and drew on the others' page, would drop it early; and a consumer that
-## never gave its reference back would leave it held after the last.
+## Which consumers share it is this test; that each of them takes a reference of its own is
+## `_test_each_street_kit_consumer_holds_its_own_reference`, since a release line comes only when
+## the count reaches zero and a consumer that took none would go unseen here unless it were freed
+## last.
 func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
@@ -145,10 +149,47 @@ func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 	marker.free()
 	light.free()
 	t.check(pages.releases(&"street_kit") == 0,
-			"each consumer holds a reference of its own: three freed leave the page to the fourth")
+			"freeing three of the four leaves the page to the one that remains")
 	edge.free()
 	t.check(pages.releases(&"street_kit") == 1,
 			"freeing every street-kit consumer releases the group, with nothing left over")
+	pages.stop()
+
+## Each street-kit consumer, alone on a library of its own, takes the page when it enters the tree
+## and gives it back when it leaves: one load, held, then exactly one release. A consumer that took
+## no reference, and drew on a page somebody else held, is held by nothing here and fails.
+func _test_each_street_kit_consumer_holds_its_own_reference(t) -> void:
+	var makers := {
+		"the closure marker": func(atlas: AtlasLibrary) -> Node:
+			var node := ClosureMarker.new()
+			node.atlas = atlas
+			return node,
+		"the traffic light": func(atlas: AtlasLibrary) -> Node:
+			var node := TrafficLight.new()
+			node.atlas = atlas
+			return node,
+		"the city edge": func(atlas: AtlasLibrary) -> Node:
+			var node := CityEdge.new()
+			node.atlas = atlas
+			return node,
+		"the park fence": func(atlas: AtlasLibrary) -> Node:
+			var node := ParkFenceMarker.new()
+			node.atlas = atlas
+			return node,
+	}
+	for label in makers:
+		_check_holds_its_own(t, makers[label], &"street_kit", label)
+
+## One consumer alone on a fresh library and run log: it is seen to hold `group` on entering the
+## tree, and the group's one release line comes when it leaves.
+func _check_holds_its_own(t, make: Callable, group: StringName, label: String) -> void:
+	var pages := PageLog.new()
+	var node: Node = make.call(AtlasLibrary.new())
+	t.add_child(node)
+	t.check(pages.held(group), "%s takes the '%s' page on its own" % [label, group])
+	node.free()
+	t.check(pages.releases(group) == 1,
+			"%s gives its '%s' reference back when it leaves" % [label, group])
 	pages.stop()
 
 ## The city edge is the one consumer with two groups — see `city_edge.gd`'s own doc for why it
@@ -190,7 +231,8 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 ## `ModeButton`, `TouchControls` and `SaveIndicator` all acquire `ui` — the whole run's own group,
 ## including the title screen where no city exists — from three different files.
 ##
-## Freed one at a time, as the street kit's are, so each is seen to hold a reference of its own.
+## This test is that they share one page and release it after the last; that each takes a reference
+## of its own is `_test_each_ui_consumer_holds_its_own_reference`.
 func _test_ui_consumers_share_one_reference_count(t) -> void:
 	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
@@ -209,11 +251,31 @@ func _test_ui_consumers_share_one_reference_count(t) -> void:
 	button.free()
 	controls.free()
 	t.check(pages.releases(&"ui") == 0,
-			"each consumer holds a reference of its own: two freed leave the page to the third")
+			"freeing two of the three leaves the page to the one that remains")
 	indicator.free()
 	t.check(pages.releases(&"ui") == 1,
 			"freeing every UI consumer releases the group, with nothing left over")
 	pages.stop()
+
+## Each UI consumer, alone on a library of its own, takes `ui` on entering the tree and gives it
+## back on leaving.
+func _test_each_ui_consumer_holds_its_own_reference(t) -> void:
+	var makers := {
+		"the mode button": func(atlas: AtlasLibrary) -> Node:
+			var node := ModeButton.new()
+			node.atlas = atlas
+			return node,
+		"touch controls": func(atlas: AtlasLibrary) -> Node:
+			var node: TouchControls = TOUCH_CONTROLS.instantiate()
+			node.atlas = atlas
+			return node,
+		"the save indicator": func(atlas: AtlasLibrary) -> Node:
+			var node := SaveIndicator.new()
+			node.atlas = atlas
+			return node,
+	}
+	for label in makers:
+		_check_holds_its_own(t, makers[label], &"ui", label)
 
 # ------------------------------------------------------------------ interior ---
 
