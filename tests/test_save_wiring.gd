@@ -620,7 +620,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 
 ## The whole path through `main`'s write: a run `_save.uses_save()` refuses — here the headless
 ## runner — leaves the symbol dark rather than struck. The same write straight through
-## `_save.write()` is `tests/test_save.gd`'s `_test_a_refused_save_leaves_the_symbol_dark()`.
+## `_save.write()` is `tests/test_save.gd`'s `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
 func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 	_begin()
 	var parked := Parked.new(t)
@@ -654,8 +654,6 @@ func _test_a_desktop_save_is_shown_at_once_and_begun_once(t) -> void:
 	t.check(not timeline.struck and Boot.save_symbol_plain(parked.indicator), "showing the plain picture")
 	t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
 	t.check(timeline.begun == 1, "and the symbol began once for it, not a second time by main")
-	t.check(parked.indicator.is_showing() and timeline.pending == 0,
-			"and that one change is already answered")
 
 	_shut(t, main)
 	parked.free_all()

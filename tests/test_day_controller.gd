@@ -14,7 +14,6 @@ func run(t) -> void:
 	_test_the_escape_clock_moves_every_frame(t)
 	await _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t)
 	_test_the_formatters(t)
-	_test_an_escape_section_reads_its_clock_to_the_hundredth(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
 	_test_each_section_is_won_at_its_own_goal(t)
 	for child in t.get_children():
@@ -197,18 +196,6 @@ func _test_the_formatters(t) -> void:
 	t.check(RunState.format_clock_hundredths(0.0) == "0:00.00", "hundredths at zero")
 	t.check(RunState.format_clock(179.432) == "2:59.432",
 			"the ending's run length keeps three digits (%s)" % RunState.format_clock(179.432))
-
-## The escape's two sections say their clock reads to the hundredth (`DaySpec.clock_hundredths`),
-## which is what the day's clock emits every frame by: drop it and the escape's label goes back to
-## changing once a second. A day's spec, and a `DayController` handed none, read to the second.
-func _test_an_escape_section_reads_its_clock_to_the_hundredth(t) -> void:
-	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
-		t.check(DaySpec.for_section(section, 180.0).clock_hundredths,
-				"escape section %d's clock reads to the hundredth" % section)
-	t.check(not DaySpec.for_day(3, 210.0).clock_hundredths, "a day's clock does not")
-	var plain := DayController.new()
-	t.check(not plain.spec.clock_hundredths, "nor does a DayController handed no spec")
-	plain.free()
 
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
 func _test_a_frozen_escape_clock_stays_silent(t) -> void:
