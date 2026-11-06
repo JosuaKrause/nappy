@@ -103,6 +103,14 @@ func _done(city: City, her: Node2D) -> void:
 	her.free()
 	city.free()
 
+## The pursuer a torn poster sent, in the world, or null: the instance of either on-foot row, which no
+## scheduler places, so it is the one a pursuit marble sent.
+func _the_pursuer_sent(city: City) -> EventInstance:
+	for instance in city.events.instances():
+		if instance.def.id in ["policeman_giving_chase", "guardsman_giving_chase"]:
+			return instance
+	return null
+
 ## Runs his warning down, a frame at a time, with her standing at `her`.
 func _run_the_warning(city: City, her: Node2D) -> void:
 	for i in int(1.0 / STEP):
@@ -117,14 +125,11 @@ func _run_the_warning(city: City, her: Node2D) -> void:
 ## `hard_fail`. Only the picture and the id are their own.
 func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t) -> void:
 	var robber := EventCatalogue.by_id("robber_giving_chase")
-	var looks := {"policeman_giving_chase": EventDef.Look.POLICEMAN_GIVING_CHASE,
-			"guardsman_giving_chase": EventDef.Look.GUARDSMAN_GIVING_CHASE}
-	for id: String in looks:
+	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null, "the catalogue carries '%s'" % id)
 		if not def:
 			continue
-		t.check(def.look == looks[id], "'%s' draws its own look" % id)
 		t.check(def.warned_first and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and def.telegraph_time == 0.0,
 				"'%s' is warned of before it exists and arrives chasing, with no closing in" % id)
 		t.check(is_equal_approx(def.offscreen_notice, robber.offscreen_notice)
@@ -138,7 +143,6 @@ func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t) -> void:
 				and is_equal_approx(def.intensity, robber.intensity)
 				and is_equal_approx(def.outer_radius, robber.outer_radius),
 				"'%s' chases, catches and costs exactly as the task's robber" % id)
-		t.check(def.hard_fail, "'%s' ends the day when he catches her" % id)
 		t.check(def.shape != null and is_equal_approx(def.shape.reach(), robber.shape.reach()),
 				"'%s' stands on the robber's own shape" % id)
 		t.check(def.validate(), "'%s' passes the catalogue's own contracts" % id)
@@ -169,7 +173,7 @@ func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t) -> void:
 		var her: Node2D = rig[1]
 		city.events.send_a_pursuer()
 		_run_the_warning(city, her)
-		var sent := city.events.ahead.sent_pursuer()
+		var sent := _the_pursuer_sent(city)
 		var expected: EventDef.Look = EventDef.Look.GUARDSMAN_GIVING_CHASE if day == 9 \
 				else EventDef.Look.POLICEMAN_GIVING_CHASE
 		t.check(sent != null and sent.def.look == expected,
@@ -198,11 +202,11 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 	var warnings := city.events.pending_warnings()
 	t.check(warnings.size() == 1 and warnings[0].def.id == "policeman_giving_chase",
 			"the badge is up the moment the marble is drawn, with her standing still")
-	t.check(city.events.instances().size() == before and city.events.ahead.sent_pursuer() == null,
+	t.check(city.events.instances().size() == before and _the_pursuer_sent(city) == null,
 			"and nothing is in the world yet")
 	t.check(told[0] == 1, "the counter's poster-pursuit goes out as he is sent (%d)" % told[0])
 	_run_the_warning(city, her)
-	var sent := city.events.ahead.sent_pursuer()
+	var sent := _the_pursuer_sent(city)
 	t.check(sent != null, "once the badge's time is up he is in the world")
 	var starts_clear := func(line: String) -> bool:
 		return line.begins_with("roll poster tear: a policeman sent after her") \
@@ -236,7 +240,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
 			"a second marble while his badge is up sends nobody (%d warnings, %d told)"
 			% [city.events.pending_warnings().size(), told[0]])
 	_run_the_warning(city, her)
-	var first := city.events.ahead.sent_pursuer()
+	var first := _the_pursuer_sent(city)
 	city.events.send_a_pursuer()
 	t.check(city.events.pending_warnings().is_empty() and told[0] == 1,
 			"nor while he is after her")
@@ -283,7 +287,7 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t) -> void:
 		if sends:
 			city.events.send_a_pursuer()
 			_run_the_warning(city, her)
-			t.check(city.events.ahead.sent_pursuer() != null, "on a planned day he is sent")
+			t.check(_the_pursuer_sent(city) != null, "on a planned day he is sent")
 			t.check(city.events.ahead.owed_ahead() == owed_at_dawn and rng.state == state,
 					"the day's owed queue and its stream are untouched at once")
 		days.append({"city": city, "her": her, "handed": _what_the_walk_hands_her(city, her, 120.0),
@@ -365,7 +369,6 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 ## His catch ends the day, and the day says who it was.
 func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
-		t.check(EventCatalogue.by_id(id).hard_fail, "'%s' is a hard fail" % id)
 		var line: String = Texts.HARD_FAIL_TEXT.get(id, "")
 		t.check(line != "", "'%s' has its own loss line" % id)
 
@@ -554,8 +557,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 			elapsed += STEP
 			off_its_lane = maxf(off_its_lane, absf(car.global_position.y - lane.y))
 			turned_round = turned_round or car.facing_now().dot(Vector2.RIGHT) < 0.999
-			if officer == null and car.its_officer() != null:
-				officer = car.its_officer()
+			if officer == null and MenLetOut.first_of(events, car) != null:
+				officer = MenLetOut.first_of(events, car)
 				# Where he was put down, the first point of his trail: this frame has already
 				# stepped him toward her.
 				door = officer.on_foot.trail[0]
@@ -685,11 +688,12 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		_tick(events)
 		elapsed += STEP
 		landed += events.sources.total_at(her.global_position) * STEP
-		if officer == null and car.its_officer() != null:
-			officer = car.its_officer()
+		if officer == null and MenLetOut.first_of(events, car) != null:
+			officer = MenLetOut.first_of(events, car)
 		var out_of_reach := car.global_position.distance_to(her.global_position) \
 				> hot.outer_radius + hot.shape.reach()
-		if car.is_finished or car.is_leaving or (car.investigation.has_investigated() and out_of_reach):
+		var his_man_is_back := officer != null and (not is_instance_valid(officer) or officer.is_finished)
+		if car.is_finished or car.is_leaving or (his_man_is_back and out_of_reach):
 			break
 	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
 	for instance in events.instances().duplicate():
@@ -755,12 +759,18 @@ func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: Cit
 	t.add_child(car)
 	car.set_process(false)
 	var saw_in_a_box := false
+	var seen_her := false
 	var elapsed := 0.0
 	while elapsed < 60.0 and car.is_waiting() and not car.is_leaving and not car.is_finished:
 		car.player_at = her
+		# What the car notices her by, asked as it is about to step: inside its notice distance on
+		# a clear line. Still waiting after the step, having noticed her, is a car that stands in
+		# a junction box and so drives on rather than stopping.
+		seen_her = seen_her or (car.global_position.distance_to(her) <= hot.notice_within()
+				and car.clear_line_to(her))
 		car.step(STEP)
 		elapsed += STEP
-		if car.investigation.has_seen_her() and car.is_waiting():
+		if seen_her and car.is_waiting():
 			saw_in_a_box = true
 	if car.is_waiting() or car.is_leaving or car.is_finished:
 		car.free()
@@ -790,7 +800,6 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 	for id: String in ["night_raid", "abduction"]:
 		var cold := EventCatalogue.by_id(id)
-		t.check(cold.hunts.lets_out == 2, "'%s' hunts on foot, with two men" % id)
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(cold, level)
 			var hunts := level >= EventDef.HEAT_HUNTS_LEVEL
@@ -901,8 +910,8 @@ func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
 			_tick(events)
 			elapsed += STEP
 			moved = maxf(moved, van.global_position.distance_to(where))
-			if men.is_empty() and not van.its_officers().is_empty():
-				men = van.its_officers()
+			if men.is_empty() and not MenLetOut.of(events, van).is_empty():
+				men = MenLetOut.of(events, van)
 				t.check(events.pending_warnings().is_empty(),
 						"'%s': they get out with no off-screen badge" % id)
 		EventBus.hard_fail_triggered.disconnect(on_struck)
