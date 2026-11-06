@@ -38,8 +38,8 @@ const REACTION := 1.0
 const SET_OFF := 4.0
 const PAST_THE_END := 60.0
 ## The frames of standing still a run may show before it is a stall: a taper's turn at a corner or
-## his hand-over from approach to round costs a frame or two; one frame in three, or a wait at a
-## solid, costs hundreds.
+## his hand-over from approach to round costs a frame or two, a wait at a solid about thirty
+## (`ParkCordon.STUCK_FRAMES`) before he walks straight.
 const STALL_FRAMES_ALLOWED := 3
 ## How far from her a taper must be for a frame he stands still to count as a stall: tapers wait for
 ## her only beside a stretch she is within reach of.
