@@ -36,8 +36,6 @@ src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
 src/visuals/ground_recipe.gd reads
-src/world/chase_way.gd sweep_under_way
-src/world/world_context.gd total_excitement_at
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
@@ -57,20 +55,6 @@ src/city/poster_art.gd torn
 src/city/scenery_residency.gd camera_view
 src/city/scenery_residency.gd ordinary_guard_preparations
 src/city/traffic_signals.gd phase_of
-src/crowd/car_strategy.gd shadow_shape
-src/crowd/car_strategy.gd turn_refusals
-src/crowd/car_strategy.gd turn_round_cause
-src/crowd/car_strategy.gd turned_on_this_approach
-src/crowd/car_turn.gd carriageway_edge
-src/crowd/car_turn.gd spin
-src/crowd/car_turn.gd start_angle
-src/crowd/crowd.gd give_way_at_junctions
-src/crowd/crowd.gd space_out_the_traffic
-src/crowd/crowd_field.gd stretch_ends_of
-src/crowd/crowd_lanes.gd busyness
-src/crowd/lane_mover.gd end_the_frame
-src/crowd/walker_look.gd heading_now
-src/crowd/walker_strategy.gd door_answer_for
 src/day/loss_cause.gd crying_suffix
 src/day/loss_cause.gd hard_fail_suffix
 src/dev/auto_screenshot.gd can_photograph
@@ -203,12 +187,6 @@ src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
 src/web_display.gd dpr_cap
-src/world/draw_layer.gd z_of
-src/world/excitement_source.gd expected_impact_at
-src/world/excitement_source.gd will_be_lethal
-src/world/excitement_sources.gd sources_at
-src/world/spawn_siting.gd is_out_of_sight
-src/world/spawn_siting.gd seen_from
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -238,6 +216,15 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+src/crowd/crowd.gd space_out_the_traffic  # the traffic half of a tick (queues resolved front to back, the index rebuilt, junctions given way); tests/crowd_rig.gd measures what this pass alone moves a car by, between a car's movement and the separation, and rebuilds the index after a movement; a tick moves the agents and recycles too (a tick of no time still recycles the cars that have left the field), so no step() isolates the pass
+src/crowd/lane_mover.gd end_the_frame  # the hook every agent's step ends on, which CrowdAgent (a file of the crowd member's own owner) overrides to run its clocks down and redraw what changed, so the check sees only the base's own calls; tests/test_car_views.gd and tests/test_drawn_view.gd read what the override answers, whether the tick asked for a redraw, which a headless run draws to nothing and no node exposes
+src/crowd/walker_strategy.gd door_answer_for  # the cut of a walker's first roll into what it does at a region door (walks through, turns back, is held), which draw_the_door_answer() calls; of the three only turning back shows outside a hut (a walker that turns back treats every door's street as shut, which the suite reads off door_is_shut()), so the walks-through and held shares and the suites' search for a seed that draws the answer they want (tests/crowd_rig.gd, tests/test_crowd_bodies.gd) can be read only off the cut itself
+src/world/chase_way.gd sweep_under_way  # the guard's frame-timing probe (tests/probes/velvet_stork_guard_path_cost.gd) reads whether a sweep is under way, before and after a step, to count the frames that carry a sweep's slice and the sweeps begun; a sweep is internal work that no tile, picture or move of the guard shows, so only this answer says when one begins (a wall-clock measurement of the work, like scenery_ground worst_step_usec)
+src/world/excitement_source.gd expected_impact_at  # the net points the caret projects over the horizon; the caret draws only three levels (none, amber, doubled), so nothing outward carries the number, and tests/test_danger.gd checks it against what the bar then gains over the same horizon, tests/test_prediction_reuse.gd that the cached answer is bit-for-bit the uncached one
+src/world/excitement_source.gd will_be_lethal  # the doubled caret's question, overridden by EventExcitement and CrowdExcitement (files of other owners, so the check sees only the base's own call in caret_strength()); tests/test_danger.gd and tests/test_car_front.gd hold a car's lethal reach with it, the fairness promise that a lethal course is shown before it lands
+src/world/excitement_sources.gd sources_at  # the one question every set answers, overridden by EventSources and CrowdSources (files of other owners, so the check sees only the base's own calls in total_at() and all_at()); the suites read each set's pairs with it, the checkpoint suite the door rule off the events' set
+src/world/spawn_siting.gd is_out_of_sight  # the no-pop-in promise: an event is never created where she can see it, and tests/test_no_pop_in.gd, test_event_manager_fire.gd, test_events_scheduler.gd and the resistance and pursuit suites ask this of every placement the game makes; the only outward sign of a violation is the pop-in itself, which no headless frame draws
+src/world/spawn_siting.gd seen_from  # the camera's whole view that is_out_of_sight is asked against, the same no-pop-in promise: the suites build the view the game places against with it
 src/autoload/game_save.gd moment_result  # what a save moment comes to on the web (PENDING while the browser has not answered, FAILED where storage was refused): a desktop run's write() never takes those branches, since OS.has_feature("web") and OS.is_userfs_persistent() are the engine's own answers and not a hand-in, so tests/test_save.gd asks the pure function for them
 src/player/stroller.gd baby_cue_aside  # how far to one side the baby's cue is drawn so it steps out of the exclamation mark's column; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes (tests/test_danger.gd: "nothing in this suite could see a _draw, so the decision is a function"), so the facings it is held for are read off the function
 src/player/stroller.gd baby_cue_lift  # how far above the pram's ground point (or above her feet, carrying or walking due south) the baby's cue is drawn; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes, so the facings it is held for are read off the function

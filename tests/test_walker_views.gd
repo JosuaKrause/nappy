@@ -15,12 +15,6 @@ const SPEED := 90.0
 ## leaves it. Any distance does: the cross term is `LaneMover.STEER_SPEED` at either size.
 const SIDESTEP := 8.0
 
-## How far from a sector's own centre angle a placed walker's heading may be, in degrees, and still be
-## that sector's walker: a walker's pace is rolled, so its diagonal is the along pace against
-## `LaneMover.STEER_SPEED` rather than exactly 45 degrees, and the sector is wide enough for every
-## pace `Tuning.PEDESTRIAN_SPEED` allows.
-const WITHIN_SECTOR := 22.0
-
 ## Every sector's `[lane heading, sidestep]`, `0` (east) to `7` (north-east): the cardinal sectors are a
 ## walker on a lane with nothing to steer across, the diagonals one of the two lanes that lead to it
 ## and the sidestep that opens the cross-lane gap.
@@ -104,9 +98,9 @@ func _walker(t, heading: Vector2) -> CrowdAgent:
 	return agent
 
 ## A walker facing `sector`: placed on the lane of `SECTOR_LANES`, and for a diagonal sidestepped
-## (`CrowdAgent.step_aside()`) so its steering target is a lane over and `WalkerLook.heading_now()`
-## swings onto the diagonal, as it does for a walker nudged aside by the player. Null when the
-## placement or the sidestep does not leave it facing that sector's own angle.
+## (`CrowdAgent.step_aside()`) so its steering target is a lane over and its heading swings onto the
+## diagonal, as it does for a walker nudged aside by the player. Null when there is no such
+## placement; that the walker then draws that sector is what the callers read off its look.
 func _walker_facing(t, sector: int) -> CrowdAgent:
 	var lane: Array = SECTOR_LANES[sector]
 	var agent := _walker(t, lane[0])
@@ -114,10 +108,6 @@ func _walker_facing(t, sector: int) -> CrowdAgent:
 		return null
 	if lane[1] != Vector2.ZERO:
 		agent.step_aside(lane[1], SIDESTEP, 1.0)
-	var off := absf(rad_to_deg(ViewRig.walker_look(agent).heading_now().angle_to(Vector2.from_angle(deg_to_rad(sector * 45.0)))))
-	t.check(off < WITHIN_SECTOR,
-			"the walker for sector %d heads within %.0f degrees of its centre (%.1f off)"
-			% [sector, WITHIN_SECTOR, off])
 	return agent
 
 func _test_walker_headings_select_the_expected_view(t) -> void:
@@ -158,7 +148,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 
 ## A give-way, a queue or a halt all reach the walker the same way: `WalkerStrategy._yield_factor()` zeroing
 ## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
-## `WalkerLook.heading_now()` returns `Vector2.ZERO` for. A walker is told to wait the way the player's
+## the look reads as no heading at all. A walker is told to wait the way the player's
 ## bump tells it (`CrowdAgent.step_aside()` along its own line of travel, away from where it is going).
 func _test_a_stopped_walker_keeps_its_view(t) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
@@ -172,7 +162,6 @@ func _test_a_stopped_walker_keeps_its_view(t) -> void:
 	# Stopped: no cross-lane gap, and the along term reads zero through the same yield the crowd
 	# actually stops a walker with.
 	_stop(agent)
-	t.check(look.heading_now() == Vector2.ZERO, "a yielding walker's own heading is zero")
 	var stopped_frame := look.sector()
 	t.check(stopped_frame == moving_frame,
 			"a stopped walker keeps the view it was last drawn with (%d, still %d)"

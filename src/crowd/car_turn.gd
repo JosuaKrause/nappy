@@ -44,8 +44,8 @@ var sweep := 0.0
 ## Which way round the centre the car goes: +1 when the centre is on its right, in the same screen
 ## sense as `Crowd._is_to_the_right_of` — y points south, so the right of a heading is a quarter
 ## turn clockwise on screen.
-var spin := 1.0
-var start_angle := 0.0
+var _spin := 1.0
+var _start_angle := 0.0
 
 ## What the car becomes when the arc ends: the axis, corridor, lane and direction it takes up.
 var exit_vertical := false
@@ -71,7 +71,7 @@ static func into_an_arm(vertical: bool, direction: float, corridor: int, cross: 
 	# The lane the car is joining runs across the corridor it is in, so its centre is a coordinate
 	# on the *along* axis: the arc has to reach it and be pointing along the new corridor there.
 	var lane_along := CrowdLanes.lane_centre(band, lane)
-	var entry := carriageway_edge(band, direction)
+	var entry := _carriageway_edge(band, direction)
 	# **A car's back swings to the outside of its turn**, and on the arm that turns *away* from its
 	# own kerb the outside is that kerb. Beginning the arc at the carriageway's edge then drags the
 	# tail over the pavement of the street it is still leaving — two pixels of it, measured, which is
@@ -130,10 +130,10 @@ static func about_face(vertical: bool, direction: float, corridor: int, from_lan
 func begin_at(cross: float) -> void:
 	centre = world(entry_vertical, entry_along, cross + cross_sign * radius)
 	var start := world(entry_vertical, entry_along, cross)
-	start_angle = (start - centre).angle()
+	_start_angle = (start - centre).angle()
 	var forward := world(entry_vertical, entry_direction, 0.0)
 	var right := Vector2(-forward.y, forward.x)
-	spin = 1.0 if (centre - start).dot(right) > 0.0 else -1.0
+	_spin = 1.0 if (centre - start).dot(right) > 0.0 else -1.0
 
 func length() -> float:
 	return radius * sweep
@@ -143,14 +143,14 @@ func is_about_face() -> bool:
 
 ## Where the car is `distance` px along the arc.
 func point_at(distance: float) -> Vector2:
-	var angle := start_angle + spin * distance / radius
+	var angle := _start_angle + _spin * distance / radius
 	return centre + Vector2(cos(angle), sin(angle)) * radius
 
 ## Which way it is pointing there: the tangent, which is what makes the heading continuous through
 ## the whole manoeuvre and is the datum everything downstream of a heading reads.
 func heading_at(distance: float) -> Vector2:
-	var angle := start_angle + spin * distance / radius
-	return Vector2(-sin(angle), cos(angle)) * spin
+	var angle := _start_angle + _spin * distance / radius
+	return Vector2(-sin(angle), cos(angle)) * _spin
 
 ## Where the car ends up along the corridor it is joining, as that lane's own queue position — what
 ## a turn has to reserve, since a turn is a placement into somebody else's queue.
@@ -195,7 +195,7 @@ static func kerb_side(lane: int) -> float:
 	return signf(float(lane) + 0.5 - float(Tuning.STREET_WIDTH) * 0.5)
 
 ## World coordinate of the near edge of a corridor's carriageway, coming at it along `direction`.
-static func carriageway_edge(band: int, direction: float) -> float:
+static func _carriageway_edge(band: int, direction: float) -> float:
 	var offset := Tuning.SIDEWALK_WIDTH if direction > 0.0 \
 			else Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 	return float(band * CityMap.period() + offset) * float(Tuning.TILE_SIZE)
