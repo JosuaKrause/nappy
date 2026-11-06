@@ -35,7 +35,7 @@ static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
 
 ## A view of the world about `centre` that a rig chose, in the scheme `joystick` says.
 static func _view_about(centre: Vector2, joystick: bool, controls: TouchControls) -> VisibleView:
-	return VisibleView.around(centre, TouchControls.covered_screen() if joystick else null)
+	return VisibleView.around(centre, TouchCover.joystick() if joystick else null)
 
 ## The crowd's view of the screen, anchored in `anchor`'s viewport.
 static func _crowd_view_of(anchor: Node) -> CrowdView:

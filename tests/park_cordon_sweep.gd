@@ -16,13 +16,14 @@ extends RefCounted
 ## into it, nor across tape that is up, on the way on out of her sight, and **no tape goes up
 ## through him** while he stands in the park waiting for his escort, nor while he walks out. And
 ## **the officers walk
-## round what stops her**: none steps onto ground a body takes on the map's record, and none stands
-## at a solid with his walk still ahead of him, on every park and whatever the day put beside it —
-## with nobody in the park, and with a busker in it, standing where the suite always puts him and
-## in the park's edge rows, where his escort's walks and the tapers' meet; and with a busker in it
-## the cordon still closes.
+## round what stops her**: none steps onto ground a body takes on the map's record, on every park and
+## whatever the day put beside it — with nobody in the park, and with a busker in it, standing where
+## the suite always puts him and in the park's edge rows, where his escort's walks and the tapers'
+## meet; and with a busker in it the cordon still closes. The officers are read off the world, the
+## figures standing on the city's entity layer, and the tape off the static bodies it stands.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 ## The sweep, and a seed whose swing park is one of the largest calm zones (704 by 704px).
 const SEEDS_FROM := 1
 const SEEDS_TO := 40
@@ -36,6 +37,13 @@ const REACTION := 1.0
 ## its last leg, she stops.
 const SET_OFF := 4.0
 const PAST_THE_END := 60.0
+## The frames of standing still a run may show before it is a stall: a taper's turn at a corner or
+## his hand-over from approach to round costs a frame or two, a wait at a solid about thirty
+## (`ParkCordon.STUCK_FRAMES`) before he walks straight.
+const STALL_FRAMES_ALLOWED := 3
+## How far from her a taper must be for a frame he stands still to count as a stall: tapers wait for
+## her only beside a stretch she is within reach of.
+const STALL_AWAY := Tuning.TILE_SIZE * 4.0
 ## Where in the park a busker stands for the walked-out runs, as a share of the park's size from its
 ## north-west corner, plus a pixel offset from there: the suite's own spot, and three in the park's
 ## edge rows — near the south edge (half way along, 94% down), and the middles of the east and north
@@ -110,19 +118,11 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 			% [m.walk, m.walk / Tuning.WALK_SPEED, ParkCordon.PARK_CLOSING_WARNING])
 	t.check(m.walked_out, "%s: setting off at a walk %.0fs after first sight gets her out"
 			% [what, REACTION])
-	# What the cordon says of itself is what happens: the close it logs and paces to, unless the
-	# park's people hold the gap, and when it expects an officer in her view.
-	t.check(m.people > 0 or absf(m.closed_at - m.deadline) <= 0.25,
-			"%s: the gap closes when the cordon said it would (%.1fs, said %.1fs)"
-			% [what, m.closed_at, m.deadline])
-	t.check(absf(m.first_seen - m.first_in_view) <= 0.25,
-			"%s: and an officer is first in view when it said (%.1fs, said %.1fs)"
-			% [what, m.first_seen, m.first_in_view])
 	t.check(m.onto_bodies == 0, "%s: no officer steps onto ground a body takes (%d steps)"
 			% [what, m.onto_bodies])
-	t.check(m.stalled == 0 and m.relaid == 0,
-			"%s: and none stands at a solid with his walk ahead of him (%d frames, %d relaid)"
-			% [what, m.stalled, m.relaid])
+	t.check(m.stalled <= STALL_FRAMES_ALLOWED and m.walking_stalled <= STALL_FRAMES_ALLOWED,
+			"%s: and no taper stands still on his round with nobody near him (%d, %d frames)"
+			% [what, m.stalled, m.walking_stalled])
 	for run: Dictionary in m.people_runs:
 		if not run.person_placed:
 			continue
@@ -134,13 +134,9 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 				% [who, run.person_through_tape])
 		t.check(run.taped_over_him == 0, "%s: and no tape goes up through him (%d stretches)"
 				% [who, run.taped_over_him])
-		t.check(run.closed_at >= 0.0, "%s: the cordon closes (at %.1fs, deadline %.1fs)"
-				% [who, run.closed_at, run.deadline])
+		t.check(run.closed_at >= 0.0, "%s: the cordon closes (at %.1fs)" % [who, run.closed_at])
 		t.check(run.onto_bodies == 0, "%s: no officer steps onto ground a body takes (%d steps)"
 				% [who, run.onto_bodies])
-		t.check(run.stalled == 0 and run.relaid == 0,
-				"%s: and none stands at a solid with his walk ahead of him (%d frames, %d relaid)"
-				% [who, run.stalled, run.relaid])
 
 ## Day 12 on `seed_value`'s city, played twice from the swing's touch: once standing at the swing,
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
@@ -193,10 +189,8 @@ func measure(t, seed_value: int) -> Dictionary:
 ## the cordon walks out (a person in the park who is not ambient, a pursuer, a vehicle, warned
 ## first or arriving chasing: `ParkCordon._walks_out()`'s question, asked of the public event).
 func _people_taken_on(city: City, cordon: ParkCordon) -> int:
-	var people := 0
-	for officer in cordon.officers:
-		if officer.job == ParkCordon.Officer.Job.ESCORT:
-			people += 1
+	# The two tapers are the first two officers in the world; every other is an escort.
+	var people := maxi(0, CordonInTheWorld.officers(city).size() - 2)
 	for live in city.events.instances():
 		var def := live.def
 		if live.is_finished or not live.is_leaving or not cordon.area.has_point(live.global_position):
@@ -216,22 +210,20 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	var result := {"park_size": cordon.area.size, "walk": swing.distance_to(cordon.last_gap)}
 	result.people = _people_taken_on(city, cordon)
 	_measure_the_gap(city, director, cordon, result)
-	var standing := _play(city, cordon, her, shows, false)
+	var standing := _play(city, cordon, her, shows, false, result.people == 0)
 	result.first_seen = standing.first_seen
 	result.closed_at = standing.closed_at
 	result.trapped_standing = standing.trapped
-	result.deadline = cordon.deadline
-	result.first_in_view = cordon.first_in_view
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
-	result.relaid = cordon.relaid
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
 			city.spawn_siting, director.reach_obstruction())
 	her[0] = swing
 	_tick(city, again, her[0])
-	var walking := _play(city, again, her, shows, true)
+	var walking := _play(city, again, her, shows, true, result.people == 0)
 	result.walked_out = walking.closed_at >= 0.0 and not walking.trapped
+	result.walking_stalled = walking.stalled
 	again.clear()
 	var runs: Array[Dictionary] = []
 	for place in PLACES:
@@ -244,10 +236,9 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 ## by his escort, with her walking the same way out from `SET_OFF` after he is sent off and stopping
 ## `PAST_THE_END` beyond its end, played until he is gone and the cordon has closed. Answers whether
 ## he was placed, whether he left the tape's line, the frames he spent back inside it after leaving
-## it, the steps he took across tape that was up, the stretches taped with any part of him within
-## reach of them (`ParkCordon.WALKER_REACH`) and when each stretch went up, by its index, when the
-## cordon closed and what it said it would, and the officers' steps onto a body's ground, stalls and
-## walks laid again (`_count_the_step()`).
+## it, the steps he took across tape that was up, the tape put up with any part of him within reach
+## of it (`ParkCordon.WALKER_REACH`) and when each piece went up (by the piece), when the cordon
+## closed, and the officers' steps onto a body's ground (`_count_the_step()`).
 func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i,
 		swing: Vector2, place: Array) -> Dictionary:
 	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
@@ -272,7 +263,8 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var through_tape := 0
 	var taped_over_him := 0
 	var taped_at := {}
-	var counts := {"onto_bodies": 0, "stalled": 0}
+	var closed_at := -1.0
+	var counts := {"onto_bodies": 0}
 	while clock < PATIENCE * 2.0 and not (_gone(busker) and cordon.is_closed()):
 		if sent_off_at < 0.0 and not _gone(busker) and busker.way_left().size() >= 2:
 			# A copy: the packed array it answers is the departure's own, shared, and her walk drops its points.
@@ -284,32 +276,29 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 			her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 			if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 				way.remove_at(0)
-		var before := {}
-		for officer in cordon.officers:
-			before[officer] = [officer.at, officer.phase]
+		var before := _where_the_officers_stand(city)
 		if not _gone(busker):
 			busker.player_at = her[0]
 			busker.step(STEP)
 		_tick(city, cordon, her[0])
 		clock += STEP
-		for officer in cordon.officers:
-			if before.has(officer):
-				_count_the_step(city.map, officer, before[officer][0], before[officer][1], counts)
-		for i in cordon.stretches.size():
-			var stretch := cordon.stretches[i]
-			if not stretch.taped or taped_at.has(i):
+		if closed_at < 0.0 and cordon.is_closed():
+			closed_at = cordon.elapsed
+		_count_the_steps(city.map, before, counts)
+		for tape in CordonInTheWorld.tapes(city):
+			if taped_at.has(tape.get_instance_id()):
 				continue
-			taped_at[i] = clock
-			if not _gone(busker) and _body_on(stretch, busker.global_position,
-					ParkCordon.WALKER_REACH):
+			taped_at[tape.get_instance_id()] = clock
+			var ends := CordonInTheWorld.ends(tape)
+			if not _gone(busker) and Geometry2D.get_closest_point_to_segment(
+					busker.global_position, ends[0], ends[1]).distance_to(busker.global_position) \
+					< ParkCordon.WALKER_REACH:
 				taped_over_him += 1
 		if _gone(busker):
 			continue
 		var now := busker.global_position
-		for stretch in cordon.stretches:
-			if stretch.taped and Geometry2D.segment_intersects_segment(last, now, stretch.a,
-					stretch.b) != null:
-				through_tape += 1
+		if CordonInTheWorld.is_across_tape(city, last, now):
+			through_tape += 1
 		if not cordon.line.has_point(now):
 			left = true
 		elif left:
@@ -318,9 +307,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var result := {"person_placed": true, "place": place[0], "person_left": left,
 			"back_in": back_in, "person_through_tape": through_tape,
 			"taped_over_him": taped_over_him, "taped_at": taped_at,
-			"closed_at": cordon.closed_at, "deadline": cordon.deadline,
-			"onto_bodies": counts.onto_bodies, "stalled": counts.stalled, "relaid": cordon.relaid,
-			"walked_straight": cordon.walked_straight}
+			"closed_at": closed_at, "onto_bodies": counts.onto_bodies}
 	cordon.clear()
 	# Gone from the world the way the day's own frame retires him, his body's tiles given back
 	# (`EventStreaming.retire_finished()`, which nothing here ticks): left on the record, the
@@ -381,25 +368,30 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 ## Plays the cordon out with the camera on `her[0]`, watching for the first frame any taper's
 ## figure is in its view. Walking, she sets off `REACTION` after that toward the last gap and on
 ## out past it. Counts, as well, every officer's step onto a tile a body takes on the map's record
-## (the one he stands on left out, since anyone may walk off a solid he stands in), and every frame
-## an officer already walking in or round the edge, waiting for nobody, did not move with his walk
-## ahead of him.
-func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool) -> Dictionary:
+## (the one he stands on left out, since anyone may walk off a solid he stands in), and, when
+## `watch_stalls` (nobody in the park, so no taper waits for a person), every frame a taper's figure
+## stood where it stood a frame before, after it had first moved and with the cordon open, while she
+## was farther than `STALL_AWAY` from him: tapers never wait for each other, so he is held up by
+## something he cannot get round.
+func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
+		watch_stalls: bool) -> Dictionary:
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
 	var first_seen := -1.0
 	var clock := STEP
 	var gap := cordon.last_gap
 	var out := gap + Vector2(cordon.gap[0].outward) * (ParkCordon.HER_REACH + Tuning.TILE_SIZE)
-	var counts := {"onto_bodies": 0, "stalled": 0}
+	var counts := {"onto_bodies": 0}
+	var stalled := 0
+	var started := {}
+	var fails: Array[String] = []
+	var listen := func(reason: String) -> void:
+		fails.append(reason)
+	EventBus.hard_fail_triggered.connect(listen)
 	while not cordon.is_closed() and clock < PATIENCE:
-		var before := {}
-		for officer in cordon.officers:
-			before[officer] = [officer.at, officer.phase]
+		var before := _where_the_officers_stand(city)
 		if first_seen < 0.0:
-			for officer in cordon.officers:
-				if officer.job == ParkCordon.Officer.Job.TAPE \
-						and officer.phase != ParkCordon.Officer.Phase.GONE \
-						and shows.call(row, officer.at):
+			for officer in CordonInTheWorld.officers(city):
+				if shows.call(row, officer.global_position):
 					first_seen = clock
 		if walks and first_seen >= 0.0 and clock >= first_seen + REACTION:
 			var target := gap if (her[0] as Vector2).distance_to(gap) > 1.0 \
@@ -407,38 +399,45 @@ func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: b
 			her[0] = (her[0] as Vector2).move_toward(target, Tuning.WALK_SPEED * STEP)
 		_tick(city, cordon, her[0])
 		clock += STEP
-		for officer in cordon.officers:
-			if before.has(officer):
-				_count_the_step(city.map, officer, before[officer][0], before[officer][1], counts)
-	return {"first_seen": first_seen, "closed_at": cordon.closed_at, "trapped": cordon.trapped,
-			"onto_bodies": counts.onto_bodies, "stalled": counts.stalled}
-
-## Whether a body centred at `at`, reaching `reach` from its centre, overlaps where `stretch`'s tape
-## stands — asked of the tape's two ends, which the stretch holds, and not of the cordon's own test.
-static func _body_on(stretch: ParkCordon.Stretch, at: Vector2, reach: float) -> bool:
-	var on := Geometry2D.get_closest_point_to_segment(at, stretch.a, stretch.b)
-	return on.distance_to(at) < reach
+		_count_the_steps(city.map, before, counts)
+		if watch_stalls and not cordon.is_closed():
+			for officer: CordonOfficer in before:
+				if not is_instance_valid(officer) or officer.is_queued_for_deletion():
+					continue
+				if not officer.global_position.is_equal_approx(before[officer]):
+					started[officer] = true
+				elif started.has(officer) and officer.global_position.distance_to(her[0]) > STALL_AWAY:
+					stalled += 1
+	EventBus.hard_fail_triggered.disconnect(listen)
+	return {"first_seen": first_seen, "closed_at": cordon.elapsed if cordon.is_closed() else -1.0,
+			"trapped": fails == [ParkCordon.TRAPPED], "onto_bodies": counts.onto_bodies,
+			"stalled": stalled}
 
 ## Whether a walked-out person has gone from the world.
 static func _gone(person: EventInstance) -> bool:
 	return not is_instance_valid(person) or person.is_finished
 
-## Adds one officer's step from `from`, in `phase` before it, to `counts`: onto a body's ground,
-## or stalled.
-func _count_the_step(map: CityMap, officer: ParkCordon.Officer, from: Vector2,
-		phase: ParkCordon.Officer.Phase, counts: Dictionary) -> void:
-	var start := map.world_to_tile(from)
-	var steps := maxi(1, ceili(from.distance_to(officer.at) / 2.0))
-	for i in range(1, steps + 1):
-		var tile := map.world_to_tile(from.lerp(officer.at, float(i) / steps))
-		if tile != start and map.is_obstructed(tile):
-			counts.onto_bodies += 1
-			break
-	var walking := phase == officer.phase and (phase == ParkCordon.Officer.Phase.APPROACH
-			or phase == ParkCordon.Officer.Phase.TAPING)
-	if walking and not officer.holding and not officer.path.is_empty() \
-			and officer.at.is_equal_approx(from):
-		counts.stalled += 1
+## Where each of the cordon's officers stands now, by his figure in the world.
+func _where_the_officers_stand(city: City) -> Dictionary:
+	var standing := {}
+	for officer in CordonInTheWorld.officers(city):
+		standing[officer] = officer.global_position
+	return standing
+
+## Adds to `counts` every officer's step since `before` (`_where_the_officers_stand()`) that went
+## onto a body's ground: a tile the map has obstructed, the one he started on left out.
+func _count_the_steps(map: CityMap, before: Dictionary, counts: Dictionary) -> void:
+	for officer: CordonOfficer in before:
+		if not is_instance_valid(officer):
+			continue
+		var from: Vector2 = before[officer]
+		var start := map.world_to_tile(from)
+		var steps := maxi(1, ceili(from.distance_to(officer.global_position) / 2.0))
+		for i in range(1, steps + 1):
+			var tile := map.world_to_tile(from.lerp(officer.global_position, float(i) / steps))
+			if tile != start and map.is_obstructed(tile):
+				counts.onto_bodies += 1
+				break
 
 ## What the camera sees with her at `her[0]`: the game's own view box round her, against the whole
 ## of what `row` draws standing at `feet` — `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`'s question.

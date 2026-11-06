@@ -61,8 +61,8 @@ extends RefCounted
 ## she stood to the gap plus `PARK_CLOSING_WARNING` after the first officer comes into the
 ## camera's view of where she stood — on a park larger than the view they come into it late, so it
 ## closes later — and never faster than `PARK_CLOSING_STRETCH_MIN` a stretch. Each taper
-## paces himself to that moment. `tests/test_park_cordon_seeds.gd` holds both the gap and the
-## warning on every seed of a sweep, and `tests/probes/plush_marten_cordon.gd` measures them.
+## paces himself to that moment. `tests/test_park_cordon_seeds_a.gd` (and `_b`, `_c`) holds both the gap
+## and the warning on every seed of a sweep, and `tests/probes/plush_marten_cordon.gd` measures them.
 ##
 ## **Deterministic from the moment she touched the swing**: nothing here draws a random number.
 
@@ -245,31 +245,23 @@ var _rect := Rect2i()
 ## The rectangle the tape stands on: the park's ground, half a barrier's depth in. She is shut in
 ## when she is inside it as the last gap is taped.
 var line := Rect2()
-var stretches: Array[Stretch] = []
-var officers: Array[Officer] = []
+var _stretches: Array[Stretch] = []
+var _officers: Array[Officer] = []
 ## Seconds since she touched the swing.
 var elapsed := 0.0
 ## When the last gap is to close, seconds after the touch (`_time_the_close()`).
-var deadline := PARK_CLOSING_SECONDS
-## When the first officer is due to come into the camera's view of where she stood at the touch,
-## and the walk from there to the last gap, in seconds: what `deadline` was solved from.
-## `tests/test_park_cordon_seeds.gd` holds the first against when one is first seen, and the probe
-## prints both.
-var first_in_view := INF
+var _deadline := PARK_CLOSING_SECONDS
+## The walk from where she stood at the touch to the last gap, in seconds: what `_deadline` was
+## solved from.
 var walk_to_the_gap := 0.0
-## The moment the last gap was taped, and whether she was inside it then. Kept for the tests.
-var closed_at := -1.0
-var trapped := false
+## The moment the last gap was taped.
+var _closed_at := -1.0
 ## Where the last gap closes, on the line, and the stretches it is (the one chosen and, when it
-## continues it on the same side, the one before).
+## continues it on the same side, the one before). Public because a test that stands her in or at the
+## gap, or walks her out through it, needs the place before any tape shows it: the world shows the
+## gap only once the tapers meet at it.
 var last_gap := Vector2.INF
 var gap: Array[Stretch] = []
-## Whether the chosen gap's outside reaches home with the park blocked, whether it stands clear of
-## every body and field, and whether the day's other calm ground is reached from home then. Kept
-## for the tests and the probe.
-var gap_reaches_home := false
-var gap_clear := false
-var other_calm_reached := false
 ## The way out for the park's people and their escorts: from inside the last gap, through it and
 ## along the ground outside to a place out of her sight, in world points.
 var _exit := PackedVector2Array()
@@ -278,12 +270,6 @@ var _exit_crossing := {}
 ## The park's people sent off down `_exit`, still walking out.
 var _leaving: Array[EventInstance] = []
 var _started := false
-## How many times an officer met something his walk was not laid round, and had the rest of it
-## laid again from where he stood: something solid put down after he set out. Kept for the tests.
-var relaid := 0
-## How many times an officer gave up on the navigator and walked the rest of a walk straight
-## (`STUCK_FRAMES`). Kept for the tests; the run log says so too.
-var walked_straight := 0
 ## Where the cordon writes its own account for the run log; the happenings' trace, handed on as it is
 ## built.
 var trace := RunTrace.new()
@@ -311,20 +297,20 @@ func _init(map: CityMap, navigator: Navigator, city: City, block: Vector2i,
 
 ## Whether the last gap has been taped.
 func is_closed() -> bool:
-	return closed_at >= 0.0
+	return _closed_at >= 0.0
 
 ## Frees everything the cordon put in the world and gives its tiles back — the next morning, or a
 ## retried day.
 func clear() -> void:
-	for stretch in stretches:
+	for stretch in _stretches:
 		if stretch.node and is_instance_valid(stretch.node):
 			stretch.node.queue_free()
 		stretch.node = null
 		if _map:
 			_map.release_obstruction(stretch.get_instance_id())
-	for officer in officers:
+	for officer in _officers:
 		_let_go(officer)
-	officers.clear()
+	_officers.clear()
 	_leaving.clear()
 	for post in _posts:
 		if is_instance_valid(post):
@@ -338,7 +324,7 @@ func tick(delta: float, her: Vector2) -> void:
 	if not _started:
 		_started = true
 		_set_out(her)
-	for officer in officers:
+	for officer in _officers:
 		_move(officer, delta, her)
 	if not is_closed() and _every_stretch_taped() and not _a_taper_inside():
 		_close(her)
@@ -364,7 +350,7 @@ func _cut_the_stretches(rect: Rect2i) -> void:
 			stretch.outward = outs[side]
 			stretch.tiles = _edge_tiles(rect, stretch)
 			stretch.needed = _opens_out(runs, stretch)
-			stretches.append(stretch)
+			_stretches.append(stretch)
 
 ## The tiles of the park's edge row a stretch stands over.
 func _edge_tiles(rect: Rect2i, stretch: Stretch) -> Array[Vector2i]:
@@ -391,14 +377,14 @@ func _opens_out(runs: Array[ParkClosure], stretch: Stretch) -> bool:
 ## ends outside (`_lay_the_round()`) and the tile he stands on inside holds its stretch
 ## (`_still_stepped_on()`), so this only keeps it so.
 func _a_taper_inside() -> bool:
-	for officer in officers:
+	for officer in _officers:
 		if officer.job == Officer.Job.TAPE and officer.phase != Officer.Phase.GONE \
 				and _rect.has_point(_map.world_to_tile(officer.at)):
 			return true
 	return false
 
 func _every_stretch_taped() -> bool:
-	for stretch in stretches:
+	for stretch in _stretches:
 		if stretch.needed and not stretch.taped:
 			return false
 	return true
@@ -409,7 +395,7 @@ func _along(point: Vector2) -> float:
 	var best := 0.0
 	var nearest := INF
 	var walked := 0.0
-	for stretch in stretches:
+	for stretch in _stretches:
 		var on := Geometry2D.get_closest_point_to_segment(point, stretch.a, stretch.b)
 		var distance := on.distance_to(point)
 		if distance < nearest:
@@ -424,17 +410,17 @@ func _boundary_at(s: float) -> int:
 	var best := 0
 	var nearest := INF
 	var walked := 0.0
-	for i in stretches.size():
+	for i in _stretches.size():
 		var difference := absf(fposmod(walked - s + perimeter * 0.5, perimeter) - perimeter * 0.5)
 		if difference < nearest:
 			nearest = difference
 			best = i
-		walked += stretches[i].length()
+		walked += _stretches[i].length()
 	return best
 
 func _perimeter() -> float:
 	var total := 0.0
-	for stretch in stretches:
+	for stretch in _stretches:
 		total += stretch.length()
 	return total
 
@@ -457,8 +443,8 @@ func _choose_the_gap(her: Vector2) -> int:
 	var best := -1
 	var best_rank := 3
 	var best_distance := INF
-	for k in stretches.size():
-		if not stretches[k].needed:
+	for k in _stretches.size():
+		if not _stretches[k].needed:
 			continue
 		var reaches := true
 		var clear := true
@@ -473,8 +459,7 @@ func _choose_the_gap(her: Vector2) -> int:
 			best_distance = distance
 	if best < 0:
 		return 0
-	gap_reaches_home = best_rank < 2
-	gap_clear = best_rank % 2 == 0
+	var other_calm_reached := false
 	for tile in _map.calm_tiles():
 		if not _rect.has_point(tile) and _map.reaches(ground, tile):
 			other_calm_reached = true
@@ -482,7 +467,7 @@ func _choose_the_gap(her: Vector2) -> int:
 	if best_rank > 0:
 		trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
 				+ "home clear of the day's events: the last gap is the best of them (reaches home: "
-				+ "%s, clear of bodies and fields: %s)" % [gap_reaches_home, gap_clear])
+				+ "%s, clear of bodies and fields: %s)" % [best_rank < 2, best_rank % 2 == 0])
 	if not other_calm_reached:
 		trace.note("contact", "with the park cordoned off, no other calm ground is reached "
 				+ "from home")
@@ -491,16 +476,16 @@ func _choose_the_gap(her: Vector2) -> int:
 ## The stretches a gap at stretch `k` is: `k`, and the stretch before it when that one needs tape
 ## on the same side.
 func _gap_of(k: int) -> Array[Stretch]:
-	var found: Array[Stretch] = [stretches[k]]
-	var before := stretches[posmod(k - 1, stretches.size())]
-	if before.needed and before.outward == stretches[k].outward and before != stretches[k]:
+	var found: Array[Stretch] = [_stretches[k]]
+	var before := _stretches[posmod(k - 1, _stretches.size())]
+	if before.needed and before.outward == _stretches[k].outward and before != _stretches[k]:
 		found.append(before)
 	return found
 
 ## Where the gap at stretch `k` is, on the line: the boundary between its two stretches, or the
 ## middle of its one.
 func _gap_point(k: int) -> Vector2:
-	var stretch := stretches[k]
+	var stretch := _stretches[k]
 	if _gap_of(k).size() > 1:
 		return stretch.a
 	return (stretch.a + stretch.b) * 0.5
@@ -561,18 +546,18 @@ func _set_out(her: Vector2) -> void:
 	gap = _gap_of(meeting)
 	last_gap = _gap_point(meeting)
 	var arrival := _boundary_at(fposmod(_along(last_gap) + perimeter * 0.5, perimeter))
-	var count := stretches.size()
+	var count := _stretches.size()
 	var clockwise := posmod(meeting - arrival, count)
 	if clockwise == 0:
 		clockwise = count / 2
 	var first := Officer.new()
 	var second := Officer.new()
 	for i in clockwise:
-		first.stretches.append(stretches[(arrival + i) % count])
+		first.stretches.append(_stretches[(arrival + i) % count])
 	for i in count - clockwise:
-		second.stretches.append(stretches[posmod(arrival - 1 - i, count)])
+		second.stretches.append(_stretches[posmod(arrival - 1 - i, count)])
 	second.forward = false
-	var start: Stretch = stretches[arrival]
+	var start: Stretch = _stretches[arrival]
 	var door := _outside(start.a, start.outward)
 	var spawn := _spawn_out_of_sight(door, start.outward)
 	var spawn_at: Vector2 = spawn[0]
@@ -596,11 +581,11 @@ func _set_out(her: Vector2) -> void:
 	_time_the_close(her)
 	trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
 			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
-			% [last_gap, deadline])
+			% [last_gap, _deadline])
 
 func _needed_count() -> int:
 	var count := 0
-	for stretch in stretches:
+	for stretch in _stretches:
 		if stretch.needed:
 			count += 1
 	return count
@@ -608,12 +593,12 @@ func _needed_count() -> int:
 ## The point of the line `s` clockwise from the north-west corner.
 func _point_at(s: float) -> Vector2:
 	var left := s
-	for stretch in stretches:
+	for stretch in _stretches:
 		var length := stretch.length()
 		if left <= length:
 			return stretch.a.lerp(stretch.b, left / maxf(length, 0.001))
 		left -= length
-	return stretches[0].a
+	return _stretches[0].a
 
 ## **Where an officer comes from**: out from `door` across the sidewalk by a tile, then along that
 ## sidewalk one way or the other, half a tile at a time, to the first place none of his figure
@@ -657,18 +642,14 @@ func _seen(feet: Vector2) -> bool:
 ## The earlier of the two tapers sets it.
 ## A park neither of them comes into view of from where she stood closes on the plain clock, and
 ## the run log says so. **And never faster than `PARK_CLOSING_STRETCH_MIN` a stretch**, the
-## floor `_reach_the_edge()` paces to, folded in here so that `deadline` is when the gap closes and
-## `first_in_view` is read off that, not off a close the floor then pushes later.
+## floor `_reach_the_edge()` paces to, folded in here so that `_deadline` is when the gap closes.
 func _time_the_close(her: Vector2) -> void:
 	walk_to_the_gap = her.distance_to(last_gap) / Tuning.WALK_SPEED if her != Vector2.INF \
 			else 0.0
 	var wanted := walk_to_the_gap + PARK_CLOSING_WARNING
 	var soonest := INF
 	var paced := PARK_CLOSING_SECONDS
-	# Per taper, `[seen walking in at, reaches the edge at, share of the round walked when seen]`,
-	# so when he is first in view can be read off the deadline once it is set.
-	var sightings: Array[PackedFloat32Array] = []
-	for officer in officers:
+	for officer in _officers:
 		if officer.job != Officer.Job.TAPE:
 			continue
 		var walk_in := PackedVector2Array([officer.at])
@@ -677,7 +658,6 @@ func _time_the_close(her: Vector2) -> void:
 		paced = maxf(paced, t_edge + PARK_CLOSING_STRETCH_MIN * officer.stretches.size())
 		var seen := _first_seen_along(walk_in)
 		if seen >= 0.0:
-			sightings.append(PackedFloat32Array([seen / officer.speed, t_edge, 0.0]))
 			soonest = minf(soonest, seen / officer.speed + wanted)
 			continue
 		var round := _round_path(officer)
@@ -686,20 +666,14 @@ func _time_the_close(her: Vector2) -> void:
 		if seen < 0.0 or length <= 0.0 or seen >= length:
 			continue
 		var share := seen / length
-		sightings.append(PackedFloat32Array([-1.0, t_edge, share]))
 		soonest = minf(soonest, t_edge + wanted / (1.0 - share))
-	deadline = paced
-	first_in_view = INF
+	_deadline = paced
 	if soonest == INF:
 		if her != Vector2.INF:
 			trace.note("contact", "no officer of the park's cordon comes into her view from "
 					+ "where she stood: it closes on the plain clock")
 		return
-	deadline = maxf(deadline, soonest)
-	for sighting in sightings:
-		var at := sighting[0] if sighting[0] >= 0.0 \
-				else sighting[1] + sighting[2] * (deadline - sighting[1])
-		first_in_view = minf(first_in_view, at)
+	_deadline = maxf(_deadline, soonest)
 
 ## The distance along `points` at which an officer standing there would first be seen, or -1.
 func _first_seen_along(points: PackedVector2Array) -> float:
@@ -1077,11 +1051,9 @@ func _walk_path_for(officer: Officer, step: float) -> float:
 	if officer.path.is_empty() or walked.travelled >= step - 0.001:
 		officer.stuck = 0
 		return walked.left if officer.path.is_empty() else -1.0
-	relaid += 1
 	officer.stuck += 1
 	if officer.stuck >= STUCK_FRAMES:
 		officer.straight = true
-		walked_straight += 1
 		trace.note("contact", "an officer of the park's cordon at %s finds no way on round what "
 				% officer.at + "stands in his way and walks the rest of his walk straight")
 		return _walk_straight(officer, step - walked.travelled)
@@ -1120,7 +1092,7 @@ func _take_the_walk(officer: Officer, walked: Navigator.Walked) -> void:
 	if walked.toward != Vector2.ZERO:
 		officer.heading = walked.toward
 
-## A taper at the edge: his pace round it is set so his last stretch is taped at `deadline`,
+## A taper at the edge: his pace round it is set so his last stretch is taped at `_deadline`,
 ## counting the corners and the ways round bodies he walks — so the two finish together and the
 ## last gap closes then — never faster than `PARK_CLOSING_STRETCH_MIN` a stretch.
 func _reach_the_edge(officer: Officer) -> void:
@@ -1140,7 +1112,7 @@ func _pace(officer: Officer) -> void:
 	var rest := PackedVector2Array([officer.at])
 	for j in range(officer.next, officer.legs.size()):
 		rest.append_array(officer.legs[j])
-	var left := deadline - elapsed
+	var left := _deadline - elapsed
 	var wanted := _length_of(rest) / left if left > 0.0 else INF
 	officer.tape_speed = minf(wanted, officer.top_speed)
 
@@ -1242,7 +1214,7 @@ func _on_the_way_out(stretch: Stretch) -> bool:
 ## edge row. The tile an officer stands on is not counted, since anyone may walk off a solid he
 ## stands in, except inside the park, where tape going up round him would shut him in.
 func _still_stepped_on(stretch: Stretch) -> bool:
-	for officer in officers:
+	for officer in _officers:
 		if officer.phase == Officer.Phase.GONE:
 			continue
 		var stands := _map.world_to_tile(officer.at)
@@ -1281,7 +1253,7 @@ func _walkers() -> PackedVector2Array:
 		if is_instance_valid(person) and not person.is_finished \
 				and not person.is_queued_for_deletion():
 			found.append(person.global_position)
-	for officer in officers:
+	for officer in _officers:
 		if officer.job != Officer.Job.ESCORT or officer.phase == Officer.Phase.GONE:
 			continue
 		found.append(officer.at)
@@ -1296,7 +1268,7 @@ func _walkers() -> PackedVector2Array:
 ## his person went before he reached them — or one of the park's people there.
 func _still_to_come_out() -> bool:
 	var at_the_line := line.grow(WALKER_REACH)
-	for officer in officers:
+	for officer in _officers:
 		if officer.job != Officer.Job.ESCORT:
 			continue
 		match officer.phase:
@@ -1396,11 +1368,11 @@ func _escort(officer: Officer, delta: float) -> void:
 
 ## The last gap is taped: she is shut in if she is inside the line. Every officer then walks off.
 func _close(her: Vector2) -> void:
-	closed_at = elapsed
-	trapped = her != Vector2.INF and line.has_point(her)
+	_closed_at = elapsed
+	var trapped := her != Vector2.INF and line.has_point(her)
 	if _city and _city.events:
 		_city.events.take_away_within(area, ["playground"] as Array[String])
-	for officer in officers:
+	for officer in _officers:
 		if officer.job == Officer.Job.TAPE:
 			officer.phase = Officer.Phase.LEAVING
 			var from := _map.world_to_tile(officer.at)
@@ -1432,7 +1404,7 @@ func _maybe_gone(officer: Officer) -> void:
 ## Takes an officer on: one of the cordon's from now, his move on the map's list of moves
 ## (`WorldMap.moves`) and his figure in the world.
 func _take_on(officer: Officer) -> void:
-	officers.append(officer)
+	_officers.append(officer)
 	officer.move.radius = _officer_reach
 	_map.moves.join(officer.move, officer.at)
 	_make_figure(officer)

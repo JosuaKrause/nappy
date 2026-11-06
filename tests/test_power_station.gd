@@ -14,6 +14,8 @@ const BASE_SEED := 7_140
 ## closures and the seals each — which is seconds a city rather than a quarter of one.
 const DAY_SEEDS := 10
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## Where the frame recorder of the yard-layer check writes its record on leaving the tree.
+const _SCRATCH_RECORD := "user://test_power_station_scratch_record.json"
 
 var _maps: Array[CityMap] = []
 
@@ -362,10 +364,12 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	record.start(ledger)
 	var sitting := Sitting.new()
 	sitting.frame_timing = record
+	# Its saved record goes to a scratch path, and the run it names the file by is the test's own.
+	sitting.frame_record_path = _SCRATCH_RECORD
+	var run := RunState.new()
 	var recorder := FrameRecorder.new()
-	recorder.save_on_exit = false
 	t.add_child(recorder)
-	recorder.setup(func() -> bool: return false, null, null, null, null, sitting)
+	recorder.setup(func() -> bool: return false, null, null, null, run, sitting)
 	var station := Building.new()
 	station.district = GameEnums.BlockPurpose.INDUSTRIAL
 	station.footprint = Vector2(96.0, 256.0)
@@ -393,3 +397,5 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 	station.free()
 	recorder.free()
 	sitting.free()
+	run.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))
