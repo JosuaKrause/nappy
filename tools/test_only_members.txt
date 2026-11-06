@@ -144,9 +144,6 @@ src/events/event_footprints.gd picture_drop_of
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
 src/events/events_ahead.gd a_pursuer_is_after_her
-src/events/views/event_look.gd mark_colour
-src/events/views/event_look.gd mark_swell
-src/events/views/event_look.gd wants_a_mark
 src/events/views/figure_look.gd charging_dog_pictures
 src/events/views/figure_look.gd rider_pictures
 src/events/views/pursuer_look.gd masked_pursuer_pictures
@@ -322,3 +319,4 @@ src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fair
 src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
 src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
 src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the caret is drawn straight onto the event with Sprites.draw_caret, a static primitive that never reaches a recording drawer, so this is the only outward statement of whether a mark is drawn and how wide it breathes (the look's wants_a_mark/mark_swell are internal and read through it)

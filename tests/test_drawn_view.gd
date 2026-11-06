@@ -234,7 +234,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	twin.free()
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
 	var drawn := cyclist.look.drawn_rect_now()
-	t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
+	t.check(cyclist.look.mark_rect().has_area() and cyclist.excitement.caret_strength() == 2,
 			"the caret it is owed is the doubled red")
 	var left := -2000.0
 	var asked_since_off := false
@@ -250,7 +250,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 		left += 4.0
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
-	t.check(cyclist.look.wants_a_mark(), "and that redraw carries its caret")
+	t.check(cyclist.look.mark_rect().has_area(), "and that redraw carries its caret")
 	# The same picture off screen and back: nothing in its key moved, and it redraws all the same,
 	# since nothing kept what it shows current while it was away.
 	_look_from(screen, Vector2.ZERO)

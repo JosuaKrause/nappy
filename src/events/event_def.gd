@@ -803,7 +803,7 @@ enum SolidWhen {
 	## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it
 	## should stay solid when it's open".)* So it never detains: a lowered boom is a wall across the
 	## road and a raised one is ground she may walk under, at the price of the car that raised it and of
-	## the guard a walked crossing sets on her (`CheckpointController.set_a_guard_on_her()`). The
+	## the guard a walked crossing sets on her (`CheckpointController._set_a_guard_on_her()`). The
 	## inspection is the huts' alone, and a hut never takes her in from the carriageway its own door's
 	## boom spans — that ground is the boom's.
 	##
@@ -954,7 +954,7 @@ enum Pavement {
 
 ## How close her own centre has to come to this instance's centre for the conversation to start —
 ## `detain_radius` past the solid edge she cannot walk through. The one form
-## `CheckpointController.check_detentions()` and `CheckpointController.release_finished_holds()`
+## `CheckpointController.check_detentions()` and `CheckpointController._release_finished_holds()`
 ## both measure, so the trigger and the distance the release has to clear can never be derived
 ## differently.
 func detain_distance() -> float:
@@ -1720,7 +1720,7 @@ func field_reach() -> float:
 ## What walking straight through the middle of one costs, in points of a hundred-point meter:
 ## the field integrated along the line, less the walking decay over the same time.
 ##
-## Cached, because `EventLook.wants_a_mark()` asks it on every `EventLook.draw()` and the answer is
+## Cached, because `EventLook._wants_a_mark()` asks it on every `EventLook.draw()` and the answer is
 ## a property of the def rather than of the moment.
 func walk_through_cost() -> float:
 	if _cost_cache == INF:

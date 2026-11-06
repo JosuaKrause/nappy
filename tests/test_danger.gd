@@ -59,7 +59,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 		return
 	var instance := _instance(def)
 	instance.excitement.set_player_at(instance.global_position)
-	t.check(not instance.look.wants_a_mark(),
+	t.check(not instance.look.mark_rect().has_area(),
 			"a café she is standing in front of carries no caret at all")
 	instance.free()
 
@@ -298,7 +298,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 	# `still_while_telegraphing`, so `travel_velocity()` is zero until then.
 	_advance(instance, def.telegraph_time + STEP)
 	instance.excitement.set_player_at(Vector2(def.outer_radius, 0.0))
-	t.check(not instance.look.wants_a_mark(),
+	t.check(not instance.look.mark_rect().has_area(),
 			"a cat driving straight at a standing player still lands under the line")
 	instance.free()
 
@@ -320,7 +320,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	var on_course := _instance(def, route)
 	_advance(on_course, def.telegraph_time + STEP)
 	on_course.excitement.set_player_at(on_course.global_position + Vector2(def.outer_radius, 0.0))
-	t.check(on_course.look.wants_a_mark() and on_course.look.mark_colour() == Palette.MARK_LETHAL,
+	t.check(on_course.look.mark_rect().has_area() and on_course.excitement.caret_strength() == 2,
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
@@ -351,10 +351,10 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 				PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 		t.check(cyclist.is_telegraphing(), "the cyclist is still telegraphing at age zero")
 		cyclist.excitement.set_player_at(cyclist.global_position + Vector2(cyclist_def.outer_radius, 0.0))
-		t.check(cyclist.look.wants_a_mark() and cyclist.look.mark_colour() == Palette.MARK_LETHAL,
+		t.check(cyclist.look.mark_rect().has_area() and cyclist.excitement.caret_strength() == 2,
 				"a telegraphing cyclist on a course that reaches her lethal radius is already " +
 						"the doubled red caret")
-		t.check(cyclist.look.mark_swell() < 1.0,
+		t.check(cyclist.look.mark_rect().size.x < EventPictures.largest_mark_rect().size.x,
 				"and the swell still reads the telegraph's own damping — the flash, not the " +
 						"colour, is what says this has not happened yet")
 		cyclist.free()
@@ -367,7 +367,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		t.check(dog.is_telegraphing() and not dog.is_waiting(),
 				"the day-3 dog has already noticed her and is still telegraphing its charge")
 		dog.excitement.set_player_at(dog.global_position + Vector2(60.0, 0.0))
-		t.check(dog.look.wants_a_mark() and dog.look.mark_colour() == Palette.MARK_LETHAL,
+		t.check(dog.look.mark_rect().has_area() and dog.excitement.caret_strength() == 2,
 				"a noticed dog holding its stand-off through the telegraph is already the " +
 						"doubled red caret")
 		dog.free()
@@ -378,7 +378,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 		var robber := _instance(robber_def)
 		t.check(robber.is_waiting(), "and nobody has come near it yet")
 		robber.excitement.set_player_at(robber.global_position + Vector2(1000.0, 1000.0))
-		t.check(not robber.look.wants_a_mark(),
+		t.check(not robber.look.mark_rect().has_area(),
 				"a waiting robber in an alley she is not in carries no mark at all")
 		robber.free()
 
@@ -481,14 +481,18 @@ func _test_the_mark_still_breathes(t) -> void:
 
 	var lowest := INF
 	var highest := 0.0
+	var approach := Vector2(-def.outer_radius - 30.0, 0.0)
 	for i in int(round(def.pulse_period / STEP)):
 		instance.step(STEP)
-		lowest = minf(lowest, instance.look.mark_swell())
-		highest = maxf(highest, instance.look.mark_swell())
-	t.check(highest > lowest * 1.5,
-			"the mark has a real swing between beats (%.2f to %.2f)" % [lowest, highest])
+		instance.excitement.set_player_at(approach, Vector2(Tuning.WALK_SPEED, 0.0), 0.0, 1.0)
+		var width := instance.look.mark_rect().size.x
+		lowest = minf(lowest, width)
+		highest = maxf(highest, width)
+	t.check(highest > lowest * 1.2,
+			"the mark has a real swing between beats (%.2f to %.2f px wide)" % [lowest, highest])
 	t.check(lowest > 0.0, "and never shrinks to nothing, which would read as flickering")
-	t.check(highest <= 1.0, "and never overstates what the event is emitting")
+	t.check(highest <= EventPictures.largest_mark_rect().size.x,
+			"and never overstates what the event is emitting")
 	instance.free()
 
 # ------------------------------------------------------- the cue over the player ---

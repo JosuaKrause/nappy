@@ -91,7 +91,7 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 				for at in places:
 					var instance := _arrival(row, at, her)
 					placed += 1
-					if instance.look.wants_a_mark():
+					if instance.look.mark_rect().has_area():
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id, way,
