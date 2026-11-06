@@ -63,7 +63,7 @@ static func format_clock_hundredths(seconds: float) -> String:
 
 ## `%d:%02d` — minutes and seconds, no millisecond term — the day clock's own shape wherever it is
 ## shown: the HUD corner while a day runs (`hud.gd`'s `_on_day_time_changed()`) and the day summary
-## once it ends (`SummaryModel.clock_line()`). Truncates rather than rounds, matching the HUD's own
+## once it ends (`SummaryModel.day_over()`). Truncates rather than rounds, matching the HUD's own
 ## `int(remaining)` so a value read from the same clock a frame apart never disagrees by a second.
 ## Its own function rather than `format_clock()` with the millisecond term dropped, so the day
 ## clock and the run clock stay two callers of two small functions instead of one function two
@@ -163,8 +163,8 @@ func _new_seed() -> int:
 
 # ------------------------------------------------------------------- save ---
 
-## Whether `data` carries every key this build's `state_data()` writes — the keys come from the
-## parts, so a field a part gains is required of a save the moment it is written.
+## Whether `data` carries every key this build's `run_data()` writes under `"state"` — the keys
+## come from the parts, so a field a part gains is required of a save the moment it is written.
 func snapshot_is_complete(data: Dictionary) -> bool:
 	for field in run_parts.state_keys():
 		if not data.has(field):
