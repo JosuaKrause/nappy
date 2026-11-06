@@ -12,8 +12,8 @@ extends RefCounted
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 
 func run(t) -> void:
-	_test_the_rim_is_painted_before_the_scene(t)
-	_test_the_rim_is_given_back_when_the_slices_go(t)
+	await _test_the_rim_is_painted_before_the_scene(t)
+	await _test_the_rim_is_given_back_when_the_slices_go(t)
 
 func _test_the_rim_is_painted_before_the_scene(t) -> void:
 	var atlas := AtlasLibrary.new()
@@ -27,7 +27,7 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 		instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO, PackedVector2Array(),
 				Vector2.RIGHT, ground)
 		t.add_child(instance)
-		instance.look.attach_nodes()
+		await t.get_tree().process_frame
 		instance.step(instance.def.telegraph_time + 0.01)
 		t.check(instance.runs_vertically() == vertical,
 				"the crash runs %s the screen on its street" % ("down" if vertical else "across"))
@@ -59,7 +59,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	instance.atlas = atlas
 	instance.setup(EventCatalogue.by_id("car_accident"), Vector2.ZERO)
 	t.add_child(instance)
-	instance.look.attach_nodes()
+	await t.get_tree().process_frame
 	instance.step(instance.def.telegraph_time + 0.01)
 	(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
