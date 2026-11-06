@@ -137,6 +137,26 @@ class ListTests(unittest.TestCase):
         }
         self.assertEqual(only(src, {"tests/test_a.gd": "func f(t):\n\tt.walks()\n"}), {("src/sim/a.gd", "walks")})
 
+    def test_a_call_on_a_namesake_is_not_an_own_use_so_the_member_has_no_reader(self) -> None:
+        src = {
+            "src/sim/a.gd": "class_name A\nfunc walks() -> bool:\n\treturn b.walks()\n",
+            "src/sim/b.gd": "class_name B\nfunc walks() -> bool:\n\treturn true\n",
+            THING: "class_name Thing\nfunc bump() -> void:\n\tpass\nfunc run() -> void:\n\tself.bump()\n",
+        }
+        reads = {"tests/test_a.gd": "func f(t):\n\tt.walks()\n\tt.bump()\n"}
+        found, _ = members.test_only(files(src, reads))
+        _, stands = members.scan(files(src, reads))
+        groups = {m.key: members.group_of(stands[m.key]) for m in found}
+        self.assertEqual(groups, {("src/sim/a.gd", "walks"): "no reader", (THING, "bump"): "own file only"})
+
+    def test_a_function_is_read_only_as_a_call_and_an_engine_name_is_never_read(self) -> None:
+        src = {THING: "class_name Thing\nfunc enabled() -> bool:\n\treturn true\nfunc bump() -> void:\n\tpass\n"}
+        engine = {"tests/test_thing.gd": "func f(c):\n\tc.enabled = false\n\tc.bump\n"}
+        self.assertEqual(only(src, engine), set())
+        self.assertEqual(only(src, {"tests/test_thing.gd": "func f(c):\n\tc.bump()\n"}), {(THING, "bump")})
+        var = {THING: "class_name Thing\nvar size := 3\nfunc f() -> int:\n\treturn size\n"}
+        self.assertEqual(only(var, {"tests/test_thing.gd": "func f(c):\n\tc.size.x\n"}), set())
+
     def test_a_constant_used_in_its_own_file_is_exempt_and_one_used_nowhere_is_not(self) -> None:
         src = {THING: "class_name Thing\nconst USED := 1\nconst UNUSED := 2\nfunc f() -> int:\n\treturn USED\n"}
         reads = {"tests/test_thing.gd": "func f():\n\tassert(Thing.USED < Thing.UNUSED)\n"}

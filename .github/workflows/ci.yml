@@ -217,8 +217,9 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run python tools/check_layers.py
 
-      # The tests hold something the game can reach: no test reads a public member that nothing else
-      # under src/ names, except those tools/test_only_members.txt lists, a list that only shrinks.
+      # The tests hold something the game can reach: no test reads a public member that no other file
+      # under src/ names (a use in its own file does not count), except those tools/test_only_members.txt
+      # lists, and a listed line whose member gained a reader, lost its test or is gone fails too.
       # Read as text, so it needs no engine and runs on every run, docs-only included.
       - name: No test reads a member only tests read
         if: ${{ !cancelled() }}
