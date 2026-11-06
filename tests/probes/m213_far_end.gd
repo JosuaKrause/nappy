@@ -10,9 +10,8 @@ extends RefCounted
 ## mouth, up to 34px short of the mark on its near side — inside `ContactPoint.REACH` (36px), so the
 ## mark is read — and back out the way she came, in 8px steps. A bare `alley_robbery` stands where
 ## a draw put him; the walk counts as reaching the mark when he is still `is_waiting()` at the end.
-## Four draws on the same marks: the whole circle of the 62-176px band around the mark (no far-end
-## rule at all), the same band with the bearing leaning toward the far end, and the director's own
-## `_draw_guard_position_near_far_mouth()`.
+## The draw on those marks is the director's own `_draw_guard_position_near_far_mouth()`, the far-end
+## rule; the whole-circle band it replaced is gone from the director.
 ##
 ## **The screen.** She stands on every `ALLEY` tile in turn; the screen is 640x360 world px
 ## around her, unrotated (`Tuning.VIEW_HALF_EXTENT`); the director relocates the mark to
@@ -108,20 +107,17 @@ func _reachability(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
-	var names := ["whole circle", "leaning bearing", "far end"]
-	var asleep := {"through": [0, 0, 0], "passage": [0, 0, 0]}
+	var names := ["far end"]
+	var asleep := {"through": [0], "passage": [0]}
 	var counted := {"through": 0, "passage": 0}
-	var unguarded := {"through": [0, 0, 0], "passage": [0, 0, 0]}
-	var too_close := [0, 0, 0]
+	var unguarded := {"through": [0], "passage": [0]}
+	var too_close := [0]
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
 		director.setup(null, map, null, own_run)
-		var rngs: Array[RandomNumberGenerator] = []
-		for i in 3:
-			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("m213-probe:%d:%d" % [seed_value, i])
-			rngs.append(rng)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("m213-probe:%d:2" % seed_value)
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
@@ -136,32 +132,22 @@ func _reachability(t) -> void:
 			var axis := (far - near).normalized() if far.distance_to(near) > 0.5 else Vector2.DOWN
 			var outside := near - axis * 48.0
 			var touch := mark - axis * TOUCH_SHORT
-			for i in 3:
-				var guard_at := Vector2.INF
-				match i:
-					0:
-						guard_at = director._draw_guard_position(rngs[i], mark, Vector2.INF,
-								min_distance, max_distance)
-					1:
-						guard_at = director._draw_guard_position(rngs[i], mark, far,
-								min_distance, max_distance)
-					2:
-						guard_at = director._draw_guard_position_near_far_mouth(rngs[i], mark,
-								far, min_distance, max_distance, Vector2.INF, 0.0, false)
-				if guard_at == Vector2.INF:
-					unguarded[kind][i] += 1
-					continue
-				if guard_at.distance_to(mark) < min_distance - 0.5:
-					too_close[i] += 1
-				if _stays_asleep(robbery, guard_at, [outside, touch, outside]):
-					asleep[kind][i] += 1
+			var guard_at := director._draw_guard_position_near_far_mouth(rng, mark, far,
+					min_distance, max_distance, Vector2.INF, 0.0, false)
+			if guard_at == Vector2.INF:
+				unguarded[kind][0] += 1
+				continue
+			if guard_at.distance_to(mark) < min_distance - 0.5:
+				too_close[0] += 1
+			if _stays_asleep(robbery, guard_at, [outside, touch, outside]):
+				asleep[kind][0] += 1
 		director.free()
 	for kind in ["through", "passage"]:
-		for i in 3:
+		for i in names.size():
 			print("[m213] %-8s %-16s asleep %4d of %4d (%.0f%%), unguarded %d" % [kind, names[i],
 					asleep[kind][i], counted[kind],
 					100.0 * asleep[kind][i] / maxf(1.0, counted[kind]), unguarded[kind][i]])
-	for i in 3:
+	for i in names.size():
 		var total: int = asleep["through"][i] + asleep["passage"][i]
 		var all: int = counted["through"] + counted["passage"]
 		print("[m213] all      %-16s asleep %4d of %4d (%.0f%%), inside 62px of the mark %d"

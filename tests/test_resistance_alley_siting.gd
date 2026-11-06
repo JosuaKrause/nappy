@@ -200,17 +200,31 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 ## `SWEEP_SEEDS`' cities, each relocated onto in turn with her standing on it
 ## (`_relocations_over_the_marks()`): the spot two-thirds in is within his notice of her there, so
 ## each guard is the one the director stands at the nearest acceptable point along the alley
-## instead, the refusal and the search after it that this rule is about.
+## instead, the refusal and the search after it that this rule is about. Each mark and its guard
+## are also held off the doorstep's lethal reach, the spawn kill
+## `_test_no_alley_robbery_stands_near_the_doorstep()` asks of the dawn, here over every mark tile.
 func _test_the_guard_never_lands_inside_a_building(t) -> void:
+	var robbery := EventCatalogue.mark_guard()
+	var doorstep_reach := 2.0 * robbery.inner_radius + ContactPoint.REACH
 	var checked := 0
 	for seed_value in SWEEP_SEEDS:
 		for entry in _relocations_over_the_marks(t, seed_value, _on_the_tile):
 			var guard_at: Vector2 = entry.guard
+			var map := _city.map
+			var tile: Vector2i = entry.tile
+			var doorstep := map.doorstep_world_position()
+			if entry.mark != Vector2.INF:
+				# PLAYTEST-55's spawn kill (`_test_no_alley_robbery_stands_near_the_doorstep()`),
+				# over every mark the relocation stands and its guard.
+				t.check(entry.mark.distance_to(doorstep) > doorstep_reach,
+						"seed %d: the mark relocated to %s is not within lethal reach of the doorstep"
+						% [seed_value, map.world_to_tile(entry.mark)])
 			if entry.mark == Vector2.INF or guard_at == Vector2.INF:
 				continue
 			checked += 1
-			var map := _city.map
-			var tile: Vector2i = entry.tile
+			t.check(guard_at.distance_to(doorstep) > doorstep_reach,
+					"seed %d: the guard for the mark at %s is not within lethal reach of the doorstep"
+					% [seed_value, tile])
 			var guard_tile := map.world_to_tile(guard_at)
 			t.check(map.is_walkable(guard_tile),
 					"seed %d: the guard for the mark at %s stands on walkable ground"
@@ -437,13 +451,17 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
 ## farthest from the mark, found here independently from `CityMap.courtyard_rects`; the guard the
 ## street has stands inside that courtyard, within `FAR_END_REACH_IN` of that tile; and he is never
 ## within his catch (`EventDef.lethal_reach()`) of any point she can touch the mark from,
-## `ContactPoint.REACH` around it. He may still wake as she reads it. The dawn draw reaches a passage
+## `ContactPoint.REACH` around it. He may still wake as she reads it. The sweep says it met both kinds
+## of passage: a one-tile passage, whose mark stands on the courtyard's first tile, and one into an
+## apartment complex's court, wider than `CityGenerator.COURTYARD_SIZE_TILES`. The dawn draw reaches a passage
 ## too: with every through-alley mark tile used by a completed step, the day's mark is drawn in one,
 ## and its guard, stood at dawn with nothing about her refusing him, is at that courtyard's inner end.
 func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var passages := 0
 	var guarded := 0
+	var one_tile_passages := 0
+	var apartment_courts := 0
 	var drawn_in_a_passage := 0
 	for seed_value in SWEEP_SEEDS:
 		for entry in _relocations_over_the_marks(t, seed_value, _outside_its_mouth):
@@ -460,6 +478,11 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 			if mark == Vector2.INF or guard_at == Vector2.INF:
 				continue
 			guarded += 1
+			if map.tile_at(tile) == GameEnums.TileType.COURTYARD:
+				one_tile_passages += 1
+			var court := AlleyMarks.courtyard_of(map, tile)
+			if maxi(court.size.x, court.size.y) > CityGenerator.COURTYARD_SIZE_TILES:
+				apartment_courts += 1
 			_check_the_courtyard_guard(t, robbery, map, tile, mark, guard_at,
 					"seed %d: the mark at %s" % [seed_value, tile])
 		# At dawn: every through-alley mark tile used, so the draw has only the passages.
@@ -485,6 +508,10 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 		director.free()
 	t.check(passages > 0 and guarded == passages,
 			"every courtyard passage mark is guarded (%d of %d)" % [guarded, passages])
+	t.check(one_tile_passages > 0 and apartment_courts > 0,
+			("the sweep met a one-tile passage, its mark on the courtyard's first tile (%d), and a " +
+			"passage into an apartment complex's wider court (%d)") % [one_tile_passages,
+			apartment_courts])
 	t.check(drawn_in_a_passage == SWEEP_SEEDS.size(),
 			"with the through-alleys used, each city's dawn mark is drawn in a passage (%d of %d)"
 			% [drawn_in_a_passage, SWEEP_SEEDS.size()])
@@ -537,7 +564,9 @@ const GUARD_DOORSTEP_DAYS: Array[int] = [6, 8, 10, 12]
 ## resistance's guard trap, from `TRAP_FIRST_DAY` (6) — ever stands within lethal reach of the
 ## doorstep, over `RULE_SEEDS` seeds: the catalogue's over every day it can appear, from its day's
 ## schedule; the mark's and its guard's from the dawns of `GUARD_DOORSTEP_DAYS` in a city of the same
-## seed (`start_day()`, the mark and the guard it stands read off the street).
+## seed (`start_day()`, the mark and the guard it stands read off the street). Every mark tile a
+## relocation stands a mark and its guard on is held off the doorstep too, in
+## `_test_the_guard_never_lands_inside_a_building()`'s sweep.
 ##
 ## `reach` is computed from the row's own `inner_radius` (26px, the always-lethal zone around
 ## whichever one of them it is) and the trap's own `min_distance` (62px, how close a guard is

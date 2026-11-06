@@ -221,11 +221,14 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	player.global_position = at
 	return player
 
-## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`):
-## three, between them every kind of mark tile the game has — one in from either end of a
-## through-alley, and the courtyard passages, of which a city has only two to four — so a sweep asks
-## the rule of each kind on more than one city.
-const SWEEP_SEEDS: Array[int] = [4242, 90210, 271828]
+## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`): the
+## six the sweeps over bare maps asked, kept whole since they found real bugs (brisk-moose #1130),
+## 2295276695 among them, the seed M100's robber stuck in a building was found on. Between them they
+## hold every kind of mark tile the game has — one in from either end of a through-alley, and the
+## courtyard passages, of which a city has only two to four: a one-tile passage, whose mark stands on
+## the courtyard's own first tile, and a passage into an apartment complex's wider court, which the
+## courtyard sweep checks it met. A relocation is a tick, so the six cost a city build each.
+const SWEEP_SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
 
 ## **A relocation, the way a played day makes one** (`ResistanceDirector.tick()`): her stroller set
 ## down at `here`, the day's mark unseen (the director is handed no sight, so nothing she passes is

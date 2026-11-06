@@ -76,11 +76,11 @@ const SEEN_DISTANCE := 150.0
 ## while stopping to read a wall would. Felt, open to overturn.
 const SEEN_DWELL_SECONDS := 1.0
 
-## How many bearings `_draw_guard_position` tries before giving up on the day's guard. A
-## `barricade`-scale alley is 64px wide against a band that can reach past 150px out — most
-## bearings land in the building on either side of it — so this is generous rather than tight;
-## what bounds it at all is that a draw has to stop somewhere; see `_draw_guard_position`'s own
-## doc for the fallback when it does.
+## How many draws a guard's or a pursuer's placement tries before giving up: the points a
+## courtyard mark's guard is drawn at in from the inner end (`_draw_guard_position_near_far_mouth()`)
+## and the bearings a sent robber's arrival is drawn on (`_draw_arrival_position()`). Generous rather
+## than tight; what bounds it at all is that a draw has to stop somewhere, and each caller says
+## what happens when it does.
 const TRAP_DRAW_LIMIT := 24
 
 ## How many times `_pick_reachable` redraws from its own pool when the draw itself lands on a
@@ -795,14 +795,13 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_task_guard = null
 	var guard_at := _guard_position(rng, at, for_mark, her, on_screen_matters, reach)
 	var placement := "band"
-	if for_mark and not _through_alley_span(at).is_empty():
-		placement = "two-thirds in"
-	elif for_mark and _far_alley_mouth(at) != Vector2.INF:
-		placement = "courtyard's inner end"
+	if for_mark:
+		placement = "two-thirds in" if not _through_alley_span(at).is_empty() \
+				else "courtyard's inner end"
 	var kind := "chalk mark" if for_mark else "task"
 	if guard_at == Vector2.INF:
-		# **No trap is better than a trap in a wall.** `TRAP_DRAW_LIMIT` bearings (or the far
-		# mouth and every legal step in from it) found nowhere walkable at all — every one of them
+		# **No trap is better than a trap in a wall.** Every spot along the alley (or the far
+		# end and every draw in from it) found nowhere walkable at all — every one of them
 		# a building, a held segment, the home block or in view of her — so the contact goes out
 		# unguarded today rather than guarded by a robber stuck for ever where nobody can ever
 		# meet him. `docs/DECISIONS.md`, M100, "The guard robber is placed inside a building,
@@ -818,11 +817,16 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		_task_guard = _city.events.spawn_extra(robbery, guard_at)
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him: for a
-## chalk mark, two-thirds through its alley (`_guard_two_thirds_through()`), at a courtyard's inner
-## end (`_draw_guard_position_near_far_mouth()`), or else the whole-circle band
-## `_draw_guard_position()` draws; for the roadblock, `_roadblock_guard_spot()`, in its band with a
-## clear line to it. All measured from the contact's own `reach` (see `_maybe_set_a_trap()`).
-## `Vector2.INF` when no candidate qualifies. Split out so a move of the roadblock's guard
+## chalk mark, two-thirds through its alley (`_guard_two_thirds_through()`) or at a courtyard's inner
+## end (`_draw_guard_position_near_far_mouth()`); for the roadblock, `_roadblock_guard_spot()`, in
+## its band with a clear line to it. All measured from the contact's own `reach` (see
+## `_maybe_set_a_trap()`). A mark stands only on a mark tile (`_marks()`; a recipe's pin off one is
+## refused, `_the_pinned_mark()`), and every mark tile is in a through-alley or past a courtyard's
+## passage, so a point on neither has no guard, as `_guard_spot()` answers off an alley. Every
+## candidate is refused within his `EventDef.notice` of `her` and, with `on_screen_matters`, where
+## he would be drawn in her view (brisk-wombat, "a robber also appeared out of nowhere and
+## instakilled me"): his spot is worked out from the contact alone, so those refusals are what keep
+## him off her. `Vector2.INF` when no candidate qualifies. Split out so a move of the roadblock's guard
 ## (`_move_the_task_guard_to_her_target()`) can ask where he would stand without spawning him.
 ## `or_any` is the roadblock's alone (`_roadblock_guard_spot()`): true for the guard placed with the
 ## task, false for a move of the guard already there, which is how
@@ -843,8 +847,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 	if far != Vector2.INF:
 		return _draw_guard_position_near_far_mouth(rng, at, far, min_distance, max_distance,
 				her, her_refuse_within, on_screen_matters)
-	return _draw_guard_position(rng, at, Vector2.INF, min_distance, max_distance,
-			her, her_refuse_within, on_screen_matters)
+	return Vector2.INF
 
 ## **Where the roadblock's guard stands**, for a roadblock whose body is at `body`, touched from
 ## within `reach` of it (`_body_touch_reach()`): a tile's centre in the band round the body that
@@ -1273,61 +1276,6 @@ static func _pursuer_walker() -> Mover:
 	return Mover.on_foot(EventInstance.FIGURE_RADIUS)
 
 var _chaser := _pursuer_walker()
-
-## A bearing and a distance from `at`, redrawn until the point is walkable ground the day's
-## catalogue and the home-block exemption both leave alone — rejected rather than repaired, the
-## same rule every other placement in this game keeps. `docs/DECISIONS.md`, M100, "The guard robber is
-## placed inside a building": his lethal radius travels with him, so a bearing that lands him in
-## a building is an invisible fatal spot rather than a cosmetic one.
-##
-## **Used for a chalk mark in neither a through-alley nor a courtyard's passage**, drawn from the
-## whole circle: `_guard_position()` sends a mark's own guard two-thirds through its alley or to
-## `_draw_guard_position_near_far_mouth()` first, and the roadblock's guard to
-## `_roadblock_guard_spot()`. The director always passes `toward` as `Vector2.INF` (a rig may pass
-## a point to lean the bearing to the half-circle facing it). An `ALLEY` tile by preference, since the
-## row's own placement is `ALLEY`, but not a requirement: the band this draws from can reach well
-## past a two-tile-wide alley's own building line, so an alley hit is kept the moment it is found
-## and any other walkable, unheld, off-the-home-block tile is kept as a fallback in case the
-## budget runs out first. `Vector2.INF` when `TRAP_DRAW_LIMIT` draws found neither — see the
-## caller for what that means.
-##
-## **Never within `her_refuse_within` of `her`, and never where he would be drawn in her view**
-## (brisk-wombat, "a robber also appeared out of nowhere and instakilled me"): a candidate is
-## drawn purely from the band around `at`, with no idea where she stands or what the camera can
-## see, so both refusals are what keeps him off her — outside his own `EventDef.notice`, or worse
-## his `inner_radius`, a `hard_fail` with no warning at all — and off screen, whichever contact
-## `at` names. `her` is `Vector2.INF` and `on_screen_matters` is `false` for a caller with nothing
-## to keep away from, which never rejects anything on either count; a dawn placement passes the doorstep and `false`
-## (`_begin_step()`).
-func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
-		min_distance: float, max_distance: float, her: Vector2 = Vector2.INF,
-		her_refuse_within: float = 0.0, on_screen_matters: bool = false) -> Vector2:
-	var ground := _spawn_siting.ask_of_ground(GUARD_BOX)
-	var fallback := Vector2.INF
-	for _attempt in TRAP_DRAW_LIMIT:
-		# Hoisted so the draw can be written down. Which distance a mark got is the one random
-		# outcome that decides a run without a route around it, and the only one whose
-		# consequence otherwise looks like bad luck with the event scheduler.
-		var distance := rng.randf_range(min_distance, max_distance)
-		var angle: float
-		if toward == Vector2.INF:
-			angle = rng.randf() * TAU
-		else:
-			var facing_toward := (toward - at).angle()
-			angle = facing_toward + rng.randf_range(-PI / 2.0, PI / 2.0)
-		var candidate := at + Vector2.RIGHT.rotated(angle) * distance
-		if her != Vector2.INF and candidate.distance_to(her) <= her_refuse_within:
-			continue
-		if on_screen_matters and not _spawn_siting.allows(
-				SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground, candidate):
-			continue
-		if not _spawn_siting.allows_every(SpawnSiting.CONTACT_GROUND, ground, candidate):
-			continue
-		if _map.tile_at(_map.world_to_tile(candidate)) == GameEnums.TileType.ALLEY:
-			return candidate
-		if fallback == Vector2.INF:
-			fallback = candidate
-	return fallback
 
 ## How far along a through-alley a chalk mark's guard stands, from the end nearer the mark:
 ## two-thirds of its length (`_guard_two_thirds_through()`).
@@ -2199,8 +2147,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 	return added
 
 ## The near mast's edge over the far one: index `i`'s weight is `1.0 / d^2`, `d` the straight-line
-## distance from where she is when the task is placed (`_player_position()`, or the doorstep for a
-## director handed no player) to `beside[i]`, the tile that draw would stand her on. Straight-line rather than a walked
+## distance from where she is when the task is placed (`_player_position()`) to `beside[i]`, the tile that draw would stand her on. Straight-line rather than a walked
 ## distance: `ReachabilityGrid` (`src/routes/reachability_grid.gd`) answers only whether a tile is
 ## reached, never how far, so there is no cheap walking distance on hand to weight by instead. `d`
 ## is floored at one tile (`Tuning.TILE_SIZE`, 32px) so a mast whose contact tile she already
@@ -2208,7 +2155,12 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 ## the same single draw off the day's RNG `_kind_for()` in `poster_walls.gd` makes for a weighted
 ## pool — so the draw is still random and still exactly reproducible for the same seed and the same
 ## route: her position at the moment of the draw is itself determined by the route that got her
-## there.
+## there. **Where her stroller is not there to ask** (none handed, or freed: `_player_position()`
+## answers `Vector2.INF`) the distances are taken from the doorstep, as every read of her position
+## in this file has a place of its own to fall back to (the contact for `_set_the_task_guard_on_her()`,
+## the mark for `_where_she_read_it()`): with no point to measure from every weight would be zero
+## and the draw would fall on the last mast whatever the distances, rather than staying a weighted
+## draw. `main` hands her right after `setup()`, so a played day always measures from her.
 func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -> int:
 	var from := _player_position()
 	if from == Vector2.INF:
