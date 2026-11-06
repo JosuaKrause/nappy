@@ -2,6 +2,7 @@ extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const GroundCells := preload("res://tests/ground_cells.gd")
 const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
@@ -319,7 +320,7 @@ func _test_water_ownership(t) -> void:
 		for tile in surface.cells:
 			actual[tile] = true
 			count += 1
-			t.check(city.scenery_ground.get_cell_source_id(tile) == -1,
+			t.check(GroundCells.source_id(city.scenery_ground, tile) == -1,
 					"animated water has no duplicate pixel owner in the static TileMap")
 	t.check(actual == expected and actual.size() == count,
 			"resident water has one owner per cell and excludes the bridge columns at every depth")

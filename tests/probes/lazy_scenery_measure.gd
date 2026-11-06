@@ -6,6 +6,7 @@ extends RefCounted
 ## which holds only the view's regions.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const GroundCells := preload("res://tests/ground_cells.gd")
 const TIMED_CITY := preload("res://tests/probes/lazy_scenery_city.gd")
 const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
@@ -89,7 +90,7 @@ func _coverage(city: City) -> void:
 	var home_rect := map.tile_rect_to_world(CityMap.block_rect(map.home_block))
 	var ground: SceneryGround = city.scenery_ground
 	_prepare_every_region(ground, city)
-	var cells := ground.get_used_cells()
+	var cells := GroundCells.used_cells(ground)
 	var boot_inside := 0
 	var boot_outside := 0
 	for tile in cells:
@@ -161,7 +162,7 @@ func _coverage(city: City) -> void:
 			for y in range(lo.y, hi.y):
 				for x in range(lo.x, hi.x):
 					var cell := Vector2i(x, y)
-					if ground.get_cell_source_id(cell) >= 0:
+					if GroundCells.source_id(ground, cell) >= 0:
 						seen_cells[cell] = true
 			for building in city.buildings():
 				if rect.intersects(map.tile_rect_to_world(building.lot)):
@@ -191,7 +192,7 @@ func _building_count(city: City, rect: Rect2) -> int:
 
 func _counterfactual(city: City, t) -> void:
 	var source: SceneryGround = city.scenery_ground
-	var expected_count := source.get_used_cells().size()
+	var expected_count := GroundCells.used_cells(source).size()
 	var home := city.map.doorstep_world_position()
 	var nearby := Rect2(home - HALF_VIEW, HALF_VIEW * 2).grow(128)
 	var sheet := (source.tile_set.get_source(source.tile_set.get_source_id(0)) as TileSetAtlasSource).texture
@@ -223,8 +224,8 @@ func _counterfactual(city: City, t) -> void:
 		for y in range(lo.y, hi.y):
 			for x in range(lo.x, hi.x):
 				var tile := Vector2i(x, y)
-				mismatches += int(layer.get_cell_source_id(tile) != source.get_cell_source_id(tile)
-					or layer.get_cell_atlas_coords(tile) != source.get_cell_atlas_coords(tile))
+				mismatches += int(layer.get_cell_source_id(tile) != GroundCells.source_id(source, tile)
+					or layer.get_cell_atlas_coords(tile) != GroundCells.atlas_coords(source, tile))
 		started = Time.get_ticks_usec()
 		layer.clear()
 		var clear_ms := (Time.get_ticks_usec() - started) / 1000.0

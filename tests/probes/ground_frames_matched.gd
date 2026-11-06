@@ -91,6 +91,9 @@ func _finish_frame() -> void:
 	var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
 	var ordinary := 0
 	var guarded := 0
+	var evictions := 0
+	for key: Vector2i in _before.chunks:
+		evictions += int(after.chunks.get(key, 0) != _before.chunks[key])
 	for key: Vector2i in after.chunks:
 		if after.chunks[key] != _before.chunks.get(key, 0):
 			sections += (4 if _stepped else 1) - int(_before.pending.get(key, 0))
@@ -105,9 +108,9 @@ func _finish_frame() -> void:
 	for key: Vector2i in _before.pending:
 		canceled += int(not after.pending.has(key) and not after.chunks.has(key))
 	var row := {"span_usec": ended - _begin, "queue_usec": _queue_usec,
-		"regions": ground.prepared - int(_before.prepared),
+		"regions": ordinary + guarded,
 		"guards": _city.scenery.ordinary_guard_preparations - int(_before.guards),
-		"evictions": ground.evicted - int(_before.evicted), "gaps": gaps,
+		"evictions": evictions, "gaps": gaps,
 		"observed_sections": sections, "canceled_pending": canceled,
 		"pending": after.pending.size(), "resident": after.chunks.size(),
 		"draw_calls": RenderingServer.get_rendering_info(
@@ -132,8 +135,8 @@ func _snapshot() -> Dictionary:
 	var chunks := {}
 	for key: Vector2i in _city.scenery_ground.chunks:
 		chunks[key] = _city.scenery_ground.chunks[key].get_instance_id()
-	return {"pending": pending, "chunks": chunks, "prepared": _city.scenery_ground.prepared,
-		"guards": _city.scenery.ordinary_guard_preparations, "evicted": _city.scenery_ground.evicted}
+	return {"pending": pending, "chunks": chunks,
+		"guards": _city.scenery.ordinary_guard_preparations}
 
 func _run() -> void:
 	var cases: Array[Dictionary] = []
