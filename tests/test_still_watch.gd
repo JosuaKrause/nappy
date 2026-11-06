@@ -240,7 +240,7 @@ func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t) -> 
 ## once the light is green for her, the hold fires.
 func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t) -> void:
 	var rig := await _rig(t)
-	var box := _junction_box(rig.city.map, Vector2i.ZERO)
+	var box := _junction_box(rig.city.map, _main_junction(rig.city.map, 0))
 	rig.viewport.canvas_transform = Transform2D(0.0, -box.position + Vector2(8, 8))
 	var here := box.get_center()
 	var green := Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
@@ -256,20 +256,29 @@ func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t) -> 
 	t.check(rig.triggered_at >= 0, "and once the light is green for her the hold fires")
 	rig.free_all()
 
-## Junction (0, 0): the main road's own corridor and, once the map says so, the signalled one —
-## `CityMap.junction_at()` and `TrafficSignals._offset()` both answer zero there, so `elapsed`
-## alone drives the phase with nothing else to account for. Tile (1, 1) sits inside the box on
-## both corridors' sidewalk band (`SIDEWALK_WIDTH` is 2), and tile (3, 3) sits in the box on both
-## corridors' road band — the same corner and the same carriageway `route_tree.gd`'s own note
-## keeps as one piece of ground, used to prove her own tile no longer decides anything. Tile
-## (10, 10) sits nowhere near any junction.
-func _signalled_map(main_road_index := 0) -> CityMap:
-	var map := CityMap.new()
-	map.main_road = main_road_index
-	map.set_tile(Vector2i(1, 1), GameEnums.TileType.SIDEWALK)
-	map.set_tile(Vector2i(3, 3), GameEnums.TileType.ROAD)
-	map.set_tile(Vector2i(10, 10), GameEnums.TileType.SIDEWALK)
-	return map
+## The suite's city: a generated one, whose main road is the corridor the generator picked, so the
+## junction the lights stand on is `_main_junction(map, 0)` and not a corridor the suite chose.
+const _SEED := 4242
+
+## The generated map, made on first use and shared: no test writes to it.
+var _map: CityMap
+
+func _signalled_map() -> CityMap:
+	if _map == null:
+		_map = CityGenerator.generate(_SEED)
+	return _map
+
+## The signalled junction `row` blocks down the main road. At row 0 `TrafficSignals._offset()`
+## answers zero, so `elapsed` alone drives the phase with nothing else to account for.
+func _main_junction(map: CityMap, row: int) -> Vector2i:
+	return Vector2i(map.main_road, row)
+
+## The tile `offset` tiles into a junction's box from its corner. Offset (1, 1) sits on both
+## corridors' sidewalk band (`SIDEWALK_WIDTH` is 2) and (3, 3) on both corridors' road band, the same
+## corner and the same carriageway `route_tree.gd`'s own note keeps as one piece of ground, used to
+## prove her own tile no longer decides anything.
+func _tile_in(junction: Vector2i, offset: Vector2i) -> Vector2i:
+	return junction * CityMap.period() + offset
 
 ## The world rect of a junction's own `Tuning.STREET_WIDTH` tile box.
 func _junction_box(map: CityMap, junction: Vector2i) -> Rect2:
@@ -281,7 +290,7 @@ func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	var view := _junction_box(map, Vector2i.ZERO).grow(20.0)
+	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
 	var far_away := map.tile_to_world(Vector2i(10, 10))
 	t.check(StillWatch.facing_a_red_light(map, signals, far_away, view),
 			"the main road's own green is a red light for the pedestrian crossing it, wherever " +
@@ -294,8 +303,8 @@ func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: Obj
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
-	var view := _junction_box(map, Vector2i.ZERO).grow(20.0)
-	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(1, 1)), view),
+	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"the side arm's own green is what lets her cross the main road")
 
 ## The old rule ended the hold the moment she stepped onto `ROAD` — the player asked for the watch
@@ -306,34 +315,35 @@ func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longe
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	var view := _junction_box(map, Vector2i.ZERO).grow(20.0)
-	t.check(StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(3, 3)), view),
+	var view := _junction_box(map, _main_junction(map, 0)).grow(20.0)
+	t.check(StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(3, 3))), view),
 			"standing on the carriageway no longer ends the hold — only the light does")
 
 func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Object) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	var view := Rect2(map.tile_to_world(Vector2i(10, 10)), Vector2(50.0, 50.0))
-	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(10, 10)),
+	var far_away := map.tile_to_world(Vector2i(10, 10))
+	var view := Rect2(far_away, Vector2(50.0, 50.0))
+	t.check(not StillWatch.facing_a_red_light(map, signals, far_away,
 			view), "no junction anywhere near what is on screen is never a red light")
 
 func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Object) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	# Junction (1, 0) is an ordinary crossroads — main_road stays 0 — but its box is on screen.
-	var view := _junction_box(map, Vector2i(1, 0)).grow(20.0)
-	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(1, 1)), view),
+	# The junction beside the main road's is an ordinary crossroads, but its box is on screen.
+	var view := _junction_box(map, _main_junction(map, 0) + Vector2i(1, 0)).grow(20.0)
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"an ordinary junction on screen has no light to wait at, whatever the phase clock reads")
 
 func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: Object) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	var box := _junction_box(map, Vector2i.ZERO)
+	var box := _junction_box(map, _main_junction(map, 0))
 	var view := Rect2(box.end + Vector2(500.0, 500.0), Vector2(50.0, 50.0))
-	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(Vector2i(1, 1)), view),
+	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"a red junction that is not on screen never holds the watch")
 
 ## `TrafficSignals` runs a green wave with a per-junction offset (`TrafficSignals._offset()`), so
@@ -342,15 +352,15 @@ func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: Object) -
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
-	var red := Vector2i(0, 0)
+	var red := _main_junction(map, 0)
 	var green := Vector2i(-1, -1)
 	for y in range(1, Tuning.CITY_BLOCKS.y + 1):
-		var candidate := Vector2i(0, y)
+		var candidate := _main_junction(map, y)
 		if not (signals.green_for(candidate, true) or signals.amber_for(candidate, true)):
 			green = candidate
 			break
 	t.check(green != Vector2i(-1, -1),
-			"a junction whose side arm is green while (0, 0) is red exists within the city")
+			"a junction whose side arm is green while the first is red exists on the main road")
 	var red_box := _junction_box(map, red)
 	var green_box := _junction_box(map, green)
 	var view := red_box.merge(green_box).grow(20.0)
