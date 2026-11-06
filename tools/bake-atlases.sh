@@ -249,9 +249,8 @@ bake_args=()
 if [[ "$mode" == "svg" ]]; then
     bake_args+=(--svg)
 fi
-# Captured rather than left to stream straight through: the stale-cache check below reads it
-# back, and the engine's own lines still land on stdout/stderr exactly where they always did,
-# in order, via the echo right after.
+# Captured and echoed right after, so the engine's own lines land on stdout in order, stderr
+# folded in, before the bake's status is read.
 bake_output="$("$GODOT" --headless --path "$PROJECT_DIR" --script tools/bake_atlases.gd -- \
         ${bake_args[@]+"${bake_args[@]}"} 2>&1)"
 bake_status=$?
