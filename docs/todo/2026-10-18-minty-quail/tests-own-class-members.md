@@ -28,8 +28,9 @@ ground-floor and roof pieces (20 and more, read by the ground-floor suite), the 
 geometry (which way a touch points her, the dead zone, double taps, the run focus, the screen's
 halves), the frame recorder's ledger, the park cordon (its stretches, officers, last gap, when it
 closed, whether she is trapped, whether it was laid again), the event scheduler's plan helpers, the
-resistance director's guard and contact spots and nearest alleys, the title screen's hard-mode
-controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
+resistance director's guard and contact spots and nearest alleys, the figures' and pursuers'
+picture lists, and one drawing helper; the main scene's, the save's, the title screen's, the HUD
+pieces', the visit counter's and the stroller's are done (record minty-quail-sandy-lark).
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate.
 
