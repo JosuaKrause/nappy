@@ -24,11 +24,7 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the
-figures' picture lists and one drawing helper, and the resistance director's five placement
-queries (`guard_position`, `place_contact`, `nearest_alley_within`, `nearest_alley_among`,
-`weighted_mast_index`), kept public for now since their sweeps ask every alley tile of several
-generated maps of a bare director, which the world form would make a built city and a reachability
-rebuild per probe (record %s).
+resistance director's guard and contact spots and nearest alleys, and one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate.
 

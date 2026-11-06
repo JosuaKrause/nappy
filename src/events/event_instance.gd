@@ -132,7 +132,7 @@ func _settle_the_notice() -> void:
 ## rider is one or the other for its whole ride. **The picture is all it changes**: the def, the
 ## field, the lethal radius, the speed and the cost are the row's own either way, and nothing reads
 ## it but the drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals).
-## Meaningless on any look but `CYCLIST`. See `FigureLook.rider_pictures()`.
+## Meaningless on any look but `CYCLIST`. See `FigureLook._rider_pictures()`.
 var is_pelican := false
 
 ## What every run log line and every GoatCounter event calls a pelican, in place of its row's own
@@ -647,7 +647,7 @@ func _become_solid_once_it_starts() -> void:
 # drives — `EventCarDriving`, which answers for the car below.
 
 ## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, so a car
-## that drives stops where they stop (`EventCarDriving.room_to_its_line()`). Null in a rig with no
+## that drives stops where they stop (`EventCarDriving._room_to_its_line()`). Null in a rig with no
 ## city, which then has no red light to stop at.
 var signals: TrafficSignals = null
 
@@ -900,7 +900,7 @@ var _notice := Warning.new()
 ## owner of the rule that a charge that began ends in exactly one way (`ChargeRecord`). A row with
 ## no wait (`is_waiting()` never true) starts chasing on its very first `EventPursuit` call rather than
 ## on a notice, so whether it has begun is the record's `began`.
-var _charge := ChargeRecord.new(Callable(self, &"charger_name"), EventBus)
+var _charge := ChargeRecord.new(Callable(self, &"_charger_name"), EventBus)
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
 ## (`CheckpointController.warn_at_the_doors()`, which sets it every frame); once the crossing's
@@ -919,7 +919,7 @@ func counts_a_charge() -> bool:
 ## `pursuit_ended`): the row's `EventDef.counts_charges_as` where it sets one (the task guard sent
 ## from out of her view counts as `task_guard`), otherwise the row's own `def.id` — the day-3
 ## lesson's dog is `charging_dog_tutorial` by its own row. Telemetry only.
-func charger_name() -> String:
+func _charger_name() -> String:
 	return def.counts_charges_as if def.counts_charges_as != "" else def.id
 
 ## **Its charge caught her**, said once: by `EventManager.check_hard_fails()` when its catch ends
@@ -1745,7 +1745,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 ##
 ## **Cars that drive are the only rows lethal without `hard_fail`** (`EventDef.vehicle`): one strikes
 ## her in front of its nose while it drives its route and she is on the carriageway, and nowhere
-## else — not behind it, not beside it, not while it stands (`EventCarDriving.is_driving()`). A body touching her is
+## else — not behind it, not beside it, not while it stands (`EventCarDriving._is_driving()`). A body touching her is
 ## not enough, and not needed: the strike reaches `EventCarDriving.PATROL_STRIKE_LEAD` of its travel past the
 ## touch, so a car driving its nose into her strikes her rather than standing for her (`EventCarDriving`).
 ## Its telegraph is not asked: its warning is a car's, `EventCarDriving.closes_on()`, not a field coming up to

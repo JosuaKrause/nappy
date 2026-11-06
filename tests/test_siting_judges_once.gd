@@ -206,6 +206,15 @@ func _test_one_offer_per_look(t) -> void:
 			toward = route[i] - at
 	t.check(owed == copies, "the day owes the fires the test added (%d)" % owed)
 	t.check(looks > 0, "there were looks (%d)" % looks)
+	# The band the director sites a walk's events in: its near edge is outside the streaming
+	# radius with its hysteresis (nothing is created in view), and its far edge is the walking
+	# `ON_HER_WAY_SIGHT` seconds beyond that.
+	var band_held := not siting.bands.is_empty()
+	for band in siting.bands:
+		band_held = band_held \
+				and is_equal_approx(band.x, Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS) \
+				and is_equal_approx(band.y - band.x, Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT)
+	t.check(band_held, "every ask the director made sites between the streaming edge and a walk's sight beyond it (%d asks)" % siting.bands.size())
 	t.check(judging > 0, "there were looks that judged a candidate (%d)" % judging)
 	t.check(one_offer == looks,
 			"a look works out what it offers once, for %d copies (%d of %d looks)"
@@ -256,9 +265,10 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	# stands in for them here.
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
-	var band := EventDirector.siting_band()
-	var near := band.x
-	var far := band.y
+	# The band the director sites the walk's events in: from the streaming edge to the sight of a
+	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
 	var copies := 4
 	# Down the day's longest route until the four copies, asked each on its own, ask about one
 	# candidate between them, which separate asks find without sharing anything.
@@ -316,9 +326,10 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
-	var band := EventDirector.siting_band()
-	var near := band.x
-	var far := band.y
+	# The band the director sites the walk's events in: from the streaming edge to the sight of a
+	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
 	# Down the day's longest route until the band ahead of her has a crew accepted.
 	var route := _longest_route(day)
 	var spot := Vector2.INF
@@ -366,6 +377,8 @@ class SpySiting extends EventScheduler.WalkSiting:
 	## One entry per call, in order: `["begin"]`, `["ask", the plan asked about was placed, it was
 	## sited]`, `["forget"]` or `["end"]`.
 	var calls: Array = []
+	## The `Vector2(near, far)` band of every ask the director made.
+	var bands: Array[Vector2] = []
 	## The plans the director is handed, to tell which one an ask is about: the one `already`
 	## leaves out.
 	var plans: Array[EventScheduler.Planned] = []
@@ -380,6 +393,7 @@ class SpySiting extends EventScheduler.WalkSiting:
 		for plan in plans:
 			if not others.has(plan):
 				placed = plan.is_placed()
+		bands.append(Vector2(near, far))
 		var sited := super.ahead_of(def, rng, already, at, heading, near, far)
 		calls.append(["ask", placed, sited != null])
 		return sited

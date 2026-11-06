@@ -119,7 +119,7 @@ The events:
 - `nappy-day-3-fire-unmet` — a won day 3 on which the fire was never met and was lit off her path
   at dusk (`EventManager.light_what_she_never_met()`).
 - `nappy-day-14-blackout` — the city goes dark, whether or not a mast was silenced
-  (`Blackout.go_dark()`; `city_went_quiet` fires only when there was one to silence). The escape's
+  (`Blackout._go_dark()`; `city_went_quiet` fires only when there was one to silence). The escape's
   city, dark from its first frame, sends `nappy-day-16-blackout` as it is built.
 - `nappy-escape-city` — the building is behind her and the city section begins
   (`main._finish_the_section()`, as the building's day is won). Once per won attempt at the

@@ -1296,8 +1296,7 @@ var _chaser := _pursuer_walker()
 ## see, so both refusals are what keeps him off her — outside his own `EventDef.notice`, or worse
 ## his `inner_radius`, a `hard_fail` with no warning at all — and off screen, whichever contact
 ## `at` names. `her` is `Vector2.INF` and `on_screen_matters` is `false` for a caller with nothing
-## to keep away from — the bare-map rigs in `tests/test_resistance_*.gd` that call this directly —
-## which never rejects anything on either count; a dawn placement passes the doorstep and `false`
+## to keep away from, which never rejects anything on either count; a dawn placement passes the doorstep and `false`
 ## (`_begin_step()`).
 func _draw_guard_position(rng: RandomNumberGenerator, at: Vector2, toward: Vector2,
 		min_distance: float, max_distance: float, her: Vector2 = Vector2.INF,

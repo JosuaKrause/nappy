@@ -78,7 +78,7 @@ const FINALE_DISTANT_FLASH_MAX_SECONDS := 5.0
 ## restarts, so an overlap never blinks dark for a frame and never leaves a window lit.
 ##
 ## **How often is the only thing that separates a far flash from a near one.** Both light every
-## window in the building together (`InteriorScene.flash_windows()`); what a bang adds is the
+## window in the building together (`InteriorScene._flash_windows()`); what a bang adds is the
 ## charge on the meter.
 const FINALE_DISTANT_FLASH_MIN_SECONDS := 0.1
 const FINALE_DISTANT_FLASH_SHAPE_B := 12.343
@@ -99,7 +99,7 @@ signal exit_requested
 const HALLWAY_WALL := &"interior/hallway_wall"
 const HALLWAY_WINDOW := &"interior/hallway_wall_window"
 ## The same window with the street outside it lit. Swapped in for a fraction of a second whenever
-## an explosion goes off — see `flash_windows()`.
+## an explosion goes off — see `_flash_windows()`.
 const HALLWAY_WINDOW_FLASH := &"interior/hallway_wall_window_flash"
 const WALL_LAMP_TEXTURE := &"interior/wall_lamp"
 const LIFT_DOOR_TEXTURE := &"interior/lift_door_dead"
@@ -213,7 +213,7 @@ func build() -> void:
 	_rebuild_stairwell_backdrops()
 	_rebuild_overlays()
 	_rebuild_collision()
-	modulate = lighting_at(map.start_tile)
+	modulate = _lighting_at(map.start_tile)
 
 ## One blocker per non-walkable cell in a margin around the whole building's footprint, including
 ## every gap between parts — so a gap blocks her exactly the way a wall does, and the only way from
@@ -323,13 +323,13 @@ func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
 ## (the 64-tile stride — see `InteriorMap`), and the colour changes only when she does, which is
 ## under a door's fade to black. A hallway lifts to `Palette.ESCAPE_FLASH_LIGHT` for as long as its
 ## windows are flashing, so a blast lights the corridor as well as the glass.
-func lighting_at(tile: Vector2i) -> Color:
+func _lighting_at(tile: Vector2i) -> Color:
 	var part := InteriorMap.part_at(tile)
 	if part.begins_with("stairwell"):
 		return Palette.ESCAPE_EMERGENCY_RED
 	if part == "basement":
 		return Palette.ESCAPE_BASEMENT_GLOOM
-	if part.begins_with("hallway") and windows_are_flashing():
+	if part.begins_with("hallway") and _windows_are_flashing():
 		return Palette.ESCAPE_FLASH_LIGHT
 	return Palette.ESCAPE_GLOOM
 
@@ -354,20 +354,20 @@ var _window_flash_left := 0.0
 ## also makes "which hallway she is standing in" a question this never has to ask — the building is
 ## one map with three hallways 64 tiles apart, and the two she is not in are off screen and cost
 ## two texture assignments.
-func flash_windows() -> void:
+func _flash_windows() -> void:
 	_window_flash_left = FINALE_WINDOW_FLASH_SECONDS
 	var texture := atlas.region(HALLWAY_WINDOW_FLASH)
 	for sprite in _window_sprites:
 		sprite.texture = texture
 
-## Whether a flash is on screen right now: the light of a hallway follows it (`lighting_at()`).
-func windows_are_flashing() -> bool:
+## Whether a flash is on screen right now: the light of a hallway follows it (`_lighting_at()`).
+func _windows_are_flashing() -> bool:
 	return _window_flash_left > 0.0
 
 ## **A bang outside** (`WorldContext.bang_outside()`): the explosion outside, as the day's events
 ## bring it, lights every window at once.
 func bang_outside() -> void:
-	flash_windows()
+	_flash_windows()
 
 # ------------------------------------------------------------------ the night ---
 # *(2026-09-19: "the flashing lights in the window are too rare.")* Between the bangs she is charged
@@ -408,7 +408,7 @@ func _physics_process(delta: float) -> void:
 	if _until_the_next_distant_flash > 0.0:
 		return
 	_until_the_next_distant_flash = distant_flash_wait(_flashes.randf())
-	flash_windows()
+	_flash_windows()
 
 ## The wait a uniform draw `u` in `[0, 1)` gives: a scaled Kumaraswamy draw, short-biased and smooth,
 ## bounded by `FINALE_DISTANT_FLASH_MIN_SECONDS` and `_MAX_SECONDS` with its mean set by the shape
@@ -598,7 +598,7 @@ func decay_multiplier(world_position: Vector2) -> float:
 ## told about it — the question is "what is on this ground", not "what did somebody just do".
 ## Nothing here is a rate the fade `Tween` does not already own, so `_delta` is not read.
 func process_player(player: Node2D, _delta: float) -> void:
-	modulate = lighting_at(map.world_to_tile(player.global_position))
+	modulate = _lighting_at(map.world_to_tile(player.global_position))
 	_door_release_latch.update(player.global_position)
 	if _transitioning or _door_release_latch.holds():
 		return
@@ -616,7 +616,7 @@ func _start_door_transition(door: InteriorMapPlan.Door, player: Node2D) -> void:
 	var target_door: String = door.target_door
 	var tween := create_tween()
 	tween.tween_property(_fade_rect, "modulate:a", 1.0, FADE_SECONDS)
-	tween.tween_callback(func() -> void: teleport_to_door(target_door, player))
+	tween.tween_callback(func() -> void: _teleport_to_door(target_door, player))
 	tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_SECONDS)
 	tween.tween_callback(func() -> void: _transitioning = false)
 
@@ -682,12 +682,12 @@ func put_the_pictures_away() -> void:
 ## black, teleport, then fade in again", and the camera "snapping with her, not sliding across the
 ## gap")*. Facing chosen as north on arrival: arbitrary, and open to revisit once the scene is
 ## actually played rather than stepped.
-func teleport_to_door(door_id: String, player: Node2D) -> void:
+func _teleport_to_door(door_id: String, player: Node2D) -> void:
 	var door := map.door(door_id)
 	var at := map.tile_to_world(door.tile)
 	_door_release_latch.arm(at, _DOOR_RELEASE_RADIUS)
 	# Under the black, so the part she arrives in is never seen in the light of the one she left.
-	modulate = lighting_at(door.tile)
+	modulate = _lighting_at(door.tile)
 	if player is Stroller:
 		(player as Stroller).reset_at(at, Vector2.UP)
 	else:

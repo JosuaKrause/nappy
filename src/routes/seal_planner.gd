@@ -205,7 +205,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## what decides which streets are spared and the spec decides how the rest are closed. The escape's
 ## spec turns three of a day's habits off, each for a reason the finale changes:
 ##
-## - **Its pictures are all hard** (`DaySpec.SealPictures.ESCAPE`, `escape_candidates()`), so no soft
+## - **Its pictures are all hard** (`DaySpec.SealPictures.ESCAPE`, `_escape_candidates()`), so no soft
 ##   seal and no thinning: a soft seal leaves the carriageway open, which is exactly the wrong answer
 ##   when the brief is *"a single path through the city"*, and the thinning pass exists to let a wrong
 ##   turn be taken and discovered, which is a day's lesson rather than the climax's.
@@ -343,13 +343,13 @@ static func _build_escape_candidates() -> Array[Candidate]:
 	]
 
 ## The escape's four pictures, built fresh by every call like `candidates()`.
-static func escape_candidates() -> Array[Candidate]:
+static func _escape_candidates() -> Array[Candidate]:
 	return _build_escape_candidates()
 
 ## The pictures `spec` seals with (`DaySpec.seal_pictures`).
 static func pictures_for(spec: DaySpec) -> Array[Candidate]:
 	if spec.seal_pictures == DaySpec.SealPictures.ESCAPE:
-		return escape_candidates()
+		return _escape_candidates()
 	return candidates()
 
 ## Whether `segment` is the main road. See the class doc: never a seal candidate on a day, because

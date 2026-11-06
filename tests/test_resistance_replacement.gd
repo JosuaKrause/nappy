@@ -226,14 +226,13 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
-			for _attempt in 1:
-				checked += 1
-				var guard_at := director.guard_position(rng, mark, true, mark, false)
-				if guard_at == Vector2.INF:
-					continue
-				t.check(guard_at.distance_to(mark) > robbery.notice_within(),
-						"seed %d: the guard for the mark at %s never lands within his own reach of her"
-						% [seed_value, tile])
+			checked += 1
+			var guard_at := director.guard_position(rng, mark, true, mark, false)
+			if guard_at == Vector2.INF:
+				continue
+			t.check(guard_at.distance_to(mark) > robbery.notice_within(),
+					"seed %d: the guard for the mark at %s never lands within his own reach of her"
+					% [seed_value, tile])
 		director.free()
 	run.free()
 	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)

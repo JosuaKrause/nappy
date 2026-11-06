@@ -498,10 +498,9 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 		t.check(not guard.is_telegraphing(), "(%s) and then he charges" % what)
 	if not parked:
 		t.check(guard.is_standing_for_its_notice()
-				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX)
-				and guard.charger_name() == "task_guard",
-				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs, %s)"
-				% [what, guard.is_standing_for_its_notice(), guard.notice_time(), guard.charger_name()])
+				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
+				"(%s) a guard already warning her by sight is set on her with the task's second (standing %s, %.1fs)"
+				% [what, guard.is_standing_for_its_notice(), guard.notice_time()])
 		_tear_down(player, director, city)
 		return
 	var start := guard.global_position.distance_to(at)

@@ -194,9 +194,7 @@ func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 		if rig["red"]:
 			# The arm she drives along is red: the main road's green is the side street's red, and
 			# the side street's green the spine's.
-			var red_phase := TrafficSignals.Phase.SIDE_GREEN if vertical \
-					else TrafficSignals.Phase.MAIN_GREEN
-			while signals.phase_of(junction) != red_phase:
+			while not signals.green_for(junction, not vertical):
 				signals.elapsed += 0.25
 		else:
 			while not signals.green_for(junction, rig.get("vertical", false)):
@@ -227,7 +225,7 @@ func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 		var state := PackedFloat32Array([car.position.x, car.position.y, car._heading.x,
 				car._heading.y, car._path_travelled, 1.0 if standing else 0.0,
 				1.0 if car.is_parked else 0.0, 1.0 if car.is_leaving else 0.0,
-				1.0 if car.is_finished else 0.0, car.car.room_to_its_line(car.position, car._heading)])
+				1.0 if car.is_finished else 0.0])
 		var context := HashingContext.new()
 		context.start(HashingContext.HASH_SHA256)
 		context.update(chain)

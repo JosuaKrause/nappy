@@ -78,10 +78,6 @@ func purpose_of(plans: Dictionary, block: Vector2i) -> GameEnums.BlockPurpose:
 		return GameEnums.BlockPurpose.PARK
 	return plan.steps[mini(_index(block), plan.steps.size() - 1)].purpose
 
-## The day this block last became something else. 1 if it never has.
-func changed_on(block: Vector2i) -> int:
-	return _changed_on.get(block, 1)
-
 ## Advances every block as far as its scheduled steps allow. Called once at the start of a
 ## day, before anything is placed, so events are placed into the city the day actually has.
 ##

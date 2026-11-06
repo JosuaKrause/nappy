@@ -53,13 +53,13 @@ func register(item: Node2D) -> void:
 
 func _process(_delta: float) -> void:
 	if city and city.map and city.is_visible_in_tree():
-		var next := camera_view()
+		var next := _camera_view()
 		# The guard remains at least 80px ahead between these 16px maintenance steps.
 		if _pending or next.size != view.size \
 				or next.get_center().distance_to(view.get_center()) >= 16.0:
 			update(next)
 
-func camera_view() -> Rect2:
+func _camera_view() -> Rect2:
 	var viewport := city.get_viewport()
 	if viewport.get_camera_2d() == null:
 		return Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,

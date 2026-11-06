@@ -5,6 +5,8 @@ extends Node
 ## that prepares a second region outside the guard, and mode 3 on stepping that never spans frames.
 
 const CITY: PackedScene = preload("res://scenes/world/city.tscn")
+## The world rectangle the camera shows, read off the viewport rather than asked of the residency.
+const CameraWorldView := preload("res://tests/probes/camera_world_view.gd")
 var _city: City
 var _failures: Array[String] = []
 var _started := 0
@@ -202,7 +204,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		var tick := Time.get_ticks_usec()
 		camera.position = view.get_center()
 		camera.force_update_scroll()
-		var actual := _city.scenery.camera_view()
+		var actual := CameraWorldView.of(_city.get_viewport())
 		if not actual.is_equal_approx(view):
 			_failures.append("rendered viewport and checked camera view differ")
 			break

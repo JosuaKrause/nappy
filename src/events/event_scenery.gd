@@ -15,8 +15,8 @@ var atlas: AtlasLibrary
 ## drawer that builds it (`EventDrawer.scenery()`) before it enters the tree, and handed on to each
 ## layer it makes.
 var drawer: SceneryDrawer
-var moving_layers: Array[SceneryLayer] = []
-var static_layers: Array[SceneryLayer] = []
+var _moving_layers: Array[SceneryLayer] = []
+var _static_layers: Array[SceneryLayer] = []
 var _picture: String
 var _extent: Vector2
 var _anchor: Vector2
@@ -29,12 +29,12 @@ func _ready() -> void:
 	_build()
 
 func _exit_tree() -> void:
-	for layer in moving_layers:
+	for layer in _moving_layers:
 		layer.free()
-	for layer in static_layers:
+	for layer in _static_layers:
 		layer.free()
-	moving_layers.clear()
-	static_layers.clear()
+	_moving_layers.clear()
+	_static_layers.clear()
 	request_ready()
 
 func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
@@ -55,7 +55,7 @@ func _build() -> void:
 		contact.drawer = drawer
 		contact.modulate = Palette.SHADOW
 		contact.append(atlas.region(_shadow), Rect2(top_left, _extent))
-		static_layers.append(contact)
+		_static_layers.append(contact)
 		add_child(contact)
 	var stem := _picture.get_file()
 	for part: Array in EventSceneryParts.LAYERS[stem]:
@@ -76,13 +76,13 @@ func _build() -> void:
 		layer.drawer = drawer
 		layer.append(texture, rect, atlas.region(region + "_b") if moving else null, source)
 		if moving:
-			moving_layers.append(layer)
+			_moving_layers.append(layer)
 		else:
-			static_layers.append(layer)
+			_static_layers.append(layer)
 		add_child(layer)
 	set_frame(_frame_b)
 
 func set_frame(frame_b: bool) -> void:
 	_frame_b = frame_b
-	for layer in moving_layers:
+	for layer in _moving_layers:
 		layer.frame_b = frame_b

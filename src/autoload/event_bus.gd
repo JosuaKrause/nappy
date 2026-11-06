@@ -112,7 +112,7 @@ signal event_sighted(id: String)
 signal event_lit_unmet(id: String)
 # **A charge, counted on its own whatever the day does** *(inbox #764 in minty-lemur, the player: "Ending a day and
 # a charging counter are not the same thing"; "Charging is independent of an ended day")*. Each
-# signal below carries the charger's name, `EventInstance.charger_name()`: its row's own `def.id`,
+# signal below carries the charger's name, `EventInstance._charger_name()`: its row's own `def.id`,
 # or `charging_dog_tutorial` for the day-3 lesson's dog. `VisitCounter` sends a counter of its own
 # for every charger. Listen-only — see docs/TELEMETRY.md, "The page counts visits". Every charger's
 # own sends go through its `ChargeRecord`, the one owner of "said once" and of a charge that began
@@ -218,7 +218,7 @@ signal poster_torn()
 signal poster_pursuit_sent()
 ## The blackout came and the masts went quiet with the power.
 signal city_went_quiet()
-## `Blackout.go_dark()`'s own moment the city goes dark, whether or not there was a mast to
+## `Blackout._go_dark()`'s own moment the city goes dark, whether or not there was a mast to
 ## silence — unlike `city_went_quiet` above, this fires on every go-dark. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal city_gone_dark()

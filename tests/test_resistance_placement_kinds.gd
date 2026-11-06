@@ -12,6 +12,8 @@ extends "res://tests/resistance_rig.gd"
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
+## Her street door's picture and the building it stands in front of, read off the city's nodes.
+const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -951,10 +953,10 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 	happenings.setup(_city, _city.map)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
-	t.check(not _city.home_door_is_sealed(), "the door is ordinary at day 10's start")
+	t.check(not HomeDoorReads.is_sealed(_city), "the door is ordinary at day 10's start")
 	var before := _street()
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(_city.home_door_is_sealed(), "and sealed the moment the raid arrives, out of her sight")
+	t.check(HomeDoorReads.is_sealed(_city), "and sealed the moment the raid arrives, out of her sight")
 	var sealed := false
 	for scar in run.attempt_spend.scars:
 		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
@@ -974,7 +976,7 @@ func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 	city.run = run
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
-	t.check(city.home_door_is_sealed(),
+	t.check(HomeDoorReads.is_sealed(city),
 			"a boot whose scars already carry the seal starts the door sealed")
 	city.free()
 	run.free()
@@ -991,7 +993,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	var door := _city.map.doorstep_world_position()
 	var before := _street()
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(_city.home_door_is_sealed(), "sealed once the raid arrives")
+	t.check(HomeDoorReads.is_sealed(_city), "sealed once the raid arrives")
 	for instance in _raid_since(before):
 		_city.events.retire(instance)
 	# The loss: the attempt's own scar is given back, the same way
@@ -1001,7 +1003,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	state.begin_day(_city.map.block_plans, ResistanceHappenings.NEIGHBOR_DAY)
 	_city.start_day(state, ResistanceHappenings.NEIGHBOR_DAY,
 			_rng(ResistanceHappenings.NEIGHBOR_DAY, "closures"))
-	t.check(not _city.home_door_is_sealed(), "a lost day 10 restores the ordinary door")
+	t.check(not HomeDoorReads.is_sealed(_city), "a lost day 10 restores the ordinary door")
 
 ## The neighbor's boarded window: absent before day 11, set on the one home-block building the
 ## door notch stands in front of from day 11's morning on — the third floor nearest the door,
@@ -1013,7 +1015,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city, _city.map)
-	var building := _city.home_door_building()
+	var building := HomeDoorReads.building(_city)
 	t.check(building != null, "the door notch stands in front of exactly one home-block building")
 	t.check(building.wall_tiles() >= 4,
 			"seed %d: her own building has at least four wall rows (%d)" % [SEED, building.wall_tiles()])
@@ -1037,7 +1039,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	t.add_child(reloaded)
 	reloaded.build(CityGenerator.generate(SEED))
 	reloaded.board_neighbor_window()
-	var reloaded_building := reloaded.home_door_building()
+	var reloaded_building := HomeDoorReads.building(reloaded)
 	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
 	reloaded.free()
 	run.free()

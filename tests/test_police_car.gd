@@ -647,7 +647,7 @@ func _test_it_stops_at_a_red_light(t) -> void:
 	var junction := Vector2i(map.main_road, CityMap.junction_index(lane_y))
 	# The main road's green, which is the side street's red.
 	signals.elapsed = 0.0
-	while signals.phase_of(junction) != TrafficSignals.Phase.MAIN_GREEN:
+	while not signals.green_for(junction, true):
 		signals.elapsed += 0.25
 	t.check(not signals.green_for(junction, false), "the east-west arm is red")
 	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])

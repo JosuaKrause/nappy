@@ -38,7 +38,7 @@ func run(t) -> void:
 		totals["streets"] = int(totals.get("streets", 0)) + plan.open_streets.size()
 		print("ESCAPE_DENSITY seed %5d | %d streets | %s | alley walls: %s | planned in %d ms"
 				% [seed_value, plan.open_streets.size(), ", ".join(parts),
-				SealPlanner._alley_mouth_def(SealPlanner.escape_candidates(), DaySpec.CITY_DAY),
+				SealPlanner._alley_mouth_def(SealPlanner._escape_candidates(), DaySpec.CITY_DAY),
 				took])
 	var parts: Array[String] = []
 	for id in ROWS:

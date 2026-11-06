@@ -53,7 +53,7 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## **Everything a row can put on the screen**, standing on its feet at the origin, whichever way it
 ## faces: the union of every picture its look can draw (`EventPictures.family_sources()` — a cyclist
 ## coming down the screen draws its front view, not the side view its badge shows) wherever it can
-## stand (the picture of a car that drives is lowered over its body, `picture_drop_of()`), its body
+## stand (the picture of a car that drives is lowered over its body, `_picture_drop_of()`), its body
 ## shadow (a disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
 ## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
 ## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
@@ -89,7 +89,7 @@ static func footprint_of(row: EventDef) -> Rect2:
 ## The furthest below its own node a row's picture is ever drawn: a car's body reach, pointed
 ## straight down the screen, and its look's largest canvas margin (`EventLook.body_anchor()`); zero
 ## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box_of()` add it.
-static func picture_drop_of(row: EventDef) -> float:
+static func _picture_drop_of(row: EventDef) -> float:
 	if not EventPictures.is_anchored_over_its_body(row.look) or row.shape == null:
 		return 0.0
 	var margins := EventPictures.canvas_margins(row.look)
@@ -98,10 +98,10 @@ static func picture_drop_of(row: EventDef) -> float:
 		margin = maxf(margin, float(margins[view]))
 	return row.shape.reach() + margin
 
-## `box` and the same box lowered by `picture_drop_of(row)`, together: every place between the
+## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
 ## two a picture can stand as its heading turns.
 static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
-	var drop := picture_drop_of(row)
+	var drop := _picture_drop_of(row)
 	if drop <= 0.0:
 		return box
 	return box.merge(Rect2(box.position + Vector2(0.0, drop), box.size))
@@ -215,7 +215,7 @@ static var _warning_sizes := {}
 
 ## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
 ## of a band at `band_at` laid along `vertical` — what his warning draws
-## (`RoadblockLook.chaser_pictures()`), at the widest and tallest of its views, standing on his
+## (`RoadblockLook._chaser_pictures()`), at the widest and tallest of its views, standing on his
 ## feet.
 static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
 	var feet := band_at + guard_post_offset(vertical, guard_side_toward(vertical, her - band_at))

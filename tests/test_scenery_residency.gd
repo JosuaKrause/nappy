@@ -298,11 +298,17 @@ func _frames(city: City, count := 1) -> void:
 	for i in count:
 		await city.get_tree().process_frame
 
+## The view the city looks at from her doorstep, which is the one a run with no camera keeps: the
+## doorstep and the half extent of a screen round it (`Tuning.VIEW_HALF_EXTENT`).
+func _home_view(city: City) -> Rect2:
+	return Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+			Tuning.VIEW_HALF_EXTENT * 2.0)
+
 ## Switches an emptied ground to `mode` and prepares the home view again in it.
 func _use_mode(city: City, mode: SceneryGround.Mode) -> void:
 	city.scenery_ground.clear()
 	city.scenery_ground.mode = mode
-	city.scenery.update(city.scenery.camera_view(), true)
+	city.scenery.update(_home_view(city), true)
 
 ## Releases up to `count` regions between the guard and the load boundary of `view`, so the next
 ## ordinary update has to prepare them: the residency's own view must already be `view`.
@@ -334,7 +340,7 @@ func _test_all_mode(t, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
-	var view := city.scenery.camera_view()
+	var view := _home_view(city)
 	var keys := _ring_keys(city, view, 3)
 	t.check(keys.size() == 3, "the mode-1 check has three actual load-ring regions to prepare")
 	# The soft budget is wall-clock time, and three whole regions take about that long on their
@@ -372,7 +378,7 @@ func _test_all_mode_budget(t, seed_value: int) -> void:
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
 	var scenery := city.scenery
-	var view := city.scenery.camera_view()
+	var view := _home_view(city)
 	var keys := _ring_keys(city, view, 5)
 	t.check(keys.size() == 5, "the budget check has five actual load-ring regions to prepare")
 	scenery.budget_usec = 1
@@ -406,7 +412,7 @@ func _test_one_mode(t, seed_value: int) -> void:
 	_use_mode(city, SceneryGround.Mode.ONE)
 	var ground := city.scenery_ground
 	var scenery := city.scenery
-	var view := city.scenery.camera_view()
+	var view := _home_view(city)
 	var keys := _ring_keys(city, view, 3)
 	t.check(keys.size() == 3, "the mode-2 check has three actual load-ring regions to prepare")
 	# A real frame since the ground was emptied, so the process frame is a new one.
@@ -438,11 +444,9 @@ func _test_one_mode(t, seed_value: int) -> void:
 	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
 	ground.release(close)
 	await _frames(city)
-	var guards := scenery.ordinary_guard_preparations
 	prepared = ground.chunks.keys()
 	scenery.update(view)
-	t.check(ground.chunks.has(close) and scenery.ordinary_guard_preparations == guards + 1,
-			"a region about to come into view is prepared at once by the guard")
+	t.check(ground.chunks.has(close), "a region about to come into view is prepared at once by the guard")
 	t.check(_added(ground, prepared) == 1 and not ground.chunks.has(waiting[0]),
 			"a frame that needed the guard prepares no second, ordinary region")
 	await _frames(city, 2)
@@ -462,7 +466,7 @@ func _test_frame_record(t, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var scenery := city.scenery
-	var view := city.scenery.camera_view()
+	var view := _home_view(city)
 	var keys := _ring_keys(city, view, 2)
 	var close := SceneryGround.key_for(city.map.world_to_tile(view.get_center()))
 	city.scenery_ground.release(close)
@@ -534,11 +538,11 @@ func _test_pending(t, seed_value: int) -> void:
 			"route-tint repaint discards pending jobs with old ground inputs")
 	ground.prepare_step(key)
 	layer = ground.pending[key].layer
-	city.scenery.update(city.scenery.camera_view(), true)
+	city.scenery.update(_home_view(city), true)
 	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
 			"out-of-range movement cancels and frees unfinished regions")
 	# Choose an actual load-ring region and remove it so ordinary maintenance must step it.
-	var view := city.scenery.camera_view()
+	var view := _home_view(city)
 	for candidate in ground.keys_in(view.grow(SceneryResidency.LOAD_MARGIN)):
 		if view.grow(SceneryResidency.GUARD_MARGIN).intersects(SceneryGround.bounds(candidate)):
 			continue
@@ -578,7 +582,7 @@ func _test_pending(t, seed_value: int) -> void:
 	ground.configure(city, ground.tile_set)
 	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
-	city.scenery.update(city.scenery.camera_view(), true)
+	city.scenery.update(_home_view(city), true)
 	_free(city)
 
 ## The instance id of each resident ground region's layer, by region key: what the ground has

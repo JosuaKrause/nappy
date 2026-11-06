@@ -99,7 +99,7 @@ func _open_run_for(before: int, after: int) -> Vector2i:
 			for dx in range(-before, after + 1):
 				var tile := Vector2i(x + dx, y)
 				if not map.is_walkable(tile) or map.is_closed(tile) or map.is_obstructed(tile) \
-						or map.is_soft_sealed(tile):
+						or not map.passable(tile, Mover.of(Mover.SOFT_SEALS)):
 					open = false
 					break
 			if open:
@@ -356,10 +356,10 @@ func _test_day_eleven_answers_at_any_live_mast(t) -> void:
 func _a_mast_can_be_sited_along_her_route() -> bool:
 	var siting: EventScheduler.WalkSiting = _city.events.ahead.walk_siting()
 	var def: EventDef = _city.events.ahead.director().route_row(EventCatalogue.mast().id)
-	# The band the director sites the walk's events in.
-	var band := EventDirector.siting_band()
-	var near := band.x
-	var far := band.y
+	# The band the director sites the walk's events in: from the streaming edge to the sight of a
+	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
+	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
+	var far := near + Tuning.WALK_SPEED * EventDirector.ON_HER_WAY_SIGHT
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1
 	var path := _longest_route_points()

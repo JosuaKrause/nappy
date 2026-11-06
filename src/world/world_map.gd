@@ -443,7 +443,7 @@ func step(from: Vector2, delta: Vector2, mover: Mover) -> Vector2:
 # from its lattice.
 
 ## Whether this map is laid out on the street lattice, so a car on it holds at a junction's line and
-## gives way at a zebra (`EventCarDriving.room_to_its_line()`).
+## gives way at a zebra (`EventCarDriving._room_to_its_line()`).
 func has_street_lattice() -> bool:
 	return false
 

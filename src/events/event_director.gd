@@ -411,14 +411,14 @@ func owed() -> int:
 func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:
 	_route_rows.clear()
 	_ordinary_rows.clear()
-	for def in route_rows_on(day, heat):
+	for def in _route_rows_on(day, heat):
 		_route_rows[def.id] = def
 		_ordinary_rows[def.id] = true
 	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
 
 ## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
 ## `TOWARD_PLAYER` that day — at `heat`, in the catalogue's own order.
-static func route_rows_on(day: int, heat: int) -> Array[EventDef]:
+static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		var mode := def.spawn_mode_on(day)
@@ -426,12 +426,12 @@ static func route_rows_on(day: int, heat: int) -> Array[EventDef]:
 			rows.append(def)
 	return rows
 
-## The marbles of `day`'s ordinary route bag: each of `route_rows_on()` in proportion to its weight
+## The marbles of `day`'s ordinary route bag: each of `_route_rows_on()` in proportion to its weight
 ## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_MARBLES_OF` names comes as often
 ## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
 static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
-	for def in route_rows_on(day, heat):
+	for def in _route_rows_on(day, heat):
 		weights[def.id] = def.weight
 	return MarbleBag.in_proportion(weights, ROUTE_BAG_MARBLES_PER_WEIGHT,
 			ROUTE_BAG_MARBLES_OF)
@@ -590,7 +590,7 @@ const ON_HER_WAY_BEYOND_HOME := 400.0
 ## How much further she may have to walk past the streaming band to reach the site, in seconds —
 ## the width of the siting band, measured **along the route she is on** like the rest of it. Still
 ## well inside the outbound leg of a 210s day with the walk home in hand. The near end of the band
-## is not a number of seconds but the streaming band itself; see `siting_band()`.
+## is not a number of seconds but the streaming band itself; see `_siting_band()`.
 const ON_HER_WAY_SIGHT := 16.0
 
 ## How long the thing has to be behind her before it is moved, in seconds of walking. It is not
@@ -694,7 +694,7 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 			continue
 		if not plan.is_placed() and _waits_its_turn(plan):
 			continue
-		var band := siting_band()
+		var band := _siting_band()
 		var rng := _walk_rng if plan.def.kind == GameEnums.EventKind.ONE_SHOT \
 				else (_place_rng if _placed_from_the_route.has(plan) else _crew_rng)
 		# A placed plan is asked about without its own body, which every other ask counts.
@@ -782,7 +782,7 @@ func _is_no_longer_on_her_way(plan: EventScheduler.Planned, at: Vector2, heading
 ## distance off the edge of the view would be the straight-line reading again, and the day's routes
 ## are loop-erased walks rather than lines: 1200px across the block is regularly 2800px of walking,
 ## and a band stated as a straight line leaves almost nothing on the route inside it.
-static func siting_band() -> Vector2:
+static func _siting_band() -> Vector2:
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	return Vector2(near, near + Tuning.WALK_SPEED * ON_HER_WAY_SIGHT)
 

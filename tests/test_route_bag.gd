@@ -40,7 +40,7 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
 	var ordinary := ["a", "a", "b", "b", "b"]
 	var bag := MarbleBag.new([], ordinary, 7)
 	var first: Array = [bag.draw(), bag.draw()]
-	bag.put_in_front(["x", "y"])
+	bag.rig(["x", "y"], 2)
 	t.check(bag.sizes() == [2, 3], "the special bag is in front of the three marbles left (%s)"
 			% [bag.sizes()])
 	var special: Array = [bag.draw(), bag.draw()]
@@ -121,7 +121,7 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
 	t.check(same, "a peek names the marble the draw takes, and the draws are the straight bag's")
 	var interrupted := MarbleBag.new([], ordinary, 5)
 	interrupted.peek()
-	interrupted.put_in_front(["z"])
+	interrupted.rig(["z"], 1)
 	t.check(interrupted.sizes() == [1, ordinary.size()],
 			"a bag put in front after a peek leaves the peeked marble where it was (%s)"
 			% [interrupted.sizes()])
@@ -236,12 +236,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
 		director.start_day(day, plans, rng)
-		var weights := {}
-		for row in EventDirector.route_rows_on(day, 0):
-			weights[row.id] = row.weight
 		var expected := {}
-		for marble: String in MarbleBag.in_proportion(weights, EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT,
-				EventDirector.ROUTE_BAG_MARBLES_OF):
+		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:
