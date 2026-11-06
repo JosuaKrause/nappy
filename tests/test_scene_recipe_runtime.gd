@@ -517,7 +517,7 @@ func _task_scene(t, day: int, task: Dictionary) -> Dictionary:
 			"player": player, "run": own_run}
 
 func _free_task_scene(made: Dictionary) -> void:
-	for node: Node in [made.runtime, made.player, made.director, made.city, made.run]:
+	for node: Node in [made.runtime, made.player, made.director, made.city]:
 		node.free()
 
 func _test_arguments(t) -> void:

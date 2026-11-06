@@ -94,7 +94,7 @@ func _test_the_task_observations_ask_about_the_task(t) -> void:
 ## The context city on `day` as a recipe starts it — the authored closures, no catalogue fill —
 ## and a director, in a run of its own on that day (the recipes' seed, as a recipe boot starts its
 ## run), which the city and the director are handed. A fresh map each time, since a day's bodies and
-## holds are recorded on it. `_free_day()` frees all three.
+## holds are recorded on it. `_free_day()` frees the city and the director.
 func _day(t, day: int) -> Array:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
@@ -125,8 +125,8 @@ func _day(t, day: int) -> Array:
 	return [city, director, own_run]
 
 func _free_day(made: Array) -> void:
-	for node: Node in made:
-		node.free()
+	(made[0] as City).free()
+	(made[1] as ResistanceDirector).free()
 
 func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
 	var made := _day(t, 7)

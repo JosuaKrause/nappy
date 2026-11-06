@@ -1,7 +1,6 @@
 extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle.
 
-const STATE_SCRIPT = preload("res://src/run/run_state.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
@@ -22,7 +21,7 @@ func run(t) -> void:
 	_test_every_family_source_is_a_baked_region(t)
 
 func _test_seeded_equal_choice_and_lifetime(t) -> void:
-	var state := STATE_SCRIPT.new()
+	var state := RunState.new()
 	var observed: Dictionary = {}
 	for seed_value in range(1, 33):
 		state.start_run(seed_value)
@@ -37,7 +36,6 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 		state.start_run(seed_value)
 		t.check(state.header.player_is_male == selected, "replaying a seed reproduces the presentation")
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
-	state.free()
 
 ## Real boots of `main` for each family (`--parent`), a day's and the escape's, whose rig is caught
 ## the moment it enters the tree (`SceneTree.node_added`), before anything has drawn it: the choice
