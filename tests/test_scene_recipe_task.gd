@@ -290,7 +290,7 @@ func _test_an_authored_mast_carries_its_own_id(t) -> void:
 	t.check(_refused(with.call([mast.call("a", "loudspeaker", "")]), "unique nonempty string"),
 			"an empty id names nothing")
 
-## An authored mast is accepted by the checks `EventScheduler.place_masts()` makes of a site: a
+## An authored mast is accepted by the checks `EventScheduler._place_masts()` makes of a site: a
 ## day with masts, ground a mast site would be offered that is not closed, held or the home block,
 ## and clear of the day's doors. (107, 60) is where day 11's own mast stands on the context city.
 ## Each site is installed as a recipe installs it (`install()`), into the day's city in a run of its

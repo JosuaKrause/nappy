@@ -179,7 +179,7 @@ signal pelican_sighted(instance)
 ## field reaches 90px and its lethal reach 33px, so a pelican that strikes her has almost always
 ## sent this first.
 signal pelican_excited_her(instance)
-## `EventManager.check_hard_fails()`'s own moment a pelican's lethal reach covers her, emitted
+## `EventManager._check_hard_fails()`'s own moment a pelican's lethal reach covers her, emitted
 ## just before the `hard_fail_triggered` that ends the day, so it is sent ahead of the loss.
 signal pelican_struck_her(instance)
 

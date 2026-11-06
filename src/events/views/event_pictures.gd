@@ -396,7 +396,7 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 ## **A policeman who is about to charge stands square-on with one hand raised, palm out**, as the
 ## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
 ## van lets out, through day 8, for the second he stands beside her before he charges
-## (`PursuerLook.policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor,
+## (`PursuerLook._policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor,
 ## sharing his waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about
 ## to charge hold up their hands; an event that does not spawn already charging always needs a
 ## warning.)*
@@ -792,7 +792,7 @@ const GUARD_LUNGING_BY_VIEW := {
 ## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
 ## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
 ## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
-## of the shaft (`PursuerLook.masked_pursuer_pictures()`), and — the front view — a checkpoint hut's
+## of the shaft (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's
 ## or post's guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
 ## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
 ## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.

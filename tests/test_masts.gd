@@ -263,7 +263,7 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
 	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
-	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `place_masts()` skips a
+	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
 	# site whose tile is today's own closure, region wall or checkpoint ground rather than
 	# planting on top of it (`tests/test_events.gd`,
 	# `_test_nothing_the_catalogue_places_stands_on_held_ground`), so a day may carry fewer.
