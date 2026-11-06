@@ -1,11 +1,14 @@
 class_name SpoiledGround
 extends RefCounted
-## **Whether a day's plans spoil a stretch of ground**, the way a player meets it: a calm area is
-## spoiled when the field of some event the day placed reaches it. Stated here from the plans' own
-## public answers (`Planned.is_placed()`, `EventDef.field_reach()`), so the suites that hold the
-## scheduler to "the day leaves an open calm area clean" check it against a definition that is not
-## the scheduler's own. A playground and a scar (`AMBIENT`) and a permanent body do not count. A
-## helper, not a suite: the runner loads only `test_*.gd`.
+## **A copy of the scheduler's spoil rule, kept in the tests on purpose**: a calm area is spoiled when
+## the field of some event the day placed reaches it. It is stated from the plans' public answers
+## (`Planned.is_placed()`, `EventDef.field_reach()`) so the suites that hold the scheduler to "the
+## day leaves an open calm area clean" judge the day against a definition that is not the
+## scheduler's own, and it must be kept in step with `EventScheduler._reaches_rect()` by hand. A
+## playground and a scar (`AMBIENT`) and a permanent body do not count. The scheduler's own
+## `_is_spoiled()` only chooses which calm ground the walkability repair keeps a route to, and no
+## suite builds a day where that choice binds, so nothing here would fail if it always answered no.
+## A helper, not a suite: the runner loads only `test_*.gd`.
 
 ## Whether some placed event of `planned` has its field reaching `rect`, in tiles of `map`.
 static func by(map: CityMap, planned: Array[EventScheduler.Planned], rect: Rect2i) -> bool:

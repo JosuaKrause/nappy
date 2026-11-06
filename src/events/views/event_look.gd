@@ -444,10 +444,10 @@ func _draw_mark() -> void:
 	# pulsing event would read as flickering in and out of existence.
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
-	Sprites.draw_caret(event, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
+	event.drawer.caret(event, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
 	if event.excitement.caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		Sprites.draw_caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
+		event.drawer.caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
 				EventPictures.MARK_WIDTH * scale, _mark_colour())
 
 ## The rectangle, in the event's own space, the caret `_draw_mark()` would draw this frame — its one
