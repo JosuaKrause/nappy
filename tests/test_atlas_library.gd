@@ -12,6 +12,8 @@ extends RefCounted
 ## an illustrated PNG whose size disagrees with its SVG, two members claiming one region name — and
 ## `tools/bake-atlases.sh`'s hash manifest, which `_test_the_bake_is_not_stale()` re-checks here.
 
+const BakedRegions := preload("res://tests/baked_regions.gd")
+const PageLog := preload("res://tests/atlas_page_log.gd")
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
 const MANIFEST_PATH := "res://assets/atlases/baked/bake_manifest.json"
 
@@ -84,9 +86,10 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 				% [group, ", ".join(missing.slice(0, 5))])
 		t.check(misfiled.is_empty(), "%s: every member is on its own group's page (%s)"
 				% [group, ", ".join(misfiled.slice(0, 5))])
-	t.check(AtlasTable.baked().region_names().size() == expected,
+	var baked := BakedRegions.names().size()
+	t.check(baked == expected,
 			"the region table holds exactly the membership (%d regions, %d members)"
-			% [AtlasTable.baked().region_names().size(), expected])
+			% [baked, expected])
 	t.check(expected >= FEWEST_CREDIBLE_REGIONS,
 			"there were regions to ask about (%d)" % expected)
 
@@ -187,7 +190,7 @@ static func _raster_like_the_bake(path: String) -> Image:
 ## of a pair of neighbours rather than for whichever was written last.
 func _test_regions_do_not_overlap(t) -> void:
 	var by_group: Dictionary = {}
-	for name: StringName in AtlasTable.baked().region_names():
+	for name: StringName in BakedRegions.names():
 		var group := AtlasTable.baked().group_of(name)
 		if not by_group.has(group):
 			by_group[group] = []
@@ -220,17 +223,19 @@ func _test_regions_do_not_overlap(t) -> void:
 ## from the table, with no page loaded. A consumer that had to acquire a group to measure a
 ## shadow would hold a megabyte of texture to read two integers. And a library is built over that
 ## table alone: the `Sitting` builds one before any boot opens a loading window, so building it
-## must read no page from disk, which every group's empty load moment shows.
+## must read no page from disk, which the run log's silence about every group shows.
 func _test_geometry_needs_nothing_acquired(t) -> void:
-	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new()
+	var _built := AtlasLibrary.new()
 	var name := &"ui/pause"
 	t.check(AtlasTable.baked().has_region(name), "the table knows a region with nothing acquired")
 	t.check(AtlasTable.baked().native_size(name) != Vector2i.ZERO,
 			"a native size is answered with nothing acquired")
 	var loaded: Array[String] = []
 	for group: StringName in AtlasTable.baked().groups():
-		if atlas.is_acquired(group) or atlas.last_load_moment(group) != &"":
+		if pages.loads(group) > 0:
 			loaded.append(String(group))
+	pages.stop()
 	t.check(not AtlasTable.baked().groups().is_empty() and loaded.is_empty(),
 			"building a library read no page from disk (%s)" % ", ".join(loaded))
 	t.check(AtlasTable.baked().native_size(&"no/such/picture") == Vector2i.ZERO,
@@ -238,33 +243,36 @@ func _test_geometry_needs_nothing_acquired(t) -> void:
 	t.check(not AtlasTable.baked().has_region(&"no/such/picture"), "an unknown region is not known")
 
 ## The page arrives on the first reference and is *gone* on the last — checked through a
-## `WeakRef` to the texture itself rather than through the library's own bookkeeping, since a
-## counter that reaches nought while the texture stays resident is exactly the bug this file
-## exists to prevent.
+## `WeakRef` to the texture itself, since a page dropped from the library's hands while the texture
+## stays resident is exactly the bug this file exists to prevent, and through the run log's one load
+## line and one release line, the page's life as the game writes it (`tests/atlas_page_log.gd`).
 func _test_a_page_arrives_and_leaves_with_its_references(t) -> void:
+	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
 	var name := &"ui/pause"
 	atlas.acquire(&"ui")
-	t.check(atlas.reference_count(&"ui") == 1, "the first acquire counts one")
+	t.check(pages.loads(&"ui") == 1, "the first acquire reads the page from disk")
 	var region := atlas.region(name)
 	t.check(region != null, "an acquired group answers its region")
 	if region == null:
+		pages.stop()
 		return
 	t.check(region.filter_clip, "a region clips its own filtering")
 	t.check(region.get_size() == Vector2(AtlasTable.baked().native_size(name)),
 			"a region reports the picture's own size, not the page's")
 	t.check(atlas.region(name) == region, "a region is handed out once and cached")
 	atlas.acquire(&"ui")
-	t.check(atlas.reference_count(&"ui") == 2, "a second acquire counts two")
+	t.check(pages.loads(&"ui") == 1, "a second acquire reads nothing more")
 	var page: WeakRef = weakref(region.atlas)
 	atlas.release(&"ui")
-	t.check(page.get_ref() != null, "the page survives while a reference is left")
+	t.check(page.get_ref() != null and pages.releases(&"ui") == 0,
+			"the page survives while a reference is left")
 	t.check(atlas.region(name) != null, "and its regions still answer")
 	region = null
 	atlas.release(&"ui")
-	t.check(atlas.reference_count(&"ui") == 0, "the last release counts nought")
+	t.check(pages.releases(&"ui") == 1, "the last release drops the page")
 	t.check(page.get_ref() == null, "the page texture is gone once nothing holds it")
-	t.check(not atlas.is_acquired(&"ui"), "and the group holds nothing")
+	pages.stop()
 	# What a released group answers `region()` — null, with a `push_error` naming the region —
 	# is deliberately not exercised here. The error would be a real engine error in the run's
 	# output, and an engine error in a suite makes the gate red whether or not a test expected
@@ -300,7 +308,7 @@ class _GroupShape:
 
 static func _group_shapes() -> Dictionary:
 	var shapes: Dictionary = {}
-	for name: StringName in AtlasTable.baked().region_names():
+	for name: StringName in BakedRegions.names():
 		var group := AtlasTable.baked().group_of(name)
 		if not shapes.has(group):
 			shapes[group] = _GroupShape.new()

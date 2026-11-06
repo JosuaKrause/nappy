@@ -67,12 +67,6 @@ const _SOURCES := {
 static func source_id_for(kind: InteriorTile.Kind) -> int:
 	return int(kind) if _SOURCES.has(kind) else -1
 
-## The region name a ground cell of `kind` is baked under, on the `interior` group's page — what
-## a test asks to check a source's own texture and offset against, since every source shares one
-## page object with no `resource_path` of its own to read a filename back off.
-static func region_name_for(kind: InteriorTile.Kind) -> StringName:
-	return _SOURCES.get(kind, &"")
-
 ## Requires the `interior` group already acquired — every source built here reads the group's own
 ## live page texture (`atlas.region(name).atlas`), so building with nothing acquired on `atlas`
 ## asks `region()` a question it answers `null` for, with its own `push_error`. See the class doc
