@@ -410,6 +410,55 @@ internals where the outside behaviour is what matters, and those are examples, n
   names, which is a defect that has already shipped once.
 - **A test that is true by luck is worse than no test**: if it would pass with the code deleted,
   or passes only on the seed it was written against, it is not holding anything.
+- **A check that asserts back what the test just set holds nothing**: it sets a field, then reads
+  the field; it hands a fake a value, then reads the value off the fake. It can only be true, so
+  it cannot fail (inbox #1097 in curly-rabbit).
+- **A test whose setup the game cannot reach holds nothing the player can meet** (inbox #1097 in curly-rabbit). The
+  shape is a state only the test can create, such as a field set through a method that only that
+  test calls: the check passes on a situation that never happens in play, and the method is dead
+  weight kept alive by the test. The exception is input the game does not control, such as a corrupted
+  save on disk or a browser's answer, which can really happen and is worth testing. The fix is to
+  reach the state the way the game does, or to delete the test and the member with it.
+- **A public function only tests read is deleted, and its test hands in a fake or reads what the
+  game shows** (inbox #1095 in curly-rabbit). It stays only when both hold: the information cannot
+  be had another way, and the test needs it to confirm the behavior; such a case may hint that its
+  module's design is suboptimal. Its line goes in a kept group of `tools/test_only_members.txt` with
+  the reason (the fairness helpers `Tuning.required_horn_time`, `required_horn_sight` and
+  `sleepiness_gain_calm` are there, since the relationship tests above rest on them).
+  `tools/check_test_only_members.py` (CI's `gates` job) fails a test that reads a public member
+  nothing else under `src/` reads. *Proposed by the orchestrator, not asked for, open to the player's
+  correction:* the rule also reaches a var, a signal or a constant with no use anywhere under `src/`,
+  a constant nothing reads being the same dead weight.
+- **A public function only its own file and the tests use is internal** (inbox #1098 in curly-rabbit): it gets the
+  underscore, and its tests check what the class does from outside. A function stays public only where
+  nothing outside can confirm the behavior, with the reason written down on its line in a kept
+  group of the list. The same check enforces it. *Proposed by the orchestrator, not asked for, open
+  to the player's correction:* the rule also reaches vars and signals, and not constants, since a test
+  reading a constant to assert a relationship is what this policy wants; a constant is flagged only
+  when nothing under `src/` uses it, its own file included.
+- *Proposed by the orchestrator, not asked for, open to the player's correction:* a **hand-in**, a
+  `use_*` setter that hands the object what it depends on, stays public and sits in a kept group
+  with that reason, since the game uses its default and a test hands in a fake (dependency injection,
+  minty-lemur #794; mocking, inbox #1095 in curly-rabbit).
+- **What the list enforces, and nothing more.** Its `[no reader]` and `[own file only]` groups only
+  shrink: with `--base <the pull request's base>`, which CI passes, the check fails a line added to
+  either, so a builder answers its failure by fixing the member, never by listing it. A line gone
+  stale (the member gained a reader in another file, lost its test, is a constant used in its own file,
+  is an engine name, is a function passed rather than called, or is gone) fails as a `REMOVE` line, so the
+  pull request that fixes a member deletes its line. A file move carries its
+  lines: an added line passes when a line of the same group with the same member name is removed in the
+  same diff and git reports its file as renamed to the added line's file, each removed line pairing with
+  one added line; before a commit git sees the move only once the moved file is tracked (`git mv`,
+  or `git add` it first). A listed member that is renamed is the moment to fix it (or to put it in a kept line
+  with its reason), never to carry its line. A
+  `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
+  reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
+  read. The check cannot see a member whose name is also a word in another file or a test of an
+  unreachable setup; those stay review's. A member a game reader reaches only through a string
+  (`call("name")`, `has_method`) is a false failure that goes in a kept line with its reason.
+- **A duplicate test is deleted** (inbox #1097 in curly-rabbit): the same behavior already tested by another suite
+  is a second place to edit and no second chance to catch a bug. Search `tests/` for the behavior
+  before writing a test, and if a suite holds it, extend that one.
 - **An identity is not the property.** Asserting a relationship that is *true* but is not the
   condition the sentence beside it claims pins nothing.
 - The suite must exit clean. **Leak warnings at shutdown mean a real retain bug.**

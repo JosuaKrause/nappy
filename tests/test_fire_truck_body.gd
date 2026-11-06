@@ -23,7 +23,6 @@ func run(t) -> void:
 	_test_parked_it_is_solid_and_harmless(t)
 	_test_parked_its_field_is_a_points(t)
 	_test_a_parked_body_closes_no_street(t)
-	_test_a_loss_to_it_names_its_own_cause(t)
 	_test_its_picture_stands_over_its_body(t)
 
 # ------------------------------------------------------------------ the rig ---
@@ -91,17 +90,8 @@ func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 	t.check(def.vehicle != null, "fire_truck drives: solid in every state, lethal in front while driving")
 	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
 			"its body is a capsule laid along its heading")
-	t.check(is_equal_approx(def.shape.reach() * 2.0, 58.0)
-			and is_equal_approx(def.shape.radius * 2.0, 26.0),
-			"58px bumper to bumper (fire_engine.svg, x 2 to 60) and 26px flank to flank "
-			+ "(fire_engine_front.svg, x 4 to 30): %.0f by %.0f"
-			% [def.shape.reach() * 2.0, def.shape.radius * 2.0])
-	t.check(def.obstructs_radius == 0.0 and not def.hard_fail,
-			"it closes no ground and is no hard fail: it kills only as a car does")
 	t.check(def.shape.reach() < def.inner_radius,
 			"and the body lies inside the field's inner radius")
-	t.check(def.telegraph_time > 0.0 and def.warned_first,
-			"it keeps its off-screen warning (M226, 'fire truck has heavy penalty')")
 
 # ------------------------------------------------------------------ driving ---
 
@@ -135,11 +125,12 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 		var struck_at := -1.0
 		var held := false
 		for i in int(8.0 / STEP):
+			var was_at := engine.global_position
 			_step(engine, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
-			held = held or engine.car.is_standing()
+			held = held or engine.global_position.is_equal_approx(was_at)
 			if engine.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -509,16 +500,6 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 	return false
 
 # -------------------------------------------------------------------- loss ---
-
-func _test_a_loss_to_it_names_its_own_cause(t) -> void:
-	var line: String = Texts.HARD_FAIL_TEXT.get("fire_truck", "")
-	t.check(line != "" and "fire engine" in line,
-			"a loss to it reads its own line: '%s'" % line)
-	t.check(line != Texts.HARD_FAIL_TEXT.get("police_patrol", "")
-			and line != Texts.HARD_FAIL_TEXT.get("car_strike", ""),
-			"and not the patrol car's or a crowd car's")
-	t.check(LossCause.hard_fail_suffix("fire_truck", "fire_truck") == "fire-truck",
-			"the run log and the page's counter name the cause 'fire-truck'")
 
 # ----------------------------------------------------------------- picture ---
 

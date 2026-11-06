@@ -76,6 +76,7 @@ run uv run python tools/test_reddit.py
 run uv run python tools/test_check_citations.py
 run uv run python tools/test_ci_checks.py
 run uv run python tools/test_check_layers.py
+run uv run python tools/test_check_test_only_members.py
 
 if [[ $status -ne 0 ]]; then
     echo

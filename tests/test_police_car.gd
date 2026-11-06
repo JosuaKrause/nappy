@@ -13,7 +13,6 @@ const STEP := 1.0 / 60.0
 const WALK := 2.0
 
 func run(t) -> void:
-	_test_the_patrol_is_a_car_at_every_heat(t)
 	_test_her_walk_into_a_standing_car_stops_at_its_side(t)
 	_test_the_body_is_its_drawn_ground_contact_along_its_heading(t)
 	_test_a_driving_car_beside_her_is_solid_and_not_lethal(t)
@@ -27,7 +26,6 @@ func run(t) -> void:
 	_test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t)
 	_test_it_gives_way_at_a_zebra_she_waits_at(t)
 	_test_it_stops_at_a_red_light(t)
-	_test_its_caret_stands_over_its_picture(t)
 	_test_a_far_zebra_holds_it_out_of_the_box(t)
 	await _test_the_log_names_the_patrol_for_its_mark(t)
 
@@ -85,24 +83,15 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 		walked += WALK
 	return walked
 
+## Whether the car holds still for one more step with her where she is: it is held when the step it
+## takes leaves it where it was, which is all a car standing for her shows.
+func _stands(car: EventInstance, player: Stroller) -> bool:
+	var was_at := car.global_position
+	_drive(car, player)
+	return car.global_position.is_equal_approx(was_at)
+
 func _gap(car: EventInstance) -> float:
 	return car.car.gap_to_her(car.position, car.facing_now())
-
-# ----------------------------------------------------------------- the row ---
-
-func _test_the_patrol_is_a_car_at_every_heat(t) -> void:
-	var cold := _patrol()
-	t.check(cold.vehicle != null, "police_patrol drives: solid in every state, lethal in front while driving")
-	t.check(cold.shape != null and cold.shape.kind == GroundShape.Kind.SEGMENT,
-			"its body is a capsule laid along its heading")
-	t.check(cold.obstructs_radius == 0.0 and not cold.hard_fail,
-			"it closes no ground and is no hard fail: it kills only as a car does")
-	for level in EventCatalogue.heat_levels():
-		var hot := EventCatalogue.heated(cold, level)
-		t.check(hot.vehicle != null and hot.shape == cold.shape and not hot.hard_fail,
-				"heat %d's patrol is the same car" % level)
-	var copy: EventDef = cold.duplicate()
-	t.check(copy.vehicle != null, "a duplicated patrol (the return's, a poster's, the raid's) still drives")
 
 # ------------------------------------------------------------- the reproduction ---
 
@@ -222,11 +211,12 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 		var struck_at := -1.0
 		var held := false
 		for i in int(6.0 / STEP):
+			var was_at := car.global_position
 			_drive(car, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and car.car.closes_on(player.global_position):
 				warned_at = now
-			held = held or car.car.is_standing()
+			held = held or car.global_position.is_equal_approx(was_at)
 			if car.is_lethal_at(player.global_position):
 				struck_at = now
 				break
@@ -262,7 +252,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 		struck = struck or leaving.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(leaving))
 	t.check(not struck, "a leaving car never strikes her in front of it")
-	t.check(deepest >= -0.01 and leaving.car.is_standing(),
+	t.check(deepest >= -0.01 and _stands(leaving, player),
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
@@ -308,7 +298,7 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	t.check(map.tile_at(map.world_to_tile(on_the_sidewalk)) == GameEnums.TileType.SIDEWALK,
 			"she stands on the sidewalk")
 	t.check(not struck, "with her on the sidewalk, a car never strikes her")
-	t.check(car.car.is_standing() and deepest >= -0.01,
+	t.check(_stands(car, player) and deepest >= -0.01,
 			"it stops for her pram in its lane instead (closest %.2fpx)" % deepest)
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
 	var nose := car.global_position + along * (car.def.shape.reach() + Tuning.PLAYER_BODY_RADIUS
@@ -318,14 +308,14 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	for i in int(3.0 / STEP):
 		_drive(car, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-	t.check(not struck and car.car.is_standing(),
+	t.check(not struck and _stands(car, player),
 			"a car standing for her never strikes her when she steps in front of it")
 	# And it drives on once she is out of its way.
 	player.global_position = on_the_sidewalk + outward * float(Tuning.TILE_SIZE)
 	var stood_at := car.global_position
 	for i in int(1.0 / STEP):
 		_drive(car, player)
-	t.check(not car.car.is_standing() and car.global_position.distance_to(stood_at) > 30.0,
+	t.check(car.global_position.distance_to(stood_at) > 30.0,
 			"and it drives on once she is out of its way")
 	car.free()
 	var in_the_road := edge - outward * 4.0
@@ -383,7 +373,7 @@ func _test_the_car_never_drives_into_her(t) -> void:
 					if car.is_lethal_at(player.global_position):
 						break
 					worst = minf(worst, _gap(car))
-				if car.car.is_standing():
+				if _stands(car, player):
 					held += 1
 				player.free()
 				car.free()
@@ -490,7 +480,7 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 			deepest = minf(deepest, _gap(car))
 		t.check(not struck, "stepped in %.0fpx behind the raid's car at the end of its beat, it never "
 				% behind + "strikes her")
-		t.check(car.car.is_standing() and car.facing_now().is_equal_approx(Vector2.RIGHT),
+		t.check(_stands(car, player) and car.facing_now().is_equal_approx(Vector2.RIGHT),
 				"%.0fpx behind: it stands, still facing away from her, rather than turning onto her"
 				% behind)
 		t.check(deepest >= -0.01, "%.0fpx behind: and its body never came into her" % behind)
@@ -498,7 +488,7 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 		player.global_position = Vector2(player.global_position.x, 80.0)
 		for i in int(1.0 / STEP):
 			_drive(car, player)
-		t.check(not car.car.is_standing() and car.facing_now().is_equal_approx(Vector2.LEFT),
+		t.check(not _stands(car, player) and car.facing_now().is_equal_approx(Vector2.LEFT),
 				"%.0fpx behind: once she is out of its lane it turns and paces back" % behind)
 		player.free()
 		car.free()
@@ -611,7 +601,7 @@ func _test_it_gives_way_at_a_zebra_she_waits_at(t) -> void:
 	var nose := car.global_position.x + car.def.shape.reach()
 	var paint := floorf(zebra.x / Tuning.TILE_SIZE) * Tuning.TILE_SIZE
 	t.check(not struck and not warned, "on the zebra she is never warned or struck")
-	t.check(car.car.is_standing() and nose <= paint,
+	t.check(_stands(car, player) and nose <= paint,
 			"it stands short of the paint (nose %.0f, paint %.0f)" % [nose, paint])
 	player.global_position = zebra + Vector2(0.0, -float(Tuning.TILE_SIZE) * 5.0)
 	var stood_at := car.global_position
@@ -663,10 +653,12 @@ func _test_it_stops_at_a_red_light(t) -> void:
 	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])
 	var car := _car(t, _patrol(), route, map)
 	car.signals = signals
+	var was_at := car.global_position
 	for i in int(5.0 / STEP):
+		was_at = car.global_position
 		car.step(STEP)
 	var nose := car.global_position.x + car.def.shape.reach()
-	t.check(car.car.is_standing() and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
+	t.check(car.global_position.is_equal_approx(was_at) and nose <= box_x - Tuning.CAR_STOP_LINE_SETBACK + 0.5,
 			"on red it stands at the stop line (nose %.0f, box %.0f)" % [nose, box_x])
 	while not signals.green_for(junction, false):
 		signals.elapsed += 0.25
@@ -674,28 +666,6 @@ func _test_it_stops_at_a_red_light(t) -> void:
 		car.step(STEP)
 	t.check(car.global_position.x > box_x, "and on green it drives through (%.0f)"
 			% car.global_position.x)
-	car.free()
-
-# ----------------------------------------------------------------- the caret ---
-
-## The caret over a police car stands as high above its picture as it does over anything else: it
-## is lowered with the picture.
-func _test_its_caret_stands_over_its_picture(t) -> void:
-	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]))
-	var player := _her(t, Vector2(200.0, 0.0), Vector2.LEFT)
-	_tell(car, player)
-	_already_driving(car)
-	var rect := car.look.mark_rect()
-	var anchor := car.look.body_anchor("side")
-	t.check(rect.has_area(), "the car in front of her is marked")
-	var above := anchor.y - (rect.position.y + rect.size.y)
-	# What any other row's caret clears its picture's bottom (its node) by, at the same swell.
-	var swell := car.look.mark_swell()
-	var width := EventPictures.MARK_WIDTH * (0.55 + 0.45 * swell)
-	var usual := EventPictures.MARK_HEIGHT + 10.0 * swell - width * 0.5 - 1.0
-	t.check(absf(above - usual) < 0.01,
-			"its caret clears the picture's bottom by %.1fpx, as on any row (%.1fpx)" % [above, usual])
-	player.free()
 	car.free()
 
 # ------------------------------------------------------------------ the box ---
@@ -767,7 +737,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 						furthest = maxf(furthest, nose)
 					cases += 1
 					worst = maxf(worst, furthest)
-					t.check(furthest <= -Tuning.CAR_STOP_LINE_SETBACK + 0.5 and car.car.is_standing(),
+					t.check(furthest <= -Tuning.CAR_STOP_LINE_SETBACK + 0.5 and _stands(car, player),
 							("at %s, driving %s, her at the far zebra's tile %d, %.0fpx out: it holds "
 							% [what, "east" if direction > 0.0 else "west", k + 1, out])
 							+ "at the box's entry line (nose %.1fpx from the box)" % furthest)
