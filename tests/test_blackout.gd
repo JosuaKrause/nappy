@@ -11,7 +11,6 @@ const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
-const STEP := 1.0 / 60.0
 
 ## The city and its run the test now running stands in: `_begin()` builds both afresh at the top of
 ## every test and `_end()` frees them at its bottom, so no test reads what an earlier one left.
