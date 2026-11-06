@@ -31,7 +31,6 @@ src/world/world_context.gd total_excitement_at
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
 src/build_info.gd commit_text
-src/city/traffic_signals.gd phase_of
 src/crowd/car_strategy.gd shadow_shape
 src/crowd/car_strategy.gd turn_refusals
 src/crowd/car_strategy.gd turn_round_cause

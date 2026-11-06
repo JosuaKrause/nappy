@@ -647,7 +647,7 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 	var cycle := Tuning.signal_cycle_seconds()
 	for tick in int(round(cycle * 10.0)):
 		signals.elapsed = float(tick) * 0.1
-		if signals.phase_of(box) == TrafficSignals.Phase.SIDE_GREEN:
+		if signals.green_for(box, false):
 			break
 	var car := _place_a_car(true, 1.0, box.x)
 	var waited_on_red := false
