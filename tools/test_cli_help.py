@@ -60,6 +60,7 @@ ENTRY_POINTS = (
     "ci_pr_questions.py",
     "check_layers.py",
     "check_test_only_members.py",
+    "merge-test-only-members.py",
 )
 
 SOUND_FILES = (

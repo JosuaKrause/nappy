@@ -905,7 +905,7 @@ choice (`main`), which hands that world's map down.
 ## WorldContext
 
 `Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
-`is_calm_zone()`, `is_alley()`, `total_excitement_at()` — and that is the entire surface
+`is_calm_zone()`, `is_alley()`, `excitement_sources_at()` — and that is the entire surface
 between the meters and the world. The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. **No world sums its events itself**: it is handed the
 sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the

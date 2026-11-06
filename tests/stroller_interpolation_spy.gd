@@ -8,7 +8,7 @@ extends Stroller
 ## `Stroller` (`set_script()`, after the scene's own has built its children) to read it back.
 ##
 ## `Stroller.teleport_to()` calls `reset_physics_interpolation()` while she is still hidden
-## (`CheckpointController.release_finished_holds()` calls it before `show_after_inspection()`);
+## (`CheckpointController._release_finished_holds()` calls it before `show_after_inspection()`);
 ## that call reaches here as `reset_seen_while_hidden`, never as the one that actually clears
 ## the stale pair a hold leaves behind — see `Stroller.show_after_inspection()`'s own doc for
 ## what that pair is and why it survives a hidden reset.

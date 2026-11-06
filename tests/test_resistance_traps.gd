@@ -265,7 +265,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## never runs through a district door, awake from his first frame, and catching her where she stands
 ## if she does nothing. Day 9's is measured from where the inspection lets her out, 54px past the
 ## door's line beside the gatehouse that held her, on each side in turn
-## (`CheckpointController.release_finished_holds()`), since that is where she stands when it
+## (`CheckpointController._release_finished_holds()`), since that is where she stands when it
 ## sends him. Planned through the real day order (`City.start_day()`, then the events), since the
 ## door, the mast and the station's door are today's own plans.
 func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
@@ -453,7 +453,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 ## frame. **His run at her never crosses a
 ## district door's line**, asked here of each door body the way
 ## `CheckpointController.watch_the_door_lines()` asks it of her own steps
-## (`CheckpointController.where_she_crossed()`), not through the director's own refusal. **A
+## (`CheckpointController._where_she_crossed()`), not through the director's own refusal. **A
 ## straight walkable run at her is a preference, not a guarantee** (`_draw_arrival_position()`'s
 ## own doc: with none from any start, the first legal one stands in): so with one — or from
 ## across the street, with his own walk at her (`SpawnSiting.Rule.REACHES_HER`) — he catches her
@@ -496,8 +496,8 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 	var through_a_door := false
 	var plan := _city.region_plan()
 	for body: EventScheduler.Planned in plan.door_bodies if plan else []:
-		if CheckpointController.where_she_crossed(body.position, body.facing, body.def.obstructs_radius,
-				start, her) != Vector2.INF:
+		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
+				start, her):
 			through_a_door = true
 	t.check(not through_a_door,
 			"%s: his run at her from %s never crosses a district door's line"

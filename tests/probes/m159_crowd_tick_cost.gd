@@ -149,7 +149,7 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	stamps.append(Time.get_ticks_usec())
 	crowd._book_the_turns()
 	stamps.append(Time.get_ticks_usec())
-	crowd.give_way_at_junctions()
+	crowd._give_way_at_junctions()
 	stamps.append(Time.get_ticks_usec())
 	crowd._stop_for_gates(STEP)
 	stamps.append(Time.get_ticks_usec())

@@ -5,7 +5,7 @@ extends Resource
 ## `Tuning.RUN_TAUGHT_DAY`, the run's lesson, and from the day after it is a place on the map that
 ## waits for her (`notice`). Siting and notice change on the same day, so they are one switch.
 ##
-## Never a mutation of the shared row: `EventDef.spawn_mode_on()` and `EventDef.notice_on()` answer
+## Never a mutation of the shared row: `EventDef.spawn_mode_on()` and `EventDef._notice_on()` answer
 ## by day, and a placement that needs the later notice is handed a copy carrying it
 ## (`EventDef.for_day()`), as a heated row is a copy.
 

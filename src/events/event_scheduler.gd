@@ -531,7 +531,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 		kept_ground: KeptGround = null) -> Array[Planned]:
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		return _fill_the_walk_from_the_bag(spec, rng, map, route,
-				street_bag(spec.bag, street_bag_seed(rng)), used_calm, doors, standing,
+				_street_bag(spec.bag, street_bag_seed(rng)), used_calm, doors, standing,
 				kept_ground, trace)
 	var day := spec.number
 	var planned: Array[Planned] = []
@@ -582,7 +582,7 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 
 	planned.append_array(_place_ambient(day, map, heat))
 	planned.append_array(_place_scars(day, scars, heat))
-	planned.append_array(place_masts(day, map, heat, doors, scars))
+	planned.append_array(_place_masts(day, map, heat, doors, scars))
 	_place_scripted(day, _stream(base, 1), map, planned, ground, leave_alone, corridor, heat, doors,
 			standing, rules)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, planned, ground,
@@ -708,7 +708,7 @@ class Rules extends RefCounted:
 ## spec keeps the caps.
 ##
 ## **The ground is the day's own for the row** (`street_ground()`), on the street's own rect, and
-## every placement rule a day keeps is kept: `_build_placement` sites each one, `room_around`
+## every placement rule a day keeps is kept: `_build_placement` sites each one, `_room_around`
 ## refuses anything drawn inside something else, and the telegraph contract is the def's own and was
 ## checked at boot. What the spec turns on is asked on top (`Rules`): one waiting guard's notice at a
 ## time, and the walk kept open past every body standing on it — the seals (`standing`, planned
@@ -763,7 +763,7 @@ static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerato
 ## `DaySpec.EMPTY_MARBLE`, on its own stream off `seed_value`, filled again whenever it runs empty —
 ## one bag for the whole walk, so the mix is exact over each fill of it rather than over each street.
 ## See `_fill_the_walk_from_the_bag()`.
-static func street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
+static func _street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
 	var marbles: Array = []
 	for marble: String in counts:
 		for _i in int(counts[marble]):
@@ -1024,7 +1024,7 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ##   different city's worth of events: measured on the day the fire engine runs, `homeless_yeller`
 ##   goes from two to eight and `cyclist` from none to three between two attempts at the same day.
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
-##   `room_around` to reject a placement against — and a rejection is a re-roll.
+##   `_room_around` to reject a placement against — and a rejection is a re-roll.
 ##
 ## Separate streams close the first completely and most of the second (see `_fill_with_recurring`).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
@@ -1108,7 +1108,7 @@ static func _ensure_the_run_is_taught(day: int, planned: Array[Planned], heat: i
 ## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
 ## def rather than repeating one — the fiction is that a park which is busy today is busy with
 ## several different things, and nine copies of one sprite in a field read as a duplicate, which is
-## exactly what the spacing rule at `room_around` prevents everywhere else.
+## exactly what the spacing rule at `_room_around` prevents everywhere else.
 ##
 ## **Every area she has used this act, not just last night.** One night's memory makes day 2 a fresh
 ## decision and day 3 the same decision as day 1; an act's memory is what turns *find a different
@@ -1313,7 +1313,7 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## under `added_mast_id()`, on every later day whose holds, closures and doors leave the tile alone
 ## — the same refusals a site is planned under. One that was never silenced left no scar and is not
 ## planned again (*"Only if silenced"*).
-static func place_masts(day: int, map: CityMap, heat: int = 0,
+static func _place_masts(day: int, map: CityMap, heat: int = 0,
 		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
@@ -1365,7 +1365,7 @@ static func added_mast_id(foot: Vector2) -> String:
 	return "added-%d-%d" % [roundi(foot.x), roundi(foot.y)]
 
 ## The scar id a mast she silenced leaves at its foot. No catalogue row answers it, so
-## `_place_scars` places nothing for it; `place_masts` is its only reader.
+## `_place_scars` places nothing for it; `_place_masts` is its only reader.
 const SILENCED_MAST := "silenced_mast"
 
 ## Whether a `SILENCED_MAST` scar from an earlier day stands at `foot` — within a tile, since the
@@ -2390,7 +2390,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## step out"*). This does not change what a seal or the wall stands as — neither is in
 ## `standing` for any reason but these three checks — so a street already sealed by design is
 ## unmoved; what changes is that the catalogue now declines to stack a second body onto ground a
-## seal or the wall has already spent. `room_around`'s own spacing stays asked of `already`
+## seal or the wall has already spent. `_room_around`'s own spacing stays asked of `already`
 ## alone: density is a question about today's catalogue rows, not about the day's fixed
 ## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
 ## them the whole of `_plans`, seals and the wall included, as their own `already`
@@ -2495,7 +2495,7 @@ class Verdicts extends RefCounted:
 		_kept.clear()
 
 ## The rule chain `_best_of()` asks of one candidate: sets its role and answers its room, the
-## `room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
+## `_room_around()` answer, or `-INF` where a rule that cannot bend refuses it, which no room
 ## beats — so a refused candidate is never the roomiest, as it never was when it was skipped.
 static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap, tile: Vector2i,
 		already: Array[Planned], reach_context: Array[Planned], ground: Dictionary,
@@ -2546,7 +2546,7 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 	if rules and rules.one_notice_at_a_time \
 			and not _keeps_its_notice_to_itself(map, candidate, already):
 		return -INF
-	return room_around(candidate, already)
+	return _room_around(candidate, already)
 
 ## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
 ## the day's planning.
@@ -2952,7 +2952,7 @@ static func _build_placement(def: EventDef, map: CityMap, tile: Vector2i,
 ## - `EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
 ##   duplicated sprite rather than a second incident. This one bends, because on a full map the
 ##   honest answer is the roomiest spot left rather than no event.
-static func room_around(candidate: Planned, already: Array[Planned]) -> float:
+static func _room_around(candidate: Planned, already: Array[Planned]) -> float:
 	var room_same := INF
 	for plan in already:
 		if not plan.is_placed():
@@ -2985,15 +2985,15 @@ static func room_around(candidate: Planned, already: Array[Planned]) -> float:
 	return INF if room_same >= EVENT_SPACING_SAME else room_same
 
 ## The placement a recipe or a planner puts at one site, or null: the candidate `_build_placement()`
-## sites on `tile` that `room_around()` leaves room for among `already`. The one entry point a
+## sites on `tile` that `_room_around()` leaves room for among `already`. The one entry point a
 ## planner and `SceneRecipeRuntime` share: an authored scene's row keeps the day's spacing. The
 ## scheduler's own loop (`_best_of()`) does not call it: a day asks `_judge()`, which asks
-## `room_around()` among many more rules and keeps its verdicts and the candidate's role, so
+## `_room_around()` among many more rules and keeps its verdicts and the candidate's role, so
 ## routing the loop through this would change what the day places.
 static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNumberGenerator,
 		already: Array[Planned]) -> Planned:
 	var candidate := _build_placement(def, map, tile, rng)
-	if not candidate or room_around(candidate, already) == -INF:
+	if not candidate or _room_around(candidate, already) == -INF:
 		return null
 	return candidate
 
@@ -3943,7 +3943,7 @@ static func _calm_to_keep_reachable(map: CityMap, planned: Array[Planned], besid
 				tiles.append(tile)
 				reachable = reachable or grid.reaches(tile, map.closed_tiles, reached)
 		other.append_array(tiles)
-		if reachable and not is_spoiled(map, planned, rect):
+		if reachable and not _is_spoiled(map, planned, rect):
 			clean.append_array(tiles)
 	return clean if not clean.is_empty() else other
 
@@ -3951,7 +3951,7 @@ static func _calm_to_keep_reachable(map: CityMap, planned: Array[Planned], besid
 ## reading of a spoiled area: a playground and a scar do not count, and neither do the seals and the
 ## region wall, which are planned before the catalogue and handed to it as `standing` rather than
 ## being in `planned`.
-static func is_spoiled(map: CityMap, planned: Array[Planned], rect: Rect2i) -> bool:
+static func _is_spoiled(map: CityMap, planned: Array[Planned], rect: Rect2i) -> bool:
 	var lot := map.tile_rect_to_world(rect)
 	for plan in planned:
 		if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed() or plan.permanent:

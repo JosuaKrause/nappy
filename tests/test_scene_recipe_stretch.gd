@@ -405,7 +405,9 @@ func _test_the_schema(t, data: Dictionary) -> void:
 			"a stretch's crowd is its listed starting population, never a rolled one")
 
 func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
-	var ends := CrowdField.stretch_ends_of(map)
+	var field := CrowdField.new(map, Vector2.ZERO)
+	field.use_stretch()
+	var ends := field.stretch_ends
 	t.check(not ends.is_empty(), "the stretch has ends where its streets run into the void")
 	var sound := true
 	for end in ends:
@@ -421,9 +423,6 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 			lane_end = lane_end or (map.is_cut_off(at - inward) and run > Tuning.STREET_WIDTH)
 		sound = sound and lane_end
 	t.check(sound, "each end is a lane end with void beyond it and more than a junction behind it")
-	var crowd_map := map
-	var field := CrowdField.new(crowd_map, Vector2.ZERO)
-	field.use_stretch()
 	var looking := Vector2(123, 456)
 	field.centre = looking
 	t.check(field.has_stretch() and field.looking_at() == looking and field.centre != looking,

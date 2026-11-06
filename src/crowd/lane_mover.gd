@@ -52,7 +52,7 @@ var kind := Kind.WALKER:
 var strategy: LaneStrategy
 
 ## This agent's own ground shape, set once in `setup()`: a point for a walker, a capsule along the
-## travel axis for a car (`CarStrategy.shadow_shape()`). Read for the shadow and the debug view;
+## travel axis for a car (`CarStrategy._shadow_shape()`). Read for the shadow and the debug view;
 ## there is no body for either. It is the noise (and the shadow) a car makes, not what it hits:
 ## `will_be_lethal()`'s strike box (the front half of the body, `Tuning.CAR_STRIKE_HALF_LENGTH` and
 ## `CAR_STRIKE_HALF_WIDTH`) is the lethal rectangle, since lethal is not noise (M61).
@@ -113,7 +113,7 @@ var gap_ahead := INF
 var leader_speed := 0.0
 
 ## Distance to the stop line of a junction this car has to give way at, or `INF` when it has
-## right of way. Written once per physics frame by `Crowd.give_way_at_junctions()`, because
+## right of way. Written once per physics frame by `Crowd._give_way_at_junctions()`, because
 ## whose turn it is at a box is a question about the pair of them and not about either one.
 var junction_hold := INF
 
@@ -583,7 +583,7 @@ func travelling_vertically() -> bool:
 ## after its middle has left.
 ##
 ## The end nearer the lattice's origin is asked first and the other second, each written out
-## rather than looped over, since `Crowd.give_way_at_junctions()` asks every car this once a
+## rather than looped over, since `Crowd._give_way_at_junctions()` asks every car this once a
 ## physics tick and a loop over the pair would build an array to walk every time.
 func junction_occupied() -> Vector2i:
 	var half := _nose

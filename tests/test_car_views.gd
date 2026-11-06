@@ -85,21 +85,26 @@ func _test_cardinal_headings_select_the_expected_view(t) -> void:
 				"sector %d mirror flag matches the west-mirror convention" % sector)
 		agent.free()
 
-## A synthetic `CarTurn` whose tangent is exactly `sector`'s own 45-degree-multiple centre, built
-## directly from `CarTurn.heading_at()`'s formula (`start_angle`, `spin`) rather than by planning a
-## real arc through a `CityMap` a focused view-selection rig has no business building. `travelled`
-## stays zero throughout, so `heading_at(0)` is just `Vector2(-sin(start_angle), cos(start_angle))
-## * spin` — solved once per diagonal sector below.
-func _turn_facing(sector: int) -> CarTurn:
-	var turn := CarTurn.new()
-	turn.radius = 16.0
-	turn.spin = 1.0
-	# SE=1 -> -45deg, NE=7 -> -135deg (=225deg), SW=3 -> 45deg, NW=5 -> 135deg — each solved so
-	# Vector2(-sin(start_angle), cos(start_angle)) lands exactly on that sector's own heading.
-	var start_angle_by_sector := {1: -45.0, 3: 45.0, 5: 135.0, 7: -135.0}
-	turn.start_angle = deg_to_rad(start_angle_by_sector[sector])
-	turn.travelled = 0.0
+## A quarter-turn arc into an arm of the crossing (`CarTurn.into_an_arm()`, the arc a car plans),
+## built on the lanes alone rather than by planning through a `CityMap` a focused view-selection rig
+## has no business building, and left `degrees` of the way round it: the heading a car on it points
+## at is its entry heading turned that far toward the arm. East-bound and turning south
+## (`direction` 1, `turning` 1) is the south-east quarter.
+func _arc_turned(degrees: float, direction := 1.0, turning := 1.0) -> CarTurn:
+	var lane := CrowdLanes.road_lane(false, direction)
+	var turn := CarTurn.into_an_arm(false, direction, 0, CrowdLanes.lane_centre(0, lane), 0,
+			CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO)
+	turn.travelled = turn.radius * deg_to_rad(degrees)
 	return turn
+
+## A turn whose tangent is exactly `sector`'s own 45-degree-multiple centre: halfway round a quarter
+## turn from an east-west lane, the heading is the diagonal between the lane's and the arm's.
+func _turn_facing(sector: int) -> CarTurn:
+	# SE=1: east-bound into the south arm; SW=3: west-bound into the south arm; NW=5: west-bound into
+	# the north arm; NE=7: east-bound into the north arm.
+	var direction := 1.0 if sector in [1, 7] else -1.0
+	var turning := 1.0 if sector in [1, 3] else -1.0
+	return _arc_turned(45.0, direction, turning)
 
 ## **Mid-turn the sector runs through the diagonal** — the property a walker has nothing
 ## equivalent to, since a walker's lane is always cardinal and only its cross-lane steering ever
@@ -450,17 +455,10 @@ func _test_the_rim_and_the_picture_share_one_footprint(t) -> void:
 				% [sector, margin, rim.size, picture.size]))
 	agent.free()
 
-## A synthetic `CarTurn` whose tangent at zero travelled is exactly `degrees` clockwise from east,
-## for sweeping a heading through a sector rather than landing on its centre. `heading_at(0)` is
-## `Vector2(-sin(start_angle), cos(start_angle))` at `spin` 1, which is `Vector2.from_angle()` of
-## `start_angle + 90°`.
+## An arc whose tangent is `degrees` clockwise from east (up to the 90 a quarter turn has), for
+## sweeping a heading through a sector rather than landing on its centre.
 func _turn_at(degrees: float) -> CarTurn:
-	var turn := CarTurn.new()
-	turn.radius = 16.0
-	turn.spin = 1.0
-	turn.start_angle = deg_to_rad(degrees - 90.0)
-	turn.travelled = 0.0
-	return turn
+	return _arc_turned(degrees)
 
 ## **A redraw gate is a promise about everything the drawing reads.** `_draw()` is retained and
 ## moving a `Node2D` does not invalidate its draw list, so `CrowdAgent.end_the_frame()` is

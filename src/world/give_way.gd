@@ -3,7 +3,7 @@ extends RefCounted
 ## **Where a car on a street gives way**: the junction box ahead of it, the red light that holds it
 ## at the box's entry line, the zebra she waits at that holds it short of the paint, and whether
 ## that zebra lies past the box. The street lattice's own rules, stateless and asked in plain
-## values, so a crowd car (`CarStrategy`, `Crowd.give_way_at_junctions()`) and an event car
+## values, so a crowd car (`CarStrategy`, `Crowd._give_way_at_junctions()`) and an event car
 ## (`EventCarDriving`) read one answer instead of keeping two copies in step by hand. Each keeps
 ## what is its own: the crowd car its braking curve, its commit rule and its queue at a box, the
 ## event car its refusal of a step past the line.

@@ -2014,7 +2014,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## any other door does nothing.
 ##
 ## **Only an inspected crossing sends the trap.** Walked under a raised boom (`inspected`
-## false), the door sets its own guard on her (`CheckpointController.set_a_guard_on_her()`),
+## false), the door sets its own guard on her (`CheckpointController._set_a_guard_on_her()`),
 ## and that guard is the whole of the crossing's price: no robber comes from off screen as well.
 ## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only
 ## the guard, the robber only after an inspected crossing.)* `_walked_under_the_door` carries
@@ -2232,7 +2232,7 @@ func weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) ->
 
 ## Silences the mast day 11 sent her to, for the rest of the run: today through
 ## `EventManager.silence_mast()`, and every later day through the scar it leaves
-## (`EventScheduler.SILENCED_MAST`), which `EventScheduler.place_masts()` reads before a mast's plan
+## (`EventScheduler.SILENCED_MAST`), which `EventScheduler._place_masts()` reads before a mast's plan
 ## is ever made. A scar rather than a field of its own on `RunState` because it is exactly what a
 ## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
 ## saved, and given back with a lost day, by what already does both for the burnt shell.

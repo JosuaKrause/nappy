@@ -17,9 +17,6 @@ const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 class FakeWorld extends WorldContext:
 	var noise := 0.0
 
-	func total_excitement_at(_world_position: Vector2) -> float:
-		return noise
-
 	var _noise := ExcitementSource.new(self)
 
 	func excitement_sources_at(_world_position: Vector2) -> Array:

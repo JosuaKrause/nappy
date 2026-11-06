@@ -38,5 +38,11 @@ from the filer's reading of the suites rather than a survey, is that the suites 
 or a `GameSave` without handing it a scratch path or a fake get one; the frame recorder's desktop file name is checked once the records folder is
 handed to the recorder rather than named under the player's `user://frame-records/`.
 
+*Proposed by the orchestrator, from a review, not asked for:* `test_run_checkpoints.gd` writes one
+fixed scratch file, `user://test_run_checkpoints_scratch.json`, and `user://` is shared by every
+checkout on a machine, so two runs of the suite at once can read each other's file (two of its checks
+failed that way while another run was going); the scratch name takes the process id, as
+`tests/scene_recipe_lifecycle.gd`'s does. CI's shards each run a suite once, so they do not collide.
+
 This item sits beside `tests-public-seams.md` (tests drive public seams and real frames), whose
 fakes injected instead of patched statics remove part of the same shared state.

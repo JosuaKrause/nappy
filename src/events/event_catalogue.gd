@@ -2037,7 +2037,7 @@ static func _poster_crew_square() -> EventDef:
 	return def
 
 ## A mast on a street, with a field around it — six of them, planted by `MastSites` and placed
-## every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler.place_masts()` rather than by the
+## every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()` rather than by the
 ## ordinary catalogue roll: `scripted_day` stays 0, the seal pictures' own sentinel for "a planner
 ## places me directly, and `EventDef.available_on()` must never roll one" (see the seal table in
 ## `docs/EVENTS.md`). Its own geometry is `homeless_yeller`'s — same inner and outer radius, same
@@ -2063,16 +2063,16 @@ static func _loudspeaker() -> EventDef:
 	def.telegraph_time = 3.0
 	def.pulse_period = 22.0
 	def.cost = 0
-	# `place_masts()` places one at every site `MastSites.compute()` names, which is
+	# `_place_masts()` places one at every site `MastSites.compute()` names, which is
 	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
 	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
 	# can carry one more: the mast day 11 queued for her task (`EventManager.queue_a_mast()`), which
-	# once she silenced it `place_masts()` plans again from its scar on every later day.
+	# once she silenced it `_place_masts()` plans again from its scar on every later day.
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
 ## What the masts carry on `EventScheduler.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast —
-## `EventScheduler.place_masts()` places one of these at every mast site that morning, alongside
+## `EventScheduler._place_masts()` places one of these at every mast site that morning, alongside
 ## the mast's own `loudspeaker` instance, which keeps drawing the pole, the lamp and the arcs: this
 ## row is `Look.NONE` and adds only the field, the same way a park's own playground frame draws
 ## itself while `_playground()` merely prices it. Its own duration and ramp are unchanged from the
@@ -3220,7 +3220,7 @@ static func _checkpoint_post() -> EventDef:
 ## spawn at the huts" · "The day ends, not going through the checkpoint is a clear unlawful thing
 ## here. She gets detained/imprisoned or whatever in that case. This is independent of the
 ## resistance. She shouldn't do it. One guard is enough".)* Nothing places it but
-## `CheckpointController.set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's
+## `CheckpointController._set_a_guard_on_her()`: `SCRIPTED` on day 0 like the rest of the door's
 ## kit, so the ordinary roll never reaches it, stepping out of the wall of the door's hut across
 ## the road from her on the side she crossed to. The guards drawn at the huts stay at their
 ## posts, so the door stays manned.

@@ -420,7 +420,7 @@ func _test_a_busy_street_never_lets_the_meter_fall(t) -> void:
 func _quietest_pavement() -> Vector2:
 	var quietest := 0
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
-		if CrowdLanes.busyness(_city.map, true, index) < CrowdLanes.busyness(_city.map, true, quietest):
+		if CrowdLanes.busyness_for(_city.map, true, index, true) < CrowdLanes.busyness_for(_city.map, true, quietest, true):
 			quietest = index
 	var x := quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return _city.map.tile_to_world(Vector2i(x, _city.map.size.y / 2))
@@ -1025,13 +1025,13 @@ func _test_a_main_road_is_kept_by_its_lights(t) -> void:
 	# **Where the spine runs is a fact about this city, not a constant.** *(Playtest 14: "I have
 	# the feeling the main road is now always left to home — it should move around more.")* It was
 	# always the middle corridor, so this used to assert `main_road == arterial_index`, which is
-	# the shape M46 found in `CrowdLanes.busyness`: a question about a city answered from a
+	# the shape M46 found in `CrowdLanes._busyness`: a question about a city answered from a
 	# constant. What is worth pinning is that it is somewhere a main road can *be*.
 	var spine := _city.map.main_road
 	var corridors := CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x)
 	t.check(spine >= 3 and spine <= corridors - 4,
 			"the spine leaves a city on both sides of it (corridor %d of %d)" % [spine, corridors])
-	t.check(CrowdLanes.busyness(_city.map, true, spine) == CrowdLanes.ARTERIAL_BUSYNESS,
+	t.check(CrowdLanes.busyness_for(_city.map, true, spine, true) == CrowdLanes.ARTERIAL_BUSYNESS,
 			"and the busiest street and the main road are the same street")
 	t.check(_city.signals.is_signalled(Vector2i(spine, 3)),
 			"every junction on the spine is signalled")
@@ -2094,11 +2094,11 @@ func _distance_along(agent: CrowdAgent, point: Vector2) -> float:
 ## arterial has to be the loud one, and it has to be the *same* one every morning.
 func _test_the_arterial_is_the_busiest_street(t) -> void:
 	var arterial := _city.map.main_road
-	var busiest := CrowdLanes.busyness(_city.map, true, arterial)
+	var busiest := CrowdLanes.busyness_for(_city.map, true, arterial, true)
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
 		if index == arterial:
 			continue
-		t.check(CrowdLanes.busyness(_city.map, true, index) < busiest,
+		t.check(CrowdLanes.busyness_for(_city.map, true, index, true) < busiest,
 				"corridor %d is quieter than the arterial" % index)
 	# And there is exactly **one** of it. *(Playtest 13, finding 7.)* `busyness` used to answer
 	# `index == arterial_index(blocks)` with `blocks` taken from whichever axis it was asked
@@ -2106,7 +2106,7 @@ func _test_the_arterial_is_the_busiest_street(t) -> void:
 	# M41 abolished the second main road everywhere except here, and the phantom held more cars
 	# than the real one. A hierarchy is only a hierarchy if there is one of the top thing.
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.y):
-		t.check(CrowdLanes.busyness(_city.map, false, index) < CrowdLanes.ARTERIAL_BUSYNESS,
+		t.check(CrowdLanes.busyness_for(_city.map, false, index, true) < CrowdLanes.ARTERIAL_BUSYNESS,
 				"east-west corridor %d is an ordinary street, not a second spine" % index)
 
 ## **Nothing walks into a cul-de-sac's wall.** *(Playtest 15, finding 1: "cars and people go

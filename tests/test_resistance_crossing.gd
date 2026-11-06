@@ -5,7 +5,7 @@ extends "res://tests/resistance_rig.gd"
 ## on it, so no test leans on a guard, a crossing or a hold an earlier one left. What the director and the
 ## checkpoints have done is read from the street: the door the arrow ends on (`_door_position()`), the
 ## guard and the robber among the city's live instances (`_guard_after_her()`, `_robber_after_her()`),
-## the hand a gatehouse's guard raises (`_a_guard_warns_her()`) and `CheckpointController.guard_is_after_her()`. She is put down at the start of a walk the way the game puts her down
+## the hand a gatehouse's guard raises (`_a_guard_warns_her()`) and `_a_guard_is_after_her()`. She is put down at the start of a walk the way the game puts her down
 ## (`Stroller.teleport_to()`: an outright move, which the next look at her compares nothing across).
 
 func run(t) -> void:
@@ -50,6 +50,8 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 		var director: ResistanceDirector = day[0]
 		var player: Stroller = day[1]
 		var events := _city.events
+		var walks_told: Array[String] = []
+		events.trace = RunTrace.recording(walks_told)
 		var step := director.current_step()
 		t.check(step != null and step.target_kind == ResistanceSteps.TargetKind.DOOR,
 				"day 9's mark puts the crossing on offer")
@@ -68,13 +70,13 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 				"and on a gatehouse of today's district doors")
 		# Another door's line first: nothing — and that crossing is seen happening, so the check
 		# is not vacuous.
-		var walked_before := events.walks_under_a_boom()
+		var walked_before := _walks_under(walks_told)
 		for body in _city.region_plan().door_bodies:
 			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED \
 					and body.position.distance_to(_door_position(director)) > 200.0:
 				_walk_through(body.position, body.facing, direction, player)
 				break
-		t.check(events.walks_under_a_boom() > walked_before,
+		t.check(_walks_under(walks_told) > walked_before,
 				"another district door's line was walked through")
 		t.check(not director.contact().is_done, "crossing another district door completes nothing")
 		# **Only one walk-under guard exists at a time**, and that other door has just set one
@@ -94,7 +96,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 				"walking under the named door's boom sends no robber after her, nor warns of one")
 		var guard := _guard_after_her(events)
 		t.check(guard != null and guard != first_guard and guard.def.id == "door_guard"
-				and events.checkpoints.guard_is_after_her(),
+				and _a_guard_is_after_her(events),
 				"the named door's own, new guard is after her instead")
 		if guard:
 			t.check(guard.global_position.distance_to(_door_position(director))
@@ -161,12 +163,12 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 		for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
 			events.checkpoints.watch_the_door_lines(STEP)
 		var guard_before := _guard_after_her(events)
-		t.check(not director.contact().is_done and not events.checkpoints.guard_is_after_her(),
+		t.check(not director.contact().is_done and not _a_guard_is_after_her(events),
 				"a crossing taken back does not do the task, and sets no guard on her")
 		_walk_through(at, axis, direction, player)
 		var guard := _guard_after_her(events)
 		t.check(director.contact().is_done and guard != null and guard != guard_before
-				and events.checkpoints.guard_is_after_her(),
+				and _a_guard_is_after_her(events),
 				"walked through and staying across, the same door does the task, its guard after her")
 		_end_the_attempt(director, player)
 
@@ -220,7 +222,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 				_step_to(player, a_at - a_axis * 40.0 * a_dir)
 			for i in int(ceil(CheckpointController.CROSSING_WARNING * 2.0 / STEP)):
 				events.checkpoints.watch_the_door_lines(STEP)
-			var chased := events.checkpoints.guard_is_after_her()
+			var chased := _a_guard_is_after_her(events)
 			var done_expected := a_stays and b_walk == "stays"
 			t.check(chased == a_stays and director.contact().is_done == done_expected,
 					"%s: A's guard %s and the task is %s" % [name,
@@ -248,7 +250,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 		_walk_through(_door_position(director), _door_axis(director), direction, player)
 		t.check(director.contact().is_done, "walking under the named boom does the task")
 		var guard := _guard_after_her(events)
-		t.check(guard != null and guard.def.id == "door_guard" and events.checkpoints.guard_is_after_her()
+		t.check(guard != null and guard.def.id == "door_guard" and _a_guard_is_after_her(events)
 				and not guard.gave_up,
 				"and sets the door's guard after her")
 		t.check(_robber_after_her(events) == null and _warning_for(events, "robber_giving_chase") == null,
@@ -272,7 +274,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 					"and nobody else is sent: no second guard is after her")
 			t.check(director.contact().is_done, "the task stays done")
 			# **The moment day 9 sends the robber is the end of the hold**: the inspection
-			# lets her through (`CheckpointController.release_finished_holds()`,
+			# lets her through (`CheckpointController._release_finished_holds()`,
 			# `door_crossed(…, true)`), which completes the crossing for a task done under
 			# the boom only if the director's early return in `_on_door_crossed()` lets it.
 			# So the hold is run out, she is released, and the warning a robber would send
@@ -284,7 +286,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 				for instance in events.instances():
 					instance.step(STEP)
 			t.check(not hut.is_chatting() and guard_steps > 0, "the hold runs its clock out")
-			events.checkpoints.release_finished_holds()
+			events.checkpoints.check_detentions()
 			# She stood at the hut's own centre, so which side she is put down on is not measured
 			# here; only the release moves her, so being moved is being let through.
 			t.check(player.global_position.distance_to(before) > 1.0,
@@ -302,7 +304,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 		_end_the_attempt(director, player)
 
 ## feathery-marmot, day 9 let through after the inspection — the ordinary way through a door
-## (`CheckpointController.release_finished_holds()`, which puts her down on the far side of the
+## (`CheckpointController._release_finished_holds()`, which puts her down on the far side of the
 ## gatehouse that held her and announces `door_crossed` with that gatehouse's position). On the test
 ## city's day 9, its mark read: being held at another door's gatehouse and let out completes nothing;
 ## being held at a gatehouse of the named door and let out on its far side completes the task, from
@@ -342,7 +344,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 					guard_steps -= 1
 					for each in events.instances():
 						each.step(STEP)
-				events.checkpoints.release_finished_holds()
+				events.checkpoints.check_detentions()
 				if instance == other:
 					if not director.contact().is_done:
 						elsewhere += 1
@@ -357,9 +359,9 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 					"the inspected crossing sends the robber after her")
 			if trap:
 				for body in _city.region_plan().door_bodies:
-					t.check(CheckpointController.where_she_crossed(body.position, body.facing,
+					t.check(not DoorLine.crossed_by(body.position, body.facing,
 							body.def.obstructs_radius, trap.global_position,
-							player.global_position) == Vector2.INF,
+							player.global_position),
 							"his run at her from %s never crosses a district door's line"
 							% _city.map.world_to_tile(trap.global_position))
 				# A finished pursuer is no longer in the world, so the director stops naming him.
@@ -381,19 +383,21 @@ func _test_the_frames_see_a_crossing(t) -> void:
 	var director: ResistanceDirector = day[0]
 	var player: Stroller = day[1]
 	var events := _city.events
+	var walks_told: Array[String] = []
+	events.trace = RunTrace.recording(walks_told)
 	if _door_position(director) == Vector2.INF:
 		t.check(false, "day 9's door is named")
 		_end_the_attempt(director, player)
 		return
 	var at := _door_position(director)
 	var axis := _door_axis(director)
-	var walked_before := events.walks_under_a_boom()
+	var walked_before := _walks_under(walks_told)
 	player.teleport_to(at - axis * 40.0)
 	await _step_a_frame(t)
 	t.check(not _a_guard_warns_her(events), "put down beside the boom, no crossing is warning her")
 	player.global_position = at + axis * 40.0
 	await _step_a_frame(t)
-	t.check(events.walks_under_a_boom() > walked_before
+	t.check(_walks_under(walks_told) > walked_before
 			and _a_guard_warns_her(events),
 			"a frame after she walks across the named boom's line its crossing is warning her")
 	_end_the_attempt(director, player)
@@ -450,10 +454,25 @@ func _door_guards(events: EventManager) -> Array[EventInstance]:
 			found.append(instance)
 	return found
 
+## How many walks across a door's line the run log told of: the `checkpoint` line
+## `CheckpointController.watch_the_door_lines()` writes for each, none for a release through it.
+func _walks_under(told: Array[String]) -> int:
+	var found := 0
+	for line in told:
+		if line.contains("walked through, heading"):
+			found += 1
+	return found
+
 ## The guard a walked crossing set on her last, in the world, or null.
 func _guard_after_her(events: EventManager) -> EventInstance:
 	var guards := _door_guards(events)
 	return guards.back() if not guards.is_empty() else null
+
+## Whether the guard a walked crossing set on her is still on her: in the world, neither finished
+## nor leaving.
+func _a_guard_is_after_her(events: EventManager) -> bool:
+	var guard := _guard_after_her(events)
+	return guard != null and not guard.is_finished and not guard.is_leaving
 
 ## The robber the done task has set on her, in the world and not finished, or null: his warning is
 ## not him, so none is named until it has run.

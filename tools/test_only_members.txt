@@ -6,6 +6,15 @@
 # member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
 # after its '#'.
 
+# [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
+# confirm what it does (inbox #1095 and #1098 in curly-rabbit; verify's testing policy). The reason is on each line.
+src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
+src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
+src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
+src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
+src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
+src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the danger-caret suite reads the caret's colour and chevrons off a recording drawer, but the arrival sweep (tests/test_no_pop_in.gd, hundreds of arrivals) and the redraw suite ask only whether a mark has an area, and drawing each of those arrivals through a recording drawer would add a real frame and a drawer per arrival to the slowest suites for a check that reads only the area
 # [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
 # proposal, not asked for and open to the player's correction: vars, signals and constants with no
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
@@ -18,13 +27,10 @@ src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/event_instance.gd charger_name
-src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
-src/world/chase_way.gd sweep_under_way
-src/world/world_context.gd total_excitement_at
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
@@ -43,56 +49,18 @@ src/city/poster_art.gd torn
 src/city/scenery_residency.gd camera_view
 src/city/scenery_residency.gd ordinary_guard_preparations
 src/city/traffic_signals.gd phase_of
-src/crowd/car_strategy.gd shadow_shape
-src/crowd/car_strategy.gd turn_refusals
-src/crowd/car_strategy.gd turn_round_cause
-src/crowd/car_strategy.gd turned_on_this_approach
-src/crowd/car_turn.gd carriageway_edge
-src/crowd/car_turn.gd spin
-src/crowd/car_turn.gd start_angle
-src/crowd/crowd.gd give_way_at_junctions
-src/crowd/crowd.gd space_out_the_traffic
-src/crowd/crowd_field.gd stretch_ends_of
-src/crowd/crowd_lanes.gd busyness
-src/crowd/lane_mover.gd end_the_frame
-src/crowd/walker_look.gd heading_now
-src/crowd/walker_strategy.gd door_answer_for
 src/events/behaviours/event_car_driving.gd is_driving
 src/events/behaviours/event_car_driving.gd room_to_its_line
-src/events/checkpoint_controller.gd guard_is_after_her
-src/events/checkpoint_controller.gd release_finished_holds
-src/events/checkpoint_controller.gd set_a_guard_on_her
-src/events/checkpoint_controller.gd where_she_crossed
 src/events/event_catalogue.gd guardsmen_from_day
 src/events/event_catalogue.gd heat_levels
-src/events/event_def.gd emission_at
-src/events/event_def.gd lunge_is_inside_the_catch
-src/events/event_def.gd mean_emission_along_the_line
-src/events/event_def.gd minimum_telegraph
-src/events/event_def.gd notice_on
-src/events/event_def.gd warning_time
 src/events/event_director.gd route_rows_on
 src/events/event_director.gd siting_band
 src/events/event_footprints.gd picture_drop_of
-src/events/event_manager.gd check_hard_fails
-src/events/event_manager.gd planner
-src/events/event_manager.gd step_the_encounters
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
-src/events/event_scheduler.gd budget_for
-src/events/event_scheduler.gd is_spoiled
-src/events/event_scheduler.gd place_masts
-src/events/event_scheduler.gd room_around
-src/events/event_scheduler.gd street_bag
 src/events/events_ahead.gd a_pursuer_is_after_her
-src/events/views/event_look.gd mark_colour
-src/events/views/event_look.gd mark_swell
-src/events/views/event_look.gd wants_a_mark
 src/events/views/figure_look.gd charging_dog_pictures
 src/events/views/figure_look.gd rider_pictures
-src/events/views/pursuer_look.gd masked_pursuer_pictures
-src/events/views/pursuer_look.gd policeman_pictures
-src/events/views/pursuer_look.gd robber_pictures
 src/events/views/roadblock_look.gd chaser_pictures
 src/events/walk_ground.gd held_by
 src/events/walk_ground.gd solids_of
@@ -114,12 +82,6 @@ src/routes/region_planner.gd region_of_segment
 src/routes/route_tree.gd lattice_grid
 src/routes/route_tree.gd trunk_used_the_spine
 src/routes/seal_planner.gd escape_candidates
-src/world/draw_layer.gd z_of
-src/world/excitement_source.gd expected_impact_at
-src/world/excitement_source.gd will_be_lethal
-src/world/excitement_sources.gd sources_at
-src/world/spawn_siting.gd is_out_of_sight
-src/world/spawn_siting.gd seen_from
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -151,6 +113,15 @@ src/web_display.gd dpr_cap  # a hand-in: apply() calls it with the engine's own 
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+src/crowd/crowd.gd space_out_the_traffic  # the traffic half of a tick (queues resolved front to back, the index rebuilt, junctions given way); tests/crowd_rig.gd measures what this pass alone moves a car by, between a car's movement and the separation, and rebuilds the index after a movement; a tick moves the agents and recycles too (a tick of no time still recycles the cars that have left the field), so no step() isolates the pass
+src/crowd/lane_mover.gd end_the_frame  # the hook every agent's step ends on, which CrowdAgent (a file of the crowd member's own owner) overrides to run its clocks down and redraw what changed, so the check sees only the base's own calls; tests/test_car_views.gd and tests/test_drawn_view.gd read what the override answers, whether the tick asked for a redraw, which a headless run draws to nothing and no node exposes
+src/crowd/walker_strategy.gd door_answer_for  # the cut of a walker's first roll into what it does at a region door (walks through, turns back, is held), which draw_the_door_answer() calls; of the three only turning back shows outside a hut (a walker that turns back treats every door's street as shut, which the suite reads off door_is_shut()), so the walks-through and held shares and the suites' search for a seed that draws the answer they want (tests/crowd_rig.gd, tests/test_crowd_bodies.gd) can be read only off the cut itself
+src/world/chase_way.gd sweep_under_way  # the guard's frame-timing probe (tests/probes/velvet_stork_guard_path_cost.gd) reads whether a sweep is under way, before and after a step, to count the frames that carry a sweep's slice and the sweeps begun; a sweep is internal work that no tile, picture or move of the guard shows, so only this answer says when one begins (a wall-clock measurement of the work, like scenery_ground worst_step_usec)
+src/world/excitement_source.gd expected_impact_at  # the net points the caret projects over the horizon; the caret draws only three levels (none, amber, doubled), so nothing outward carries the number, and tests/test_danger.gd checks it against what the bar then gains over the same horizon, tests/test_prediction_reuse.gd that the cached answer is bit-for-bit the uncached one
+src/world/excitement_source.gd will_be_lethal  # the doubled caret's question, overridden by EventExcitement and CrowdExcitement (files of other owners, so the check sees only the base's own call in caret_strength()); tests/test_danger.gd and tests/test_car_front.gd hold a car's lethal reach with it, the fairness promise that a lethal course is shown before it lands
+src/world/excitement_sources.gd sources_at  # the one question every set answers, overridden by EventSources and CrowdSources (files of other owners, so the check sees only the base's own calls in total_at() and all_at()); the suites read each set's pairs with it, the checkpoint suite the door rule off the events' set
+src/world/spawn_siting.gd is_out_of_sight  # the no-pop-in promise: an event is never created where she can see it, and tests/test_no_pop_in.gd, test_event_manager_fire.gd, test_events_scheduler.gd and the resistance and pursuit suites ask this of every placement the game makes; the only outward sign of a violation is the pop-in itself, which no headless frame draws
+src/world/spawn_siting.gd seen_from  # the camera's whole view that is_out_of_sight is asked against, the same no-pop-in promise: the suites build the view the game places against with it
 src/autoload/game_save.gd moment_result  # what a save moment comes to on the web (PENDING while the browser has not answered, FAILED where storage was refused): a desktop run's write() never takes those branches, since OS.has_feature("web") and OS.is_userfs_persistent() are the engine's own answers and not a hand-in, so tests/test_save.gd asks the pure function for them
 src/player/stroller.gd baby_cue_aside  # how far to one side the baby's cue is drawn so it steps out of the exclamation mark's column; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes (tests/test_danger.gd: "nothing in this suite could see a _draw, so the decision is a function"), so the facings it is held for are read off the function
 src/player/stroller.gd baby_cue_lift  # how far above the pram's ground point (or above her feet, carrying or walking due south) the baby's cue is drawn; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes, so the facings it is held for are read off the function
@@ -189,3 +160,5 @@ src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [r
 src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
 src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
+src/events/event_manager.gd check_hard_fails  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it
+src/events/event_manager.gd step_the_encounters  # real physics ticks for the suite's 20+ whole encounters ran past 400 s against about 33 s (measured in PR 1117), so tests/test_pursuer_on_foot.gd steps the manager's two public steps, the exception tests-public-seams.md records for it

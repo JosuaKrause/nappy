@@ -1103,7 +1103,7 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 
 ## The tile a plan starts from: the one she stands on, or — where that is not open ground at all —
 ## the nearest open tile to her. A door can set her down on a tile that is not ground
-## (`CheckpointController.release_finished_holds()` mirrors her through the door without
+## (`CheckpointController._release_finished_holds()` mirrors her through the door without
 ## asking what is there), and a sweep seeded on a building reaches nothing, which read as every
 ## target unreachable from there. The rig plans every leg and re-plan from it.
 ##

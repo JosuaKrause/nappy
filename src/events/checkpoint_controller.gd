@@ -25,7 +25,7 @@ extends RefCounted
 ## 'just spawned' that only resets once she leaves the area. that way she can't accidentally go back
 ## and we don't need to place her far away".)* `ReleaseLatch` is what stops the trigger firing on
 ## her there. Purely a spatial clearance, so it does not move with `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`. See
-## `CheckpointController.release_finished_holds()`.
+## `CheckpointController._release_finished_holds()`.
 const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## **How long a door's guard warns once she has crossed its line**, in seconds (`door_guard` and its
 ## alley copy, `CheckpointController.watch_the_door_lines()`). *(Inbox #788 in minty-lemur, the
@@ -60,7 +60,7 @@ signal holds_her(seconds: float)
 signal lets_her_out(at: Vector2)
 
 ## She has crossed a district door: let out on its far side after the inspection
-## (`release_finished_holds()`, `inspected` true), or walked through its line under a
+## (`_release_finished_holds()`, `inspected` true), or walked through its line under a
 ## raised boom (`watch_the_door_lines()`, `inspected` false), sent once that crossing's warning has
 ## run with her still across, the frame the door's own guard is set on her
 ## (`_run_the_crossing_warning()`): a crossing she takes back is never announced, and one made while
@@ -73,7 +73,7 @@ signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 
 ## Which side of a redetaining instance's own crossing she was on when its conversation started —
 ## `instance -> signf(...)`, the sign of her offset from the body against `facing_now()`. Present
-## only while that instance's own detention is running; `release_finished_holds()` reads
+## only while that instance's own detention is running; `_release_finished_holds()` reads
 ## and clears it the frame the conversation ends. See `EventDef.redetains`.
 var _door_entry_side: Dictionary = {}
 
@@ -82,11 +82,8 @@ var _door_entry_side: Dictionary = {}
 ## reads. `Vector2.INF` until the first look of a day, so a day's first frame compares nothing.
 var _last_seen_at := Vector2.INF
 var _last_outright_moves := 0
-## How many times today she has walked across a door's line rather than being let through it.
-## Read by `walks_under_a_boom()`; the run log has a line for each.
-var _walked_under := 0
 ## The guard a walked crossing last set on her, or `null` — one at a time, see
-## `set_a_guard_on_her()`.
+## `_set_a_guard_on_her()`.
 var _guard_after_her: EventInstance = null
 ## **A crossing still warning her** (`watch_the_door_lines()`): the door body whose line she walked
 ## across, the hut or post whose guard raises his hand at her, which side of the line she crossed
@@ -109,7 +106,7 @@ var _held_crossings: Array = []
 ## One `ReleaseLatch` per redetaining instance she has been let out of — `instance -> latch`. Armed
 ## the frame the release teleports her, with that instance's own trigger circle, and holding until
 ## she is measured outside it: the far side of a door is inside the door's own reach, so without
-## this she is taken in again the instant she is put down. See `release_finished_holds()`
+## this she is taken in again the instant she is put down. See `_release_finished_holds()`
 ## and `ReleaseLatch`, which the escape scene's own doors reuse.
 var _door_release_latches: Dictionary = {}
 
@@ -118,7 +115,6 @@ func clear() -> void:
 	_door_entry_side.clear()
 	_door_release_latches.clear()
 	_last_seen_at = Vector2.INF
-	_walked_under = 0
 	_guard_after_her = null
 	_crossing = null
 	_crossing_hut = null
@@ -126,9 +122,9 @@ func clear() -> void:
 	_held_crossings.clear()
 
 ## Whether the guard a walked crossing set on her is still on her: in the world, neither finished
-## nor leaving. One guard at a time (`set_a_guard_on_her()`), so a crossing starts no warning and
+## nor leaving. One guard at a time (`_set_a_guard_on_her()`), so a crossing starts no warning and
 ## sets no second guard while this holds.
-func guard_is_after_her() -> bool:
+func _guard_is_after_her() -> bool:
 	return is_instance_valid(_guard_after_her) and not _guard_after_her.is_finished \
 			and not _guard_after_her.is_leaving
 
@@ -196,7 +192,7 @@ func check_detentions() -> void:
 	var body := world.player as Stroller
 	if not world.has_player() or not body:
 		return
-	release_finished_holds()
+	_release_finished_holds()
 	_update_door_release_latches(body.global_position)
 	var nearest := hold_that_would_begin(body.global_position)
 	if not nearest:
@@ -205,7 +201,7 @@ func check_detentions() -> void:
 	if nearest.def.redetains:
 		# **She goes in, out of sight, and the camera goes to the door** — on the same physics frame
 		# the hold starts, so no drawn frame catches her outside. Coming out is the release's
-		# (`release_finished_holds()`), on the frame she is moved.
+		# (`_release_finished_holds()`), on the frame she is moved.
 		takes_her_in.emit(nearest.global_position)
 		_end_the_guard_for_a_hold()
 		var axis := nearest.facing_now()
@@ -307,7 +303,7 @@ func _on_a_booms_carriageway(door_body: EventInstance, at: Vector2) -> bool:
 ## **The teleport, not `move_and_slide()`.** She is standing inside the band that is about to seal
 ## behind her — walking her out through the world would mean colliding with the very body that is
 ## detaining her, which is the thing `Stroller.teleport_to()`'s own doc explains at length.
-func release_finished_holds() -> void:
+func _release_finished_holds() -> void:
 	var body := world.player as Stroller
 	if not world.has_player() or not body:
 		return
@@ -388,11 +384,6 @@ func _update_door_release_latches(her: Vector2) -> void:
 # her still across (`_start_the_crossing_warning()`); a catch ends the day, since *"not going
 # through the checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
 
-## How many times today she has walked across a door's line rather than being let through it —
-## the count `tests/test_route_rig.gd` holds a rig run to zero on.
-func walks_under_a_boom() -> int:
-	return _walked_under
-
 ## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
 ## and no `Stroller.teleport_to()` (nor `reset_at()`) moved her in between, which starts a
 ## crossing's warning, and one frame of the crossing already warning her
@@ -421,13 +412,12 @@ func watch_the_door_lines(delta := 0.0) -> void:
 	for instance in world.instances:
 		if not instance.def.redetains and instance.def.solid_when != EventDef.SolidWhen.WHILE_LOWERED:
 			continue
-		if where_she_crossed(instance.global_position, instance.facing_now(),
+		if _where_she_crossed(instance.global_position, instance.facing_now(),
 				instance.def.obstructs_radius, was, here) != Vector2.INF:
 			crossed = instance
 			break
 	if not crossed:
 		return
-	_walked_under += 1
 	world.trace.note("checkpoint", "%s at %s walked through, heading %s — not inspected%s" % [
 		crossed.def.id, RunTrace.tile(world.map.world_to_tile(crossed.global_position)),
 		heading_name(here - was),
@@ -465,10 +455,10 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## (`EventInstance.guard_warns_her`, drawn by `warn_at_the_doors()`) from the frame she crosses.
 ## Back across the line before `CROSSING_WARNING` has run, the crossing is called off and
 ## nothing comes; still across it once it has run, a guard is set on her
-## (`set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
+## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
 ## her. Answers whether a warning started.
 func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
-	if _crossing != null or guard_is_after_her():
+	if _crossing != null or _guard_is_after_her():
 		return false
 	var hut := _hut_on_the_line_nearest(crossed, here, true)
 	if not hut:
@@ -534,7 +524,7 @@ func _run_the_crossing_warning(here: Vector2, delta: float) -> bool:
 	_crossing = null
 	_crossing_hut = null
 	_crossing_warning.stop()
-	set_a_guard_on_her(hut, crossed, here)
+	_set_a_guard_on_her(hut, crossed, here)
 	door_crossed.emit(crossed.global_position, crossed.facing_now(), false)
 	for held: Array in _held_crossings:
 		door_crossed.emit(held[0] as Vector2, held[1] as Vector2, false)
@@ -569,11 +559,8 @@ func _call_off_the_crossing(why: String) -> void:
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
 ## steps out of it. *The far hut is chosen while building, open to overturn.*
-##
-## **Called from outside the controller only by tests**, which set a guard on her without walking
-## a crossing; the game sets one from its own crossing warning.
-func set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
-	if not is_instance_valid(hut) or guard_is_after_her():
+func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
+	if not is_instance_valid(hut) or _guard_is_after_her():
 		return
 	var axis := crossed.facing_now()
 	var side := -1.0 if (here - hut.global_position).dot(axis) < 0.0 else 1.0
@@ -582,7 +569,7 @@ func set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector
 
 ## The hut or post on `door`'s own cross-street line nearest `here` — or, with `farthest`, the
 ## farthest — or null. The farthest is the one whose guard warns her and the one a guard steps out
-## of (`set_a_guard_on_her()`).
+## of (`_set_a_guard_on_her()`).
 func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := false) -> EventInstance:
 	var axis := door.facing_now()
 	var hut: EventInstance = null
@@ -638,7 +625,7 @@ func warn_at_the_doors() -> void:
 ## her holds her where he can catch her. *(2026-10-04, the player: "you shouldn't try to cheat it by
 ## going back in the hut -- that should be fatal by the robber".)*
 func _end_the_guard_for_a_hold() -> void:
-	if guard_is_after_her():
+	if _guard_is_after_her():
 		_guard_after_her.give_up_the_chase()
 
 ## Where the step from `was` to `here` crosses the line through `at` across `axis` — the door
@@ -646,7 +633,7 @@ func _end_the_guard_for_a_hold() -> void:
 ## `Vector2.INF` if it does not. Which side she is on is read the way `check_detentions()` reads
 ## an entry side: level with the line counts as the positive side, so standing on it is on one of
 ## the two rather than on both.
-static func where_she_crossed(at: Vector2, axis: Vector2, reach: float, was: Vector2,
+static func _where_she_crossed(at: Vector2, axis: Vector2, reach: float, was: Vector2,
 		here: Vector2) -> Vector2:
 	var before := (was - at).dot(axis)
 	var after := (here - at).dot(axis)

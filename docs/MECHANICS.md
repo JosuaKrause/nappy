@@ -245,7 +245,7 @@ one hold. The escape scene's own doors reuse the same class.
 frozen in the street — `Stroller.hide_for_inspection()` and `EventInstance.is_its_guard_inside()`
 stop drawing the two of them the moment the hold starts, and both are back the moment it ends, her
 on the far side of the door so being let out reads as being let through
-(`CheckpointController.release_finished_holds()`).
+(`CheckpointController._release_finished_holds()`).
 
 **Going in and coming out are owned by different halves, and that asymmetry is the whole of why
 she reappears where she is let out.** Hiding her happens on the frame `start_chat()` fires, which
@@ -526,7 +526,7 @@ meter, none of which a data-level test can see:
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
 the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
 every other one. So contacts still compose by plain addition, there is still no ordering to get
-wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
+wrong, and `WorldContext.excitement_sources_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
 ### The crowd gives way to event figures
 

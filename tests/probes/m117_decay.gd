@@ -79,7 +79,7 @@ func _legs(city: City) -> Array:
 
 	var quietest := 0
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
-		if CrowdLanes.busyness(map, true, index) < CrowdLanes.busyness(map, true, quietest):
+		if CrowdLanes.busyness_for(map, true, index, true) < CrowdLanes.busyness_for(map, true, quietest, true):
 			quietest = index
 	var quiet := map.tile_to_world(Vector2i(
 			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size.y / 2))
@@ -248,7 +248,7 @@ func _cost_table() -> void:
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
 				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
-				"pursues": def.pursuit != null, "emission": def.mean_emission_along_the_line(),
+				"pursues": def.pursuit != null, "emission": _mean_emission(def),
 				"intensity": def.intensity, "outer": def.outer_radius})
 	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
@@ -277,5 +277,10 @@ func _cost_table() -> void:
 ## `tests/test_events.gd._cost_to_run_through`, which is where the assertion lives.
 func _run_through_cost(def: EventDef) -> float:
 	var seconds := def.outer_radius * 2.0 / Tuning.RUN_SPEED
-	return (def.mean_emission_along_the_line() - Baby.EXCITEMENT_DECAY_RUNNING
+	return (_mean_emission(def) - Baby.EXCITEMENT_DECAY_RUNNING
 			+ Baby.EXCITEMENT_FROM_RUNNING) * seconds
+
+## The mean emission along the line through the centre, read back from what walking through costs.
+func _mean_emission(def: EventDef) -> float:
+	return def.walk_through_cost() / (def.outer_radius * 2.0 / Tuning.WALK_SPEED) \
+			+ Tuning.EXCITEMENT_DECAY_WALKING

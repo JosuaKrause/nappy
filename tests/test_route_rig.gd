@@ -237,6 +237,21 @@ func _route_lines() -> Array[String]:
 			lines.append(line)
 	return lines
 
+## How many times the run log says she walked across a door's line rather than being let through
+## it (the `checkpoint` line `CheckpointController.watch_the_door_lines()` writes for each).
+func _walks_under_a_boom() -> int:
+	if Telemetry.current_log() == null:
+		return 0
+	return _walks_told_in(Telemetry.current_log().lines)
+
+## How many of `lines` tell of such a walk.
+func _walks_told_in(lines: Array) -> int:
+	var found := 0
+	for line: String in lines:
+		if line.contains("walked through, heading"):
+			found += 1
+	return found
+
 ## How many of the rig's lines so far contain `text`.
 func _count(text: String) -> int:
 	var found := 0
@@ -1504,7 +1519,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t, doors: 
 ## carriageway from one side of a street door's boom to the other, walked over real frames: the
 ## rig's own presses, her own `move_and_slide()`, and the events' own frame, which steps the doors,
 ## holds her and sets her down, and counts a walk under the boom
-## (`EventManager.walks_under_a_boom()`). The leg's end is handed to the rig as the escape's tunnel
+## (the run log's `checkpoint` line for each). The leg's end is handed to the rig as the escape's tunnel
 ## would be (`DaySpec.exits`), the one target word that names a point the test chooses. The count
 ## must stay at zero while she ends up on the far side, held by a hut on the way, which is what says
 ## the leg crossed.
@@ -1539,21 +1554,23 @@ func _test_a_rig_run_never_walks_under_a_boom(t, doors: Dictionary) -> void:
 	print("[test_route_rig] through the door at %s: %s after %.1fs, held %s, %d walks under" % [
 		RunTrace.tile(city.map.world_to_tile(gate.global_position)),
 		"arrived" if _count("route done") > 0 else "still walking", elapsed, held,
-		city.events.walks_under_a_boom()])
+		_walks_under_a_boom()])
 	t.check(crossed and held,
 			"she ends the leg on the far side of the door, held by a hut on the way "
 			+ "(far side %s, held %s) — otherwise this run never crossed a door" % [crossed, held])
-	t.check(city.events.walks_under_a_boom() == 0,
+	t.check(_walks_under_a_boom() == 0,
 			"and the rig never walked under the boom (%d walks under)"
-			% city.events.walks_under_a_boom())
+			% _walks_under_a_boom())
 	_end_rig(rig, day)
 	# And the same count sees a walk under this boom when there is one — so the zero above is the
 	# rig's route and not a count that could not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
+	var told: Array[String] = []
+	city.events.trace = RunTrace.recording(told)
 	stroller.reset_at(lane - axis * 20.0)
 	city.events.checkpoints.watch_the_door_lines()
 	stroller.global_position = lane + axis * 20.0
 	city.events.checkpoints.watch_the_door_lines()
-	t.check(city.events.walks_under_a_boom() == 1,
+	t.check(_walks_told_in(told) == 1,
 			"while walking straight along the carriageway under it is counted (%d)"
-			% city.events.walks_under_a_boom())
+			% _walks_told_in(told))
