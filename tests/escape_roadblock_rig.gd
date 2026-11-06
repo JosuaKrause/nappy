@@ -23,6 +23,8 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const BEYOND := 260.0
 const LANE_SCAN := 4.0
+## How long a charge that has begun is followed past the end of her line, in seconds.
+const TAIL := 10.0
 
 ## The finale's plan for a seed, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds it: the map, the walk
 ## (`plan`) and what stands on it (`placements`).
@@ -259,7 +261,8 @@ static func _charging(instances: Array[EventInstance]) -> int:
 ## At a walk from `from` to `to` past the street's roadblocks, `built` (from `build()`) or a fresh
 ## set, which it frees. Answers `cost` (the meter's peak less where it started), `peak`, `end`,
 ## `caught`, `charged` (how many guards charged her), `strongest` (the most any of them charged a
-## second at her on the way) and `at`, where she stopped.
+## second at her on the way) and `at`, where she stopped. A charge begun when her line ends is followed
+## on (`TAIL`).
 static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
@@ -285,6 +288,16 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			strongest = maxf(strongest, instance.excitement.contribution_at(her))
 		meter.feed(instances, her, false, false)
 		walked += Tuning.WALK_SPEED * STEP
+	# A charge that has begun is not over where her line ends: she walks on at the same pace until
+	# every charge has caught her or given up (`TAIL`), as she would past the end of a street.
+	var tail := 0
+	while not caught and _charging(instances) > 0 and tail < int(TAIL / STEP):
+		her += heading * Tuning.WALK_SPEED * STEP
+		if tick(instances, her, false, heading):
+			caught = true
+			break
+		meter.feed(instances, her, false, false)
+		tail += 1
 	made[0].close()
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
 			"charged": charged.size(), "strongest": strongest, "at": her}
