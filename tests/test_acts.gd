@@ -169,7 +169,7 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 		# is not.
 		for col in behind.lot.size.x:
 			var left_edge := facade.position.x + col * size
-			var drawn := not behind.is_covered(col)
+			var drawn := not (col < behind.covered_ground_cols.size() and behind.covered_ground_cols[col])
 			var burning_all := true
 			var burning_any := false
 			for point in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
