@@ -3,8 +3,8 @@ extends RefCounted
 ## One bounded animation sequence at a time, asked for by a person (`B`): frames read off a screen
 ## into a folder of their own, with the `burst.json` manifest `tools/clip.py` turns into a video.
 ##
-## **Handed everything it touches.** `Telemetry` builds the one a run uses and hands it the screen
-## it photographs (`TelemetryScreen`), the clock its timestamps and waits run on (`Clock`) and the
+## **Handed everything it touches.** `main` builds the one a run uses for the run log it makes
+## (`Telemetry.use_bursts()`) and hands it the screen it photographs (`TelemetryScreen`), the clock its timestamps and waits run on (`Clock`) and the
 ## run log's `note`; each `start()` is handed the folder the sequence goes under. It asks the
 ## display server, the tree and the wall clock nothing itself, so a test hands it a screen whose
 ## frames it draws, a clock it moves and a scratch folder.

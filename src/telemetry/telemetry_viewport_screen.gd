@@ -4,8 +4,9 @@ extends TelemetryScreen
 ## the null display server draws no frame; otherwise the wait for a drawn frame every capture shares
 ## (`DrawnFrame.wait()`) and the viewport's texture once it is drawn.
 ##
-## Built over a node that outlives the scene (`Telemetry`, an autoload): the wait and the viewport
-## are that node's, so a scene reload in the middle of a capture leaves nothing freed to ask.
+## Built over a node that outlives the scene (the run log, `Telemetry`, which lives under the
+## sitting): the wait and the viewport are that node's, so a scene reload in the middle of a capture
+## leaves nothing freed to ask.
 
 var _node: Node
 

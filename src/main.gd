@@ -2,8 +2,8 @@ extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##
 ## **The composition root.** The run's configuration (`config`, a `RunConfig`) is resolved once at
-## boot and handed from here: to the observers (`Telemetry`, `GameSave`, `VisitCounter`) as the
-## config itself, and to the world, the day and the baby as the plain values each needs out of it
+## boot and handed from here: to the observers (the run log `Telemetry`, `GameSave`, `VisitCounter`,
+## each kept under the sitting) as the config itself, and to the world, the day and the baby as the plain values each needs out of it
 ## — a day's length, whether the clock stands still, how the ground is scheduled.
 ##
 ## The developer's furniture — the right-hand readout, the frame graph, the debug view's overlays,
@@ -157,6 +157,13 @@ var _sitting: Sitting
 ## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. A
 ## handed save is set at once; otherwise `_ready()` takes it from under the sitting, or makes one.
 var _save: GameSave
+## The run log this boot writes (`Telemetry`): the one under the sitting, which outlives the reload
+## that frees this node as the save does, or the one `use_run_log()` handed in, which its caller
+## owns. Taken or made beside the save in `_ready()`, and handed to `RunSession`, which opens it.
+var _run_log: Telemetry
+## What the page counts (`VisitCounter`): the one under the sitting, made and handed the game's bus
+## and the page's outbox on the sitting's first boot, so its count of the run outlives every reload.
+var _visit_counter: VisitCounter
 ## Where the sitting is parked before a reload and looked for at boot (`_park_the_sitting()`,
 ## `_take_the_sitting()`): the tree's root, which a reload leaves alone, unless `use_sitting_home()`
 ## handed another node. A test hands a node of its own, so a reload it stands in for parks and
@@ -251,6 +258,13 @@ func use_sitting(sitting: Sitting) -> void:
 func use_save(save: GameSave) -> void:
 	_save = save
 
+## Hands this boot a run log of the caller's own (`Telemetry`) in place of the one under its
+## sitting: a suite's, made over a scratch folder or none (`Telemetry.new("")`, a log in memory), so
+## the boot writes nothing under the player's own and the suite reads back the lines it wrote. Set
+## before the boot runs; the caller frees it.
+func use_run_log(run_log: Telemetry) -> void:
+	_run_log = run_log
+
 ## Hands this boot the node its sitting is parked in before a reload and looked for at boot, in
 ## place of the tree's root (`_sitting_home`): a suite's own node, which it frees afterwards, so
 ## nothing it drives is left at the root. Set before the boot runs; the boot that stands for the
@@ -271,19 +285,19 @@ func _ready() -> void:
 		return
 	# Before anything the observers watch can happen: the run log's header, the save's gate and
 	# what the page counts all read this boot's configuration rather than the command line.
-	Telemetry.configure(config)
-	var screen := TelemetryViewportScreen.new(Telemetry)
-	Telemetry.use_screen(screen)
-	Telemetry.use_bursts(BurstRecorder.new(screen, BurstRecorder.Clock.new(Telemetry), Telemetry.note))
+	_run_log.configure(config)
 	_save.configure(config)
-	VisitCounter.configure(config, _run)
+	_visit_counter.configure(config, _run)
 	# The run log's owner, listening on the bus from here on, and the trace everything this boot
-	# builds writes its own account into.
+	# builds writes its own account into: the save and the atlas pages, which outlive this boot under
+	# the sitting, take this boot's.
 	_session = RunSession.new()
 	_session.name = "RunSession"
 	add_child(_session)
-	_session.setup(Telemetry, config, EventBus, _run)
+	_session.setup(_run_log, config, EventBus, _run)
 	_run.use_trace(_session.trace)
+	_save.trace = _session.trace
+	_sitting.atlas.trace_note = _session.trace.note
 	# Esc has to work even while the summary has the tree paused, so this node keeps running
 	# through a pause. Everything under it that *is* the game is put back to pausable as it is
 	# created — see `_pauses_with_the_game()`. A child left on the default INHERIT inherits
@@ -437,8 +451,8 @@ func _ready() -> void:
 		var trace := FrameTrace.new()
 		trace.name = "FrameTrace"
 		add_child(trace)
-		trace.setup(_flow.in_the_title, _readout.readout_on, _readout.graph_on, _city, _player, _day,
-				Array(config.active_args), _run)
+		trace.setup(_flow.in_the_title, _readout.readout_on, _readout.graph_on, _run_log.is_active,
+				_city, _player, _day, Array(config.active_args), _run)
 
 	if walks_a_day and config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
@@ -486,7 +500,7 @@ func _ready() -> void:
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
 		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds,
-				StillWatch.telemetry_picture_dir(), config.recording)
+				StillWatch.telemetry_picture_dir(_run_log), config.recording)
 
 	# The escape's first screen — see `_open_the_first_screen_of_the_escape()`. An authored scene
 	# has already started playing above.
@@ -1103,6 +1117,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_route_rig.name = "RouteRig"
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
+	_route_rig.trace = _the_trace()
 	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets, _run)
 	_flow.day_planned.connect(_route_rig.start_day)
 	_route_rig.use_continue(_on_summary_continued)
@@ -1118,6 +1133,7 @@ func _add_the_building_walker() -> void:
 	_building_walker.name = "BuildingWalker"
 	add_child(_building_walker)
 	_pauses_with_the_game(_building_walker)
+	_building_walker.trace = _the_trace()
 	_building_walker.setup(_interior.map, _player, _day)
 	_building_walker.use_continue(_on_summary_continued)
 	_flow.day_planned.connect(_building_walker.start_section)
@@ -2108,7 +2124,8 @@ func _reload_the_scene() -> void:
 ## Takes the sitting this boot keeps across a reload: the one `use_sitting()` handed in, else the
 ## one the boot before parked in the sitting's home (`_park_the_sitting()`), else a new one as this
 ## node's own child, which this sitting's first boot builds. Looked up here, in the composition
-## root, and handed down from it; nothing below fetches it.
+## root, and handed down from it; nothing below fetches it. So are the observers it keeps under it,
+## each found there or made on the sitting's first boot: the save, the run log and the page counter.
 func _take_the_sitting() -> void:
 	if not _sitting:
 		_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
@@ -2123,6 +2140,36 @@ func _take_the_sitting() -> void:
 		_save = GameSave.new()
 		_save.name = GameSave.NODE_NAME
 		_sitting.add_child(_save)
+	if not _run_log:
+		_run_log = _sitting.get_node_or_null(NodePath(Telemetry.NODE_NAME)) as Telemetry
+	if not _run_log:
+		_run_log = _new_run_log()
+	_visit_counter = _sitting.get_node_or_null(NodePath(VisitCounter.NODE_NAME)) as VisitCounter
+	if not _visit_counter:
+		_visit_counter = _new_visit_counter()
+
+## The sitting's run log, made on its first boot: the player's own folder, photographing the game's
+## viewport, with the recorder of the bursts a person asks for over the same screen; under the
+## sitting, so the next boot finds it there with the run it is writing still open.
+func _new_run_log() -> Telemetry:
+	var run_log := Telemetry.new()
+	run_log.name = Telemetry.NODE_NAME
+	_sitting.add_child(run_log)
+	var screen := TelemetryViewportScreen.new(run_log)
+	run_log.use_screen(screen)
+	run_log.use_bursts(BurstRecorder.new(screen, BurstRecorder.Clock.new(run_log), run_log.note))
+	return run_log
+
+## The sitting's page counter, made on its first boot and handed the game's bus and the page's
+## outbox, under the sitting so its count of the run outlives every reload.
+func _new_visit_counter() -> VisitCounter:
+	var counter := VisitCounter.new()
+	counter.name = VisitCounter.NODE_NAME
+	_sitting.add_child(counter)
+	counter.listen(EventBus)
+	counter.send_through(GoatCounterOutbox.new(
+			func(script: String) -> void: JavaScriptBridge.eval(script)))
+	return counter
 
 ## Takes the run this boot plays off its sitting (`Sitting.take_the_run()`): the one a held
 ## restart, the day-14 hand-over or a carried run reloaded with, the one a test handed the
