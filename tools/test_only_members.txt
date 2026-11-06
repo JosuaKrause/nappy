@@ -34,7 +34,6 @@ src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
-src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
 src/world/world_context.gd total_excitement_at
 
