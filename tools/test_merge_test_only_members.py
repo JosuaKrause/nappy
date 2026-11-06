@@ -71,8 +71,8 @@ class MergeTests(unittest.TestCase):
         self.assertEqual((self.repo / LIST).read_text(), before)
         self.assertNotEqual(self.git("ls-files", "-u").stdout, "")
 
-    def test_refuses_a_removed_line_main_already_dropped(self) -> None:
-        self.conflict(BASE.replace("a.gd two\n", ""), BASE.replace("a.gd two\n", "a.gd other\n"))
+    def test_refuses_a_removed_line_main_has_twice(self) -> None:
+        self.conflict(BASE.replace("a.gd two\n", ""), BASE.replace("a.gd two\n", "a.gd two\na.gd two\n"))
         done = self.tool()
         self.assertEqual(done.returncode, 1)
         self.assertIn("a.gd two", done.stderr)
@@ -83,6 +83,64 @@ class MergeTests(unittest.TestCase):
         done = self.tool()
         self.assertEqual(done.returncode, 1)
         self.assertIn("a.gd two", done.stderr)
+
+    def test_a_line_both_sides_removed_is_skipped(self) -> None:
+        self.conflict(BASE.replace("a.gd two\n", ""), BASE.replace("a.gd two\n", "").replace("a.gd one\n", "a.gd x\n"))
+        done = self.tool()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("0 added, 0 removed", done.stdout)
+        self.assertEqual(
+            (self.repo / LIST).read_text(), BASE.replace("a.gd two\n", "").replace("a.gd one\n", "a.gd x\n")
+        )
+
+    def test_a_blank_line_edit_is_replayed(self) -> None:
+        self.conflict(
+            BASE.replace("a.gd two\na.gd three\n", "a.gd two\n\n"),
+            BASE.replace("a.gd three\n", "a.gd three\na.gd mainnew\n"),
+        )
+        done = self.tool()
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("1 added, 1 removed", done.stdout)
+        want = "# [no reader]\na.gd one\na.gd two\n\na.gd mainnew\n\n# [kept]\nb.gd keep # why\n"
+        self.assertEqual((self.repo / LIST).read_text(), want)
+
+    def test_refuses_an_ambiguous_predecessor(self) -> None:
+        base = "a.gd one\n\nb.gd two\n\n"
+        self.commit(base)
+        self.git("checkout", "-q", "-b", "feature")
+        self.commit("a.gd one\n\nb.gd two\n\nc.gd new\n")
+        self.git("checkout", "-q", "main")
+        self.commit("a.gd one\n\nb.gd two\n\nz.gd z\n")
+        self.git("checkout", "-q", "feature")
+        self.git("merge", "main", check=False)
+        done = self.tool()
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("times in main's file", done.stderr)
+        self.assertNotEqual(self.git("ls-files", "-u").stdout, "")
+
+    def test_a_failed_verification_restores_only_the_list(self) -> None:
+        self.conflict(BASE.replace("a.gd two\n", ""), BASE.replace("a.gd one\n", "a.gd one\na.gd mainnew\n"))
+        (self.repo / "other.txt").write_text("keep\n")
+        spoiler = self.repo / "spoil.py"
+        spoiler.write_text(
+            "import runpy, sys\nimport subprocess\n"
+            "orig = subprocess.run\n"
+            "def run(cmd, *a, **k):\n"
+            "    if cmd[:3] == ['git', 'diff', '-U0']:\n"
+            "        cmd = ['git', 'diff', '-U0', 'HEAD', '--', 'tools/test_only_members.txt']\n"
+            "    return orig(cmd, *a, **k)\n"
+            "subprocess.run = run\n"
+            "sys.argv = [sys.argv[1]]\n"
+            "runpy.run_path(sys.argv[0], run_name='__main__')\n"
+        )
+        done = subprocess.run(
+            [sys.executable, str(spoiler), str(TOOL)], cwd=self.repo, capture_output=True, text=True, check=False
+        )
+        self.assertEqual(done.returncode, 1, done.stderr)
+        self.assertIn("verification differs", done.stderr)
+        self.assertNotEqual(self.git("ls-files", "-u").stdout, "")
+        self.assertIn("<<<<<<<", (self.repo / LIST).read_text())
+        self.assertEqual((self.repo / "other.txt").read_text(), "keep\n")
 
     def test_refuses_a_path_that_is_not_unmerged(self) -> None:
         self.commit(BASE)

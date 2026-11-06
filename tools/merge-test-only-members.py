@@ -2,12 +2,12 @@
 """Resolves a merge conflict in `tools/test_only_members.txt`, and in no other file.
 
 Mid-merge, with the list unmerged in the index, this keeps main's file and replays the branch's own
-edits on it. The edits are read from the stages: a line in stage 2 (the branch) and not in stage 1
-(the base) is added, one in stage 1 and not in stage 2 is removed. Start from stage 3 (main's file),
-remove each removed line (it must occur exactly once there), insert each added line right after the
-line that precedes it in stage 2 (that line must occur exactly once in main's file or in what was
-inserted before it), write the file and `git add` it. Then `git diff <main ref> -- <path>` must show
-exactly the added and removed lines and nothing else.
+edits on it. The edits are read from the stages as a line diff of stage 1 (the base) against stage 2
+(the branch), so a blank line counts. Start from stage 3 (main's file), remove each removed line (it
+must occur exactly once there; a line main removed too is already gone and is skipped), insert each
+added line right after the line that precedes it in stage 2 (that line must occur exactly once in
+main's file or in what was inserted before it), write the file and `git add` it. Then
+`git diff <main ref> -- <path>` must show exactly the added and the removed lines applied, and nothing else.
 
 The list is a set of unique lines in groups, so a line is identified by its text. This is why the
 tool is for this one file: on any other file a repeated line would be misplaced.
@@ -22,6 +22,7 @@ Example: uv run python tools/merge-test-only-members.py --dry-run
 from __future__ import annotations
 
 import argparse
+import difflib
 import subprocess
 import sys
 from collections import Counter
@@ -46,18 +47,30 @@ def stage(path: str, number: int, cwd: Path) -> list[str]:
 
 
 def replay(base: list[str], mine: list[str], theirs: list[str]) -> tuple[list[str], list[str], list[str]]:
-    """The merged lines, the added lines and the removed lines."""
-    added = [line for line in mine if line not in set(base)]
-    removed = [line for line in base if line not in set(mine)]
+    """The merged lines, the added lines and the removed lines that were applied.
+
+    The branch's edits are a line diff of the base against the branch, so a blank line counts. A line
+    both sides removed is not in main's file any more and is skipped, not applied.
+    """
+    added: list[tuple[int, str]] = []
+    removed: list[str] = []
+    for tag, b1, b2, m1, m2 in difflib.SequenceMatcher(None, base, mine, autojunk=False).get_opcodes():
+        if tag in ("delete", "replace"):
+            removed.extend(base[b1:b2])
+        if tag in ("insert", "replace"):
+            added.extend((at, mine[at]) for at in range(m1, m2))
     result = list(theirs)
+    applied_removed: list[str] = []
     for line in removed:
-        if result.count(line) != 1:
-            raise Refusal(f"removed line occurs {result.count(line)} times in main's file, not once: {line!r}")
-        result.remove(line)
-    for line in added:
-        if line in result:
+        found = result.count(line)
+        if found > 1:
+            raise Refusal(f"removed line occurs {found} times in main's file, not once: {line!r}")
+        if found == 1:
+            result.remove(line)
+            applied_removed.append(line)
+    for at, line in added:
+        if line.strip() and line in result:
             raise Refusal(f"added line is already in main's file: {line!r}")
-        at = mine.index(line)
         if at == 0:
             result.insert(0, line)
             continue
@@ -67,7 +80,7 @@ def replay(base: list[str], mine: list[str], theirs: list[str]) -> tuple[list[st
                 f"the line before {line!r} occurs {result.count(before)} times in main's file, not once: {before!r}"
             )
         result.insert(result.index(before) + 1, line)
-    return result, added, removed
+    return result, [line for _, line in added], applied_removed
 
 
 def changed_lines(path: str, ref: str, cwd: Path) -> tuple[Counter[str], Counter[str]]:
