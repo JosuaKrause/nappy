@@ -10,6 +10,7 @@ extends RefCounted
 ## view's fields layer cut where the meter receives nothing.
 
 const BuildingEvents := preload("res://tests/building_events.gd")
+const HaloRig := preload("res://tests/halo_rig.gd")
 const _SIZE := float(Tuning.TILE_SIZE)
 ## How much faster than real time a long stretch of real physics ticks runs (`Engine.time_scale`, put
 ## back by `PhysicsTicks`).
@@ -29,7 +30,7 @@ func run(t) -> void:
 	_test_her_body_in_a_wall_is_not_shielded(t)
 	_test_a_corner_open_only_diagonally_is_shallow_round_its_point(t)
 	_test_exact_geometry_agrees_with_a_sampled_depth(t)
-	_test_an_event_is_silent_behind_a_wall(t)
+	await _test_an_event_is_silent_behind_a_wall(t)
 	_test_a_crowd_body_is_silent_behind_a_wall(t)
 	_test_the_caret_asks_the_wall_where_the_bodies_will_be(t)
 	await _test_the_building_inside_stops_it_at_its_own_walls(t)
@@ -303,7 +304,7 @@ func _test_an_event_is_silent_behind_a_wall(t) -> void:
 			"with a building between them it does not")
 	t.check(behind.field_at(her, -1.0, Vector2.INF) == beside.excitement.contribution_at(her),
 			"the field itself is unchanged; only what reaches her is")
-	var picked := ExcitementHalo.select_sources([behind.excitement, beside.excitement], her)
+	var picked := await HaloRig.lit_among(t, [behind.excitement, beside.excitement], her)
 	t.check(picked.size() == 1 and picked[0] == beside.excitement,
 			"the halo picks the one that reaches her and not the one behind the wall")
 	behind.free()

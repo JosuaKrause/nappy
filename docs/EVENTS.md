@@ -2547,8 +2547,8 @@ brightness on distance, and the same player overturned it the next session, once
 being tracked at all: *(2026-09-08: "the transparency shouldn't show distance since distance
 actually doesn't matter. only the actual received amount counts ... this frees up transparency for
 also encoding magnitude. color and transparency shouldn't be the same number. transparency can be
-used to emphasize low values.")* `ExcitementHalo.colour_for()` is linear over `landed()`, pale to
-red by forty points; `ExcitementHalo.magnitude_for()` is the same `landed()` on a curve that rises
+used to emphasize low values.")* `ExcitementHalo._colour_for()` is linear over `landed()`, pale to
+red by forty points; `ExcitementHalo._magnitude_for()` is the same `landed()` on a curve that rises
 fast and saturates by fifteen points, so a point or two already reads as a faint rim while colour
 is still climbing — transparency carries the low end, colour carries the difference between
 fifteen and forty. Both channels ease toward whatever they are last told over
@@ -2565,7 +2565,7 @@ red already".)* `Baby._update_excitement()` is where the meter is fed, so it is 
 attribution happens: `WorldContext.excitement_sources_at()` returns every live source's own share
 of what is about to land, and each one's `accumulate_landed()` gets exactly that share —
 sensitivity included — rather than the halo pass recomputing anything from `contribution_at()` on
-its own. `ExcitementHalo.colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
+its own. `ExcitementHalo._colour_for()` is a pale-to-red ramp (`Palette.HALO_WEAK` to
 `Palette.HALO_STRONG`) over `landed()`, a true five-second sliding sum of those shares — not a
 decayed average, so a 35-point burst reads as 35 for the whole window and then drops — saturating
 at `Tuning.EXPECTED_IMPACT_POINTS` (40 of the 100-point bar, the same line the caret goes amber at

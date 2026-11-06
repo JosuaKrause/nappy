@@ -57,3 +57,57 @@ static func told(instance: EventInstance) -> ToldRim:
 	var rim := ToldRim.new(instance.excitement.rim as SourceRim)
 	instance.excitement.rim = rim
 	return rim
+
+## A meter whose decay over the window is a number the test sets (none by default, so a source's
+## net is what it landed): the one answer a halo takes from the baby it is handed (`setup()`) that
+## the test sets, and the others, `decay_rate()` and `current_sensitivity()`, get a fresh `Baby`'s
+## defaults. Never in the tree (`Baby._ready()` wants a stroller parent).
+class DecayedBaby extends Baby:
+	var decay := 0.0
+
+	func decay_in_window() -> float:
+		return decay
+
+## The one set a halo is handed, over a list of sources a test edits: the stand-in for a world's
+## own set (`EventManager.sources`, `Crowd.sources`), handed in where the game hands those.
+class ListSet extends ExcitementSources:
+	var sources: Array = []
+
+	func every_source(into: Array) -> void:
+		into.append_array(sources)
+
+## **Which of `sources` a real halo lights,** the sources being whatever the game has in its world
+## (an event's, a crowd body's, each with its body) and her standing at `at`: the halo is built the
+## way `main` builds it (`setup()` with a set of sources, her and the baby) and let pass real frames,
+## and the sources whose rim it was told a nonzero strength are the ones it draws a rim on. Each
+## source's rim is swapped for a `ToldRim` that draws nothing (a plain `EntityHalo` on its body), so
+## the selection is read the way the halo suites read what a rim was told. Answers the lit sources;
+## the caller frees the bodies.
+static func lit_among(t, sources: Array, at: Vector2) -> Array:
+	var set := ListSet.new()
+	for source in sources:
+		var body: Node = source.body
+		source.rim = ToldRim.new(SourceRim.new(func() -> EntityHalo:
+				var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: pass,
+						func() -> float: return 0.0)
+				body.add_child(halo)
+				return halo))
+		set.sources.append(source)
+	var player := Node2D.new()
+	t.add_child(player)
+	player.global_position = at
+	var baby := DecayedBaby.new()
+	var halo := ExcitementHalo.new()
+	var sets: Array[ExcitementSources] = [set]
+	halo.setup(sets, player, baby)
+	t.add_child(halo)
+	for _frame in 3:
+		await t.get_tree().process_frame
+	var lit: Array = []
+	for source in sources:
+		if (source.rim as ToldRim).strength > 0.0:
+			lit.append(source)
+	halo.free()
+	player.free()
+	baby.free()
+	return lit
