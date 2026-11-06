@@ -314,10 +314,10 @@ func _test_ground_mode_is_ignored_on_a_release_page_without_debug(t) -> void:
 
 func _test_ground_mode_refuses_anything_but_its_three_numbers(t) -> void:
 	for raw in ["1", "2", "3"]:
-		t.check(DevFlags.parse_ground_mode(raw) == int(raw), "mode %s is read back" % raw)
+		t.check(_debug_build(["--ground-mode", raw]).ground_mode == int(raw), "mode %s is read back" % raw)
 	for raw in ["0", "4", "two", ""]:
-		t.check(DevFlags.parse_ground_mode(raw) == 2 \
-			and DevFlags.parse_ground_mode(raw) == DevFlags.GROUND_MODE_DEFAULT,
+		t.check(_debug_build(["--ground-mode", raw]).ground_mode == 2 \
+			and _debug_build(["--ground-mode", raw]).ground_mode == DevFlags.GROUND_MODE_DEFAULT,
 			"'%s' refuses the flag rather than choosing a mode" % raw)
 
 ## Pins the engine's own physics rate and interpolation setting so a `project.godot` edit cannot

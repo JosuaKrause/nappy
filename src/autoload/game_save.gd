@@ -216,7 +216,7 @@ func configure(config: RunConfig) -> void:
 ## any of them reading or writing what may be the player's own day 9.
 ##
 ## `config.headless` answers the null display server a headless run boots against (see the
-## **verify** skill on `AutoScreenshot.can_photograph()`, the same check), read once at boot by
+## **verify** skill on `AutoScreenshot._capture()`'s headless guard, the same check), read once at boot by
 ## `RunConfig.at_boot()` — checked first and unconditionally, since a headless boot carries no dev
 ## flag at all and would otherwise read as an ordinary release run. A test that wants the saving of
 ## a windowed run hands `configure()` a config parsed with `headless_display` false. On a debug build any dev flag at all keeps the run off

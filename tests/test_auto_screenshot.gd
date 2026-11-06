@@ -52,22 +52,40 @@ const UI := preload("res://tests/ui_screens.gd")
 
 # --------------------------------------------------------------- photographing ---
 
+## The scene a child process runs to be photographed: a rig built the way `main` builds it by
+## `AutoScreenshot.from_config()`, asked for a picture at once.
+const PROBE := """extends Node
+func _ready() -> void:
+	var words := PackedStringArray(["--screenshot", OS.get_cmdline_user_args()[0], "--after", "0"])
+	add_child(AutoScreenshot.from_config(RunConfig.parse(words, "", true)))
+"""
+
 ## The guard that stops `_capture()` awaiting a frame a headless run will never draw. **The hang it
 ## replaces printed nothing at all**, so the failure read as a slow run rather than as a stuck one,
 ## and it is reached by any caller of `tools/shot.sh` that has no display to open a window against.
 ##
-## The predicate takes the display server's name rather than reading it, which is what makes this
-## testable: the suite is itself headless, so a version that asked `DisplayServer` directly could
-## only ever be checked in one of its two states.
+## Asked of a process of its own, started headless the way a display-less machine starts one: the
+## rig refuses with the line that says why, exits non-zero, and writes no picture to its path.
 func _test_a_headless_run_has_nothing_to_photograph(t) -> void:
-	t.check(not AutoScreenshot.can_photograph("headless"),
-			"a headless run draws no frame, so there is nothing to save")
-	t.check(AutoScreenshot.can_photograph("macos"),
-			"a real display server has a frame to photograph")
-	t.check(AutoScreenshot.can_photograph("windows") and AutoScreenshot.can_photograph("x11"),
-			"and so does every other one — only the null server is refused")
-	t.check(not AutoScreenshot.can_photograph(DisplayServer.get_name()),
-			"and this suite is itself headless, which is why the name is a parameter")
+	var stem := "user://auto_screenshot_probe_%d" % OS.get_process_id()
+	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
+	script.store_string(PROBE)
+	script.close()
+	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
+	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
+	scene.close()
+	var picture := ProjectSettings.globalize_path(stem + ".png")
+	var output: Array = []
+	var status := OS.execute(OS.get_executable_path(), PackedStringArray([
+			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "600",
+			stem + ".tscn", "--", picture]), output, true)
+	var text_output := "\n".join(output)
+	t.check(status == 1 and text_output.contains("nothing to photograph"),
+			"a headless run draws no frame, so it says there is nothing to save and exits 1: %s" % text_output)
+	t.check(not FileAccess.file_exists(stem + ".png"), "and writes no picture")
+	DirAccess.remove_absolute(stem + ".tscn")
+	DirAccess.remove_absolute(stem + ".gd")
+	DirAccess.remove_absolute(stem + ".gd.uid")
 
 # ------------------------------------------------------------------ the rig ---
 

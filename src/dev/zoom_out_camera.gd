@@ -39,10 +39,10 @@ func setup(from: Camera2D, bounds: Rect2, viewport_size: Vector2, seconds: float
 	_seconds = maxf(seconds, 0.01)
 	_delay = maxf(delay, 0.0)
 	_end_position = bounds.get_center()
-	_end_zoom = overview_zoom(bounds, viewport_size)
+	_end_zoom = _overview_zoom(bounds, viewport_size)
 
 ## The zoom that fits all of `bounds` in `viewport_size` — `DevRig.make_overview_camera()`'s own.
-static func overview_zoom(bounds: Rect2, viewport_size: Vector2) -> float:
+static func _overview_zoom(bounds: Rect2, viewport_size: Vector2) -> float:
 	return minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 
 func _process(delta: float) -> void:
@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 	if not _camera:
 		_start()
 	var t := clampf((_elapsed - _delay) / _seconds, 0.0, 1.0)
-	var pose := pose_at(smoothstep(0.0, 1.0, t), _start_position, _start_zoom, _end_position,
+	var pose := _pose_at(smoothstep(0.0, 1.0, t), _start_position, _start_zoom, _end_position,
 			_end_zoom)
 	_camera.position = Vector2(pose.x, pose.y)
 	_camera.zoom = Vector2.ONE * pose.z
@@ -77,7 +77,7 @@ func _start() -> void:
 ## start to the end: `x` and `y` the centre, `z` the zoom. Pure, so a test can hold the shape of the
 ## move without a camera: the zoom is geometric between the two, and the centre has travelled the
 ## same fraction of the way that the view's own width has grown.
-static func pose_at(weight: float, start_position: Vector2, start_zoom: float,
+static func _pose_at(weight: float, start_position: Vector2, start_zoom: float,
 		end_position: Vector2, end_zoom: float) -> Vector3:
 	var zoom := exp(lerpf(log(start_zoom), log(end_zoom), weight))
 	var widened := inverse_lerp(1.0 / start_zoom, 1.0 / end_zoom, 1.0 / zoom) \

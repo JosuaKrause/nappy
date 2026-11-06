@@ -259,7 +259,7 @@ static func _mark_the_events(image: Image, map: CityMap,
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		var colour := role_mark(plan.role)
+		var colour := _role_mark(plan.role)
 		if plan.path.size() >= 2:
 			_blend_tiles(image, _route_stroke(map, plan.path), colour, ROUTE_ALPHA)
 		_mark_one_event(image, map.world_to_tile(plan.position), colour,
@@ -291,10 +291,7 @@ static func _mark_one_event(image: Image, at: Vector2i, colour: Color, lethal: b
 		_fill_tiles(image, Rect2i(at, Vector2i.ONE), MET_MARK)
 
 ## The role a placement carries, as the colour it is drawn in.
-##
-## Public because the test asserts against these by name, and a test that hard-codes the hex of a
-## mark is a test that passes when the drawing and the legend have come apart.
-static func role_mark(role: GameEnums.BlockerRole) -> Color:
+static func _role_mark(role: GameEnums.BlockerRole) -> Color:
 	match role:
 		GameEnums.BlockerRole.WALL:
 			return WALL_MARK

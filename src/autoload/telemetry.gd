@@ -282,9 +282,9 @@ func current_log() -> TelemetryLog:
 # - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
 #   a directory nobody opens.
 
-## The most shots one day may produce, and the least time between two of them — `TelemetryShots`
-## holds both and the day's count; this is where they are named for the callers that read them.
-const SHOTS_PER_DAY := TelemetryShots.PER_DAY
+## The least time between two shots — `TelemetryShots` holds it, with the most shots one day may
+## produce (`TelemetryShots.PER_DAY`) and the day's count; this is where it is named for the callers
+## that read it.
 const SHOT_SPACING := TelemetryShots.SPACING
 
 ## The day's allowance, the spacing and the run-wide counter that names every picture.
@@ -337,7 +337,7 @@ func snapshot(kind: String) -> void:
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
 ##
-## **It bypasses `SHOTS_PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
+## **It bypasses `TelemetryShots.PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
 ## exist because a heuristic firing on a condition that stays true for two seconds would write a
 ## hundred and twenty near-identical frames; somebody pressing a key has already decided this frame
 ## is worth keeping, and a cap that silently swallows the seventh press is a tool that lies about
