@@ -125,20 +125,12 @@ func clear() -> void:
 	_crossing_warning.stop()
 	_held_crossings.clear()
 
-## The guard a walked crossing last set on her, while he is in the world, or null.
-func guard_after_her() -> EventInstance:
-	return _guard_after_her if is_instance_valid(_guard_after_her) else null
-
 ## Whether the guard a walked crossing set on her is still on her: in the world, neither finished
 ## nor leaving. One guard at a time (`set_a_guard_on_her()`), so a crossing starts no warning and
 ## sets no second guard while this holds.
 func guard_is_after_her() -> bool:
 	return is_instance_valid(_guard_after_her) and not _guard_after_her.is_finished \
 			and not _guard_after_her.is_leaving
-
-## The door body whose crossing is warning her right now, or null.
-func crossing_door() -> EventInstance:
-	return _crossing if is_instance_valid(_crossing) else null
 
 ## The region door whose hold is running right now and whose own trigger circle `world_position`
 ## lies inside, or `null` when this point is not inside a door. `WorldContext.excitement_sources_at()`
