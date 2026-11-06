@@ -137,11 +137,16 @@ another session does not carry over to it. A review agent never merges (**pr-rev
 Finishing implementation, opening a PR and green CI do not by themselves make a PR mergeable.
 Leave the PR open and report its link when the session has no permission to merge it.
 
-**The standing permission reaches Claude Code's auto-mode classifier only through the player's Claude Code
-settings** (`~/.claude/settings.json`'s permission allow rules and its auto-mode environment lines), never
-through `CLAUDE.md` or a skill, which the classifier does not read as the player's consent. When it refuses a
-write the standing permission covers, report the refusal to the player naming that place; never work around it
-(curly-rabbit #1094).
+**A standing permission reaches Claude Code's auto-mode classifier reliably only through the player's own Claude Code
+settings** (`~/.claude/settings.json`: `permissions.allow` rules for a command, `autoMode.environment` or
+`autoMode.allow` lines for anything else; a reviewer spawn only by an `autoMode` line, since auto mode drops `Agent`
+allow rules). The classifier reads `CLAUDE.md`, yet writes its standing permission covered were refused until the
+player's settings carried it, so `CLAUDE.md` and the skills are not relied on as the player's consent. The player's
+own approval of one action (their next message, or the `/permissions` recently-blocked list) is a different thing
+and is fine. When the classifier refuses a write the player's standing permission covers, report the refusal to the
+player naming their settings; never work around it: no other command shape, no `gh api` substitute, no
+player-write prompt to get the same write through. *Proposed by the filer, not asked for, open to the player's
+correction: the player asked only for the standing permission in their own settings (curly-rabbit #1094).*
 
 **A PR merges only after its review**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). A review under

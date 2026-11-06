@@ -9,9 +9,11 @@ and its auto-mode environment lines), never `CLAUDE.md` or a skill, which the cl
 player's consent; and a refusal of a write the permission covers is reported to the player naming that place,
 never worked around. The wording is the filer's proposal, open to overturn.
 
-**Where.** One paragraph in **committing**'s "Merging" (the full statement), one sentence in **pr-review**'s
-"The findings go on the PR" (a refused post or reviewer spawn, pointing at **committing**), and two sentences
-in `CLAUDE.md`'s standing-permission paragraph.
+**Where.** One paragraph in **committing**'s "Merging" (the full rule, marked as the filer's proposal, with the
+one-off approval distinguished and "worked around" defined), one sentence in **pr-review**'s "The findings go on
+the PR" (what the repository states versus the player's settings line), and a one-sentence pointer in
+`CLAUDE.md`'s standing-permission paragraph. The review of the first version narrowed the technical claims to
+what Claude Code documents: the classifier does read `CLAUDE.md`, and `Agent` allow rules are dropped in auto mode.
 
 **Options weighed.** Stating the full rule in all three places was rejected: `CLAUDE.md` does not grow and
 duplicated text drifts, so **pr-review** and `CLAUDE.md` carry the short form. A separate new skill was

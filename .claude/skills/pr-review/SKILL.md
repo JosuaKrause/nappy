@@ -136,9 +136,9 @@ REQUEST_CHANGES when it is *not ready*, and COMMENT for an interim or partial re
 neither verdict yet. The verdict still lives in the review's own text either way — the event is what
 GitHub shows beside it, not a replacement for writing it out. **The reviewer still never merges**:
 merging is **committing**'s, under its permission rule, whatever the review's event says.
-A refused post or reviewer spawn that the player's standing permission covers is reported to the player, naming
-their Claude Code settings (`~/.claude/settings.json`'s allow rules and auto-mode environment lines), where
-**committing** says that permission has to live; it is never worked around (curly-rabbit #1094).
+The repository states a standing permission to merge only; starting reviewers and posting their verdict reviews
+is covered by the player's settings line. A refused spawn or post is reported to the player as **committing**
+("Merging") says, never worked around. *Proposed by the filer, open to the player's correction (curly-rabbit #1094).*
 
 **A reviewer bot's APPROVE counts toward `main`'s required approval** (**committing** says what
 that requires), the same as the player's own.
