@@ -32,11 +32,7 @@ minty-quail-misty-badger), the resistance director's guard and contact spots and
 the title screen's hard-mode controls, the save's has-a-save, the figures' picture lists, and one
 drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
-"about 250" was an estimate. The park cordon's `gap`, `line`, `area`, `elapsed` and
-`walk_to_the_gap` are in scope too, though the CI check misses them since other classes have
-members of the same names: only the cordon and the tests use them, and their tests read the gap
-stretches and the tape line, so moving them is a build of its own (record
-minty-quail-dappled-sparrow).
+"about 250" was an estimate.
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing `tests-hold-nothing.md`'s findings in the files

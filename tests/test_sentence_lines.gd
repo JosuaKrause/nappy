@@ -74,9 +74,9 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t) -> 
 
 ## *(2026-09-27, the player: "if a text has multiple sentences like \"She started crying after
 ## 0:10. There is no settling now.\" the newline comes after the period".)* The exact line quoted
-## is `SummaryModel.clock_line()`'s own reconstruction of `DayController`'s `"She started crying.
-## There is no settling her now."` with the clock worked into the first sentence — see that
-## function's own doc.
+## is the title `SummaryModel.day_over()` builds from `DayController`'s `"She started crying.
+## There is no settling her now."` with the clock worked into the first sentence — see
+## `SummaryModel._clock_line()`'s own doc.
 func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
@@ -160,20 +160,27 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t) -> void:
 	summary.queue_free()
 
 func _test_the_pause_screens_body_breaks_only_between_sentences(t) -> void:
+	# The touch layer holds the control scheme, and the screen words its body again on every open.
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
 	var run := RunState.new()
 	pause.use_run(run)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
-		var source: String = pause.body_for(joystick)
-		var wrapped := SentenceLines.break_for_help(source, body)
-		var lines := wrapped.split("\n")
+		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		pause.open()
+		var source: String = Texts.WALKING_LESSON_PAUSE % (
+				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
+		var lines := body.line.split("\n")
 		for i in range(lines.size() - 1):
 			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
 					"the pause screen's instructions (joystick %s) break only after a sentence's end"
 							% joystick)
 		t.check(" ".join(lines) == source,
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
+		pause.close()
 	pause.free()
 	run.free()
+	controls.free()

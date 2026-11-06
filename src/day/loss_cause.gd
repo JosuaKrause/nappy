@@ -6,8 +6,8 @@ extends RefCounted
 ## (`tests/test_loss_cause.gd`).
 ##
 ## The cause is `""` for a win or a timeout, whose results already say everything. A hard-fail day
-## is named by what struck her (`hard_fail_suffix()`), a crying day by whichever group landed the
-## most on her over the crying window (`crying_suffix()`). GoatCounter's `lost-*` names and the run
+## is named by what struck her (`_hard_fail_suffix()`), a crying day by whichever group landed the
+## most on her over the crying window (`_crying_suffix()`). GoatCounter's `lost-*` names and the run
 ## log read it; see `docs/TELEMETRY.md`.
 
 ## The cause of a day that ended with `result`. `hard_fail_reason` and `struck_by` are read only for
@@ -17,9 +17,9 @@ static func of(result: GameEnums.DayResult, hard_fail_reason := "", struck_by :=
 		landed_by_group := {}) -> String:
 	match result:
 		GameEnums.DayResult.LOST_HARD_FAIL:
-			return hard_fail_suffix(hard_fail_reason, struck_by)
+			return _hard_fail_suffix(hard_fail_reason, struck_by)
 		GameEnums.DayResult.LOST_CRYING:
-			return crying_suffix(landed_by_group)
+			return _crying_suffix(landed_by_group)
 	return ""
 
 ## What ended a hard-fail day: `car` for the one hard fail that is not a catalogue row
@@ -32,7 +32,7 @@ static func of(result: GameEnums.DayResult, hard_fail_reason := "", struck_by :=
 ## ended the day — and names it in place of `reason` when there is one, so a day lost to the
 ## pelican is `pelican` rather than its row's `cyclist` *(inbox #527 in azure-tapir)*. `reason` stays
 ## the row's id for `DayController`'s own sentence, which is the cyclist's either way.
-static func hard_fail_suffix(reason: String, struck_by := "") -> String:
+static func _hard_fail_suffix(reason: String, struck_by := "") -> String:
 	if reason == "car_strike":
 		return "car"
 	return (struck_by if struck_by != "" else reason).replace("_", "-")
@@ -46,7 +46,7 @@ static func hard_fail_suffix(reason: String, struck_by := "") -> String:
 ## rather than left to whatever order a `Dictionary` happens to iterate in. An empty dictionary
 ## (nothing landed anything inside the window at all) falls back to `self`, the one group that
 ## always exists whether or not anything else ever did.
-static func crying_suffix(landed_by_group: Dictionary) -> String:
+static func _crying_suffix(landed_by_group: Dictionary) -> String:
 	var names := landed_by_group.keys()
 	names.sort()
 	var best := ""

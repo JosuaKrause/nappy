@@ -227,7 +227,6 @@ func _draw() -> void:
 	if not _events or not _player:
 		return
 	var transform := get_viewport().get_canvas_transform()
-	arrows_drawn = 0
 	# Exactly the badges `announcing()` lists, farthest arrival first so the soonest lies on top where
 	# two overlap.
 	var badges := announcing()
@@ -235,13 +234,8 @@ func _draw() -> void:
 		_draw_arrow(badges[i]["def"] as EventDef, badges[i]["position"] as Vector2,
 				float(badges[i]["distance"]), transform)
 
-## How many arrows the last `_draw()` put on the edge, for a test that the drawing shows every
-## badge the model lists.
-var arrows_drawn := 0
-
 func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 		transform: Transform2D) -> void:
-	arrows_drawn += 1
 	var centre := size * 0.5
 	var at_design := ScreenOrientation.to_design_space(transform * world_position, rotated)
 	var offset: Vector2 = at_design - centre

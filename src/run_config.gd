@@ -82,8 +82,8 @@ var seed_override := 0:
 var day_override := 1:
 	set(value): day_override = _write(day_override, value)
 ## `-1.0` for "not given"; see `day_length_for()`.
-var day_length_override := -1.0:
-	set(value): day_length_override = _write(day_length_override, value)
+var _day_length_override := -1.0:
+	set(value): _day_length_override = _write(_day_length_override, value)
 var parent_override := "":
 	set(value): parent_override = _write(parent_override, value)
 var hard_mode_requested := false:
@@ -238,7 +238,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 
 	config.seed_override = flags.seed_override()
 	config.day_override = flags.day_override()
-	config.day_length_override = flags.day_length_override()
+	config._day_length_override = flags.day_length_override()
 	config.parent_override = flags.parent_override()
 	config.hard_mode_requested = flags.hard_mode_requested()
 	config.nerves_override = flags.nerves_override()
@@ -308,12 +308,12 @@ func with_recipe(recipe_data: Dictionary) -> RunConfig:
 ## How long day `day` runs: `--day-length` when given, else the day's own (`Tuning.day_length()`).
 ## The one place a day's length is decided, handed to the day as a plain number.
 func day_length_for(day: int) -> float:
-	return day_length_override if day_length_override > 0.0 else Tuning.day_length(day)
+	return _day_length_override if _day_length_override > 0.0 else Tuning.day_length(day)
 
 ## How long one escape section runs: a day's own clock, compressed by `--day-length` exactly as a
 ## day is, since each section is a day.
 func escape_section_length() -> float:
-	return day_length_override if day_length_override > 0.0 else FINALE_LENGTH_SECONDS
+	return _day_length_override if _day_length_override > 0.0 else FINALE_LENGTH_SECONDS
 
 ## Seconds until a rig quits itself: `--after` when given, else the length of the day it plays.
 func rig_quit_seconds() -> float:

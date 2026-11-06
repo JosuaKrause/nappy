@@ -9,21 +9,29 @@ func run(t) -> void:
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
 	_test_the_cause_by_result(t)
 
+## What `LossCause.of()` names a hard-fail day that `reason` ended, `struck_by` the instance whose reach did.
+func _hard_fail(reason: String, struck_by := "") -> String:
+	return LossCause.of(GameEnums.DayResult.LOST_HARD_FAIL, reason, struck_by)
+
+## What `LossCause.of()` names a crying day in which `landed_by_group` landed what it holds on her.
+func _crying(landed_by_group: Dictionary) -> String:
+	return LossCause.of(GameEnums.DayResult.LOST_CRYING, "", "", landed_by_group)
+
 ## `car_strike` is the one hard fail that is not a catalogue row and gets its own short name;
 ## every other reason is a `def.id`, hyphenated the same way every other cause name in this file
 ## already is — `roadblock` included, so a row that turns lethal only once the resistance's heat
 ## reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
 ## — `VisitCounter._loss_event_suffix()` is what folds it onto `lost-hard-fail`.
 func _test_hard_fail_cause_suffix(t) -> void:
-	t.check(LossCause.hard_fail_suffix("car_strike") == "car",
+	t.check(_hard_fail("car_strike") == "car",
 		"the one hard fail that is not a catalogue row")
-	t.check(LossCause.hard_fail_suffix("charging_dog") == "charging-dog",
+	t.check(_hard_fail("charging_dog") == "charging-dog",
 		"a caught chase, hyphenated off its own catalogue id")
-	t.check(LossCause.hard_fail_suffix("roadblock") == "roadblock",
+	t.check(_hard_fail("roadblock") == "roadblock",
 		"a row whose id already has no underscore to hyphenate")
-	t.check(LossCause.hard_fail_suffix("night_raid") == "night-raid",
+	t.check(_hard_fail("night_raid") == "night-raid",
 		"a row whose id has an underscore, named off the same `def.id` as every other")
-	t.check(LossCause.hard_fail_suffix("alley_robbery") == "alley-robbery",
+	t.check(_hard_fail("alley_robbery") == "alley-robbery",
 		"the chalk mark's own guard")
 
 ## The largest group in `landed_by_group` names the cause; ties and an empty window pick the
@@ -31,26 +39,26 @@ func _test_hard_fail_cause_suffix(t) -> void:
 ## in the window at all. Raw, unprefixed — `VisitCounter._loss_event_suffix()` is what folds it onto
 ## `lost-crying`.
 func _test_crying_cause_suffix(t) -> void:
-	t.check(LossCause.crying_suffix({"homeless_yeller": 12.0, "crowd": 4.0})
+	t.check(_crying({"homeless_yeller": 12.0, "crowd": 4.0})
 			== "homeless-yeller", "the largest group names the cause, hyphenated")
-	t.check(LossCause.crying_suffix({"crowd": 6.0, "traffic": 9.0}) == "traffic",
+	t.check(_crying({"crowd": 6.0, "traffic": 9.0}) == "traffic",
 		"traffic outweighing the crowd names traffic")
-	t.check(LossCause.crying_suffix({"leaf_blower": 3.0}) == "leaf-blower",
+	t.check(_crying({"leaf_blower": 3.0}) == "leaf-blower",
 		"a single group with an underscore in its own id")
-	t.check(LossCause.crying_suffix({"crowd": 5.0, "construction": 5.0})
+	t.check(_crying({"crowd": 5.0, "construction": 5.0})
 			== "construction",
 		"a tie picks the alphabetically first key present, deterministic without a second rule")
-	t.check(LossCause.crying_suffix({}) == "self",
+	t.check(_crying({}) == "self",
 		"an empty window falls back to her own unattributed share")
 
 ## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527 in azure-tapir)*: a hard fail
 ## through `EventManager.what_struck_her()`'s own name, and a crying loss through the grouping `DayDirector.landed_by_group()` reads, checked in
 ## `tests/test_day_director.gd`.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
-	t.check(LossCause.hard_fail_suffix("cyclist", "pelican") == "pelican",
+	t.check(_hard_fail("cyclist", "pelican") == "pelican",
 		"a day the pelican's reach ended is lost to the pelican")
-	t.check(LossCause.hard_fail_suffix("cyclist", "cyclist") == "cyclist"
-			and LossCause.hard_fail_suffix("cyclist") == "cyclist",
+	t.check(_hard_fail("cyclist", "cyclist") == "cyclist"
+			and _hard_fail("cyclist") == "cyclist",
 		"and one a cyclist's ended is lost to the cyclist")
 
 ## `LossCause.of()` is the one entry: a win and a timeout have no cause, a hard-fail day is named by

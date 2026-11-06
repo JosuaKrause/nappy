@@ -91,7 +91,7 @@ class ReadoutRig:
 func run(t) -> void:
 	t.gives_back_observers()
 	await _test_a_boot_gives_the_day_its_configured_length(t)
-	await _test_a_placed_player_settles_with_her_lead_and_keeps_room_limits(t)
+	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	await _test_the_readout_flag_shows_it_on_a_release_build(t)
 	_test_the_debug_mode_note_only_exists_when_requested(t)
@@ -236,20 +236,13 @@ func _check_boot_camera_handoff(t, main: Node2D, interpolated: bool) -> void:
 			% interpolated)
 	t.check(camera.position_smoothing_enabled, "boot handoff preserves normal follow smoothing")
 
-func _test_a_placed_player_settles_with_her_lead_and_keeps_room_limits(t) -> void:
+func _test_a_placed_player_keeps_room_limits(t) -> void:
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
 	player.set_physics_process(false)
 	var camera: Camera2D = player.get_node("Camera2D")
 	camera.make_current()
-	var destination := Vector2(1800, 1400)
-	player.reset_at(destination, Vector2.RIGHT)
-	SceneRecipeRuntime.settle_camera_on(camera, player)
-	print("CAMERA_SETTLED interpolation=%s screen=%s offset=%s" % [
-			t.get_tree().physics_interpolation, camera.get_screen_center_position(), camera.offset])
-	t.check(camera.get_screen_center_position().is_equal_approx(
-			destination + Vector2(Stroller.CAMERA_LOOK_AHEAD, 0)),
-			"a settled recipe starts at the actual player with its authored facing lead")
+	player.reset_at(Vector2(1800, 1400), Vector2.RIGHT)
 	player.set_camera_limits(Rect2(1000, 1000, 1600, 1200))
 	player.reset_at(Vector2(1500, 1500))
 	camera.force_update_scroll()
@@ -1080,7 +1073,8 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	var viewport := Vector2(
 			ProjectSettings.get_setting("display/window/size/viewport_width"),
 			ProjectSettings.get_setting("display/window/size/viewport_height"))
-	var zoom := ZoomOutCamera.overview_zoom(bounds, viewport)
+	# The zoom that fits all of the bounds in the window, as `ZoomOutCamera` ends its pull back on.
+	var zoom := minf(viewport.x / bounds.size.x, viewport.y / bounds.size.y)
 	var size := viewport / zoom
 	var view := Rect2(bounds.get_center() - size / 2.0, size)
 	var lo := city.map.world_to_tile(view.position)

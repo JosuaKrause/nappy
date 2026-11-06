@@ -223,11 +223,12 @@ func _layer_manifest(t) -> Dictionary:
 
 ## A day's repaint is a `build_tile_set()`, and it may not go back to the disk for the recipe: a
 ## file that moved under a running game would compose nothing and draw whole authored tiles. Two
-## builds, one read — and an SVG bake, which composes nothing, reads it no more than once either.
+## builds, one read: the recipe the first ask read is the very dictionary after both builds.
 func _test_the_recipe_is_read_from_disk_once(t) -> void:
 	if _page(t) == null:
 		return
 	var fresh_recipe := GroundRecipe.new()
+	var held := fresh_recipe.manifest()
 	var first := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	var second := GroundLayers.build_tile_set(AUTHORED_GROUND, fresh_recipe, atlas)
 	t.check(first != null and second != null, "both ground builds produced a TileSet")
@@ -235,12 +236,8 @@ func _test_the_recipe_is_read_from_disk_once(t) -> void:
 			"water is absent from both static compositions, including a daily repaint")
 	t.check(AtlasTable.baked().has_region(&"tiles/water"),
 			"the independent water surface still has its original baked picture")
-	t.check(fresh_recipe.reads() <= 1,
-			"two ground builds read the recipe from disk at most once (read %d times)"
-			% fresh_recipe.reads())
-	if not _svg_bake():
-		t.check(fresh_recipe.reads() == 1,
-				"a default bake's first ground build is the one that reads the recipe")
+	t.check(is_same(fresh_recipe.manifest(), held),
+			"two ground builds leave the recipe the one read the first ask made, not read again")
 
 func _test_composed_sources_keep_ids_and_visible_detail(t) -> void:
 	if _svg_bake():

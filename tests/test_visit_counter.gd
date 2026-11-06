@@ -450,7 +450,7 @@ func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t) -> void:
 		"the cause and the loss kind fold into one event, not a lost-crying beside a noise-traffic")
 	_done(counter)
 
-## A hard-fail day folds the same way, off `LossCause.hard_fail_suffix()`'s own raw name, as the day's
+## A hard-fail day folds the same way, off `LossCause.of()`'s own raw name for it, as the day's
 ## end carries it.
 func _test_a_hard_fail_day_folds_its_cause_too(t) -> void:
 	var counter := RecordingCounter.new()
@@ -929,7 +929,7 @@ func _test_the_pelican_is_its_own_entry(t) -> void:
 	_done(counter)
 
 ## A day the pelican ends folds `pelican` into its loss, never its row's `cyclist` — the cause
-## `LossCause.hard_fail_suffix()` names it by (`tests/test_loss_cause.gd`), carried through.
+## `LossCause.of()` names it by (`tests/test_loss_cause.gd`), carried through.
 func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day

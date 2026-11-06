@@ -25,7 +25,7 @@ extends RefCounted
 ## draws uses either.
 ##
 ## A coroutine: callers write `await DrawnFrame.wait(get_tree())`. Never called headless — the null
-## display server can draw nothing, forced or not, which is `AutoScreenshot.can_photograph()`'s
+## display server can draw nothing, forced or not, which is `AutoScreenshot._capture()`'s headless guard's
 ## question.
 static func wait(tree: SceneTree) -> bool:
 	var state := {"drawn": false}

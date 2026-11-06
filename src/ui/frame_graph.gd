@@ -45,7 +45,7 @@ const _BOX_HEIGHT := 48.0
 ## The frame length the 60fps reference line is drawn at, and the two-character label beside it.
 const _TARGET_MS := 16.7
 ## The frame length that reaches the top of the box and clips beyond it — also the ceiling
-## `classify()` calls lethal, the same 33.3ms (30fps) the caret and the badge would call a frame
+## `_classify()` calls lethal, the same 33.3ms (30fps) the caret and the badge would call a frame
 ## too slow to call smooth. Doubles as the height scale's own denominator, so a frame at exactly
 ## this length draws a bar reaching the box's own top edge.
 const _LETHAL_MS := 33.3
@@ -90,7 +90,7 @@ func push(delta: float) -> void:
 	if not visible:
 		return
 	# Classified once, here, against the two fixed lines; the answer travels with the frame.
-	_classes.append(classify(delta))
+	_classes.append(_classify(delta))
 	_deltas.append(delta)
 	if _deltas.size() > FRAME_GRAPH_FRAMES:
 		_deltas.pop_front()
@@ -115,7 +115,7 @@ func frames() -> Array[float]:
 	return _deltas.duplicate()
 
 ## Each surviving frame's class, in the same order as `frames()` — what the bars are actually
-## drawn from, so a test can check a class stays what it was when the frame was pushed.
+## drawn from, which a headless run draws to nothing; this is the one handle on their colours.
 func classes() -> Array[int]:
 	return _classes.duplicate()
 
@@ -135,7 +135,7 @@ func mean() -> float:
 ## wins rather than whichever condition is checked first. Answers against the window as it stands
 ## `push()` stores the answer with the frame rather than asking again at draw time, so a bar keeps
 ## the colour it was born with.
-func classify(delta: float) -> int:
+func _classify(delta: float) -> int:
 	var ms := delta * 1000.0
 	if ms > _LETHAL_MS:
 		return FrameClass.LETHAL

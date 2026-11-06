@@ -17,7 +17,7 @@ var _walk_spec: DaySpec = null
 var built: Dictionary = {}
 var manifest: Dictionary = {}
 var named: Dictionary = {}
-var scripted := false
+var _scripted := false
 var tick := 0
 ## The run's configuration with this recipe on top, handed in by `configure()`: where the manifest
 ## and a draft go, whether to validate and quit, a screenshot's tick and a day's length.
@@ -58,7 +58,7 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 	var written := recipe
 	if "--recipe-draft" in args:
 		recipe = SceneRecipeDraft.base_of(recipe)
-	var errors := validate_runtime(recipe)
+	var errors := _validate_runtime(recipe)
 	for flag in OWNED_FLAGS:
 		if flag in args:
 			errors.append("arguments: %s conflicts with recipe-owned setup/playback" % flag)
@@ -81,7 +81,7 @@ static func load_recipe(path: String, args: PackedStringArray) -> Dictionary:
 	result.written = written
 	return result
 
-static func validate_runtime(recipe: Dictionary) -> Array[String]:
+static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
 	var setup: Dictionary = recipe.get("setup", {})
 	var playback: Dictionary = recipe.get("playback", {})
@@ -483,7 +483,7 @@ func configure(result: Dictionary, config: RunConfig, run: RunState,
 	if config.recipe_draft_path != "":
 		_draft = SceneRecipeDraft.new()
 	manifest = result.manifest.duplicate(true)
-	scripted = config.recipe_scripted
+	_scripted = config.recipe_scripted
 	manifest["recipe"] = data.get("name", "")
 	manifest["recipe_sha256"] = JSON.stringify(data, "", true).sha256_text()
 	manifest["engine"] = Engine.get_version_info().string
@@ -530,7 +530,7 @@ func lessons_learned() -> bool:
 	return bool(data.get("setup", {}).get("tutorial_complete", false))
 
 func plays_by_script() -> bool:
-	return scripted
+	return _scripted
 
 ## Installs the fixed day before the world gets a simulation frame. Geometry eligibility reads
 ## the declared construction context, never the exterior's unbuilt walkable floor. `spec` is the walk
@@ -723,7 +723,7 @@ func _bind_task_names() -> void:
 			print("[SceneRecipe] " + problem)
 		print("[SceneRecipe] setup.task: the mark's task has nowhere to go in this scene")
 		write_manifest()
-		if scripted:
+		if _scripted:
 			_active = false
 			_end_the_game(1)
 		return
@@ -1044,7 +1044,7 @@ func begin() -> void:
 	if _config.recipe_validate:
 		_end_the_game(0)
 		return
-	if not scripted:
+	if not _scripted:
 		_hand_played = true
 		return
 	# `install()` positions the player while the boot camera is still current. Camera2D can only
@@ -1079,11 +1079,11 @@ func _settle_starting_camera() -> void:
 	var starting_camera := get_viewport().get_camera_2d()
 	if not starting_camera or not _player:
 		return
-	settle_camera_on(starting_camera, _player)
+	_settle_camera_on(starting_camera, _player)
 
 ## Puts `camera` on `player` with her facing lead, at once and with no smoothing left to arrive: the
 ## first view of a scripted scene is the player, not a camera travelling to her.
-static func settle_camera_on(camera: Camera2D, player: Stroller) -> void:
+static func _settle_camera_on(camera: Camera2D, player: Stroller) -> void:
 	camera.offset = Vector2(player.facing.x,
 			player.facing.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	camera.force_update_scroll()
@@ -1316,7 +1316,7 @@ func _release_input() -> void:
 	Input.action_release("run")
 
 func _exit_tree() -> void:
-	if scripted:
+	if _scripted:
 		_release_input()
 
 func snapshot() -> Dictionary:
@@ -1606,7 +1606,7 @@ func _write_the_draft() -> int:
 ## failed — the manifest says so and the run quits non-zero — and answers `true`; a free one
 ## answers `false`, for `main` to reload the authored scene rather than retry the section.
 func lose_the_attempt() -> bool:
-	if not scripted:
+	if not _scripted:
 		return false
 	manifest["playback_error"] = "the authored escape attempt was lost"
 	write_manifest()

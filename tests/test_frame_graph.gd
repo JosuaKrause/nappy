@@ -53,11 +53,15 @@ func _test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t) -> void:
 		graph.push(0.010)
 	t.check(is_equal_approx(graph.mean(), 0.010),
 			"the window's mean is the steady 10ms every frame in it was pushed at (%.4f)" % graph.mean())
-	t.check(graph.classify(0.011) == FrameGraph.FrameClass.NORMAL,
+	graph.push(0.011)
+	graph.push(0.025)
+	graph.push(0.040)
+	var classes := graph.classes()
+	t.check(classes[10] == FrameGraph.FrameClass.NORMAL,
 			"11ms is past neither the 16.7ms line nor the 33.3ms one")
-	t.check(graph.classify(0.025) == FrameGraph.FrameClass.COSTLY,
+	t.check(classes[11] == FrameGraph.FrameClass.COSTLY,
 			"25ms is past the 16.7ms line and short of the 33.3ms one, whatever the mean")
-	t.check(graph.classify(0.040) == FrameGraph.FrameClass.LETHAL,
+	t.check(classes[12] == FrameGraph.FrameClass.LETHAL,
 			"40ms is past the 33.3ms lethal line whatever the mean says")
 	graph.free()
 
@@ -76,7 +80,7 @@ func _test_a_hidden_graph_records_nothing(t) -> void:
 ## The stored classes age out with the frames they colour: past the window, both arrays hold the
 ## same last 240. *(2026-09-14, the player: "I see things on the left side changing (notably adding
 ## yellow lines after the fact)".)* A class decided at push time cannot change afterwards, since
-## `classify()` reads fixed lines only; what a stored class could still get wrong is falling out of
+## a frame's class reads fixed lines only; what a stored class could still get wrong is falling out of
 ## step with its frame when the ring trims.
 func _test_the_classes_age_out_with_their_frames(t) -> void:
 	var graph := FrameGraph.new()
@@ -108,12 +112,16 @@ func _test_clear_empties_the_ring(t) -> void:
 			"a push after clear() starts a new window rather than resuming the old one")
 	graph.free()
 
+## The layers a debug build given `--layers raw` starts on.
+func _layers(raw: String) -> Array[int]:
+	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
+
 ## `6` (the frame graph's own key) joins `5` in the list `--layers`/`?layers=` may set, on the same
 ## terms `tests/test_route_lines.gd` already holds for `5`: `4` (the readout) stays rejected even
 ## though it sits inside the numeric range the others span.
 func _test_parse_layers_accepts_six_and_still_rejects_four(t) -> void:
-	t.check(DevFlags.parse_layers("6") == [6], "6 (the spike view) is accepted on its own")
-	t.check(DevFlags.parse_layers("1,4,6") == [1, 6],
+	t.check(_layers("6") == [6], "6 (the spike view) is accepted on its own")
+	t.check(_layers("1,4,6") == [1, 6],
 			"4 is still dropped — the readout is never set through this flag — while 1 and 6 pass")
-	t.check(DevFlags.parse_layers("1,9,0") == [1],
+	t.check(_layers("1,9,0") == [1],
 			"still-invalid entries (there is no layer 9 or 0) are dropped the same way as before")

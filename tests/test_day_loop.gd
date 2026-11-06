@@ -466,7 +466,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 ## M154: the summary carries the day's own clock at the instant it ended, phrased per outcome —
 ## `docs/TODO.md`'s M154 item, quoting the player: *"fell asleep after xx:xx or something like
 ## that"*. `elapsed_seconds` is a known value here (84.0, `1:24`) rather than anything a rig walks
-## to, since what is under test is the phrasing `SummaryModel.clock_line()` builds from it, not the
+## to, since what is under test is the phrasing `SummaryModel.day_over()` titles the day with, not the
 ## capture in `DayDirector.finish_day()`.
 ##
 ## **`_title`, not `_body`**: the one line about the day that ended is the screen's own title,
