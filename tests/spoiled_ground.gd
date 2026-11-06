@@ -6,8 +6,9 @@ extends RefCounted
 ## day leaves an open calm area clean" judge the day against a definition that is not the
 ## scheduler's own, and it must be kept in step with `EventScheduler._reaches_rect()` by hand. A
 ## playground and a scar (`AMBIENT`) and a permanent body do not count. The scheduler's own
-## `_is_spoiled()` only chooses which calm ground the walkability repair keeps a route to, and no
-## suite builds a day where that choice binds, so nothing here would fail if it always answered no.
+## `_is_spoiled()` only chooses which calm ground the walkability repair keeps a route to; the day in
+## `test_events_scheduler.gd` that closes every street but the few the calm areas need holds that
+## choice.
 ## A helper, not a suite: the runner loads only `test_*.gd`.
 
 ## Whether some placed event of `planned` has its field reaching `rect`, in tiles of `map`.

@@ -68,12 +68,10 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
 
 1. `shared-components.md`.
 2. `comments.md`: in whichever PR touches the code.
-3. `tests-public-seams.md`: the tests rewritten with dependency injection and through public APIs,
-   with `tests-unseen-reads.md` for what its count cannot see, in that file's build order;
-   `tests-isolated.md` beside it, and `tests-coverage-gaps.md`, the rules no suite holds.
-   `run-state-handed-in.md` beside them too: each wave moves its suites onto a fresh run state
-   handed in, after the one PR that moves the run onto the `Sitting` (inbox #985 in round-egret).
-   `tests-own-class-members.md` follows `tests-unseen-reads.md`'s builds.
+3. `tests-public-seams.md`: the rule the tests are written under (dependency injection, public
+   APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md` for
+   what its count cannot see; `tests-isolated.md` beside it. `tests-own-class-members.md` holds the
+   members whose names collide with another class's.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each

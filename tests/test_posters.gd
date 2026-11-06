@@ -238,7 +238,6 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 			"a taken neighbor's face is crossed out")
 	t.check(PosterArt.sheet(atlas, PosterArt.Kind.LEADER, run.neighbor_was_taken()) == atlas.region(
 			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
-	run.free()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
 ## **The crossed notice reaches the wall from the run's state.** No front holds a run:

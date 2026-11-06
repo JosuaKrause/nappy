@@ -347,5 +347,4 @@ func _physics_frames(t, count: int) -> void:
 func _shut_down(t, booted: Boot.Booted) -> void:
 	booted.free_all()
 	_home.free()
-	_run.free()
 	t.get_tree().paused = _saved_paused

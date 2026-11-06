@@ -152,7 +152,6 @@ func _reachability(t) -> void:
 		var all: int = counted["through"] + counted["passage"]
 		print("[m213] all      %-16s asleep %4d of %4d (%.0f%%), inside 62px of the mark %d"
 				% [names[i], total, all, 100.0 * total / maxf(1.0, all), too_close[i]])
-	own_run.free()
 	t.check(true, "probe ran")
 
 func _on_screen(t) -> void:
@@ -198,7 +197,6 @@ func _on_screen(t) -> void:
 				guards_seen += 1
 			var _unused := robbery
 		director.free()
-	own_run.free()
 	print("[m213] relocations %d: mark picture on screen %d, guard centre on screen %d, guard body on screen %d, unguarded %d"
 			% [relocations, marks_seen, guards_centre_seen, guards_seen, unguarded])
 	t.check(true, "probe ran")

@@ -145,7 +145,6 @@ func _free_fixture(fixture: Dictionary) -> void:
 	(fixture["stroller"] as Stroller).free()
 	(fixture["resistance"] as ResistanceDirector).free()
 	(fixture["city"] as City).free()
-	(fixture["run"] as RunState).free()
 
 ## The suite's own day 6, with nobody handed to the director or the events, so nothing reads her
 ## position but the rig and its planner.

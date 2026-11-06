@@ -142,7 +142,6 @@ class Stage extends RefCounted:
 		if t != null:
 			t.add_child(world)
 		var run := RunState.new()
-		world.add_child(run)
 		map.world = world
 		manager = EventManager.new()
 		manager.setup_world(map, run)

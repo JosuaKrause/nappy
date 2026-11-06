@@ -54,7 +54,6 @@ func run(t) -> void:
 	await _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	await _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)
 	_city.free()
-	_run.free()
 
 ## The city's events paint through a recording drawer from here on, handed to the world the way
 ## the manager hands the real one, so a check reads the pictures an event was drawn with.

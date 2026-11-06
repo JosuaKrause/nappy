@@ -6,8 +6,7 @@ state? so they're kind of a loophole", then said "we should add the underscore",
 that each becomes internal, its tests checking what the class does from outside, in its own pass
 after the current test builds, one staying public only where nothing outside can confirm the
 behavior, with its reason written down, "yes, that's cleaner" (curly-rabbit #1098). It overturns
-`tests-unseen-reads.md`'s former reading that a caller in the member's own class counts as a game
-caller.
+the reading that a caller in the member's own class counts as a game caller.
 
 **Read as:** a public member a test reads, whose only other user is the file that defines it, gets
 a leading underscore, and its tests move to what the class does outward: what it draws, the plans
@@ -23,9 +22,9 @@ least as long as the fairness floor needs") is what **verify**'s testing policy 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** The CI check of test-only members lists the owners one by one, and its count is the
-scope; its own-file group holds no line, every member it lists being internal or kept with its
-reason. What is left is the members the check cannot see, below.
+**Scope.** The CI check of test-only members lists the owners one by one; its own-file group holds
+no line, every member it lists being internal or kept with its reason. What is left is the members
+the check cannot see.
 
 **What the check still cannot see** (record minty-quail-feathery-finch): it qualifies a member by its class where a
 reader's type is known when another class has a member of the same name, and a reader typed as a base class reaches an
@@ -38,7 +37,8 @@ Three members have no test reader: `CrowdField.contains` and `MarbleBag.take` (t
 and `EventStreaming.take`, which the check cannot type) are dead and are deleted, and `Main.use_sitting` is a hand-in
 no test calls (the tests' `use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
-**Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
-several small owners together), each also removing a check that holds nothing once its member is
-gone (curly-rabbit #1097). A builder deletes the owner's lines from the CI check's list as its members turn
+**Build.** Each of those members becomes internal, its tests moving to what the class does outward,
+or takes a `[kept]` line with its reason, owner by owner (or several small owners together) in a
+pull request each, each also removing a check that holds nothing once its member is gone
+(curly-rabbit #1097). A builder deletes the member's line from the CI check's list as it turns
 internal.

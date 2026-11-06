@@ -45,7 +45,6 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	Telemetry.end_run()
 	booted.free_all()
 	home.free()
-	run.free()
 
 ## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
 ## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
@@ -86,7 +85,6 @@ class ReadoutRig:
 		layer.free()
 		day.free()
 		stroller.free()
-		run.free()
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -499,7 +497,6 @@ func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
 	t.check((left.get_node("Letter") as Label).mouse_filter == Control.MOUSE_FILTER_IGNORE,
 			"the letter never catches a press meant for its button")
 	title.free()
-	run.free()
 	await t.get_tree().process_frame
 
 ## **A left joystick press on the title, on the boot the rig flags configure.** A real touch on the
@@ -621,9 +618,9 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 	seat.end()
 
 ## **A sitting's own run crosses the reload into the next boot, as in the game.** In play the run
-## is the sitting's own (`Sitting.take_the_run()` makes it as the sitting's child), and the reload
-## carries it because the sitting is parked in its home and taken back. This sitting makes its
-## run before it enters, and is parked in a home of the test's own standing for the tree's root.
+## is the sitting's own (`Sitting.take_the_run()` makes it), and the reload carries it because the
+## sitting is parked in its home and taken back. This sitting makes its run before it enters, and
+## is parked in a home of the test's own standing for the tree's root.
 ## The first boot plays that run and day 14's hand-over reloads; the boot standing for the reload,
 ## handed only the home, opens on the escape the run was left in.
 func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
@@ -636,7 +633,7 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
 	home.add_child(sitting)
 	var first_calls := Calls.new()
 	var first := await _boot(t, [], first_calls, home)
-	t.check(sitting.run == run and run.get_parent() == sitting and run.header.run_seed == SEED,
+	t.check(sitting.run == run and run.header.run_seed == SEED,
 			"the first boot plays the run the sitting made, started on the run's seed")
 	run.header.day = Tuning.RUN_LENGTH_DAYS
 	run.resistance.progress = Tuning.RESISTANCE_GOAL
@@ -1187,7 +1184,6 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 		pause.free()
 		window.free()
 		await t.get_tree().process_frame
-	run.free()
 
 ## Nothing can leave input off. A second trigger (the web's page events beside the engine's own)
 ## moves nothing; a frame landing inside the window leaves it running and a later frame still puts

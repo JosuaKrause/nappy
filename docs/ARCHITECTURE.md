@@ -33,7 +33,6 @@ src/
 	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
 	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
-	game_state.gd         the run (`RunState`), as a registry of its parts; held by the `Sitting`
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
 	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
@@ -42,6 +41,7 @@ src/
 	                                                       (autoload: VisitCounter)
   run/                  the run's state, a domain model — one registered list of sub-states —
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
+	run_state.gd          the run (`RunState`), as a registry of its parts; held by the `Sitting`
 	run_sub_state.gd      the interface of a part: reset, photograph, give_back, to_data, restore
 	run_calendar.gd       the run's calendar: day and act, a day begun and ended, the mode and checkpoint, the day's RNG
 	run_state_registry.gd the one list the dawn, a lost day, the snapshot and the save walk
@@ -761,9 +761,10 @@ save puts it (`RunSubState.Slot`): inside the `"state"` snapshot, whose keys a s
 beside it with a default for absence, or under a key of its own. Readers use the part that owns a field
 (`run.header.day`, `run.attempt_spend.scars`); code written against a part takes it as
 an argument. **The `Sitting` is where the run lives** (`Sitting.run`): the sitting outlives the
-scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and the
-boot after a held restart starts a fresh run in it (`start_run()`). `main`, the composition root,
-takes it off the sitting once a boot and hands it, typed `RunState`, to every reader it builds — the
+scene reloads that carry a run on (the day-14 hand-over, a run carried to its checkpoint), and a
+held restart hands it a fresh run (`main._restart_run()`), which the boot after starts
+(`start_run()`). `main`, the composition root, takes it off the sitting once a boot and hands it,
+typed `RunState`, to every reader it builds — the
 `City` (which hands it to its `PosterWalls`, which hands each `Building` whether the neighbor was
 taken, the one thing `PosterArt` draws from the run), the HUD, the pause and title screens,
 `RunSession` and its `TelemetryObserver`, the frame trace and recorder, `DayController`,
@@ -779,8 +780,9 @@ builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save(
 `ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
 puts no run back between suites; the visit counter autoload holds only the sitting's run that `main`
-hands it, and holds none otherwise, and then sends nothing. `RunState` is a `Node` so the `Sitting` can
-hold it as a child and free it with itself; nothing in the game otherwise needs it to be one.
+hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
+`Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
+the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
 builds over the parts and exposes as `run.calendar`): the day and act, a day's attempt begun
 (`begin_day()`, the dawn photograph) and ended (`finish_day()`, the nerve a loss spends and the day

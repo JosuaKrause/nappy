@@ -10,7 +10,7 @@ extends RefCounted
 ##
 ## **Freeing a seat gives back what the observers held before it.** A booted `main` hands the run to
 ## the observers (`VisitCounter.configure()`), which keep it after `main` is gone; `end()` frees the
-## run and puts the observers back (`tests/booted_main.gd`), so none holds a freed run.
+## home and puts the observers back (`tests/booted_main.gd`), so none holds a run that is over.
 
 const Boot := preload("res://tests/booted_main.gd")
 
@@ -38,5 +38,4 @@ func boot(t, scratch_path: String, words: Array) -> Boot.Booted:
 
 func end() -> void:
 	home.free()
-	run.free()
 	Boot.give_back_observers(observers)

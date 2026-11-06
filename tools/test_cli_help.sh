@@ -954,6 +954,9 @@ printf 'badger\notter\n' > "$names_repo/tools/names/animals.txt"
 closed="$(cd "$names_repo" && ./tools/new-name.sh decision --entry M210 "Built" 2>/dev/null)"
 check_that "new-name.sh names an old entry's decision by its folder" \
     '[[ "$closed" == 2026-09-26-M210 && -s "$names_repo/docs/decisions/2026-09-26-M210.md" ]]'
+out="$(cd "$names_repo" && ./tools/new-name.sh decision --entry gone-entry "Built" 2>&1)"; status=$?
+check_that "new-name.sh --entry of an entry whose folder is gone says to draw the record before deleting the folder" \
+    '[[ $status -ne 0 && "$out" == *"no entry named gone-entry"* && "$out" == *"draw it first and delete the folder after"* ]] && ! ls "$names_repo"/docs/decisions | grep -q gone-entry'
 if command -v rg >/dev/null 2>&1; then
     printf 'The brief says what is coming, spent or not.\n' >> "$names_repo/docs/decisions/2026-09-26-M210.md"
     found="$(cd "$names_repo" && ./tools/decisions.sh M210)"

@@ -27,14 +27,10 @@ const _SCRATCH_PATH := "user://test_run_state_scratch.json"
 ## The save under test, at a scratch path.
 var _save := GameSave.new(_SCRATCH_PATH)
 
-## The runs this suite made, each freed when it is over.
-var _runs: Array[RunState] = []
-
 ## A fresh run in `run_seed`, handed to what a check tests.
 func _fresh(run_seed: int) -> RunState:
 	var run := RunState.new()
 	run.start_run(run_seed)
-	_runs.append(run)
 	return run
 
 ## An owner holding one part, for the check that a part left off the list is caught.
@@ -57,8 +53,6 @@ func run(t) -> void:
 
 	_with_saving(func() -> void: _save.clear())
 	_save.free()
-	for run in _runs:
-		run.free()
 
 ## `callable` run as a windowed release run, which saves, against the scratch file `run()` set.
 func _with_saving(callable: Callable) -> void:

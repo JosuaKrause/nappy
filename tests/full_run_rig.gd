@@ -26,7 +26,7 @@ func run(t, seed_value: int) -> void:
 	await PhysicsTicks.settle(t)
 	await _play_a_run(t, seed_value)
 
-## One run: the city is built over a run of its own (`RunCity.with_own_run()`, freed with the city),
+## One run: the city is built over a run of its own (`RunCity.with_own_run()`),
 ## and every day of it is started and played the way `main._start_day()` does, on real physics ticks.
 func _play_a_run(t, seed_value: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)

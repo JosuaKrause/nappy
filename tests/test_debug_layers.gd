@@ -194,7 +194,6 @@ class Rig:
 		layer.free()
 		player.free()
 		city.free()
-		run.free()
 
 func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), query, debug_build)

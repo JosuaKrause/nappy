@@ -399,7 +399,6 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	edge.free()
 	standing.free()
 	manager.free()
-	run.free()
 	atlas.release(&"events")
 
 ## Lets one real frame pass and answers whether the engine drew `edge` in it (`drawn`, its count of

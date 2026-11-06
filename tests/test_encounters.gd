@@ -58,7 +58,7 @@ func _clear() -> void:
 	_ran.clear()
 
 ## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
-## world (`EventManager.setup_world()`), in the tree. `_free_manager()` frees it with the run.
+## world (`EventManager.setup_world()`), in the tree. `_free_manager()` frees it.
 func _manager(t) -> EventManager:
 	var run := RunState.new()
 	run.start_run(SEED)
@@ -74,11 +74,9 @@ func _manager(t) -> EventManager:
 	return manager
 
 func _free_manager(manager: EventManager) -> void:
-	var run := manager.world.run
 	var holder := manager.world.map.world
 	manager.free()
 	holder.free()
-	run.free()
 
 ## A watch for day `DAY`.
 func _watch() -> EncounterWatch:
