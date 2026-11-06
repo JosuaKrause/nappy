@@ -12,10 +12,10 @@ const STEP := 1.0 / 60.0
 const SPENT_US := 2000
 ## The save the real boot is handed, at a scratch path, so nothing it drives reaches the player's.
 const _SCRATCH_SAVE := "user://test_frame_record_scratch.json"
-## Where the boot's recorder writes its record on the desktop, kept on the test's sitting.
-const _SCRATCH_RECORD := "user://test_frame_record_scratch_record.json"
-## Where the other recorders of this suite write theirs, saved or on leaving the tree.
-const _SCRATCH_RECORDER := "user://test_frame_record_scratch_recorder.json"
+## The folder the boot's recorder is handed to write its record in on the desktop.
+const _SCRATCH_RECORDS := "user://test_frame_record_scratch_records"
+## The folder the other recorders of this suite are handed, saved or on leaving the tree.
+const _SCRATCH_RECORDERS := "user://test_frame_record_scratch_recorders"
 
 func run(t) -> void:
 	t.gives_back_observers()
@@ -443,9 +443,10 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var home := Boot.home_playing(t, run)
 	var sitting: Sitting = home.get_node(Sitting.NODE_NAME)
 	sitting.frame_timing = record
-	sitting.frame_record_path = _SCRATCH_RECORD
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
-			func(unbooted: Node) -> void: unbooted.use_sitting_home(home))
+			func(unbooted: Node) -> void:
+				unbooted.use_sitting_home(home)
+				unbooted.use_frame_records_dir(_SCRATCH_RECORDS))
 	var main := booted.main
 	await Boot.press_title(t, main)
 	var city := Boot.city(main)
@@ -506,16 +507,17 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	await _check_the_crowd_is_timed_once(t, city.crowd, record, ledger)
 	record.start(ledger)
 	var written := recorder.save()
-	t.check(written == ProjectSettings.globalize_path(_SCRATCH_RECORD)
-			and sitting.frame_record_path == _SCRATCH_RECORD,
+	t.check(written == ProjectSettings.globalize_path(sitting.frame_record_path)
+			and sitting.frame_record_path.begins_with(_SCRATCH_RECORDS + "/"),
 			"a desktop save writes the file its sitting keeps, which outlives the recorder")
 	t.check(recorder.save() == written, "and every later save rewrites the same file")
 	DirAccess.remove_absolute(written)
 	booted.free_all()
 	t.check(not record.on, "leaving the tree switches the timing off")
-	t.check(FileAccess.get_file_as_string(_SCRATCH_RECORD).contains("nappy-frame-record"),
+	t.check(FileAccess.get_file_as_string(sitting.frame_record_path).contains("nappy-frame-record"),
 			"and writes the record on the desktop as the scene exits")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORD))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(sitting.frame_record_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
 	home.free()
 	run.free()
 
@@ -769,17 +771,17 @@ func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
 	rig.free_all()
 
 ## A recorder in the tree on `record`, set up as `main` sets one up with no world to count, and its
-## sitting's saved record at a scratch path so that a save, or leaving the tree, writes there and not
+## sitting's records handed a scratch folder so that a save, or leaving the tree, writes there and not
 ## under the player's own records. `free_all()` frees it all and removes the file.
 func _rig(t, record: FrameRecord) -> _Rig:
 	var rig := _Rig.new()
 	rig.sitting = Sitting.new()
 	rig.sitting.frame_timing = record
-	rig.sitting.frame_record_path = _SCRATCH_RECORDER
 	rig.run = RunState.new()
 	rig.recorder = FrameRecorder.new()
 	t.add_child(rig.recorder)
-	rig.recorder.setup(func() -> bool: return false, null, null, null, rig.run, rig.sitting)
+	rig.recorder.setup(func() -> bool: return false, null, null, null, rig.run, rig.sitting,
+			_SCRATCH_RECORDERS)
 	return rig
 
 class _Rig extends RefCounted:
@@ -790,6 +792,9 @@ class _Rig extends RefCounted:
 	func free_all() -> void:
 		# Leaving the tree writes the record to the sitting's path.
 		recorder.free()
+		var written := sitting.frame_record_path
 		sitting.free()
 		run.free()
-		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_frame_record_scratch_recorder.json"))
+		if written != "":
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_frame_record_scratch_recorders"))

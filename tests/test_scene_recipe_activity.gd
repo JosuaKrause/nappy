@@ -146,7 +146,7 @@ func run(t) -> void:
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--quit-after", "120", "--path", ProjectSettings.globalize_path("res://"),
 			stem + ".tscn", "--", "--recipe", "res://scene-recipes/trailer-%s.json" % name,
-			"--recipe-mode", "scripted", "--recipe-validate", "--no-telemetry"
+			"--recipe-mode", "scripted", "--recipe-validate", "--no-telemetry", "--no-save"
 		]), output, true)
 		var body := "\n".join(output)
 		t.check(status == 0 and body.contains("RECIPE_ACTIVITY_OK")

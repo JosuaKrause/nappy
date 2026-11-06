@@ -939,7 +939,7 @@ record through the browser's own download — a page element over the canvas rat
 control, so a tap on it never steers her, and the download starts inside the tap that asked for
 it. The button answers the tap: its label reads `sent to your browser: <file name>` for six
 seconds, in words that say the download was handed over and not that it finished, which the page
-cannot observe. On the desktop it is written to `user://frame-records/` on every scene exit, the same file each
+cannot observe. On the desktop it is written to the folder `main` hands the recorder (the game hands `user://frame-records/`) on every scene exit, the same file each
 time across a restart, since the path is kept on the `Sitting` that outlives the reload, and the
 path is printed. `--frame-record --after N` with `--walk` or `--press` is a timed
 rig that quits without a screenshot, the same way `--frame-trace --after N` is, headless or not.
