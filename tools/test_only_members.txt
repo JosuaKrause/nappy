@@ -46,8 +46,6 @@ src/events/checkpoint_controller.gd guard_is_after_her
 src/events/checkpoint_controller.gd release_finished_holds
 src/events/checkpoint_controller.gd set_a_guard_on_her
 src/events/checkpoint_controller.gd where_she_crossed
-src/events/event_catalogue.gd guardsmen_from_day
-src/events/event_catalogue.gd heat_levels
 src/events/event_def.gd emission_at
 src/events/event_def.gd lunge_is_inside_the_catch
 src/events/event_def.gd mean_emission_along_the_line
@@ -197,3 +195,4 @@ src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [r
 src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
 src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
+src/events/event_catalogue.gd heat_levels  # the number of heat levels a run can reach (the goal plus the cold one), which all() validates every heated shape of every row over; the heat, shapes, pursuit-on-foot and resistance-trap suites loop every level of every row to hold the fairness contracts to each shape, and a test that wrote the goal plus one itself would pass when the table's range moved; nothing outward carries the range, since a run reaches one level at a time

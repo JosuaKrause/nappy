@@ -809,8 +809,8 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 ## alert (`policeman_alert_*` or `guard_alert_*`) for `Tuning.WARNING_ALONE_MAX` while she walks
 ## away, and then lunges.
 func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
-	var day_of := {"policeman_giving_chase": EventCatalogue.guardsmen_from_day() - 1,
-			"guardsman_giving_chase": EventCatalogue.guardsmen_from_day()}
+	var day_of := {"policeman_giving_chase": Tuning.REGION_WALL_FIRST_DAY - 1,
+			"guardsman_giving_chase": Tuning.REGION_WALL_FIRST_DAY}
 	for id: String in day_of.keys():
 		for stops: bool in [true, false]:
 			var def := EventCatalogue.out_of_the_car(day_of[id], stops)

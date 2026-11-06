@@ -185,7 +185,7 @@ static func all() -> Array[EventDef]:
 		# And the man an investigating vehicle lets out, a copy of the day's pursuer on foot whose
 		# notice is the sight of him — the patrol car's, whose catch is a stop, and a hunting van's,
 		# whose catch ends the day — validated for the same reason.
-		for day: int in [guardsmen_from_day() - 1, guardsmen_from_day()]:
+		for day: int in [_guardsmen_from_day() - 1, _guardsmen_from_day()]:
 			out_of_the_car(day).validate()
 			out_of_the_car(day, false).validate()
 		escape_roadblock().validate()
@@ -2559,13 +2559,13 @@ static func _guardsman_giving_chase() -> EventDef:
 ## The first day the pursuer on foot is a guardsman rather than a policeman: the day the region's
 ## doors and their guards first stand (`Tuning.REGION_WALL_FIRST_DAY`, day 9). *(Inbox #591, the
 ## player: "policemen get switched to guardman on day 9".)*
-static func guardsmen_from_day() -> int:
+static func _guardsmen_from_day() -> int:
 	return Tuning.REGION_WALL_FIRST_DAY
 
 ## The pursuer on foot on `day`: the policeman through day 8, the guardsman from day 9
-## (`guardsmen_from_day()`).
+## (`_guardsmen_from_day()`).
 static func on_foot_on(day: int) -> EventDef:
-	return by_id("guardsman_giving_chase" if day >= guardsmen_from_day()
+	return by_id("guardsman_giving_chase" if day >= _guardsmen_from_day()
 			else "policeman_giving_chase")
 
 ## Derived copies of the pursuer on foot, as he gets out of a vehicle, keyed by his row's id and
