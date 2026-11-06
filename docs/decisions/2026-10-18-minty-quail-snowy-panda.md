@@ -18,7 +18,7 @@ a door line state it from the body's public position, facing and reach (`tests/d
 event look's mark decisions are internal; the caret is drawn through the event's drawer
 (`EventDrawer.caret()`), so the recording drawer holds its colour and chevrons and the danger suite
 checks the lethal mark's two chevrons in the lethal colour; the pursuer look's
-picture lists are internal, read off a recording drawer after `draw_body()`. Three checks that held
+picture lists are internal, read off a recording drawer after a real frame. Three checks that held
 nothing went (curly-rabbit #1097): a bare mast placement the real-night check repeats, a room check
 by the scheduler's own spacing, and an exact bag fill `MarbleBag`'s own suite holds. Comments,
 docs and two skill sentences that named the renamed members name them as they are.
