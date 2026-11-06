@@ -8,8 +8,8 @@ extends RefCounted
 ## more followed by a space and another word or a `%` (so `"Day %d of %d"`, `"press a button"`
 ## and `"The end."` are sentences, `"res://x"`, `"ui/pause"`, `"%d"` and `"A"` are not).
 ## Comments are not code, and neither is the argument of a log or error call (`print`,
-## `push_warning`, `push_error`, `printerr`, `assert`, the run log's `note`, a run trace's `note`), which
-## may run over several lines; both are skipped before a string is judged.
+## `push_warning`, `push_error`, `printerr`, `assert`, the run log's `note`, a run trace's `note`),
+## which may run over several lines; both are skipped before a string is judged.
 ##
 ## A text added to a screen's own script therefore fails here, with the file, the line and the
 ## text: it belongs in `Texts`, and the caller reads `Texts.<NAME>`. A developer readout is

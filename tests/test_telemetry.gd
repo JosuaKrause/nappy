@@ -533,8 +533,8 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 # by hand: it is a per-frame poll with no signal of its own to trigger from outside.)*
 
 ## A bare observer in the tree on a running day clock, with a map of no streets for the tile in the
-## sentence: `Rig.new(t, _log, CityMap.new())` hands the observer what `main` hands the escape's — the
-## player, the baby, the day's clock and the world — and every test lets real frames pass.
+## sentence: `Rig.new(t, _log, CityMap.new())` hands the observer what `main` hands the escape's —
+## the player, the baby, the day's clock and the world — and every test lets real frames pass.
 ## `CityMap.new()` is a real map with nothing generated onto it — `world_to_tile` is arithmetic on
 ## `Tuning.TILE_SIZE` and asks the generator for nothing.
 func _blocked_rig(t) -> Rig:

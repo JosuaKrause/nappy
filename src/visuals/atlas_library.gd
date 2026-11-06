@@ -97,10 +97,11 @@ var _resident: Dictionary = {}
 ## call's `region()` is one lookup. Each page lists the names it handed out, and its last release
 ## drops them from here.
 var _textures: Dictionary = {}
-## Where the library's own `texture` lines go, and the ground's (`note()`): a `Callable(kind, text)`,
-## the boot's run trace's `note`, which `main` hands the sitting's library each boot. Empty, the
-## default, writes nowhere: the bake (`tools/bake_atlases.gd`), and a suite's library it hands none.
-## A `Callable` rather than a `RunTrace`, which sits on the domain model's layer, above this one.
+## Where the library's own `texture` lines go, and the ground's (`note()`): a `Callable(kind,
+## text)`, the boot's run trace's `note`, which `main` hands the sitting's library each boot. Empty,
+## the default, writes nowhere: the bake (`tools/bake_atlases.gd`), and a suite's library it hands
+## none. A `Callable` rather than a `RunTrace`, which sits on the domain model's layer, above this
+## one.
 var trace_note := Callable()
 
 ## Group name -> the loaded page `Texture2D`, its reference count and its size.

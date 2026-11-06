@@ -20,7 +20,6 @@ src/events/views/event_look.gd mark_rect  # the rectangle the danger caret cover
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/autoload/telemetry.gd begin_memory_log
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
@@ -42,11 +41,10 @@ src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS  # the mean wait betwee
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
 # what it depends on, the game using its default and a test handing in a fake.
-src/autoload/visit_counter.gd listen  # a hand-in: _ready() hands the counter the game's EventBus and a test hands a bus of its own, so what it emits reaches this counter alone (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
-src/autoload/visit_counter.gd send_through  # a hand-in: _ready() hands the counter an outbox that evaluates its script through JavaScriptBridge and a test hands one with a recorder (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_reload  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/main.gd use_run_log  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_save  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_sitting  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_sitting_home  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)

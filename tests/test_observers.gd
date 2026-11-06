@@ -165,8 +165,8 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	var run_log := Telemetry.new("")
 	run_log.begin_run(SEED)
 
-	# No `--no-telemetry`: the escape's boot keeps a log already open, so the memory log above, which
-	# it is handed, is the one it writes into, its own section header included.
+	# No `--no-telemetry`: the escape's boot keeps a log already open, so the memory log above,
+	# which it is handed, is the one it writes into, its own section header included.
 	var home := Boot.home_playing(t, run)
 	var config := RunConfig.parse(PackedStringArray(["--no-save"]), "", true)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,

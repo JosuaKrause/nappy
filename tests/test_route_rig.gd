@@ -6,9 +6,9 @@ extends RefCounted
 ## and real physics frames, with a real `Stroller` walking by `move_and_slide()` — reading what the
 ## rig does from what it presses (`Input`'s move actions) and from the lines it writes in the run
 ## log (a memory log of the suite's own, `Telemetry.new("")`, handed to the rig through its trace),
-## which is what `tests/probes/m184_route_timing.gd` reads a real run back from. The whole loop — resolve, plan, walk, arrive — is proven, and not
-## only its pieces (the verify skill: "a rig that steps the parts is not running the whole, and the
-## gap is silent both ways").
+## which is what `tests/probes/m184_route_timing.gd` reads a real run back from. The whole loop —
+## resolve, plan, walk, arrive — is proven, and not only its pieces (the verify skill: "a rig that
+## steps the parts is not running the whole, and the gap is silent both ways").
 ##
 ## **Each group of tests has a city of its own, and no test leans on what an earlier one left.**
 ## The day-6 city is shared by the tests that read it or put back what they change; a test that

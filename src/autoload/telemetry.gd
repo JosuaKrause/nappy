@@ -45,8 +45,8 @@ const DIRECTORY := "user://telemetry"
 const NODE_NAME := "RunLog"
 
 ## Where this log's day folders go: `DIRECTORY` for the game's, a scratch folder for a suite that
-## opens a real run, or `""` for a log that keeps each run in memory only, writing no folder, no file
-## and no picture, which is what a suite hands the game for a run it reads back.
+## opens a real run, or `""` for a log that keeps each run in memory only, writing no folder, no
+## file and no picture, which is what a suite hands the game for a run it reads back.
 var _directory := DIRECTORY
 
 var _log: TelemetryLog
@@ -90,8 +90,8 @@ func is_active() -> bool:
 	return _log != null
 
 ## Opens a log for a run, in its own folder under the log's directory (`_directory`). Called by
-## `RunSession.open()` and by nothing else — a system that wants to be traced calls `note()` and lets this decide whether anyone is
-## listening.
+## `RunSession.open()` and by nothing else — a system that wants to be traced calls `note()` and
+## lets this decide whether anyone is listening.
 ##
 ## **The folder is `<day>/<run>`; the date and each run are independently removable.**
 ## *(2026-09-03: "hmm, the commit hash makes it hard to find a run maybe let's remove it from the
@@ -366,8 +366,8 @@ func snapshot(kind: String) -> void:
 ## context, because this file must not start asking the world questions.
 ## **The note is written whenever there is a log at all, and only the picture needs a file to sit
 ## beside.** The two halves are guarded separately on purpose: a log with no path is a real state —
-## it is what a log made over no directory opens, and what the whole suite runs on — and folding the two
-## guards together made the entry disappear along with the PNG, which is the valuable half going
+## it is what a log made over no directory opens, and what the whole suite runs on — and folding the
+## two guards together made the entry disappear along with the PNG, which is the valuable half going
 ## missing in exactly the configuration that can still keep it.
 func snapshot_now(context: String) -> void:
 	if not _log:

@@ -3,8 +3,9 @@ extends Node2D
 ##
 ## **The composition root.** The run's configuration (`config`, a `RunConfig`) is resolved once at
 ## boot and handed from here: to the observers (the run log `Telemetry`, `GameSave`, `VisitCounter`,
-## each kept under the sitting) as the config itself, and to the world, the day and the baby as the plain values each needs out of it
-## — a day's length, whether the clock stands still, how the ground is scheduled.
+## each kept under the sitting) as the config itself, and to the world, the day and the baby as the
+## plain values each needs out of it — a day's length, whether the clock stands still, how the
+## ground is scheduled.
 ##
 ## The developer's furniture — the right-hand readout, the frame graph, the debug view's overlays,
 ## the routes and their keys — is `DebugReadout`'s (`src/dev/debug_readout.gd`), handed what it reads
@@ -289,8 +290,8 @@ func _ready() -> void:
 	_save.configure(config)
 	_visit_counter.configure(config, _run)
 	# The run log's owner, listening on the bus from here on, and the trace everything this boot
-	# builds writes its own account into: the save and the atlas pages, which outlive this boot under
-	# the sitting, take this boot's.
+	# builds writes its own account into: the save and the atlas pages, which outlive this boot
+	# under the sitting, take this boot's.
 	_session = RunSession.new()
 	_session.name = "RunSession"
 	add_child(_session)

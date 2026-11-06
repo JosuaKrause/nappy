@@ -159,8 +159,9 @@ func _one(root: Node, type_name: String) -> Node:
 	return found[0] if found.size() == 1 else null
 
 ## The real `main.tscn` handed `config`, `calls` and, when given, the `home` its sitting is parked
-## in and taken from and the `run_log` it writes (`main.use_run_log()`), put in the tree, with real frames let pass until its boot has finished
-## (`Boot.until_booted()`): the run, the day, her and the title are built.
+## in and taken from and the `run_log` it writes (`main.use_run_log()`), put in the tree, with real
+## frames let pass until its boot has finished (`Boot.until_booted()`): the run, the day, her and
+## the title are built.
 func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true,
 		run_log: Telemetry = null) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
