@@ -61,7 +61,7 @@ var _rng: RandomNumberGenerator
 var morning_neighbor: EventInstance
 ## The raid at her building, once it has arrived: the vans and the patrol. Empty before then and on
 ## every other day.
-var raid: Array[EventInstance] = []
+var _raid: Array[EventInstance] = []
 ## Where the raid will stand, worked out at dawn so waiting for her to be out of sight costs a
 ## distance and a screen test a frame: the vans' points, and the patrol's beat.
 var _raid_vans := PackedVector2Array()
@@ -79,8 +79,6 @@ var _look_in := 0.0
 ## Whether today still owes the market, and the day's routes to site it on.
 var _market_owed := false
 var _siting: EventScheduler.WalkSiting = null
-## The block boarded up today, `(-1, -1)` before then and on every other day. Kept for the tests.
-var market_block := Vector2i(-1, -1)
 ## Day 12's park closing: the police cordon round it, from the touch of its swing for the rest of
 ## the day, or null. Kept for the tests.
 var cordon: ParkCordon = null
@@ -129,7 +127,7 @@ func start_day(day: int, with_its_events := true) -> void:
 	_day = day
 	_rng = _run.calendar.day_rng(day, "happenings")
 	morning_neighbor = null
-	raid.clear()
+	_raid.clear()
 	_raid_vans = PackedVector2Array()
 	_raid_beat = PackedVector2Array()
 	_elapsed = 0.0
@@ -137,7 +135,6 @@ func start_day(day: int, with_its_events := true) -> void:
 	_heading = Vector2.ZERO
 	_look_in = 0.0
 	_siting = null
-	market_block = Vector2i(-1, -1)
 	if cordon:
 		cordon.clear()
 	cordon = null
@@ -164,7 +161,7 @@ func tick(delta: float, her: Vector2, velocity: Vector2) -> void:
 	if her != Vector2.INF and velocity.length() >= Tuning.AHEAD_MIN_SPEED:
 		_heading = velocity.normalized()
 		_walked += delta
-	if not _raid_vans.is_empty() and raid.is_empty():
+	if not _raid_vans.is_empty() and _raid.is_empty():
 		_maybe_raid(her)
 	if _market_owed:
 		_maybe_the_market(delta, her)
@@ -224,7 +221,7 @@ func _maybe_raid(her: Vector2) -> void:
 			if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, car_box, at):
 				return
 	for at in _raid_vans:
-		raid.append(_city.events.spawn_extra(van, at))
+		_raid.append(_city.events.spawn_extra(van, at))
 	if _raid_beat.size() == 2:
 		var patrol: EventDef = row.duplicate()
 		# `shape` is a plain `RefCounted` field `Resource.duplicate()` does not copy (the note on
@@ -232,7 +229,7 @@ func _maybe_raid(her: Vector2) -> void:
 		patrol.shape = row.shape
 		patrol.solid_parts = row.solid_parts
 		patrol.paces = true
-		raid.append(_city.events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
+		_raid.append(_city.events.spawn_extra(patrol, _raid_beat[0], _raid_beat))
 	# What she comes home to besides the raid itself: her own street door, sealed, out of her
 	# sight the same as the vans (PLAYTEST-131: "when returning to find the raid the door
 	# texture should also have changed. and then the change stays"). Live today; the scar is
@@ -268,7 +265,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := market_candidates(_map, _run.attempt_spend.city_state)
+	var candidates := _market_candidates(_map, _run.attempt_spend.city_state)
 	if candidates.is_empty():
 		_market_owed = false
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
@@ -281,7 +278,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 
 ## Every block that is commercial today and whose arc is waiting to board up next, in the
 ## lattice's own order — the blocks day 11's market can be.
-static func market_candidates(map: CityMap, state: CityState) -> Array[Vector2i]:
+static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []
 	if not map or not state:
 		return found
@@ -306,7 +303,7 @@ func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var lot := frontage_of(block)
+		var lot := _frontage_of(block)
 		if _distance_to_rect(her, lot) < Tuning.OUT_OF_SIGHT:
 			continue
 		for cell: Vector2i in ahead:
@@ -321,7 +318,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 	var best := Vector2i(-1, -1)
 	var nearest := INF
 	for block in candidates:
-		var distance := _distance_to_rect(her, frontage_of(block))
+		var distance := _distance_to_rect(her, _frontage_of(block))
 		if distance >= Tuning.OUT_OF_SIGHT and distance < nearest:
 			nearest = distance
 			best = block
@@ -334,19 +331,18 @@ func board_up(block: Vector2i) -> bool:
 	if not state or not state.advance_now(_map.block_plans, block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
-	market_block = block
 	_market_owed = false
 	if _city:
 		_city.present_block(block, state)
 	var stalls := 0
 	if _city and _city.events:
-		stalls = _city.events.take_away_within(frontage_of(block), ["market_stall"] as Array[String])
+		stalls = _city.events.take_away_within(_frontage_of(block), ["market_stall"] as Array[String])
 	trace.note("contact", "the market at block %s is gone: boarded up, %d stall(s) taken away"
 			% [block, stalls])
 	return true
 
 ## A block's lot and the sidewalk round it, in world space: what a market on it stands in.
-func frontage_of(block: Vector2i) -> Rect2:
+func _frontage_of(block: Vector2i) -> Rect2:
 	return _map.tile_rect_to_world(_map.lot_rect(block).grow(Tuning.SIDEWALK_WIDTH))
 
 static func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
@@ -414,7 +410,7 @@ func _maybe_the_column(her: Vector2) -> void:
 		return
 	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
 	# asked again as she moves.
-	_column_owed = send_the_column(her) == null
+	_column_owed = _send_the_column(her) == null
 
 ## The main road's middle, across it.
 func spine_x() -> float:
@@ -424,7 +420,7 @@ func spine_x() -> float:
 ## Puts up the column's warning, coming down the main road toward the point level with `her` from
 ## whichever end the day's stream picks, and returns it — or null when there is no main road or no
 ## row. `column` holds the trucks, front first, once they have arrived.
-func send_the_column(her: Vector2) -> PendingWarning:
+func _send_the_column(her: Vector2) -> PendingWarning:
 	var def := EventCatalogue.by_id("military_convoy")
 	if not def or _map.main_road < 0:
 		return null

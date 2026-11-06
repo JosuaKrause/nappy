@@ -233,9 +233,8 @@ src/
 	happenings.gd           what the story puts in the street that is not a task (the neighbor's
 	                         mornings, day 10's raid, day 11's market, day 12's park, day 13's
 	                         column); owned by the director, built and ticked on its own over a
-	                         city (`setup()`, `start_day()`, `tick()`); `raid` holds day 10's vans and
-	                         patrol once they have come, and `frontage_of()` and `spine_x()` say
-	                         where a block's frontage and the main road's middle are
+	                         city (`setup()`, `start_day()`, `tick()`); `spine_x()` says where the main
+	                         road's middle is
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
@@ -1092,7 +1091,7 @@ field with its value before and after (`tests/shared_state.gd`).
   its own and read what the director put in the street from the street (`steps`, `traps`,
   `reach_contacts`, `reach_marks`, `reach_narrow`, `reach_relocated`, `crossing`, `replacement`,
   `placement_kinds`, `arrow` and `alley_siting` do; `reach_narrow` (through the rig's circle) and
-  `reach_relocated` read the day's obstruction from `ResistanceDirector.reach_obstruction()` and
+  `reach_relocated` read the day's obstruction (`ResistanceReads.day_reachability()`) and
   the way home over it from `ReachabilityGrid`, in `tests/resistance_reads.gd` with the red arrow's
   tip and what stands under it): `steps` (the step table, touch-completion, a
   task activated the same day its mark is touched, the seeded dawn draws, an expiring step, a
