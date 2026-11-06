@@ -177,8 +177,8 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 ## `Stroller`, a `City` or a `Crowd` by hand, and where there is no played frame for a load to
 ## stutter. The moment `main` boots, the rule is on for the sitting's library until it leaves.
 func _test_a_page_may_only_be_read_in_a_window(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"with no boot, nothing owns the loading moments")
 	atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
@@ -226,8 +226,9 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 func _test_two_days_never_reload_a_page(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
-	var pages := PageLog.new()
-	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"])).free_all()
+	var pages := PageLog.new(atlas)
+	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"],
+			pages.run_log)).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))

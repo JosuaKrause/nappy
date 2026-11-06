@@ -33,12 +33,13 @@ const DAY := 1
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
 func run(t) -> void:
-	var pages := PageLog.new()
 	var seat := Seat.new(t, func(fresh: RunState) -> void:
 			fresh.start_run(SEED)
 			fresh.header.day = DAY
 			fresh.facts.escape_section = DaySpec.Section.BUILDING)
-	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [])
+	# Handed the watch's log: a boot points the sitting's library at the log it writes.
+	var pages := PageLog.new(seat.sitting.atlas)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.run_log)
 	var main := booted.main
 	var interior := Boot.interior(main)
 	t.check(interior != null, "the boot stands in the building")

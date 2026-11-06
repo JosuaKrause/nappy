@@ -225,8 +225,8 @@ func _test_regions_do_not_overlap(t) -> void:
 ## table alone: the `Sitting` builds one before any boot opens a loading window, so building it
 ## must read no page from disk, which the run log's silence about every group shows.
 func _test_geometry_needs_nothing_acquired(t) -> void:
-	var pages := PageLog.new()
 	var _built := AtlasLibrary.new()
+	var pages := PageLog.new(_built)
 	var name := &"ui/pause"
 	t.check(AtlasTable.baked().has_region(name), "the table knows a region with nothing acquired")
 	t.check(AtlasTable.baked().native_size(name) != Vector2i.ZERO,
@@ -247,8 +247,8 @@ func _test_geometry_needs_nothing_acquired(t) -> void:
 ## stays resident is exactly the bug this file exists to prevent, and through the run log's one load
 ## line and one release line, the page's life as the game writes it (`tests/atlas_page_log.gd`).
 func _test_a_page_arrives_and_leaves_with_its_references(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var name := &"ui/pause"
 	atlas.acquire(&"ui")
 	t.check(pages.loads(&"ui") == 1, "the first acquire reads the page from disk")
