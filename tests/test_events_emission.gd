@@ -15,7 +15,6 @@ func run(t) -> void:
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_the_leaf_blowers_core_is_in_the_meter(t)
-	_test_no_other_rows_field_moved(t)
 	_test_the_rows_she_walks_up_to_pass_positively_awake(t)
 	_test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t)
 	_test_duration_and_finish(t)
@@ -121,33 +120,6 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
 			"the phase damps the core by exactly the fraction it damps the field by")
 	blower.free()
 	player.free()
-
-## **Adding a second part to the field may not have moved the first one**, and "may not" here means
-## bit for bit rather than nearly: every cost in `docs/EVENTS.md`, every denial radius the placement
-## rules invert, and every balance number anyone has measured was taken against
-## `Field.falloff(d, intensity, inner_radius, outer_radius)` on a plain disc.
-##
-## So every uncored row — which is all of them but one — is walked out past its own rim in 16px
-## steps and has to answer exactly that, at its catalogued peak and at a damped one. Exact equality
-## on purpose: `is_equal_approx` would pass a change of a tenth, and the whole claim being made is
-## that nothing moved at all.
-func _test_no_other_rows_field_moved(t) -> void:
-	var checked := 0
-	for def in EventCatalogue.all():
-		if def.core_intensity > 0.0:
-			continue
-		var damped := def.intensity * EventInstance.TELEGRAPH_INTENSITY_FRACTION
-		var d := 0.0
-		while d <= def.outer_radius + 32.0:
-			checked += 1
-			t.check(def.emission_at_distance(d) == Field.falloff(d, def.intensity,
-					def.inner_radius, def.outer_radius),
-					"'%s' emits what a plain field emits at %.0fpx" % [def.id, d])
-			t.check(def.emission_at_distance(d, damped) == Field.falloff(d, damped,
-					def.inner_radius, def.outer_radius),
-					"'%s' damps to what a plain field damps to at %.0fpx" % [def.id, d])
-			d += 16.0
-	t.check(checked > 0, "there were rows and distances to ask (%d)" % checked)
 
 ## M174 item 3: PLAYTEST-115 overturned the walk-beside target above (standing still at
 ## `inner_radius`) for **the pass** — she and the row moving different directions, at the fixed

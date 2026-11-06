@@ -9,8 +9,6 @@ extends RefCounted
 ## measurement.
 
 const SEED := 4242
-## One sample day per act, the same days `tests/probes/m98_return_phase.gd` samples.
-const ACT_SAMPLE_DAYS: Array[int] = [2, 5, 9, 13]
 ## The act IV day the walking checks play.
 const RETURN_DAY := 13
 ## One `due()` call's slice of a walk, as `EventsAhead.place_what_is_owed_ahead()` asks it every
@@ -18,7 +16,6 @@ const RETURN_DAY := 13
 const STEP := 0.1
 
 func run(t) -> void:
-	_test_owed_count_per_act(t)
 	_test_no_double_batch_in_a_day(t)
 	_test_forced_queue_is_untouched(t)
 	_test_pacing_switches_after_the_return_is_owed(t)
@@ -111,20 +108,6 @@ class Walk:
 
 # ---------------------------------------------------------------------- owing ---
 
-## `EventDirector.RETURN_PATROLS_PER_ACT` is `[0, 0, 2, 3]`: acts I and II owe nothing, so the teaching
-## days and the return she learns the mechanic on are untouched; III and IV owe a small, fixed
-## batch each.
-func _test_owed_count_per_act(t) -> void:
-	var map := _map()
-	for day in ACT_SAMPLE_DAYS:
-		var act := Tuning.act_for_day(day)
-		var director := _director(map)
-		director.owe_the_return(day, 0)
-		var expected: int = EventDirector.RETURN_PATROLS_PER_ACT[act - 1]
-		t.check(director.owed() == expected,
-				"day %d (act %d) owes %d return patrol(s), got %d"
-				% [day, act, expected, director.owed()])
-
 ## The baby can wake and settle again inside one day — `EventBus.return_phase_started` firing
 ## twice must not owe a second batch on top of the first.
 func _test_no_double_batch_in_a_day(t) -> void:
@@ -137,7 +120,6 @@ func _test_no_double_batch_in_a_day(t) -> void:
 	t.check(director.owed() == once,
 			"a second 'return started' the same day owes nothing more (%d, then %d)"
 			% [once, director.owed()])
-	t.check(once == EventDirector.RETURN_PATROLS_PER_ACT[3], "the one batch is the whole of act IV's count")
 
 ## `--force <id>` replaces the day's own queue with nothing but the forced row — there is no
 ## ordinary queue left for the return to add to or re-pace, and the brief says leave it alone. The

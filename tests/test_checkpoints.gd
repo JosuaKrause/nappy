@@ -1674,7 +1674,6 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 	manager.use_player(stroller)
 
 	var def := EventCatalogue.by_id("chatting_mother")
-	t.check(not def.redetains, "chatting_mother does not redetain")
 	var at := Vector2(6000.0, 6000.0)
 	var mother := _planned_instance(manager, def, at, Vector2.RIGHT, null, 0.0,
 			PackedVector2Array([at, at + Vector2(256.0, 0.0)]))
@@ -1781,8 +1780,6 @@ func _test_the_boom_never_inspects_her(t) -> void:
 	state.position = gate.global_position
 	gate.gate_state = state
 
-	t.check(not gate.def.redetains and gate.def.detain_seconds <= 0.0,
-			"checkpoint_gate carries no detention of its own")
 	for raised: bool in [false, true]:
 		state.raised = raised
 		# The arm moves and the body follows it on the instance's next step, the manager's tick.

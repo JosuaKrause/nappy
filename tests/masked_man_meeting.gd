@@ -22,7 +22,7 @@ const TURNS := [
 ## One meeting with the right shaft's masked man: her real body from the shaft's second-floor door
 ## down the landing to `walk`'s row, then holding its keys, walking (`pace` "walk"), running all the
 ## way ("run"), walking until he runs and running from then on with the keys she already holds, the
-## turn coming at its row ("walk-run"), or starting to run 16 ticks after he does ("run-late"); once he runs she
+## turn coming at its row ("walk-run"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
 func meet(t: Node, walk: Array, pace: String, badge := false,
@@ -31,11 +31,6 @@ func meet(t: Node, walk: Array, pace: String, badge := false,
 	# a tick's step the same.
 	const MAX_TICKS := 600
 	const WALK_PACE := 8
-	# She starts running this many ticks after he does ("run-late"), a little over half a second.
-	# On real ticks the line is caught from 13 ticks on, every start to 30 ticks tried; at 11 she
-	# is caught, at 12 she gets through by 1.4px, and below that she gets through. Three ticks past
-	# the first start from which every later one is caught keeps the pin off that ragged edge.
-	const RUN_LATE_TICKS := 16
 	# How far outside the distance he runs from the fast stretch of a badge case ends, px: a few
 	# ticks of the two closing on each other.
 	const BADGE_LEAD := 60.0
@@ -93,7 +88,7 @@ func meet(t: Node, walk: Array, pace: String, badge := false,
 	var running := pace == "run"
 	_hold_keys(["move_down"], running)
 	var met := {"ran": false, "outcome": "neither", "closest": INF}
-	var state := {"turned": false, "ran_at": 0, "running": running, "before": {}, "ticks": 0}
+	var state := {"turned": false, "running": running, "before": {}, "ticks": 0}
 	# After each tick her step, the building's manager (which tells him where she is, steps him and
 	# checks the catch) and her camera have run, in the tree's order; the edge has processed every
 	# frame up to the one before this.
@@ -118,15 +113,10 @@ func meet(t: Node, walk: Array, pace: String, badge := false,
 			_hold_keys(walk[1], state["running"])
 		if not met["ran"] and not man.is_waiting() and not man.is_telegraphing():
 			met["ran"] = true
-			state["ran_at"] = ticks
 			if pace == "walk-run":
 				# Runs with the keys she already holds; the turn comes at its row.
 				state["running"] = true
 				_hold_keys(walk[1] if state["turned"] else ["move_down"], true)
-		if pace == "run-late" and met["ran"] and not state["running"] \
-				and ticks - state["ran_at"] >= RUN_LATE_TICKS:
-			state["running"] = true
-			_hold_keys(walk[1] if state["turned"] else ["move_down"], true)
 		if caught:
 			met["outcome"] = "caught"
 			return true

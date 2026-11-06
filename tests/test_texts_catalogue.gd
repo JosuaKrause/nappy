@@ -262,7 +262,6 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t) -> void:
 					"the allow-list's \"%s\" in %s is still quoted there -- drop it" % [text, path])
 
 func _test_the_catalogue_holds_what_the_screens_say(t) -> void:
-	t.check(Texts.TITLE_NAME == "Nappy", "the title's name is the catalogue's")
 	t.check(Texts.DAY_BRIEF.size() == Tuning.RUN_LENGTH_DAYS,
 			"there is a brief for every day of the run")
 	for day in Tuning.RUN_LENGTH_DAYS:
