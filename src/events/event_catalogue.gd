@@ -654,7 +654,8 @@ static func _alley_mouse() -> EventDef:
 ## walking up and down two hundred and fifty pixels of footway is a *timing* problem on top of a
 ## routing one, as his pulse is at a larger scale.
 ##
-## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*, so
+## **The cost of pacing is the body.** Anything mobile is exempt from *solid things are solid*, since a
+## moving wall on a two-tile sidewalk pins her against a building, so
 ## what stops you walking through him is the meter alone: he is one of the two rows on day 1 a
 ## player is most likely to walk *into* rather than around, and a quiet one reads as a man who does
 ## nothing.
@@ -2473,15 +2474,14 @@ static func _barricade() -> EventDef:
 ## Grows while it is there: `intensity_ramp` takes it to 1.9x over its duration. A protest you could
 ## have walked past when you saw it is not one you can walk past two minutes later.
 ##
-## **Radii derived from the body.** Both lose the segment's own `half_length` (31, from `band(55)`)
-## so the along-axis reach from centre is unchanged: `inner_radius` 70 → 39, `outer_radius`
-## 300 → 269; the 39px still clears the body's own 24px rounding, so neither clamps.
+## **Radii derived from the body.** The field is a capsule about the body's spine, so the radii are
+## the along-axis reach less the segment's own `half_length` (31, from `band(55)`): `inner_radius`
+## 39 and `outer_radius` 269. The 39px still clears the body's own 24px rounding, so neither clamps.
 ##
 ## **Intensity 19.5, because the walking decay takes more off this row than off any other.** A wide
 ## field at a moderate rate loses far more of its price to a decay netted off over the whole
 ## crossing than a narrow fierce one does (the **balance** skill's own example, and this is the row
-## it is stated about). 19.5 gives back the 2.5 a second the decay's rise took away, with a little
-## over.
+## it is stated about). 19.5 is as loud as it can be made while staying under the wall line below.
 ##
 ## **19.9 is where it stops, and the margin is thin on purpose.** At that rate
 ## `walk_through_cost()` crosses `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
