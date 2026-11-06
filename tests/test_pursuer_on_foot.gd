@@ -503,12 +503,11 @@ func _a_lane_beside_a_sidewalk(map: CityMap) -> Array:
 				return [map.tile_to_world(tile), map.tile_to_world(tile + Vector2i.UP)]
 	return []
 
-## One frame of what `EventManager` does for a vehicle and its men, with her where she
-## stands: the manager's own encounter step (tell everything where she is, tick every instance, let
-## out whoever is owed), then the look for a day-ending catch.
+## One frame of what `EventManager` does: its own physics tick, called as the engine calls it once a
+## frame, with her where she stands. The checks below are synchronous, so no engine frame passes
+## between their steps and each step is this call.
 func _tick(events: EventManager) -> void:
-	events.step_the_encounters(STEP)
-	events.check_hard_fails()
+	events._physics_process(STEP)
 
 ## **The investigating car stops on its road, the man gets out and pursues her, reaches her, stops
 ## her, walks back and gets in, and the car drives on.** On a real city, through the manager's own

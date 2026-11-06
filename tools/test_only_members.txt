@@ -146,9 +146,6 @@ src/events/event_catalogue.gd heat_levels
 src/events/event_director.gd route_rows_on
 src/events/event_director.gd siting_band
 src/events/event_footprints.gd picture_drop_of
-src/events/event_manager.gd check_hard_fails
-src/events/event_manager.gd planner
-src/events/event_manager.gd step_the_encounters
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
 src/events/events_ahead.gd a_pursuer_is_after_her
@@ -329,3 +326,4 @@ src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge 
 src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check verify asks for
 src/events/event_def.gd warning_time  # the warning a row actually gives; held against minimum_telegraph() by the catalogue and cost suites, the same fairness contract (events skill)
 src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check verify asks for
+src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
