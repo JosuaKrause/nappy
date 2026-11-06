@@ -292,23 +292,27 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 			for fence in fences:
 				t.check(fence.barrier_width() > 0.0, "seed %d %s: a run of %s has length"
 						% [map.seed_used, block, fence.segment.tile_rect()])
-				# Where each rail ends (`rail_ends()`): on the corner a joined end turns, or on the
-				# fence's own post `ParkClosure.POST_HALF` in from an open end.
-				var ends := fence.rail_ends()
-				for end: Array in [[fence.joined_start, ends[0]], [fence.joined_end, ends[1]]]:
+				# Where the line ends, worked out from its middle and its length alone (not from
+				# `rail_ends()`, which the posts are built from): a joined end stands on the corner it
+				# turns, an open end's post `ParkClosure.POST_HALF` in from it.
+				var line := _line_ends(fence, map)
+				var inward := _along(fence)
+				for end: Array in [[fence.joined_start, line[0], inward],
+						[fence.joined_end, line[1], -inward]]:
 					var joined: bool = end[0]
 					var point: Vector2 = end[1]
 					if not joined:
 						open_ends += 1
-						t.check(posts.has(point),
+						var post: Vector2 = point + (end[2] as Vector2) * ParkClosure.POST_HALF
+						t.check(posts.has(post),
 								"seed %d %s: the open end at %s ends on its own post"
 								% [map.seed_used, block, point])
 						continue
 					corners += 1
 					var meets := 0
 					for other in fences:
-						if other != fence and (other.rail_ends()[0] == point
-								or other.rail_ends()[1] == point):
+						var other_line := _line_ends(other, map)
+						if other != fence and (other_line[0] == point or other_line[1] == point):
 							meets += 1
 					t.check(meets == 1, "seed %d %s: the run ending at %s meets exactly one "
 							% [map.seed_used, block, point] + "other run there (%d)" % meets)
@@ -317,6 +321,18 @@ func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
 	t.check(corners > 0, "the sweep had corners to turn (%d)" % corners)
 	print("  fence corners: %d run ends turn a corner, %d end on a post of their own"
 			% [corners, open_ends])
+
+## The direction a fence's line runs in: across the screen along a north or south edge, down it along
+## a west or east one.
+func _along(fence: ParkClosure) -> Vector2:
+	return Vector2.RIGHT if fence.outward.y != 0 else Vector2.DOWN
+
+## A fence's two line ends, start first: half its length either side of its middle (`mouth_centres()`).
+func _line_ends(fence: ParkClosure, map: CityMap) -> Array[Vector2]:
+	var middle := fence.mouth_centres(map)[0]
+	var half := _along(fence) * fence.barrier_width() * 0.5
+	var found: Array[Vector2] = [middle - half, middle + half]
+	return found
 
 func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 	var found: Array[Vector2i] = []

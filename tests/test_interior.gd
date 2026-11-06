@@ -2074,7 +2074,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 	t.check(wrong["half_lit"] == 0,
 			"every window lights on every flash and goes dark with it, none on its own (%d ticks with some lit and some dark)"
 			% wrong["half_lit"])
-	t.check(wrong["began"] > 0 and wrong["ended"] >= wrong["began"] - 1,
+	t.check(wrong["ended"] > 0 and wrong["ended"] >= wrong["began"] - 1,
 			"and none is left lit once a flash is over (%d began, %d ended)"
 			% [wrong["began"], wrong["ended"]])
 	print("Window flashes over %.0fs: %d ticks lit, against %d explosions" % [SPAN, when.size(), bangs])

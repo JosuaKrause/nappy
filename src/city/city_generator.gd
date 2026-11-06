@@ -1417,7 +1417,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## ever taken back. `_attempt` grows the regions once more afterwards, which gives the same answer
 ## for the accepted station since both growths see the same city.
 ##
-## **Industrial where it can be.** Candidates are tried in `_power_station_rank` order — both blocks
+## **Industrial where it can be.** Candidates are tried in `power_station_rank` order — both blocks
 ## `INDUSTRIAL`, then one, then the pair nearest industrial ground — and the pool's own shuffle
 ## breaks ties, so a seed with an eligible industrial pair gets one.
 ##
@@ -1463,7 +1463,7 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			return
 		before.restore(map, purposes, block_rects, between)
 
-## The pool's horizontal pairs, in the order the station tries them: `_power_station_rank` first and
+## The pool's horizontal pairs, in the order the station tries them: `power_station_rank` first and
 ## the pool's own shuffled order after it, so the preference is strict and the tie is the seed's.
 static func _power_station_candidates(pool: Array[Rect2i], industrial: Dictionary) -> Array[Rect2i]:
 	var ranked: Array = []

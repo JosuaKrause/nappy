@@ -240,16 +240,17 @@ func _wall_at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	return map.boundary_wall_at_a.get(segment.key(), default_at_a)
 
 ## The check a segment-level rule cannot do: block every boundary segment's one-tile mouth strip
-## (`Segment.mouth_rect`, at whichever end `map.boundary_wall_at_a` names) and every crossing
-## alley's two mouths, then flood from the doorstep. Every real segment's ground —
-## `RegionPlanner.ground_region_of`, which is a boundary segment's **far** end now rather than
-## either end alike — resolves to reached exactly when it is the home region and not reached
-## otherwise, proving the partition and the tile-level ground agree everywhere. A boundary
-## segment's own walled mouth tiles are excluded from the per-tile check: they are blocked ground,
-## reached from neither side, so asserting them against either region would fail by construction
-## rather than say anything about the partition.
+## (`Segment.mouth_rect`, at whichever end `map.boundary_wall_at_a` names) and both mouths of every
+## alley the day's plan lists, then flood from a street in **every** region. Every real segment's
+## ground (`RegionPlanner.ground_region_of`, a boundary segment's **far** end) is reached from a
+## region's seed exactly when it belongs to that region, so a crossing alley the plan missed would
+## let one region's flood into another's and fail here, whichever two regions it joins. And each
+## listed alley's two ends lie in different regions' floods, so none is listed that does not cross.
+## A boundary segment's own walled mouth tiles are excluded from the per-tile check: they are
+## blocked ground, reached from neither side.
 func _test_flood_matches_the_partition(t) -> void:
 	var checked_cells := 0
+	var listed_alleys := 0
 	for map in _maps:
 		var blocked := {}
 		var wall_mouth_tiles := {}
@@ -263,32 +264,67 @@ func _test_flood_matches_the_partition(t) -> void:
 		var day := Tuning.REGION_WALL_FIRST_DAY
 		_repaint_for(map, day)
 		var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
-		for rect in plan.alley_doors + plan.alley_walls:
+		var listed: Array[Rect2i] = []
+		listed.assign(plan.alley_doors + plan.alley_walls)
+		for rect in listed:
 			var vertical := rect.size.x < rect.size.y
 			for at_start in [true, false]:
 				for tile in _alley_mouth_tiles(map, rect, vertical, at_start):
 					blocked[tile] = true
 
 		var grid := ReachabilityGrid.build(map)
-		var doorstep := map.world_to_tile(map.doorstep_world_position())
-		var reached := grid.flood([doorstep], blocked)
-		var home := RegionPlanner.home_region(map)
+		# One flood per region, from the first open street tile that region's ground has.
+		var floods := {}
+		for segment in map.network.segments():
+			if not map.has_street(segment.key()):
+				continue
+			var region := RegionPlanner.ground_region_of(map, segment)
+			var seed_tile := segment.tile_rect().get_center()
+			if region < 0 or floods.has(region) or blocked.has(seed_tile):
+				continue
+			floods[region] = grid.flood([seed_tile], blocked)
+		t.check(floods.size() == Tuning.REGION_COUNT,
+				"seed %d: every region has a street to flood from (%d of %d)"
+				% [map.seed_used, floods.size(), Tuning.REGION_COUNT])
 		for segment in map.network.segments():
 			if not map.has_street(segment.key()):
 				continue
 			var region := RegionPlanner.ground_region_of(map, segment)
 			if region < 0:
 				continue
-			var should_reach := region == home
 			for tile in map.rect_tiles(segment.tile_rect()):
 				if wall_mouth_tiles.has(tile):
 					continue
-				checked_cells += 1
-				var does_reach := grid.reaches(tile, blocked, reached)
-				t.check(does_reach == should_reach,
-						"seed %d: tile %s of region %d's street %s reached=%s, want %s (home is %d)"
-						% [map.seed_used, tile, region, segment.key(), does_reach, should_reach, home])
+				for from_region: int in floods:
+					checked_cells += 1
+					var does_reach := grid.reaches(tile, blocked, floods[from_region])
+					t.check(does_reach == (from_region == region),
+							"seed %d: tile %s of region %d's street %s reached from region %d = %s"
+							% [map.seed_used, tile, region, segment.key(), from_region, does_reach])
+		for rect in listed:
+			var ends := _alley_end_tiles(rect)
+			var regions: Array[int] = []
+			for end in ends:
+				var found := -1
+				for from_region: int in floods:
+					if grid.reaches(end, blocked, floods[from_region]):
+						found = from_region
+				regions.append(found)
+			listed_alleys += 1
+			t.check(regions[0] >= 0 and regions[1] >= 0 and regions[0] != regions[1],
+					"seed %d: listed alley %s joins two regions (%d and %d)"
+					% [map.seed_used, rect.position, regions[0], regions[1]])
 	t.check(checked_cells > 0, "there were cells to ask (%d)" % checked_cells)
+	t.check(listed_alleys > 0, "and listed alleys to ask about (%d)" % listed_alleys)
+
+## The two tiles an alley's rect opens onto, one past each end of its length.
+func _alley_end_tiles(rect: Rect2i) -> Array[Vector2i]:
+	var found: Array[Vector2i] = []
+	if rect.size.x < rect.size.y:
+		found.assign([Vector2i(rect.position.x, rect.position.y - 1), Vector2i(rect.position.x, rect.end.y)])
+	else:
+		found.assign([Vector2i(rect.position.x - 1, rect.position.y), Vector2i(rect.end.x, rect.position.y)])
+	return found
 
 # ---------------------------------------------------------------------------- the day ---
 
