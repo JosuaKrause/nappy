@@ -691,11 +691,14 @@ func _test_every_charger_has_its_own_counter(t) -> void:
 			"van_guard_giving_chase": "van-guard-giving-chase",
 			"policeman_giving_chase": "policeman-giving-chase",
 			"guardsman_giving_chase": "guardsman-giving-chase"}
-	for id: String in names.keys():
-		t.check(VISIT_COUNTER_SCRIPT.charger_counter_name(id) == names[id],
-			"'%s' is counted as '%s'" % [id, VISIT_COUNTER_SCRIPT.charger_counter_name(id)])
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
+	for id: String in names.keys():
+		counter.sent.clear()
+		counter.bus.pursuit_began.emit(id)
+		t.check(counter.sent == ["nappy-day-%d-%s-chased" % [day, names[id]]],
+			"'%s' is counted as '%s' (%s)" % [id, names[id], counter.sent])
+	counter.sent.clear()
 	counter.bus.pursuit_began.emit("door_guard")
 	counter.bus.pursuit_caught.emit("door_guard")
 	counter.bus.pursuit_began.emit("policeman_giving_chase")

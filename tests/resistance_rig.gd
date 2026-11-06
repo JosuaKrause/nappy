@@ -20,7 +20,6 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 
 const SEED := 4242
 

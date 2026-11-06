@@ -281,7 +281,7 @@ func hard_mode_checked() -> bool:
 	return _hard_mode != null and _hard_mode.visible and _hard_mode.button_pressed
 
 ## Whether the Hard Mode checkbox is on screen: only while the title begins a new game.
-func hard_mode_shown() -> bool:
+func _hard_mode_shown() -> bool:
 	return _hard_mode != null and _hard_mode.visible
 
 ## Flips the Hard Mode checkbox, if it is showing. Never starts the run.
@@ -299,7 +299,7 @@ const _HARD_MODE_KEY := KEY_H
 ## makes the target about 92 design px tall, about 50pt there, over the 44pt a finger needs. The space it reaches into holds nothing else a press can
 ## land on — the hint line above is not a target, and the buttons' catches end well above it. It is
 ## the floor under the 5% margin every button has (`ButtonGeometry.margin_rect()`, see
-## `hard_mode_target()`), and at this size it is also the larger of the two each way.
+## `_hard_mode_target()`), and at this size it is also the larger of the two each way.
 const _HARD_MODE_REACH := 28.0
 
 ## How much larger than the theme's own the checkbox is drawn, box and label together — scaling the
@@ -321,7 +321,7 @@ const _HARD_MODE_SCALE := 1.5
 ## catch above its column. `tests/test_run_checkpoints.gd` holds both: it taps through the engine's
 ## own dispatch rather than calling this, and names any `Control` here left stopping a press.
 func _handle_hard_mode_press(event: InputEvent) -> bool:
-	if not hard_mode_shown():
+	if not _hard_mode_shown():
 		return false
 	var position: Vector2
 	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
@@ -333,7 +333,7 @@ func _handle_hard_mode_press(event: InputEvent) -> bool:
 	else:
 		return false
 	var at := ScreenOrientation.to_design_space(position, _wants_rotation())
-	if not hard_mode_contains_design_point(at):
+	if not _hard_mode_contains_design_point(at):
 		return false
 	get_viewport().set_input_as_handled()
 	_toggle_hard_mode()
@@ -365,9 +365,9 @@ func _place_the_hard_mode_frame() -> void:
 			+ _hard_mode.get_theme_constant("check_v_offset"))
 	_hard_mode_frame.size = icon.get_size()
 
-## Whether `point`, in the 1280x720 design box, lands on the checkbox's catch (`hard_mode_target()`).
-func hard_mode_contains_design_point(point: Vector2) -> bool:
-	return hard_mode_target().has_point(point)
+## Whether `point`, in the 1280x720 design box, lands on the checkbox's catch (`_hard_mode_target()`).
+func _hard_mode_contains_design_point(point: Vector2) -> bool:
+	return _hard_mode_target().has_point(point)
 
 ## The checkbox's tappable area in the 1280x720 design box: the box and its label as drawn, scale
 ## included, grown by the larger of two margins each way — the 5% every button catches beyond what
@@ -376,7 +376,7 @@ func hard_mode_contains_design_point(point: Vector2) -> bool:
 ## catch it had before, which no margin may shrink (the calm-pelican record: "the 5% button reach is
 ## a minimum, and no catch shrank"). The two are centred on the same rect, so their merge is each
 ## axis's larger.
-func hard_mode_target() -> Rect2:
+func _hard_mode_target() -> Rect2:
 	var transform := _hard_mode.get_global_transform()
 	var drawn := transform * Rect2(Vector2.ZERO, _hard_mode.size)
 	return drawn.grow(_HARD_MODE_REACH).merge(ButtonGeometry.margin_rect(drawn))
@@ -418,7 +418,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
 		return
 	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo \
-			and (event as InputEventKey).keycode == _HARD_MODE_KEY and hard_mode_shown():
+			and (event as InputEventKey).keycode == _HARD_MODE_KEY and _hard_mode_shown():
 		get_viewport().set_input_as_handled()
 		_toggle_hard_mode()
 		return

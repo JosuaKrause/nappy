@@ -98,7 +98,8 @@ func _boot_catching(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.B
 ## `assets/atlases/membership.json` wants. **Which page each one is on is
 ## `tests/test_atlas_loading.gd`'s**, since that is a claim about what a run loads rather than
 ## about the presentation choice this suite is for; what the pixels of a region owe their caller
-## is `tests/test_visuals.gd`'s.
+## is `tests/test_visuals.gd`'s. The marks over her head are on the UI's page, which
+## `tests/test_atlas_loading.gd` checks.
 func _test_every_family_source_is_a_baked_region(t) -> void:
 	var sources := Stroller.family_sources()
 	t.check(not sources.is_empty(), "the family exports at least one source")
@@ -109,10 +110,3 @@ func _test_every_family_source_is_a_baked_region(t) -> void:
 		families[path.get_file().split("_")[0]] = true
 	t.check(families.has("father") and families.has("mother") and families.has("pram"),
 			"the family covers both parents and the shared stroller")
-	var indicators := Stroller.indicator_sources()
-	t.check(not indicators.is_empty(), "the indicators export at least one source")
-	for path: String in indicators:
-		var name := StringName(path)
-		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
-		t.check(AtlasTable.baked().group_of(name) == Stroller.INDICATOR_ATLAS,
-				"%s is on the indicators' own page" % path)

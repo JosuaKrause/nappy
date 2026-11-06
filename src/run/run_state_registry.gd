@@ -81,7 +81,7 @@ func restore_riders(data: Dictionary) -> void:
 
 ## The registry's parts in the shape a save carries them: `state_data()` under `"state"` and the
 ## riders beside it. This is also exactly what a checkpoint is, so the save and the checkpoint
-## never carry two different ideas of what a run is (`GameSave.file_data()` adds the file's
+## never carry two different ideas of what a run is (`GameSave._file_data()` adds the file's
 ## own keys).
 func run_data() -> Dictionary:
 	var data := rider_data()

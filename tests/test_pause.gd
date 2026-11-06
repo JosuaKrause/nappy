@@ -600,15 +600,15 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 	run.calendar.hard_mode = false
 	title.open(false, false, true)
 	t.check(Boot.mode_name_drawn(title) == "Normal", "a decided Normal run is named 'Normal'")
-	t.check(not title.hard_mode_shown(), "and the checkbox is not offered beside it")
+	t.check(not UI.control(title, "HardMode").visible, "and the checkbox is not offered beside it")
 	run.calendar.hard_mode = true
 	title.open(false, false, true)
 	t.check(Boot.mode_name_drawn(title) == "Hard Mode", "a decided Hard Mode run is named 'Hard Mode'")
 	title.open(false, true)
 	t.check(Boot.mode_name_drawn(title) == "", "a new game, where the mode is not decided, names none")
-	t.check(title.hard_mode_shown(), "and offers the checkbox")
+	t.check(UI.control(title, "HardMode").visible, "and offers the checkbox")
 	title.open(true)
-	t.check(Boot.mode_name_drawn(title) == "" and not title.hard_mode_shown(),
+	t.check(Boot.mode_name_drawn(title) == "" and not UI.control(title, "HardMode").visible,
 			"a title with no run behind it shows neither")
 	title.free()
 	run.free()

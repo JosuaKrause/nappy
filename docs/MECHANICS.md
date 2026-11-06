@@ -1901,7 +1901,7 @@ whether checkpoints are available".)* It shows only when the title begins a new 
 front of a resumed save, whose run already has its mode. There the checkbox's place holds the
 mode's name instead, "Normal" or "Hard Mode". The box opens unchecked every time, and is never
 remembered between sittings. A touch or a click on its box or label, or anywhere within the larger of
-5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen.hard_mode_target()`),
+5% beyond them (the margin every button catches by) and 28 design px (`TitleScreen._hard_mode_target()`),
 or `H` on a keyboard, flips it and never starts the run:
 the run still begins only from the title's three controls buttons or a key, so the box can be set
 first (`TitleScreen`). The mode is `RunCalendar.hard_mode`, fixed for the run and carried in the save.
@@ -1954,7 +1954,7 @@ scratch"*), and goes back to the title, where the checkbox shows again.
 
 The run is saved implicitly — there is no save button, no slot and no menu — at exactly two
 moments, each saying which one it is. `GameSave` is the one place every read and write of it
-happens, gated behind `GameSave.uses_save()` so a dev flag, a headless run, the test runner and
+happens, gated behind `GameSave._uses_save()` so a dev flag, a headless run, the test runner and
 `tools/check.sh`'s own boot never touch it: every checkout and worktree of this repository shares
 one `user://`, and none of those runs may land in or overwrite what may be the player's own day 9.
 A run carrying any dev flag already falls outside the gate by being one; `--no-save` is what a
@@ -2101,6 +2101,6 @@ nothing. Every failure of the newest save restarts its ten seconds, and a new sa
 unanswered does not hide a failure already known. A save is not kept when the file
 could not be written, the copy failed on its retry or never answered, or the browser refused the
 page storage at boot (`OS.is_userfs_persistent()` false, asked at every save), in which case the
-game plays on from memory and nothing survives a reload. A run `GameSave.uses_save()` refuses on
+game plays on from memory and nothing survives a reload. A run `GameSave._uses_save()` refuses on
 purpose — a dev flag, a headless run, a web page that used a debug parameter — is not a save that
 failed, and draws nothing at all.

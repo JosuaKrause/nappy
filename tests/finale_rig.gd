@@ -13,7 +13,6 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
-const MAIN_SCRIPT: GDScript = preload("res://src/main.gd")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
@@ -1905,7 +1904,8 @@ func _test_the_escape_counts_its_time_and_closes_its_charges(t) -> void:
 
 ## One of the escape's sections, a whole clock long, titled the way the run titles it.
 static func _section(section: int) -> DaySpec:
-	return MAIN_SCRIPT.escape_section_spec(section, RunConfig.FINALE_LENGTH_SECONDS)
+	return DaySpec.for_section(section, RunConfig.FINALE_LENGTH_SECONDS,
+			Texts.ESCAPE_BUILDING if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY)
 
 ## A booted escape: the real `main.tscn`, the run of the test's own it plays (on seed `SEEDS[0]`
 ## and its last day, handed over to `section`), and the home its sitting is parked in. Freed
@@ -1951,13 +1951,16 @@ func _free_the_escape(t, escape: Escape) -> void:
 	escape.home.free()
 	escape.run.free()
 
-## `main` hands each section its `DaySpec` (`escape_section_spec()`), and each section is counted as
-## a day of its own after the last.
+## `main` hands each section its `DaySpec`, read off the day's clock of a booted escape, and each
+## section is counted as a day of its own after the last.
 func _test_the_two_sections_are_the_two_days_after_the_last(t) -> void:
-	var building := _section(DaySpec.Section.BUILDING)
-	var city := _section(DaySpec.Section.CITY)
-	t.check(building.number == Tuning.RUN_LENGTH_DAYS + 1 and city.number == building.number + 1,
-			"and they are the two days after the last (%d and %d)" % [building.number, city.number])
+	var numbers: Array[int] = []
+	for section: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
+		var escape := await _boot_the_escape(t, section)
+		numbers.append(Boot.day(escape.main).spec.number)
+		_free_the_escape(t, escape)
+	t.check(numbers[0] == Tuning.RUN_LENGTH_DAYS + 1 and numbers[1] == numbers[0] + 1,
+			"and they are the two days after the last (%d and %d)" % [numbers[0], numbers[1]])
 
 ## *"The escape the building starts when the player has completed all tasks by the end of day
 ## 14."* Every other way day 14 can end keeps the ending it already had, which is what the three
@@ -1995,25 +1998,24 @@ func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	run.free()
 
 ## Every part word `--start-escape` recognises has to actually move her, onto ground she can
-## stand on.
+## stand on: the real `main` booted on each word, her position read off the building it builds.
 func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	scene.build()
-	var start := scene.start_world_position()
 	for word in ["stairwell:left", "stairwell:right", "lobby", "basement", "floor:2", "floor:1"]:
-		var part: String = MAIN_SCRIPT.escape_part_for(word)
-		var at := scene.part_world_position(part)
-		t.check(at != start, "'%s' (part '%s') teleports away from her own door" % [word, part])
+		var escape := await _boot_the_escape(t, DaySpec.Section.BUILDING,
+				PackedStringArray(["--start-escape", word]))
+		var scene := Boot.interior(escape.main)
+		var her := Boot.player(escape.main)
+		var at := her.global_position
+		t.check(at != scene.start_world_position(), "'%s' teleports away from her own door" % word)
 		t.check(scene.map.is_walkable(scene.map.world_to_tile(at)),
-				"'%s' (part '%s') lands on a walkable tile" % [word, part])
+				"'%s' lands on a walkable tile" % word)
 		# **And one she stays on.** A part word puts her down with nothing armed, and
 		# `process_player()` fires a transition on the frame she is standing on a door or the
 		# service exit — so a waypoint that is a threshold shows her the part on the other side of
 		# it rather than the part she asked for, silently, with the flag looking like it worked.
 		t.check(scene.map.transition_at(scene.map.world_to_tile(at)).is_empty(),
-				"'%s' (part '%s') lands somewhere that is not a door" % [word, part])
-	scene.free()
+				"'%s' lands somewhere that is not a door" % word)
+		_free_the_escape(t, escape)
 
 ## **The escape is outbound from its first frame, so it owes no return leg.** `EventDirector.owe_
 ## the_return()` hands acts III and IV extra `police_patrol` rows when `EventBus.return_phase_

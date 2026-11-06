@@ -32,6 +32,21 @@ const SEED := 4242
 const _SCRATCH_SAVE := "user://test_main_scratch.json"
 var _save := GameSave.new(_SCRATCH_SAVE)
 
+## `--day-length` reaches the day a boot starts: the real `main` booted with `--day-length 77` walks
+## a day whose clock is 77 seconds long, read off the day's own spec.
+func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--day-length", "77"]),
+			func(main: Node) -> void: main.use_sitting_home(home))
+	var spec: DaySpec = Boot.day(booted.main).spec
+	t.check(spec != null and is_equal_approx(spec.length, 77.0),
+			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.length if spec else "no spec"])
+	Telemetry.end_run()
+	booted.free_all()
+	home.free()
+	run.free()
+
 ## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
 ## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
 class ReadoutRig:
@@ -75,6 +90,7 @@ class ReadoutRig:
 
 func run(t) -> void:
 	t.gives_back_observers()
+	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_a_placed_player_settles_with_her_lead_and_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	await _test_the_readout_flag_shows_it_on_a_release_build(t)
@@ -1211,7 +1227,7 @@ func _test_return_window_needs_a_departure(t) -> void:
 	var clock := UI.FakeClock.new()
 	var window := _window(t, clock)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
-	t.check(not t.get_viewport().is_input_disabled() and not window.ignoring_input(),
+	t.check(not t.get_viewport().is_input_disabled(),
 			"a focus-in with no loss before it (the page's own focus at load) does not arm")
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)

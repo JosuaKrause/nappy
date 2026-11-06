@@ -24,8 +24,8 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** `tests-unseen-reads.md`'s "SELF-only readers" tier names the owners: the event
-scheduler's plan helpers, the resistance director's guard
-and contact spots and nearest alleys, the title screen's hard-mode controls, the save's has-a-save, the figures' and pursuers' picture lists, and one drawing helper.
+scheduler's plan helpers, the resistance director's guard and contact spots and nearest alleys,
+the figures' and pursuers' picture lists, and one drawing helper.
 The CI check of test-only members lists them one by one; its count is the scope, since the tier's
 "about 250" was an estimate. The park cordon's `gap`, `line`, `area`, `elapsed` and
 `walk_to_the_gap` are in scope too, though the CI check misses them since other classes have

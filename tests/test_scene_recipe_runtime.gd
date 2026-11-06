@@ -26,6 +26,9 @@ class Watcher extends Node:
 				and not observed[0].passed:
 			print("OBSERVATION_STOPPED_BEFORE_SUCCESS")
 		set_physics_process(false)
+## Where the probe's saves are kept: a scratch file, never the player's, since a policy that broke
+## would write here rather than to the player's save.
+const _SCRATCH_SAVE := "user://test_scene_recipe_runtime_scratch.json"
 ## A run of the probe's own, freed with it, which every runtime below is handed.
 var _run := RunState.new()
 ## A scripted recipe's configuration, which is what the runtime probes below are handed.
@@ -35,7 +38,7 @@ func _scripted() -> RunConfig:
 func _ready() -> void:
 	add_child(_run)
 	var config := RunConfig.at_boot()
-	var save := GameSave.new()
+	var save := GameSave.new(_SCRATCH_SAVE)
 	save.configure(config)
 	if config.is_rig != config.recipe_scripted:
 		save.free()
@@ -43,16 +46,18 @@ func _ready() -> void:
 		return
 	# The desktop policy is checked independently of headless's unconditional no-save gate: the same
 	# words, parsed for a window, still take no save.
-	var windowed := GameSave.new()
+	var windowed := GameSave.new(_SCRATCH_SAVE)
 	windowed.configure(RunConfig.parse(OS.get_cmdline_user_args(), "", true, false, {}, false))
-	var desktop_saves := windowed.uses_save()
+	var desktop_saves := windowed.write(_run, false) != GameSave.Result.REFUSED
 	windowed.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	if desktop_saves:
 		save.free()
 		get_tree().quit(13)
 		return
-	var saves := save.uses_save()
+	var saves := save.write(_run, false) != GameSave.Result.REFUSED
 	save.free()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	if saves:
 		get_tree().quit(14)
 		return
