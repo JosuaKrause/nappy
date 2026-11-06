@@ -34,10 +34,8 @@ hold nothing, "let's make sure those tests also won't enter the codebase again" 
 - The merges of `main` added `Blackout.go_dark()` (a patrol test now calls it, and only the
   blackout's own file uses it) and `RunStateRegistry.state_data()` (the save suites now read the
   run's parts through it, and only its own file's `run_data()` calls it) to the own-file group,
-  and took off the eight members the save, run, telemetry and screen build deleted. The second merge took
-  off eight more: `City.close_ground`, `PosterArt.region_names`, `SceneryGround.has_water`,
-  `InteriorTileset.region_name_for`, `AtlasLibrary.is_resident` and `last_load_moment`,
-  `AtlasTable.region_names`, and `Stroller.stroller_sources` (no test reads it any more).
+  and took off the lines whose members the builds merged from `main` deleted or stopped testing
+  (#1096, #1103, #1104, #1105).
 
 **Open to overturn:** the variables, signals and constants line of the own-file rule and the
 hand-ins' kept group, both the orchestrator's readings of the player's words; the engine-name set's
