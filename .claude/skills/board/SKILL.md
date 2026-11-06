@@ -25,7 +25,11 @@ separate session that has none of this context.
 **On every turn the orchestrator takes, and whenever the player says "doc" or "check the doc".**
 Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
 rather than have the board polled (inbox #830 in minty-dolphin). A report from an agent, a merge or
-a review verdict updates the Running table in the same turn. **Both tabs are read**, since the
+a review verdict is not written to the Running table at once: the board is the player's information
+and the channel they answer on, so it is updated in batches, and the orchestrator's own temporary
+working state is kept in the local restart prompt (**session-cleanup**, step 8), which a fresh session
+can recover from. The player asks when they want the current state before looking at the board
+(inbox #986 in brisk-pelican). **Both tabs are read**, since the
 player answers review items on the Review tab and design questions on the Main tab.
 
 ## The layout
