@@ -70,14 +70,6 @@ constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_me
 
 Each line: where | the check | its kind | why | the audit's confidence.
 
-**`crowd_rig.gd`**
-
-- `crowd_rig.gd:1132-1137` | "there are exactly two precincts in all (%d)", "a precinct is %d blocks long" | duplicate / restates a design decision | Generator facts about the city (precinct count, `PRECINCT_BLOCKS` length), which the city-generator suites own; this rig only needs "a precinct to build a field around", and the next lines take the last span anyway. Suite to compare: the city generator suites (`tests/test_city_*` / `test_routes_*`, not in my group); I did not verify the other suite's line | medium
-- crowd_rig.gd:121-134 `_test_walkers_follow_the_selected_presentation` | `not agent.has_node("ModularWalker")` (x2, walker and car) and `walkers > 0 and cars > 0` | cannot fail | `rg ModularWalker src tests` finds only these two lines: no node of that name exists anywhere in `src/`, so the "not has_node" assertions are true with or without the crowd code. The whole function (leftover of a removed presentation mode) holds nothing; the closing both-kinds guard only guards those dead checks. Delete the function. | high
-- crowd_rig.gd:2098-2100 `_test_the_arterial_is_the_busiest_street` | "a street's character is stable, not rolled afresh on every question" (`busyness(map,true,arterial) == busyness(map,true,arterial)`) | cannot fail | Compares the same call with the same arguments to itself; passes unless the function is nondeterministic, and it reads no state a roll could change between the two calls. Delete the check (the other two halves of the function are real). | high
-- crowd_rig.gd:731-732 `_test_a_bump_costs_and_one_of_them_is_survivable` | "a contact outruns the walking decay, so it is a spike and not a ripple" | duplicate | Same assertion (`Crowd.BUMP_INTENSITY > Tuning.EXCITEMENT_DECAY_WALKING`) as crowd_rig.gd:345-347 in `_test_a_close_pass_costs_and_a_wide_one_does_not`, in the same rig. Keep one. | high
-- crowd_rig.gd:2165-2168 `_test_nothing_walks_into_a_hard_blocker` | "and it never happens on any frame (frames_with_one == 0)" | duplicate | `worst == 0` (line 2165) and `frames_with_one == 0` are the same statement over the same loop: the worst count is zero exactly when no frame had one. The second check can never differ from the first. | high
-
 **`finale_rig.gd`**
 
 - `finale_rig.gd:2174-2182` (`_test_finale_entities_stop_when_the_tree_pauses`, whole function) | "the section's clock processes while the tree is running" ... "nor anything in the finale city" | cannot fail | The test sets `process_mode = PROCESS_MODE_PAUSABLE` on the `DayController`, `InteriorScene` and `City` itself (lines 2162, 2166, 2171), then asserts `can_process()` follows `get_tree().paused`. That is Godot's own rule applied to a mode the test just wrote. It would pass with `main._pauses_with_the_game()` (the call that is meant to set the mode, `main.gd:1776`) deleted. The real wiring is only reached by the booted pause tests in this rig (`_test_the_escape_pauses_the_same_way_a_day_does`), which pause a booted `main`. To keep the intent, boot `main` and ask `can_process()` of its nodes; otherwise delete. | high
@@ -316,14 +308,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - test_route_rig.gd:24-27 (`RUN_SEED` comment: "these checks hold on seeds 4 and 5 and fail on 1, 2 and 3") | the whole target-resolution and rig-walk group built by `_build_fixture(RUN_SEED)` | cannot fail (true by luck of the seed) | The suite's own comment says the ground the targets resolve to depends on the run seed and the checks fail on three of five seeds, so they hold on the seed picked, not on a property of the code. Not a deletion: say in the finding that a run on seeds 1-3 would show which checks are seed-dependent; I could not tell which ones from reading. | medium
 
-**`test_route_tree.gd`**
-
-- test_route_tree.gd:165 `_test_no_route_runs_along_the_main_road` | `on_the_spine >= 0` ("%d route tiles stood on the main road's own corridor") | cannot fail | A count can not be negative; the comment itself calls it "not a lower bound to defend ... reported". Delete the check (the per-tile `junction_at(tile) != (-1,-1)` assertion inside the loop is the real one, and `_test_a_route_crosses_a_carriageway_only_at_a_junction` carries the non-vacuity guard). | high
-
-**`test_routes_lattice.gd`**
-
-- `test_routes_lattice.gd:36` | `_test_the_lattice_is_the_lattice`: `junction_count() == CITY_BLOCKS + ONE`, `segments().size() == expected`, each segment `rect.size == (BLOCK_SIZE, STREET_WIDTH)` | RESTATES | The lattice's own definition computed a second time from the same constants (the same reason `test_generator.gd:148`'s comment gives for not restating `period()`/`block_rect()`). The per-street "every tile is walkable" check beside it is real. | high
-
 **`test_run_checkpoints.gd`**
 
 - `test_run_checkpoints.gd:516` | `_test_parse_nerves_accepts_one_to_five_and_refuses_the_rest` | RESTATES | The accepted range of a dev flag written out; no game path reads it. | medium
@@ -350,10 +334,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_scene_recipe_task.gd`**
 
 - `test_scene_recipe_task.gd:272-297` (`_test_the_task_scenes_start_off_an_unread_mark`, whole function), `:303-318` (`_test_the_door_scenes_show_the_robber_a_done_task_sends`, whole function), `:343-348` (last check of `_test_an_authored_mast_carries_its_own_id`) | "%s starts off the mark" / "%s lists the street the robber starts on" / "the two-mast scene stands two masts under two ids" | restates a design decision | These load the authored `scene-recipes/*.json` files and assert facts about their contents (the start anchor is not the mark, an observation is at tick 1, `draft.include` is non-empty). No game code is exercised; they are red only when a recipe file is edited, and the second says in its own comment that the headless scene play (`tools/scene-recipes.sh`) answers the question and this "keeps either from being dropped". That is a lint of authored data, not a behavior. Could move into the recipe validator (`SceneRecipeRuntime.validate_runtime`) if the rule is wanted. | medium
-
-**`test_seals.gd`**
-
-- `test_seals.gd:397-401` | "disconnected alleys are sealed at about the configured rate", "...the exception now, not the rule" (`rate < ALLEY_MOUTH_SEAL_CHANCE + 0.15`, `rate < 0.5`) | restates a design decision / true by luck of the seed | A statistical upper bound on sampled seeds against a tuning chance. It goes red when the chance is retuned and passes by sample luck otherwise; neither side is a fairness or winnability floor. The `candidates > 0` guard (391) stays | medium
 
 **`test_siting_judges_once.gd`**
 
@@ -390,10 +370,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_tuning_fairness.gd`**
 
 - `test_tuning_fairness.gd:84` | `RETURN_PATROLS_PER_ACT.size() == 4` and `count >= 0` per entry | RESTATES | A table's length and its entries being non-negative; goes red when an act is added or a count is edited. The interval ordering checks below it (ordered, shorter than `AHEAD_INTERVAL`) are orderings of constants and stay. | medium
-
-**`test_turns.gd`**
-
-- `test_turns.gd:637` (`_test_a_red_light_still_holds_a_car_that_is_turning`; early returns at 639 and 642) | no check on the two early exits (`if not signals: return`, `if not signals.is_signalled(box): return`) | cannot fail (true by luck of the seed) | If the city has no signals, or the junction is not signalled, the test returns without a check, so it passes having tested nothing. A guard such as `t.check(signals != null and signals.is_signalled(box), ...)` is what it lacks; a run would show whether the standard seed always signals it. | medium
 
 **`test_tutorial_dog.gd`**
 

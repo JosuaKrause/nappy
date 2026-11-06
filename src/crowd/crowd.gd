@@ -393,8 +393,13 @@ func _resolve_and_settle() -> void:
 	for agent in _agents:
 		agent.reset_physics_interpolation()
 
-## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself; this
-## exists so `main` can put it on the doorstep before the player is standing there.
+## Where the simulated patch of city is centred. `Crowd` moves it onto the player itself, in the
+## player half of its live tick. No game class calls this; it stays for the tests (curly-rabbit
+## #1095), which tick the crowd with `step()`, the half with no player in it: a stroller handed
+## through `use_player()` moves no field there, real frames would add shoves, warnings and strikes
+## to every check, and recycling would drop the cars and walkers under test. What makes it so is
+## that where the patch stands is fused with who she is; a focus source handed to the crowd would
+## let this go.
 func set_focus(at: Vector2) -> void:
 	_field.centre = at
 
