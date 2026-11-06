@@ -40,6 +40,8 @@ const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const SEED := 4242
+## The regions the UI's page bakes for her: the two warning marks over her head and the baby's three.
+const _HEAD_INDICATORS: Array[String] = [Stroller.ALERT, Stroller.ALERT_CLOSE, Stroller.BABY_ZZZ, Stroller.BABY_FUSS, Stroller.BABY_CRY]
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
 
@@ -61,20 +63,42 @@ func run(t) -> void:
 ## sixty views on a page of their own, and the five pram views, which either parent pushes, on a
 ## third the run holds whichever parent it drew.
 func _test_each_parent_has_a_page_of_their_own(t) -> void:
-	var by_group := Stroller.sources_by_group()
 	var seen: Dictionary = {}
-	for group: StringName in by_group.keys():
-		var sources: Array[String] = by_group[group]
-		t.check(not sources.is_empty(), "%s: there were sources to check at all" % group)
-		for path: String in sources:
+	var drawn_by := {}
+	for male: bool in [false, true]:
+		var page := Stroller.parent_atlas(male)
+		var rig := Stroller.new()
+		rig.is_male = male
+		var camera := Camera2D.new()
+		camera.name = "Camera2D"
+		rig.add_child(camera)
+		t.add_child(rig)
+		# Every view she is drawn in, pushing and carrying, on the eight facings; the pram's with them.
+		var views: Dictionary = {}
+		var prams: Dictionary = {}
+		for carrying in [false, true]:
+			rig.carrying = carrying
+			for direction in range(8):
+				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
+				var pose := rig.pose(1.0)
+				for path: String in pose.mother_sources:
+					views[path] = true
+				prams[pose.pram_source] = true
+		t.check(not views.is_empty(), "%s: there were views to check at all" % page)
+		for path: String in views:
 			var name := StringName(path)
 			t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
-			t.check(AtlasTable.baked().group_of(name) == group,
-					"%s is on the '%s' page" % [path, group])
+			t.check(AtlasTable.baked().group_of(name) == page,
+					"%s is on the '%s' page" % [path, page])
 			t.check(not seen.has(name), "%s is on exactly one page" % path)
-			seen[name] = group
-	t.check((by_group[Stroller.MOTHER_ATLAS] as Array[String]).size()
-			== (by_group[Stroller.FATHER_ATLAS] as Array[String]).size(),
+			seen[name] = page
+		t.check(prams.size() == 5, "the pram has its five views (%d)" % prams.size())
+		for path: String in prams:
+			t.check(AtlasTable.baked().group_of(StringName(path)) == Stroller.STROLLER_ATLAS,
+					"%s is on the page the two parents share" % path)
+		drawn_by[male] = views.size()
+		rig.free()
+	t.check(drawn_by[false] == drawn_by[true],
 			"the two parents carry the same number of views, so neither page is the other's tail")
 	t.check(Stroller.parent_atlas(false) == Stroller.MOTHER_ATLAS
 			and Stroller.parent_atlas(true) == Stroller.FATHER_ATLAS,
@@ -86,7 +110,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 func _test_the_indicators_share_the_ui_page(t) -> void:
 	t.check(not &"head_indicators" in AtlasTable.baked().groups(),
 			"and the head indicators are no longer a group of their own")
-	for path: String in Stroller.indicator_sources():
+	for path: String in _HEAD_INDICATORS:
 		var name := StringName(path)
 		t.check(AtlasTable.baked().has_region(name), "%s is baked" % path)
 		t.check(AtlasTable.baked().group_of(name) == &"ui", "%s is on the UI's page" % path)

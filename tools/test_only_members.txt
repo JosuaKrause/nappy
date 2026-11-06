@@ -37,7 +37,6 @@ src/events/views/spread_look.gd attach_nodes
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
-src/player/stroller.gd indicator_sources
 src/resistance/resistance_director.gd mark_guard
 src/telemetry/frame_ledger.gd DRAWS_HALOS
 src/telemetry/frame_ledger.gd DRAWS_OTHER
@@ -182,9 +181,6 @@ src/interior/interior_scene.gd lighting_at
 src/interior/interior_scene.gd teleport_to_door
 src/interior/interior_scene.gd windows_are_flashing
 src/player/baby.gd overflow_mass
-src/player/stroller.gd baby_cue_aside
-src/player/stroller.gd baby_cue_lift
-src/player/stroller.gd sources_by_group
 src/resistance/contact_point.gd draws_a_mark
 src/resistance/contact_point.gd would_complete_at
 src/resistance/happenings.gd cordon
@@ -320,6 +316,8 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
 src/autoload/game_save.gd moment_result  # what a save moment comes to on the web (PENDING while the browser has not answered, FAILED where storage was refused): a desktop run's write() never takes those branches, since OS.has_feature("web") and OS.is_userfs_persistent() are the engine's own answers and not a hand-in, so tests/test_save.gd asks the pure function for them
+src/player/stroller.gd baby_cue_aside  # how far to one side the baby's cue is drawn so it steps out of the exclamation mark's column; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes (tests/test_danger.gd: "nothing in this suite could see a _draw, so the decision is a function"), so the facings it is held for are read off the function
+src/player/stroller.gd baby_cue_lift  # how far above the pram's ground point (or above her feet, carrying or walking due south) the baby's cue is drawn; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes, so the facings it is held for are read off the function
 src/ui/meter_bar.gd displayed_fraction  # the fraction of the bar's width the fill is drawn at, held under full until the value is the max; it exists only as the argument to draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it (tests/test_hud.gd's header says the same of the number printed beside it)
 src/ui/meter_bar.gd displayed_value  # the number the bar prints, floored so 99.5 does not read 100 while the day is live; it exists only as the argument to draw_string() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it
 src/ui/mode_button.gd hold_progress  # the fraction of the restart disc's radial sweep, which is all _draw() paints of the hold; a headless run draws to nothing and no node exposes the sweep, so the value is the only thing a test can read of what the disc shows (and the one-line clamp its setter owns)

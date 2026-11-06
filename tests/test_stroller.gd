@@ -3,6 +3,9 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 
+## The regions the UI's page bakes for her: the two warning marks over her head and the baby's three.
+const _HEAD_INDICATORS: Array[String] = [Stroller.ALERT, Stroller.ALERT_CLOSE, Stroller.BABY_ZZZ, Stroller.BABY_FUSS, Stroller.BABY_CRY]
+
 ## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
 ## from her own library.
 func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
@@ -81,7 +84,7 @@ func _test_her_family_comes_from_its_baked_pages(t) -> void:
 				"and direction %d is on the same page every other pram view is on" % direction)
 		t.check((pram as AtlasTexture).atlas != atlas,
 				"which is the page the two parents share, not the one her body is on")
-	for mark: String in Stroller.indicator_sources():
+	for mark: String in _HEAD_INDICATORS:
 		var packed := rig.atlas.region(StringName(mark))
 		t.check(packed is AtlasTexture,
 				"the head indicator %s is drawn from the UI's page" % mark.get_file())
