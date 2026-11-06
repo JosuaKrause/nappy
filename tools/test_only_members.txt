@@ -29,11 +29,7 @@ src/dev/walk_plan.gd smoothed_turns
 src/events/event_instance.gd charger_name
 src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
-src/events/views/event_look.gd attach_nodes
 src/events/views/event_look.gd drawn_rect_now
-src/events/views/event_pictures.gd boom_arm_span
-src/events/views/roadblock_look.gd attach_nodes
-src/events/views/spread_look.gd attach_nodes
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
 src/player/baby.gd set_stroller
@@ -44,8 +40,6 @@ src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
 src/visuals/atlas_library.gd illustrated_path_for
-src/visuals/atlas_library.gd is_acquired
-src/visuals/atlas_library.gd reference_count
 src/visuals/atlas_library.gd region_name_for
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way

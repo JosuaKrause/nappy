@@ -870,11 +870,6 @@ const BOOM_EW_FAR_POST := Vector2(18.5, 12.0)
 ## and the arm crosses the lanes, which is the shape the picture was drawn as.
 const BOOM_NS_ANCHOR := (BOOM_NS_NEAR_POST + BOOM_NS_FAR_POST) * 0.5
 const BOOM_EW_ANCHOR := (BOOM_EW_NEAR_POST + BOOM_EW_FAR_POST) * 0.5
-## The lowered arm's own extent inside each canvas — the striped bar itself, not the posts or the
-## sockets. Only `boom_arm_span()` reads them: where the bar lands across the road is the thing a
-## test can check and `EventLook.draw()` cannot.
-const BOOM_NS_ARM := Rect2(4.0, 43.0, 79.0, 7.0)
-const BOOM_EW_ARM := Rect2(15.0, 7.0, 9.0, 76.0)
 
 ## The one silhouette that stands for a look, at any size, as the picture's own path — `""` for a
 ## look with nothing to put in a badge. The badge turns it into a region of the `events` page the
@@ -1370,17 +1365,6 @@ static func protester_texture(from: Vector2, objective: Vector2) -> String:
 ## Whether a gate sited with `along_axis` bars a road running north-south, and so draws the boom
 ## whose arm spans east-west. `along_axis` is the street's own along-axis, which
 ## `RegionPlanner._along_axis` sets to `DOWN` for a north-south street and `RIGHT` for an east-west
-## one. Named rather than inlined so the drawing and the test that measures it read the same rule.
+## one.
 static func gate_runs_north_south(along_axis: Vector2) -> bool:
 	return absf(along_axis.y) > absf(along_axis.x)
-
-## How far the lowered arm reaches to either side of the gate's own ground point, across the road
-## it bars: `x` the near edge (negative), `y` the far edge, in pixels along the cross-street axis.
-## This is the number the player reads as *the bar is on the road* or *the bar is on the kerb*, and
-## nothing in `EventLook.draw()` can be asserted headless — see `tests/test_checkpoints.gd`.
-static func boom_arm_span(runs_north_south: bool) -> Vector2:
-	if runs_north_south:
-		var ns := BOOM_NS_ARM.position.x - BOOM_NS_ANCHOR.x
-		return Vector2(ns, ns + BOOM_NS_ARM.size.x)
-	var ew := BOOM_EW_ARM.position.y - BOOM_EW_ANCHOR.y
-	return Vector2(ew, ew + BOOM_EW_ARM.size.y)

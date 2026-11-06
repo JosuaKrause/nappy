@@ -1067,9 +1067,9 @@ the halo gates on it for the same reason.
 stands on the carriageway's centre line, level with the gatehouses on either pavement, so a picture hung
 by the near post alone puts its whole arm to one side of where the body is — along a kerb, with the
 lanes it exists to bar open underneath it. Anchored between the posts, each post lands just outside
-a kerb and the striped arm crosses the lanes. `EventPictures.boom_arm_span()` states that reach as
-a number, because a headless test's draw pass makes no pixels to measure and the arm's own extent
-is the whole of what the player sees.
+a kerb and the striped arm crosses the lanes. `tests/test_checkpoints.gd` measures that reach off the
+opaque pixels of the lowered boom a real gate draws, because a headless draw pass makes no pixels
+to look at but the picture it paints is the whole of what the player sees.
 
 ### Which way a spread lies
 

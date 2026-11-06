@@ -1081,7 +1081,6 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 ## again, and how long after she was back inside he charged (`INF` if never).
 func _back_inside_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance.look.attach_nodes()
 	var result := {"first_warning": 0.0, "waited": false, "second_warning": INF}
 	var stand_at := func(off: float) -> void:
 		instance.player_at = instance.body_position() + Vector2(0.0, def.notice_within() + off)
@@ -1116,7 +1115,6 @@ func _back_inside_rig(t, def: EventDef) -> Dictionary:
 ## warned, whether he charged and whether he caught her.
 func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance.look.attach_nodes()
 	var her := Vector2(-def.notice_within() * 0.3, def.notice_within() * 0.5)
 	var speed := 0.0
 	var ran_for := 0.0
@@ -1193,7 +1191,6 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, inside := 10.0,
 		seconds := 40.0, from := INF, then_speed := Tuning.RUN_SPEED, stop_at := -1.0) -> Dictionary:
 	var instance := _instance(t, def, Vector2.ZERO)
-	instance.look.attach_nodes()
 	var start := from if from != INF else def.notice_within() - inside
 	var her := Vector2(0.0, start)
 	var speed := player_speed
