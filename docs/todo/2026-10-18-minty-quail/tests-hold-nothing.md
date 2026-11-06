@@ -250,22 +250,10 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_regions.gd:525` (first check of `_test_wall_crossing_posts_four_guards`) | "a catalogue roadblock still posts two guards (%d)" | restates a design decision | `guard_sides.size() == 2` is the table; the per-wall counts in the loop (`street_walls.size() == per_wall * ...`, `total_guards == 4`) are derived from it and also restate "a wall stands three bodies / four guards" (546, 561). Would go red only on a design change to the crossing's make-up. | medium
 
-**`test_resistance_arrow.gd`**
-
-- `test_resistance_arrow.gd:217` and `:220` | `_test_the_arrow_moves_at_four_tiles_closer` / `_test_the_arrow_does_not_move_at_three_tiles_closer` | RESTATES | Two probes straddling the hysteresis constant (4 tiles) read back as `moves` true/false; they go red when the threshold is retuned, not when switching breaks. `_test_the_arrow_switches_as_another_target_becomes_closer` (test_resistance_arrow.gd:182) is the behaviour. | medium
-
 **`test_resistance_placement_kinds.gd`**
 
 - `test_resistance_placement_kinds.gd:1057-1058` | "the convoys start on day 13" (`convoy.first_day == ResistanceHappenings.COLUMN_DAY`) | cannot fail in practice / restates | Compares a catalogue field with the constant it is assigned from; red only if one is edited without the other, which is a table read back to itself. The behaviour (a column comes on day 13, `1093`) is separately asserted | medium
 - `test_resistance_placement_kinds.gd:968-969` | "seed %d: on the third floor" (`neighbor_window_row() == 3`) | restates a design decision | A literal floor number; the contract is that the boarded cell is stable across days and reload (972, 982), which stay | medium
-
-**`test_resistance_reach_narrow.gd`**
-
-- test_resistance_reach_narrow.gd:97-98 `_test_the_narrow_targets_are_reachable_on_their_day` | "day %d has a narrow resistance target" (`ResistanceSteps.narrow_target_on(day) != null` for days 9, 12, 14) | restates a design decision | Reads which days have a narrow target out of `ResistanceSteps` and then loops over the same three days; goes red only when the table is edited. The skip-branch `continue` it guards is the only thing it does. Medium-low; kept as a guard if the player prefers. | medium
-
-**`test_resistance_replacement.gd`**
-
-- `test_resistance_replacement.gd:100` | `t.check(true, "skipped: the test city has no two alleys close enough to test this")` | cannot fail | An always-true check on the branch where the setup found nothing, so the whole test silently passes on a seed/city where its precondition does not hold. Should fail (or the setup should pick a city that has the alleys). | high
 
 **`test_resistance_steps.gd`**
 
