@@ -318,8 +318,3 @@ func _apply() -> void:
 	var texture := _struck_texture if _showing.struck else _plain_texture
 	if _icon_rect.texture != texture:
 		_icon_rect.texture = texture
-
-## Whether the picture on screen is the struck-through one — what a test reads, since a headless
-## run draws nothing to look at.
-func shows_struck() -> bool:
-	return _icon_rect != null and _icon_rect.texture == _struck_texture

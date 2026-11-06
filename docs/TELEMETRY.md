@@ -301,9 +301,9 @@ things holds: the build is running on the web (`OS.get_name() == "Web"`), it is 
 nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —
 `count.js` can fail to load or be blocked by the visitor's own browser, and `?debug=1` already
 keeps `count.js` off the page entirely (see above), so this is belt and braces rather than a second
-independent switch. One pure function, `GoatCounterOutbox.gate_allows()`, decides the gate from those
-four booleans, the same shape `DevFlags._live_debug_requested()` already uses, and
-`tests/test_visit_counter.gd` drives its truth table directly. The same `GoatCounterOutbox` holds
+independent switch. `GoatCounterOutbox.may_ever_send()` decides the three that never change, and
+`GoatCounterOutbox.send()` takes the fourth as its `present` argument, and
+`tests/test_visit_counter.gd` drives the truth table through both. The same `GoatCounterOutbox` holds
 the events asked for before `count.js` has loaded and counts them in order once it has, and is
 handed the evaluator of the page's script; the counter is handed its outbox with `send_through()`
 (its `_ready()` hands it the page's), so a test hands one with a recorder and reads the script each

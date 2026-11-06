@@ -54,10 +54,6 @@ func setup(run_log: Node, config: RunConfig, bus: Node, run: RunState) -> void:
 	bus.day_ended.connect(_on_day_ended)
 	bus.escape_section_started.connect(_on_escape_section_started)
 
-## The observer watching this boot's walk, or null while nothing is traced.
-func observer() -> TelemetryObserver:
-	return _observer
-
 # ------------------------------------------------------------- open and close ---
 
 ## Opens the run log for the run this boot plays, after its seed is settled and before anything is
