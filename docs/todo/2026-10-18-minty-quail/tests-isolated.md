@@ -11,17 +11,13 @@ another can see, whichever order the suites run in, and a check that passes or f
 a seed it does not control is made deterministic. The landing process stays as it is: the same
 statement says "we don't need either" of the two options (freckled-moose #914).
 
-**The incident.** An order-dependent `test_touch` failure on `main`: a suite run alone passes, but
-fails in a shard, likely behind another suite that leaves shared state behind. The cause is not
-established: a held `pause` action does not fail `test_touch.gd`'s own checks.
-
-**What is left.** The runner fails a suite that leaves shared state changed, and the leaks it found
-are fixed (the isolated half). The runner shuffles and repeats suites (`--shuffle SEED`, `--repeat N`), and every CI shard runs
-in a shuffled order it prints with the command that replays it, so an order dependence shows on any
-pull request, and a re-run draws another order. The suites that boot `main` declare `t.gives_back_observers()`
-for the observers' count of a run, which the `Telemetry` and `VisitCounter` autoloads hold and no
-suite can hold a copy of; giving each its own teardown, once that count is held by something a
-suite is handed, removes the declaration.
+**What is left.** The runner fails a suite that leaves shared state changed, shuffles and repeats
+suites (`--shuffle SEED`, `--repeat N`), and every CI shard runs in a shuffled order it prints with
+the command that replays it, so an order dependence shows on any pull request. What stays open is
+the suites that boot `main`: they declare `t.gives_back_observers()` for the observers' count of a
+run, which the `Telemetry` and `VisitCounter` autoloads hold and no suite can hold a copy of; giving
+each its own teardown, once that count is held by something a suite is handed, removes the
+declaration.
 
 **Boots that drift with the wall clock.** A booted `main` has stepped as many physics ticks by the
 time a suite takes hold as the wall clock gave its boot frames, so a suite that then counts ticks
