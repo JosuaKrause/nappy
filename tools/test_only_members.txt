@@ -146,9 +146,6 @@ src/events/event_scenery.gd static_layers
 src/events/events_ahead.gd a_pursuer_is_after_her
 src/events/views/figure_look.gd charging_dog_pictures
 src/events/views/figure_look.gd rider_pictures
-src/events/views/pursuer_look.gd masked_pursuer_pictures
-src/events/views/pursuer_look.gd policeman_pictures
-src/events/views/pursuer_look.gd robber_pictures
 src/events/views/roadblock_look.gd chaser_pictures
 src/events/walk_ground.gd held_by
 src/events/walk_ground.gd solids_of
