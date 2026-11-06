@@ -37,11 +37,12 @@ const REACTION := 1.0
 ## its last leg, she stops.
 const SET_OFF := 4.0
 const PAST_THE_END := 60.0
+## The frames of standing still a run may show before it is a stall: a taper's turn at a corner or
+## his hand-over from approach to round costs a frame or two; one frame in three, or a wait at a
+## solid, costs hundreds.
+const STALL_FRAMES_ALLOWED := 3
 ## How far from her a taper must be for a frame he stands still to count as a stall: tapers wait for
 ## her only beside a stretch she is within reach of.
-## The frames of standing still a run may show before it is a stall: a taper's turn at a corner or his
-## hand-over from approach to round costs a frame or two; one frame in three, or a wait at a solid, costs hundreds.
-const STALL_FRAMES_ALLOWED := 3
 const STALL_AWAY := Tuning.TILE_SIZE * 4.0
 ## Where in the park a busker stands for the walked-out runs, as a share of the park's size from its
 ## north-west corner, plus a pixel offset from there: the suite's own spot, and three in the park's
