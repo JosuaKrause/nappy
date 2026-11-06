@@ -445,9 +445,11 @@ internals where the outside behaviour is what matters, and those are examples, n
   either, so a builder answers its failure by fixing the member, never by listing it. A line gone
   stale (the member gained a reader in another file, lost its test, is a constant used in its own file,
   is an engine name, is a function passed rather than called, or is gone) fails as a `REMOVE` line, so the
-  pull request that fixes a member deletes its line. Moving a file or renaming a listed member moves the
-  line with it in the same pull request: an added line passes when a line of the same group removed in the
-  same diff has the same member name (a file move) or the same file (a rename). A
+  pull request that fixes a member deletes its line. A file move carries its
+  lines: an added line passes when a line of the same group with the same member name is removed in the
+  same diff and git reports its file as renamed to the added line's file, each removed line pairing with
+  one added line. A listed member that is renamed is the moment to fix it (or to put it in a kept line
+  with its reason), never to carry its line. A
   `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
   reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
   read. The check cannot see a member whose name is also a word in another file or a test of an

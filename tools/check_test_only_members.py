@@ -12,9 +12,9 @@ at the top level of a `.gd` file under `src/`, its name not starting with `_` --
 - **read by the game**: a word occurrence of the name in code in another file under `src/`, counting
   every other file's uses less its own definitions of the name. A caller under `src/dev` (the rigs and
   the scene-recipe runtime are the composition root) counts, so does an assignment to it or an emit of
-  it. A use in the member's own defining file does not count (inbox #1098 in curly-rabbit); in that file a plain
-  `name`, a `self.name`, the file's own `ClassName.name` and any call `.name(` is a use, so a call on another
-  instance of the file's own class (`other.name()`) counts, a namesake on another class in that file too.
+  it. A use in the member's own defining file does not count (inbox #1098 in curly-rabbit), and in that file only a use
+  that is not a member of another object counts: a call `other.name()` on a namesake is not a use of
+  this member, a plain `name` or `self.name` or the file's own `ClassName.name` is.
 
 A member read by a test is test-only, and belongs to one of two groups of the list: **no reader**
 (no use in its own file either; inbox #1095 in curly-rabbit) or **own file only** (used by its own file, so
@@ -44,8 +44,9 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
   push to `main` the commit before it, so a builder cannot answer the check's failure by listing the
   member; only a kept line, with its reason, is added, and review reads the reason. A line that moves with its
   member passes: an added line passes when a line of the same group that the pull request removes has the
-  same member name (the file moved) or the same file (the member was renamed). A `REV` without the list
-  yet compares nothing.
+  same member name and git reports the file as renamed from the removed line's file to the added line's file in the
+  same diff (a file move carries its lines, each removed line pairing with one added line; a renamed member is
+  fixed or kept, not carried). A `REV` without the list yet compares nothing.
 
 **What it can miss and where it can accuse falsely.** A member is judged by its word, never by its
 class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose method this
@@ -53,15 +54,18 @@ reproduces, spot-checked names by hand for the same reason. It can *miss* a test
 unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
 of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it
 does not see members of an inner class. Because the own-file count is a word count, a call `.name(` on a
-namesake of another class in the member's own file counts as an own use, so such a member lands in
-`[own file only]` rather than `[no reader]`. It can *accuse falsely* in three ways: a test calling `.name`
+namesake is not an own use either, so a member only that call and a test use lands in `[no reader]` although its
+own class does call it (a call on another instance of the file's own class, `other.name()`); the remedy is then
+the underscore of inbox #1098 (it is not dead code), not deleting it. It can *accuse falsely* in three ways:
+a test calling `.name`
 on its own fake (an inner class of the test with a method of that name) reads as a test reading the
 member; a test reading an engine member of the same name that `ENGINE_MEMBERS` does not list (a
 `.size` on a Control, a `.enabled` on a camera) does too, and a function is told apart only by the
 call parenthesis; and a game reader that goes through a string (`call("name")`, `has_method("name")`,
 `Callable(self, "name")`, a scene's `.tscn`) is blanked out and not seen. On such a false failure the
-builder adds the line to a kept group with the reason as a comment (a real engine callback name, one the
-engine calls on the node, is the only reason to add to `ENGINE_MEMBERS`).
+builder adds the line to a kept group with the reason as a comment (a member name an engine class carries,
+which a test reads on an engine node it holds, is the only reason to add to `ENGINE_MEMBERS`; never a way to
+exempt a game member).
 `shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
 them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree.
 """
@@ -95,8 +99,8 @@ KEPT = "kept"
 GROUPS = frozenset({"no reader", "own file only", KEPT})
 READ = re.compile(r"\.\s*([A-Za-z]\w*)")
 CALL = re.compile(r"\.\s*([A-Za-z]\w*)\s*\(")
-# A word used in its own file not after a `.`; `self.name`, the file's own `ClassName.name` and any call `.name(`
-# are added where the file is read.
+# A word used in its own file other than as a member of another object: not after a `.`; `self.name` and the
+# file's own `ClassName.name` are added where the file is read.
 OWN_USE = re.compile(r"(?<![\w.])(\w+)")
 # Names the engine's own classes carry, which a test reads on a node it holds (`camera.enabled`, a
 # Control's `.size`): a `.name` read of these is taken as the engine's, never as the game's member.
@@ -197,7 +201,7 @@ def readings_of(tests: dict[str, str]) -> Readings:
 @dataclass(frozen=True)
 class Stand:
     """What a member stands on: word uses in the other files of `src/`, and uses in its own file other than as
-    a member of another object, or called as `.name(`)."""
+    a member of another object (`other.name` is a call on a namesake, not a use of this member)."""
 
     elsewhere: int
     own: int
@@ -219,7 +223,6 @@ def scan(files: Files) -> tuple[list[Member], dict[tuple[str, str], Stand]]:
         class_name = check_layers.CLASS_NAME.search(bare)
         qualifier = rf"(?<![\w.])(?:self{'|' + re.escape(class_name.group(1)) if class_name else ''})\s*\.\s*(\w+)"
         own.update(re.findall(qualifier, bare))
-        own.update(CALL.findall(bare))
         own_words[path] = own
         defined[path] = Counter(member.name for member in found)
     uses = {path: {name: words[path][name] - defined[path][name] for name in defined[path]} for path in words}
@@ -310,12 +313,13 @@ def listed(text: str) -> set[tuple[str, str]]:
     return {entry.key for entry in entries_of(text)}
 
 
-def list_failures(entries: list[Entry], base: list[Entry] | None) -> list[str]:
+def list_failures(entries: list[Entry], base: list[Entry] | None, renames: dict[str, str] | None = None) -> list[str]:
     """What the list's own lines fail: a kept line with no reason, and, against the base's list, a line added to
     the no reader or own file only group (those only shrink). A line in a shrinking group that the base's list
     held in either of them is not an addition, so a member that moves from one to the other is not one; nor is
-    one that moves with its member: a line of the same group removed in the same diff with the same member name
-    (the file moved) or the same file (the member was renamed)."""
+    one that moves with its file: `renames` maps a path git reports as renamed to its new path, and an added line
+    pairs with one removed line of the same group with the same member name in the old path, each removed line
+    with at most one added line."""
     failures = [
         f"{ALLOWLIST_NAME}:{e.number}: {e.path} {e.name} is in a kept group with no reason after a '#'"
         for e in entries
@@ -325,9 +329,19 @@ def list_failures(entries: list[Entry], base: list[Entry] | None) -> list[str]:
         before = {e.key for e in base if e.group != KEPT}
         now = {e.key for e in entries}
         gone = [e for e in base if e.group != KEPT and e.key not in now]
+        paired: set[tuple[str, str]] = set()
 
         def moved(e: Entry) -> bool:
-            return any(g.group == e.group and (g.name == e.name or g.path == e.path) for g in gone)
+            for g in gone:
+                if (
+                    g.key not in paired
+                    and g.group == e.group
+                    and g.name == e.name
+                    and (renames or {}).get(g.path) == e.path
+                ):
+                    paired.add(g.key)
+                    return True
+            return False
 
         failures.extend(
             f"{ALLOWLIST_NAME}:{e.number}: {e.path} {e.name} is added to the [{e.group}] group, which only shrinks; "
@@ -422,6 +436,23 @@ def read_base(rev: str, cwd: Path) -> list[Entry] | None:
     return entries_of(check_layers.git("show", f"{rev}:{ALLOWLIST}", cwd=cwd).decode("utf-8"))
 
 
+def read_renames(base: str, cwd: Path, rev: str | None = None) -> dict[str, str]:
+    """The files git reports as renamed (old path to new) from `base` to `rev`, or to the checkout."""
+    args = ["diff", "--find-renames", "--name-status", "-z", base] + ([rev] if rev else [])
+    fields = check_layers.git(*args, cwd=cwd).decode("utf-8").split("\0")
+    renames: dict[str, str] = {}
+    position = 0
+    while position < len(fields) and fields[position]:
+        status = fields[position]
+        if status.startswith(("R", "C")) and position + 2 < len(fields):
+            if status.startswith("R"):
+                renames[fields[position + 1]] = fields[position + 2]
+            position += 3
+        else:
+            position += 2
+    return renames
+
+
 def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_test_only_members.py",
@@ -464,7 +495,9 @@ def main(argv: list[str]) -> int:
         allowed = {entry.key for entry in entries}
         failures, only = check(files, allowed)
         base = read_base(args.base, args.root or ROOT) if args.base else None
-        failures.extend(list_failures(entries, base))
+        root = args.root or ROOT
+        renames = read_renames(args.base, root, args.rev) if args.base and base is not None else None
+        failures.extend(list_failures(entries, base, renames))
         _, stands = scan(files)
     except (check_layers.LayerError, MembersError, OSError) as error:
         print(f"tools/check_test_only_members.py: {error}", file=sys.stderr)

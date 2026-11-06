@@ -21,6 +21,9 @@ src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/marble_bag.gd rig_spaced
+src/city/scenery_ground.gd get_cell_atlas_coords
+src/city/scenery_ground.gd get_cell_source_id
+src/city/scenery_ground.gd get_used_cells
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/crowd/crowd.gd set_focus
 src/crowd/crowd.gd signals_for_tests
@@ -41,6 +44,7 @@ src/events/checkpoint_controller.gd crossing_door
 src/events/checkpoint_controller.gd guard_after_her
 src/events/event_instance.gd charger_name
 src/events/event_instance.gd its_officer
+src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd sent_pursuer
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd attach_nodes
@@ -65,6 +69,7 @@ src/resistance/resistance_director.gd arrow_targets
 src/resistance/resistance_director.gd door_axis
 src/resistance/resistance_director.gd door_position
 src/resistance/resistance_director.gd fell_back
+src/resistance/resistance_director.gd mark_guard
 src/resistance/resistance_director.gd mark_tiles
 src/resistance/resistance_director.gd mast_in_play
 src/resistance/resistance_director.gd reaches_from_home
@@ -133,9 +138,6 @@ src/city/city_map.gd count_walkable
 src/city/marble_bag.gd put_in_front
 src/city/poster_art.gd torn
 src/city/scenery_ground.gd evicted
-src/city/scenery_ground.gd get_cell_atlas_coords
-src/city/scenery_ground.gd get_cell_source_id
-src/city/scenery_ground.gd get_used_cells
 src/city/scenery_ground.gd prepared
 src/city/scenery_ground.gd worst_step_usec
 src/city/scenery_residency.gd camera_view
@@ -201,7 +203,6 @@ src/events/event_footprints.gd picture_drop_of
 src/events/event_manager.gd check_hard_fails
 src/events/event_manager.gd planner
 src/events/event_manager.gd step_the_encounters
-src/events/event_manager.gd walks_under_a_boom
 src/events/event_scenery.gd moving_layers
 src/events/event_scenery.gd static_layers
 src/events/event_scheduler.gd budget_for
@@ -268,7 +269,6 @@ src/resistance/resistance_director.gd is_alley_mouth
 src/resistance/resistance_director.gd is_at_a_front_door
 src/resistance/resistance_director.gd is_mark_tile
 src/resistance/resistance_director.gd keeps_a_waiting_guard
-src/resistance/resistance_director.gd mark_guard
 src/resistance/resistance_director.gd mark_tile_of
 src/resistance/resistance_director.gd nearest_alley_among
 src/resistance/resistance_director.gd nearest_alley_within
