@@ -11,7 +11,6 @@ const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
-const STEP := 1.0 / 60.0
 
 ## The city and its run the test now running stands in: `_begin()` builds both afresh at the top of
 ## every test and `_end()` frees them at its bottom, so no test reads what an earlier one left.
@@ -28,7 +27,6 @@ func run(t) -> void:
 	await _test_a_retry_gives_the_power_back(t)
 	await _test_the_station_hall_is_lit_only_on_the_last_night(t)
 	await _test_a_dark_junction_is_negotiated(t)
-	await _test_the_dark_spine_is_crossed_on_the_horn(t)
 	await _test_the_dark_spine_keeps_moving(t)
 	await _test_the_escape_is_dark_from_its_first_frame(t)
 	await _test_the_building_is_dark_too(t)
@@ -263,24 +261,17 @@ func _test_a_dark_junction_is_negotiated(t) -> void:
 	var signals := _city.signals
 	var junction := _spine_junction()
 	var reds := 0
-	signals.powered = true
+	# One cycle of the day's signal clock in 24 steps, as the crowd's ticks advance it.
 	for i in 24:
-		signals.elapsed = float(i) / 24.0 * Tuning.signal_cycle_seconds()
 		if not signals.green_for(junction, true):
 			reds += 1
+		signals.advance(Tuning.signal_cycle_seconds() / 24.0)
 	t.check(reds > 0, "a lit spine junction holds its own traffic for part of the cycle (%d/24)"
 			% reds)
-	signals.powered = false
+	_go_dark()
 	t.check(not signals.is_signalled(junction),
 			"a dark one is left to the crowd's own give-way, the same as a side street's")
 	_end()
-
-## The contract a dark crossing of the spine keeps is the side street's: the painted carriageway
-## and the horn, since the spine's traffic does not give way at its zebras lit or dark.
-func _test_the_dark_spine_is_crossed_on_the_horn(t) -> void:
-	t.check(Tuning.CAR_HORN_TIME >= Tuning.required_horn_time(),
-			"the horn %.2fs covers the spine's %.0fpx of carriageway doubled (%.2fs)"
-			% [Tuning.CAR_HORN_TIME, Tuning.carriageway_width(), Tuning.required_horn_time()])
 
 ## A spine left to the box rule still carries its traffic: right before left and "nothing enters a
 ## box it cannot leave" hold a five-times-busier street together without a light. Stated against the
@@ -288,9 +279,10 @@ func _test_the_dark_spine_is_crossed_on_the_horn(t) -> void:
 ## is no car park by comparison.
 func _test_the_dark_spine_keeps_moving(t) -> void:
 	_begin(t)
-	var lit := _spine_traffic(true)
+	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
-	var dark := _spine_traffic(false)
+	_go_dark()
+	var dark: Vector2 = await _spine_traffic(t)
 	_sampled_cars = mini(_sampled_cars, lit_samples)
 	print("[test_blackout] spine traffic over 40s, lit: mean %.0f px/s, %.0f%% stopped; "
 			% [lit.x, lit.y * 100.0] + "dark: mean %.0f px/s, %.0f%% stopped"
@@ -303,31 +295,51 @@ func _test_the_dark_spine_keeps_moving(t) -> void:
 			% (dark.y * 100.0))
 	_end()
 
-## Mean speed and stopped share of the cars on the spine, sampled over forty seconds of a real
-## crowd step, with the field on the spine so the cars there are the ones being simulated.
-func _spine_traffic(powered: bool) -> Vector2:
+## Mean speed and stopped share of the cars on the spine, sampled every half second over forty
+## seconds of the crowd's own physics ticks, with a stroller standing on the sidewalk beside the
+## spine for the crowd to make way for, so the field is over the spine and the cars there are the
+## ones being simulated. The spine is lit or dark as the city left it.
+func _spine_traffic(t) -> Vector2:
 	_city.crowd.start_day(Tuning.RUN_LENGTH_DAYS, _rng("traffic"))
-	_city.signals.powered = powered
-	var centre := Vector2((_city.map.main_road * CityMap.period()
-			+ Tuning.STREET_WIDTH * 0.5) * Tuning.TILE_SIZE, _city.map.world_size().y * 0.5)
-	_city.crowd.set_focus(centre)
-	var speed_sum := 0.0
-	var stopped := 0
-	var samples := 0
-	for i in int(round(40.0 / STEP)):
-		_city.crowd.step(STEP)
-		if i % 30 != 0:
-			continue
+	var her := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	her.add_child(camera)
+	_city.add_child(her)
+	her.set_physics_process(false)
+	her.global_position = _sidewalk_beside_the_spine()
+	_city.crowd.use_player(her)
+	var totals := {"speed": 0.0, "stopped": 0, "samples": 0}
+	var sample := func(ticks: int) -> bool:
+		if ticks % 30 != 0:
+			return false
 		for agent in _city.crowd.agents():
 			if agent.kind != CrowdAgent.Kind.CAR or not agent.travelling_vertically() \
 					or not _city.map.is_main_road(true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
-			samples += 1
-			speed_sum += agent.speed()
+			totals.samples += 1
+			totals.speed += agent.speed()
 			if agent.speed() < Tuning.CAR_STOPPED_SPEED:
-				stopped += 1
-	_sampled_cars = samples
-	return Vector2(speed_sum / maxf(1.0, samples), float(stopped) / maxf(1.0, samples))
+				totals.stopped += 1
+		return false
+	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(40.0, 1.0), sample)
+	_city.crowd.use_player(null)
+	her.free()
+	_sampled_cars = totals.samples
+	return Vector2(totals.speed / maxf(1.0, totals.samples),
+			float(totals.stopped) / maxf(1.0, totals.samples))
+
+## A sidewalk tile beside the spine at the map's middle height, where a body stands off the
+## carriageway the cars drive on.
+func _sidewalk_beside_the_spine() -> Vector2:
+	var row := _city.map.size.y / 2
+	for x in range(_city.map.main_road * CityMap.period(),
+			_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH + 1):
+		var tile := Vector2i(x, row)
+		if _city.map.tile_at(tile) == GameEnums.TileType.SIDEWALK:
+			return _city.map.tile_to_world(tile)
+	return _city.map.tile_to_world(Vector2i(_city.map.main_road * CityMap.period(), row))
 
 ## The escape is the same night, so a city built for it — its `DaySpec` dark from the start — is
 ## dark before its first frame.
@@ -367,11 +379,10 @@ func _test_the_building_is_dark_too(t) -> void:
 			"the hallways and the lobby are in the gloom")
 	t.check(basement.get_luminance() < hallway.get_luminance(),
 			"and the basement is darker than they are")
-	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED and stairs.r > stairs.g * 2.0,
+	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED,
 			"the stairwells are on the red emergency lighting")
 	t.check(scene.lighting_at(plan.waypoints["stairwell_right"]) == stairs,
 			"both of them")
-	t.check(hallway.get_luminance() < 0.6, "and nothing in the building is lit as it was")
 	scene.flash_windows()
 	t.check(scene.lighting_at(plan.waypoints["hallway_second"]).get_luminance()
 			> hallway.get_luminance(), "a hallway is lit up while its windows flash")

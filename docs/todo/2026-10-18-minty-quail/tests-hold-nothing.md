@@ -106,11 +106,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_barrier_stays.gd:192-214` (`_test_the_barrier_costs_nothing_while_he_walks_away`, whole function) and `:139` (`current_intensity() == 0.0`) | "the barrier costs nothing beside it on any leaving frame" / "nor after it, as a roadblock's band never does" | duplicate | `finale_rig.gd:525-592` (`_test_a_roadblock_band_costs_nothing`) walks the same roadblock through posted, warning, charging, walking away, gone and streamed back, and asserts `strongest == 0.0` on every frame including the leaving ones; its 531 check asserts the row's intensity is 0.0. The two suites test the same behavior of the same component (`excitement.contribution_at` on a roadblock band). | medium
 
-**`test_blackout.gd`**
-
-- test_blackout.gd:280-283 `_test_the_dark_spine_is_crossed_on_the_horn` | "the horn %.2fs covers the spine's %.0fpx of carriageway doubled" (`CAR_HORN_TIME >= required_horn_time()`) | duplicate | Exactly the first check of `_test_the_traffic_contract_is_fair` in tests/crowd_rig.gd:514. It builds no city, darkens nothing and reads nothing about the blackout, so it cannot fail for any blackout reason. The whole function is the finding; delete it. | high
-- test_blackout.gd:370 and 374 `_test_the_building_is_dark_too` | `stairs.r > stairs.g * 2.0` and `hallway.get_luminance() < 0.6` | restates a design decision | Colour numbers read back from `Palette` ("not tested, checked by eye: colour"); they go red when the palette is retuned, not when lighting selection breaks. The part-by-part equality checks (`== Palette.ESCAPE_GLOOM`, `== ESCAPE_EMERGENCY_RED`, basement darker than hallway, flash lifts hallway but not stairs) are the real ones. | medium
-
 **`test_bollards.gd`**
 
 - `test_bollards.gd:46` | "and that circle is 4.8px" (`post.shape.radius == 12.0 * 0.4`) | restates a design decision | The literal radius restated; line 44 already asserts the body's circle equals the radius the shadow is drawn from, which is the relationship that matters. | high
@@ -214,10 +209,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - test_give_way.gd:34-37 `_test_the_stop_line_is_a_setback_short` | "the line is the setback short of what it stops for" (`GiveWay.stop_line(100.0) == 100.0 - Tuning.CAR_STOP_LINE_SETBACK`) | cannot fail (tautology) | The assertion is the function's body retyped. The second check (`stop_line(1.0) < 0.0`) is a real edge case and is worth keeping. | medium
 
-**`test_ground_floor.gd`**
-
-- `test_ground_floor.gd:828` and `:844` (inside `_test_roof_extension_rows_reads_back_per_column` and `_test_extension_is_seamless_reads_back_per_column`) | "column %d: extension_rows() reads roof_extension_rows back exactly" / "extension_is_seamless() reads roof_extension_seamless back exactly" | cannot fail | Assert an accessor returns the field the test just wrote by hand. The out-of-range checks next to them (830-831, 846-847) are real; the per-column read-back loops are not. | medium
-
 **`test_ground_layers.gd`**
 
 - test_ground_layers.gd:114-145 `_test_directional_component_pairs_match_ground_tiles` (with `_check_directional_layers`) | "source %d has its GroundTiles direction and component rotation" | restates a design decision | A literal 22-row table (source id -> component, rotation) compared to the same table in `ground_layers.json`; it never reads `GroundTiles` for the direction it names, so it can go red only when the JSON or the table is edited, and every such edit is made together. If the intent is "the rotated component agrees with the tile's direction", derive the expected rotation from `GroundTiles`; otherwise delete. | medium
@@ -246,10 +237,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_loss_cause.gd`**
 
 - test_loss_cause.gd:_test_a_day_lost_to_the_pelican_names_the_pelican, third check "a car is still a car" | `hard_fail_suffix("car_strike") == "car"` | duplicate | Same call, same value as the first check of `_test_hard_fail_cause_suffix` (:21) and again in `_test_the_cause_by_result` (`car_strike` -> "car"). | medium
-
-**`test_main.gd`**
-
-- `test_main.gd:1138` | "the window is 500ms" (`ReturnWindow.IGNORED_MSEC == 500`) | restates a design decision | Reads the constant back against its literal. The behaviour is checked on the next lines (a press inside the window is ignored, the same press after it counts), which uses the constant, so a retune moves both and breaks nothing the player feels. | high
 
 **`test_orientation.gd`**
 
@@ -363,10 +350,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_scene_recipe_task.gd`**
 
 - `test_scene_recipe_task.gd:272-297` (`_test_the_task_scenes_start_off_an_unread_mark`, whole function), `:303-318` (`_test_the_door_scenes_show_the_robber_a_done_task_sends`, whole function), `:343-348` (last check of `_test_an_authored_mast_carries_its_own_id`) | "%s starts off the mark" / "%s lists the street the robber starts on" / "the two-mast scene stands two masts under two ids" | restates a design decision | These load the authored `scene-recipes/*.json` files and assert facts about their contents (the start anchor is not the mark, an observation is at tick 1, `draft.include` is non-empty). No game code is exercised; they are red only when a recipe file is edited, and the second says in its own comment that the headless scene play (`tools/scene-recipes.sh`) answers the question and this "keeps either from being dropped". That is a lint of authored data, not a behavior. Could move into the recipe validator (`SceneRecipeRuntime.validate_runtime`) if the rule is wanted. | medium
-
-**`test_scenery_animation.gd`**
-
-- `test_scenery_animation.gd:150` | "the rotor display is centered in the generated housing's circular opening" (`VENT_ROTOR_RECT.get_center()` vs `Vector2(29, 22)`) | restates a design decision | Pixel coordinates of an art registration restated; red only when the art is redrawn, and the picture is a look question (checked by eye). Line 148 (runtime crop equals the authored viewBox) is the real contract and stays | medium
 
 **`test_seals.gd`**
 
