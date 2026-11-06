@@ -1920,9 +1920,11 @@ JQ
 # **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
 # nothing lets the command through in both Claude Code and Codex, so the guard never answers
 # "allow" by breaking: the payload failing to read, no jq at all, the text failing to strip where
-# jq is missing, git's aliases failing to list, the program failing, its findings failing to read
-# back, and the answer failing to print are each a deny. The one input whose failure does not deny
-# is git's list of its built-ins (`git_table`), since the writing ones are counted all the same.
+# jq is missing, git's aliases failing to list both in the session's directory and outside any
+# repository (or that directory failing to read from the payload), the program failing, its
+# findings failing to read back, and the answer failing to print are each a deny. The one input
+# whose failure does not deny is git's list of its built-ins (`git_table`), since the writing ones
+# are counted all the same.
 # A decision is never the exit status of a pipe: under `pipefail` a pipe fails when any one of its
 # programs does, which a match does not stop (a reader that has matched and left gives the writer
 # EPIPE where SIGPIPE is ignored, as on GitHub's runners), so a pipe's text is first read into a
@@ -1963,31 +1965,31 @@ fi
 # player's global aliases, the repository's own and any file they include all count. Only a
 # command of the two guarded tools that names git, with quotes, backslashes, `$` and newlines
 # taken out as the reading takes them out, and that is short enough to be read at all, asks;
-# every other command reads with no aliases, and so does one where git is not installed. Where
-# git's config cannot answer -- any failure but git's own exit 1 with nothing listed, which is how
-# it says no alias is set -- the command is denied unread, since an alias it cannot see may stand
-# for a write (`ci` = `commit`). The built-ins are asked for only when there is an alias to tell
-# them from, and the ones that write (`write_builtins`, the subcommands `is_write_name` lists) are
-# always among them, whether git's own list reads or not: every git has them and never runs an
-# alias in their place, and a list that failed to read would otherwise let an alias named after
-# one (`push` = `status`, which git ignores) read as the read it stands for.
-git_table() {
-	local dir aliases builtins alias_status
-	local write_builtins='{"push":true,"commit":true,"merge":true,"rebase":true,"pull":true,"cherry-pick":true,"revert":true,"am":true}'
-	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
-	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
-		if (.tool_name | IN("Bash", "Monitor")) | not then "-" else
-		  (.tool_input.command // ""
-		   | if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end) as $c
-		  | if ($c | length) > $cap or ($c | test("(?i)g[\\\\\"'\''$\n]*i[\\\\\"'\''$\n]*t") | not) then "-"
-		    else (.cwd // "" | if type == "string" and length > 0 then . else "." end) end
-		end' 2>/dev/null) || { printf 'null'; return; }
-	if [ "$dir" = "-" ]; then printf 'null'; return; fi
-	[ -d "$dir" ] || dir=.
-	# git's own exit status is kept apart from jq's (`-z` output holds NULs, which a shell variable
-	# cannot): 1 with nothing listed is git's "no such key", and any other failure of either is an
-	# alias table that cannot be read.
-	aliases=$(git -C "$dir" config -z --get-regexp '^alias\.' 2>/dev/null | jq -Rsc '
+# every other command reads with no aliases, and so does one where git is not installed.
+#
+# Where git's config cannot answer in that directory -- any failure but git's own exit 1 with
+# nothing listed, which is how it says no alias is set -- it is asked again outside any repository
+# (`git -C /`), which gives the global and system aliases alone. git fails in the session's
+# directory in ordinary states: a worktree whose admin entry was pruned, or a directory that was
+# removed while the session sat in it. A git run there fails too, so the aliases that matter are
+# the global ones a `git -C <elsewhere>` would use, and a repository's own aliases reached that way
+# are already an accepted gap (the header). Only when that second read fails as well, or the
+# payload cannot be read for its directory, is the command denied unread, since an alias the guard
+# cannot see may stand for a write (`ci` = `commit`).
+#
+# The built-ins are asked for only when there is an alias to tell them from, and the ones that
+# write (`write_builtins`, the subcommands `is_write_name` lists) are always among them, whether
+# git's own list reads or not: every git has them and never runs an alias in their place, and a
+# list that failed to read would otherwise let an alias named after one (`push` = `status`, which
+# git ignores) read as the read it stands for.
+#
+# `alias_table <dir>` prints every `alias.*` key git's config gives in <dir> as a JSON object, or
+# fails. git's own exit status is kept apart from jq's (`-z` output holds NULs, which a shell
+# variable cannot hold): exit 1 with nothing listed is git's "no such key", an empty table, and any
+# other failure of either program fails the call.
+alias_table() {
+	local table status
+	table=$(git -C "$1" config -z --get-regexp '^alias\.' 2>/dev/null | jq -Rsc '
 		[split("\u0000")[] | select(length > 0)
 		 | (index("\n")) as $k
 		 | if $k == null then {key: .[6:], value: null} else {key: .[6:$k], value: .[$k + 1:]} end
@@ -1996,12 +1998,28 @@ git_table() {
 		statuses=("${PIPESTATUS[@]}")
 		[ "${statuses[1]:-1}" = 0 ] || exit 2
 		exit "${statuses[0]:-2}")
-	alias_status=$?
-	if [ "$alias_status" = 1 ] && [ "$aliases" = '{}' ]; then
+	status=$?
+	if [ "$status" = 1 ] && [ "$table" = '{}' ]; then
 		:
-	elif [ "$alias_status" != 0 ] || [ -z "$aliases" ]; then
-		return 3
+	elif [ "$status" != 0 ] || [ -z "$table" ]; then
+		return 1
 	fi
+	printf '%s' "$table"
+}
+git_table() {
+	local dir aliases builtins
+	local write_builtins='{"push":true,"commit":true,"merge":true,"rebase":true,"pull":true,"cherry-pick":true,"revert":true,"am":true}'
+	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
+	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
+		if (.tool_name | IN("Bash", "Monitor")) | not then "-" else
+		  (.tool_input.command // ""
+		   | if type == "string" then . elif type == "array" then map(tostring) | join(" ") else "" end) as $c
+		  | if ($c | length) > $cap or ($c | test("(?i)g[\\\\\"'\''$\n]*i[\\\\\"'\''$\n]*t") | not) then "-"
+		    else (.cwd // "" | if type == "string" and length > 0 then . else "." end) end
+		end' 2>/dev/null) || return 3
+	if [ "$dir" = "-" ]; then printf 'null'; return; fi
+	[ -d "$dir" ] || dir=.
+	aliases=$(alias_table "$dir") || aliases=$(alias_table /) || return 3
 	if [ "$aliases" = '{}' ]; then
 		printf '{"aliases":{},"builtins":{}}'
 		return
@@ -2013,7 +2031,7 @@ git_table() {
 	printf '{"aliases":%s,"builtins":%s}' "$aliases" "$builtins"
 }
 if ! git_json=$(git_table); then
-	deny_unread "The write guard could not read git's aliases (git config failed), so this command, which names git, is denied unread: an alias it cannot see may stand for a write. See .claude/hooks/github-write-guard.sh."
+	deny_unread "The write guard could not read git's aliases: git config failed both in the session's directory and outside any repository (git -C / config), or the hook's payload could not be read for that directory. This command names git, and an alias the guard cannot see may stand for a write, so it is denied unread; check that git config --global --list works. See .claude/hooks/github-write-guard.sh."
 fi
 
 # The writes the closing ask may put to the player rather than deny (see the end of this script).

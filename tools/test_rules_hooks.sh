@@ -156,8 +156,11 @@
 #     a looping one, one with no value and one starting with git's own options deny, an alias to
 #     a read and a built-in an alias cannot shadow allow, a built-in write an alias is named after
 #     stays the write even where git's list of its built-ins cannot be read, a command naming git
-#     denies where git's aliases cannot be listed (git config failing other than with its exit 1
-#     and nothing listed, which still reads as no alias), a coder's wrapper
+#     denies where git's aliases cannot be listed in the session's directory or outside any
+#     repository (git config failing other than with its exit 1 and nothing listed, which still
+#     reads as no alias), while a session whose directory is a pruned worktree or was deleted reads
+#     the global aliases instead (reads elsewhere allow, a global alias for a write denies), a
+#     coder's wrapper
 #     exempts each and a reviewer's does not exempt a push or an unreadable one, and where no
 #     identity can work an
 #     alias is asked about or denied as what it stands for; an alias set on the command line
@@ -1258,9 +1261,17 @@ write_guard_env() {
 write_guard_payload() {
     jq -Rs --arg t "${1:-Bash}" --arg d "$write_guard_repo" '{tool_name:$t, cwd:$d, tool_input:{command:.}}'
 }
+# With `write_guard_gone_cwd` set, the hook runs in a directory removed after it was entered, which
+# is the payload's cwd too: the state of a session whose directory was deleted under it.
+write_guard_gone_cwd=""
 write_guard_decision() {
-    local cmd="$1" tool="${2:-Bash}" raw
-    raw=$(printf '%s' "$cmd" | write_guard_payload "$tool" \
+    local cmd="$1" tool="${2:-Bash}" raw gone=""
+    if [ -n "$write_guard_gone_cwd" ]; then
+        gone="$(mktemp -d)" || return 1
+        local write_guard_repo="$gone"
+    fi
+    raw=$({ [ -z "$gone" ] || { cd "$gone" && rmdir "$gone"; }; } || exit 1
+        printf '%s' "$cmd" | write_guard_payload "$tool" \
         | write_guard_env \
             ${write_guard_remote:+CLAUDE_CODE_REMOTE=true} ${write_guard_switch:+NAPPY_ASK_FOR_PLAYER_WRITES=$write_guard_switch} \
             NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
@@ -2416,9 +2427,10 @@ write_guard_fail_git="--list-cmds=builtins"
 assert_write_guard "built-ins unlisted: git push (push = status) -> deny, the push it is" deny 'git push origin main'
 assert_write_guard "built-ins unlisted: git ci (ci = commit) -> deny" deny 'git ci -m wip'
 assert_write_guard "built-ins unlisted: git st (status -sb) -> allow" allow 'git st'
-# Where git's aliases cannot be listed, a command naming git is denied unread, since an alias it
-# cannot see may stand for a write; git's own exit 1 with nothing listed is how it says no alias
-# is set, and still reads as none.
+# Where git's aliases cannot be listed in the session's directory or outside any repository (the
+# shim fails both reads), a command naming git is denied unread, since an alias it cannot see may
+# stand for a write; git's own exit 1 with nothing listed is how it says no alias is set, and still
+# reads as none.
 write_guard_fail_git="--get-regexp"
 write_guard_fail_git_status=128
 assert_write_guard "aliases unlisted (git config exits 128): git ci (ci = commit) -> deny" deny 'git ci -m x'
@@ -2429,6 +2441,44 @@ assert_write_guard "no aliases (git config exits 1, nothing listed): git ci -> a
 write_guard_fail_git_status=""
 write_guard_fail_git=""
 write_guard_path=""
+# A session's directory git cannot run in -- a worktree whose admin entry was pruned, or a
+# directory removed while the session sat in it -- is an ordinary state here, not a broken config:
+# the aliases are read again outside any repository, so reads elsewhere still allow, and a global
+# alias for a write (ci = commit, in this config) still denies.
+write_guard_pruned_main="${TMPDIR:-/tmp}/write-guard-pruned-main"
+write_guard_pruned="${TMPDIR:-/tmp}/write-guard-pruned"
+git init -q "$write_guard_pruned_main"
+GIT_CONFIG_GLOBAL="$write_guard_no_aliases" GIT_CONFIG_NOSYSTEM=1 git -C "$write_guard_pruned_main" \
+    -c user.name=t -c user.email=t@example.com commit -q --no-verify --allow-empty -m seed
+GIT_CONFIG_GLOBAL="$write_guard_no_aliases" GIT_CONFIG_NOSYSTEM=1 git -C "$write_guard_pruned_main" \
+    worktree add -q "$write_guard_pruned" 2>/dev/null
+rm -rf "$write_guard_pruned_main/.git/worktrees"
+assert_pruned_worktree_now() {
+    checks=$((checks + 1))
+    if [ -f "$write_guard_pruned/.git" ] && ! git -C "$write_guard_pruned" rev-parse >/dev/null 2>&1; then
+        echo "ok   $1"
+    else
+        fail "$1: $write_guard_pruned was not made, or git still runs in it"
+    fi
+}
+run_case assert_pruned_worktree_now "the pruned worktree is a directory git cannot run in"
+write_guard_repo_kept="$write_guard_repo"
+for write_guard_where in "a pruned worktree" "a deleted directory"; do
+    if [ "$write_guard_where" = "a pruned worktree" ]; then
+        write_guard_repo="$write_guard_pruned"
+    else
+        write_guard_repo="$write_guard_repo_kept"
+        write_guard_gone_cwd=1
+    fi
+    assert_write_guard "cwd $write_guard_where: git -C <repo> status -> allow" allow \
+        "git -C $write_guard_repo_kept status"
+    assert_write_guard "cwd $write_guard_where: echo digits -> allow" allow 'echo digits'
+    assert_write_guard "cwd $write_guard_where: ls -> allow" allow 'ls -la'
+    assert_write_guard "cwd $write_guard_where: git -C <repo> ci (a global ci = commit) -> deny" deny \
+        "git -C $write_guard_repo_kept ci -m x"
+done
+write_guard_gone_cwd=""
+write_guard_repo="$write_guard_repo_kept"
 assert_write_guard "git ci, wrapped as a coder -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git ci -m wip'
 assert_write_guard "git sh, wrapped as a coder -> allow" allow \
@@ -2671,20 +2721,18 @@ write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 write_guard_fail_jq="--slurpfile"
 assert_write_guard "the program fails: git status -> deny" deny 'git status'
 # The findings fail to read back: every flag the answer turns on is read in one call, and a call
-# that fails denies rather than leaving the flag empty, which reads as false -- so a reviewer's
-# push, where the switch is on and no identity can work, would be asked about. The shim fails the
-# call that names each flag in turn.
-for write_guard_flag in reviewer_push wrapped issue_write approval too_long; do
-    write_guard_fail_jq="$write_guard_flag"
-    assert_write_guard_reason "the $write_guard_flag flag fails to read: git push -> a deny that says so" \
-        'git push origin main' "could not read back what its own reading found"
-    write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
-    write_guard_switch=1
-    assert_write_guard "the $write_guard_flag flag fails to read where it would ask: a reviewer's git push -> deny" deny \
-        'uv run python tools/agent-identity.py run claude-reviewer -- git push origin feature/x'
-    write_guard_switch=""
-    write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
-done
+# that fails denies rather than leaving a flag empty, which reads as false -- so a reviewer's push,
+# where the switch is on and no identity can work, would be asked about. The shim fails that call
+# by the reviewer_push flag it names.
+write_guard_fail_jq="reviewer_push"
+assert_write_guard_reason "the flags fail to read back: git push -> a deny that says so" \
+    'git push origin main' "could not read back what its own reading found"
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+write_guard_switch=1
+assert_write_guard "the flags fail to read back where it would ask: a reviewer's git push -> deny" deny \
+    'uv run python tools/agent-identity.py run claude-reviewer -- git push origin feature/x'
+write_guard_switch=""
+write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 write_guard_fail_jq=""
 # git-grep-guard.sh builds its answer whole too, and prints a fixed deny when that fails rather
 # than nothing, which would let the search through.
