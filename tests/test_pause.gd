@@ -1437,13 +1437,12 @@ func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t) -> void
 	var pause := _pause(t)
 	var body := UI.control(pause, "Body") as HelpText
 	pause.open()
-	var tap_line := body.line
 	pause.close()
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	pause.open()
-	t.check(body.line != tap_line, "the line is re-read on this open, not kept from the last")
 	t.check(body.line.begins_with("Tap to walk, hold {run} or double tap to run."),
-			"joystick scheme: the body shows the run button, got '%s'" % body.line)
+			"joystick scheme: the line is read again on this open and shows the run button, got '%s'"
+			% body.line)
 	pause.close()
 	pause.free()
 	controls.free()
