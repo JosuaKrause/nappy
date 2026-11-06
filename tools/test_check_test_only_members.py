@@ -148,7 +148,8 @@ class CollisionTests(unittest.TestCase):
         key = (self.CORDON, "gap")
         failures = members.check(files(self.SRC | hud, self.TESTS), {key}, frozenset({key}))[0]
         self.assertEqual(
-            failures, [f"REMOVE from tools/test_only_members.txt: {self.CORDON} gap (now read by another file under src/)"]
+            failures,
+            [f"REMOVE from tools/test_only_members.txt: {self.CORDON} gap (now read by another file under src/)"],
         )
 
     def test_a_reader_typed_as_a_subclass_reaches_the_member_its_parent_defines(self) -> None:

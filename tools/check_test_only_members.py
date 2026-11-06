@@ -245,7 +245,7 @@ def members_of(path: str, text: str) -> list[Member]:
     return found
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def bare_of(text: str) -> str:
     return check_layers.blank(text).bare
 
