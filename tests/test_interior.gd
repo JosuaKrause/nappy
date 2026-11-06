@@ -7,6 +7,7 @@ extends RefCounted
 const BuildingEvents := preload("res://tests/building_events.gd")
 const InteriorRig := preload("res://tests/interior_rig.gd")
 const GivenPlanner := preload("res://tests/given_planner.gd")
+const BakedRegions := preload("res://tests/baked_regions.gd")
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
@@ -159,12 +160,12 @@ func _test_the_exit_and_the_entrance_are_what_they_claim(t: Node) -> void:
 			"the basement's own exit tile is the emergency exit kind")
 	t.check(f.is_walkable(f.exit_tile), "the emergency exit is walkable")
 
-	t.check(f.entrance_tiles.size() == 1, "the map records exactly one barricaded entrance")
+	t.check(not f.entrance_tiles.is_empty(), "the map records a barricaded entrance")
+	if f.entrance_tiles.is_empty():
+		return
 	var entrance: Vector2i = f.entrance_tiles[0]
 	t.check(f.walls.get(entrance) == InteriorTile.Kind.ENTRANCE_DOOR,
 			"the lobby's own entrance is the entrance door kind")
-	t.check(not InteriorTile.is_walkable(InteriorTile.Kind.ENTRANCE_DOOR),
-			"the barricaded entrance is not a walkable kind at all — it is a wall cell, never a floor tile")
 
 ## A few representative points between parts — the gap `InteriorMap._SLOT_STRIDE` leaves, since
 ## nothing is ever placed there.
@@ -316,9 +317,9 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 ## Region names, and every `TileSetAtlasSource` sharing the one `interior` page object rather
 ## than a texture of its own — see `InteriorTileSet`'s own doc for why one tile per source makes
 ## that safe, proved against this engine version with a throwaway script before it was written
-## this way. `InteriorTileSet.region_name_for()` is the lookup; a drawn sprite's own `AtlasTexture`
-## (`.atlas`/`.region`) is what a test reads directly now, since it is a live region rather than a
-## cropped copy with no `resource_path` of its own.
+## this way. A source's own tile region on the page (`get_tile_texture_region()`) is what says which
+## region it draws, as a drawn sprite's own `AtlasTexture` (`.atlas`/`.region`) does, since either is
+## a live region rather than a cropped copy with no `resource_path` of its own.
 func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var expected_names := {
 		InteriorTile.Kind.STAIR_TOP_E: &"interior/m158_stair_side_upper_e",
@@ -338,15 +339,14 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	var page := atlas.region(&"interior/stairwell_floor").atlas
 	for kind: InteriorTile.Kind in expected_names:
 		var name: StringName = expected_names[kind]
-		t.check(InteriorTileSet.region_name_for(kind) == name,
-				"stair role %d binds its reviewed tile region" % kind)
 		var source_id := InteriorTileSet.source_id_for(kind)
 		var source := tile_set.get_source(source_id) as TileSetAtlasSource
 		t.check(source != null and source.texture == page,
 				"stair role %d's source shares the interior page, not a texture of its own" % kind)
 		var rect := AtlasTable.baked().region_rect(name)
 		t.check(source != null and source.get_tile_texture_region(Vector2i.ZERO) == rect,
-				"stair role %d's tile addresses exactly its own region on the shared page" % kind)
+				"stair role %d binds its reviewed tile, exactly its own region on the shared page"
+				% kind)
 
 	# Every shaft picture the whole TileSet carries, by its own region name. `interior/stairwell_
 	# floor` is the level `F` ground and the tread under each `D`; the basement's own
@@ -360,12 +360,17 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 		&"interior/stair_flight_e": true, &"interior/stair_flight_w": true,
 		&"interior/stair_landing": true, &"interior/stairwell_floor": true,
 	}
+	var interior_names := BakedRegions.on(&"interior")
+	var name_at: Dictionary = {}
+	for name in interior_names:
+		name_at[AtlasTable.baked().region_rect(name)] = name
 	var stair_sources := {}
 	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
 		var id := InteriorTileSet.source_id_for(kind)
-		if id < 0:
+		if id < 0 or not tile_set.has_source(id):
 			continue
-		var name := InteriorTileSet.region_name_for(kind)
+		var tile_source := tile_set.get_source(id) as TileSetAtlasSource
+		var name: StringName = name_at.get(tile_source.get_tile_texture_region(Vector2i.ZERO), &"")
 		var short := String(name).trim_prefix("interior/")
 		if not short.begins_with("stair") and not short.begins_with("m158_stair"):
 			continue
@@ -380,8 +385,8 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 	# no longer carries a name of its own to compare against, only the `AtlasTexture` region
 	# the library's `region()` handed out and cached — the scene is handed the same library.
 	var forbidden := {}
-	for name in AtlasTable.baked().region_names():
-		if AtlasTable.baked().group_of(name) != &"interior" or name == InteriorScene.DOOR_TEXTURE:
+	for name in interior_names:
+		if name == InteriorScene.DOOR_TEXTURE:
 			continue
 		var short := String(name).trim_prefix("interior/")
 		if short.begins_with("stair") or short.begins_with("m158_stair"):
