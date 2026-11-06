@@ -53,11 +53,6 @@ static func _burn(run: RunState, block: Vector2i) -> void:
 	]
 	run.attempt_spend.city_state.apply_cause({block: plan}, block, GameEnums.BlockCause.FIRE, 6)
 
-## What the save file holds, as JSON-safe values (what a read back from disk is).
-static func written(run: RunState) -> Dictionary:
-	return JSON.parse_string(JSON.stringify(GameSave.file_data(run, true)))
-
-## What the save file holds after the day was lost: the run given back to its dawn, a nerve spent.
-static func after_a_loss(run: RunState) -> Dictionary:
+## The day lost on the run: it is given back to its dawn, a nerve spent.
+static func lose_a_day(run: RunState) -> void:
 	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	return JSON.parse_string(JSON.stringify(GameSave.file_data(run, false)))

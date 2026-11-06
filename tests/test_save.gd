@@ -139,6 +139,16 @@ func _next_operation() -> int:
 	_operation += 1
 	return _operation
 
+## Whether a write under the current configuration lands: the save answers that it kept the file
+## and the file is there. The scratch file is gone before and after, so only this write is read.
+func _a_write_lands() -> bool:
+	var run := _a_run()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_PATH))
+	var landed := _saved(run, false) and FileAccess.file_exists(_SCRATCH_PATH)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_PATH))
+	run.free()
+	return landed
+
 ## The scratch file is put away around `callable`, so a test starts and leaves with no save.
 func _with_a_scratch_save(callable: Callable) -> void:
 	_save.clear()
@@ -159,26 +169,26 @@ func _headless(callable: Callable) -> void:
 ## answers "no" on its own, before a path override is even asked for.
 func _test_uses_save_is_false_under_the_headless_runner(t) -> void:
 	_save.configure(RunConfig.at_boot())
-	t.check(RunConfig.at_boot().headless and not _save.uses_save(),
+	t.check(RunConfig.at_boot().headless and not _a_write_lands(),
 			"the headless test runner never reads or writes the real save")
 	_save.configure(_headless_run())
-	t.check(not _save.uses_save(), "nor does a headless release run, flags or no flags")
+	t.check(not _a_write_lands(), "nor does a headless release run, flags or no flags")
 	_save.configure(null)
-	t.check(not _save.uses_save(), "nor does a run nothing has configured yet")
+	t.check(not _a_write_lands(), "nor does a run nothing has configured yet")
 
-## The pure half of `uses_save()`'s policy — see that function's own doc for why it is split out.
+## The debug build's policy on whether a run saves, read off whether a write lands.
 func _test_debug_run_uses_save_policy(t) -> void:
 	_save.configure(_windowed_run(PackedStringArray(), "", true))
-	t.check(_save.uses_save(), "a flagless debug run uses the save")
+	t.check(_a_write_lands(), "a flagless debug run uses the save")
 	_save.configure(_windowed_run(PackedStringArray(["--seed", "1"]), "", true))
-	t.check(not _save.uses_save(), "any dev flag disables it, by being a dev flag at all")
+	t.check(not _a_write_lands(), "any dev flag disables it, by being a dev flag at all")
 	_save.configure(_windowed_run(PackedStringArray(), "?nosave=1", true))
-	t.check(not _save.uses_save(),
+	t.check(not _a_write_lands(),
 			"--no-save disables it even with nothing else on the command line")
 	_save.configure(_windowed_run(PackedStringArray(["--seed", "1"]), "?nosave=1", true))
-	t.check(not _save.uses_save(), "and the two reasons stack rather than fighting")
+	t.check(not _a_write_lands(), "and the two reasons stack rather than fighting")
 	_save.configure(_windowed_run())
-	t.check(_save.uses_save(), "a windowed release run uses it")
+	t.check(_a_write_lands(), "a windowed release run uses it")
 	_save.configure(null)
 
 
@@ -191,7 +201,7 @@ func _test_no_save_query_parsing(t) -> void:
 	t.check(DevFlags.new(PackedStringArray(), "?seed=1&nosave=1&day=2", true).no_save(),
 			"the parameter is found among other URL parameters")
 
-## M193, "the live page's ?debug=1 reaches the debug flags": `uses_save()`'s release branch is
+## M193, "the live page's ?debug=1 reaches the debug flags": the save's release branch is
 ## `not DevFlags.web_debug_flag_used()` rather than an unconditional `true` now, so a visitor who
 ## tries `?day=12` never touches the save the page might otherwise share with a real player —
 ## `_web_debug_flag_used_in_query()` is the pure half of that predicate a test can drive without a
@@ -220,7 +230,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 	_save.configure(_headless_run())
 	t.check(_save.write(run, true) == GameSave.Result.REFUSED,
 			"the gated write refuses under the headless runner")
-	t.check(not _save.has_save(), "and leaves no file behind")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and leaves no file behind")
 	_save.configure(_windowed_run())
 	t.check(_saved(run, true), "while the run saves, the same write lands")
 	_save.configure(_headless_run())
@@ -228,7 +238,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 			"the gated resume also refuses, even with a real file sitting at the scratch path")
 	t.check(_save.clear() == GameSave.Result.REFUSED,
 			"the gated deletion refuses too")
-	t.check(_save.has_save(), "and leaves the file where it was")
+	t.check(FileAccess.file_exists(_SCRATCH_PATH), "and leaves the file where it was")
 	_save.configure(_windowed_run())
 	_save.clear()
 	run.free()
@@ -238,7 +248,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## The guard the brief asks for: a field declared on `RunState` and saved by nothing fails here
 ## rather than quietly not being saved. A field is saved when the registered parts write a key of
 ## its name, or it is a part itself, or it is the calendar, whose mode and checkpoint ride at the
-## top of the save beside `"day_under_way"` (`GameSave.file_data()`, held by
+## top of the save beside `"day_under_way"` (the file `write()` leaves, held by
 ## `tests/test_run_checkpoints.gd`). (A part's own field is saved by its part, which
 ## `tests/test_run_state.gd` holds.)
 ## `PROPERTY_USAGE_SCRIPT_VARIABLE` is what separates a field this script declares from the base
@@ -434,10 +444,10 @@ func _test_clear_deletes_the_file(t) -> void:
 		t.check(_save.clear(answers.take) == GameSave.Result.REFUSED,
 				"with no file there is nothing to delete, which changes nothing")
 		t.check(_saved(run, true), "a write lands")
-		t.check(_save.has_save(), "and the file exists")
+		t.check(FileAccess.file_exists(_SCRATCH_PATH), "and the file exists")
 		t.check(_save.clear(answers.take) == GameSave.Result.CONFIRMED,
 				"deleting it off the web is confirmed at once")
-		t.check(not _save.has_save(), "clear() removes it")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "clear() removes it")
 		t.check(_save.clear(answers.take) == GameSave.Result.REFUSED,
 				"clearing an already-absent save changes nothing and answers refused")
 		t.check(answers.results.is_empty(), "and nothing is left for a later answer to settle")
@@ -449,7 +459,7 @@ func _test_write_refuses_once_the_run_has_ended(t) -> void:
 	_save.clear()
 	run.header.ending = GameEnums.Ending.BAD
 	t.check(not _saved(run, true), "a write refuses once the run has an ending")
-	t.check(not _save.has_save(), "and touches no file at all")
+	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and touches no file at all")
 	run.free()
 
 ## Closing the game inside a section of the escape and opening it again comes back to that
@@ -754,7 +764,7 @@ func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 		t.check(run.header.nerves == 0, "the last nerve is gone")
 		t.check(run.header.ending == GameEnums.Ending.BAD,
 				"the bad ending, the same as any other run out")
-		t.check(not _save.has_save(), "and the save that named the run is gone with it")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and the save that named the run is gone with it")
 	)
 	run.free()
 
@@ -783,7 +793,7 @@ func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
 				"the run goes on rather than ending")
 		t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
 				"back at day 8 with every nerve")
-		t.check(_save.has_save(), "and the save is not deleted")
+		t.check(FileAccess.file_exists(_SCRATCH_PATH), "and the save is not deleted")
 	)
 	run.free()
 
@@ -892,14 +902,14 @@ func _test_either_ending_clears_the_save(t) -> void:
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(run.header.ending == GameEnums.Ending.NONE,
 				"day 3 of a run this short does not end it")
-		t.check(_save.has_save(), "so the save is untouched")
+		t.check(FileAccess.file_exists(_SCRATCH_PATH), "so the save is untouched")
 
 		run.header.day = Tuning.RUN_LENGTH_DAYS
 		run.calendar.begin_day()
 		t.check(_saved(run, true), "a save exists for the final day")
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(run.header.ending != GameEnums.Ending.NONE, "winning the final day ends the run")
-		t.check(not _save.has_save(), "and a won run clears the save exactly as a lost one does")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and a won run clears the save exactly as a lost one does")
 	)
 	run.free()
 
@@ -936,12 +946,12 @@ func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
 		var answers := _Answers.new()
 		var result: int = _save.write(run, true, answers.take)
 		t.check(result == GameSave.Result.CONFIRMED, "a desktop write is confirmed at once")
-		t.check(_save.has_save(), "and the file is there")
+		t.check(FileAccess.file_exists(_SCRATCH_PATH), "and the file is there")
 		t.check(answers.results.is_empty(), "with nothing left for a later answer to settle")
 	)
 	run.free()
 
-## A run `uses_save()` refuses, and a run that has already ended, answer `REFUSED`, which draws
+## A run the save refuses (a dev or headless run), and a run that has already ended, answer `REFUSED`, which draws
 ## nothing — neither is a save that failed, so neither may show the strike.
 func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 	var run := _a_run()
@@ -954,7 +964,7 @@ func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 		run.header.ending = GameEnums.Ending.BAD
 		t.check(_save.write(run, true, answers.take) == GameSave.Result.REFUSED,
 				"a run with an ending is refused, not failed")
-		t.check(not _save.has_save(), "and writes nothing")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and writes nothing")
 	)
 	t.check(answers.results.is_empty(), "neither ever answers later")
 	run.free()
@@ -1186,7 +1196,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 		run.calendar.begin_day()
 		run.calendar.finish_day(GameEnums.DayResult.WON)
 		t.check(run.header.ending != GameEnums.Ending.NONE, "the final day ends the run")
-		t.check(not _save.has_save(), "which deletes the save")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "which deletes the save")
 		t.check(indicator.is_showing() and Boot.save_symbol_plain(indicator),
 				"and the symbol shows the deletion, kept")
 		indicator.free()
@@ -1209,7 +1219,7 @@ func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
 		var resume := _save.try_resume(run)
 		t.check(resume.get("day_under_way", false), "it resumes with its day under way")
 		var kept_going := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
-		t.check(not kept_going and not _save.has_save(), "the charge ends the run and deletes it")
+		t.check(not kept_going and not FileAccess.file_exists(_SCRATCH_PATH), "the charge ends the run and deletes it")
 		t.check(indicator.is_showing(), "and the symbol that was already there shows it")
 		indicator.free()
 	)
@@ -1221,7 +1231,7 @@ func _test_a_restart_with_no_save_left_shows_nothing(t) -> void:
 	_with_a_scratch_save(func() -> void:
 		var indicator := SaveIndicator.new()
 		t.add_child(indicator)
-		t.check(not _save.has_save(), "the run's end already deleted the save")
+		t.check(not FileAccess.file_exists(_SCRATCH_PATH), "the run's end already deleted the save")
 		t.check(_save.clear() == GameSave.Result.REFUSED, "so the restart's deletion is refused")
 		t.check(not indicator.is_showing(), "and the symbol stays dark")
 		indicator.free()

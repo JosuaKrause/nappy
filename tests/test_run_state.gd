@@ -3,7 +3,7 @@ extends RefCounted
 ## docs/ARCHITECTURE.md, "The run's state".
 ##
 ## **Save compatibility is held against a file main wrote.** `tests/fixtures/
-## run_state_saved_by_main.json` is `GameSave.file_data()` of the run `run_state_scenario.gd`
+## run_state_saved_by_main.json` is the file `GameSave.write()` leaves of the run `run_state_scenario.gd`
 ## builds, and of the same run after a lost day, dumped on commit e1cc7c7f — the build that kept
 ## every field by hand in `GameState`, the `_dawn_*` copies and
 ## `RunStateRegistry.run_data()` — by a throwaway probe that ran the scenario under `tools/test.sh`. The
@@ -72,6 +72,15 @@ func _resumed_from_the_scratch_file(run: RunState) -> Dictionary:
 	_with_saving(func() -> void: resumed[0] = _save.try_resume(run))
 	return resumed[0]
 
+## What the save writes for `run`, as the scratch file holds it: parsed back from the file
+## `GameSave.write()` leaves, `day_under_way` as given.
+func _written_for(run: RunState, day_under_way: bool) -> Dictionary:
+	var written := [{}]
+	_with_saving(func() -> void:
+		_save.write(run, day_under_way)
+		written[0] = JSON.parse_string(FileAccess.get_file_as_string(_SCRATCH_PATH)))
+	return written[0]
+
 ## Everything the file holds but the build that wrote it.
 func _without_build(file: Dictionary) -> Dictionary:
 	var kept := file.duplicate(true)
@@ -81,7 +90,7 @@ func _without_build(file: Dictionary) -> Dictionary:
 func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	var written: Dictionary = SCENARIO.written(run)
+	var written: Dictionary = _written_for(run, true)
 	t.check(_without_build(written) == _without_build(fixture["written"]),
 			"the scenario's save is the file main wrote, key for key (%s)"
 			% _first_difference(_without_build(written), _without_build(fixture["written"])))
@@ -91,7 +100,8 @@ func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
 func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	var after: Dictionary = SCENARIO.after_a_loss(run)
+	SCENARIO.lose_a_day(run)
+	var after := _written_for(run, false)
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a lost day on the scenario leaves the file main's give-back left (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))
@@ -103,9 +113,9 @@ func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> v
 	file.close()
 	var resume := _resumed_from_the_scratch_file(run)
 	t.check(resume.get("day_under_way", false) == true, "main's save resumes, a day under way")
-	t.check(_without_build(SCENARIO.written(run)) == _without_build(fixture["written"]),
+	t.check(_without_build(_written_for(run, true)) == _without_build(fixture["written"]),
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
-			_without_build(SCENARIO.written(run)), _without_build(fixture["written"])))
+			_without_build(_written_for(run, true)), _without_build(fixture["written"])))
 
 func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
 	var run := _fresh(5)
@@ -113,7 +123,8 @@ func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixtu
 	file.store_string(JSON.stringify(fixture["written"]))
 	file.close()
 	_resumed_from_the_scratch_file(run)
-	var after: Dictionary = SCENARIO.after_a_loss(run)
+	SCENARIO.lose_a_day(run)
+	var after := _written_for(run, false)
 	t.check(_without_build(after) == _without_build(fixture["after_a_loss"]),
 			"a day lost after resuming main's save gives back what main's did (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))

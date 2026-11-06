@@ -11,7 +11,6 @@
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/autoload/game_save.gd FILE_KEYS
 src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
@@ -57,10 +56,6 @@ src/world/world_context.gd total_excitement_at
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/autoload/game_save.gd file_data
-src/autoload/game_save.gd has_save
-src/autoload/game_save.gd moment_result
-src/autoload/game_save.gd uses_save
 src/autoload/visit_counter.gd charger_counter_name
 src/autoload/visit_counter.gd listen
 src/autoload/visit_counter.gd send_through
@@ -335,3 +330,4 @@ src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a te
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
 # engine member of that name). The reason is on each line.
+src/autoload/game_save.gd moment_result  # what a save moment comes to on the web (PENDING while the browser has not answered, FAILED where storage was refused): a desktop run's write() never takes those branches, since OS.has_feature("web") and OS.is_userfs_persistent() are the engine's own answers and not a hand-in, so tests/test_save.gd asks the pure function for them

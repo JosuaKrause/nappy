@@ -6,7 +6,7 @@ extends Node
 ## the web flush below, the operation ids and the file's path outlive those reloads. `main` hands it
 ## the run's configuration each boot (`configure()`) and uses it; a suite builds its own, at a
 ## scratch path (`GameSave.new(path)`), and hands it to the boot it drives (`main.use_save()`). The
-## pure policy and format (the `Result` words, `file_data()`, `moment_result()`) stay `static`. **It is
+## pure policy and format (the `Result` words, `_file_data()`, `moment_result()`) stay `static`. **It is
 ## handed the run it reads or writes** (`run: RunState`) on every call that touches one — `main` hands
 ## the run it plays, a test whichever run it built, and `RunState` itself for its checkpoint — and
 ## names no autoload for it. Lives beside `RunState`, the one thing it reads
@@ -42,7 +42,7 @@ extends Node
 ##
 ## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
 ## run; a suite hands the constructor a scratch path instead, and
-## `uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
+## `_uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
 ## or the test runner never touches either.
 ##
 ## **A write is not a save until the storage behind `user://` has kept it.** *(cozy-pelican,
@@ -86,7 +86,7 @@ const _DEFAULT_PATH := "user://save.json"
 ## What one save moment came to — a write (`EventBus.save_written` carries it to `SaveIndicator`) or
 ## a deletion (`EventBus.save_deleted` does).
 enum Result {
-	## Nothing was attempted: `uses_save()` refused the run, the run has already ended (a write), or
+	## Nothing was attempted: `_uses_save()` refused the run, the run has already ended (a write), or
 	## there is no file to delete (a deletion). The symbol draws nothing, since nothing was meant
 	## to change.
 	REFUSED,
@@ -203,7 +203,7 @@ func _path() -> String:
 	return _file_path
 
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
-## which `uses_save()` answers with no save at all: nothing reads or writes the player's save
+## which `_uses_save()` answers with no save at all: nothing reads or writes the player's save
 ## before the run has said which flags it carries.
 var _config: RunConfig
 
@@ -233,7 +233,7 @@ func configure(config: RunConfig) -> void:
 ## `config.web_debug_flag_used` answers that — `false` for the ordinary release page everyone else
 ## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
 ## is a run built any differently from the one every other visitor gets.
-func uses_save() -> bool:
+func _uses_save() -> bool:
 	if _config == null or _config.headless:
 		return false
 	if not _config.debug_build:
@@ -241,16 +241,15 @@ func uses_save() -> bool:
 	return _debug_run_uses_save(_config.active_args, _config.no_save) \
 			and not _config.web_debug_flag_used
 
-## The one piece of `uses_save()`'s policy that does not depend on the live environment — pulled
-## out so a test can drive every combination of flags directly rather than only through whichever
-## shape `OS.is_debug_build()` happens to answer under the runner. Called only on a debug build, so
+## The one piece of `_uses_save()`'s policy that does not depend on the live environment — pulled
+## out so the debug build's policy reads in one place, whichever shape `OS.is_debug_build()` answers
+## under the runner. Called only on a debug build, so
 ## a release build's own empty argument list never reaches this at all.
 static func _debug_run_uses_save(args: PackedStringArray, no_save: bool) -> bool:
 	return not no_save and args.is_empty()
 
-## Whether a save file is currently on disk — read by `main.gd` for nothing gameplay-facing; a
-## test's own way to check `clear()`/`write()` actually touched the filesystem.
-func has_save() -> bool:
+## Whether a save file is currently on disk.
+func _has_save() -> bool:
 	return FileAccess.file_exists(_path())
 
 ## Deletes the save, if there is one, and answers what the deletion came to — which is also what
@@ -258,7 +257,7 @@ func has_save() -> bool:
 ## subscriber (a run that is over) and `main._restart_run()` (the held restart) both call this;
 ## a run that is over or has been thrown away leaves nothing to resume.
 ##
-## `Result.REFUSED` for a dev run or a headless run (`uses_save()`) and when there is no file to
+## `Result.REFUSED` for a dev run or a headless run (`_uses_save()`) and when there is no file to
 ## delete: a restart after the run already ended and deleted the save changes nothing, so it draws
 ## nothing. *(cozy-pelican, 2026-10-02: "A restart with no save left to delete ... changes nothing,
 ## so it shows nothing.")* `Result.PENDING` on the web while the browser has not yet said whether
@@ -267,7 +266,7 @@ func has_save() -> bool:
 ## `save_deletion_settled` says the same to anything listening, which is how a symbol outlives the
 ## `main` that raised it. `settled` is never called for any other answer.
 func clear(settled := Callable()) -> Result:
-	if not uses_save() or not has_save():
+	if not _uses_save() or not _has_save():
 		return Result.REFUSED
 	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
@@ -286,7 +285,7 @@ func clear(settled := Callable()) -> Result:
 ## The ungated mechanics `clear()` calls through. Returns whether the file is gone; a file that was
 ## not there to begin with is already gone, so that is `true` and writes nothing to the run log.
 func _clear_now() -> bool:
-	if not has_save():
+	if not _has_save():
 		return true
 	var removed := DirAccess.remove_absolute(ProjectSettings.globalize_path(_path())) == OK
 	if not removed:
@@ -305,7 +304,7 @@ func _clear_now() -> bool:
 ## exists then. `settled` is never called for any other answer. **The symbol is answered by the bus,
 ## not by `settled`**, because a scene reload may free the caller before the browser answers.
 func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
-	if not uses_save() or _run_has_ended(run):
+	if not _uses_save() or _run_has_ended(run):
 		return Result.REFUSED
 	var operation := _new_operation()
 	var on_web := OS.has_feature("web")
@@ -324,7 +323,8 @@ func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
 	return result
 
 ## What a save moment comes to before any browser has answered — the pure half of `write()` and of
-## `clear()`, public so the web's branches can be asked from a desktop runner. `done` is
+## `clear()`, public so the web's branches can be asked from a desktop runner, which `OS.has_feature("web")` keeps
+## `write()` from reaching. `done` is
 ## the file write's or removal's own answer, `persistent` is `OS.is_userfs_persistent()`:
 ## false on a web page whose browser refused IndexedDB at boot, where Godot carries on from memory
 ## alone and a flush would report success for a copy no reload will ever find — so a page in that
@@ -492,7 +492,7 @@ func _write_now(run: RunState, day_under_way: bool) -> bool:
 	if not file:
 		push_warning("GameSave: could not open %s for writing" % _path())
 		return false
-	var stored := file.store_string(JSON.stringify(file_data(run, day_under_way)))
+	var stored := file.store_string(JSON.stringify(_file_data(run, day_under_way)))
 	file.close()
 	if not stored:
 		push_warning("GameSave: could not write %s" % _path())
@@ -504,10 +504,8 @@ func _write_now(run: RunState, day_under_way: bool) -> bool:
 ## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`
 ## stringifies: `RunStateRegistry.run_data()`, plus the facts about the file and the run's mode
 ## rather than about where the run stands — the format and the build that wrote it, whether a
-## day was under way, the mode, and the checkpoint. `FILE_KEYS` names those, and
-## `tests/test_run_checkpoints.gd` reads every other key off this function to check a checkpoint
-## gives each one back.
-static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
+## day was under way, the mode, and the checkpoint.
+static func _file_data(run: RunState, day_under_way: bool) -> Dictionary:
 	var data := run.run_parts.run_data()
 	data["format_version"] = FORMAT_VERSION
 	data["build"] = BuildInfo.build_text()
@@ -515,13 +513,6 @@ static func file_data(run: RunState, day_under_way: bool) -> Dictionary:
 	data["hard_mode"] = run.calendar.hard_mode
 	data["checkpoint"] = run.calendar.checkpoint.duplicate(true)
 	return data
-
-## The keys of `file_data()` that are not the run's own state, and so are neither part of a
-## checkpoint nor given back by one: the file's format and build, whether a day was under way when
-## it was written, the mode (fixed for the run) and the checkpoint itself.
-const FILE_KEYS: Array[String] = [
-	"format_version", "build", "day_under_way", "hard_mode", "checkpoint",
-]
 
 ## Connects the deletion of the save to the end of a run: **a finished run leaves no save**,
 ## since a save that named an ended run would have to be specially refused on load rather than
@@ -536,13 +527,13 @@ func _on_run_ended(_ending: GameEnums.Ending) -> void:
 	clear()
 
 ## Tries to resume a run into `run`. Returns `{}` when there is nothing to resume — no file, a
-## file this build cannot read, or a dev/headless run `uses_save()` already refused — and
+## file this build cannot read, or a dev/headless run `_uses_save()` already refused — and
 ## `{"day_under_way": bool}` once `run` has been overwritten with the save's own fields. The
 ## caller (`main._ready()`) still owns what a `true` costs: the same lost-day path an ordinary
 ## loss takes, through `RunCalendar.finish_day()`, so this function only ever reads and
 ## restores, never spends a nerve.
 func try_resume(run: RunState) -> Dictionary:
-	if not uses_save():
+	if not _uses_save():
 		return {}
 	return _read_now(run)
 
@@ -603,7 +594,7 @@ static func _apply(run: RunState, data: Dictionary) -> Dictionary:
 ## Never reads the file, so a write the storage did not keep cannot hand the reload an older run.
 func load_in_memory(run: RunState) -> void:
 	var parser := JSON.new()
-	if parser.parse(JSON.stringify(file_data(run, false))) != OK:
+	if parser.parse(JSON.stringify(_file_data(run, false))) != OK:
 		push_error("GameSave: the run could not be written out as JSON")
 		return
 	_apply(run, parser.data)

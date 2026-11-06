@@ -91,9 +91,10 @@ static func _windowed() -> RunConfig:
 ## and the last nerve is lost: what comes back must be the checkpoint's own dawn, field for field,
 ## with every nerve.
 ##
-## **The fields are enumerated off the save itself, not listed here.** `GameSave.file_data()` is
-## everything the file holds; less `GameSave.FILE_KEYS` (the file's format, build, the day under way,
-## the mode and the checkpoint), every top-level key and every field under `"state"` is checked
+## **The fields are enumerated off the run itself, not listed here.** `RunStateRegistry.run_data()`
+## is everything the file holds of the run (the file adds its format, build, the day under way, the
+## mode and the checkpoint, and refuses a run that has an ending, which the last change below gives
+## it); every top-level key and every field under `"state"` is checked
 ## twice: once that `_change_everything()` actually changed it — so a field a later build adds to
 ## the save fails here until it is changed too — and once that going back gave it back. A field the
 ## restore left out keeps its changed value and fails the second check; a field the save never
@@ -128,9 +129,9 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 
 	var keys := _run_keys(run)
 	t.check(keys.size() > 10, "there are fields to check (%d)" % keys.size())
-	var before := _flatten(GameSave.file_data(run, false))
+	var before := _flatten(run.run_parts.run_data())
 	_change_everything(run)
-	var changed := _flatten(GameSave.file_data(run, false))
+	var changed := _flatten(run.run_parts.run_data())
 	for key in keys:
 		t.check(changed[key] != before[key] and changed[key] != _flatten_run(expected)[key],
 				"'%s' is changed after the checkpoint — a field this test does not change cannot "
@@ -139,7 +140,7 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	run.header.nerves = 1
 	t.check(run.calendar.a_loss_goes_back_to_the_checkpoint(), "losing now spends a normal run's last nerve")
 	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL), "and the run goes on")
-	var after := _flatten(GameSave.file_data(run, false))
+	var after := _flatten(run.run_parts.run_data())
 	var wanted := _flatten_run(expected)
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
 	# The one field going back does not give back: the time played only grows (inbox #920 in plaid-penguin).
@@ -156,12 +157,10 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	run.free()
 
 ## Every key of the file that is the run's own state — top-level riders by name, and `"state"`'s
-## fields as `state.<name>` — read off `GameSave.file_data()` itself.
+## fields as `state.<name>` — read off `RunStateRegistry.run_data()` itself.
 func _run_keys(run: RunState) -> Array[String]:
 	var keys: Array[String] = []
-	for key: String in _flatten(GameSave.file_data(run, false)):
-		if key.get_slice(".", 0) in GameSave.FILE_KEYS:
-			continue
+	for key: String in _flatten(run.run_parts.run_data()):
 		keys.append(key)
 	return keys
 
@@ -544,15 +543,27 @@ func _title_for(t, run: RunState, touch := false) -> TitleScreen:
 	t.add_child(title)
 	return title
 
+## Whether the title shows its Hard Mode checkbox, read off the box's node.
+static func _box_shown(title: TitleScreen) -> bool:
+	return UI.control(title, "HardMode").visible
+
+## The catch the box owes a press, in the 1280x720 design box: the box and its label as drawn, grown
+## by the 5% every button catches beyond what it draws and by the reach it had before, whichever is
+## larger each way. A press inside it flips the box.
+static func _the_catch_owed(title: TitleScreen) -> Rect2:
+	var box := UI.control(title, "HardMode")
+	var drawn := box.get_global_transform() * Rect2(Vector2.ZERO, box.size)
+	return ButtonGeometry.margin_rect(drawn).merge(drawn.grow(_HARD_MODE_FLOOR_REACH))
+
 func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var title := _title_for(t, run)
 	title.open(false, true)
-	t.check(title.hard_mode_shown() and not title.hard_mode_checked(),
+	t.check(_box_shown(title) and not title.hard_mode_checked(),
 			"a new game shows the box, unchecked")
 	title.open(false, false)
-	t.check(not title.hard_mode_shown() and not title.hard_mode_checked(),
+	t.check(not _box_shown(title) and not title.hard_mode_checked(),
 			"a resumed game shows none")
 	UI.push(title, _key(KEY_H))
 	t.check(not title.hard_mode_checked(), "and H flips nothing that is not there")
@@ -603,18 +614,18 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_PATH, _windowed(),
 				func(main: Node) -> void: main.use_sitting_home(home))
 		var title := Boot.title(booted.main)
-		t.check(title.is_open() and title.hard_mode_shown() == case[2],
+		t.check(title.is_open() and _box_shown(title) == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
 		# Where the box is not shown a resumed run's mode is decided, so its name stands there.
 		t.check(Boot.mode_name_drawn(title) == ("" if case[2] else "Normal"),
 				"%s: the mode's name is %s" % [case[3], "not shown" if case[2] else "shown"])
 		if case[0] == null:
 			title.open(true, true)
-			t.check(title.hard_mode_shown(), "the same, after an ending in this scene: the box is shown")
+			t.check(_box_shown(title), "the same, after an ending in this scene: the box is shown")
 			t.check(Boot.mode_name_drawn(title) == "",
 					"the same, after an ending in this scene: the mode's name is not shown")
 			title.open(true)
-			t.check(not title.hard_mode_shown() and Boot.mode_name_drawn(title) == "",
+			t.check(not _box_shown(title) and Boot.mode_name_drawn(title) == "",
 					"nor does the --start-escape epilogue show a box or a name")
 		Telemetry.end_run()
 		booted.free_all()
@@ -632,12 +643,12 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
 			_side: ControlsMode.Side) -> void: started[0] += 1)
 	title.open(false, true)
-	var centre := title.hard_mode_target().get_center()
 	var box := title.get_node("Root/HardMode") as Control
+	var centre := _the_catch_owed(title).get_center()
 	t.check(box.size.x > 0.0, "the box is laid out (%s)" % box.size)
 	# A phone held landscape is about 393pt tall and shows the 720-px-tall design box scaled to fit;
 	# a finger wants 44pt each way.
-	var on_a_phone := title.hard_mode_target().size * (_PHONE_LANDSCAPE_HEIGHT_PT / 720.0)
+	var on_a_phone := _the_catch_owed(title).size * (_PHONE_LANDSCAPE_HEIGHT_PT / 720.0)
 	t.check(on_a_phone.x >= 44.0 and on_a_phone.y >= 44.0,
 			"the box is a 44pt target on a phone held landscape (%s pt)" % on_a_phone)
 
@@ -650,14 +661,18 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 	await UI.frames(t, 3)
 	t.check(started[0] == 0, "none of which started the run")
 
-	for button_name: String in ["Left", "Tap", "Right"]:
-		var button := UI.button(title, button_name)
-		t.check(not title.hard_mode_contains_design_point(button.get_global_rect().get_center()),
-				"no button's disc is within the box's reach")
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, "Tap")), true))
 	await UI.frames(t, 3)
 	t.check(started[0] == 1 and title.hard_mode_checked(),
 			"a button still starts the run, with the box as it was set")
+	for button_name: String in ["Left", "Right"]:
+		title.open(false, true)
+		var was := title.hard_mode_checked()
+		UI.push(title, UI.touch_at(UI.centre(UI.button(title, button_name)), true))
+		await UI.frames(t, 3)
+		t.check(title.hard_mode_checked() == was and started[0] == (2 if button_name == "Left" else 3),
+				"the %s button's disc is outside the box's reach: it starts the run and flips nothing"
+						% button_name)
 	title.free()
 	run.free()
 
@@ -703,19 +718,15 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 		var frame_node := title.get_node("Root/HardMode/Frame") as Control
 		var drawn := box_node.get_global_transform() * Rect2(Vector2.ZERO, box_node.size)
 		var box := frame_node.get_global_transform() * Rect2(Vector2.ZERO, frame_node.size)
-		var catch := title.hard_mode_target()
-		t.check(catch.encloses(ButtonGeometry.margin_rect(drawn))
-				and catch.encloses(drawn.grow(_HARD_MODE_FLOOR_REACH)),
-				"%s: the catch %s holds the box and label grown by 5%% and by the old reach"
-						% [device[2], catch])
+		var catch := _the_catch_owed(title)
 		var inset := Vector2.ONE
 		var points := {
 			"the box's centre": box.get_center(),
 			"its label": Vector2(drawn.end.x - drawn.size.x * 0.25, drawn.get_center().y),
 			"the space between the box and its label": Vector2(box.end.x + 1.0, box.get_center().y),
 			"the drawn rect's top-right corner": Vector2(drawn.end.x - 1.0, drawn.position.y + 1.0),
-			"just inside its catch's top-left": catch.position + inset,
-			"just inside its catch's bottom-right": catch.end - inset,
+			"just inside its owed catch's top-left": catch.position + inset,
+			"just inside its owed catch's bottom-right": catch.end - inset,
 		}
 		for where: String in points:
 			var was := title.hard_mode_checked()
@@ -820,7 +831,7 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var title := Boot.title(booted.main)
 	await UI.frames(t)
-	UI.push(title, UI.touch_at(title.hard_mode_target().get_center(), true))
+	UI.push(title, UI.touch_at(_the_catch_owed(title).get_center(), true))
 	await Boot.press_title(t, booted.main, "Tap")
 	t.check(run.calendar.hard_mode and modes == [[true, 1]],
 			"a new game takes the box's answer and reports it with the day behind the title (%s)"

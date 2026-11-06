@@ -45,7 +45,7 @@ var _movie := false:
 # ------------------------------------------------------------------ the gates ---
 
 ## The null display server a headless run boots against: no window, so no player, and the
-## run never touches the player's save (`GameSave.uses_save()`). Read from the process at
+## run never touches the player's save (`GameSave._uses_save()`). Read from the process at
 ## boot (`at_boot()`); a test that wants the saving of a windowed run parses `false`.
 var headless := true:
 	set(value): headless = _write(headless, value)
