@@ -147,12 +147,6 @@ func configure(config: RunConfig, run: RunState) -> void:
 	_config = config
 	_run = run
 
-## Whether an event may be sent at all, right now. `GoatCounterOutbox.gate_allows()` is the pure
-## truth table; this is the one place its four live inputs are actually read.
-func should_send() -> bool:
-	return _config != null and GoatCounterOutbox.gate_allows(OS.get_name() == "Web",
-			_config.debug_build, _config.readout_requested, _goatcounter_present())
-
 ## Whether the page actually has a callable `window.goatcounter.count` — `false` off the web
 ## without ever asking `JavaScriptBridge`, the same guard `DevFlags.page_query()` makes before its
 ## own `JavaScriptBridge.eval()`. **`bool(...)`, never `present is bool`**: a JS boolean crosses
