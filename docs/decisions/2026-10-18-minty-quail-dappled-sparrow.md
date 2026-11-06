@@ -24,8 +24,14 @@ record saved to a scratch path, the ledger's `report()`, the readout line and th
 which the booted-main suites ask while a title or brief pauses the tree and a press reaches
 nothing; `ParkCordon.last_gap`, since a test stands her at the gap before any tape shows it.
 
-**Open to overturn.** Four cordon checks went rather than converting: "closes when the cordon said
-it would" and "first officer in view when it said", which compared the cordon with its own
-promise; the stalled-officer count with `relaid == 0`; and the escort-alone test's "gap held for
-him" half, which needed a speed only a test can write, so that test is now "let out before the gap
-shuts" and the slow-walker test covers a held gap.
+**Restored after review.** The sweep's check that no taper stands still with his walk ahead, which
+first went as unreadable, reads the officer figures: in a run with nobody in the park, the frames
+where a taper's figure stands still after it first moved, with the cordon open and her more than
+four tiles off, stay at three or fewer, since a corner or a hand-over shows one or two.
+
+**Open to overturn.** Three cordon checks went rather than converting: "closes when the cordon
+said it would" and "first officer in view when it said", which compared the cordon with its own
+prediction while the check that she gets the walk to the gap plus the warning after first seeing an
+officer stays; and the escort-alone test's "gap held for him" half, which needed a speed only a
+test can write and which no check at the base held either, so that test is now "let out before the
+gap shuts".
