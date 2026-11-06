@@ -119,10 +119,12 @@
 #     each case runs once per distinct way the guard's closing ask condition reads it (the comment
 #     above that block says which)
 #   - a failure of github-write-guard.sh's own machinery denies: the payload failing to read, the
-#     program failing, the answer failing to print or printing and then failing (one deny, never
-#     two answers), and, with no jq, a tr that fails, whether it strips its text first or leaves
-#     at once; with no jq and a working tr, a command naming git or gh in any case denies and
-#     brew install jq allows
+#     program failing, any one of the flags its answer turns on failing to read back (a reviewer's
+#     push is denied, not asked about), the answer failing to print or printing and then failing
+#     (one deny, never two answers), and, with no jq, a tr that fails, whether it strips its text
+#     first or leaves at once; with no jq and a working tr, a command naming git or gh in any case
+#     denies and brew install jq allows; and git-grep-guard.sh's answer failing to print denies
+#     too, while a guarded search still needs no answer
 #   - xargs/gxargs and parallel/env_parallel input makes an unwrapped push or missing/nonliteral
 #     git subcommand or gh noun/verb unreadable; pushing scripts behind their options are guarded;
 #     input can append tools/release.sh's own push, so release.sh under one is a write without it;
@@ -152,8 +154,10 @@
 #     aliases configured, a git alias is read as the command it stands for (ci = commit denies,
 #     a chain is followed, an alias's own refspec is read, a lone ; in it stays a word), a ! alias,
 #     a looping one, one with no value and one starting with git's own options deny, an alias to
-#     a read and a built-in an alias cannot shadow allow, a coder's wrapper exempts each and a
-#     reviewer's does not exempt a push or an unreadable one, and where no identity can work an
+#     a read and a built-in an alias cannot shadow allow, a built-in write an alias is named after
+#     stays the write even where git's list of its built-ins cannot be read, a coder's wrapper
+#     exempts each and a reviewer's does not exempt a push or an unreadable one, and where no
+#     identity can work an
 #     alias is asked about or denied as what it stands for; an alias set on the command line
 #     (-c alias.*, attached, any case, quoted, --config-env either way) denies wrapped as a reviewer
 #     or unwrapped; and the longest alias chains are decided well inside the timeout
@@ -624,13 +628,18 @@ fi
 
 # ---------------------------------------------------------------- git-grep-guard.sh -------------
 # Prints "deny" or "allow" for one synthetic command through git-grep-guard.sh, as the tool named
-# by $2 (Bash when omitted).
+# by $2 (Bash when omitted). `grep_guard_path` puts the write guard's jq and git shims (below)
+# first on the hook's PATH, and `grep_guard_fail_jq` makes that jq fail on a call with an argument
+# holding its text, for the fail-closed case near the write guard's own.
+grep_guard_path=""
+grep_guard_fail_jq=""
 guard_decision() {
     local cmd="$1" tool="${2:-Bash}" raw
     # The command goes to jq on stdin, never as an argument: Linux caps one argument at 128 KB, so
     # the long-text rows would fail to build their payload on CI while passing on macOS.
     raw=$(printf '%s' "$cmd" | jq -Rs --arg t "$tool" '{tool_name:$t, tool_input:{command:.}}' \
-        | "$root/.claude/hooks/git-grep-guard.sh")
+        | env PATH="${grep_guard_path:+$grep_guard_path:}$PATH" \
+            ${grep_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$grep_guard_fail_jq} "$root/.claude/hooks/git-grep-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
     else
@@ -1204,7 +1213,8 @@ write_guard_gitconfig="$write_guard_no_aliases"
 # shims first on the guard's PATH (every timed case does), and `write_guard_fail_jq` makes the jq
 # shim fail outright on a call with an argument holding that text, for the fail-closed cases;
 # `write_guard_fail_jq_late` makes it do its work, print its answer, and only then fail, the way a
-# pipe fails after its text is through.
+# pipe fails after its text is through; `write_guard_fail_git` makes the git shim fail outright
+# on a call with an argument holding its text.
 write_guard_shims="${TMPDIR:-/tmp}/write-guard-shims"
 mkdir -p "$write_guard_shims"
 for write_guard_tool in jq git; do
@@ -1220,6 +1230,9 @@ for write_guard_tool in jq git; do
         printf '    if [ -n "${WRITE_GUARD_FAIL_JQ_LATE:-}" ] && [ "%s" = jq ]; then\n' "$write_guard_tool"
         printf '        case "$a" in *"$WRITE_GUARD_FAIL_JQ_LATE"*) late=1 ;; esac\n'
         printf '    fi\n'
+        printf '    if [ -n "${WRITE_GUARD_FAIL_GIT:-}" ] && [ "%s" = git ]; then\n' "$write_guard_tool"
+        printf '        case "$a" in *"$WRITE_GUARD_FAIL_GIT"*) echo "git: made to fail" >&2; exit 1 ;; esac\n'
+        printf '    fi\n'
         printf 'done\n'
         printf 'if [ -n "$late" ]; then %q "$@"; echo "jq: made to fail after printing" >&2; exit 5; fi\n' "$write_guard_real"
         printf 'exec %q "$@"\n' "$write_guard_real"
@@ -1229,10 +1242,12 @@ done
 write_guard_path=""
 write_guard_fail_jq=""
 write_guard_fail_jq_late=""
+write_guard_fail_git=""
 write_guard_env() {
     env -u CLAUDE_CODE_REMOTE -u NAPPY_ASK_FOR_PLAYER_WRITES -u GIT_CONFIG_PARAMETERS -u GIT_CONFIG_COUNT \
         PATH="${write_guard_path:+$write_guard_path:}$PATH" ${write_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$write_guard_fail_jq} \
         ${write_guard_fail_jq_late:+WRITE_GUARD_FAIL_JQ_LATE=$write_guard_fail_jq_late} \
+        ${write_guard_fail_git:+WRITE_GUARD_FAIL_GIT=$write_guard_fail_git} \
         GIT_CONFIG_GLOBAL="$write_guard_gitconfig" GIT_CONFIG_NOSYSTEM=1 "$@"
 }
 write_guard_payload() {
@@ -2359,6 +2374,7 @@ loop2=loop
 opt=-c alias.y=push y
 semi=push origin ; v1.0.0
 log=push
+push=status
 EOF
 printf '[alias]\n\tbare\n' >> "$write_guard_aliases"
 write_guard_gitconfig="$write_guard_aliases"
@@ -2386,6 +2402,17 @@ assert_write_guard "git ms (merge --no-ff --no-commit), an alias that expands to
 assert_write_guard "git st (status -sb) -> allow" allow 'git st'
 assert_write_guard "git lg, an alias with quoted parentheses -> allow" allow 'git lg -5'
 assert_write_guard "git log, a built-in an alias cannot shadow (log = push) -> allow" allow 'git log --oneline'
+assert_write_guard "git push, a built-in write an alias cannot shadow (push = status) -> deny" deny 'git push origin main'
+# Where git's list of its built-ins cannot be read, the built-ins that write still count as
+# built-ins, so an alias named after one is not read in its place (git ignores it), while the
+# aliases themselves are read as usual.
+write_guard_path="$write_guard_shims"
+write_guard_fail_git="--list-cmds=builtins"
+assert_write_guard "built-ins unlisted: git push (push = status) -> deny, the push it is" deny 'git push origin main'
+assert_write_guard "built-ins unlisted: git ci (ci = commit) -> deny" deny 'git ci -m wip'
+assert_write_guard "built-ins unlisted: git st (status -sb) -> allow" allow 'git st'
+write_guard_fail_git=""
+write_guard_path=""
 assert_write_guard "git ci, wrapped as a coder -> allow" allow \
     'uv run python tools/agent-identity.py run claude-coder -- git ci -m wip'
 assert_write_guard "git sh, wrapped as a coder -> allow" allow \
@@ -2627,7 +2654,31 @@ write_guard_switch=""
 write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
 write_guard_fail_jq="--slurpfile"
 assert_write_guard "the program fails: git status -> deny" deny 'git status'
+# The findings fail to read back: every flag the answer turns on is read in one call, and a call
+# that fails denies rather than leaving the flag empty, which reads as false -- so a reviewer's
+# push, where the switch is on and no identity can work, would be asked about. The shim fails the
+# call that names each flag in turn.
+for write_guard_flag in reviewer_push wrapped issue_write approval too_long; do
+    write_guard_fail_jq="$write_guard_flag"
+    assert_write_guard_reason "the $write_guard_flag flag fails to read: git push -> a deny that says so" \
+        'git push origin main' "could not read back what its own reading found"
+    write_guard_agents="${TMPDIR:-/tmp}/write-guard-no-fail-agents"
+    write_guard_switch=1
+    assert_write_guard "the $write_guard_flag flag fails to read where it would ask: a reviewer's git push -> deny" deny \
+        'uv run python tools/agent-identity.py run claude-reviewer -- git push origin feature/x'
+    write_guard_switch=""
+    write_guard_agents="${TMPDIR:-/tmp}/write-guard-agents"
+done
 write_guard_fail_jq=""
+# git-grep-guard.sh builds its answer whole too, and prints a fixed deny when that fails rather
+# than nothing, which would let the search through.
+grep_guard_path="$write_guard_shims"
+grep_guard_fail_jq="permissionDecision"
+assert_guard "git-grep-guard.sh's answer fails to print: git grep with no -I -> deny" deny 'git grep -n x -- docs/'
+assert_guard "git-grep-guard.sh's answer fails to print: git grep -I -> allow (no answer was needed)" allow \
+    'git grep -I -n x -- docs/'
+grep_guard_fail_jq=""
+grep_guard_path=""
 # The answer is printed whole and once: a jq that prints it and then fails gets one fixed deny, never
 # that answer with a deny after it, which is two answers and none the harness can read (and, where
 # the guard would ask, an ask the deny was meant to take back).

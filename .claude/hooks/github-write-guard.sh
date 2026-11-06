@@ -1920,11 +1920,15 @@ JQ
 # **Every failure of the guard's own machinery denies** (fails closed). A hook that errors or prints
 # nothing lets the command through in both Claude Code and Codex, so the guard never answers
 # "allow" by breaking: the payload failing to read, no jq at all, the text failing to strip where
-# jq is missing, the program failing, and the answer failing to print are each a deny. A decision
-# is never the exit status of a pipe: under `pipefail` a pipe fails when any one of its programs
-# does, which a match does not stop (a reader that has matched and left gives the writer EPIPE
-# where SIGPIPE is ignored, as on GitHub's runners), so a pipe's text is first read into a
-# variable, its failure denies, and the variable is then tested with no pipe at all. No text larger
+# jq is missing, the program failing, its findings failing to read back, and the answer failing to
+# print are each a deny. The one input whose failure does not deny is git's own table
+# (`git_table`): aliases git cannot list leave the command read as written, and built-ins it cannot
+# list leave the writing ones counted all the same. A decision is never the exit status of a pipe:
+# under `pipefail` a pipe fails when any one of its programs does, which a match does not stop (a
+# reader that has matched and left gives the writer EPIPE where SIGPIPE is ignored, as on GitHub's
+# runners), so a pipe's text is first read into a variable, its failure denies, and the variable is
+# then tested with no pipe at all -- the closing ask among them, whose test reads a flag read back
+# with the others rather than a pipe's status. No text larger
 # than a few kilobytes is ever an argument to another program -- the program, git's answer, the
 # command and the reason all go through stdin or a file -- since Linux refuses any one argument
 # over 128 KB (MAX_ARG_STRLEN) where macOS does not, and that refusal is exactly such a failure.
@@ -1960,9 +1964,14 @@ fi
 # command of the two guarded tools that names git, with quotes, backslashes, `$` and newlines
 # taken out as the reading takes them out, and that is short enough to be read at all, asks;
 # every other command reads with no aliases, and so does any command where git or its config
-# cannot answer. The built-ins are asked for only when there is an alias to tell them from.
+# cannot answer. The built-ins are asked for only when there is an alias to tell them from, and
+# the ones that write (`write_builtins`, the subcommands `is_write_name` lists) are always among
+# them, whether git's own list reads or not: every git has them and never runs an alias in their
+# place, and a list that failed to read would otherwise let an alias named after one (`push` =
+# `status`, which git ignores) read as the read it stands for.
 git_table() {
 	local dir aliases builtins
+	local write_builtins='{"push":true,"commit":true,"merge":true,"rebase":true,"pull":true,"cherry-pick":true,"revert":true,"am":true}'
 	command -v git >/dev/null 2>&1 || { printf 'null'; return; }
 	dir=$(printf '%s' "$input" | jq -r --argjson cap 65536 '
 		if (.tool_name | IN("Bash", "Monitor")) | not then "-" else
@@ -1984,13 +1993,19 @@ git_table() {
 		printf '{"aliases":{},"builtins":{}}'
 		return
 	fi
-	builtins=$(git --list-cmds=builtins 2>/dev/null | jq -Rsc '[split("\n")[] | select(length > 0) | {key: ., value: true}] | from_entries' 2>/dev/null) \
-		|| builtins='{}'
-	[ -n "$builtins" ] || builtins='{}'
+	builtins=$(git --list-cmds=builtins 2>/dev/null | jq -Rsc --argjson w "$write_builtins" \
+		'$w + ([split("\n")[] | select(length > 0) | {key: ., value: true}] | from_entries)' 2>/dev/null) \
+		|| builtins=$write_builtins
+	[ -n "$builtins" ] || builtins=$write_builtins
 	printf '{"aliases":%s,"builtins":%s}' "$aliases" "$builtins"
 }
 git_json=$(git_table)
 
+# The writes the closing ask may put to the player rather than deny (see the end of this script).
+askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
+"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
+findings_unread="The write guard could not read back what its own reading found, so this command is \
+denied. See .claude/hooks/github-write-guard.sh."
 if ! result=$(printf '%s' "$input" \
 		| jq -c --slurpfile git_in <(printf '%s' "$git_json") -f <(printf '%s' "$check_program") 2>/dev/null); then
 	flagged="(the guard's own jq program failed on this command, so it could not be checked)"
@@ -1999,6 +2014,7 @@ if ! result=$(printf '%s' "$input" \
 	issue_write=false
 	approval=false
 	too_long=false
+	askable=false
 elif [ -z "$result" ]; then
 	exit 0
 else
@@ -2006,11 +2022,24 @@ else
 		.out | reduce .[] as $x ([]; if index([$x]) != null then . else . + [$x] end)
 		| join("; ") | if length > 1000 then .[:1000] + " ..." else . end') \
 		|| flagged="(the guard could not list what it flagged)"
-	reviewer_push=$(printf '%s' "$result" | jq -r '.reviewer_push')
-	wrapped=$(printf '%s' "$result" | jq -r '.wrapped')
-	issue_write=$(printf '%s' "$result" | jq -r '.issue_write // false')
-	approval=$(printf '%s' "$result" | jq -r '.approval // false')
-	too_long=$(printf '%s' "$result" | jq -r '.too_long // false')
+	# Every flag the answer turns on, and whether each write found is one the player may be asked
+	# about, come back from one call. A call that fails, or a flag that is not a plain true or false,
+	# denies: an empty flag would read as false, so a reviewer's push would be asked about where the
+	# switch is on rather than denied.
+	if ! flags=$(printf '%s' "$result" | jq -r --argjson ok "$askable_reasons" '
+			[.reviewer_push, .wrapped, .issue_write // false, .approval // false, .too_long // false,
+			 ((.out | length) > 0 and all(.out[]; . as $r | $ok | index($r) != null))]
+			| map(tostring) | join(" ")' 2>/dev/null); then
+		deny_unread "$findings_unread"
+	fi
+	read -r reviewer_push wrapped issue_write approval too_long askable extra <<<"$flags"
+	for flag in "$reviewer_push" "$wrapped" "$issue_write" "$approval" "$too_long" "$askable"; do
+		case "$flag" in
+			true | false) ;;
+			*) deny_unread "$findings_unread" ;;
+		esac
+	done
+	[ -z "$extra" ] || deny_unread "$findings_unread"
 fi
 
 # The hint for a long text: a file the command reads is not text the hook has to read.
@@ -2115,15 +2144,12 @@ fi
 # and this hook does not stop that; switched on any of those ways, all it does is put each ordinary
 # write in front of the player as a prompt, which only the player can approve. That a session
 # leaves the switch alone is **committing**'s rule, not something this hook enforces.
-askable_reasons='["git commit","git push","git cherry-pick","git revert","git am","git merge",
-"git rebase","git pull","gh pr create","gh pr comment","gh pr edit","gh pr ready"]'
 decision="deny"
 if [ "${NAPPY_ASK_FOR_PLAYER_WRITES:-}" = "1" ] \
 		&& [ "$too_long" != "true" ] && [ "$reviewer_push" != "true" ] && [ -n "${result:-}" ] \
 		&& { [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] \
 			|| [ ! -d "${NAPPY_AGENTS_DIR:-$HOME/.config/nappy-agents}" ]; } \
-		&& printf '%s' "$result" | jq -e --argjson ok "$askable_reasons" \
-			'(.out | length) > 0 and all(.out[]; . as $r | $ok | index($r) != null)' >/dev/null 2>&1
+		&& [ "$askable" = "true" ]
 then
 	decision="ask"
 	reason="This command ($flagged) would go out under the player's own GitHub account: no agent \
