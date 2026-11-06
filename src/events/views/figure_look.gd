@@ -28,10 +28,10 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_eight_view(EventPictures.LEAF_BLOWER_BY_VIEW, event.facing_now(), canvas, false,
 					EventPictures.LEAF_BLOWER_BY_VIEW_B)
 		EventDef.Look.CYCLIST:
-			var rider := rider_pictures()
+			var rider := _rider_pictures()
 			_draw_eight_view(rider[0], event.facing_now(), canvas, false, rider[1])
 		EventDef.Look.CHARGING_DOG:
-			var dog := charging_dog_pictures()
+			var dog := _charging_dog_pictures()
 			_draw_eight_view(dog[0], event.facing_now(), canvas, false, dog[1])
 		EventDef.Look.CHATTING_MOTHER:
 			_draw_chatting_mother(canvas)
@@ -58,9 +58,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_mast(canvas)
 
 ## The two pedal frames a cyclist draws, `[by_view, by_view_b]`: the pelican's when `is_pelican`
-## is set, the kid's otherwise. The one place the choice is read, so the draw and a test ask the
-## same question.
-func rider_pictures() -> Array[Dictionary]:
+## is set, the kid's otherwise. The one place the choice is read.
+func _rider_pictures() -> Array[Dictionary]:
 	if event.is_pelican:
 		return [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]
 	return [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
@@ -68,9 +67,8 @@ func rider_pictures() -> Array[Dictionary]:
 ## The charging dog's two frames for this stage, `[by_view, by_view_b]`, `by_view_b` empty for a
 ## still pose: sitting while it waits (`is_waiting()`), its alert while it stands for its notice
 ## (`is_standing_for_its_notice()`), and the gallop otherwise — the charge, the day-3 dog's
-## approach, and the trot away when it gives up. The one place the choice is read, so the draw, its
-## halo and a test ask the same question.
-func charging_dog_pictures() -> Array[Dictionary]:
+## approach, and the trot away when it gives up. The one place the choice is read.
+func _charging_dog_pictures() -> Array[Dictionary]:
 	if event.is_waiting():
 		return [EventPictures.CHARGING_DOG_RESTING_BY_VIEW, {}]
 	if event.is_standing_for_its_notice():

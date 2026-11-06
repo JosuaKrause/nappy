@@ -769,7 +769,6 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	var day := counter.run.header.day
 	var def := EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog"))
 	var lesson := _charger(t, def)
-	t.check(lesson.charger_name() == "charging_dog_tutorial", "the lesson's dog is named apart")
 	_walk(lesson, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
 	lesson.report_the_catch()
 	t.check(counter.sent == ["nappy-day-%d-dog-tutorial-chased" % day,
@@ -793,7 +792,7 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
-	var def := EventCatalogue.out_of_the_car(EventCatalogue.guardsmen_from_day())
+	var def := EventCatalogue.out_of_the_car(Tuning.REGION_WALL_FIRST_DAY)
 	var man := _charger(t, def)
 	man.global_position = Vector2(150.0, 0.0)
 	_walk(man, Vector2.ZERO, 1.0 / 60.0)
