@@ -180,14 +180,6 @@ func repaint() -> void:
 	for key: Vector2i in keys:
 		prepare(key)
 
-func set_cell(tile: Vector2i, source: int, coords := Vector2i.ZERO) -> void:
-	# A live edit can alter neighbors already prepared in an unfinished quadrant. Reconstruct
-	# that region from current map state on the next step instead of publishing mixed state.
-	cancel(key_for(tile))
-	var layer: TileMapLayer = chunks.get(key_for(tile))
-	if layer:
-		layer.set_cell(tile, source, coords)
-
 func get_cell_source_id(tile: Vector2i) -> int:
 	var layer: TileMapLayer = chunks.get(key_for(tile))
 	return layer.get_cell_source_id(tile) if layer else -1
@@ -201,11 +193,3 @@ func get_used_cells() -> Array[Vector2i]:
 	for layer: TileMapLayer in chunks.values():
 		cells.append_array(layer.get_used_cells())
 	return cells
-
-func has_water(tile: Vector2i) -> bool:
-	var layer: TileMapLayer = chunks.get(key_for(tile))
-	if layer:
-		for child in layer.get_children():
-			if child is SceneryWater and child.cells.has(tile):
-				return true
-	return false
