@@ -24,6 +24,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 ## The sweep, and a seed whose swing park is one of the largest calm zones (704 by 704px).
 const SEEDS_FROM := 1
 const SEEDS_TO := 40
@@ -170,13 +171,13 @@ func measure(t, seed_value: int) -> Dictionary:
 	var task := director.current_step()
 	if task and task.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
 		var swing := director.contact_position()
-		# The park is taken by happenings of the sweep's own, handed what the director hands its
-		# own when the swing is reached (`take_the_park()` with `reach_obstruction()`), so the
+		# The park is taken by happenings of the sweep's own, handed the day's obstruction as the director
+		# hands it to its own when the swing is reached (`ResistanceReads.day_reachability()`), so the
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
 		happenings.setup(city, city.map)
 		happenings.start_day(day, false)
-		happenings.take_the_park(director.reach_obstruction())
+		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
 		result = _measure_the_day(city, director, happenings, swing)
 		happenings.start_day(day + 1)
 	director.free()
@@ -220,7 +221,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.stalled = standing.stalled
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
-			city.spawn_siting, director.reach_obstruction())
+			city.spawn_siting, ResistanceReads.day_reachability(city)[1])
 	her[0] = swing
 	_tick(city, again, her[0])
 	var walking := _play(city, again, her, shows, true, result.people == 0)
@@ -250,7 +251,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
 	var cordon := ParkCordon.new(city.map, city.navigator, city, park,
-			city.spawn_siting, director.reach_obstruction())
+			city.spawn_siting, ResistanceReads.day_reachability(city)[1])
 	var her := [swing]
 	var shows := _camera_on(her)
 	_tick(city, cordon, her[0])
@@ -321,7 +322,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	return result
 
 ## Checks the chosen gap against the map: the tile beyond each of its stretches' edge tiles reached
-## from home with the park's ground blocked under the director's `reach_obstruction()`, some other calm
+## from home with the park's ground blocked under the day's obstruction (`ResistanceReads.day_reachability()`), some other calm
 ## tile reached the same way, and the point a tile out from each stretch farther from every placed
 ## body than its obstruction and her whole shape, and outside the field of any body that carries
 ## one and the lethal reach of anything that ends the day.
@@ -330,7 +331,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 	var map := city.map
 	var rect := ClosurePlanner.calm_area_rect(map, cordon.park)
 	var area := CordonInTheWorld.park_ground(map, cordon.park)
-	var blocked: Dictionary = director.reach_obstruction()
+	var blocked: Dictionary = ResistanceReads.day_reachability(city)[1]
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
 	var field := map.walk_field(map.home_rect.position, blocked)

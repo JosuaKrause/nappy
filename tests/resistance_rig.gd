@@ -19,6 +19,8 @@ extends RefCounted
 ## action does (`ContactPoint.complete_now()`), which runs the same completion a touch runs.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const ContactTouches := preload("res://tests/contact_touches.gd")
+const AlleyMarks := preload("res://tests/alley_marks.gd")
 
 
 const SEED := 4242
@@ -178,6 +180,27 @@ func _new_one(id: String, before: Array[EventInstance]) -> EventInstance:
 			return instance
 	return null
 
+## Every live instance in the test city's street. Taken before a happening runs, it says by
+## difference what the happening put there (`_raid_since()`).
+func _street() -> Array[EventInstance]:
+	var found: Array[EventInstance] = []
+	for instance in _city.events.instances():
+		if not instance.is_finished:
+			found.append(instance)
+	return found
+
+## Day 10's raid at her building as the street holds it: the night raid's vans and the patrol car
+## pacing between them, among the live instances that were not in the street in `before` (an earlier
+## `_street()`).
+func _raid_since(before: Array[EventInstance]) -> Array[EventInstance]:
+	var found: Array[EventInstance] = []
+	for instance in _street():
+		if instance in before:
+			continue
+		if instance.def.id == "night_raid" or (instance.def.id == "police_patrol" and instance.def.paces):
+			found.append(instance)
+	return found
+
 func _all_but_the_finale() -> Array[int]:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
@@ -212,14 +235,27 @@ func _alley_farther_than(min_distance: float, at: Vector2) -> Vector2:
 	return Vector2.INF
 
 ## Every tile a chalk mark may stand on in the test city: one step in from each alley mouth
-## (`ResistanceDirector.is_alley_mouth()`, `mark_tile_of()`), in `CityMap.tiles_of_type()`'s own
-## order. The director offers no list of them; it draws from the same walk over the map.
+## (`AlleyMarks.mark_tile_of_mouth()`), in `CityMap.tiles_of_type()`'s own order. The director offers
+## no list of them; it draws from the same walk over the map.
 func _mark_tiles() -> Array[Vector2i]:
 	var marks: Array[Vector2i] = []
 	for tile in _city.map.tiles_of_type(GameEnums.TileType.ALLEY):
-		if ResistanceDirector.is_alley_mouth(_city.map, tile):
-			marks.append(ResistanceDirector.mark_tile_of(_city.map, tile))
+		if _is_a_mouth(_city.map, tile):
+			marks.append(AlleyMarks.mark_tile_of_mouth(_city.map, tile))
 	return marks
+
+## Where the guard of a mark at `mark` stands before anything refuses his ground, worked out from the
+## map alone (`AlleyMarks`): two-thirds through a through-alley, the courtyard's inner end past a
+## passage, `Vector2.INF` off an alley.
+static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
+	var tile := map.world_to_tile(mark)
+	var robbery := EventCatalogue.mark_guard()
+	var spot := AlleyMarks.expected_guard_spot(map, tile, mark,
+			robbery.inner_radius + ContactPoint.REACH)
+	if spot != Vector2.INF:
+		return spot
+	var court := AlleyMarks.courtyard_of(map, tile)
+	return AlleyMarks.courtyard_inner_end(map, court, mark) if court.has_area() else Vector2.INF
 
 ## The test city's through-alley tiles — see `_through_alley_tiles()`.
 func _through_alleys() -> Array[Vector2i]:
@@ -274,21 +310,9 @@ static func _is_one_in_from_a_mouth(map: CityMap, tile: Vector2i) -> bool:
 			return true
 	return false
 
-## An alley's mouth, worked out from the map alone: the end tile of a through-alley along its long
-## axis, or a courtyard passage's tile beside walkable ground that is neither alley nor courtyard.
+## An alley's mouth, worked out from the map alone (`AlleyMarks.is_a_mouth()`).
 static func _is_a_mouth(map: CityMap, tile: Vector2i) -> bool:
-	for rect in map.alley_rects:
-		if rect.has_point(tile):
-			var vertical := rect.size.y >= rect.size.x
-			var along := tile.y - rect.position.y if vertical else tile.x - rect.position.x
-			var length := rect.size.y if vertical else rect.size.x
-			return along == 0 or along == length - 1
-	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
-		var type := map.tile_at(tile + step)
-		if map.is_walkable(tile + step) and type != GameEnums.TileType.ALLEY \
-				and type != GameEnums.TileType.COURTYARD:
-			return true
-	return false
+	return AlleyMarks.is_a_mouth(map, tile)
 
 ## Runs the warning the trap row `row_id` is under to its end, frame by frame, with her standing at
 ## `her`, the way `EventManager._physics_process` runs it. Returns how long it was up, or `INF` when
@@ -325,9 +349,10 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 	return null
 
 ## Whether some tile within three of `item` is ground she can stand on (walkable, no body,
-## reachable from home under the day's whole obstruction, `_day_reachability()`) and its centre
-## completes today's contact (`ContactPoint.would_complete_at()`). On `in_city`, or the test city.
-func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
+## reachable from home under the day's whole obstruction, `_day_reachability()`) and standing at its
+## centre for a physics frame completes today's contact (`ContactTouches.touches_from()`). On
+## `in_city`, or the test city.
+func _touched_from_standable_ground(t, director: ResistanceDirector, item: Vector2,
 		in_city: City = null) -> bool:
 	var city := in_city if in_city else _city
 	var map := city.map
@@ -336,25 +361,32 @@ func _touched_from_standable_ground(director: ResistanceDirector, item: Vector2,
 	var blocked: Dictionary = reachability[1]
 	var reached: Dictionary = reachability[2]
 	var centre := map.world_to_tile(item)
+	var places: Array[Vector2] = []
 	for dy in range(-3, 4):
 		for dx in range(-3, 4):
 			var tile := centre + Vector2i(dx, dy)
 			if not map.is_walkable(tile) or map.is_obstructed(tile) \
 					or not grid.reaches(tile, blocked, reached):
 				continue
-			if director.contact().would_complete_at(map.tile_to_world(tile)):
-				return true
-	return false
+			places.append(map.tile_to_world(tile))
+	var touched := await ContactTouches.touches_from(t, director, places)
+	return touched.has(true)
+
+## The day's obstruction without the body of the task `director` offers (its contact's place and
+## its rider's), which the day's first placement did not yet have.
+func _obstruction_but_the_task(director: ResistanceDirector) -> Dictionary:
+	var near: Array[Vector2] = [director.contact_position()]
+	if director.rider() != null:
+		near.append(director.rider().global_position)
+	return preload("res://tests/resistance_reads.gd").day_reachability(_city, near)[1]
 
 ## `[edge, inside]`, each `tile -> true`: walked tile by tile from her tile at `her` over walkable
 ## ground the day's obstruction leaves open, going on only from a tile inside the `NEAR_THE_MARK`
 ## circle round her — a tile at or past its edge is where that path reaches the edge. The
-## obstruction is the director's own as it placed the day's first contact
-## (`ResistanceDirector.reach_obstruction()`), so a task's own body placed after it (day 11's mast)
-## does not shut its own tile.
+## obstruction is the day's, built independently of the director (`_day_reachability()`).
 func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 	var map := _city.map
-	var blocked := director.reach_obstruction()
+	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var start := map.world_to_tile(her)
 	var centre := map.tile_to_world(start)
 	var edge := {}
@@ -376,14 +408,14 @@ func _edge_of_her_circle(director: ResistanceDirector, her: Vector2) -> Array:
 
 ## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
 ## centre, over walkable ground the day's obstruction leaves open
-## (`ResistanceDirector.reach_obstruction()`), walked on past the circle's edge. `tile -> true`.
+## (`_day_reachability()`), walked on past the circle's edge. `tile -> true`.
 ## **A deliberate copy of the director's own walk** (`_paths_reach_between()` there), kept as a test
 ## oracle: day 13's check grades the director's roadblock against a walk the director does not run,
 ## so if the two drift that check fails rather than passing silently.
 func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: float,
 		far: float) -> Dictionary:
 	var map := _city.map
-	var blocked := director.reach_obstruction()
+	var blocked: Dictionary = _obstruction_but_the_task(director)
 	var found := {}
 	var start := map.world_to_tile(her)
 	if not map.is_walkable(start):
@@ -459,24 +491,6 @@ func _stands_on_legal_ground(map: CityMap, tile: Vector2i, walled_alleys: Array[
 			and not map.is_in_walled_alley(tile, walled_alleys) and not map.is_obstructed(tile) \
 			and grid.reaches(tile, blocked, reached)
 
-## The day's reachability answer as `ResistanceDirector._reachable_from_home()` builds it
-## (`EventScheduler.blocked_by()` over every placed, obstructing or hard-fail plan, flooded from
-## home), built independently here so a sweep is not just asking the director to grade its own
-## homework. A region door's own bodies are excluded, the same way `_ensure_reachability()`
-## excludes them and for the same reason — see that function's own doc. The soft seals' bands
-## (`CityMap.soft_sealed_tiles`) are blocked on top, as the director blocks them: the red arrow
-## reads a band as ground she cannot walk, so a place reached only through one is not a place the
-## arrow can lead her to. `[grid, blocked, reached]`.
+## The day's reachability answer, built independently of the director (`ResistanceReads.day_reachability()`).
 func _day_reachability(city: City) -> Array:
-	var region_plan: RegionPlanner.RegionPlan = city.region_plan()
-	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
-	var blockers: Array[EventScheduler.Planned] = []
-	for plan in city.events.plans():
-		if not plan.is_placed() or plan in door_bodies:
-			continue
-		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
-			blockers.append(plan)
-	var grid := ReachabilityGrid.build(city.map)
-	var blocked := EventScheduler.blocked_by(city.map, blockers)
-	blocked.merge(city.map.soft_sealed_tiles)
-	return [grid, blocked, grid.flood([city.map.home_rect.position], blocked)]
+	return preload("res://tests/resistance_reads.gd").day_reachability(city)

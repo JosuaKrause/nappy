@@ -6,7 +6,7 @@ extends "res://tests/resistance_rig.gd"
 ## arrow has chosen is read the way the player reads it, from where its tip stands
 ## (`ResistanceDirector.red_arrow_target()`) and what the street has there (`ResistanceReads`), with the
 ## contact (`contact()`, `contact_position()`) and what it rides (`rider()`); its choosing and
-## sweeping are driven by `retarget_the_arrow()` and `tick()`, the step `main` runs on every physics
+## sweeping are driven by `tick()`, the step `main` runs on every physics
 ## tick (`_settle_the_arrow()` below); and her touch is a real physics frame (`_step_a_frame()`).
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
@@ -20,11 +20,11 @@ func run(t) -> void:
 	_test_the_arrow_leaves_a_freed_instance_at_once(t)
 	_test_a_single_target_arrow_stays_on_its_contact(t)
 	await _test_day_eleven_answers_at_any_live_mast(t)
-	_test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
-	_test_the_swings_touch_is_the_ellipse_at_its_base(t)
+	await _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
+	await _test_the_swings_touch_is_the_ellipse_at_its_base(t)
 	_free_city()
 
-## Runs the arrow to rest the way the game does: it chooses (`retarget_the_arrow()`), then the
+## Runs the arrow to rest the way the game does: the
 ## physics ticks `main` runs (`ResistanceDirector.tick()`) sweep the walking fields a slice at a time,
 ## choosing again as each finishes, until none is under way. Bounded: a sweep that never ends fails
 ## the test's next check rather than hanging it.
@@ -163,7 +163,7 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 		_settle_the_arrow(director)
 		t.check(director.red_arrow_target().distance_to(near_by_path.global_position) < 1.0,
 				"behind a wall the arrow points at the one she can walk to sooner")
-		t.check(director.pointable_objective() == director.red_arrow_target(),
+		t.check(_city.events.points_at.call() == director.red_arrow_target(),
 				"and the protest cue points at the same chosen objective as the arrow")
 		t.check(director.red_arrow_target().distance_to(near_by_crow.global_position) > 100.0,
 				"and not at the nearer as the crow flies")
@@ -461,7 +461,7 @@ func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 7, SEED)
 	var van: ResistanceDirector = read[0]
-	van.retarget_the_arrow()
+	_settle_the_arrow(van)
 	t.check(van.red_arrow_target() == van.contact_position()
 			and van.red_arrow_target() != Vector2.INF,
 			"the van has the one arrow, on its contact")
@@ -504,7 +504,7 @@ func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
 						"seed %d day %d: the arrow ends on the item itself (%s, item %s)"
 						% [seed_value, day, arrow, item])
 				if step.target_kind != ResistanceSteps.TargetKind.DOOR:
-					t.check(_touched_from_standable_ground(director, item),
+					t.check(await _touched_from_standable_ground(t, director, item),
 							"seed %d day %d: and the task is touched from ground she can stand on"
 							% [seed_value, day])
 			player.free()
@@ -556,18 +556,25 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 	return Vector2.INF
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
-## touch"*. The swing's contact is touched by her body overlapping `ResistanceDirector.swing_base()`
-## round the swing's base, the extent of the shadow the frame casts there (the ground shape a swing
-## frame `Prop` takes as it enters the tree, `Prop.shape`): from eight bearings, standing with her edge a pixel inside the ellipse's
+## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
+## the extent of the shadow the frame casts there (the ground shape a swing frame `Prop` takes as it
+## enters the tree, `Prop.shape`): the contact the director offers on day 12 carries that ellipse as
+## its `touch_ellipse`, and from eight bearings, standing with her edge a pixel inside the ellipse's
 ## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
-## Before, a 36px circle round the swing's tile centre counted.
 func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
-	var contact := ContactPoint.new()
-	contact.setup(_perform_on(12), Vector2(500.0, 500.0))
-	contact.touch_ellipse = ResistanceDirector.swing_base()
-	t.add_child(contact)
-	contact.set_physics_process(false)
-	var semi := ResistanceDirector.swing_base()
+	_build_city_in_a_new_run(t)
+	var read := _read_the_mark_on(t, 12, SEED)
+	var director: ResistanceDirector = read[0]
+	var player: Stroller = read[2]
+	var contact := director.contact()
+	var step := director.current_step()
+	t.check(step != null and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING
+			and contact != null, "day 12 offers the swing task with a contact")
+	if contact == null:
+		player.free()
+		director.free()
+		return
+	var semi := contact.touch_ellipse
 	var frame := Prop.new()
 	frame.kind = Prop.Kind.PLAYGROUND_FRAME
 	t.add_child(frame)
@@ -575,19 +582,23 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 	frame.free()
 	t.check(is_equal_approx(semi.x, shadow.reach()) and is_equal_approx(semi.y, shadow.across()),
 			"the ellipse spans the shadow the frame casts at its base (%s)" % semi)
-	var touching := 0
-	var clear := 0
+	var places: Array[Vector2] = []
 	for i in 8:
 		var angle := TAU * float(i) / 8.0
 		var edge := Vector2(cos(angle) * semi.x, sin(angle) * semi.y)
 		var outward := Vector2(cos(angle) / semi.x, sin(angle) / semi.y).normalized()
-		var inside := contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS - 1.0)
-		var outside := contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS + 2.0)
-		if contact.would_complete_at(inside):
+		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS - 1.0))
+		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS + 2.0))
+	var touched := await ContactTouches.touches_from(t, director, places)
+	var touching := 0
+	var clear := 0
+	for i in 8:
+		if touched[2 * i]:
 			touching += 1
-		if not contact.would_complete_at(outside):
+		if not touched[2 * i + 1]:
 			clear += 1
 	t.check(touching == 8, "her body overlapping the swing's base ellipse completes it on every side and corner (%d of 8)" % touching)
 	t.check(clear == 8, "and two pixels clear of it, on every side and corner, does not (%d of 8)" % clear)
 	t.check(semi.x > semi.y and semi.y > 0.0, "the base is wider than it is deep, as the frame stands side-on")
-	contact.free()
+	player.free()
+	director.free()

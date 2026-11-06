@@ -47,7 +47,7 @@ var atlas: AtlasLibrary
 ## through one of its own.
 var drawer: EventDrawer
 ## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
-## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`). Unset where there is no
+## resistance (`ResistanceDirector.setup()`, its `_pointable_objective()`). Unset where there is no
 ## resistance, and a protest then points at nothing.
 var points_at := Callable()
 ## What she can see this frame — the one answer to "can she see it" for everything on a day

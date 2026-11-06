@@ -107,7 +107,7 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	# The mark and its guard.
 	var offered := director.current_step()
 	_print("%s mark %s guard %s" % [label, _point(director.contact_position()),
-			_guard_at(director.mark_guard())])
+			_guard_at(director._guard)])
 	printed += 1
 	var mark := director.contact_position()
 	if offered and offered.is_pickup and mark != Vector2.INF:
@@ -230,14 +230,14 @@ func _the_raid(city: City, director: ResistanceDirector, player: Stroller, label
 				Tuning.VIEW_HALF_EXTENT), null)
 		happenings.tick(STEP, far, Vector2.ZERO)
 		_print("%s raid with her screen on %s: %d" % [label, _point(focus),
-				happenings.raid.size()])
+				happenings._raid.size()])
 		printed += 1
 	_stand(city, player, far)
 	happenings.tick(STEP, far, Vector2.ZERO)
 	var at: Array[String] = []
-	for body in happenings.raid:
+	for body in happenings._raid:
 		at.append(_point(body.global_position))
-	_print("%s raid from %s: %d at %s" % [label, _point(far), happenings.raid.size(), at])
+	_print("%s raid from %s: %d at %s" % [label, _point(far), happenings._raid.size(), at])
 	return printed + 1
 
 ## Day 13's column sent at her from three places along the main road and one off it.
@@ -253,7 +253,7 @@ func _the_column(city: City, director: ResistanceDirector, player: Stroller, lab
 	for her in hers:
 		_stand(city, player, her)
 		var before := happenings._rng.state
-		var warning := happenings.send_the_column(her)
+		var warning := happenings._send_the_column(her)
 		if warning == null:
 			_print("%s column from %s: none (rng %d -> %d)" % [label, _point(her), before,
 					happenings._rng.state])

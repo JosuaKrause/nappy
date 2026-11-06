@@ -1920,7 +1920,7 @@ func rim() -> EntityHalo:
 var look: EventLook
 
 ## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
-## from the resistance's `pointable_objective()`); unset, it points at nothing.
+## from the resistance's `_pointable_objective()`); unset, it points at nothing.
 var points_at := Callable()
 
 func _draw() -> void:

@@ -54,7 +54,7 @@ var ahead: EventsAhead
 ## instances.
 var checkpoints: CheckpointController
 ## What a protest points at, answering a world point or `Vector2.INF` for nothing: handed in by the
-## resistance (`ResistanceDirector.setup()`, its `pointable_objective()`) and asked on behalf of
+## resistance (`ResistanceDirector.setup()`, its `_pointable_objective()`) and asked on behalf of
 ## every instance made here. Unset where there is no resistance, and a protest then points at
 ## nothing.
 var points_at := Callable():

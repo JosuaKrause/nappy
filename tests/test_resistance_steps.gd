@@ -467,7 +467,7 @@ func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
 
 ## *Always guarded* has to mean a survivable placement, not a guaranteed lost day: a robber
 ## stands at least 62px (26 + `ContactPoint.REACH`) from every mark, in the mark's own alley —
-## within 96px of where `ResistanceDirector.guard_spot()` says he stands, two-thirds through it or
+## within 96px of where the map's alley puts him, two-thirds through it or
 ## at a courtyard's inner end — and the distance is the same every time this day is replayed. On a
 ## city of its own with no day started, so every guard is a dawn guard.
 func _test_the_guard_is_seeded(t) -> void:
@@ -497,7 +497,7 @@ func _test_the_guard_is_seeded(t) -> void:
 		if guard:
 			t.check(distance >= min_distance - 0.5,
 					"day %d's guard stands at least 62px from the mark" % day)
-			var spot := director.guard_spot(at)
+			var spot := _guard_spot_of(_city.map, at)
 			t.check(spot == Vector2.INF or guard.global_position.distance_to(spot) <= ResistanceDirector.FAR_END_REACH_IN + 0.5,
 					"day %d's guard stands two-thirds through the mark's alley, or at its courtyard's inner end" % day)
 			_seen_guard_distances.append(distance)

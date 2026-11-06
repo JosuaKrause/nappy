@@ -14,3 +14,11 @@ a rule the player meets that nothing checks.
   suite builds a day where the choice matters. The check builds such a day (an event spoiling one
   calm area beside a clean one) and reads which one the repaired routes reach (record
   minty-quail-snowy-panda).
+- **The park's obstruction.** Handing the park cordon an empty obstruction fails no suite, at the
+  resistance build's head or before it; the check gives the cordon a day's obstruction and one
+  without the bodies and reads that what she can reach differs (the review of the resistance's
+  underscore pass, record minty-quail-sunny-heron).
+- **The market boarded in her sight.** Boarding the market up while she can see it fails no suite;
+  the check stands her in view of the candidate block on the day it is boarded and reads that the
+  boarding waits (the same review).
+

@@ -2381,7 +2381,7 @@ static func _alley_robbery() -> EventDef:
 ## offscreen"; "we need a version of the robber that is not frozen when spawned"; 2026-10-04,
 ## grassy-goose: "the robber should spawn in off-screen already pursuing when I touch the goal".)*
 ## Every task but the van's, the roadblock's and the neighbor's sends him
-## (`ResistanceDirector.sets_a_trap_on_her()`): the man shouting's note, the burnt building's door,
+## (`ResistanceDirector._sets_a_trap_on_her()`): the man shouting's note, the burnt building's door,
 ## the district door, a mast's foot, the swing and the last night's front door. Nothing places
 ## it but `ResistanceDirector._set_the_trap_on_her()`: `SCRIPTED` on day 0, the day nobody plays, so
 ## the roll, the stream and the budget never reach it — `EventDef.validate()` refuses a pursuer with

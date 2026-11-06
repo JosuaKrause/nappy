@@ -15,7 +15,7 @@ extends RefCounted
 ## is placed as a played day places it. Each city stands in a run of its own
 ## (`RunCity.with_own_run()`), and she is handed to the director and the events as `main` hands her.
 ## The arrow is then run to rest from where she stands the way the game runs it
-## (`ResistanceDirector.retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
+## (`ResistanceDirector._retarget_the_arrow()`, then its physics ticks, `tick()`, until no sweep is
 ## under way), and again from each of `WALK_STOPS` points on her straight line toward the task's
 ## roadblock, to see whether the arrow stays on it as she walks there; what it points at is its
 ## `_arrow_key`.
@@ -149,7 +149,7 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 ## Runs the arrow to rest the way the game does: it chooses, then the physics ticks `main` runs sweep
 ## its walking fields a slice at a time, choosing again as each finishes, until none is under way.
 static func _settle_the_arrow(director: ResistanceDirector) -> void:
-	director.retarget_the_arrow()
+	director._retarget_the_arrow()
 	var ticks := 0
 	while _arrow_sweeping(director) and ticks < 1200:
 		director.tick(1.0 / Engine.physics_ticks_per_second)

@@ -18,8 +18,8 @@ extends RefCounted
 ##
 ## **Who takes the park.** The two cases that walk out through the last gap need to know where it
 ## is, which only the cordon holds (`ParkCordon.last_gap`, kept public for it; the world shows the gap
-## only once it has closed), so they take the park with happenings of their own, handed what the director hands its
-## own at the swing (`take_the_park(director.reach_obstruction())`) and ticked by the suite with the
+## only once it has closed), so they take the park with happenings of their own, handed the day's obstruction as the director
+## hands it to its own at the swing (`ResistanceReads.day_reachability()`) and ticked by the suite with the
 ## day's clock; the director's own task for the swing is left open, since finishing it would send
 ## the task's pursuer after her too. The case that stands in the park until the day is lost has no
 ## use for the gap, so it finishes the swing's task as she does and ticks the director
@@ -30,6 +30,7 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
+const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const SEEDS: Array[int] = [4242, 11, 13]
 const STEP := 1.0 / 60.0
 ## How long a check lets the cordon work before calling it stuck, in seconds of day.
@@ -99,8 +100,7 @@ func _touch_the_contact(director: ResistanceDirector) -> void:
 
 ## Puts her at the swing and answers where it is. The park is then taken either by the director,
 ## as the swing's task being done takes it (`through_the_director`: the cordon is the director's
-## own, read off the world), or by happenings of the suite's own, handed what the director hands
-## its own at the touch (`take_the_park(reach_obstruction())`), whose `cordon` says where its last
+## own, read off the world), or by happenings of the suite's own, handed the day's obstruction as the director hands it to its own at the touch, whose `cordon` says where its last
 ## gap is: the one thing a walk out through the gap needs, which nothing in the world shows before
 ## the gap closes.
 func _touch_the_swing(t, main: Node2D, through_the_director := false) -> Vector2:
@@ -115,7 +115,7 @@ func _touch_the_swing(t, main: Node2D, through_the_director := false) -> Vector2
 	_happenings = ResistanceHappenings.new()
 	_happenings.setup(Boot.city(main), Boot.city(main).map)
 	_happenings.start_day(_run.header.day, false)
-	t.check(_happenings.take_the_park(director.reach_obstruction()),
+	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
 			"reaching the swing takes the park")
 	return swing
 

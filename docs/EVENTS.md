@@ -1894,7 +1894,7 @@ One row the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resi
 
 Two rows the ordinary roll never reaches (`SCRIPTED`, `scripted_day` 0): the resistance sets one
 on her the moment she has done a task, never at dawn — every task but the roadblock, which keeps a
-guard waiting at it, and the neighbor, which has neither (`ResistanceDirector.sets_a_trap_on_her()`).
+guard waiting at it, and the neighbor, which has neither (`ResistanceDirector._sets_a_trap_on_her()`).
 The roadblock's waiting guard comes after her the moment she has done its task, from wherever he
 stands, and he is the one pursuer who walks round buildings toward her: where no clear line runs to
 her he follows the walk to her over the ground she can walk, refreshed as she moves, rather than

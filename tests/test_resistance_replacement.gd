@@ -4,10 +4,10 @@ extends "res://tests/resistance_rig.gd"
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. A mark is
 ## read off the street (`ResistanceDirector.contact_position()`), the neighbor and the raid off the
-## street and the happenings' public queries (`ResistanceHappenings.raid`, the raid's instances),
+## street (the raid's instances among the live ones),
 ## and what the director did on a tick off the run's trace (`RunTrace.recording()`). Three tests
-## call the director's own draws (`nearest_alley_within()`, `guard_position()`,
-## `draw_guard_position()`) over bare maps and a run of their own.
+## call the director's own draws (`nearest_alley_within()`, `nearest_alley_among()`,
+## `guard_position()`) over bare maps and a run of their own.
 func run(t) -> void:
 	t.gives_back_observers()
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
@@ -76,7 +76,7 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 	var map := _city.map
 	var marks: Array[Vector2i] = []
 	for tile in _through_alleys():
-		if ResistanceDirector.is_mark_tile(map, tile):
+		if _is_one_in_from_a_mouth(map, tile):
 			marks.append(tile)
 	var director: ResistanceDirector = null
 	var player_at := Vector2.INF
@@ -210,12 +210,9 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 ## mark relocating right up to where she stands (or a dawn placement near a wandering player)
 ## could put him inside his own `EventDef.notice`, or worse `inner_radius` (a `hard_fail` with no
 ## warning), of wherever she actually is unless the draw is also asked to refuse that. Checked
-## directly against `draw_guard_position()`, the draw the roadblock's guard uses, with
-## `her` forced onto the mark itself — the closest a real guard's own band ever gets to her.
+## directly against `guard_position()`, with `her` forced onto the mark itself — the closest a real guard's own band ever gets to her.
 func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
-	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
-	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	var checked := 0
@@ -229,15 +226,13 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 			if map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile):
 				continue
 			var mark := map.tile_to_world(tile)
-			for _attempt in 3:
-				checked += 1
-				var guard_at := director.draw_guard_position(rng, mark, Vector2.INF,
-						min_distance, max_distance, mark, robbery.notice_within())
-				if guard_at == Vector2.INF:
-					continue
-				t.check(guard_at.distance_to(mark) > robbery.notice_within(),
-						"seed %d: the guard for the mark at %s never lands within his own reach of her"
-						% [seed_value, tile])
+			checked += 1
+			var guard_at := director.guard_position(rng, mark, true, mark, false)
+			if guard_at == Vector2.INF:
+				continue
+			t.check(guard_at.distance_to(mark) > robbery.notice_within(),
+					"seed %d: the guard for the mark at %s never lands within his own reach of her"
+					% [seed_value, tile])
 		director.free()
 	run.free()
 	t.check(checked > 0, "some mark was actually checked (%d draws)" % checked)
@@ -383,7 +378,7 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 			# covered corner or out of the view) is a case the whole view has to refuse.
 			var seen_by_the_visible_area := false
 			for box_at: Array in [[ResistanceDirector.MARK_BOX, mark],
-					[ResistanceDirector.GUARD_BOX, director.guard_spot(mark)]]:
+					[ResistanceDirector.GUARD_BOX, _guard_spot_of(_city.map, mark)]]:
 				var drawn: Rect2 = box_at[0]
 				var drawn_at: Vector2 = box_at[1]
 				var middle := drawn_at + drawn.get_center()
@@ -507,16 +502,16 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 		scout.start_day(day)
 		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 				Tuning.VIEW_HALF_EXTENT * 2.0), covered)
+		var before := _street()
 		scout.tick(STEP, her, Vector2.ZERO)
 		var vans := PackedVector2Array()
 		var beat := PackedVector2Array()
-		for arrived in scout.raid:
+		for arrived in _raid_since(before):
 			if arrived.def.paces:
 				beat = arrived.path
 			else:
 				vans.append(arrived.global_position)
 			events.retire(arrived)
-		scout.raid.clear()
 		var happenings := ResistanceHappenings.new()
 		happenings.setup(_city, _city.map)
 		happenings.start_day(day)
@@ -537,14 +532,16 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 			any_feet = any_feet or events.on_screen(at)
 		t.check(not any_feet and view.intersects(Rect2(start + car.position, car.size)),
 				"%s scheme: no feet of the raid are in view, the car's picture is" % scheme)
+		before = _street()
 		happenings.tick(STEP, her, Vector2.ZERO)
-		t.check(happenings.raid.is_empty(),
+		t.check(_raid_since(before).is_empty(),
 				"%s scheme: the raid waits while the car would be drawn in view" % scheme)
 		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 				Tuning.VIEW_HALF_EXTENT * 2.0), covered)
 		happenings.tick(STEP, her, Vector2.ZERO)
-		t.check(happenings.raid.size() == 3,
-				"%s scheme: off camera, the raid arrives (%d)" % [scheme, happenings.raid.size()])
+		var raid := _raid_since(before)
+		t.check(raid.size() == 3,
+				"%s scheme: off camera, the raid arrives (%d)" % [scheme, raid.size()])
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
 func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
