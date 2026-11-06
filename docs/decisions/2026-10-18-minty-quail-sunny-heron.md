@@ -21,14 +21,14 @@ alley members only it and the tests used are internal (`keeps_a_waiting_guard`,
 obstruction apart from the director, and `tests/alley_marks.gd` states the alley rules from the map.
 Removed as holding nothing (curly-rabbit #1097): the guard-tracking and predicate-label read-backs,
 the hand-made-pool tests of the mark draw (one dawn test now holds that a body on another mark tile
-leaves the mark where it fell), and the replacement suite's repeat passes per tile, its placement
-there no longer random (8246 checks to 2157).
+leaves the mark where it fell), and the replacement suite's three passes per tile, which sampled the band draw round the mark that a mark's own guard never uses in an alley; it now asks once per tile, the answer fixed on the through-alley tiles and still drawn on the 56 courtyard-passage tiles, and checks the 1235 tiles that get a guard (8246 checks to 2157).
 
-**Kept public**, each with its reason beside its line in the list, open to overturn: the director's
-`guard_position`, `place_contact`, `nearest_alley_within`, `nearest_alley_among` and
-`weighted_mast_index`, on cost rather than on nothing outward showing them, since their sweeps ask
-every alley tile of several generated maps of a bare director and the world form needs a built
-city and a reachability rebuild per probe (`guard_position` also because day 13's guard-move spot
-cannot be told from no move); `ContactPoint.draws_a_mark`, which only guards a `_draw()` a headless
-run never shows; `ResistanceHappenings.cordon`, the cordon suites' one handle on the cordon's
-`last_gap`. The five stay in the queue's scope to convert.
+**Kept public**, each with its reason beside its line in the list, open to overturn:
+`ContactPoint.draws_a_mark`, which only guards a `_draw()` a headless run never shows, and
+`ResistanceHappenings.cordon`, which the cordon and park-return suites read the cordon through.
+
+**Left public, still to convert.** The director's `guard_position`, `place_contact`,
+`nearest_alley_within`, `nearest_alley_among` and `weighted_mast_index` stay in the list's own-file
+group: their sweeps ask every alley tile of several generated maps of a bare director, and the world
+form needs a built city and a reachability rebuild per probe. A sampled sweep through the world costs
+seconds, so they stay in the queue's scope.
