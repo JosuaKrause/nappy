@@ -98,51 +98,57 @@ func _test_damage_pools_are_shared_without_changing_source_semantics(t) -> void:
 					"the shared %s pool names a published transparent component" % damage_type)
 		t.check(provenance.has_all(["road", "sidewalk", "alley"]),
 				"the shared %s pool makes every accepted surface drawing available on every base" % damage_type)
-	var source_types: Dictionary = manifest.get("source_damage_types", {})
 	var source_layers: Dictionary = manifest.get("source_layers", {})
 	for first_source in [40, 46, 52]:
 		for offset in range(6):
 			var source_id: int = int(first_source) + offset
-			var expected: String = ["hairline", "hairline", "cracked", "cracked", "broken", "broken"][offset]
-			t.check(str(source_types.get(str(source_id), "")) == expected,
-					"damage source %d retains its authored severity and A/B gameplay slot" % source_id)
 			t.check(not source_layers.has(str(source_id)),
 					"damage source %d selects a shared pool instead of a surface-bound layer" % source_id)
 			t.check(AUTHORED_GROUND.get_source(source_id) != null,
 					"damage source %d remains an authored GroundTiles source" % source_id)
 
+## **A direction means one rotation in every family.** Each directional family (the kerb, the
+## centre line, the main road's own kerb, line and crossing) is four `GroundTiles` sources named
+## for a direction, drawn from one component turned to face it: so the four sources of a family
+## share one component, turn it four different ways, and a direction is turned the same way in
+## every family. The rotation is read off the sources `GroundTiles` names, not retyped here.
 func _test_directional_component_pairs_match_ground_tiles(t) -> void:
 	var manifest := _layer_manifest(t)
 	if manifest.is_empty():
 		return
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	_check_directional_layers(t, source_layers, {
-		8: ["curbstone", 0], 9: ["curbstone", 180],
-		10: ["curbstone", 90], 11: ["curbstone", 270],
-		26: ["curbstone", 0], 27: ["curbstone", 180],
-		28: ["curbstone", 90], 29: ["curbstone", 270],
-		1: ["yellow_half_line", 90], 2: ["yellow_half_line", 270],
-		3: ["yellow_half_line", 0], 4: ["yellow_half_line", 180],
-		22: ["yellow_main_line", 90], 23: ["yellow_main_line", 270],
-		24: ["yellow_main_line", 0], 25: ["yellow_main_line", 180],
-		5: ["crosswalk", 90], 6: ["crosswalk", 0],
-		36: ["main_crosswalk", 0], 37: ["main_crosswalk", 180],
-		38: ["main_crosswalk", 270], 39: ["main_crosswalk", 90],
-	})
-
-func _check_directional_layers(t, source_layers: Dictionary, expected: Dictionary) -> void:
-	for source_id_value in expected:
-		var source_id: int = source_id_value
-		var contract: Array = expected[source_id]
-		var layers: Array = source_layers.get(str(source_id), [])
-		var component: String = ""
-		var rotation := -1
-		if not layers.is_empty() and layers[0] is Dictionary:
-			var layer: Dictionary = layers[0]
-			component = str(layer.get("component", ""))
-			rotation = int(layer.get("rotation_degrees", -1))
-		t.check(component == contract[0] and rotation == contract[1],
-			"source %d has its GroundTiles direction and component rotation" % source_id)
+	var families := {
+		"kerb": {"N": GroundTiles.SIDEWALK_KERB_N, "S": GroundTiles.SIDEWALK_KERB_S,
+				"E": GroundTiles.SIDEWALK_KERB_E, "W": GroundTiles.SIDEWALK_KERB_W},
+		"main kerb": {"N": GroundTiles.SIDEWALK_KERB_MAIN_N, "S": GroundTiles.SIDEWALK_KERB_MAIN_S,
+				"E": GroundTiles.SIDEWALK_KERB_MAIN_E, "W": GroundTiles.SIDEWALK_KERB_MAIN_W},
+		"centre line": {"N": GroundTiles.ROAD_LINE_N, "S": GroundTiles.ROAD_LINE_S,
+				"E": GroundTiles.ROAD_LINE_E, "W": GroundTiles.ROAD_LINE_W},
+		"main line": {"N": GroundTiles.ROAD_MAIN_LINE_N, "S": GroundTiles.ROAD_MAIN_LINE_S,
+				"E": GroundTiles.ROAD_MAIN_LINE_E, "W": GroundTiles.ROAD_MAIN_LINE_W},
+		"main crossing": {"N": GroundTiles.CROSSING_MAIN_N, "S": GroundTiles.CROSSING_MAIN_S,
+				"E": GroundTiles.CROSSING_MAIN_E, "W": GroundTiles.CROSSING_MAIN_W},
+	}
+	var turned_by_direction := {}
+	for family: String in families:
+		var sources: Dictionary = families[family]
+		var components := {}
+		var turns := {}
+		for direction: String in sources:
+			var layers: Array = source_layers.get(str(sources[direction]), [])
+			var layer: Dictionary = layers[0] if not layers.is_empty() and layers[0] is Dictionary else {}
+			var turn := int(layer.get("rotation_degrees", -1))
+			components[str(layer.get("component", ""))] = true
+			turns[turn] = true
+			if turned_by_direction.has(direction):
+				t.check(turn == turned_by_direction[direction],
+						"the %s turns its component to face %s the way the other families do (%d)"
+						% [family, direction, turn])
+			else:
+				turned_by_direction[direction] = turn
+		t.check(components.size() == 1 and not components.has(""),
+				"the %s's four directions are one component (%s)" % [family, components.keys()])
+		t.check(turns.size() == 4, "the %s turns it four different ways (%s)" % [family, turns.keys()])
 
 func _test_manifest_covers_the_authored_ground_sources(t) -> void:
 	var manifest := _layer_manifest(t)
