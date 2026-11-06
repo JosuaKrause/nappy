@@ -8,6 +8,8 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
+const ContactTouches := preload("res://tests/contact_touches.gd")
+const AlleyMarks := preload("res://tests/alley_marks.gd")
 ## The context city every task scene is built on, so a mark here is a mark there.
 const CONTEXT := 1917501
 ## An alley mouth of that city, the mark most task scenes start at.
@@ -24,7 +26,7 @@ func run(t) -> void:
 	_test_an_authored_mast_carries_its_own_id(t)
 	_test_an_authored_mast_stands_only_where_the_days_masts_may(t)
 	_test_a_pinned_mark_is_read_and_its_task_placed_near_it(t)
-	_test_a_mark_is_touched_only_from_inside_its_alley(t)
+	await _test_a_mark_is_touched_only_from_inside_its_alley(t)
 	_test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t)
 	_test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t)
 	_test_a_neighbor_start_the_day_could_not_draw_is_refused(t)
@@ -173,11 +175,13 @@ func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
 	var outward := Vector2(MOUTH - MARK)
 	var street_edge := mark + outward * Tuning.TILE_SIZE * 1.5
 	var body := Tuning.PLAYER_BODY_RADIUS
-	t.check(director.contact().would_complete_at(street_edge - outward * body),
+	var touched := await ContactTouches.touches_from(t, director, [street_edge - outward * body,
+			street_edge + outward * body, street_edge] as Array[Vector2])
+	t.check(touched[0],
 			"standing in the alley, her body wholly past the street's edge, touches the mark")
-	t.check(not director.contact().would_complete_at(street_edge + outward * body),
+	t.check(not touched[1],
 			"standing on the pavement at the mouth, her body wholly outside it, does not")
-	t.check(not director.contact().would_complete_at(street_edge),
+	t.check(not touched[2],
 			"nor does her centre on the street's edge")
 	_free_day(made)
 
@@ -209,7 +213,7 @@ func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t) -> void:
 	var map := city.map
 	var inside := MOUTH + Vector2i.UP * 3
 	t.check(map.tile_at(inside) == GameEnums.TileType.ALLEY
-			and not ResistanceDirector.is_alley_mouth(map, inside),
+			and not AlleyMarks.is_a_mouth(map, inside),
 			"the probe stands inside the mark's own alley, not at its mouth")
 	var errors := director.start_recipe_task(7, own_run.calendar.day_rng(7, "resistance"), 300.0,
 			map.tile_to_world(inside))
@@ -228,7 +232,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
 	var director: ResistanceDirector = made[1]
 	var own_run: RunState = made[2]
 	var map := city.map
-	var mark := map.tile_to_world(ResistanceDirector.mark_tile_of(map, Vector2i(66, 146)))
+	var mark := map.tile_to_world(AlleyMarks.mark_tile_of_mouth(map, Vector2i(66, 146)))
 	# A sidewalk a block from her door: a few tiles of walk from home, nowhere near the band of
 	# about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of walk the day draws a start from.
 	var near_home := Vector2i(62, 84)

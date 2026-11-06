@@ -18,6 +18,7 @@ extends RefCounted
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
+const ContactTouches := preload("res://tests/contact_touches.gd")
 const SEED := 4242
 ## Day 6, "A chalk mark" — the first task day, and the smallest one whose mark is a pickup step
 ## rather than null, the same reason `tests/test_dev_rig.gd` picks it for `--spawn contact`.
@@ -61,10 +62,10 @@ func run(t) -> void:
 	_test_resolve_target_unknown_word_warns_and_answers_inf(t)
 	_test_task_target_resolves_for_the_neighbor_task_on_day_10(t)
 	_test_task_target_steps_off_obstructed_ground(t)
-	_test_task_target_resolves_for_the_mast_task_on_day_11(t)
+	await _test_task_target_resolves_for_the_mast_task_on_day_11(t)
 	_test_task_target_resolves_for_the_swing_task_on_day_12(t)
 	_test_task_target_resolves_for_the_door_task_on_day_9(t)
-	_test_task_target_resolves_for_the_station_door_on_the_last_night(t)
+	await _test_task_target_resolves_for_the_station_door_on_the_last_night(t)
 	_test_nearest_calm_excludes_ground_the_day_has_spoiled(t)
 	_test_calm_leaves_the_park_being_taken(t)
 	_test_resolve_target_calm_home_prefers_the_combined_walk(t)
@@ -797,8 +798,10 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 	var map := (fixture["city"] as City).map
 	var foot := map.world_to_tile(contact)
 	var on_a_body := not map.is_walkable(foot) or map.is_obstructed(foot)
-	t.check(resolved != Vector2.INF and (resolved != contact) == on_a_body
-			and director.contact().would_complete_at(resolved),
+	var touched := false
+	if resolved != Vector2.INF:
+		touched = await ContactTouches.touches_from_one(t, director, resolved)
+	t.check(resolved != Vector2.INF and (resolved != contact) == on_a_body and touched,
 			"'task' resolves to ground the mast's foot is touched from (%s)"
 			% ("open ground beside it" if on_a_body else "the open foot itself"))
 	_free_fixture(fixture)
@@ -854,8 +857,10 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 			"'mark' is unavailable on the last night, which has none")
 	var resolved := planner.resolve("task")
 	var map := (fixture["city"] as City).map
-	t.check(resolved != Vector2.INF and director.contact().would_complete_at(resolved)
-			and map.is_walkable(map.world_to_tile(resolved)),
+	var touched := false
+	if resolved != Vector2.INF:
+		touched = await ContactTouches.touches_from_one(t, director, resolved)
+	t.check(resolved != Vector2.INF and touched and map.is_walkable(map.world_to_tile(resolved)),
 			"'task' resolves to the pavement the power station's front door is touched from")
 	var door := director.contact_position()
 	var door_tile := map.world_to_tile(door)
