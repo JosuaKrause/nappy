@@ -428,7 +428,7 @@ func _quietest_pavement() -> Vector2:
 ##
 ## *(Playtest 13, and it is M44's lesson in the one test that pins the floor.)* This used to call
 ## `start_day(1, rng)` with no focus, which parks the field on the map centre — and then measured
-## at `quietest_pavement`, which is whichever north-south corridor this city made quietest and is
+## at `_quietest_pavement()`, which is whichever north-south corridor this city made quietest and is
 ##1968px from that centre on seed 4242. Measured: **zero agents within 400px**, so "a back street
 ## is somewhere she can recover" was 0.00 against a decay of 3.50 and "the arterial is a different
 ## place" was 7.58 against 0.00. Three of this test's four checks were passing against a street
