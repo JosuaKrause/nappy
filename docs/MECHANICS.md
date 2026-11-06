@@ -526,7 +526,7 @@ meter, none of which a data-level test can see:
 **Excitement stays a pure query.** A contact does not touch `Baby.excitement`; it *startles
 the person she walked into*, and the crowd's set (`CrowdSources`) sums that agent like it sums
 every other one. So contacts still compose by plain addition, there is still no ordering to get
-wrong, and `WorldContext.total_excitement_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
+wrong, and `WorldContext.excitement_sources_at` still adds its sets (the events' and, in the city, the crowd's). See the **events** skill.
 
 ### The crowd gives way to event figures
 
@@ -1984,7 +1984,7 @@ closing the window and quitting all still do what they always have — the game 
 loss (M161), the run log still closes — but none of them changes what a save holds, since a save is
 the run and the day, never the moment inside one (PLAYTEST-82).
 
-**A save holds the run, never the moment inside a day.** The run's registered parts (`run.run_parts`; `run.run_parts.state_data()` is the ones in the snapshot) — the seed,
+**A save holds the run, never the moment inside a day.** The run's registered parts (`run.run_parts`; `run.run_parts.run_data()["state"]` is the ones in the snapshot) — the seed,
 the day, nerves, resistance progress, scars, consumed one-shot events, the block arcs the run's own
 history has moved, where she settled each day and the run's clock — plus the facts that ride beside
 it: whether a day was under way when the file was written, which section of the escape it is in, if

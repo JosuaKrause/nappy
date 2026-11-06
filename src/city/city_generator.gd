@@ -233,7 +233,7 @@ static func _assign_regions(map: CityMap) -> void:
 ## Decides where the main road and the precincts are, before a tile is laid.
 ##
 ## Seeded from the map seed with an RNG of its own rather than drawn from the generator's, the
-## same trick `CrowdLanes.busyness` uses: the hierarchy is a property of the city, and taking it
+## same trick `CrowdLanes._busyness` uses: the hierarchy is a property of the city, and taking it
 ## out of the shared stream means adding it moves nothing else that a seed already decided.
 ##
 ## There is **only** one main road and it is the north-south one.

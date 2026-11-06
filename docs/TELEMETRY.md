@@ -109,7 +109,7 @@ The events:
   for her own running and
   standing in an alley (`Baby.self_landed()`, tracked the same way with no source object of its
   own). Ties, and a window with nothing landed in it at all, pick the alphabetically first group
-  present, falling back to `self` when there is none (`LossCause.crying_suffix()`). A
+  present, falling back to `self` when there is none (`LossCause.of()`). A
   `LOST_CRYING`/`LOST_HARD_FAIL` day ended with no cause still sends the bare `lost-crying` /
   `lost-hard-fail` rather than nothing.
 - `nappy-day-3-seen-fire` — the first frame the burning building is in sight, whether or not the

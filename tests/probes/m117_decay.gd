@@ -79,7 +79,7 @@ func _legs(city: City) -> Array:
 
 	var quietest := 0
 	for index in CrowdLanes.corridor_count(Tuning.CITY_BLOCKS.x):
-		if CrowdLanes.busyness(map, true, index) < CrowdLanes.busyness(map, true, quietest):
+		if CrowdLanes.busyness_for(map, true, index, true) < CrowdLanes.busyness_for(map, true, quietest, true):
 			quietest = index
 	var quiet := map.tile_to_world(Vector2i(
 			quietest * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1, map.size.y / 2))

@@ -1,6 +1,6 @@
 extends RefCounted
 ## `GameSave`, and the functions on `RunState` and its registry it reads and writes through
-## (`run_parts.state_data()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The
+## (`run_parts.run_data()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The
 ## checks that go through `main` (the title, the resume gate, the focus loss and the day-14
 ## hand-over) are in `tests/test_save_wiring.gd`.
 ##
@@ -262,7 +262,7 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 		if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 			declared.append(property["name"])
 	var written := run.run_parts.state_keys()
-	written.append_array(run.run_parts.rider_data().keys())
+	written.append_array(run.run_parts.run_data().keys())
 	for name in declared:
 		var value: Variant = run.get(name)
 		if value is RunSubState or value is RunStateRegistry or value is RunCalendar:
@@ -318,7 +318,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	run.resistance.carrying_package = true
 	run.settled.settled_in = {5: Vector2i(-2, 7), 6: Vector2i(9, 9)}
 
-	var written := run.run_parts.state_data()
+	var written: Dictionary = run.run_parts.run_data()["state"]
 	t.check(_saved(run, true), "the write reports success")
 	var resume := _save.try_resume(run)
 	t.check(resume.get("day_under_way", false) == true, "day_under_way round-trips as true")
@@ -343,7 +343,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 	t.check(run.settled.settled_in.get(5) == Vector2i(-2, 7)
 			and run.settled.settled_in.get(6) == Vector2i(9, 9),
 			"settled_in survives with its Vector2i values and integer day keys intact")
-	t.check(run.run_parts.state_data() == written,
+	t.check(run.run_parts.run_data()["state"] == written,
 			"and the whole snapshot taken before the write matches the one read back after it")
 	# The dawn snapshot, read through what it is for: a lost day gives it back.
 	run.resistance.give_back()
@@ -394,32 +394,32 @@ func _test_missing_file_is_dropped(t) -> void:
 
 func _test_garbled_text_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.run_parts.state_data()
+	var before: Dictionary = run.run_parts.run_data()["state"]
 	_write_raw("not valid json at all {{{")
 	t.check(_save.try_resume(run).is_empty(), "text that is not valid JSON resumes nothing")
-	t.check(run.run_parts.state_data() == before, "and the run is left exactly as it was")
+	t.check(run.run_parts.run_data()["state"] == before, "and the run is left exactly as it was")
 	run.free()
 
 
 func _test_wrong_format_version_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.run_parts.state_data()
+	var before: Dictionary = run.run_parts.run_data()["state"]
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION + 1,
 		"build": "some other build",
 		"day_under_way": true,
-		"state": run.run_parts.state_data(),
+		"state": run.run_parts.run_data()["state"],
 	}))
 	t.check(_save.try_resume(run).is_empty(),
 			"a save this build's own format version does not match resumes nothing")
-	t.check(run.run_parts.state_data() == before, "and the run is untouched by trying")
+	t.check(run.run_parts.run_data()["state"] == before, "and the run is untouched by trying")
 	run.free()
 
 
 func _test_incomplete_state_is_dropped(t) -> void:
 	var run := _a_run()
-	var before := run.run_parts.state_data()
-	var state := run.run_parts.state_data()
+	var before: Dictionary = run.run_parts.run_data()["state"]
+	var state: Dictionary = run.run_parts.run_data()["state"]
 	state.erase("nerves")
 	_write_raw(JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
@@ -429,7 +429,7 @@ func _test_incomplete_state_is_dropped(t) -> void:
 	}))
 	t.check(_save.try_resume(run).is_empty(),
 			"a state missing a field this build writes resumes nothing rather than half-loading")
-	t.check(run.run_parts.state_data() == before, "and the run is untouched by trying")
+	t.check(run.run_parts.run_data()["state"] == before, "and the run is untouched by trying")
 	run.free()
 
 
@@ -500,7 +500,7 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the escape",
 		"day_under_way": true,
-		"state": run.run_parts.state_data(),
+		"state": run.run_parts.run_data()["state"],
 	})
 	t.check(not old_shape.contains("escape_section"),
 			"the payload really is one with no escape section in it")
@@ -570,7 +570,7 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 		"build": "a build from before this field",
 		"day_under_way": true,
 		"escape_section": run.facts.escape_section,
-		"state": run.run_parts.state_data(),
+		"state": run.run_parts.run_data()["state"],
 	})
 	t.check(not old_shape.contains("completed_resistance_alley_tiles"),
 			"the payload really is one with no alley tiles recorded in it")
@@ -612,7 +612,7 @@ func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
 		"build": "a build from before this field",
 		"day_under_way": true,
 		"escape_section": run.facts.escape_section,
-		"state": run.run_parts.state_data(),
+		"state": run.run_parts.run_data()["state"],
 	})
 	t.check(not old_shape.contains("fenced_park"),
 			"the payload really is one with no fenced park recorded in it")
@@ -669,7 +669,7 @@ func _test_the_posters_survive_a_round_trip(t) -> void:
 		"format_version": GameSave.FORMAT_VERSION,
 		"build": "a build from before the posters",
 		"day_under_way": false,
-		"state": run.run_parts.state_data(),
+		"state": run.run_parts.run_data()["state"],
 	})
 	_write_raw(old_shape)
 	_save.try_resume(run)
@@ -694,7 +694,7 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
 	run.header.nerves = 4
 	run.resistance.completed_steps = [1, 2, 3]
 	run.resistance.progress = 1
-	var snapshot := run.run_parts.state_data()
+	var snapshot: Dictionary = run.run_parts.run_data()["state"]
 	snapshot["pending_resistance_brief"] = "meet at the fountain"
 	snapshot["_dawn_brief"] = "an earlier brief"
 	var old_shape := JSON.stringify({

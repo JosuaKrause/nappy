@@ -51,7 +51,7 @@ var _looking_at := Vector2.ZERO
 var _stretch_box := Rect2()
 ## Where a stretch's streets run into the void, as the places the crowd enters it:
 ## `{"vertical", "corridor", "along", "direction"}`, the lane's axis, its corridor, the tile along
-## it at the very end, and the way into the stretch. See `stretch_ends_of()`.
+## it at the very end, and the way into the stretch. See `_stretch_ends_of()`.
 var stretch_ends: Array[Dictionary] = []
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
@@ -71,7 +71,7 @@ func use_stretch() -> void:
 				box = Rect2i(x, y, 1, 1) if not box.has_area() else box.expand(Vector2i(x, y)) \
 						.expand(Vector2i(x + 1, y + 1))
 	_stretch_box = map.tile_rect_to_world(box)
-	stretch_ends = stretch_ends_of(map)
+	stretch_ends = _stretch_ends_of(map)
 	centre = _looking_at
 
 ## Where the camera is looking: the box's own centre, except on a stretch, whose box stays put while
@@ -86,7 +86,7 @@ func looking_at() -> Vector2:
 ## and nobody enters there. Nor is a junction's own arm into the void: a walker or a car entered there
 ## would cross the box and be gone again in a few strides, so an end needs more of the stretch
 ## behind it than a junction is wide.
-static func stretch_ends_of(stretch_map: CityMap) -> Array[Dictionary]:
+static func _stretch_ends_of(stretch_map: CityMap) -> Array[Dictionary]:
 	var ends: Array[Dictionary] = []
 	var seen := {}
 	for y in stretch_map.size.y:

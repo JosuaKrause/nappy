@@ -111,18 +111,23 @@ func _test_the_epilogue_names_the_way_out_and_its_clock(t) -> void:
 			and model.body("P") == Texts.FINALE_OUT_IN % ["P", RunState.format_clock(42.5)],
 			"its body is the way she took and the clock she took it on")
 
+## The tally is the last line of a day summary once she has joined the resistance, read off the
+## summary a won day's end builds.
+func _tally_on_the_summary(run: RunState) -> String:
+	var lines := SummaryModel.day_over(run, _ended(GameEnums.DayResult.WON)).body("").split("\n")
+	return lines[lines.size() - 1]
+
 func _test_the_tally_counts_errands_and_contacts_lost(t) -> void:
 	var run := _run_on(6, 3)
 	run.resistance.progress = 1
-	t.check(SummaryModel.resistance_tally(run) == "Errands run: 1 of %d" % Tuning.RESISTANCE_GOAL,
+	t.check(_tally_on_the_summary(run) == "Errands run: 1 of %d" % Tuning.RESISTANCE_GOAL,
 			"the errands run of the goal")
 	run.resistance.failed_steps.assign([4])
-	t.check(SummaryModel.resistance_tally(run).ends_with(Texts.SUMMARY_TALLY_LOST_ONE),
-			"one contact lost")
+	t.check(_tally_on_the_summary(run).ends_with(Texts.SUMMARY_TALLY_LOST_ONE), "one contact lost")
 	run.resistance.failed_steps.assign([4, 7])
-	t.check(SummaryModel.resistance_tally(run).ends_with(Texts.SUMMARY_TALLY_LOST % 2),
+	t.check(_tally_on_the_summary(run).ends_with(Texts.SUMMARY_TALLY_LOST % 2),
 			"several contacts lost")
 	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	t.check(SummaryModel.resistance_tally(run) == Texts.SUMMARY_TALLY_DONE,
+	t.check(_tally_on_the_summary(run) == Texts.SUMMARY_TALLY_DONE,
 			"and done enough once the last night's work is on offer")
 	run.free()

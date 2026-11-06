@@ -653,7 +653,7 @@ func space_out_the_traffic(delta: float) -> void:
 	_keep_room_for_the_turning(lanes)
 	_index_the_queues(lanes)
 	_book_the_turns()
-	give_way_at_junctions()
+	_give_way_at_junctions()
 	_stop_for_gates(delta)
 
 ## And the road a car in a turn has **booked** rather than reached. A turning car is still in the
@@ -800,7 +800,7 @@ func _keep_room_for_the_turning(lanes: Dictionary) -> void:
 ##   symmetric arrival undecided, and right-before-left alone deadlocks four cars in a ring. Taken
 ##   in that order there is exactly one winner per box per frame, so nothing can gridlock: the
 ##   loser is holding for a car that is by construction going.
-func give_way_at_junctions() -> void:
+func _give_way_at_junctions() -> void:
 	# junction -> which axes are in the box: 1 for the north-south arm, 2 for the east-west one.
 	var occupied := {}
 	# junction -> the cars actually standing in it, so the rare pair that ends up in one together
@@ -879,7 +879,7 @@ func give_way_at_junctions() -> void:
 ## again.")*
 ##
 ## **Not a junction box.** A gate stands at a segment's mouth, not at a lattice junction, so
-## `give_way_at_junctions()`'s own arbitration has nothing to arbitrate here — there is one axis
+## `_give_way_at_junctions()`'s own arbitration has nothing to arbitrate here — there is one axis
 ## of traffic and no crossing arm. What replaces the box is a timer: the nearest car within its own
 ## braking distance of the stop line holds there, and once it has been actually stopped (not merely
 ## slowing) for `GATE_STOP_SECONDS`, the gate raises and stays up for as long as any car

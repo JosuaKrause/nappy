@@ -110,13 +110,13 @@ var _generation := 0
 
 ## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
 ## Passing the same point for both distances is what "with the player held still" *means*.
-static func approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
+static func _approach_speed(was: Vector2, now: Vector2, player: Vector2, delta: float) -> float:
 	if delta <= 0.0:
 		return 0.0
 	return (was.distance_to(player) - now.distance_to(player)) / delta
 
 ## Whether something closing at `approach` px/s with `gap` px of clear ground left is worth announcing.
-static func announces(approach: float, gap: float) -> bool:
+static func _announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
 
 ## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
@@ -126,7 +126,7 @@ static func announces(approach: float, gap: float) -> bool:
 ## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
 ## warning is put up before its danger is placed, the badge points at where it will come from, and
 ## nothing is measured. `_measure_dangers_in_the_world()` (with `watch`, `SMOOTHING`, `LEAD_TIME`,
-## `CLOSING_SPEED`, `SCREEN_MARGIN`, `announces()`, `approach_speed()` and the `Subject` fields only it
+## `CLOSING_SPEED`, `SCREEN_MARGIN`, `_announces()`, `_approach_speed()` and the `Subject` fields only it
 ## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
 ## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
 func step(delta: float, here: Vector2, subjects: Array, sees: Callable, walk_speed: float) -> void:
@@ -180,7 +180,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		watch[subject.key] = state
 	# The event's own approach: how much closer *it* got to where she is standing now. Both
 	# distances are measured to the same point, so her own walking cancels out of it.
-	var raw := approach_speed(state["was"], at, here, delta)
+	var raw := _approach_speed(state["was"], at, here, delta)
 	var approach: float = lerpf(state["approach"], raw, clampf(delta * SMOOTHING, 0.0, 1.0))
 	# **A charge is met at its true approach on its first moving frame** *(inbox #788 in minty-lemur,
 	# the player, of the stairwell's masked man, whose only heads-up is this badge once he runs:
@@ -208,7 +208,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	if subject.shown:
 		state["seen"] = true
 		state["up"] = false
-	elif subject.worth_an_arrow(walk_speed) and announces(approach, gap) \
+	elif subject.worth_an_arrow(walk_speed) and _announces(approach, gap) \
 			and not sees.call(at, SCREEN_MARGIN if state["seen"] else 0.0):
 		state["up"] = true
 	state["was"] = at

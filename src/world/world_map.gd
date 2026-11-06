@@ -491,7 +491,7 @@ func lot_at(_tile: Vector2i) -> Rect2i:
 # ------------------------------------------------------------ the world it is in ---
 
 ## Adds `node` to the world this map is drawn in, on `layer` (`DrawLayer.Layer`, an `int` for the
-## reason `DrawLayer.z_of()` gives), the y-sorted `ENTITIES` unless the caller asks for another
+## reason `DrawLayer._z_of()` gives), the y-sorted `ENTITIES` unless the caller asks for another
 ## (`WorldContext.add_entity()`). Only on a map a world draws (`has_world()`).
 func add_entity(node: Node, layer: int = DrawLayer.Layer.ENTITIES) -> void:
 	world.add_entity(node, layer)

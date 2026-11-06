@@ -81,7 +81,7 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
 
 ## The body as the scheme in force words it.
-static func body_for(joystick: bool) -> String:
+static func _body_for(joystick: bool) -> String:
 	return Texts.WALKING_LESSON_PAUSE % (Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
 
 func _ready() -> void:
@@ -107,7 +107,7 @@ func _ready() -> void:
 ## screen was built.
 func _refresh_body() -> void:
 	_body.show_line(SentenceLines.break_for_help(
-			body_for(HelpText.joystick_in_force(get_tree())), _body))
+			_body_for(HelpText.joystick_in_force(get_tree())), _body))
 
 ## Shown on every device — there is one control scheme now, and a press sets a direction on a
 ## keyboard-and-mouse desktop exactly as it does on a phone, so the same pair of buttons is a

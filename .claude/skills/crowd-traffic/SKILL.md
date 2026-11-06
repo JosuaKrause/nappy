@@ -60,7 +60,7 @@ re-rolls its position and finds bollards every time, so `CrowdAgent.setup` picks
 
 ## A lane is a queue; a junction is a box
 
-`Crowd.give_way_at_junctions()` is the rule, and every clause of it is load-bearing:
+`Crowd._give_way_at_junctions()` is the rule, and every clause of it is load-bearing:
 
 - **Only crossing traffic conflicts.** Two cars meeting head-on are in different lanes and pass.
 - **A car that cannot stop is counted as already in the box**, not asked to brake — the zebra's

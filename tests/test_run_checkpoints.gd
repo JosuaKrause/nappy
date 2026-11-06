@@ -242,11 +242,9 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 			t.check(run.calendar.checkpoint == day_four,
 					"day %d is not a checkpoint, so day 4's stands" % run.header.day)
 	t.check(run.header.day == 8 and run.calendar.checkpoint_day() == 8, "day 8 replaces it")
-	for d in [1, 4, 8, 12]:
-		t.check(RunCalendar.is_checkpoint_day(d) == (d > 1),
-				"day %d is %s" % [d, "a stored checkpoint" if d > 1 else "checkpoint zero, never stored"])
-	for d in Tuning.ACT_START_DAYS:
-		t.check(RunCalendar.is_checkpoint_day(d) or d == 1, "every act after the first starts on one")
+	run.header.day = 12
+	run.calendar.begin_day()
+	t.check(run.calendar.checkpoint_day() == 12, "day 12, the last act's first, replaces it too")
 	run.free()
 
 ## Before day 4, the last nerve goes back to day 1 of the same city — the same seed, and the same

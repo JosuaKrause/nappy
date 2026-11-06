@@ -27,7 +27,7 @@ extends RefCounted
 ##   a fresh lane by `LaneMover._recycle()`, or none of those, which leaves the separation pass;
 ## - every reversal on the spot (`CrowdAgent._turn_round()`), **with the reason**: which of the
 ##   planner's two ways out fired, what state the car was in, and what refused each of the four
-##   arcs it tried on that frame. `CrowdAgent.strategy.turn_refusals` and `turn_round_cause` are the
+##   arcs it tried on that frame. `CrowdAgent.strategy._turn_refusals` and `_turn_round_cause` are the
 ##   planner's own record and this is what reads them;
 ## - every episode of a car swaying across its lane without going anywhere;
 ## - for every `spacing` jump — a car the queue's resolve moved backwards — what put it inside the
@@ -234,7 +234,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			before[id] = [agent.position, agent.is_turning(), agent._cruise,
 					agent.strategy.is_in_a_pocket(), agent._direction, agent._vertical,
 					agent._speed, agent.strategy._room_to_stop_in(), agent.strategy._distance_to_the_blockage(),
-					agent._blocked_in, agent.strategy.turned_on_this_approach]
+					agent._blocked_in, agent.strategy._turned_on_this_approach]
 
 		city.crowd.set_focus(focus)
 		city.crowd.step(STEP)
@@ -348,16 +348,16 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 
 ## Why one reversal on the spot happened, as a line a report can count identical copies of.
 ##
-## Everything in it is read off the planner's own record — `CrowdAgent.strategy.turn_round_cause` for which
-## of the two calls fired and `turn_refusals` for what each of the four candidate arcs met — plus
+## Everything in it is read off the planner's own record — `CrowdAgent.strategy._turn_round_cause` for which
+## of the two calls fired and `_turn_refusals` for what each of the four candidate arcs met — plus
 ## the state the car was in on the frame before, which is where the question *should this have been
 ## an arc* is actually settled: a car stopped with its aim point reached has the road it needs and
 ## a car nose to a barrier does not.
 func _why_it_reversed(agent: CrowdAgent, was: Array, in_view: bool) -> String:
-	var cause: int = agent.strategy.turn_round_cause
+	var cause: int = agent.strategy._turn_round_cause
 	var line := "%-16s" % _cause_name(cause)
 	if cause == CarStrategy.TurnRoundCause.STOPPED_NO_ROOM:
-		line += " arcs[%s]" % _refusal_names(agent.strategy.turn_refusals)
+		line += " arcs[%s]" % _refusal_names(agent.strategy._turn_refusals)
 	line += " blocked_in=%d room=%s gap=%s speed=%s turned_before=%s %s" % [
 			int(was[9]), _bucket(float(was[7])), _bucket(float(was[8])), _bucket(float(was[6])),
 			"yes" if bool(was[10]) else "no", "in-view" if in_view else "off-camera"]

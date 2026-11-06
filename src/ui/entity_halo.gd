@@ -169,7 +169,7 @@ func is_faded_out() -> bool:
 
 ## Whether the eased alpha and colour have both arrived at whatever `set_glow()` last asked for.
 ## The two channels are asked together because they ease together — see the class doc.
-func has_settled() -> bool:
+func _has_settled() -> bool:
 	return is_equal_approx(_alpha, _target_alpha) and _colour.is_equal_approx(_target_colour)
 
 ## Whether this rim is putting anything on the screen right now — its **drawn** alpha rather than
@@ -202,8 +202,8 @@ func is_showing() -> bool:
 ## `ExcitementHalo.MAX_SOURCES` (8) rims of `HALO_OFFSETS` (12) body re-draws apiece, whatever is
 ## happening on screen.
 func _process(delta: float) -> void:
-	var settled := has_settled()
-	# `has_settled()` is approximate (within `CMP_EPSILON`), so a step that leaves `_alpha` a hair
+	var settled := _has_settled()
+	# `_has_settled()` is approximate (within `CMP_EPSILON`), so a step that leaves `_alpha` a hair
 	# above a target of zero reads as settled and is never stepped again: the rim would stay "showing"
 	# and be re-traced every frame at an alpha no one can see. Arriving is exact, so the last hair is
 	# closed here, and the redraw below clears the rim off the screen.

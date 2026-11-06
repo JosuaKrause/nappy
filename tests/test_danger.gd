@@ -680,39 +680,11 @@ func _test_the_screen_edge_is_the_same_size_for_everyone(t) -> void:
 ## speed, and she walks at 92 against a threshold of 20, so walking towards anything lethal
 ## raised its badge whether or not it was coming.
 ##
-## Testable because the two questions are static functions with no viewport in them, which is
-## most of why they are static functions.
+## The arithmetic of the window (a time to arrive, not a distance) is `tests/test_badge_model.gd`'s;
+## this runs the plumbing, what the edge hands the model, on real frames.
 func _test_the_badge_measures_the_things_own_speed(t) -> void:
-	var step := 1.0 / 60.0
-	var walk := Tuning.WALK_SPEED * step
-
-	# A parked van and a player walking straight at it. The gap is closing at 92px/s and the van
-	# is not coming at anybody: nothing to announce.
-	var van := Vector2(600.0, 0.0)
-	var her := Vector2(walk, 0.0)
-	t.check(is_zero_approx(BadgeModel.approach_speed(van, van, her, step)),
-			"a stationary event has no approach speed, however fast she walks towards it")
-
-	# The same van, now driving at her while she walks the other way. Her own retreat does not
-	# subtract from what it is doing either.
-	var was := Vector2(600.0, 0.0)
-	var now := was - Vector2(Tuning.WALK_SPEED * 2.0 * step, 0.0)
-	var approach := BadgeModel.approach_speed(was, now, Vector2.ZERO, step)
-	t.check(absf(approach - Tuning.WALK_SPEED * 2.0) < 1.0,
-			"and a mover is measured at its own speed (%.0f px/s)" % approach)
-
-	# The range limit, which is a window rather than a distance: the same 900px of clear ground is
-	# a fire engine worth announcing and a dawdler that is somebody else's problem for now.
-	t.check(BadgeModel.announces(190.0, 800.0),
-			"something doing 190px/s at 800px is four seconds away and is announced")
-	t.check(not BadgeModel.announces(40.0, 800.0),
-			"the same distance at 40px/s is twenty seconds away and is not")
-	t.check(not BadgeModel.announces(BadgeModel.CLOSING_SPEED - 1.0, 0.0),
-			"and nothing slower than a stroll is announced at any distance")
-
-	# And the same thing through the real measurement, because the defect was in the plumbing
-	# rather than in the arithmetic: what the two static functions above are *given*. The edge runs
-	# its own frames, and each thing moves by hand at its own speed over the frame's own length.
+	# The edge runs its own frames, and each thing moves by hand at its own speed over the frame's
+	# own length: a stationary fire engine with her walking at it, then the same one driving at her.
 	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()

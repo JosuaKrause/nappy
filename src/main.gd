@@ -1695,7 +1695,7 @@ func _add_touch_controls() -> void:
 ## one — see `ScreenOrientation` for the mechanism and why it needs no CSS and no orientation API.
 ## Nothing here asks the device itself to rotate.
 ##
-## Every `CanvasLayer` of screen furniture gets the same `ScreenOrientation.rotation_transform()`,
+## Every `CanvasLayer` of screen furniture gets the same rotation (`ScreenOrientation.apply_to_layer()`),
 ## so the HUD, the pause screen, the day summary, the title screen, the debug status line, the
 ## danger edge and the touch controls all turn together; the world is the one thing not drawn
 ## through a `CanvasLayer`, so it rotates separately, through whichever camera is current —

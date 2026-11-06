@@ -25,9 +25,6 @@ class FakeWorld extends WorldContext:
 	func is_alley(_world_position: Vector2) -> bool:
 		return alley
 
-	func total_excitement_at(_world_position: Vector2) -> float:
-		return noise
-
 	## `Baby` sums `excitement_sources_at()` and traces each pair's own share back to its source's
 	## `accumulate_landed()`. This fake has no real body to attribute `noise` to, so it hands out a
 	## source of no field of its own standing on itself — no test here reads a colour, only the
@@ -427,11 +424,7 @@ func _test_one_bump_no_longer_ends_the_day(t) -> void:
 
 	var from_95 := await _one_bump_from(t, 95.0)
 	t.check(not from_95["crying"],
-			"one contact from 95 does not end the day either, though it reaches the cap (overflow %.2f)"
-			% from_95["overflow"])
-	t.check(from_95["overflow"] < Baby.EXCITEMENT_OVERFLOW_TO_CRY,
-			"its own overflow mass (%.2f) stays under the %.1f threshold"
-			% [from_95["overflow"], Baby.EXCITEMENT_OVERFLOW_TO_CRY])
+			"one contact from 95 does not end the day either, though it reaches the cap")
 
 ## The other half of the same rule: a source that keeps emitting once she is already at the cap
 ## does end the day, because the mass it leaves behind keeps accruing rather than being spent
@@ -471,25 +464,34 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 
 ## And the drain, since nothing about leaving the source resets the mass: it ages out of
 ## `EXCITEMENT_OVERFLOW_WINDOW` the same way `Baby.decay_in_window()`'s own sum does, so it survives
-## the instant the source is gone and is gone itself once the window has fully turned over.
+## the instant the source is gone and is gone itself once the window has fully turned over. Read
+## through the day: a quiet source leaves a mass just under the threshold behind and no day ends;
+## then a short loud push at the cap ends it while that mass is still inside the window, and does
+## not once the window has turned over, the same push alone being too small to.
 func _test_the_overflow_mass_drains_with_the_window(t) -> void:
-	_build(t)
-	_baby.excitement = Tuning.METER_MAX
-	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # stays under the threshold throughout
-	_walk()
-	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW * 0.5)
-	var mid := _baby.overflow_mass()
-	t.check(mid > 0.0, "the source has left some mass behind")
-	_world.noise = 0.0
-	await _simulate(ONE_FRAME)
-	t.close_to(_baby.overflow_mass(), mid,
-			"the mass does not clear the instant the source is gone", 0.1)
-	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0)
-	t.close_to(_baby.overflow_mass(), 0.0,
-			"and it has fully aged out of the window well after she has left", 0.01)
-	_teardown()
+	for waited in [ONE_FRAME, Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0]:
+		_build(t)
+		_baby.excitement = Tuning.METER_MAX
+		# Net +6/s while walking: 1.4s of it is about 8.4 points, under the threshold.
+		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 6.0
+		_walk()
+		await _simulate(1.4)
+		t.check(_baby.state != GameEnums.BabyState.CRYING,
+				"a source whose mass stays under the threshold ends nothing")
+		_world.noise = 0.0
+		await _simulate(waited)
+		_baby.excitement = Tuning.METER_MAX
+		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
+		await _simulate(0.3)  # 3 points of its own: too few alone
+		if waited == ONE_FRAME:
+			t.check(_baby.state == GameEnums.BabyState.CRYING,
+					"the mass does not clear the instant the source is gone: a short push then ends the day")
+		else:
+			t.check(_baby.state != GameEnums.BabyState.CRYING,
+					"and it has fully aged out of the window well after she has left: the same push is too small")
+		_teardown()
 
-## The meter, whether the day ended crying, and the overflow mass left behind, after one whole
+## The meter, and whether the day ended crying, after one whole
 ## contact starting from `at` and walking ordinary ground.
 func _one_bump_from(t, at: float) -> Dictionary:
 	_build(t)
@@ -511,8 +513,7 @@ func _one_bump_from(t, at: float) -> Dictionary:
 	t.check(not agent.excitement.is_startled(),
 			"a bump's jolt runs down within its own duration (from %.0f)" % at)
 	var result := {"excitement": _baby.excitement,
-			"crying": _baby.state == GameEnums.BabyState.CRYING,
-			"overflow": _baby.overflow_mass()}
+			"crying": _baby.state == GameEnums.BabyState.CRYING}
 	agent.free()
 	_teardown()
 	return result

@@ -919,11 +919,14 @@ func _test_no_two_roadblocks_notice_her_from_the_same_ground(t) -> void:
 							map.world_to_tile(bands[j].position), gap, apart])
 	t.check(pairs > 0, "there were pairs of roadblocks to measure (%d)" % pairs)
 
-## Whether `item` draws on `layer`: the absolute depth the layer draws at
-## (`DrawLayer.z_of()`), which the event writes on its own node on the drawn frame
-## (`DrawLayer.draw_on()`).
+## Whether `item` draws on `layer`: the absolute depth a node asked onto the layer
+## (`DrawLayer.draw_on()`, which the event calls on its own node on the drawn frame) draws at.
 func _is_drawn_on(item: CanvasItem, layer: int) -> bool:
-	return not item.z_as_relative and item.z_index == DrawLayer.z_of(layer)
+	var reference := Node2D.new()
+	DrawLayer.draw_on(reference, layer)
+	var drawn := not item.z_as_relative and item.z_index == reference.z_index
+	reference.free()
+	return drawn
 
 ## Where each of `bands` stands once it is built: its body's place (`EventInstance.body_position()`),
 ## which is where its guard waits and notices her from. Built the way the game builds them
