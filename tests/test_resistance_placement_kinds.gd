@@ -783,7 +783,8 @@ func _test_the_mast_task_favors_the_near_mast(t) -> void:
 	director.use_player(player)
 	var drawn := {}
 	for i in MAST_DRAWS:
-		run.resistance.completed_steps = []
+		# Each read a day of its own, with the run as its dawn left it.
+		run.resistance.give_back()
 		run.facts.completed_resistance_alley_tiles = []
 		var errors := director.start_recipe_task(11, _rng(11, "mast-weight:%d" % i), 300.0, mark)
 		if not errors.is_empty() or director.contact() == null:
