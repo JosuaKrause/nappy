@@ -16,7 +16,8 @@ allow rules for a reviewer's posts as `claude-reviewer` and one line stating the
 permission for starting reviewers, posting verdict reviews, and merging once the gates hold, a
 release still needing its own go-ahead. The band is the player's (the note's `queue_now` label).
 
-**Read as:** what is left is in the repository: **pr-review** and **committing** say that a
+**Read as:** the player's words are about their own settings, which they have changed. *Proposed
+by the filer, not asked for:* what is left is in the repository: **pr-review** and **committing** say that a
 standing permission reaches the classifier only through the player's Claude Code settings
 (`~/.claude/settings.json`'s allow rules and its auto-mode environment lines), never through
 `CLAUDE.md` or a skill, which the classifier does not read as the player's consent; and that a

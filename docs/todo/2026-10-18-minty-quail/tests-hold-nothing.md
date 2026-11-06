@@ -4,17 +4,19 @@
 called a function only that test called), the player: "that was a completely pointless test to
 begin with", "good that it's gone", then "can we audit tests for those kind of useless ones and
 remove them?", and, quoting back the four kinds the audit looks for, "let's make sure those tests
-also won't enter the codebase again" (curly-rabbit #1097). The four kinds, as the player quoted
-them: a state only the test can create (input the game does not control, such as a corrupted save
+also won't enter the codebase again" (curly-rabbit #1097). The four kinds, in the orchestrator's
+words that the player quoted back: a state only the test can create (input the game does not control, such as a corrupted save
 on disk or a browser's answer, does not count, since it can really happen); a design decision read
 back, a check that goes red only because a number changed, not because what the number is for
 broke; a check that cannot fail, that would pass with the code deleted or checks a value it just
 set itself; and a duplicate of the same behavior another suite already tests.
 
-**Read as:** every finding below is removed, or tightened where the finding says so (a sweep guard
-that cannot fail becomes one that can, rather than going), in the same pass as whatever else
-rewrites its file; keeping the four kinds out from now on is the testing policy in **verify** and
-the CI check of test-only members, which are not this item's.
+**Read as:** the checks of those four kinds are removed. **The findings below are the audit's, not
+the player's:** seven read-only agents of the orchestrator's read every suite on 2026-11-05 and
+wrote each line, and the player has ruled only on the four cases next. So a builder checks each
+finding against the suite before acting on it, removes it if it holds, tightens it where the line
+says so (a sweep guard that cannot fail becomes one that can), and keeps it, saying why in its
+record, where it does not hold. Keeping the four kinds out from now on is `tests-kept-out.md`.
 
 **The player's rulings on the four cases the audit could not settle** (curly-rabbit #1100):
 
@@ -32,11 +34,12 @@ the CI check of test-only members, which are not this item's.
   until they do, on the orchestrator's pick that the names are a contract with the dashboards.
 
 **The stairwell masked man** (curly-rabbit #1086): "the only case that really counts is not running
-at all. running 0.3s late and still succeeding is actually good". **Read as:** in
+at all. running 0.3s late and still succeeding is actually good". Record minty-quail-breezy-pelican
+left the two pins below open to overturn on this answer. **Read as:** in
 `test_interior_masked_man.gd`, the checks that she is caught when she does not run (the walker
-lines) and gets through when she runs stay; the pinned margins go: his closest approach pinned to
-36.4 px (the contract is the same condition's `closest > MASKED_PURSUER_CATCH`), and the late start
-pinned as caught at 16 ticks.
+lines) and gets through when she runs stay; the late start pinned as caught at 16 ticks goes, and
+his closest approach pinned to 36.4 px is tightened to the contract the same condition already
+holds, `closest > MASKED_PURSUER_CATCH`, as the finding below says.
 
 **Who removes what.** A suite in a remaining build's file list in `tests-unseen-reads.md`, or in
 `tests-own-class-members.md`'s pass, has its findings removed by that build, in the same commit as
