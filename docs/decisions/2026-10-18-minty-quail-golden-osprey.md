@@ -7,8 +7,8 @@ lines when it started; the file had been split into behaviours by earlier steps,
 **Built.** The comments only; a diff of the file with comments stripped
 (`git diff -U0 origin/main -- src/events/event_instance.gd | grep '^[-+]' | grep -v '^[-+]\s*#'`)
 shows nothing. Quotes of the player, a date and a nickname for who asked are gone from the doc
-comments; each rule keeps its reason and at most one citation. The history those comments carried,
-which now lives here:
+comments; each rule keeps its reason and at most one citation. The playtests hold the player's
+words; this record names where, and what each comment's history carried:
 
 - **Pelican name in logs** (azure-tapir #527): the player asked that logs identify a pelican
   correctly from the first line, which is why `PELICAN_NAME` replaces the row's `cyclist` in the run

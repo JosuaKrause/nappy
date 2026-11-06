@@ -483,8 +483,9 @@ func body_position() -> Vector2:
 ## picture (`warning_rect()`) inside the camera's view this frame (`player_view`; inbox #788 in
 ## minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
 ## the escape, so his warning never starts off the screen, and his warning's clock starts from
-## there. The view is the camera's own, look-ahead and trailing included. Always true for any other row, and for an instance nobody has handed a view
-## (`player_view` empty, a rig that steps it directly), where the notice is the radius alone.
+## there. The view is the camera's own, look-ahead and trailing included. Always true for any other
+## row, and for an instance nobody has handed a view (`player_view` empty, a rig that steps it
+## directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
 	if def.pursuit == null or not warns_by_radius() or not player_view.has_area():
 		return true
@@ -1395,8 +1396,9 @@ func is_telegraphing() -> bool:
 ## True while a pursuer that noticed her stands for its notice in its alert pose rather than closing
 ## on her (`PursuitSpec.stands`): the dog that waited, the hunting roadblock's guard, the
 ## man a vehicle lets out, and day 13's guard set on her in her view (`notice_her_at()`). **Asked of
-## the def the instance was handed**, so the day-3 dog — the same row, sent down her heading with no trigger to have waited behind — is false here and spends its telegraph
-## coming, which is the lesson; and false for anything that has not noticed her yet or has lunged.
+## the def the instance was handed**, so the day-3 dog — the same row, sent down her heading with no
+## trigger to have waited behind — is false here and spends its telegraph coming, which is the
+## lesson; and false for anything that has not noticed her yet or has lunged.
 func is_standing_for_its_notice() -> bool:
 	var stands := def.pursuit != null and def.pursuit.stands
 	return (stands or _stands_for_this_notice) and is_telegraphing() \
@@ -1444,9 +1446,9 @@ func chase_age() -> float:
 ## noticed her by sight (`EventDef.notice` on the def it was handed) — the dog that waited, the
 ## alley robber and every guard drawn from his row, the hunting roadblock's guard (inbox #788 in
 ## minty-lemur). **One radius, and a warning on a clock inside it**: from the frame it notices her
-## inside `EventDef.notice` it warns for its row's `PursuitSpec.warns_for` (`notice_time()`); back outside the radius before that, the
-## warning stops and it waits again (`_stop_warning()`), its clock reset; still inside when it
-## runs out, it charges.
+## inside `EventDef.notice` it warns for its row's `PursuitSpec.warns_for` (`notice_time()`); back
+## outside the radius before that, the warning stops and it waits again (`_stop_warning()`), its
+## clock reset; still inside when it runs out, it charges.
 ##
 ## **Not one set on her by what she did** (`notice_her_at()`, day 13's task guard, `_chase_way`):
 ## he is sent after her from wherever he stands, often a city away, so a radius he has to be inside
