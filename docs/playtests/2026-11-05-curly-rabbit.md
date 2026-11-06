@@ -168,3 +168,13 @@
 9. **Note** (the assistant's):
 
    Answered on the board: no. The test hands the visit counter a recording counter that lists the names it would send; nothing is sent, and no page or JavaScriptBridge is involved.
+
+## #1102
+
+1. **Context** (the assistant's):
+
+   Said in the chat, answering the board question goatcounter-names-table (Nappy board, Main tab). Question: the visit counter's test pins the GoatCounter event names sent for the chargers. Keep it or remove it? Context (abridged): the test compares the names the game sends to GoatCounter for each charger against a table typed in the test, a table read back by the audit's rule; but those names are what the player's GoatCounter dashboards and docs/stats/ count, so a rename silently splits the numbers. My pick: keep it. The player had asked on its You line "does it touch the live service?", answered on its Me line: no, the test hands the visit counter a recording counter that only lists the names it would send; nothing is sent anywhere.
+
+2. **The note.**
+
+   > let's keep the table

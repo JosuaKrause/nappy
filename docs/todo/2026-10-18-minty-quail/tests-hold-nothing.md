@@ -18,7 +18,7 @@ finding against the suite before acting on it, removes it if it holds, tightens 
 says so (a sweep guard that cannot fail becomes one that can), and keeps it, saying why in its
 record, where it does not hold. Keeping the four kinds out from now on is `tests-kept-out.md`.
 
-**The player's rulings on the four cases the audit could not settle** (curly-rabbit #1100):
+**The player's rulings on the four cases the audit could not settle** (curly-rabbit #1100, #1102):
 
 - The day-3 dog's chase test (`test_events_pursuit.gd`, `_test_the_day_3_dog_keeps_its_gold_timing`):
   "the measured half" stays, the chase timed on real frames as she walks into the dog and the
@@ -29,9 +29,9 @@ record, where it does not hold. Keeping the four kinds out from now on is `tests
 - The pause screen's wording checks (`test_pause.gd`): of the pick to remove the wording checks and
   keep the ones that a hint is or is not shown, "agreed".
 - The visit counter's table of the chargers' GoatCounter names (`test_visit_counter.gd`,
-  `_test_every_charger_has_its_own_counter`): asked whether it touches the live service (it does
-  not: a recording counter lists the names and nothing is sent), the player has not ruled; it stays
-  until they do, on the orchestrator's pick that the names are a contract with the dashboards.
+  `_test_every_charger_has_its_own_counter`): told it does not touch the live service (a recording
+  counter lists the names and nothing is sent) and that the names are what the GoatCounter
+  dashboards count, "let's keep the table" (curly-rabbit #1102).
 
 **The stairwell masked man** (curly-rabbit #1086): "the only case that really counts is not running
 at all. running 0.3s late and still succeeding is actually good". Record minty-quail-breezy-pelican
