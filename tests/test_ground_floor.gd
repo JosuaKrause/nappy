@@ -26,6 +26,7 @@ extends RefCounted
 ## lands on. `roof_extension_rows` itself is pure geometry, not a roll.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const RoofReads := preload("res://tests/roof_reads.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with (`tests/front_reads.gd`).
 const FrontReads := preload("res://tests/front_reads.gd")
@@ -102,39 +103,6 @@ func _watch_the_fronts(t, city: City) -> Dictionary:
 	for building in city.buildings():
 		fronts[building] = FrontReads.look(building)
 	return fronts
-
-## The roof units `building` draws, farthest first: each `RoofObject` it stands on its roof
-## (`_build_roof_layers()` makes one per unit) as `{"cell": Vector2i, "span": int, "texture":
-## StringName}`. A unit stands centred across its span of columns (the width its picture covers,
-## `roof_equipment_scale()` included; a duct run is always one) with its foot a tile above the cell's floor line, so the cell
-## is read back from the object's place. A live `City` parents the objects under its entity layer
-## (`roof_object_parent`), shared by every building, so an object is this building's when that read
-## lands on a whole cell inside its columns and its roof, extension included. Empty while the building's scenery is not resident and
-## for a roof with no interior.
-static func _roof_units(building: Building) -> Array[Dictionary]:
-	var units: Array[Dictionary] = []
-	var parent: Node = building.roof_object_parent if building.roof_object_parent != null else building
-	var left_edge := -building.columns() * Building.TILE * 0.5
-	var deepest := building.roof_tiles()
-	for col in building.columns():
-		deepest = maxi(deepest, building.roof_tiles() + _extension_of(building, col))
-	for child in parent.get_children():
-		if not child is Building.RoofObject:
-			continue
-		var object: Building.RoofObject = child
-		var key := object.texture_key
-		var span := 1
-		if key != Building.DUCT_RUN:
-			span = ceili(AtlasTable.baked().native_size(key).x * Building.roof_equipment_scale(key) / Building.TILE)
-		var at := object.global_position - building.global_position
-		var col := (at.x - left_edge) / Building.TILE - span * 0.5
-		var row := -at.y / Building.TILE - building.wall_tiles()
-		if not (is_equal_approx(col, roundf(col)) and is_equal_approx(row, roundf(row))):
-			continue
-		if col < 0.0 or roundi(col) + span > building.columns() or row < 0.0 or row >= deepest:
-			continue
-		units.append({"cell": Vector2i(roundi(col), roundi(row)), "span": span, "texture": key})
-	return units
 
 # ------------------------------------------------------------------- the rule ---
 
@@ -976,10 +944,10 @@ func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t) -> void:
 	t.add_child(early)
 	var late := _new_building(t, GameEnums.BlockPurpose.INDUSTRIAL, footprint, 64.0, false, at)
 	late.roof_extension_rows = [0, 4, 4, 4, 4, 0]
-	t.check(not _roof_units(early).is_empty() and _roof_units(late) == _roof_units(early),
+	t.check(not RoofReads.units_of(early).is_empty() and RoofReads.units_of(late) == RoofReads.units_of(early),
 			"an extension set after entering the tree rolls the same furniture as one set before")
 	var on_extension := 0
-	for unit: Dictionary in _roof_units(early):
+	for unit: Dictionary in RoofReads.units_of(early):
 		if (unit["cell"] as Vector2i).y >= early.roof_tiles():
 			on_extension += 1
 	t.check(on_extension > 0, "the fixture's furniture reaches onto the extension (%d)" % on_extension)
@@ -995,16 +963,16 @@ func _test_a_shallow_roof_carries_furniture_on_its_extension(t) -> void:
 	var bare := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
 	t.check(bare.roof_tiles() < 3,
 			"the fixture's own roof is too shallow for an interior cell (%d rows)" % bare.roof_tiles())
-	t.check(bare.roof_interior_cells().is_empty() and _roof_units(bare).is_empty(),
+	t.check(RoofReads.units_of(bare).is_empty(),
 			"with nothing to cover, the shallow roof has no pool and carries nothing")
 	var covering := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, footprint, 64.0, false, at)
 	covering.roof_extension_rows = [0, 2, 4, 4, 2, 0]
 	var front = await _see(t, covering)
-	t.check(not covering.roof_interior_cells().is_empty(),
-			"the extended shallow roof has interior cells to offer")
-	t.check(not _roof_units(covering).is_empty(),
-			"the extended shallow roof carries at least one unit (%d)" % _roof_units(covering).size())
-	for unit: Dictionary in _roof_units(covering):
+	t.check(RoofReads.tallest_of(covering) >= 3,
+			"the extended shallow roof is deep enough, at its tallest column, for interior cells")
+	t.check(not RoofReads.units_of(covering).is_empty(),
+			"the extended shallow roof carries at least one unit (%d)" % RoofReads.units_of(covering).size())
+	for unit: Dictionary in RoofReads.units_of(covering):
 		var cell: Vector2i = unit["cell"]
 		t.check(front.roof_edges_at(cell.x, cell.y) == 0,
 				"a unit on the extended shallow roof sits on a cell with no lip (%s)" % cell)
@@ -1037,15 +1005,24 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 					lipped += 1
 		var roof := building.roof_tiles()
 		t.check(lipped > 0, "roof of %d rows: there were step cells to leave out (%d)" % [roof, lipped])
-		t.check(building.roof_interior_cells() == expected,
+		# The pool is read off where units stand: across many seeds, none stands outside the
+		# lip-free interior and every cell of it is stood on by some seed.
+		var reached := {}
+		for variant in 120:
+			building.variant = variant
+			for unit: Dictionary in RoofReads.units_of(building):
+				for cell: Vector2i in unit["cells"]:
+					reached[cell] = true
+		t.check(expected.all(func(cell: Vector2i) -> bool: return reached.has(cell))
+				and reached.keys().all(func(cell: Vector2i) -> bool: return expected.has(cell)),
 				"roof of %d rows: the pool is exactly the lip-free interior" % roof)
 		var drawn := 0
 		for child in building.get_children():
 			drawn += 1 if child is Building.RoofObject else 0
-		t.check(_roof_units(building).size() == drawn,
+		t.check(RoofReads.units_of(building).size() == drawn,
 				"roof of %d rows: every roof object the building stands is read back as a unit" % roof)
 		found_units += drawn
-		for unit: Dictionary in _roof_units(building):
+		for unit: Dictionary in RoofReads.units_of(building):
 			var cell: Vector2i = unit["cell"]
 			for step in int(unit["span"]):
 				t.check(expected.has(cell + Vector2i(step, 0)),
@@ -1055,9 +1032,10 @@ func _test_the_furniture_pool_is_exactly_the_lip_free_interior(t) -> void:
 
 ## A roof with nothing to cover lands its units on exactly the cells `main` rolls for it: its pool
 ## is the interior in row-major order, the order the shuffle has always permuted, so an extension
-## elsewhere in the city moves no other roof's furniture. Every unextended roof of the sweep is
-## asked for that order, and two roofs of seed 61400 are pinned to the layout `main` rolls for
-## them (cell, then the unit's picture), which a pool built in any other order breaks.
+## elsewhere in the city moves no other roof's furniture. Every unextended roof of the sweep
+## stands its units only on its interior, and two roofs of seed 61400 are pinned to the layout
+## `main` rolls for them (cell, then the unit's picture), which a pool built in any other order
+## breaks.
 func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -> void:
 	var main_layouts := {
 		Vector2i(6, 6): [[Vector2i(5, 2), Building.WATER_TANK], [Vector2i(2, 2), Building.SERVICE_BULKHEAD],
@@ -1080,14 +1058,17 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -
 				for row in range(1, building.roof_tiles() - 1):
 					for col in range(1, building.columns() - 1):
 						expected.append(Vector2i(col, row))
-			t.check(building.roof_interior_cells() == expected,
-					"seed %d: the unextended roof at %s offers its interior row by row"
+			building.set_scenery_resident(true)
+			var inside := true
+			for unit: Dictionary in RoofReads.units_of(building):
+				for cell: Vector2i in unit["cells"]:
+					inside = inside and expected.has(cell)
+			t.check(inside, "seed %d: the unextended roof at %s stands its units on its interior"
 					% [map.seed_used, building.lot.position])
 			ordered += 1
 			if map.seed_used == BASE_SEED and main_layouts.has(building.lot.position):
-				building.set_scenery_resident(true)
 				var layout: Array = []
-				for unit: Dictionary in _roof_units(building):
+				for unit: Dictionary in RoofReads.units_of(building):
 					layout.append([unit["cell"], unit["texture"]])
 				t.check(layout == main_layouts[building.lot.position],
 						"seed %d: the roof at %s carries main's layout %s (got %s)"
@@ -1441,7 +1422,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
 		for building: Building in city.buildings():
 			if building.power_station:
 				continue
-			for unit: Dictionary in _roof_units(building):
+			for unit: Dictionary in RoofReads.units_of(building):
 				var cell: Vector2i = unit["cell"]
 				for step in int(unit["span"]):
 					var at := cell + Vector2i(step, 0)

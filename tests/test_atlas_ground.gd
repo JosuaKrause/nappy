@@ -432,7 +432,7 @@ func _region(page: Image, name: StringName) -> Image:
 		return null
 	return page.get_region(rect)
 
-## Alpha-composited here with `Image`'s own call rather than through `GroundLayers.compose_image`,
+## Alpha-composited here with `Image`'s own call rather than by the ground compositor,
 ## so this stays a reference and not a second reading of the code under test.
 func _over(base: Image, overlays: Array[Image]) -> Image:
 	var result := base.duplicate()

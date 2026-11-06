@@ -25,7 +25,6 @@ var recipe := GroundRecipe.new()
 var atlas := AtlasLibrary.new()
 
 func run(t) -> void:
-	_test_transparent_pixels_leave_the_base_unchanged(t)
 	_test_component_rotation_is_clockwise(t)
 	_test_sparse_grass_selection_is_stable_and_varied(t)
 	_test_manifest_covers_the_authored_ground_sources(t)
@@ -37,28 +36,41 @@ func run(t) -> void:
 	_test_route_kerb_twin_tints_the_stone_alone(t)
 	_test_the_recipe_is_read_from_disk_once(t)
 
-func _test_transparent_pixels_leave_the_base_unchanged(t) -> void:
-	var base := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-	base.fill(Color("426a4c"))
-	var overlay := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-	overlay.set_pixel(2, 1, Color("d9b24c"))
-	var composed := GroundLayers.compose_image(base, [overlay])
-	for y in range(4):
-		for x in range(4):
-			if x != 2 or y != 1:
-				t.check(composed.get_pixel(x, y) == base.get_pixel(x, y),
-						"an empty overlay pixel preserves the shared base at %s" % Vector2i(x, y))
-	t.check(composed.get_pixel(2, 1) == Color("d9b24c"),
-			"a visible overlay pixel composites over the base")
-
+## A 90-degree layer declaration turns its mark clockwise, read off the sources the game composes:
+## the four kerb sources are one curbstone component turned to face each direction, so the stone
+## stands on the north edge of the north kerb and on the east, south and west edge of the others.
+## Where the stone is is where the composed tile differs from the sidewalk base it is laid over.
 func _test_component_rotation_is_clockwise(t) -> void:
-	var source := Image.create(3, 3, false, Image.FORMAT_RGBA8)
-	source.set_pixel(0, 0, Color.WHITE)
-	var rotated := GroundLayers.rotate_clockwise(source, 90)
-	t.check(rotated.get_pixel(2, 0) == Color.WHITE,
-			"a 90-degree layer declaration rotates its mark clockwise")
-	t.check(GroundLayers.rotate_clockwise(source, 45) == null,
-			"a non-right-angle layer declaration falls back instead of distorting the marking")
+	if _svg_bake():
+		return
+	var page := _page(t)
+	if page == null:
+		return
+	var composed := GroundLayers.build_tile_set(AUTHORED_GROUND, recipe, atlas)
+	var base := _layer_image(page, "sidewalk_base.png")
+	t.check(base != null, "the sidewalk base is a region of the ground page")
+	if base == null:
+		return
+	var centre := (Vector2(GroundLayers.TILE_SIZE) - Vector2.ONE) * 0.5
+	var edges := {GroundTiles.SIDEWALK_KERB_N: Vector2.UP, GroundTiles.SIDEWALK_KERB_E: Vector2.RIGHT,
+			GroundTiles.SIDEWALK_KERB_S: Vector2.DOWN, GroundTiles.SIDEWALK_KERB_W: Vector2.LEFT}
+	for source_id: int in edges:
+		var cell := _cell_image(composed.get_source(source_id) as TileSetAtlasSource, Vector2i.ZERO)
+		var sum := Vector2.ZERO
+		var marked := 0
+		for y in GroundLayers.TILE_SIZE.y:
+			for x in GroundLayers.TILE_SIZE.x:
+				if cell.get_pixel(x, y) != base.get_pixel(x, y):
+					sum += Vector2(x, y)
+					marked += 1
+		t.check(marked > 0, "kerb source %d shows its stone over the sidewalk base" % source_id)
+		if marked == 0:
+			continue
+		var offset := sum / marked - centre
+		var direction: Vector2 = edges[source_id]
+		t.check(offset.dot(direction) > GroundLayers.TILE_SIZE.x * 0.25,
+				"kerb source %d turns its stone to the %s edge (offset %s)"
+				% [source_id, direction, offset])
 
 func _test_sparse_grass_selection_is_stable_and_varied(t) -> void:
 	var tile_set := TileSet.new()

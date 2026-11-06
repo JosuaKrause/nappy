@@ -2,14 +2,15 @@ extends RefCounted
 ## Roof art that can reach a street lives in the city's y-sorted entity layer at its feet.
 ##
 ## Three things are tested apart. Where a roof's units stand is decided by its random draws, so the
-## layout (`Building.roof_layout()`) is checked on its own as a function of the seed and the lot.
-## The roof that holds them is checked with a drawer that records what it is told to draw
+## roof drawn is checked on its own as a function of the seed and the lot. The roof that holds the
+## units is checked with a drawer that records what it is told to draw
 ## (`tests/recording_roof_drawer.gd`), handed in through `Building.roof_drawer` as the city hands the
-## real one: every unit the layout places is drawn, at its foot, in the layer the city gave it, at
-## the rotor phase of the clock the city gave it. And the real drawer (`RoofDrawer`) is checked on
+## real one: every unit is drawn once, at its foot, in the layer the city gave it, at the rotor
+## phase of the clock the city gave it. And the real drawer (`RoofDrawer`) is checked on
 ## its own, handed chosen units and a bare layer, with no building and no roll.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
+const RoofReads := preload("res://tests/roof_reads.gd")
 
 func run(t) -> void:
 	_test_every_placed_unit_is_drawn_at_its_foot_in_entities(t)
@@ -24,9 +25,10 @@ func run(t) -> void:
 ## A building standing at the same place on the same lot as the city builds one, its roof drawn
 ## into an `Entities` layer through `drawer` (a recording one, or the real one over its own atlas
 ## when null) on `clock` when one is given, both handed in before it enters the tree as
-## `City._spawn_buildings()` hands them.
+## `City._spawn_buildings()` hands them. A recording drawer stands each unit through the real one
+## too when `stand` is set, so the objects are in the layer.
 func _new_fixture(t, district: int, drawer: RoofDrawer = null,
-		clock: SceneryGround = null) -> Dictionary:
+		clock: SceneryGround = null, stand := false) -> Dictionary:
 	var root := Node2D.new()
 	var entities := Node2D.new()
 	entities.name = "Entities"
@@ -37,6 +39,8 @@ func _new_fixture(t, district: int, drawer: RoofDrawer = null,
 	building.name = "Building"
 	building.atlas = AtlasLibrary.new()
 	building.roof_drawer = drawer if drawer != null else RoofDrawer.new(building.atlas)
+	if stand:
+		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(building.atlas)
 	building.position = Vector2(320.0, 320.0)
 	building.footprint = Vector2(256.0, 256.0)
 	building.height = 64.0
@@ -58,6 +62,17 @@ func _roof_objects_in(entities: Node) -> Array[Building.RoofObject]:
 			objects.append(child)
 	return objects
 
+## The draw `drawer` recorded for the unit `entry` of its layout.
+func _draw_of(drawer: RecordingRoofDrawer, entry: Dictionary) -> Dictionary:
+	for draw in drawer.standing():
+		if draw.cell == entry.cell and draw.texture == entry.texture:
+			return draw
+	return {}
+
+## How many cells a roof offers units with no extension: the interior columns by the interior rows.
+func _interior_cells(building: Building) -> int:
+	return maxi(building.columns() - 2, 0) * maxi(building.roof_tiles() - 2, 0)
+
 # ------------------------------------------------------------------ the holder ---
 
 ## The city's clock alternates a rotor's two frames once every `Building.VENT_FRAME_INTERVAL`, so
@@ -71,18 +86,18 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, clock)
 	var entities: Node2D = fixture["entities"]
 	var building: Building = fixture["building"]
-	var layout := building.roof_layout()
+	var layout := drawer.layout()
 	t.check(not layout.is_empty(), "a full residential roof places roof units")
 	var standing := drawer.standing()
 	t.check(standing.size() == layout.size() and drawer.draws.size() == layout.size(),
-			"every unit the layout places is drawn once, and nothing else is (%d placed, %d drawn)"
-			% [layout.size(), drawer.draws.size()])
+			"every unit is drawn once, and nothing else is (%d standing, %d drawn)"
+			% [standing.size(), drawer.draws.size()])
+	for i in layout.size():
+		t.check(i == 0 or (layout[i - 1].cell as Vector2i).y >= (layout[i].cell as Vector2i).y,
+				"units are drawn farthest first, so they paint back to front")
 	for i in mini(layout.size(), standing.size()):
 		var unit := layout[i]
 		var drawn := standing[i]
-		t.check(drawn.cell == unit.cell and drawn.texture == unit.texture
-				and drawn.links == unit.get("links", -1),
-				"units are drawn as placed, farthest first")
 		t.check(drawn.layer == entities, "roof art is drawn into Entities")
 		var at: Vector2 = drawn.at
 		t.check(at.is_equal_approx(building.position + RecordingRoofDrawer.foot_of(building, unit)),
@@ -147,44 +162,43 @@ func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
 
 func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t) -> void:
 	var drawer := RecordingRoofDrawer.new()
+	var twin_drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
-	var twin := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL)
+	var twin := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, twin_drawer)
 	var building: Building = fixture["building"]
 	var other: Building = twin["building"]
 	var differs := false
 	for variant in 8:
 		building.variant = variant
 		other.variant = variant
-		var draws := drawer.draws.size()
-		var layout := building.roof_layout()
-		t.check(building.roof_layout() == layout and drawer.draws.size() == draws,
-				"asking for the layout again gives the same one and draws nothing")
-		t.check(other.roof_layout() == layout,
+		var roof := drawer.drawn()
+		t.check(not roof.is_empty(), "an industrial roof of seed %d has units" % variant)
+		t.check(twin_drawer.drawn() == roof,
 				"the same seed on the same lot lays the same roof on another building")
-		t.check(RecordingRoofDrawer.placed(layout) == drawer.drawn(),
-				"the roof drawn is the layout placed")
 		building.variant = variant + 100
-		differs = differs or building.roof_layout() != layout
+		differs = differs or drawer.drawn() != roof
+		building.variant = variant
+		t.check(drawer.drawn() == roof, "laying a seed again gives the same roof")
 	t.check(differs, "another seed lays another roof on the same lot")
 	_free(fixture)
 	_free(twin)
 
 func _test_industrial_networks_fit_and_connect(t) -> void:
-	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, RecordingRoofDrawer.new())
+	var drawer := RecordingRoofDrawer.new()
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var signatures := {}
 	var branched := false
 	for variant in 40:
 		building.variant = variant
 		building.roof_extension_rows = [0, 0, 1, 3, 3, 1, 0, 0]
-		var eligible := building.roof_interior_cells()
-		var layout := building.roof_layout()
+		var layout := drawer.layout()
 		var network := {}
 		var used := {}
 		var signature := ""
 		for entry: Dictionary in layout:
 			for cell: Vector2i in entry["cells"]:
-				t.check(eligible.has(cell) and not used.has(cell),
+				t.check(RoofReads.on_the_interior(building, cell) and not used.has(cell),
 						"every duct and equipment foot fits free interior roof, extensions included")
 				used[cell] = true
 			if entry.has("links"):
@@ -217,18 +231,22 @@ func _test_industrial_networks_fit_and_connect(t) -> void:
 	_free(fixture)
 
 func _test_reserved_cells_hold_native_base_widths(t) -> void:
-	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, RecordingRoofDrawer.new())
+	var drawer := RecordingRoofDrawer.new()
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var used := {}
-	for entry: Dictionary in building.roof_layout():
+	for entry: Dictionary in drawer.layout():
 		var cells: Array = entry["cells"]
 		for cell: Vector2i in cells:
 			t.check(not used.has(cell), "roof equipment reservations never share a cell")
 			used[cell] = true
 		var key: StringName = entry["texture"]
 		var width := 32.0 if entry.has("links") else AtlasTable.baked().native_size(key).x \
-				* Building.roof_equipment_scale(key)
-		var horizontal_cells: int = entry["span"]
+				* RoofReads.equipment_scale(key)
+		# The columns the foot is centred across, read off where it was put.
+		var foot: Vector2 = _draw_of(drawer, entry).at - building.position
+		var horizontal_cells := roundi(2.0 * ((foot.x + building.columns() * Building.TILE * 0.5)
+				/ Building.TILE - (entry["cell"] as Vector2i).x))
 		t.check(cells.size() >= horizontal_cells,
 				"a roof object's foot is centered in every reserved horizontal cell")
 		t.check(width <= horizontal_cells * Building.TILE,
@@ -237,7 +255,8 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 	_free(fixture)
 
 func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
-	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, RecordingRoofDrawer.new())
+	var drawer := RecordingRoofDrawer.new()
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
 	var vertical := false
 	for size: Vector2 in [Vector2(96, 448), Vector2(128, 128), Vector2(160, 192),
@@ -245,13 +264,12 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 		building.footprint = size
 		for variant in 12:
 			building.variant = variant
-			var interior := building.roof_interior_cells()
-			var layout := building.roof_layout()
+			var layout := drawer.layout()
 			var occupied := {}
 			var network := {}
 			for entry: Dictionary in layout:
 				for cell: Vector2i in entry["cells"]:
-					t.check(interior.has(cell) and not occupied.has(cell),
+					t.check(RoofReads.on_the_interior(building, cell) and not occupied.has(cell),
 							"narrow and shallow roofs never reserve a lip, absent cell or occupied base")
 					occupied[cell] = true
 				if entry.has("links"):
@@ -260,7 +278,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 				vertical = true
 				for links: int in network.values():
 					t.check((links & 3) == 0, "a one-column network uses only north/south links")
-			if not interior.is_empty():
+			if building.columns() >= 3 and RoofReads.tallest_of(building) >= 3:
 				t.check(layout.size() > network.size(),
 						"narrow and shallow roof layouts retain ordinary compact equipment")
 	t.check(vertical, "the narrow fixture exercises a generated purely vertical network")
@@ -277,20 +295,22 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 		# column three and nine cells deep; five columns by five and by seven leave three columns
 		# one and three rows deep.
 		for pair: Array in [[Vector2(3, 7), Vector2(5, 5)], [Vector2(3, 13), Vector2(5, 7)]]:
-			var narrow_fixture := _new_fixture(t, district, RecordingRoofDrawer.new())
-			var wide_fixture := _new_fixture(t, district, RecordingRoofDrawer.new())
+			var narrow_drawer := RecordingRoofDrawer.new()
+			var wide_drawer := RecordingRoofDrawer.new()
+			var narrow_fixture := _new_fixture(t, district, narrow_drawer)
+			var wide_fixture := _new_fixture(t, district, wide_drawer)
 			var narrow: Building = narrow_fixture["building"]
 			var wide: Building = wide_fixture["building"]
 			narrow.footprint = pair[0] * Building.TILE
 			wide.footprint = pair[1] * Building.TILE
-			var cells := narrow.roof_interior_cells().size()
-			t.check(cells > 0 and cells == wide.roof_interior_cells().size(),
+			var cells := _interior_cells(narrow)
+			t.check(cells > 0 and cells == _interior_cells(wide),
 					"the two roofs offer as many interior cells (%d)" % cells)
 			for variant in 24:
 				narrow.variant = variant
 				wide.variant = variant
-				var layout := narrow.roof_layout()
-				var wide_layout := wide.roof_layout()
+				var layout := narrow_drawer.layout()
+				var wide_layout := wide_drawer.layout()
 				t.check(layout.size() == wide_layout.size(),
 						"a three-column roof keeps every roll a wide roof of as many cells lays out"
 						+ " (district %d, variant %d: %d against %d)"
@@ -304,7 +324,8 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 # ------------------------------------------------------- the holder, drawn for real ---
 
 func _test_rebuild_releases_external_roof_objects(t) -> void:
-	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL)
+	var drawer := RecordingRoofDrawer.new()
+	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, null, true)
 	var entities: Node2D = fixture["entities"]
 	var building: Building = fixture["building"]
 	var old_objects: Array[WeakRef] = []
@@ -316,6 +337,6 @@ func _test_rebuild_releases_external_roof_objects(t) -> void:
 		t.check(object.get_ref() == null, "rebuild frees superseded entity roof art")
 	var replacements := _roof_objects_in(entities)
 	t.check(not replacements.is_empty() and replacements.size() == entities.get_child_count()
-			and replacements.size() == building.roof_layout().size(),
+			and replacements.size() == drawer.standing().size(),
 			"rebuild keeps replacement roof art in Entities")
 	_free(fixture)

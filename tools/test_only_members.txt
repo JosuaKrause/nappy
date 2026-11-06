@@ -14,14 +14,10 @@
 src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
-src/city/building.gd VENT_ROTOR_SOURCE_RECT
 src/city/city.gd home_door_is_sealed
 src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
-src/city/scenery_ground.gd get_cell_atlas_coords
-src/city/scenery_ground.gd get_cell_source_id
-src/city/scenery_ground.gd get_used_cells
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/dev/debug_layers.gd body_outline_count
 src/dev/rig_lock.gd has_a_deadline
@@ -39,8 +35,6 @@ src/telemetry/frame_ledger.gd DRAWS_OTHER
 src/telemetry/frame_ledger.gd DRAWS_PLAYER
 src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
-src/visuals/atlas_library.gd illustrated_path_for
-src/visuals/atlas_library.gd region_name_for
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
 src/world/world_context.gd total_excitement_at
@@ -52,10 +46,6 @@ src/world/world_context.gd total_excitement_at
 src/build_info.gd commit_text
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
-src/city/building.gd roof_equipment_scale
-src/city/building.gd roof_interior_cells
-src/city/building.gd roof_layout
-src/city/building.gd window_texture
 src/city/city.gd barrier_footprint
 src/city/city.gd blackout
 src/city/city.gd home_door_building
@@ -64,9 +54,6 @@ src/city/city_generator.gd power_station_rank
 src/city/city_map.gd count_walkable
 src/city/marble_bag.gd put_in_front
 src/city/poster_art.gd torn
-src/city/scenery_ground.gd evicted
-src/city/scenery_ground.gd prepared
-src/city/scenery_ground.gd worst_step_usec
 src/city/scenery_residency.gd camera_view
 src/city/scenery_residency.gd ordinary_guard_preparations
 src/city/traffic_signals.gd phase_of
@@ -215,10 +202,6 @@ src/ui/entity_halo.gd trace_offsets
 src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
-src/visuals/atlas_library.gd aspect_ceiling
-src/visuals/atlas_library.gd moment_for_a_load
-src/visuals/ground_layers.gd compose_image
-src/visuals/ground_layers.gd rotate_clockwise
 src/web_display.gd dpr_cap
 src/world/draw_layer.gd z_of
 src/world/excitement_source.gd expected_impact_at
@@ -262,6 +245,11 @@ src/ui/meter_bar.gd displayed_fraction  # the fraction of the bar's width the fi
 src/ui/meter_bar.gd displayed_value  # the number the bar prints, floored so 99.5 does not read 100 while the day is live; it exists only as the argument to draw_string() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it
 src/ui/mode_button.gd hold_progress  # the fraction of the restart disc's radial sweep, which is all _draw() paints of the hold; a headless run draws to nothing and no node exposes the sweep, so the value is the only thing a test can read of what the disc shows (and the one-line clamp its setter owns)
 src/ui/return_window.gd on_web_event  # the decision half of the page's focus, blur and visibilitychange events: their callback is made by JavaScriptBridge, which exists only in a web export, so no desktop run can send the browser's event and the suite hands the kind and the visibility the callback reads
+src/city/building.gd window_texture  # the picture each wall cell's window shows, lit or dark by the roll; tests/test_scenery_residency.gd compares it across a prepared building's condition changes, eviction and return, all inside synchronous scenery.update() calls it makes by hand, and the front's pictures are drawn only in frames (tests/front_reads.gd waits two) whose residency maintenance would move the view that suite sets (tests-own-class-members.md: that suite runs without the frames a drawn read needs); every other suite reads windows off the drawn front
+src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)
 src/ui/touch_controls.gd current_heading  # the heading the steering ring's knob is drawn at, which she is walking this instant, zero while she is detained; the knob is a draw_circle() straight onto the control and the headless dummy renderer reads no pixels, so only this answer says where the knob would sit (tests/test_touch.gd and the knob checks of tests/test_checkpoints.gd read it)
 src/ui/touch_controls.gd run_button_center  # where Run's disc is drawn: the focus opposite the steering one in the joystick scheme, none in the tap scheme; the disc is drawn and nothing else reads its place, and the booted-main suites (tests/test_main.gd, tests/test_run_checkpoints.gd, tests/test_visible_view.gd) ask it while the title or a brief holds the tree paused, when a press reaches nothing; which half holds Run is confirmed by real presses in tests/test_touch.gd
+src/visuals/atlas_library.gd illustrated_path_for  # the bake calls it: tools/bake_atlases.gd names each member's illustrated PNG with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd and tests/test_atlas_events.gd check it one-to-one over the membership)
+src/visuals/atlas_library.gd moment_for_a_load  # what a page read from disk right now would be called; its OUTSIDE state is the one in which acquire() raises an engine error, which the test gate is red for, so the log's page lines cannot show it without failing the run, and only asking without loading states the rule (tests/test_atlas_loading.gd asks it for the three states)
+src/visuals/atlas_library.gd region_name_for  # the bake calls it: tools/bake_atlases.gd names each region with it, so a tool outside src/ reads it and it is no probe of state (tests/test_atlas_library.gd derives the same names from the membership file)

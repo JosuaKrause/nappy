@@ -16,6 +16,7 @@ extends RefCounted
 ## A check that steps one step by hand with an injected delta says so where it does.
 
 const UI := preload("res://tests/ui_screens.gd")
+const GroundCells := preload("res://tests/ground_cells.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -1058,7 +1059,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 		for y in range(lo.y, hi.y + 1):
 			for x in range(lo.x, hi.x + 1):
 				var cell := Vector2i(x, y)
-				if ground.get_cell_source_id(cell) < 0 and not GroundWater.at(ground, cell):
+				if GroundCells.source_id(ground, cell) < 0 and not GroundWater.at(ground, cell):
 					unpainted += 1
 		t.check(unpainted == 0,
 				"corner %s: every cell the window can show is painted (%d unpainted of %d)"

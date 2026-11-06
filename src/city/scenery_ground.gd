@@ -25,8 +25,6 @@ var _city: City
 ## The city's library (`AtlasLibrary`), handed by the city before it configures the ground, and
 ## handed on to every water surface a chunk stands up.
 var atlas: AtlasLibrary
-var prepared := 0
-var evicted := 0
 ## Whole-region prepare() time: every preparation in ALL and ONE, the guard's alone in STEPPED,
 ## whose ordinary quadrant steps use worst_step_usec.
 var worst_prepare_usec := 0
@@ -105,7 +103,6 @@ func _prepare_whole(key: Vector2i) -> void:
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
-	prepared += 1
 
 ## One bounded quadrant, including TileMap renderer command preparation, for STEPPED alone. The
 ## residency owner advances each region once per process frame; prepare() drains it for the
@@ -151,7 +148,6 @@ func prepare_step(key: Vector2i) -> bool:
 	if complete:
 		chunks[key] = layer
 		pending.erase(key)
-		prepared += 1
 	worst_step_usec = maxi(worst_step_usec, Time.get_ticks_usec() - started)
 	return complete
 
@@ -166,7 +162,6 @@ func cancel(key: Vector2i) -> void:
 func release(key: Vector2i) -> void:
 	(chunks[key] as TileMapLayer).free()
 	chunks.erase(key)
-	evicted += 1
 
 func clear() -> void:
 	for key: Vector2i in pending.keys():
@@ -179,17 +174,3 @@ func repaint() -> void:
 	clear()
 	for key: Vector2i in keys:
 		prepare(key)
-
-func get_cell_source_id(tile: Vector2i) -> int:
-	var layer: TileMapLayer = chunks.get(key_for(tile))
-	return layer.get_cell_source_id(tile) if layer else -1
-
-func get_cell_atlas_coords(tile: Vector2i) -> Vector2i:
-	var layer: TileMapLayer = chunks.get(key_for(tile))
-	return layer.get_cell_atlas_coords(tile) if layer else Vector2i(-1, -1)
-
-func get_used_cells() -> Array[Vector2i]:
-	var cells: Array[Vector2i] = []
-	for layer: TileMapLayer in chunks.values():
-		cells.append_array(layer.get_used_cells())
-	return cells
