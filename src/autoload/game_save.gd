@@ -72,7 +72,7 @@ extends Node
 ## change begun last decides what it shows, and an answer to a change a symbol never began — one
 ## announced before a scene reload, to a symbol that did not survive it — settles nothing there.
 
-## Bumped only when the shape `RunState.save_snapshot()` writes changes — never for an ordinary
+## Bumped only when the shape `RunStateRegistry.state_data()` writes changes — never for an ordinary
 ## release. **This is the whole of what makes a save "the running build cannot read": a newer
 ## build with the same format keeps finding an older build's save, and only a format change drops
 ## one.** The build string below is recorded for a person to read, not for this comparison.
@@ -422,10 +422,6 @@ class Flushes extends RefCounted:
 		_waiting[operation] = {"settled": settled, "deleting": deleting, "waited": 0.0}
 		return operation
 
-	## Whether `token`'s flush is still waiting for an answer.
-	func waits_for(token: int) -> bool:
-		return _waiting.has(token)
-
 	func is_empty() -> bool:
 		return _waiting.is_empty()
 
@@ -555,7 +551,7 @@ func try_resume(run: RunState) -> Dictionary:
 ## Every way a file fails to become a resumable run answers the same "drop it for a fresh title
 ## screen" the design asks for, rather than a half-loaded run: no file at that path, text that is
 ## not valid JSON, JSON that is not an object, a `format_version` this build does not carry, or a
-## `"state"` missing a field this build's own `RunState.save_snapshot()` writes — see
+## `"state"` missing a field this build's own `RunStateRegistry.state_data()` writes — see
 ## `RunState.snapshot_is_complete()`. Only past every one of those does `run` actually change.
 func _read_now(run: RunState) -> Dictionary:
 	var path := _path()

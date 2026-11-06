@@ -141,11 +141,6 @@ func fail_resistance_step(step: int) -> void:
 	resistance.failed_steps.append(step)
 	EventBus.resistance_step_failed.emit(step)
 
-## Being seen near a contact costs progress but never takes it below zero.
-func penalise_resistance() -> void:
-	resistance.progress = maxi(0, resistance.progress - 1)
-	EventBus.resistance_progress_changed.emit(resistance.progress)
-
 # ---------------------------------------------------------------------- RNG ---
 
 ## Independent reproducible choices whose lifetime is the whole run, rather than one day.
@@ -168,14 +163,7 @@ func _new_seed() -> int:
 
 # ------------------------------------------------------------------- save ---
 
-## The run's state as the flat dictionary a save carries under `"state"`: every part the registry
-## holds in the `STATE` slot (`RunStateRegistry.state_data()`), each writing its own keys. Plain
-## JSON-safe values only — a `Vector2i` or an int-keyed `Dictionary` cannot survive
-## `JSON.stringify()`, so each part turns its own into small dictionaries.
-func save_snapshot() -> Dictionary:
-	return run_parts.state_data()
-
-## Whether `data` carries every key this build's `save_snapshot()` writes — the keys come from the
+## Whether `data` carries every key this build's `state_data()` writes — the keys come from the
 ## parts, so a field a part gains is required of a save the moment it is written.
 func snapshot_is_complete(data: Dictionary) -> bool:
 	for field in run_parts.state_keys():

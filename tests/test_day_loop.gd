@@ -301,9 +301,6 @@ func _test_nerves_and_endings(t) -> void:
 	run.complete_resistance_step(1)
 	run.complete_resistance_step(1)
 	t.check(run.resistance.progress == 1, "a resistance step counts once")
-	run.penalise_resistance()
-	run.penalise_resistance()
-	t.check(run.resistance.progress == 0, "resistance progress never goes negative")
 
 	run.free()
 
@@ -368,7 +365,7 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 	# Asleep on an ordinary pavement is not a park and does not spend one.
 	_away_from_home()
 	EventBus.return_phase_started.emit()
-	t.check(run.calendar.settled_yesterday() == Vector2i(-1, -1),
+	t.check(run.calendar.settled_this_act().is_empty(),
 			"nothing is remembered yet on day 1")
 	t.check(not run.settled.settled_in.has(1),
 			"falling asleep on a pavement does not spend a park")
@@ -384,7 +381,7 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 			"the calm block she settled in is remembered")
 
 	run.header.day = 2
-	t.check(run.calendar.settled_yesterday() == calm,
+	t.check(run.calendar.settled_this_act() == [calm],
 			"and tomorrow is the day that reads it")
 	_teardown()
 
@@ -412,7 +409,8 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 			func(unbooted: Node2D) -> void: unbooted.use_sitting_home(home))
 	var main := booted.main
 	var session := main.get_node("RunSession") as RunSession
-	t.check(session.observer() == null, "the session watches with no observer, as with the log off")
+	t.check(not session.get_children().any(func(child: Node) -> bool: return child is TelemetryObserver),
+			"the session watches with no observer, as with the log off")
 	await Boot.press_title(t, main, "Tap")
 	var day := Boot.day(main)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
