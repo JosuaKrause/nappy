@@ -23,6 +23,10 @@ const UI := preload("res://tests/ui_screens.gd")
 const TOLERANCE := 0.01
 ## Ticks walked past the end of a script, so both versions have come to rest.
 const RUN_OUT := 30
+const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
+
+## Where each recipe is written and loaded, and what loading it answers.
+var _errors := RecipeErrors.new()
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
@@ -100,6 +104,18 @@ func _release() -> void:
 	TouchControls.set_axis(&"move_up", &"move_down", 0.0)
 	Input.action_release(&"run")
 
+## How many turns `plan` blends over its first `ticks` ticks: the windows in which it presses a blend
+## rather than a step's own vector (`input_at()`'s `blending`), each counted once.
+func _turns_blended(plan: WalkPlan, ticks: int) -> int:
+	var turns := 0
+	var inside := false
+	for tick in ticks:
+		var blending: bool = plan.input_at(tick).blending
+		if blending and not inside:
+			turns += 1
+		inside = blending
+	return turns
+
 ## The two walks of `script` agree wherever her velocity does — before a turn, and from the moment
 ## the smoothed turn has caught up with the abrupt one — and end at rest at the same point. The
 ## count of agreeing ticks after the first turn keeps "wherever" from being vacuous.
@@ -107,8 +123,8 @@ func _check_same_place(t, script: String, smoothed: int) -> Dictionary:
 	var abrupt: Dictionary = await _walk(t, script, false)
 	var smooth: Dictionary = await _walk(t, script, true)
 	var plan: WalkPlan = smooth.plan
-	t.check(plan.smoothed_turns() == smoothed,
-			"'%s' smooths %d turn(s) (got %d)" % [script, smoothed, plan.smoothed_turns()])
+	var turns := _turns_blended(plan, smooth.positions.size())
+	t.check(turns == smoothed, "'%s' smooths %d turn(s) (got %d)" % [script, smoothed, turns])
 	var a_positions: Array[Vector2] = abrupt.positions
 	var s_positions: Array[Vector2] = smooth.positions
 	var a_velocities: Array[Vector2] = abrupt.velocities
@@ -221,7 +237,7 @@ func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t) -> void:
 			var s := smooth.input_at(tick)
 			if a.direction != s.direction or a.run != s.run or s.blending:
 				differ += 1
-		t.check(smooth.smoothed_turns() == 0 and differ == 0,
+		t.check(differ == 0,
 				"'%s' has no turn to smooth and presses exactly the abrupt script (%d ticks differ)"
 						% [script, differ])
 
@@ -298,8 +314,8 @@ func _test_the_step_clock_never_advances_a_smooth_script(t) -> void:
 ## `playback.smooth` is a boolean or the recipe is refused, like every other playback switch.
 func _test_a_recipe_says_smooth_with_a_boolean(t) -> void:
 	var recipe := {"playback": {"walk": "1w1n", "smooth": true}}
-	t.check(not "\n".join(SceneRecipeRuntime.validate_runtime(recipe)).contains("smooth"),
+	t.check(not "\n".join(_errors.errors_of(t, recipe)).contains("smooth"),
 			"a boolean smooth is accepted")
 	recipe.playback.smooth = "yes"
-	t.check("\n".join(SceneRecipeRuntime.validate_runtime(recipe)).contains("playback.smooth"),
+	t.check("\n".join(_errors.errors_of(t, recipe)).contains("playback.smooth"),
 			"anything else is refused by name")

@@ -71,9 +71,9 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
 func _test_a_crying_day_is_named_by_what_landed_the_most(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
-	t.check(director.loss_cause(GameEnums.DayResult.LOST_CRYING) == "self",
-			"a crying day with nothing in the world that landed is her own")
 	t.check(director.landed_by_group().is_empty(), "the bare world landed nothing")
+	t.check(director.finish_day(GameEnums.DayResult.LOST_CRYING).cause == "self",
+			"a crying day with nothing in the world that landed is her own")
 	_put_away(rig)
 
 ## The pelican's share of the meter is its own group, never added to the cyclists' *(inbox #527 in
@@ -92,7 +92,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	pelican.excitement.accumulate_landed(5.0)
 	t.check(director.landed_by_group() == {"cyclist": 3.0, "pelican": 5.0},
 			"the pelican's share is its own group (%s)" % [director.landed_by_group()])
-	t.check(director.loss_cause(GameEnums.DayResult.LOST_CRYING) == "pelican",
+	t.check(director.finish_day(GameEnums.DayResult.LOST_CRYING).cause == "pelican",
 			"so a crying day the pelican landed the most on is lost to the pelican")
 	director.events.clear()
 	_put_away(rig)
@@ -101,9 +101,8 @@ func _test_a_hard_fail_is_named_by_its_reason(t) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	director.day.hard_fail_reason = "charging_dog"
-	t.check(director.loss_cause(GameEnums.DayResult.LOST_HARD_FAIL) == "charging-dog",
+	t.check(director.finish_day(GameEnums.DayResult.LOST_HARD_FAIL).cause == "charging-dog",
 			"a hard fail is named by the row that struck her")
-	t.check(director.loss_cause(GameEnums.DayResult.WON) == "", "a win is named by nothing")
 	_put_away(rig)
 
 func _test_a_won_day_moves_the_calendar_on(t) -> void:
@@ -112,6 +111,7 @@ func _test_a_won_day_moves_the_calendar_on(t) -> void:
 	var end := director.finish_day(GameEnums.DayResult.WON)
 	t.check(not end.hands_over_to_the_escape and not end.run_over and _run.header.day == 2,
 			"a won day 1 is day 2 next")
+	t.check(end.cause == "", "and a win is named by nothing")
 	_put_away(rig)
 
 ## `finish_day()` requires only the clock and the run: a won day walked home with a player but no

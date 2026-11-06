@@ -18,9 +18,9 @@ extends Node2D
 ## boundary's own barrier bodies, every solid event's obstruction (a checkpoint hut or gate, a
 ## region wall, a barricade), and in the escape's building every wall blocker and the fire on the
 ## stairs — so a body a future row grows needs nothing added here to be drawn,
-## and this layer cannot disagree with what she actually collides against. `_draw_bodies()` and
-## `body_outline_count()` both read this one list, and `tests/test_debug_layers.gd` counts the same
-## tree independently to check the two never drift apart.
+## and this layer cannot disagree with what she actually collides against. `_draw_bodies()` reads this one
+## list, and `tests/test_debug_layers.gd` counts the same tree independently to check it never
+## drifts from the tree.
 ##
 ## **One node, three booleans, not three nodes.** Godot skips `_draw()` on an invisible `CanvasItem`
 ## entirely, so a plain `visible` flag per section already buys "no work happens while a layer is
@@ -95,7 +95,7 @@ func _agents() -> Array[CrowdAgent]:
 
 ## Sets which layers start on — `1` fields, `2` shadows, `3` bounding boxes — from
 ## `RunConfig.layers_override`. Pulled out from `DebugReadout.show_the_world()` so a test can drive it
-## with the indices it wants: see `DevFlags.parse_layers()` for the same split.
+## with the indices it wants: see `DevFlags.layers_override()` for the same split.
 func apply_initial_state(indices: Array[int]) -> void:
 	fields_on = 1 in indices
 	shadows_on = 2 in indices
@@ -446,14 +446,6 @@ func _draw_bodies() -> void:
 		_draw_closed_polyline(_rect_corners(agent.global_position + forward * half, forward,
 				Vector2(half, Tuning.CAR_STRIKE_HALF_WIDTH)), FIELD_LETHAL)
 
-## How many outlines `_draw_bodies()` draws right now — the same `collision_nodes_under()` lists it
-## draws from, plus a fast car's own strike box. The seam `tests/test_debug_layers.gd` checks
-## against an independent tree walk of its own, so a body this layer stops drawing is a number this
-## count would also drop.
-func body_outline_count() -> int:
-	return collision_nodes_under(_world).size() + collision_nodes_under(_player).size() \
-			+ _strike_box_agents().size()
-
 func _strike_box_agents() -> Array[CrowdAgent]:
 	var found: Array[CrowdAgent] = []
 	for agent in _agents():
@@ -464,7 +456,7 @@ func _strike_box_agents() -> Array[CrowdAgent]:
 ## Every enabled `CollisionShape2D` (with a shape) or `CollisionPolygon2D`, under a `StaticBody2D`
 ## or `CharacterBody2D`, anywhere in `root`'s own subtree — recursive rather than a per-kind list,
 ## so a new body needs nothing added here to be found. This is the one place that decides what
-## counts as a body for the debug view; `_draw_bodies()` and `body_outline_count()` both read it,
+## counts as a body for the debug view; `_draw_bodies()` reads it,
 ## and `tests/test_debug_layers.gd` walks the same tree by hand as an independent check.
 ##
 ## A thin wrapper over `_collect_collision_nodes_into()`, which walks into one array the caller

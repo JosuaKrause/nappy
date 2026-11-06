@@ -234,7 +234,7 @@ var _frames := FrameWatch.new(Telemetry.note)
 ## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
 ## cannot leave it out — the frame watch must cost nothing but this one check while the flag is
 ## off.
-var spikes_on := false
+var _spikes_on := false
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
 # and which edge badges are up, each with the clock reading it went up at.
@@ -246,7 +246,7 @@ var _badges := {}
 
 func setup(run: RunState, city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
-	spikes_on = spikes
+	_spikes_on = spikes
 	_run = run
 	_city = city
 	_map = city.map
@@ -265,7 +265,7 @@ func setup(run: RunState, city: City, player: Stroller, baby: Baby, day: DayCont
 ## `watch_city()`, and the escape has no subquest to watch.
 func setup_escape(player: Stroller, baby: Baby, clock: DayController, spikes: bool,
 		edge: DangerEdge = null) -> void:
-	spikes_on = spikes
+	_spikes_on = spikes
 	_player = player
 	_baby = baby
 	_day = clock
@@ -450,7 +450,7 @@ func _process(delta: float) -> void:
 	_watch_the_contact(here)
 	_watch_the_trail(here)
 	_watch_met_events(here)
-	_frames.watch(delta, spikes_on, _spike_scene)
+	_frames.watch(delta, _spikes_on, _spike_scene)
 
 ## Her tile and the live event count this frame: what a `--spikes` frame's line says changed since
 ## the frame before (`FrameWatch.watch()`), read off what every other line already reads — `_tile_of()`

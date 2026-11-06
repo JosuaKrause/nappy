@@ -25,21 +25,38 @@ func run(t) -> void:
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
 	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
+	var hard_fail_run := RunState.new()
 	for reason in hard_fails.keys():
-		var line := SummaryModel.clock_line(GameEnums.DayResult.LOST_HARD_FAIL,
-				hard_fails[reason], "10:00")
+		var hard_fail_end := DayEnd.new()
+		hard_fail_end.result = GameEnums.DayResult.LOST_HARD_FAIL
+		hard_fail_end.reason = hard_fails[reason]
+		hard_fail_end.elapsed_seconds = 600.0
+		var line := SummaryModel.day_over(hard_fail_run, hard_fail_end).title
 		_check_label(t, line, title, "the day summary title for %s" % reason)
+	hard_fail_run.free()
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")
 	summary.queue_free()
 
 	var run := RunState.new()
+	var was_paused: bool = t.get_tree().paused
+	# The touch layer holds the control scheme, and the screen words its body again on every open;
+	# what it shows has its sentences on separate lines, so the text it was laid out from is the
+	# shown lines joined by the spaces they stand for.
+	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	t.add_child(controls)
 	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
 	pause.use_run(run)
 	t.add_child(pause)
 	var pause_body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick in [false, true]:
-		_check_help(t, pause.body_for(joystick), pause_body, "the pause body (joystick %s)" % joystick)
+		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		pause.open()
+		var shown := pause_body.line.replace("\n", " ")
+		pause.close()
+		_check_help(t, shown, pause_body, "the pause body (joystick %s)" % joystick)
 	pause.free()
+	controls.free()
+	t.get_tree().paused = was_paused
 
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
 	hud.use_run(run)

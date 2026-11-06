@@ -64,10 +64,6 @@ static func make(steps: Array[Dictionary], ticks_per_second: int, smooth: bool) 
 		plan._plan_turns()
 	return plan
 
-## How many turns this plan smooths, for a caller to report and a test to read.
-func smoothed_turns() -> int:
-	return _turns.size()
-
 ## The step the abrupt script holds for the input sampled at `tick` (physics ticks since the script
 ## started), or `_steps.size()` once it has ended. The same subtraction a recipe's playback has
 ## always made, so smooth off is the same press on the same tick.

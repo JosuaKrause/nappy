@@ -78,7 +78,7 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 ## own words, standing where "Day N of 14" stands).
 ##
 ## **Everything but the one line about the day that ended is the coming day's.** The title is the
-## clock the day ended on, worded by `clock_line()`; the day, the nerves and the morning's line read
+## clock the day ended on, worded by `_clock_line()`; the day, the nerves and the morning's line read
 ## the run as it stands now — a win has already moved `run.header.day` on, and a loss leaves it on
 ## the day being retried, so the screen names the day she is about to walk.
 ##
@@ -90,7 +90,7 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 static func day_over(run: RunState, end: DayEnd, section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.DAY
-	model.title = clock_line(end.result, end.reason, RunState.format_clock_seconds(end.elapsed_seconds))
+	model.title = _clock_line(end.result, end.reason, RunState.format_clock_seconds(end.elapsed_seconds))
 	model.title_is_prose = true
 	var day := run.header.day
 	var nerves := run.header.nerves
@@ -109,7 +109,7 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 	# wall.
 	if run.has_joined_resistance() and section_title == "":
 		lines.append("")
-		lines.append(resistance_tally(run))
+		lines.append(_resistance_tally(run))
 	model._plain_body("\n".join(lines))
 	model.brief = Texts.DAY_BRIEF.get(day, "") if section_title == "" else ""
 	return model
@@ -162,7 +162,7 @@ static func standing_line(run: RunState) -> String:
 
 ## The resistance's tally: the errands run of the goal and the contacts lost, or that the work is
 ## done enough once the last night's sabotage is on offer. The morning's line is not part of it.
-static func resistance_tally(run: RunState) -> String:
+static func _resistance_tally(run: RunState) -> String:
 	if run.sabotage_available():
 		return Texts.SUMMARY_TALLY_DONE
 	var done := run.resistance.progress
@@ -182,7 +182,7 @@ static func resistance_tally(run: RunState) -> String:
 ## other reason keeps its own sentence whole with the clock as a sentence of its own after it. A
 ## timeout shows no clock at all: dusk is the whole day, and printing the day's own length back is
 ## the total the player does not want here.
-static func clock_line(result: GameEnums.DayResult, reason: String, clock: String) -> String:
+static func _clock_line(result: GameEnums.DayResult, reason: String, clock: String) -> String:
 	match result:
 		GameEnums.DayResult.WON:
 			return Texts.SUMMARY_FELL_ASLEEP % clock

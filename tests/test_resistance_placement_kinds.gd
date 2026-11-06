@@ -7,8 +7,8 @@ extends "res://tests/resistance_rig.gd"
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
 ## (`frontage_of()`, `spine_x()`, `tick()`). The ground a row is offered is asked of
 ## `EventScheduler.open_ground_for()`, the next day's masts of `EventScheduler.place_masts()`, the
-## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` hands the baby its
-## stroller with `Baby.set_stroller()`.
+## near mast of the director's `weighted_mast_index()`, and `_start_the_day()` puts her stroller in
+## the tree with the baby a child of it, as the scene has them.
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
 const FrontReads := preload("res://tests/front_reads.gd")
@@ -307,11 +307,16 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	if prepare.is_valid():
 		prepare.call()
 	var config := RunConfig.parse(PackedStringArray(), "", true)
+	# In the tree, as the scene has her, so the baby takes the stroller she rides in from her parent.
 	var player := Stroller.new()
+	var camera := Camera2D.new()
+	camera.name = "Camera2D"
+	player.add_child(camera)
 	var baby := Baby.new()
 	baby.name = "Baby"
 	player.add_child(baby)
-	baby.set_stroller(player)
+	t.add_child(player)
+	player.set_physics_process(false)
 	var clock := DayController.new()
 	clock.set_process(false)
 	t.add_child(clock)

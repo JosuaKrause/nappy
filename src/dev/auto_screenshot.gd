@@ -452,7 +452,7 @@ func _process(delta: float) -> void:
 ##
 ## **Tagged with `InputEvent.DEVICE_ID_EMULATION` so a locked-out rig still hears it.**
 ## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
-## device id — see `RigLock.is_the_rigs_own_press()` for why a tag on the event and not its class.
+## device id — see `RigLock._input()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
 	for pressed in [true, false]:
 		var event: InputEvent
@@ -517,7 +517,7 @@ func _turn_and_run() -> void:
 func _capture() -> void:
 	if before_capture.is_valid():
 		before_capture.call()
-	if not can_photograph(DisplayServer.get_name()):
+	if not _can_photograph(DisplayServer.get_name()):
 		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
 		get_tree().quit(1)
@@ -538,12 +538,7 @@ func _capture() -> void:
 const FORCED_FRAME_NOTE := " (window not visible, so this frame was drawn on demand)"
 
 ## Whether a run driving the display server called `display_name` has a frame to photograph.
-##
-## A parameter rather than a call to `DisplayServer.get_name()` inside, for the same reason
-## `TelemetryPage.reads_the_url(is_debug, on_web)` takes its two: the display server is one of the
-## few things a test cannot fake, so welding it in would make the guard itself the untestable part
-## of the guard. `"headless"` is the name Godot gives the null display server that `--headless`
-## selects, and it is the name `main.gd` and `Telemetry` already compare against for the same
-## question.
-static func can_photograph(display_name: String) -> bool:
+## `"headless"` is the name Godot gives the null display server that `--headless` selects, and it is
+## the name `main.gd` and `Telemetry` already compare against for the same question.
+static func _can_photograph(display_name: String) -> bool:
 	return display_name != "headless"

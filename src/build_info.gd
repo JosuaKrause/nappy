@@ -69,7 +69,7 @@ static func version_text() -> String:
 ## The commit on its own, by the same two steps: `source_commit()` where there is a repository,
 ## else `application/config/source_commit`, which `tools/export-web.sh` bakes beside the version.
 ## On a release `version_text()` is the bare tag, and a tag can be moved; the hash cannot.
-static func commit_text() -> String:
+static func _commit_text() -> String:
 	var from_git := source_commit()
 	if from_git != "unknown":
 		return from_git
@@ -80,4 +80,4 @@ static func commit_text() -> String:
 ## the commit together, since describe alone collapses to the tag on every release. *(2026-09-13,
 ## playtest 70: "Debug mode should contain the commit + describe.")*
 static func build_text() -> String:
-	return "%s (%s)" % [version_text(), commit_text()]
+	return "%s (%s)" % [version_text(), _commit_text()]

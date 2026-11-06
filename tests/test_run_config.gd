@@ -66,7 +66,7 @@ func _test_a_debug_build_reads_them(t) -> void:
 			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
 	t.check(debug.day_override == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
 	t.check(debug.seed_override == 7 and debug.invincible and debug.layers_override == [1, 3]
-			and debug.ground_mode == 3 and is_equal_approx(debug.day_length_override, 40.0),
+			and debug.ground_mode == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
 			"and every other flag given is read")
 	t.check(debug.active_args.size() == 11, "the words themselves are kept, all of them")
 

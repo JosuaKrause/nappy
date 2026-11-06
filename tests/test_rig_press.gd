@@ -5,12 +5,12 @@ extends RefCounted
 ## gate that swallowed every event would swallow the rig's own injected presses along with a real
 ## key or pointer, so `--press pause 3` would pause nothing and `snapshot_burst` would never arrive.
 ##
-## `RigLock.is_the_rigs_own_press()` is what `_input()` reads instead of marking every event
-## handled outright: whether `event.device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant
-## `AutoScreenshot` tags its own `--press` events with before handing them to
-## `Input.parse_input_event()`. The gate tests drive a real `RigLock` with `locked_out` set by hand,
-## never `setup()`, which also erases this process's `InputMap` bindings until the lock leaves the
-## tree; the one test that calls `setup()` is the one about those bindings coming back.
+## `RigLock._input()` does not mark every event handled outright: it lets through an event whose
+## `device` carries `InputEvent.DEVICE_ID_EMULATION`, the constant `AutoScreenshot` tags its own
+## `--press` events with before handing them to `Input.parse_input_event()`. The gate tests drive a
+## real `RigLock` with `locked_out` set by hand, never `setup()`, which also erases this process's
+## `InputMap` bindings until the lock leaves the tree; the one test that calls `setup()` is the one
+## about those bindings coming back.
 
 const UI := preload("res://tests/ui_screens.gd")
 
@@ -23,51 +23,10 @@ class Catcher extends Node:
 		seen.append(event)
 
 func run(t) -> void:
-	_test_is_the_rigs_own_press(t)
 	_test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t)
 	await _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
 	_test_the_gate_does_nothing_once_the_rig_unlocks(t)
 	_test_the_lock_gives_the_bindings_back_when_freed(t)
-
-# ------------------------------------------------------------------ predicate ---
-
-## The predicate on its own, both event classes `--press` can produce (`InputEventAction` for a
-## named action, `InputEventKey` for `key:<name>`) and both the default a fresh event carries and
-## the two device ids Godot itself reserves for real hardware — `DEVICE_ID_KEYBOARD` (16) and
-## `DEVICE_ID_MOUSE` (32) — so this is not merely "false unless tagged" by accident of the default.
-func _test_is_the_rigs_own_press(t) -> void:
-	var untagged_action := InputEventAction.new()
-	untagged_action.action = &"pause"
-	t.check(not RigLock.is_the_rigs_own_press(untagged_action),
-			"a freshly-built action event, device left at its default, is not the rig's own")
-
-	var untagged_key := InputEventKey.new()
-	untagged_key.keycode = KEY_R
-	t.check(not RigLock.is_the_rigs_own_press(untagged_key),
-			"a freshly-built key event, device left at its default, is not the rig's own")
-
-	var keyboard_key := InputEventKey.new()
-	keyboard_key.keycode = KEY_R
-	keyboard_key.device = InputEvent.DEVICE_ID_KEYBOARD
-	t.check(not RigLock.is_the_rigs_own_press(keyboard_key),
-			"a key tagged as real keyboard hardware is not the rig's own")
-
-	var mouse_click := InputEventMouseButton.new()
-	mouse_click.device = InputEvent.DEVICE_ID_MOUSE
-	t.check(not RigLock.is_the_rigs_own_press(mouse_click),
-			"a click tagged as a real mouse is not the rig's own")
-
-	var tagged_action := InputEventAction.new()
-	tagged_action.action = &"pause"
-	tagged_action.device = InputEvent.DEVICE_ID_EMULATION
-	t.check(RigLock.is_the_rigs_own_press(tagged_action),
-			"an action event tagged DEVICE_ID_EMULATION is the rig's own")
-
-	var tagged_key := InputEventKey.new()
-	tagged_key.keycode = KEY_R
-	tagged_key.device = InputEvent.DEVICE_ID_EMULATION
-	t.check(RigLock.is_the_rigs_own_press(tagged_key),
-			"a key event tagged DEVICE_ID_EMULATION is the rig's own")
 
 # ---------------------------------------------------------------------- gate ---
 
