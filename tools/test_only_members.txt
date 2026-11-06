@@ -28,7 +28,6 @@ src/dev/debug_layers.gd body_outline_count
 src/dev/rig_lock.gd has_a_deadline
 src/dev/walk_plan.gd smoothed_turns
 src/events/event_instance.gd charger_name
-src/events/event_manager.gd walks_under_a_boom
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
 src/interior/interior_map.gd PARTS
@@ -137,10 +136,6 @@ src/dev/zoom_out_camera.gd overview_zoom
 src/dev/zoom_out_camera.gd pose_at
 src/events/behaviours/event_car_driving.gd is_driving
 src/events/behaviours/event_car_driving.gd room_to_its_line
-src/events/checkpoint_controller.gd guard_is_after_her
-src/events/checkpoint_controller.gd release_finished_holds
-src/events/checkpoint_controller.gd set_a_guard_on_her
-src/events/checkpoint_controller.gd where_she_crossed
 src/events/event_catalogue.gd guardsmen_from_day
 src/events/event_catalogue.gd heat_levels
 src/events/event_director.gd route_rows_on

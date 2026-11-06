@@ -598,7 +598,7 @@ func _pass_the_hold(t, seconds: float) -> void:
 ## The core rig: she walks into a hut, is detained for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`, and
 ## comes out the other side, outside the band, on the same pavement lane — the mirror of where she
 ## stood, reflected through the crossing's own cross-street line and pushed clear of the hold's own
-## trigger. See `CheckpointController.release_finished_holds()`.
+## trigger. See `CheckpointController._release_finished_holds()`.
 func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
@@ -974,7 +974,7 @@ func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
 ## location. I should directly spawn at the new location".)*
 ##
 ## A hold's own seconds run down in its event's step (`EventInstance.step()`), and moving her out is
-## the release's (`CheckpointController.release_finished_holds()`, from `check_detentions()`), later
+## the release's (`CheckpointController._release_finished_holds()`, from `check_detentions()`), later
 ## on the same physics tick. The hold ending must not show her: shown where its clock ran out, she
 ## would be back on the screen at the place she went in until the release moved her.
 ##
@@ -1024,7 +1024,7 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 ## interpolation, which draws her between her last two physics-tick transforms — frozen at the
 ## door for the whole hold — and only honours a `reset_physics_interpolation()` call made while
 ## `is_visible_in_tree()` is true, silently dropping one made while she — or an ancestor — is
-## hidden. `CheckpointController.release_finished_holds()` calls `Stroller.teleport_to()` (whose
+## hidden. `CheckpointController._release_finished_holds()` calls `Stroller.teleport_to()` (whose
 ## own reset is a documented no-op while she is still hidden — see
 ## `Stroller._reset_interpolation_if_shown()`) one line before
 ## `Stroller.show_after_inspection()`, so before `show_after_inspection()` gained a reset of its
@@ -1960,6 +1960,15 @@ func _step_her_to(rig: Dictionary, at: Vector2) -> void:
 	(rig["stroller"] as Stroller).global_position = at
 	(rig["city"] as City).events.checkpoints.watch_the_door_lines()
 
+## How many walks across a door's line the run log told of: the `checkpoint` line
+## `CheckpointController.watch_the_door_lines()` writes for each, none for a release through it.
+func _walks_under(told: Array[String]) -> int:
+	var found := 0
+	for line in told:
+		if line.contains("walked through, heading"):
+			found += 1
+	return found
+
 ## **Walking under the boom is detected, not guessed.** *(2026-09-24: "The guards should start
 ## pursuing her in that case".)* She walks across the door's own line on the carriageway, raised
 ## or not — nothing asks the arm — and each crossing counts; standing short of it does not. The
@@ -1968,6 +1977,8 @@ func _step_her_to(rig: Dictionary, at: Vector2) -> void:
 func _test_a_walk_under_the_boom_is_seen(t) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
+	var walks_told: Array[String] = []
+	city.events.trace = RunTrace.recording(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -1980,13 +1991,13 @@ func _test_a_walk_under_the_boom_is_seen(t) -> void:
 	var lane := gate.global_position + across * 16.0
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane - axis * 2.0)
-	t.check(city.events.walks_under_a_boom() == 0, "walking up to the line is nothing")
+	t.check(_walks_under(walks_told) == 0, "walking up to the line is nothing")
 	_step_her_to(rig, lane + axis * 20.0)
-	t.check(city.events.walks_under_a_boom() == 1, "walking across it under the boom is one")
+	t.check(_walks_under(walks_told) == 1, "walking across it under the boom is one")
 	_step_her_to(rig, lane - axis * 20.0)
-	t.check(city.events.walks_under_a_boom() == 2, "and walking back under it is another")
+	t.check(_walks_under(walks_told) == 2, "and walking back under it is another")
 
-	var before := city.events.walks_under_a_boom()
+	var before := _walks_under(walks_told)
 	var hut := huts[0]
 	var side := (hut.global_position - gate.global_position).normalized()
 	_step_her_to(rig, hut.global_position - axis * 60.0 + side * 8.0)
@@ -1999,9 +2010,9 @@ func _test_a_walk_under_the_boom_is_seen(t) -> void:
 	var released := (rig["stroller"] as Stroller).global_position
 	t.check((released - hut.global_position).dot(axis) > 0.0, "the release sets her across the line")
 	city.events.checkpoints.watch_the_door_lines()
-	t.check(city.events.walks_under_a_boom() == before,
+	t.check(_walks_under(walks_told) == before,
 			"and being let through is not a walk under (%d, %d before)"
-			% [city.events.walks_under_a_boom(), before])
+			% [_walks_under(walks_told), before])
 	_free_street_door_rig(rig)
 
 ## Holds her where she is for `seconds`, the door's lines watched every frame at `STEP` and its
@@ -2026,6 +2037,8 @@ func _stand_for(rig: Dictionary, seconds: float) -> void:
 func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
+	var walks_told: Array[String] = []
+	city.events.trace = RunTrace.recording(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2079,10 +2092,10 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 		t.check(not guard.is_telegraphing() and not guard.is_waiting(), "and charging at once")
 		t.check(not far_hut.is_finished and not far_hut.is_its_guard_inside(),
 				"while the hut and its own guard stay where they are")
-	var walks := city.events.walks_under_a_boom()
+	var walks := _walks_under(walks_told)
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING + 0.2)
-	t.check(city.events.walks_under_a_boom() == walks + 1 and _door_guard_after_her(city.events) == guard,
+	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(city.events) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
 
@@ -2215,17 +2228,25 @@ static func _door_guard_after_her(manager: EventManager) -> EventInstance:
 	return found
 
 ## A `_door_rig()` (two huts and a gate on an east-west street) with a `door_guard` already after
-## her, set on her by `CheckpointController.set_a_guard_on_her()` out of the northern hut, `doors[0]`,
-## on the east side — the shape every test below starts from.
+## her, set on her the way the game sets him: she walks across the gate's line in the southern lane
+## and stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), and
+## the guard steps out of the northern hut, `doors[0]`, the one across the road, on the east side
+## she crossed to — the shape every test below starts from.
 func _guard_after_her_rig(t) -> Dictionary:
 	var rig := _door_rig(t)
 	var doors: Array[EventInstance] = []
 	doors.assign(rig["doors"])
 	var manager: EventManager = rig["manager"]
-	var near_hut := doors[0]
-	var axis := near_hut.facing_now()
-	# Set on her the way a walked crossing sets him, out of the near hut on the side she crossed to.
-	manager.checkpoints.set_a_guard_on_her(near_hut, doors[1], near_hut.global_position + axis * 40.0)
+	var stroller: Stroller = rig["stroller"]
+	var axis := doors[0].facing_now()
+	var lane := doors[1].global_position + Vector2(-axis.y, axis.x) * 16.0
+	stroller.teleport_to(lane - axis * 20.0)
+	manager.checkpoints.watch_the_door_lines()
+	stroller.global_position = lane + axis * 20.0
+	manager.checkpoints.watch_the_door_lines()
+	for i in int(ceil(CheckpointController.CROSSING_WARNING / STEP)) + 1:
+		manager.checkpoints.warn_at_the_doors()
+		manager.checkpoints.watch_the_door_lines(STEP)
 	var guard := _door_guard_after_her(manager)
 	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors
