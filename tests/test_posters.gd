@@ -193,15 +193,15 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
 	var art := PosterArt.new()
 	var other := PosterArt.new()
 	var kind := PosterArt.Kind.LEADER
-	t.check(art.torn(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
+	t.check(art.texture_for(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
 			"before it is prepared an art answers the intact sheet, never a missing picture")
 	art.prepare(atlas)
-	var composed := art.torn(atlas, kind, 0, false)
+	var composed := art.texture_for(atlas, kind, 0, false)
 	t.check(composed != PosterArt.sheet(atlas, kind, false) and composed is ImageTexture,
 			"a prepared art answers its composed torn picture")
 	art.prepare(atlas)
-	t.check(art.torn(atlas, kind, 0, false) == composed, "preparing again composes nothing")
-	t.check(other.torn(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
+	t.check(art.texture_for(atlas, kind, 0, false) == composed, "preparing again composes nothing")
+	t.check(other.texture_for(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
 			"another art holds none of the first's pictures")
 	_map = CityGenerator.generate(SEEDS[0])
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
@@ -285,8 +285,8 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
 	t.check(torn, "a push tears the wanted notice")
 	var which := int(_run.posters.cells[tile]["tear"])
 	t.check(building.neighbor_taken, "after a tear, the run's taken neighbor reaches the front")
-	t.check(drawn.call() == building.poster_art.torn(atlas, PosterArt.Kind.WANTED, which, true)
-			and drawn.call() != building.poster_art.torn(atlas, PosterArt.Kind.WANTED, which, false),
+	t.check(drawn.call() == building.poster_art.texture_for(atlas, PosterArt.Kind.WANTED, which, true)
+			and drawn.call() != building.poster_art.texture_for(atlas, PosterArt.Kind.WANTED, which, false),
 			"and the torn sheet is the crossed notice torn")
 
 	_close()
