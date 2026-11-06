@@ -17,6 +17,8 @@ extends RefCounted
 ## `tests/test_atlas_events.gd`, through `EventPictures.family_sources()`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const DrawnEvent := preload("res://tests/drawn_event.gd")
+const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
@@ -47,11 +49,17 @@ func run(t) -> void:
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
-	_test_a_pelican_rides_as_one_to_the_end(t)
-	_test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
+	_record_the_drawing()
+	await _test_a_pelican_rides_as_one_to_the_end(t)
+	await _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	await _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)
 	_city.free()
 	_run.free()
+
+## The city's events paint through a recording drawer from here on, handed to the world the way
+## the manager hands the real one, so a check reads the pictures an event was drawn with.
+func _record_the_drawing() -> void:
+	_city.events.world.drawer = RecordingEventDrawer.new(_city.events.atlas)
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -241,21 +249,23 @@ func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
 	var events := _city.events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
-	t.check(pelican.is_pelican and (pelican.look as FigureLook).rider_pictures()[0] == EventPictures.PELICAN_BY_VIEW
-			and (pelican.look as FigureLook).rider_pictures()[1] == EventPictures.PELICAN_BY_VIEW_B,
+	t.check(pelican.is_pelican and _is_drawn_from(await _drawn_from(t, pelican),
+			EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B),
 			"a rider rolled as the pelican is drawn as the pelican from its first frame")
-	t.check(not kid.is_pelican and (kid.look as FigureLook).rider_pictures()[0] == EventPictures.CYCLIST_BY_VIEW,
+	t.check(not kid.is_pelican and _is_drawn_from(await _drawn_from(t, kid),
+			EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B),
 			"and one rolled as the kid is drawn as the kid")
 	var travelled := 0.0
 	for _i in 600:
-		if pelican.is_finished:
+		if pelican.is_finished or travelled > 250.0:
 			break
 		pelican.step(STEP)
 		kid.step(STEP)
 		travelled = pelican.path_travelled()
 	t.check(travelled > 200.0, "the pelican rode %.0fpx of its 300px line" % travelled)
-	t.check(pelican.is_pelican and (pelican.look as FigureLook).rider_pictures()[0] == EventPictures.PELICAN_BY_VIEW,
-			"and is still drawn as the pelican at the end of it")
+	t.check(pelican.is_pelican and _is_drawn_from(await _drawn_from(t, pelican),
+			EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B),
+			"and is still drawn as the pelican late in its ride")
 	t.check(not kid.is_pelican, "and the kid is still the kid")
 	var dog := events.spawn_warned(EventCatalogue.by_id("loose_dog"), _ride(), true)
 	t.check(not dog.is_pelican, "a loose dog sent the same way is never the pelican, whatever its roll")
@@ -263,7 +273,7 @@ func _test_a_pelican_rides_as_one_to_the_end(t) -> void:
 		events.retire(instance)
 
 ## The same ride, rolled both ways: the same row, the same field and the same lethal reach at every
-## point around it, the same speed. Only `rider_pictures()` differs.
+## point around it, the same speed. Only the pictures it is drawn with differ.
 func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var events := _city.events
@@ -292,9 +302,28 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	t.check(same_reach and lethal_points > 0,
 			"and so is the reach that ends the day (%d of the points asked are inside it)"
 			% lethal_points)
-	t.check((pelican.look as FigureLook).rider_pictures() != (kid.look as FigureLook).rider_pictures(), "only the picture differs")
+	var pelican_pictures := await _drawn_from(t, pelican)
+	var kid_pictures := await _drawn_from(t, kid)
+	t.check(not pelican_pictures.is_empty() and not kid_pictures.is_empty()
+			and pelican_pictures != kid_pictures, "only the picture differs")
 	for instance in [pelican, kid]:
 		events.retire(instance)
+
+## The pictures `instance` is drawn with on its own canvas once drawn frames have passed: what its
+## look asked its drawer to stand. The city's events are drawn through a recording drawer
+## (`_record_the_drawing()`).
+func _drawn_from(t, instance: EventInstance) -> Array[String]:
+	await DrawnEvent.frames(t)
+	var found: Array[String] = []
+	for entry in DrawnEvent.shown(instance):
+		if entry.canvas == instance and entry.kind == &"stand":
+			found.append(entry.picture)
+	return found
+
+## Whether `pictures` are some, and only, of the views in `by_view` and `also_by_view`.
+func _is_drawn_from(pictures: Array[String], by_view: Dictionary, also_by_view: Dictionary) -> bool:
+	return not pictures.is_empty() and pictures.all(func(picture: String) -> bool:
+			return by_view.values().has(picture) or also_by_view.values().has(picture))
 
 ## A straight 300px line up the arterial's sidewalk, the kind `spawn_warned()` is handed.
 func _ride() -> PackedVector2Array:

@@ -142,10 +142,10 @@ func run(t) -> void:
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
 	_test_masked_man_is_drawn_standing_until_he_goes(t)
-	_test_the_waiting_dog_rests_stands_alert_and_gallops(t)
-	_test_the_day_3_dog_gallops_through_its_approach(t)
+	await _test_the_waiting_dog_rests_stands_alert_and_gallops(t)
+	await _test_the_day_3_dog_gallops_through_its_approach(t)
 	_test_the_robber_waits_walks_alert_and_lunges(t)
-	_test_the_roadblock_guard_raises_his_hand_at_his_post(t)
+	await _test_the_roadblock_guard_raises_his_hand_at_his_post(t)
 	_test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t)
 	_test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t)
 	_test_no_guard_who_arrives_charging_takes_the_alert(t)
@@ -616,8 +616,9 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 # polite-toad, #722: "a distinct alert and rest post for each charger that gets triggered by the
 # player"; inbox #748: "robber can walk towards her but guards should lift their hand in warning",
 # "nobody walks -- only the robber".)* Each test walks one charger through its stages and pins the
-# picture query its `_draw_*` reads (`charging_dog_pictures()`, `robber_pictures()`,
-# `chaser_pictures()`, `masked_pursuer_pictures()`), and whether it moves while it warns.
+# pictures it is drawn with after a drawn frame (the charging dog's and the roadblock guard's through
+# a recording drawer; the robber's `robber_pictures()` and the masked man's
+# `masked_pursuer_pictures()` are the pursuer look's own), and whether it moves while it warns.
 
 ## Steps `instance` for `seconds` with her held at `her`.
 func _hold(instance: EventInstance, her: Vector2, seconds: float) -> void:
@@ -625,14 +626,34 @@ func _hold(instance: EventInstance, her: Vector2, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
+## `def` standing at the origin in the tree, drawn through a recording drawer by the frames the caller
+## lets pass (`_drawn_from()`); the caller frees it.
+func _drawn_at_the_origin(t, def: EventDef) -> EventInstance:
+	return DrawnEvent.build(t, def, false, null, null, Vector2.ZERO)
+
+## The pictures `instance` is drawn with on its own canvas once drawn frames have passed: what its
+## look asked its drawer to stand.
+func _drawn_from(t, instance: EventInstance) -> Array[String]:
+	await DrawnEvent.frames(t)
+	var found: Array[String] = []
+	for entry in DrawnEvent.shown(instance):
+		if entry.canvas == instance and entry.kind == &"stand":
+			found.append(entry.picture)
+	return found
+
+## Whether `pictures` are some, and only, of the views in `by_view` and `also_by_view` (a picture
+## table's own frames, such as the stride frame beside the standing one).
+func _is_drawn_from(pictures: Array[String], by_view: Dictionary, also_by_view := {}) -> bool:
+	return not pictures.is_empty() and pictures.all(func(picture: String) -> bool:
+			return by_view.values().has(picture) or also_by_view.values().has(picture))
+
 func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
-	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	var instance := _drawn_at_the_origin(t, def)
 	_hold(instance, Vector2(def.notice_within() + 60.0, 0.0), 1.0)
-	var pictures := (instance.look as FigureLook).charging_dog_pictures()
-	t.check(instance.is_waiting() and pictures[0] == EventPictures.CHARGING_DOG_RESTING_BY_VIEW
-			and pictures[1].is_empty(), "waiting for her, the dog sits, with no stride frame")
+	var pictures := await _drawn_from(t, instance)
+	t.check(instance.is_waiting() and _is_drawn_from(pictures, EventPictures.CHARGING_DOG_RESTING_BY_VIEW),
+			"waiting for her, the dog sits, with no stride frame")
 	# Inside its radius, where she stands through its warning.
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var her := Vector2((def.notice_within() + standoff) * 0.5, 0.0)
@@ -641,27 +662,38 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 	t.check(instance.facing_now().is_equal_approx(her.normalized()), "turned to face her")
 	var still := true
 	var alert := true
-	for i in int(round(def.pursuit.warns_for / STEP)) - 3:
+	var warning_steps := int(round(def.pursuit.warns_for / STEP)) - 3
+	for i in warning_steps:
 		instance.step(STEP)
 		still = still and instance.global_position.is_equal_approx(Vector2.ZERO) \
 				and not instance.look.gait_is_stepping()
-		pictures = (instance.look as FigureLook).charging_dog_pictures()
-		alert = alert and pictures[0] == EventPictures.CHARGING_DOG_ALERT_BY_VIEW \
-				and pictures[1].is_empty()
+		# Drawn at the start, the middle and the end of its warning.
+		if i == 0 or i * 2 == warning_steps or i == warning_steps - 1:
+			alert = alert and _is_drawn_from(await _drawn_from(t, instance),
+					EventPictures.CHARGING_DOG_ALERT_BY_VIEW)
 	t.check(alert, "its alert, a still picture, through its warning")
 	t.check(still, "and it does not move toward her while it warns")
 	# Back out of its radius it sits again, and warns again when she comes back.
 	_hold(instance, Vector2(def.notice_within() + 10.0, 0.0), STEP)
-	pictures = (instance.look as FigureLook).charging_dog_pictures()
-	t.check(instance.is_waiting() and pictures[0] == EventPictures.CHARGING_DOG_RESTING_BY_VIEW,
+	pictures = await _drawn_from(t, instance)
+	t.check(instance.is_waiting() and _is_drawn_from(pictures, EventPictures.CHARGING_DOG_RESTING_BY_VIEW),
 			"out of its radius again, it sits")
 	_hold(instance, her, STEP)
-	t.check((instance.look as FigureLook).charging_dog_pictures()[0] == EventPictures.CHARGING_DOG_ALERT_BY_VIEW,
+	t.check(_is_drawn_from(await _drawn_from(t, instance), EventPictures.CHARGING_DOG_ALERT_BY_VIEW),
 			"and back inside, it warns again")
 	_hold(instance, her, def.pursuit.warns_for + 0.2)
-	pictures = (instance.look as FigureLook).charging_dog_pictures()
-	t.check(not instance.is_telegraphing() and pictures[0] == EventPictures.CHARGING_DOG_BY_VIEW
-			and pictures[1] == EventPictures.CHARGING_DOG_BY_VIEW_B,
+	# Galloping it draws both stride frames, one after the other, and only those.
+	var first_frame := false
+	var second_frame := false
+	var gallop := not instance.is_telegraphing()
+	for i in 40:
+		pictures = await _drawn_from(t, instance)
+		gallop = gallop and _is_drawn_from(pictures, EventPictures.CHARGING_DOG_BY_VIEW,
+				EventPictures.CHARGING_DOG_BY_VIEW_B)
+		first_frame = first_frame or _is_drawn_from(pictures, EventPictures.CHARGING_DOG_BY_VIEW)
+		second_frame = second_frame or _is_drawn_from(pictures, EventPictures.CHARGING_DOG_BY_VIEW_B)
+		_hold(instance, her, 3.0 * STEP)
+	t.check(gallop and first_frame and second_frame,
 			"once its warning has run with her still inside it gallops, both frames")
 	instance.free()
 
@@ -670,13 +702,12 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t) -> void:
 func _test_the_day_3_dog_gallops_through_its_approach(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def.notice_within() <= 0.0, "on the teaching day the dog does not wait")
-	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	var instance := _drawn_at_the_origin(t, def)
 	_hold(instance, Vector2(400.0, 0.0), 1.0)
 	t.check(instance.is_telegraphing() and not instance.is_standing_for_its_notice(),
 			"its approach is its telegraph, and it does not stand for it")
-	t.check((instance.look as FigureLook).charging_dog_pictures()[0] == EventPictures.CHARGING_DOG_BY_VIEW,
-			"drawn galloping")
+	t.check(_is_drawn_from(await _drawn_from(t, instance), EventPictures.CHARGING_DOG_BY_VIEW,
+			EventPictures.CHARGING_DOG_BY_VIEW_B), "drawn galloping")
 	t.check(instance.global_position.x > 100.0, "and coming (%.0fpx in a second)"
 			% instance.global_position.x)
 	instance.free()
@@ -749,19 +780,16 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 
 func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
-	var guard := EventInstance.new()
-	guard.setup(hot, Vector2.ZERO)
-	t.add_child(guard)
-	guard.set_process(false)
+	var guard := _drawn_at_the_origin(t, hot)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, her, STEP)
 	t.check(guard.barrier_post.chaser_side() != 0 and guard.is_standing_for_its_notice(),
 			"the guard on her side has noticed her and stands for his notice")
-	t.check((guard.look as RoadblockLook).chaser_pictures() == EventPictures.GUARD_ALERT_BY_VIEW, "hand raised")
+	t.check(_is_drawn_from(await _drawn_from(t, guard), EventPictures.GUARD_ALERT_BY_VIEW), "hand raised")
 	var post := guard.global_position
 	_hold(guard, her, hot.pursuit.warns_for - 0.2)
 	t.check(guard.global_position.is_equal_approx(post)
-			and (guard.look as RoadblockLook).chaser_pictures() == EventPictures.GUARD_ALERT_BY_VIEW,
+			and _is_drawn_from(await _drawn_from(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
 			"at his post, hand raised, through his warning")
 	# Out of his radius he is back at the band, and both guards stand at their posts again.
 	_hold(guard, Vector2(0.0, hot.notice_within() + 10.0), STEP)
@@ -770,11 +798,11 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 			"out of his radius he stands at the band again, its body under him")
 	_hold(guard, her, STEP)
 	t.check(guard.is_standing_for_its_notice()
-			and (guard.look as RoadblockLook).chaser_pictures() == EventPictures.GUARD_ALERT_BY_VIEW,
+			and _is_drawn_from(await _drawn_from(t, guard), EventPictures.GUARD_ALERT_BY_VIEW),
 			"and back inside it he raises his hand again")
 	_hold(guard, her, hot.pursuit.warns_for + 0.2)
 	t.check(not guard.is_telegraphing()
-			and (guard.look as RoadblockLook).chaser_pictures() == EventPictures.GUARD_LUNGING_BY_VIEW,
+			and _is_drawn_from(await _drawn_from(t, guard), EventPictures.GUARD_LUNGING_BY_VIEW),
 			"then, his warning run with her still inside his radius, he lunges")
 	guard.free()
 

@@ -28,7 +28,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ## where its collision body is pinned (`PursuitSpec.leaves_its_body`), and the other guard still
 ## stands
 ##   at his post beside it. `guard_alert_*`, hand raised, while he stands at that post for his
-##   notice (`chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
+##   notice (`_chaser_pictures()`), and `guard_lunging_*` once he is actually giving chase —
 ##   each read from his own travel heading through `_draw_eight_view()`, so he turns to face where
 ##   he is going rather than only mirroring east/west *(PLAYTEST-128: "the masked pursuer and the
 ##   heated roadblock guard face where they are heading")*.
@@ -76,12 +76,12 @@ func _draw_the_chaser(canvas: CanvasItem) -> void:
 	# His own small shadow — not the band's — so `_draw_eight_view()` below is asked not to draw
 	# one of its own; see that function's own doc comment.
 	_draw_shadow(canvas, Vector2.ZERO, EventPictures.GUARD_SHADOW_RADIUS)
-	_draw_eight_view(chaser_pictures(), event.facing_now(), canvas, false, {}, false)
+	_draw_eight_view(_chaser_pictures(), event.facing_now(), canvas, false, {}, false)
 
 ## The hunting roadblock's guard who set off, by stage: his alert, hand raised, while he stands at
 ## his post for his notice (`is_standing_for_its_notice()`), his lunge once he gives chase, and his
 ## standing picture as he walks away when the chase is over.
-func chaser_pictures() -> Dictionary:
+func _chaser_pictures() -> Dictionary:
 	if event.is_standing_for_its_notice():
 		return EventPictures.GUARD_ALERT_BY_VIEW
 	if event.is_telegraphing() or event.is_leaving:

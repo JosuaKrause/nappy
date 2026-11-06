@@ -132,7 +132,7 @@ func _settle_the_notice() -> void:
 ## rider is one or the other for its whole ride. **The picture is all it changes**: the def, the
 ## field, the lethal radius, the speed and the cost are the row's own either way, and nothing reads
 ## it but the drawing and the telemetry (`logged_name()` and the pelican's own `EventBus` signals).
-## Meaningless on any look but `CYCLIST`. See `FigureLook.rider_pictures()`.
+## Meaningless on any look but `CYCLIST`. See `FigureLook._rider_pictures()`.
 var is_pelican := false
 
 ## What every run log line and every GoatCounter event calls a pelican, in place of its row's own

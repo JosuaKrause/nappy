@@ -158,7 +158,9 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 	var picture := ""
 	match def.look:
 		EventDef.Look.CYCLIST:
-			var rider := (instance.look as FigureLook).rider_pictures()
+			var rider := [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B] \
+					if instance.is_pelican \
+					else [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
 			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
 			picture = instance.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())

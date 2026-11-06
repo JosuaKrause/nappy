@@ -215,7 +215,7 @@ static var _warning_sizes := {}
 
 ## The world rect a roadblock's guard fills with his hand raised, standing at the post on `her` side
 ## of a band at `band_at` laid along `vertical` — what his warning draws
-## (`RoadblockLook.chaser_pictures()`), at the widest and tallest of its views, standing on his
+## (`RoadblockLook._chaser_pictures()`), at the widest and tallest of its views, standing on his
 ## feet.
 static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
 	var feet := band_at + guard_post_offset(vertical, guard_side_toward(vertical, her - band_at))
