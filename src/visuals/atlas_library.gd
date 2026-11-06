@@ -93,9 +93,6 @@ var _moments_claimed := false
 var _window: StringName = &""
 ## Groups held for the life of the process, each holding exactly one reference of its own.
 var _resident: Dictionary = {}
-## Group -> the moment its page was last read from disk in. What a test reads instead of
-## provoking the error.
-var _load_moments: Dictionary = {}
 ## Region name -> the `AtlasTexture` handed out for it while its group is acquired, so a draw
 ## call's `region()` is one lookup. Each page lists the names it handed out, and its last release
 ## drops them from here.
@@ -448,10 +445,6 @@ func moment_for_a_load() -> StringName:
 		return MOMENT_UNMANAGED
 	return _window if _window != &"" else MOMENT_OUTSIDE
 
-## The moment `group`'s page was last read from disk in, or `&""` if it has never been read.
-func last_load_moment(group: StringName) -> StringName:
-	return _load_moments.get(group, &"")
-
 ## Takes the one reference that keeps `group` resident for the life of the process, and does
 ## nothing if it is already held. **This is what makes "nothing is unloaded that the next day
 ## might need" true by construction**: a consumer's own `_exit_tree()` release can then only ever
@@ -472,10 +465,6 @@ func stop_holding(group: StringName) -> void:
 		return
 	_resident.erase(group)
 	release(group)
-
-## Whether `group` is one of the pages held for the life of the process.
-func is_resident(group: StringName) -> bool:
-	return _resident.has(group)
 
 # --------------------------------------------------------------- the lifetime ---
 
@@ -502,7 +491,6 @@ func acquire(group: StringName) -> void:
 		return
 	page.texture = texture
 	page.loaded_at_usec = started
-	_load_moments[group] = moment
 	# Written before the error below, so an offending load is in the log whichever way the run
 	# ends. `texture` is the kind docs/TELEMETRY.md already gives to "when a picture was loaded
 	# and what it cost".

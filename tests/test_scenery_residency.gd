@@ -108,8 +108,6 @@ func _test_residency_follows_the_view(t, seed_value: int) -> void:
 	building.powered = false
 	building.neighbor_window_col = 2
 	building.posters = {1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}
-	var changed: Array[Vector2i] = [map.world_to_tile(target.get_center())]
-	city.close_ground(changed)
 	seed(91234)
 	var expected_rng := randi()
 	seed(91234)
@@ -513,11 +511,11 @@ func _test_pending(t, seed_value: int) -> void:
 	ground.prepare_step(key)
 	t.check(ground.pending[key].layer.get_instance_id() == identity,
 			"resuming preparation keeps one owner for the unfinished region")
-	# Mutate an already-prepared tile, not merely an untouched later quadrant.
-	var changed: Array[Vector2i] = [key * SceneryGround.CHUNK_TILES]
-	city.close_ground(changed)
+	# The residency cancels a job whose region leaves the retention ring; cancelling frees the
+	# unfinished layer rather than publishing its cells.
+	ground.cancel(key)
 	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
-			"live ground changes free incomplete state rather than publishing stale cells")
+			"cancelling an unfinished region frees its state rather than publishing stale cells")
 	ground.prepare_step(key)
 	ground.prepare(key)
 	t.check(ground.chunks.has(key) and not ground.pending.has(key),
@@ -560,8 +558,7 @@ func _test_pending(t, seed_value: int) -> void:
 				and ground.pending[key].layer.get_instance_id() == pending_id,
 				"unfinished regions pause with the same allocation inside the retention ring")
 		city.scenery.view = view
-		var edit: Array[Vector2i] = [key * SceneryGround.CHUNK_TILES]
-		city.close_ground(edit)
+		ground.cancel(key)
 		city.scenery.update(view)
 		t.check(not ground.pending.has(key) and not ground.chunks.has(key),
 				"canceling a job cannot bypass its region's process-frame step fence")
@@ -585,7 +582,7 @@ func _check_chunk(t, city: City, key: Vector2i) -> void:
 			var tile := Vector2i(x, y)
 			var source := city.scenery_ground_source(tile)
 			if source == GroundTiles.WATER:
-				t.check(city.scenery_ground.has_water(tile), "completed region preserves separate water cells")
+				t.check(GroundWater.at(city.scenery_ground, tile), "completed region preserves separate water cells")
 			else:
 				t.check(city.scenery_ground.get_cell_source_id(tile) == source,
 						"completed region matches the current independent source lookup")
@@ -604,7 +601,7 @@ func _check_coverage(t, city: City, view: Rect2) -> void:
 			var tile := Vector2i(x, y)
 			var source := city.scenery_ground_source(tile)
 			if source == GroundTiles.WATER:
-				wrong += int(not city.scenery_ground.has_water(tile))
+				wrong += int(not GroundWater.at(city.scenery_ground, tile))
 			elif source >= 0:
 				wrong += int(city.scenery_ground.get_cell_source_id(tile) != source)
 				checked += 1

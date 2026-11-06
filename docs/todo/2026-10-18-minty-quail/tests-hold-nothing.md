@@ -65,7 +65,7 @@ a test; `test_events_costs.gd:553` (`spoiled_days >= 10` of 13) may be seed-sens
 **Kept on purpose, not findings:** guards that a sweep was not vacuous, orderings between two
 constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_memory_log()` setup
 (kept with its reason in `tests-unseen-reads.md`), and the atlas library's accounting, which
-`tests-unseen-reads.md`'s atlas build handles.
+`tests-unseen-reads.md` says what is left of.
 
 ## The findings, by suite
 
@@ -99,19 +99,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_acts.gd:330` and `:335` | "act %d has its own cast", "act III is cooler than act I" | restates a design decision | Palette tints per act are colour/look, which verify's policy says is checked by eye ("Not tested: layout, colour"). Goes red only when the palette is retuned. Line 330 (all four tints distinct) is the milder case | medium
 
-**`test_atlas_events.gd`**
-
-- `test_atlas_events.gd:154` | "the normal dog and the gallop draw fifteen and ten pictures (%d)" (`pictures.size() == 25`) | restates a design decision | A literal picture count of two looks; red only when a frame is added or removed. The next loop (every listed picture has a transfer file) is the real claim | medium
-
-**`test_atlas_loading.gd`**
-
-- `test_atlas_loading.gd:87` | "the indicators name the UI's own group" (`Stroller.INDICATOR_ATLAS == &"ui"`) | restates a design decision | Constant against its literal. The property that matters, "the indicators' regions are baked on the UI's page", is asserted on line 93 via `group_of(name) == &"ui"`, so this one only goes red when the name is changed. | high
-- `test_atlas_loading.gd:62` and `:78` | "the rig's pictures are spread over three groups (%d)" / "the pram's five views are the shared group" | restates a design decision | Counts of groups and of pram views against literals; the neighbouring checks (every source baked, on exactly one page, equal parent counts) hold the property, and adding a sixth pram view would fail 78 without breaking anything. | medium
-
-**`test_atlas_stroller_crowd.gd`**
-
-- `test_atlas_stroller_crowd.gd:156` | `body != trim` / `body_b != trim_b` for every walker view, and `:163` for every car view | CANNOT-FAIL (table check) | Compares two constant tables (`WalkerLook.BODY_BY_VIEW` vs `TRIM_BY_VIEW`, `CarLook.*`) for inequality of region names. The comment's concern (a bake folding body and trim into one region) is not what this checks: two different names can still be one region, and one name per table cannot be equal by accident. It would only fail on a typo that copies a name between the tables. | medium
-
 **`test_baby_world.gd`**
 
 - `test_baby_world.gd:40` (`_test_a_baby_answers_for_the_world_she_is_handed`, checks at 44 and 46) | "set_world() is the world she then reads" / "and a null world is a world taken away" | cannot fail | Sets a world on a `Baby` and asserts `world()` hands back the value the test just set; a plain setter/getter pair. The real handing (`main` calling `_baby.set_world(map.world)`) is already checked from a boot by `_test_the_escape_hands_her_the_building_then_the_city` (line 50) and `_test_an_ordinary_boot_hands_her_the_city` (line 143). | high
@@ -119,11 +106,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_barrier_stays.gd`**
 
 - `test_barrier_stays.gd:192-214` (`_test_the_barrier_costs_nothing_while_he_walks_away`, whole function) and `:139` (`current_intensity() == 0.0`) | "the barrier costs nothing beside it on any leaving frame" / "nor after it, as a roadblock's band never does" | duplicate | `finale_rig.gd:525-592` (`_test_a_roadblock_band_costs_nothing`) walks the same roadblock through posted, warning, charging, walking away, gone and streamed back, and asserts `strongest == 0.0` on every frame including the leaving ones; its 531 check asserts the row's intensity is 0.0. The two suites test the same behavior of the same component (`excitement.contribution_at` on a roadblock band). | medium
-
-**`test_blackout.gd`**
-
-- test_blackout.gd:280-283 `_test_the_dark_spine_is_crossed_on_the_horn` | "the horn %.2fs covers the spine's %.0fpx of carriageway doubled" (`CAR_HORN_TIME >= required_horn_time()`) | duplicate | Exactly the first check of `_test_the_traffic_contract_is_fair` in tests/crowd_rig.gd:514. It builds no city, darkens nothing and reads nothing about the blackout, so it cannot fail for any blackout reason. The whole function is the finding; delete it. | high
-- test_blackout.gd:370 and 374 `_test_the_building_is_dark_too` | `stairs.r > stairs.g * 2.0` and `hallway.get_luminance() < 0.6` | restates a design decision | Colour numbers read back from `Palette` ("not tested, checked by eye: colour"); they go red when the palette is retuned, not when lighting selection breaks. The part-by-part equality checks (`== Palette.ESCAPE_GLOOM`, `== ESCAPE_EMERGENCY_RED`, basement darker than hallway, flash lifts hallway but not stairs) are the real ones. | medium
 
 **`test_bollards.gd`**
 
@@ -228,10 +210,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - test_give_way.gd:34-37 `_test_the_stop_line_is_a_setback_short` | "the line is the setback short of what it stops for" (`GiveWay.stop_line(100.0) == 100.0 - Tuning.CAR_STOP_LINE_SETBACK`) | cannot fail (tautology) | The assertion is the function's body retyped. The second check (`stop_line(1.0) < 0.0`) is a real edge case and is worth keeping. | medium
 
-**`test_ground_floor.gd`**
-
-- `test_ground_floor.gd:828` and `:844` (inside `_test_roof_extension_rows_reads_back_per_column` and `_test_extension_is_seamless_reads_back_per_column`) | "column %d: extension_rows() reads roof_extension_rows back exactly" / "extension_is_seamless() reads roof_extension_seamless back exactly" | cannot fail | Assert an accessor returns the field the test just wrote by hand. The out-of-range checks next to them (830-831, 846-847) are real; the per-column read-back loops are not. | medium
-
 **`test_ground_layers.gd`**
 
 - test_ground_layers.gd:114-145 `_test_directional_component_pairs_match_ground_tiles` (with `_check_directional_layers`) | "source %d has its GroundTiles direction and component rotation" | restates a design decision | A literal 22-row table (source id -> component, rotation) compared to the same table in `ground_layers.json`; it never reads `GroundTiles` for the direction it names, so it can go red only when the JSON or the table is edited, and every such edit is made together. If the intent is "the rotated component agrees with the tile's direction", derive the expected rotation from `GroundTiles`; otherwise delete. | medium
@@ -253,11 +231,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 - `test_home_block.gd:157` | `_test_her_building_is_the_same_across_two_seeds` | DUPLICATE | `_test_every_home_block_building_is_the_same_across_two_seeds` (test_home_block.gd:188) compares floor count, variant, window pictures, scenery residency and roof furniture for all three home-block lots, her lot included. Only `columns()` and the "roof too shallow" explanation are extra. | medium
 - `test_home_block.gd:145` | `short_rects.size() == 3` | RESTATES | The count of lots the home block carves into; the equality of the rect lists on the next line is the property. | medium
 
-**`test_interior.gd`**
-
-- test_interior.gd:162-166 (in `_test_the_exit_and_the_entrance_are_what_they_claim`) | "the map records exactly one barricaded entrance", "the barricaded entrance is not a walkable kind at all" | restates a design decision | `entrance_tiles.size() == 1` and `not InteriorTile.is_walkable(ENTRANCE_DOOR)` read the map's authoring back. `_test_collision_blocks_exactly_the_non_walkable_ground` (:256) and `_test_every_walkable_tile_is_reachable...` (:179) test what walkability is for. | medium
-- test_interior.gd:1642-1665 `_test_one_blow_of_steam_costs_forty_to_fifty_points` | "one blow costs 40 to 50 points awake at %.0fpx" | restates a design decision | A band on a balance outcome (`cost >= 40 and <= 50`); it goes red when steam or the telegraph is rebalanced, not when what the number is for breaks (the nearby `_test_no_pocket_between_two_vents_outlasts_the_noise` and `_test_a_vent_never_closes_around_her` hold the fairness reasons). It also prints rather than relating the cost to a meter limit. | medium
-
 **`test_interior_masked_man.gd`**
 
 - test_interior_masked_man.gd:167-171 (inside `_test_she_has_to_run_to_the_first_floor_door`) | "he comes %.1fpx from her centre on the tick (%.1fpx pinned)" (`absf(closest - _TIGHTEST_RUNNER_CLOSEST) < 0.5`, with `_TIGHTEST_RUNNER_CLOSEST := 36.4`) | restates a design decision | A measured figure of the escape's geometry pinned to half a pixel; it goes red on any stairwell, speed or collision tweak even when the margin is still fair. The part that holds the contract is the other half of the same condition, `closest > EventCatalogue.MASKED_PURSUER_CATCH`. Tighten to that inequality (optionally with a minimum margin) and drop the literal. | medium
@@ -265,10 +238,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_loss_cause.gd`**
 
 - test_loss_cause.gd:_test_a_day_lost_to_the_pelican_names_the_pelican, third check "a car is still a car" | `hard_fail_suffix("car_strike") == "car"` | duplicate | Same call, same value as the first check of `_test_hard_fail_cause_suffix` (:21) and again in `_test_the_cause_by_result` (`car_strike` -> "car"). | medium
-
-**`test_main.gd`**
-
-- `test_main.gd:1138` | "the window is 500ms" (`ReturnWindow.IGNORED_MSEC == 500`) | restates a design decision | Reads the constant back against its literal. The behaviour is checked on the next lines (a press inside the window is ignored, the same press after it counts), which uses the constant, so a retune moves both and breaks nothing the player feels. | high
 
 **`test_orientation.gd`**
 
@@ -382,10 +351,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_scene_recipe_task.gd`**
 
 - `test_scene_recipe_task.gd:272-297` (`_test_the_task_scenes_start_off_an_unread_mark`, whole function), `:303-318` (`_test_the_door_scenes_show_the_robber_a_done_task_sends`, whole function), `:343-348` (last check of `_test_an_authored_mast_carries_its_own_id`) | "%s starts off the mark" / "%s lists the street the robber starts on" / "the two-mast scene stands two masts under two ids" | restates a design decision | These load the authored `scene-recipes/*.json` files and assert facts about their contents (the start anchor is not the mark, an observation is at tick 1, `draft.include` is non-empty). No game code is exercised; they are red only when a recipe file is edited, and the second says in its own comment that the headless scene play (`tools/scene-recipes.sh`) answers the question and this "keeps either from being dropped". That is a lint of authored data, not a behavior. Could move into the recipe validator (`SceneRecipeRuntime.validate_runtime`) if the rule is wanted. | medium
-
-**`test_scenery_animation.gd`**
-
-- `test_scenery_animation.gd:150` | "the rotor display is centered in the generated housing's circular opening" (`VENT_ROTOR_RECT.get_center()` vs `Vector2(29, 22)`) | restates a design decision | Pixel coordinates of an art registration restated; red only when the art is redrawn, and the picture is a look question (checked by eye). Line 148 (runtime crop equals the authored viewBox) is the real contract and stays | medium
 
 **`test_seals.gd`**
 

@@ -16,17 +16,14 @@ src/autoload/telemetry.gd SHOTS_PER_DAY
 src/autoload/telemetry.gd begin_memory_log
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS
 src/city/building.gd VENT_ROTOR_SOURCE_RECT
-src/city/city.gd close_ground
 src/city/city.gd home_door_is_sealed
 src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
 src/city/marble_bag.gd rig_spaced
-src/city/poster_art.gd region_names
 src/city/scenery_ground.gd get_cell_atlas_coords
 src/city/scenery_ground.gd get_cell_source_id
 src/city/scenery_ground.gd get_used_cells
-src/city/scenery_ground.gd has_water
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/crowd/crowd.gd set_focus
 src/crowd/crowd.gd signals_for_tests
@@ -58,7 +55,6 @@ src/events/views/roadblock_look.gd far_guard_node
 src/events/views/spread_look.gd attach_nodes
 src/interior/interior_map.gd PARTS
 src/interior/interior_map_plan.gd inner_floor_approaches
-src/interior/interior_tileset.gd region_name_for
 src/player/baby.gd set_stroller
 src/player/stroller.gd indicator_sources
 src/resistance/cordon_tape.gd body_rect
@@ -88,11 +84,8 @@ src/telemetry/frame_ledger.gd DRAWS_SCENERY
 src/ui/frame_graph.gd classes
 src/visuals/atlas_library.gd illustrated_path_for
 src/visuals/atlas_library.gd is_acquired
-src/visuals/atlas_library.gd is_resident
-src/visuals/atlas_library.gd last_load_moment
 src/visuals/atlas_library.gd reference_count
 src/visuals/atlas_library.gd region_name_for
-src/visuals/atlas_table.gd region_names
 src/visuals/ground_recipe.gd reads
 src/world/chase_way.gd sweep_under_way
 src/world/draw_layer.gd layer_of
@@ -247,7 +240,6 @@ src/player/baby.gd overflow_mass
 src/player/stroller.gd baby_cue_aside
 src/player/stroller.gd baby_cue_lift
 src/player/stroller.gd sources_by_group
-src/player/stroller.gd stroller_sources
 src/resistance/contact_point.gd draws_a_mark
 src/resistance/contact_point.gd would_complete_at
 src/resistance/happenings.gd cordon
