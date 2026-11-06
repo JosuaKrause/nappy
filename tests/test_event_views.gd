@@ -123,7 +123,6 @@ const VEHICLE_SIDE_FACES_WEST := {
 }
 
 func run(t) -> void:
-	_test_eight_view_by_sector_matches_convention(t)
 	_test_select_view_holds_and_mirrors(t)
 	_test_select_view_zero_heading_holds(t)
 	await _test_cafe_sitters_face_their_own_tables(t)
@@ -133,8 +132,6 @@ func run(t) -> void:
 	await _test_a_spread_covers_the_ground_its_body_closes(t)
 	_test_roadwork_barrier_follows_alley_axis(t)
 	_test_family_dictionaries_are_complete(t)
-	_test_animal_side_view_reuses_the_canonical_source(t)
-	_test_vehicle_side_view_reuses_the_canonical_source(t)
 	_test_people_views_are_five_distinct_pictures(t)
 	_test_vehicle_views_are_five_distinct_pictures(t)
 	_test_state_pairs_stay_visually_distinct(t)
@@ -153,7 +150,6 @@ func run(t) -> void:
 	_test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t)
 	_test_no_guard_who_arrives_charging_takes_the_alert(t)
 	_test_vehicle_views_match_facings_csv_per_sector(t)
-	_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t)
 	_test_kerb_parked_vans_keep_their_axis_chosen_view(t)
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
@@ -167,13 +163,6 @@ func _heading_for_sector(sector: int) -> Vector2:
 	return Vector2.from_angle(deg_to_rad(sector * 45.0))
 
 # ------------------------------------------------------------------- the selector wiring ---
-
-func _test_eight_view_by_sector_matches_convention(t) -> void:
-	for sector in range(8):
-		t.check(EventPictures.EIGHT_VIEW_BY_SECTOR[sector] == EXPECTED_VIEW[sector],
-				"sector %d names the %s view" % [sector, EXPECTED_VIEW[sector]])
-		t.check(EightDirection.is_mirrored(sector) == EXPECTED_MIRRORED[sector],
-				"sector %d mirrors according to the west convention" % sector)
 
 ## `select_view()` is what every `_draw_*` below reads instead of repeating
 ## `EightDirection.update()` and the table lookup itself — this pins that wiring once, over all
@@ -446,22 +435,9 @@ func _test_roadwork_barrier_follows_alley_axis(t) -> void:
 func _test_family_dictionaries_are_complete(t) -> void:
 	for name in FAMILY_DICTS:
 		var by_view: Dictionary = FAMILY_DICTS[name]
-		t.check(by_view.size() == 5, "%s carries exactly five authored views" % name)
 		for view in EXPECTED_VIEW:
 			t.check(by_view.has(view) and by_view[view] != null,
 					"%s has a resolving %s view" % [name, view])
-
-func _test_animal_side_view_reuses_the_canonical_source(t) -> void:
-	for name in ANIMAL_SIDE_REUSE:
-		var by_view: Dictionary = FAMILY_DICTS[name]
-		t.check(by_view["side"] == ANIMAL_SIDE_REUSE[name],
-				"%s's side view is the same picture as its existing canonical source" % name)
-
-func _test_vehicle_side_view_reuses_the_canonical_source(t) -> void:
-	for name in VEHICLE_SIDE_REUSE:
-		var by_view: Dictionary = FAMILY_DICTS[name]
-		t.check(by_view["side"] == VEHICLE_SIDE_REUSE[name],
-				"%s's side view is the same picture as its existing canonical source" % name)
 
 ## The people families' five views are freshly authored rather than reusing an old flat picture —
 ## `busker.svg` and `busker_side.svg` differ on disk, unlike the animal and vehicle families above —
@@ -777,7 +753,6 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 	guard.setup(hot, Vector2.ZERO)
 	t.add_child(guard)
 	guard.set_process(false)
-	guard.look.attach_nodes()
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	_hold(guard, her, STEP)
 	t.check(guard.barrier_post.chaser_side() != 0 and guard.is_standing_for_its_notice(),
@@ -953,37 +928,6 @@ func _test_vehicle_views_match_facings_csv_per_sector(t) -> void:
 					"%s sector %d mirrors %s per facings.csv (got %s)"
 					% [name, sector, expected_mirror[sector], mirror])
 		instance.free()
-
-## M56's original hand-written `match` in `_draw_riot_van()`, transcribed as literal data
-## independent of `EXPECTED_VIEW`/`EIGHT_VIEW_BY_SECTOR` above, so a later change to either of those
-## shared tables cannot silently change what the night raid's van draws without this test noticing.
-## The texture per sector is exactly what the hand-written match once picked; the mirror at
-## sectors 0 (E) and 4 (W) is corrected from it, since `riot_van.svg` is authored facing west
-## (`facings.csv`) and the hand-written match had those two sectors backwards — every other sector
-## draws a front/back/diagonal view, which `side_faces_west` never touches, so it is pinned exactly
-## as the original match had it.
-const RIOT_VAN_OCTANT_TEXTURE := [
-	EventPictures.RIOT_VAN, EventPictures.RIOT_VAN_FRONT_DIAGONAL, EventPictures.RIOT_VAN_FRONT,
-	EventPictures.RIOT_VAN_FRONT_DIAGONAL, EventPictures.RIOT_VAN,
-	EventPictures.RIOT_VAN_BACK_DIAGONAL, EventPictures.RIOT_VAN_BACK,
-	EventPictures.RIOT_VAN_BACK_DIAGONAL,
-]
-const RIOT_VAN_OCTANT_MIRROR: Array[bool] = [true, false, false, true, false, true, false, false]
-
-func _test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror(t) -> void:
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("night_raid"), Vector2.ZERO)
-	for sector in range(8):
-		instance.look.face(_heading_for_sector((sector + 4) % 8))
-		var view := instance.look.select_view(_heading_for_sector(sector))
-		var mirror := instance.look.is_mirrored()
-		if view == "side":
-			mirror = not mirror
-		t.check(EventPictures.RIOT_VAN_BY_VIEW[view] == RIOT_VAN_OCTANT_TEXTURE[sector],
-				"sector %d draws the same texture the hand-written match once did" % sector)
-		t.check(mirror == RIOT_VAN_OCTANT_MIRROR[sector],
-				"sector %d mirrors per facings.csv, corrected from the hand-written match" % sector)
-	instance.free()
 
 ## `delivery_van` and `ice_cream_van` are always sited facing east — `AT_THE_KERB` never sets
 ## `EventScheduler.Planned.facing` away from its own default — so binding them onto the shared

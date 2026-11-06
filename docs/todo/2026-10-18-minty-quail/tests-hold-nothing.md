@@ -64,7 +64,7 @@ a test; `test_events_costs.gd:553` (`spoiled_days >= 10` of 13) may be seed-sens
 **Kept on purpose, not findings:** guards that a sweep was not vacuous, orderings between two
 constants, checks that pin a bug that shipped, the run log's `Telemetry.begin_memory_log()` setup
 (kept with its reason in `tests-unseen-reads.md`), and the atlas library's accounting, which
-`tests-unseen-reads.md`'s atlas build handles.
+`tests-unseen-reads.md` says what is left of.
 
 ## The findings, by suite
 
@@ -98,19 +98,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_acts.gd:330` and `:335` | "act %d has its own cast", "act III is cooler than act I" | restates a design decision | Palette tints per act are colour/look, which verify's policy says is checked by eye ("Not tested: layout, colour"). Goes red only when the palette is retuned. Line 330 (all four tints distinct) is the milder case | medium
 
-**`test_atlas_events.gd`**
-
-- `test_atlas_events.gd:154` | "the normal dog and the gallop draw fifteen and ten pictures (%d)" (`pictures.size() == 25`) | restates a design decision | A literal picture count of two looks; red only when a frame is added or removed. The next loop (every listed picture has a transfer file) is the real claim | medium
-
-**`test_atlas_loading.gd`**
-
-- `test_atlas_loading.gd:87` | "the indicators name the UI's own group" (`Stroller.INDICATOR_ATLAS == &"ui"`) | restates a design decision | Constant against its literal. The property that matters, "the indicators' regions are baked on the UI's page", is asserted on line 93 via `group_of(name) == &"ui"`, so this one only goes red when the name is changed. | high
-- `test_atlas_loading.gd:62` and `:78` | "the rig's pictures are spread over three groups (%d)" / "the pram's five views are the shared group" | restates a design decision | Counts of groups and of pram views against literals; the neighbouring checks (every source baked, on exactly one page, equal parent counts) hold the property, and adding a sixth pram view would fail 78 without breaking anything. | medium
-
-**`test_atlas_stroller_crowd.gd`**
-
-- `test_atlas_stroller_crowd.gd:156` | `body != trim` / `body_b != trim_b` for every walker view, and `:163` for every car view | CANNOT-FAIL (table check) | Compares two constant tables (`WalkerLook.BODY_BY_VIEW` vs `TRIM_BY_VIEW`, `CarLook.*`) for inequality of region names. The comment's concern (a bake folding body and trim into one region) is not what this checks: two different names can still be one region, and one name per table cannot be equal by accident. It would only fail on a typo that copies a name between the tables. | medium
-
 **`test_baby_world.gd`**
 
 - `test_baby_world.gd:40` (`_test_a_baby_answers_for_the_world_she_is_handed`, checks at 44 and 46) | "set_world() is the world she then reads" / "and a null world is a world taken away" | cannot fail | Sets a world on a `Baby` and asserts `world()` hands back the value the test just set; a plain setter/getter pair. The real handing (`main` calling `_baby.set_world(map.world)`) is already checked from a boot by `_test_the_escape_hands_her_the_building_then_the_city` (line 50) and `_test_an_ordinary_boot_hands_her_the_city` (line 143). | high
@@ -118,11 +105,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_barrier_stays.gd`**
 
 - `test_barrier_stays.gd:192-214` (`_test_the_barrier_costs_nothing_while_he_walks_away`, whole function) and `:139` (`current_intensity() == 0.0`) | "the barrier costs nothing beside it on any leaving frame" / "nor after it, as a roadblock's band never does" | duplicate | `finale_rig.gd:525-592` (`_test_a_roadblock_band_costs_nothing`) walks the same roadblock through posted, warning, charging, walking away, gone and streamed back, and asserts `strongest == 0.0` on every frame including the leaving ones; its 531 check asserts the row's intensity is 0.0. The two suites test the same behavior of the same component (`excitement.contribution_at` on a roadblock band). | medium
-
-**`test_blackout.gd`**
-
-- test_blackout.gd:280-283 `_test_the_dark_spine_is_crossed_on_the_horn` | "the horn %.2fs covers the spine's %.0fpx of carriageway doubled" (`CAR_HORN_TIME >= required_horn_time()`) | duplicate | Exactly the first check of `_test_the_traffic_contract_is_fair` in tests/crowd_rig.gd:514. It builds no city, darkens nothing and reads nothing about the blackout, so it cannot fail for any blackout reason. The whole function is the finding; delete it. | high
-- test_blackout.gd:370 and 374 `_test_the_building_is_dark_too` | `stairs.r > stairs.g * 2.0` and `hallway.get_luminance() < 0.6` | restates a design decision | Colour numbers read back from `Palette` ("not tested, checked by eye: colour"); they go red when the palette is retuned, not when lighting selection breaks. The part-by-part equality checks (`== Palette.ESCAPE_GLOOM`, `== ESCAPE_EMERGENCY_RED`, basement darker than hallway, flash lifts hallway but not stairs) are the real ones. | medium
 
 **`test_bollards.gd`**
 
@@ -159,17 +141,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_day_loop.gd:303-306` | "resistance progress never goes negative" | unreachable setup | Already dropped by PR #1096 (setup is `RunState.penalise_resistance`, called by no game path). Listed so the owning build does not lose it | high
 - `test_day_loop.gd:371-372` and `:386-388` | "nothing is remembered yet on day 1" / "and tomorrow is the day that reads it" (`run.calendar.settled_yesterday()`) | unreachable setup (dead API) | `RunCalendar.settled_yesterday()` (run_calendar.gd:66) has no caller in `src/`; the game reads `settled_this_act()` instead. The test asserts a function no game path calls, and its message ("the day that reads it") is false. The neighbouring checks on `run.settled.settled_in` (373, 383) hold the real behaviour and stay. Searched `rg settled_yesterday src` and found only the definition | high
-
-**`test_event_behaviours.gd`**
-
-- `test_event_behaviours.gd:54` (`_test_a_row_is_composed_of_what_its_data_says`) | "a pursuer chases and has a man's stop...", "a mother holds her and does not chase", "the unmarked van takes a bystander..." | restates a design decision | Asserts which behaviour objects each catalogue row's data produces (`robber.pursuit != null`, `mother.hold != null`, ...). That is the catalogue table read back through the constructor; every behaviour round-trip test below it would go red if a row lost its behaviour. | medium
-
-**`test_event_views.gd`**
-
-- test_event_views.gd:171-176 `_test_eight_view_by_sector_matches_convention` | "sector %d names the %s view", "sector %d mirrors according to the west convention" | duplicate + restates a table | Same two assertions as test_car_views.gd:53-58 (`CarLook.VIEW_BY_SECTOR` vs `EXPECTED_VIEW`, `EightDirection.is_mirrored` vs `EXPECTED_MIRRORED`); `EightDirection.is_mirrored` is tested twice, and each is a table compared to its retyped copy. `_test_select_view_holds_and_mirrors` (:181) tests the behaviour. | medium
-- test_event_views.gd:434-440 `_test_family_dictionaries_are_complete` first check | "%s carries exactly five authored views" (`by_view.size() == 5`) | restates a design decision | The literal 5 is the view count restated; the per-view `has(view) and != null` check beneath it is the real completeness check. | medium
-- test_event_views.gd:442-455 `_test_animal_side_view_reuses_the_canonical_source`, `_test_vehicle_side_view_reuses_the_canonical_source` | "%s's side view is the same picture as its existing canonical source" | restates a design decision | `ANIMAL_SIDE_REUSE`/`VEHICLE_SIDE_REUSE` are the test's own copy of which constant each family reuses; red only if someone repoints a picture on purpose. | medium
-- test_event_views.gd:961-978 `_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror` | "sector %d draws the same texture the hand-written match once did" | restates a design decision | A literal transcription of the van's table (`RIOT_VAN_OCTANT_TEXTURE`, `RIOT_VAN_OCTANT_MIRROR`); `_test_vehicle_views_match_facings_csv_per_sector` makes the same per-sector texture-and-mirror check from `facings.csv` for the other vehicles. Medium because the comment frames it as protection against edits to the shared table, which is a "you changed a table" failure. | medium
 
 **`test_events_catalogue.gd`**
 
@@ -210,11 +181,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_events_scheduler.gd:560` | "day %d: the game's spec keeps %.2f of the walls" (`spec.wall_row_share == 1.0 if day < REGION_WALL_FIRST_DAY else GATEHOUSE_DAY_WALL_ROW_SHARE`) | restates a design decision | Reads the `DaySpec` table back against the two constants it is built from; the behavioural relation is the next checks (the thinned day is the full day minus walls; share within tolerance), which stay | medium
 
-**`test_fire_truck_body.gd`**
-
-- `test_fire_truck_body.gd:89` | `_test_the_row_is_a_car_with_the_engines_body` (`reach()*2 == 58.0`, `radius*2 == 26.0`, `telegraph_time > 0 and warned_first`, `obstructs_radius == 0.0 and not hard_fail`) | RESTATES | Pixel dimensions of the engine's body and the row's flags, with the SVG coordinates they were copied from in the message. Red only when the row or the art is edited on purpose. `reach() < inner_radius` in the same function is a relation and stays. | high
-- `test_fire_truck_body.gd:513` | `_test_a_loss_to_it_names_its_own_cause` (`Texts.HARD_FAIL_TEXT["fire_truck"]` contains "fire engine", differs from the patrol's and the car's; `hard_fail_suffix == "fire-truck"`) | RESTATES | Table lookups in `Texts` and `LossCause` read back; the three strings are not behaviour. | medium
-
 **`test_frame_graph.gd`**
 
 - `test_frame_graph.gd:80` | `_test_a_bars_class_is_fixed_when_it_is_pushed` | CANNOT-FAIL | The comment concedes it: "With the lines fixed the answer could not change anyway". A graph that classed at draw time would give the same `classes()` answers because `classify()` depends on fixed lines only, so the test passes with either implementation. It names a player report but pins nothing that could differ. | medium
@@ -226,10 +192,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_give_way.gd`**
 
 - test_give_way.gd:34-37 `_test_the_stop_line_is_a_setback_short` | "the line is the setback short of what it stops for" (`GiveWay.stop_line(100.0) == 100.0 - Tuning.CAR_STOP_LINE_SETBACK`) | cannot fail (tautology) | The assertion is the function's body retyped. The second check (`stop_line(1.0) < 0.0`) is a real edge case and is worth keeping. | medium
-
-**`test_ground_floor.gd`**
-
-- `test_ground_floor.gd:828` and `:844` (inside `_test_roof_extension_rows_reads_back_per_column` and `_test_extension_is_seamless_reads_back_per_column`) | "column %d: extension_rows() reads roof_extension_rows back exactly" / "extension_is_seamless() reads roof_extension_seamless back exactly" | cannot fail | Assert an accessor returns the field the test just wrote by hand. The out-of-range checks next to them (830-831, 846-847) are real; the per-column read-back loops are not. | medium
 
 **`test_ground_layers.gd`**
 
@@ -252,11 +214,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 - `test_home_block.gd:157` | `_test_her_building_is_the_same_across_two_seeds` | DUPLICATE | `_test_every_home_block_building_is_the_same_across_two_seeds` (test_home_block.gd:188) compares floor count, variant, window pictures, scenery residency and roof furniture for all three home-block lots, her lot included. Only `columns()` and the "roof too shallow" explanation are extra. | medium
 - `test_home_block.gd:145` | `short_rects.size() == 3` | RESTATES | The count of lots the home block carves into; the equality of the rect lists on the next line is the property. | medium
 
-**`test_interior.gd`**
-
-- test_interior.gd:162-166 (in `_test_the_exit_and_the_entrance_are_what_they_claim`) | "the map records exactly one barricaded entrance", "the barricaded entrance is not a walkable kind at all" | restates a design decision | `entrance_tiles.size() == 1` and `not InteriorTile.is_walkable(ENTRANCE_DOOR)` read the map's authoring back. `_test_collision_blocks_exactly_the_non_walkable_ground` (:256) and `_test_every_walkable_tile_is_reachable...` (:179) test what walkability is for. | medium
-- test_interior.gd:1642-1665 `_test_one_blow_of_steam_costs_forty_to_fifty_points` | "one blow costs 40 to 50 points awake at %.0fpx" | restates a design decision | A band on a balance outcome (`cost >= 40 and <= 50`); it goes red when steam or the telegraph is rebalanced, not when what the number is for breaks (the nearby `_test_no_pocket_between_two_vents_outlasts_the_noise` and `_test_a_vent_never_closes_around_her` hold the fairness reasons). It also prints rather than relating the cost to a meter limit. | medium
-
 **`test_interior_masked_man.gd`**
 
 - test_interior_masked_man.gd:167-171 (inside `_test_she_has_to_run_to_the_first_floor_door`) | "he comes %.1fpx from her centre on the tick (%.1fpx pinned)" (`absf(closest - _TIGHTEST_RUNNER_CLOSEST) < 0.5`, with `_TIGHTEST_RUNNER_CLOSEST := 36.4`) | restates a design decision | A measured figure of the escape's geometry pinned to half a pixel; it goes red on any stairwell, speed or collision tweak even when the margin is still fair. The part that holds the contract is the other half of the same condition, `closest > EventCatalogue.MASKED_PURSUER_CATCH`. Tighten to that inequality (optionally with a minimum margin) and drop the literal. | medium
@@ -264,10 +221,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_loss_cause.gd`**
 
 - test_loss_cause.gd:_test_a_day_lost_to_the_pelican_names_the_pelican, third check "a car is still a car" | `hard_fail_suffix("car_strike") == "car"` | duplicate | Same call, same value as the first check of `_test_hard_fail_cause_suffix` (:21) and again in `_test_the_cause_by_result` (`car_strike` -> "car"). | medium
-
-**`test_main.gd`**
-
-- `test_main.gd:1138` | "the window is 500ms" (`ReturnWindow.IGNORED_MSEC == 500`) | restates a design decision | Reads the constant back against its literal. The behaviour is checked on the next lines (a press inside the window is ignored, the same press after it counts), which uses the constant, so a retune moves both and breaks nothing the player feels. | high
 
 **`test_orientation.gd`**
 
@@ -292,17 +245,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_player_presentation.gd`**
 
 - `test_player_presentation.gd:34` | "the presentation is the run stream's equal two-way draw" | cannot fail (tautology) | Re-derives the expected value with the very same call the code under test makes (`run_rng("player-presentation").randi_range(0, 1) == 1`, `game_state.gd:86`); it can only differ if the stream name is changed in one place. The replay and retain-the-choice checks on lines 41 and 43, and the both-families guard on line 44, are the property. | medium
-
-**`test_police_car.gd`**
-
-- test_police_car.gd:93-109 `_test_the_patrol_is_a_car_at_every_heat` | "police_patrol drives...", "its body is a capsule laid along its heading", "it closes no ground and is no hard fail", "heat %d's patrol is the same car", "a duplicated patrol ... still drives" | restates a design decision | Reads the catalogue row's fields back (`vehicle != null`, `shape.kind == SEGMENT`, `obstructs_radius == 0`, `hard_fail == false`); red only if the row is edited. What the row means is tested by the behaviour tests that follow (stops at her side, solid beside her, lethal in front). | medium
-- test_police_car.gd:683-697 `_test_its_caret_stands_over_its_picture` | "its caret clears the picture's bottom by %.1fpx, as on any row" | restates a design decision | `usual` re-derives the caret placement formula from `MARK_HEIGHT`, `MARK_WIDTH`, the swell and `10.0`/`0.55`/`0.45`; a change to the shared caret formula turns it red though nothing about the police car broke. Cues are checked by eye per the testing policy. | medium
-
-**`test_pursuer_on_foot.gd`**
-
-- `test_pursuer_on_foot.gd:124`, `:138`, `:139` (in `_test_the_two_rows_are_the_task_robbers_chase_in_a_uniform`) | "'%s' draws its own look", "'%s' ends the day when he catches her", reach equal | restates a design decision | `def.look == looks[id]` and `def.hard_fail` restate table entries. The relationship checks beside them (`chase_speed`, `offscreen_notice`, `duration` equal to the robber's) stay. | medium
-- `test_pursuer_on_foot.gd:363` (`_test_his_catch_ends_the_day_with_its_own_line`, 365) | "'%s' is a hard fail" | restates a design decision | `EventCatalogue.by_id(id).hard_fail` against true; the loss line check on 367 is the behaviour. | medium
-- `test_pursuer_on_foot.gd:790` | "'%s' hunts on foot, with two men" (`cold.hunts.lets_out == 2`) | restates a design decision | Count of men per van restated from the row; `_test_a_hunting_van_waits_for_its_men` (833, `officers_owed() == 2`) and the stops-and-lets-men-out test (906) already run the behaviour. | medium
 
 **`test_regions.gd`**
 
@@ -334,10 +276,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_return_patrols.gd:117-126` (`_test_owed_count_per_act`, whole function) | "day %d (act %d) owes %d return patrol(s)" | restates a design decision | `owed() == EventDirector.RETURN_PATROLS_PER_ACT[act - 1]` reads the table back to itself (the doc comment states `[0, 0, 2, 3]`). `test_tuning_fairness.gd:84-88` already guards the table's shape. The behaviour this table drives is checked by the walking tests below (`_test_each_patrol_comes_within_its_rigged_bag` 229, `_test_a_marble_spent_unmet...` 258). | high
 - `test_return_patrols.gd:140` | "the one batch is the whole of act IV's count" | restates a design decision | `once == RETURN_PATROLS_PER_ACT[3]`: the same table read back. The no-second-batch check above it (137) is the real one. | medium
-
-**`test_route_bag.gd`**
-
-- `test_route_bag.gd:133` (`_test_a_spaced_rig_comes_after_its_bag_and_no_sooner`, whole function) | "seed %d: bags of %d, 1 and %d", "the dog is drawn sixth and not before", "...hold the ordinary set exactly" | unreachable setup | `MarbleBag.rig_spaced()` (`src/city/marble_bag.gd:204`) has no caller anywhere in `src/` (only this test and a sentence in `docs/EVENTS.md`); the game rigs only through `MarbleBag.rig()` (`event_director.gd:325, 501, 863`). Game path looked for: `EventDirector.rig_her_route()` and the day 3 lesson, both call `rig()`. Either `rig_spaced` is dead code (remove both) or something should call it. | high
 
 **`test_route_lines.gd`**
 
@@ -381,10 +319,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_scene_recipe_task.gd`**
 
 - `test_scene_recipe_task.gd:272-297` (`_test_the_task_scenes_start_off_an_unread_mark`, whole function), `:303-318` (`_test_the_door_scenes_show_the_robber_a_done_task_sends`, whole function), `:343-348` (last check of `_test_an_authored_mast_carries_its_own_id`) | "%s starts off the mark" / "%s lists the street the robber starts on" / "the two-mast scene stands two masts under two ids" | restates a design decision | These load the authored `scene-recipes/*.json` files and assert facts about their contents (the start anchor is not the mark, an observation is at tick 1, `draft.include` is non-empty). No game code is exercised; they are red only when a recipe file is edited, and the second says in its own comment that the headless scene play (`tools/scene-recipes.sh`) answers the question and this "keeps either from being dropped". That is a lint of authored data, not a behavior. Could move into the recipe validator (`SceneRecipeRuntime.validate_runtime`) if the rule is wanted. | medium
-
-**`test_scenery_animation.gd`**
-
-- `test_scenery_animation.gd:150` | "the rotor display is centered in the generated housing's circular opening" (`VENT_ROTOR_RECT.get_center()` vs `Vector2(29, 22)`) | restates a design decision | Pixel coordinates of an art registration restated; red only when the art is redrawn, and the picture is a look question (checked by eye). Line 148 (runtime crop equals the authored viewBox) is the real contract and stays | medium
 
 **`test_seals.gd`**
 

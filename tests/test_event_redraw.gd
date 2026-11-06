@@ -544,11 +544,12 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
 	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT)
 	t.check(not _never_settles(instance), "an idle van is gated like any other vehicle")
-	instance.abduction.take_now()
+	instance.player_at = instance.global_position
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(_never_settles(instance), "a van mid-take is never gated")
 	instance.abduction.stop()
+	instance.player_at = Vector2.INF
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")
 	t.check(_asks(instance),

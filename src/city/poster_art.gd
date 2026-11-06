@@ -69,16 +69,6 @@ const OVER_OFFSET := Vector2(4.0, 0.0)
 ## `kind * TEARS + tear` -> the composed `ImageTexture`. Built once by `prepare()`.
 var _torn: Dictionary = {}
 
-## Every region name this class draws, for the bake check in `tests/test_atlas_leaf_consumers.gd`.
-static func region_names() -> Array[StringName]:
-	var names: Array[StringName] = []
-	for kind: int in SHEETS:
-		names.append(SHEETS[kind])
-	names.append(WANTED_CROSSED)
-	names.append_array(TEAR_MASKS)
-	names.append_array(TEAR_OVERLAYS)
-	return names
-
 ## The intact sheet for `kind`, a region on the held `buildings` page — the crossed wanted notice in
 ## place of the plain one once the neighbor has been taken (`neighbor_taken`).
 static func sheet(atlas: AtlasLibrary, kind: int, neighbor_taken: bool) -> Texture2D:
