@@ -201,7 +201,6 @@ src/ui/entity_halo.gd trace_offsets
 src/ui/frame_graph.gd classify
 src/ui/pause_screen.gd body_for
 src/ui/screen_orientation.gd rotation_transform
-src/web_display.gd dpr_cap
 src/world/draw_layer.gd z_of
 src/world/excitement_source.gd expected_impact_at
 src/world/excitement_source.gd will_be_lethal
@@ -233,6 +232,7 @@ src/ui/mode_button.gd use_clock  # a hand-in: the game uses its default, a test 
 src/ui/return_window.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/ui/title_screen.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/ui/touch_controls.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
+src/web_display.gd dpr_cap  # a hand-in: apply() calls it with the engine's own answer to whether this is a Web export (the default of on_web) and hands the result to JavaScriptBridge, which does nothing outside a web export, so no desktop run takes the branch that caps; a test hands the answer and reads the cap (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 
 # [kept] Kept public because nothing outside can confirm the behavior (inbox #1098 in curly-rabbit), or
 # because the check misreads the line (name how: a game reader through a string, a test's own fake, an
