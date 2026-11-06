@@ -13,7 +13,7 @@ func run(t) -> void:
 	_test_the_mean_is_the_windows_own_mean(t)
 	_test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t)
 	_test_a_hidden_graph_records_nothing(t)
-	_test_a_bars_class_is_fixed_when_it_is_pushed(t)
+	_test_the_classes_age_out_with_their_frames(t)
 	_test_clear_empties_the_ring(t)
 	_test_parse_layers_accepts_six_and_still_rejects_four(t)
 
@@ -73,27 +73,21 @@ func _test_a_hidden_graph_records_nothing(t) -> void:
 	t.check(is_equal_approx(graph.mean(), 0.0), "and the mean of an empty ring is 0.0, not a stale reading")
 	graph.free()
 
-## A frame's colour is decided once, when it is pushed, and stored — not re-derived at draw time.
-## *(2026-09-14, the player: "I see things on the left side changing (notably adding yellow lines
-## after the fact)".)* With the lines fixed the answer could not change anyway, so the check is
-## that the stored classes exist, stay in step with the frames, and read what `classify()` says.
-func _test_a_bars_class_is_fixed_when_it_is_pushed(t) -> void:
+## The stored classes age out with the frames they colour: past the window, both arrays hold the
+## same last 240. *(2026-09-14, the player: "I see things on the left side changing (notably adding
+## yellow lines after the fact)".)* A class decided at push time cannot change afterwards, since
+## `classify()` reads fixed lines only; what a stored class could still get wrong is falling out of
+## step with its frame when the ring trims.
+func _test_the_classes_age_out_with_their_frames(t) -> void:
 	var graph := FrameGraph.new()
-	for i in range(10):
+	for i in range(300):
 		graph.push(0.010)
 	graph.push(0.025)
-	var at_push: int = graph.classes()[10]
-	t.check(at_push == FrameGraph.FrameClass.COSTLY,
-			"25ms pushed after ten 10ms frames is classed costly at the moment it is pushed")
-	for i in range(100):
-		graph.push(0.030)
-	t.check(graph.classes()[10] == FrameGraph.FrameClass.COSTLY,
-			"the bar keeps the class it was given when pushed, however the window moved since")
-	t.check(graph.classes()[0] == FrameGraph.FrameClass.NORMAL and graph.classes()[11] == FrameGraph.FrameClass.COSTLY,
-			"a 10ms bar is ordinary and a 30ms bar is costly, each by the fixed lines alone")
 	t.check(graph.classes().size() == graph.frames().size(),
-			"and the classes stay in step with the frames (%d against %d)"
+			"the classes stay in step with the frames past the window (%d against %d)"
 			% [graph.classes().size(), graph.frames().size()])
+	t.check(graph.classes()[graph.classes().size() - 1] == FrameGraph.FrameClass.COSTLY,
+			"and the newest bar keeps the class it was pushed with")
 	graph.free()
 
 ## `clear()` is what `DebugReadout._toggle_debug_layer()` calls when the `6` key turns the layer off — the

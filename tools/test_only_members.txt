@@ -92,12 +92,10 @@ src/autoload/game_save.gd file_data
 src/autoload/game_save.gd has_save
 src/autoload/game_save.gd moment_result
 src/autoload/game_save.gd uses_save
-src/autoload/game_state.gd run_rng
 src/autoload/visit_counter.gd charger_counter_name
 src/autoload/visit_counter.gd listen
 src/autoload/visit_counter.gd send_through
 src/build_info.gd commit_text
-src/build_info.gd source_commit
 src/city/blackout.gd go_dark
 src/city/blackout.gd is_dark
 src/city/building.gd civic_entrance_cols
@@ -159,7 +157,6 @@ src/dev/debug_layers.gd field_runs
 src/dev/debug_layers.gd open_runs
 src/dev/dev_flags.gd parse_ground_mode
 src/dev/dev_flags.gd parse_layers
-src/dev/dev_flags.gd parse_nerves
 src/dev/dev_flags.gd parse_parent
 src/dev/dev_rig.gd nearest_walkable
 src/dev/dev_rig.gd pavement_offset
@@ -291,8 +288,6 @@ src/run/summary_model.gd resistance_tally
 src/run_config.gd day_length_override
 src/sprites.gd base_transform_of
 src/sprites.gd mirrored_transform
-src/telemetry/frame_cost.gd physics_ms
-src/telemetry/frame_cost.gd process_ms
 src/telemetry/frame_ledger.gd last_slow
 src/telemetry/frame_ledger.gd overwritten
 src/telemetry/frame_ledger.gd slow_frames
@@ -333,7 +328,6 @@ src/ui/touch_controls.gd covered_screen
 src/ui/touch_controls.gd current_heading
 src/ui/touch_controls.gd heading_to
 src/ui/touch_controls.gd in_dead_zone
-src/ui/touch_controls.gd is_double_tap
 src/ui/touch_controls.gd is_in_stop_band
 src/ui/touch_controls.gd is_on_run_side
 src/ui/touch_controls.gd run_button_center
