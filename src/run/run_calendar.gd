@@ -62,10 +62,6 @@ var hard_mode := false
 ## Not in the run snapshot, for the same reason as `hard_mode`: a top-level save key of its own.
 var checkpoint: Dictionary = {}
 
-## Where she settled yesterday, or `Vector2i(-1, -1)` if she did not settle at all.
-func settled_yesterday() -> Vector2i:
-	return settled.settled_in.get(header.day - 1, Vector2i(-1, -1))
-
 ## Every calm area she has used **so far this act**, most recent first, today excluded.
 ##
 ## **The act, not last night.** Remembering one night spoils one park, which makes day 2 a fresh

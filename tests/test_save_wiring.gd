@@ -585,7 +585,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	_shut(t, main)
 	t.check(is_instance_valid(indicator) and SaveIndicator.carried(sitting) == indicator,
 			"so the reload does not free it, and the escape's boot adopts it")
-	t.check(is_instance_valid(indicator) and indicator.is_showing() and not indicator.shows_struck(),
+	t.check(is_instance_valid(indicator) and indicator.is_showing() and Boot.save_symbol_plain(indicator),
 			"still shown, not struck, for day 14's save after the reload")
 	if is_instance_valid(indicator):
 		indicator.free()
@@ -607,7 +607,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 	t.check(timeline.pending == 1,
 			"day 14's late answer settles day 14's save, not the escape's")
 	EventBus.save_write_settled.emit(escape, false)
-	t.check(parked.indicator.shows_struck() and timeline.pending == 0,
+	t.check(Boot.save_symbol_struck(parked.indicator) and timeline.pending == 0,
 			"so the escape's failure afterwards still strikes the symbol")
 	timeline.advance(SaveIndicator.MIN_STRUCK_SECONDS - 0.1)
 	t.check(timeline.alpha() == 1.0, "fully, for its ten seconds")
@@ -651,7 +651,7 @@ func _test_a_desktop_save_is_shown_at_once_and_begun_once(t) -> void:
 	var timeline := parked.timeline
 	t.check(timeline.pending == 0 and not timeline.is_idle(),
 			"a desktop save is answered at once and the symbol is already showing")
-	t.check(not timeline.struck and not parked.indicator.shows_struck(), "showing the plain picture")
+	t.check(not timeline.struck and Boot.save_symbol_plain(parked.indicator), "showing the plain picture")
 	t.check(heard == [int(GameSave.Result.CONFIRMED)], "a write announces what it came to")
 	t.check(timeline.begun == 1, "and the symbol began once for it, not a second time by main")
 	t.check(parked.indicator.is_showing() and timeline.pending == 0,
