@@ -366,8 +366,7 @@ cases_finish() {
 # by ten times or more on both.
 # A timed case runs alone: it waits for every case started before it and runs in this shell, with
 # nothing of the suite's own beside it, since a bound measured next to --jobs other cases measures
-# their load rather than the hook's walk (run among them, most of the long cases went past their
-# bounds).
+# their load rather than the hook's walk.
 assert_decided_in_time() {
     cases_finish
     assert_decided_in_time_now "$@"
@@ -3475,8 +3474,8 @@ write_guard_allowed=(
 #     missing agents directory (the other arm of the same ||), and local identities through
 #     neither, so the condition fails there and every write denies. Those are three paths, and
 #     each runs its write cases whole: both arrays in the two ask modes, and write_guard_never_asked
-#     with local identities, where it shows that no write which must stay denied is allowed
-#     outright before the environment is ever consulted.
+#     with local identities, the machine an agent works on, where a write that must stay denied
+#     is denied by that failed mode test rather than by the list of askable writes.
 write_guard_switch=1
 for write_guard_cmd in "${write_guard_never_asked[@]}"; do
     assert_write_guard "local identities: $write_guard_cmd -> deny" deny "$write_guard_cmd"
