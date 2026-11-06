@@ -221,6 +221,89 @@ func _rig_player(t, at: Vector2) -> Stroller:
 	player.global_position = at
 	return player
 
+## The cities a sweep relocates a mark over every mark tile of (`_relocations_over_the_marks()`): the
+## six the sweeps over bare maps asked, kept whole since they found real bugs (brisk-moose #1130),
+## 2295276695 among them, the seed M100's robber stuck in a building was found on. Between them they
+## hold every kind of mark tile the game has — one in from either end of a through-alley, and the
+## courtyard passages, of which a city has only two to four: a one-tile passage, whose mark stands on
+## the courtyard's own first tile, and a passage into an apartment complex's wider court, which the
+## courtyard sweep checks it met. A relocation is a tick, so the six cost a city build each.
+const SWEEP_SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
+
+## **A relocation, the way a played day makes one** (`ResistanceDirector.tick()`): her stroller set
+## down at `here`, the day's mark unseen (the director is handed no sight, so nothing she passes is
+## noticed) and more than `NOTICE_RADIUS` from her, and one tick, which moves the mark to the mark
+## tile nearest her that every refusal of the day's placement leaves alone and stands its guard for
+## her standing at `here`, or leaves it where it stood when no tile qualifies. Where the mark stands
+## within `NOTICE_RADIUS` of `here`, she first stands at the first of `away` (world points) more than
+## twice that from `here` whose tick moves it out there. Answers where the mark stands after her tick
+## at `here`, or `Vector2.INF` when that tick did not move it.
+func _relocate_round(director: ResistanceDirector, player: Stroller, here: Vector2,
+		away: Array[Vector2]) -> Vector2:
+	for far in away:
+		if director.contact_position().distance_to(here) > ResistanceDirector.NOTICE_RADIUS:
+			break
+		if far.distance_to(here) > ResistanceDirector.NOTICE_RADIUS * 2.0:
+			player.global_position = far
+			director.tick(STEP)
+	var before := director.contact_position()
+	if before.distance_to(here) <= ResistanceDirector.NOTICE_RADIUS:
+		return Vector2.INF
+	player.global_position = here
+	director.tick(STEP)
+	var after := director.contact_position()
+	return after if after.distance_to(before) > 0.5 else Vector2.INF
+
+## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.mark_guard()`
+## among the test city's instances), or `Vector2.INF` when none stands, or more than one.
+func _marks_guard_feet() -> Vector2:
+	var guards := _live(EventCatalogue.mark_guard().id)
+	return guards[0].global_position if guards.size() == 1 else Vector2.INF
+
+## **Every mark tile of the city of `seed_value`, relocated to in turn** (`_relocate_round()`), on
+## day 7 in a run of its own with nothing in her view and no event of the day's own in the street, so
+## the one robber there is the mark's guard: one entry per tile, `{"tile", "her", "mark", "guard"}`,
+## where she stood for it (`her_at.call(map, tile)`), where her tick put the mark (`Vector2.INF` when
+## it did not move) and the guard's feet after it (`_marks_guard_feet()`). The relocation is the one
+## placement a tick makes, so a sweep asks the director's rule of a hundred tiles in a few
+## milliseconds; the city is the test's, freed by the next build or `_free_city()`.
+func _relocations_over_the_marks(t, seed_value: int, her_at: Callable) -> Array[Dictionary]:
+	var run := _build_city_in_a_new_run(t, seed_value)
+	run.resistance.completed_steps = _completed_through(2)
+	_look_at(Rect2())
+	var director := _director(t)
+	director.start_day(7, _rng(7, "resistance", seed_value), 300.0)
+	var player := _rig_player(t, director.contact_position())
+	director.use_player(player)
+	var tiles := _mark_tiles()
+	var away: Array[Vector2] = []
+	for tile in tiles:
+		away.append(_city.map.tile_to_world(tile))
+	var found: Array[Dictionary] = []
+	for tile in tiles:
+		var her: Vector2 = her_at.call(_city.map, tile)
+		var mark := _relocate_round(director, player, her, away)
+		found.append({"tile": tile, "her": her, "mark": mark, "guard": _marks_guard_feet()})
+	player.free()
+	director.free()
+	return found
+
+## Where she stands to have a mark relocated onto `tile` with nothing about her refusing its guard:
+## four tiles out from it through its mouth, on the ground beyond the mouth, so the mark tile is the
+## one nearest her (its twin across a two-tile alley is farther, another alley's across the street)
+## and its guard, further in, is past his notice of her (`EventDef.notice`) even at a small
+## courtyard's inner end. The tile's own centre when it has no mouth beside it.
+static func _outside_its_mouth(map: CityMap, tile: Vector2i) -> Vector2:
+	for step: Vector2i in [Vector2i.UP, Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT]:
+		var mouth := tile + step
+		if AlleyMarks.is_a_mouth(map, mouth) and AlleyMarks.mark_tile_of_mouth(map, mouth) == tile:
+			return map.tile_to_world(tile + step * 4)
+	return map.tile_to_world(tile)
+
+## Where she stands to have a mark relocated onto `tile` with her on it: its own centre.
+static func _on_the_tile(map: CityMap, tile: Vector2i) -> Vector2:
+	return map.tile_to_world(tile)
+
 ## The world position of a through-alley tile where a mark stands (one in from a mouth) more than
 ## `min_distance` from `at`, or `Vector2.INF`
 ## if the test city has none. Used to put her far enough from the mark that the re-placement

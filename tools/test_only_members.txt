@@ -29,11 +29,6 @@ src/events/views/event_look.gd drawn_rect_now
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/resistance/resistance_director.gd guard_position
-src/resistance/resistance_director.gd nearest_alley_among
-src/resistance/resistance_director.gd nearest_alley_within
-src/resistance/resistance_director.gd place_contact
-src/resistance/resistance_director.gd weighted_mast_index
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
