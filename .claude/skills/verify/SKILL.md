@@ -448,7 +448,8 @@ internals where the outside behaviour is what matters, and those are examples, n
   pull request that fixes a member deletes its line. A file move carries its
   lines: an added line passes when a line of the same group with the same member name is removed in the
   same diff and git reports its file as renamed to the added line's file, each removed line pairing with
-  one added line. A listed member that is renamed is the moment to fix it (or to put it in a kept line
+  one added line; before a commit git sees the move only once the moved file is tracked (`git mv`,
+  or `git add` it first). A listed member that is renamed is the moment to fix it (or to put it in a kept line
   with its reason), never to carry its line. A
   `[kept]` group takes a new line, and the check fails one with no reason after its `#`; whether the
   reason holds (the player's exception, a hand-in, a line the check misreads) is the reviewer's to
