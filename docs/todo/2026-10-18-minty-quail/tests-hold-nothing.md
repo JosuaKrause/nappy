@@ -143,17 +143,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 - `test_day_loop.gd:303-306` | "resistance progress never goes negative" | unreachable setup | Already dropped by PR #1096 (setup is `RunState.penalise_resistance`, called by no game path). Listed so the owning build does not lose it | high
 - `test_day_loop.gd:371-372` and `:386-388` | "nothing is remembered yet on day 1" / "and tomorrow is the day that reads it" (`run.calendar.settled_yesterday()`) | unreachable setup (dead API) | `RunCalendar.settled_yesterday()` (run_calendar.gd:66) has no caller in `src/`; the game reads `settled_this_act()` instead. The test asserts a function no game path calls, and its message ("the day that reads it") is false. The neighbouring checks on `run.settled.settled_in` (373, 383) hold the real behaviour and stay. Searched `rg settled_yesterday src` and found only the definition | high
 
-**`test_event_behaviours.gd`**
-
-- `test_event_behaviours.gd:54` (`_test_a_row_is_composed_of_what_its_data_says`) | "a pursuer chases and has a man's stop...", "a mother holds her and does not chase", "the unmarked van takes a bystander..." | restates a design decision | Asserts which behaviour objects each catalogue row's data produces (`robber.pursuit != null`, `mother.hold != null`, ...). That is the catalogue table read back through the constructor; every behaviour round-trip test below it would go red if a row lost its behaviour. | medium
-
-**`test_event_views.gd`**
-
-- test_event_views.gd:171-176 `_test_eight_view_by_sector_matches_convention` | "sector %d names the %s view", "sector %d mirrors according to the west convention" | duplicate + restates a table | Same two assertions as test_car_views.gd:53-58 (`CarLook.VIEW_BY_SECTOR` vs `EXPECTED_VIEW`, `EightDirection.is_mirrored` vs `EXPECTED_MIRRORED`); `EightDirection.is_mirrored` is tested twice, and each is a table compared to its retyped copy. `_test_select_view_holds_and_mirrors` (:181) tests the behaviour. | medium
-- test_event_views.gd:434-440 `_test_family_dictionaries_are_complete` first check | "%s carries exactly five authored views" (`by_view.size() == 5`) | restates a design decision | The literal 5 is the view count restated; the per-view `has(view) and != null` check beneath it is the real completeness check. | medium
-- test_event_views.gd:442-455 `_test_animal_side_view_reuses_the_canonical_source`, `_test_vehicle_side_view_reuses_the_canonical_source` | "%s's side view is the same picture as its existing canonical source" | restates a design decision | `ANIMAL_SIDE_REUSE`/`VEHICLE_SIDE_REUSE` are the test's own copy of which constant each family reuses; red only if someone repoints a picture on purpose. | medium
-- test_event_views.gd:961-978 `_test_riot_van_reproduces_its_octant_table_with_the_corrected_side_mirror` | "sector %d draws the same texture the hand-written match once did" | restates a design decision | A literal transcription of the van's table (`RIOT_VAN_OCTANT_TEXTURE`, `RIOT_VAN_OCTANT_MIRROR`); `_test_vehicle_views_match_facings_csv_per_sector` makes the same per-sector texture-and-mirror check from `facings.csv` for the other vehicles. Medium because the comment frames it as protection against edits to the shared table, which is a "you changed a table" failure. | medium
-
 **`test_events_catalogue.gd`**
 
 - `test_events_catalogue.gd:104` | `_test_what_a_picture_once_decided_is_row_data` ("%s is set on %s and nothing else", the dog/robber `warning_picture` line, the policeman/guardsman `noun`/`noun_plural` line) | RESTATES | Lists which catalogue rows carry which flag, which warning picture and which noun strings. It is the catalogue table copied into the test; it goes red only when a row is edited on purpose, and then the test is edited with it. Nothing it names can break without the row being changed. | high
@@ -192,11 +181,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 **`test_events_scheduler.gd`**
 
 - `test_events_scheduler.gd:560` | "day %d: the game's spec keeps %.2f of the walls" (`spec.wall_row_share == 1.0 if day < REGION_WALL_FIRST_DAY else GATEHOUSE_DAY_WALL_ROW_SHARE`) | restates a design decision | Reads the `DaySpec` table back against the two constants it is built from; the behavioural relation is the next checks (the thinned day is the full day minus walls; share within tolerance), which stay | medium
-
-**`test_fire_truck_body.gd`**
-
-- `test_fire_truck_body.gd:89` | `_test_the_row_is_a_car_with_the_engines_body` (`reach()*2 == 58.0`, `radius*2 == 26.0`, `telegraph_time > 0 and warned_first`, `obstructs_radius == 0.0 and not hard_fail`) | RESTATES | Pixel dimensions of the engine's body and the row's flags, with the SVG coordinates they were copied from in the message. Red only when the row or the art is edited on purpose. `reach() < inner_radius` in the same function is a relation and stays. | high
-- `test_fire_truck_body.gd:513` | `_test_a_loss_to_it_names_its_own_cause` (`Texts.HARD_FAIL_TEXT["fire_truck"]` contains "fire engine", differs from the patrol's and the car's; `hard_fail_suffix == "fire-truck"`) | RESTATES | Table lookups in `Texts` and `LossCause` read back; the three strings are not behaviour. | medium
 
 **`test_frame_graph.gd`**
 
@@ -263,17 +247,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_player_presentation.gd:34` | "the presentation is the run stream's equal two-way draw" | cannot fail (tautology) | Re-derives the expected value with the very same call the code under test makes (`run_rng("player-presentation").randi_range(0, 1) == 1`, `game_state.gd:86`); it can only differ if the stream name is changed in one place. The replay and retain-the-choice checks on lines 41 and 43, and the both-families guard on line 44, are the property. | medium
 
-**`test_police_car.gd`**
-
-- test_police_car.gd:93-109 `_test_the_patrol_is_a_car_at_every_heat` | "police_patrol drives...", "its body is a capsule laid along its heading", "it closes no ground and is no hard fail", "heat %d's patrol is the same car", "a duplicated patrol ... still drives" | restates a design decision | Reads the catalogue row's fields back (`vehicle != null`, `shape.kind == SEGMENT`, `obstructs_radius == 0`, `hard_fail == false`); red only if the row is edited. What the row means is tested by the behaviour tests that follow (stops at her side, solid beside her, lethal in front). | medium
-- test_police_car.gd:683-697 `_test_its_caret_stands_over_its_picture` | "its caret clears the picture's bottom by %.1fpx, as on any row" | restates a design decision | `usual` re-derives the caret placement formula from `MARK_HEIGHT`, `MARK_WIDTH`, the swell and `10.0`/`0.55`/`0.45`; a change to the shared caret formula turns it red though nothing about the police car broke. Cues are checked by eye per the testing policy. | medium
-
-**`test_pursuer_on_foot.gd`**
-
-- `test_pursuer_on_foot.gd:124`, `:138`, `:139` (in `_test_the_two_rows_are_the_task_robbers_chase_in_a_uniform`) | "'%s' draws its own look", "'%s' ends the day when he catches her", reach equal | restates a design decision | `def.look == looks[id]` and `def.hard_fail` restate table entries. The relationship checks beside them (`chase_speed`, `offscreen_notice`, `duration` equal to the robber's) stay. | medium
-- `test_pursuer_on_foot.gd:363` (`_test_his_catch_ends_the_day_with_its_own_line`, 365) | "'%s' is a hard fail" | restates a design decision | `EventCatalogue.by_id(id).hard_fail` against true; the loss line check on 367 is the behaviour. | medium
-- `test_pursuer_on_foot.gd:790` | "'%s' hunts on foot, with two men" (`cold.hunts.lets_out == 2`) | restates a design decision | Count of men per van restated from the row; `_test_a_hunting_van_waits_for_its_men` (833, `officers_owed() == 2`) and the stops-and-lets-men-out test (906) already run the behaviour. | medium
-
 **`test_regions.gd`**
 
 - `test_regions.gd:525` (first check of `_test_wall_crossing_posts_four_guards`) | "a catalogue roadblock still posts two guards (%d)" | restates a design decision | `guard_sides.size() == 2` is the table; the per-wall counts in the loop (`street_walls.size() == per_wall * ...`, `total_guards == 4`) are derived from it and also restate "a wall stands three bodies / four guards" (546, 561). Would go red only on a design change to the crossing's make-up. | medium
@@ -304,10 +277,6 @@ Each line: where | the check | its kind | why | the audit's confidence.
 
 - `test_return_patrols.gd:117-126` (`_test_owed_count_per_act`, whole function) | "day %d (act %d) owes %d return patrol(s)" | restates a design decision | `owed() == EventDirector.RETURN_PATROLS_PER_ACT[act - 1]` reads the table back to itself (the doc comment states `[0, 0, 2, 3]`). `test_tuning_fairness.gd:84-88` already guards the table's shape. The behaviour this table drives is checked by the walking tests below (`_test_each_patrol_comes_within_its_rigged_bag` 229, `_test_a_marble_spent_unmet...` 258). | high
 - `test_return_patrols.gd:140` | "the one batch is the whole of act IV's count" | restates a design decision | `once == RETURN_PATROLS_PER_ACT[3]`: the same table read back. The no-second-batch check above it (137) is the real one. | medium
-
-**`test_route_bag.gd`**
-
-- `test_route_bag.gd:133` (`_test_a_spaced_rig_comes_after_its_bag_and_no_sooner`, whole function) | "seed %d: bags of %d, 1 and %d", "the dog is drawn sixth and not before", "...hold the ordinary set exactly" | unreachable setup | `MarbleBag.rig_spaced()` (`src/city/marble_bag.gd:204`) has no caller anywhere in `src/` (only this test and a sentence in `docs/EVENTS.md`); the game rigs only through `MarbleBag.rig()` (`event_director.gd:325, 501, 863`). Game path looked for: `EventDirector.rig_her_route()` and the day 3 lesson, both call `rig()`. Either `rig_spaced` is dead code (remove both) or something should call it. | high
 
 **`test_route_lines.gd`**
 

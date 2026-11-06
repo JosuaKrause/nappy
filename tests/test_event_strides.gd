@@ -320,7 +320,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(not instance.look.victim_gait_is_stepping(), "no take is running yet")
 	instance.player_at = instance.global_position
-	instance.abduction.take_now()
+	instance.abduction.step(0.0)
 	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false
 	var steps := int(instance.def.abduction.taken_over / STEP)

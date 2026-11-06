@@ -20,7 +20,6 @@ src/city/city.gd home_door_is_sealed
 src/city/city_map.gd is_post
 src/city/city_map.gd is_soft_sealed
 src/city/city_state.gd changed_on
-src/city/marble_bag.gd rig_spaced
 src/city/scenery_ground.gd get_cell_atlas_coords
 src/city/scenery_ground.gd get_cell_source_id
 src/city/scenery_ground.gd get_used_cells
@@ -34,18 +33,12 @@ src/crowd/traffic_index.gd entry_count
 src/dev/debug_layers.gd body_outline_count
 src/dev/rig_lock.gd has_a_deadline
 src/dev/walk_plan.gd smoothed_turns
-src/events/behaviours/event_abduction.gd take_now
 src/events/behaviours/event_barrier_post.gd has_its_far_guard_posted
-src/events/behaviours/event_car_driving.gd is_standing
 src/events/behaviours/event_departure.gd plan_the_rest_again
-src/events/behaviours/event_investigation.gd has_investigated
-src/events/behaviours/event_investigation.gd has_seen_her
 src/events/checkpoint_controller.gd crossing_door
 src/events/checkpoint_controller.gd guard_after_her
 src/events/event_instance.gd charger_name
-src/events/event_instance.gd its_officer
 src/events/event_manager.gd walks_under_a_boom
-src/events/events_ahead.gd sent_pursuer
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd attach_nodes
 src/events/views/event_look.gd drawn_rect_now
@@ -213,7 +206,6 @@ src/events/event_scheduler.gd street_bag
 src/events/event_spawner.gd obstructed_footprint
 src/events/events_ahead.gd a_pursuer_is_after_her
 src/events/views/event_look.gd mark_colour
-src/events/views/event_look.gd mark_rect
 src/events/views/event_look.gd mark_swell
 src/events/views/event_look.gd wants_a_mark
 src/events/views/figure_look.gd charging_dog_pictures
