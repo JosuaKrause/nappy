@@ -97,6 +97,70 @@ class TestOnlyTests(unittest.TestCase):
         self.assertEqual(only(src, {"tests/shared_state.gd": "func f(t):\n\tt.bump()\n"}), set())
 
 
+class CollisionTests(unittest.TestCase):
+    """Two classes with a member of one name: a reader is the member's when its type is that class or not known."""
+
+    CORDON = "src/resistance/cordon.gd"
+    CLOSURE = "src/routes/closure.gd"
+    HUD = "src/ui/hud.gd"
+    SRC: ClassVar[dict[str, str]] = {
+        CORDON: "class_name Cordon\nvar gap := 0\n",
+        CLOSURE: "class_name Closure\nvar gap := 1\nfunc total() -> int:\n\treturn gap\n",
+    }
+    TESTS: ClassVar[dict[str, str]] = {"tests/test_cordon.gd": "func f(c: Cordon):\n\tprint(c.gap)\n"}
+
+    def test_the_other_classes_own_use_no_longer_hides_a_member_a_typed_test_reads(self) -> None:
+        self.assertEqual(only(self.SRC, self.TESTS), {(self.CORDON, "gap")})
+
+    def test_a_game_reader_typed_as_the_other_class_is_not_a_reader_of_this_one(self) -> None:
+        hud = {self.HUD: "func f(k: Closure):\n\tprint(k.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), {(self.CORDON, "gap")})
+
+    def test_a_game_reader_typed_as_this_class_clears_it(self) -> None:
+        hud = {self.HUD: "func f():\n\tvar c := Cordon.new()\n\tprint(c.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), set())
+
+    def test_a_static_call_through_the_class_name_is_typed(self) -> None:
+        hud = {self.HUD: "func f():\n\tprint(Closure.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), {(self.CORDON, "gap")})
+
+    def test_an_untyped_game_reader_still_counts_as_the_games(self) -> None:
+        hud = {self.HUD: "func f(k):\n\tprint(k.gap)\n"}
+        self.assertEqual(only(self.SRC | hud, self.TESTS), set())
+
+    def test_a_test_typed_as_the_other_class_does_not_read_this_one(self) -> None:
+        tests = {"tests/test_closure.gd": "func f(k: Closure):\n\tprint(k.gap)\n"}
+        self.assertEqual(only(self.SRC, tests), {(self.CLOSURE, "gap")})
+
+    def test_an_untyped_test_read_is_a_read_of_each_class_that_has_the_name(self) -> None:
+        tests = {"tests/test_any.gd": "func f(x):\n\tprint(x.gap)\n"}
+        self.assertEqual(only(self.SRC, tests), {(self.CORDON, "gap"), (self.CLOSURE, "gap")})
+
+    def test_a_kept_line_stands_while_only_untyped_reads_hide_the_member(self) -> None:
+        hud = {self.HUD: "func f(k):\n\tprint(k.gap)\n"}
+        src = self.SRC | hud
+        key = (self.CORDON, "gap")
+        self.assertEqual(len(members.check(files(src, self.TESTS), {key})[0]), 1)
+        self.assertEqual(members.check(files(src, self.TESTS), {key}, frozenset({key}))[0], [])
+
+    def test_a_kept_line_is_stale_once_a_typed_reader_reads_it(self) -> None:
+        hud = {self.HUD: "func f():\n\tvar c := Cordon.new()\n\tprint(c.gap)\n"}
+        key = (self.CORDON, "gap")
+        failures = members.check(files(self.SRC | hud, self.TESTS), {key}, frozenset({key}))[0]
+        self.assertEqual(
+            failures, [f"REMOVE from tools/test_only_members.txt: {self.CORDON} gap (now read by another file under src/)"]
+        )
+
+    def test_a_reader_typed_as_a_subclass_reaches_the_member_its_parent_defines(self) -> None:
+        sub = {"src/x/sub.gd": "class_name Sub\nextends Cordon\n"}
+        hud = {self.HUD: "func f(s: Sub):\n\tprint(s.gap)\n"}
+        self.assertEqual(only(self.SRC | sub | hud, self.TESTS), set())
+
+    def test_a_name_defined_once_is_still_judged_by_its_word(self) -> None:
+        src = {self.CORDON: "class_name Cordon\nvar gap := 0\n", self.HUD: "func f(k: Other):\n\tprint(k.gap)\n"}
+        self.assertEqual(only(src, self.TESTS), set())
+
+
 class ListTests(unittest.TestCase):
     SRC: ClassVar[dict[str, str]] = {
         THING: "class_name Thing\nfunc bump() -> void:\n\tpass\nfunc used() -> void:\n\tpass\n"

@@ -27,11 +27,13 @@ stay public for the same reason: the fairness tests check numbers against them.
 scope; its own-file group holds no line, every member it lists being internal or kept with its
 reason. What is left is the members the check cannot see, below.
 
-*Proposed by the orchestrator, from a review, not asked for:* the CI check of test-only members
-counts a member as read by the game when any other class has a member of the same name, so a
-member whose name collides (`ParkCordon.gap`, whose reason stands as a comment on it, record
-minty-quail-grassy-squirrel) can take no `[kept]` line; the check qualifies a member by its class
-where the reader's type is known, or takes a `[kept]` line for a colliding name.
+**The members the check now sees** (record minty-quail-feathery-finch): the CI check qualifies a member by its
+class where a reader's type is known, so a member whose name another class shares is no longer hidden by that
+namesake. The ones it newly lists, in the last `[kept]` group of the CI check's list, are `BuildingShadows.compute`,
+`City.sleepiness_multiplier` and `decay_multiplier`, `CityMap.walkable_lut`, `is_crossing`, `corridor_offsets` and
+`alley_at`, `MarbleBag.take`, the `photograph` and `to_data` of the run-state parts, `CarStrategy` and
+`WalkerStrategy` helpers, `CrowdField.contains`, `ParkClosure.barrier_width` and `barrier_runs_across`, and others;
+each is made internal, or kept with its reason, in its owner's pass, which deletes its line.
 
 **Build**, owner by owner, after `tests-unseen-reads.md`'s builds, each owner a pull request (or
 several small owners together), each also removing a check that holds nothing once its member is
