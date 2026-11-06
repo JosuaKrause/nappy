@@ -609,7 +609,11 @@ func _same_plan(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
 	return a.def.id == b.def.id and a.position == b.position
 
 ## The city, and the seed of the day's draw, where the walkability repair has to choose between two
-## calm areas (found by a search over cities and draws; see the test below).
+## calm areas (see the test below). Found by building this day for cities 1000 + 31k and draw seeds
+## `hash("zz:<city>:<area>:<try>")`, once with `_is_spoiled()` as the game has it and once answering
+## "not spoiled" (a temporary edit), until the two kept different bodies; the first hit is pinned. If
+## the guard in the test trips because the catalogue, the planner or the tuning moved, search again
+## the same way for a city and a draw where the plans differ, and pin those.
 const _CHOICE_CITY_SEED := 1000
 const _CHOICE_DRAW_SEED := 3855935560
 
@@ -644,9 +648,17 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 			if Tile.is_calm(map.tile_at(tile)):
 				return tile
 		return Vector2i(-1, -1)
+	var walks := {}   # which place -> the street segments its walk from home uses
 	var keep := {}
-	for to: Vector2i in [target[0], calm_tile.call(clean_block), calm_tile.call(spoiled_block)]:
-		t.check(_keep_streets_to(map, to, keep), "home reaches %s on open streets" % [to])
+	for place: String in ["target", "clean", "spoiled"]:
+		var to: Vector2i = target[0]
+		if place == "clean":
+			to = calm_tile.call(clean_block)
+		elif place == "spoiled":
+			to = calm_tile.call(spoiled_block)
+		walks[place] = {}
+		t.check(_keep_streets_to(map, to, walks[place]), "home reaches the %s on open streets" % place)
+		keep.merge(walks[place])
 	var shut: Array[RoadClosure] = []
 	for segment in map.network.segments():
 		if not keep.has(segment.key()):
@@ -673,6 +685,23 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 	var reached := grid.flood([map.home_rect.position], blocked)
 	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
 			"with every body the day kept standing, the clean calm area is still reached from home")
+	# **The case is live**: the clean area has one way in, the streets only its walk uses, and a body
+	# the day kept stands on them. Were it opened another way, or no body to stand there, the
+	# check above would pass whatever `_is_spoiled()` answered.
+	var access := {}   # the tiles of the streets only the clean area's walk uses
+	for key: Vector3i in walks["clean"]:
+		if not walks["target"].has(key) and not walks["spoiled"].has(key):
+			for tile in map.rect_tiles(walks["clean"][key].tile_rect()):
+				access[tile] = true
+	t.check(not access.is_empty(), "the clean area has streets of its own to reach it by")
+	var shut_off := grid.flood([map.home_rect.position], access)
+	t.check(not grid.reaches(calm_tile.call(clean_block), access, shut_off),
+			"the clean area has one way in: without its own streets home does not reach it")
+	var stands_on_access := false
+	for body in blockers:
+		for tile: Vector2i in EventScheduler.blocked_by(map, [body] as Array[EventScheduler.Planned]):
+			stands_on_access = stands_on_access or access.has(tile)
+	t.check(stands_on_access, "a body the day kept stands on the clean area's one way in")
 	map.close_streets([])
 
 ## Marks in `keep` (by key) every street segment on the shortest walk from the doorstep to `to`.
