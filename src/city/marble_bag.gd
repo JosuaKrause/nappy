@@ -195,17 +195,6 @@ func put_in_front(marbles: Array) -> void:
 func rig(ensured: Array, size: int) -> void:
 	put_in_front(ensured + _take(size - ensured.size(), []))
 
-## **Rigs `ensured` to come after the next `before` draws and no sooner** — the two-bag shape, for an
-## ensured marble that must not be met early. *(inbox #561 in coral-bunny: "day 3 have a 5 bag then a 1 bag with
-## the dog" · "if you need guaranteed spacing use the day 3 trick otherwise just do the rigged bag
-## directly".)* A bag of `before` marbles taken out of the bag being drawn from, none of them one of
-## `ensured`, goes in front of a bag of `ensured`, in front of what is left. Like `rig()`, nothing
-## is made or lost but `ensured`.
-func rig_spaced(ensured: Array, before: int) -> void:
-	var taken := _take(before, ensured)
-	put_in_front(ensured)
-	put_in_front(taken)
-
 ## Takes `count` marbles at random out of the bag being drawn from and the bags behind it, in queue
 ## order, leaving any that is one of `keep_out` where it is, and answers them. An empty queue is
 ## filled with the ordinary set first, and one more ordinary bag may be filled at the back when what
