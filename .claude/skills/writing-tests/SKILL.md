@@ -39,8 +39,8 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   request's change reaches** (inbox #1159).
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
-that spans modules or the game's composition. The reason is stated in the suite's `##` header
-comment, in words a reader can check, so a combined suite without one reads as a suite to split.
+that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
+is stated in the suite's `##` header comment, in words a reader can check, so a combined suite without one reads as a suite to split.
 **Any suite that builds a real city and is not a direct test of the city gives its reason there**
 (inbox #1159). The ones that do, each for the reason its header states:
 
