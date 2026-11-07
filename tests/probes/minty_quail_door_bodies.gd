@@ -82,12 +82,12 @@ func _start(t, seed_value: int, day: int) -> City:
 
 ## The siting the walk's events would build for a task row on `day` (`EventsAhead._task_siting()`).
 func _siting(city: City, day: int) -> EventScheduler.WalkSiting:
-	return EventScheduler.WalkSiting.new(day, city.map, city.route_tree(),
+	return EventScheduler.WalkSiting.new(day, city.map, city.streets().route_tree(),
 			city.events.walk_events(), EventScheduler.Verdicts.new())
 
 ## Every passable tile the day's routes run along.
 func _route_tiles(city: City) -> Array[Vector2i]:
-	var corridor := Corridor.of(city.route_tree())
+	var corridor := Corridor.of(city.streets().route_tree())
 	var found: Array[Vector2i] = []
 	for y in city.map.size.y:
 		for x in city.map.size.x:
@@ -201,7 +201,7 @@ func _ahead(t) -> void:
 ## The cell centres of the day's longest route, from the doorstep end out.
 func _longest(city: City, siting: EventScheduler.WalkSiting) -> PackedVector2Array:
 	var best: Array = []
-	for branch in city.route_tree().branches:
+	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() > best.size():
 				best = route

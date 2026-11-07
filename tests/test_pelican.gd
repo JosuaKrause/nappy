@@ -377,7 +377,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var clock := DayController.new()
 	clock.start(180.0)
 	var observer := TelemetryObserver.new(run_log)
-	observer.setup(_run, _city, stroller, baby, clock, null, false)
+	observer.setup(_city, stroller, baby, clock, null, false)
 
 	# The director owes her one cyclist from a route bag holding nothing else, as a scene's recipe
 	# hands it (`EventManager.start_recipe_route()`), due as soon as she is walking. She walks up the

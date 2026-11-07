@@ -24,7 +24,7 @@ thirteen. The crowd closure windows, each still stepped at 1/60 s:
 
 The "another masked man" trim and the plain-edge, four-sides window go beyond the pick the player
 accepted; the builder made them as the same kind of trim, and the player accepted them too ("it's
-fine", inbox #1145).
+fine", inbox #1145 in gray-dolphin).
 
 **Measured** on a loaded machine, so only the ratios mean anything: the six suites together took
 1639 s before and 729 s after; per suite, city decay 426 to 140 s, closures a 424 to 187 s, b 329 to

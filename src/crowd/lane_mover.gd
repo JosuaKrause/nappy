@@ -73,7 +73,7 @@ var view: CrowdView = null
 var traffic: TrafficIndex
 
 ## Today's region-door segment keys (`StreetNetwork.Segment.key()` -> `true`), held by reference
-## and rebuilt once a day by `Crowd.start_day()` from `City.region_plan().doors`. Empty for an
+## and rebuilt once a day by `Crowd.start_day()` from `DayStreets.region_plan().doors`. Empty for an
 ## agent built by hand in a test or for a rig with no city behind it, which then treats every held
 ## segment as wall the way `cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
 ## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a

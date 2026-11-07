@@ -63,10 +63,11 @@ const CONTACT_GROUND: Array[Rule] = [Rule.LEGAL_GROUND, Rule.OPEN_TO_IT]
 ## `CONTACT_GROUND` with held ground allowed, for the contact on a held street (a district door).
 const HELD_CONTACT_GROUND: Array[Rule] = [Rule.GROUND_EVEN_IF_HELD, Rule.OPEN_TO_IT]
 
-## **What the day's region shuts**, as the city hands it (`City.siting_region()`): the crossing
-## alleys a wall closes, and each body of the wall and of the district doors as a disc, kerb to kerb
-## across a street (`RegionPlanner._add_door_bodies()`, `SealPlanner.place_hard_on()`), so a line
-## through a door or the wall passes through one of them wherever it crosses.
+## **What the day's region shuts**, as the city hands it (`DayStreets.siting_region()`): the
+## crossing alleys a wall closes, and each body of the wall and of the district doors as a disc,
+## kerb to kerb across a street (`RegionPlanner._add_door_bodies()`,
+## `SealPlanner.place_hard_on()`), so a line through a door or the wall passes through one of
+## them wherever it crosses.
 class Region:
 	extends RefCounted
 	## The walled-off crossing alleys (`RegionPlanner.RegionPlan.alley_walls`).

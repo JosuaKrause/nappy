@@ -82,7 +82,7 @@ touches (the path table in `CLAUDE.md`). Look for:
 
 - a correctness bug, with a concrete input that shows it;
 - a test that does not test what its name says, builds a real object it does not test
-  (inbox #1159), or holds nothing in one of the four ways
+  (inbox #1159 in gray-dolphin), or holds nothing in one of the four ways
   **writing-tests** names (an unreachable setup, a design decision read back, a check that
   cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
   first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
@@ -106,7 +106,7 @@ touches (the path table in `CLAUDE.md`). Look for:
   docs, names are content);
 - a design that breaks **designing-classes**: a dependency pointing up a layer, a mode copied
   instead of configured, or a component fetching what it should be handed (the
-  player's), or one fact derived in more than one place (inbox #1156); and, from that skill's
+  player's), or one fact derived in more than one place (inbox #1156 in gray-dolphin); and, from that skill's
   proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;

@@ -175,7 +175,7 @@ func _walk_the_rigged_bag(city: City, player: Stroller) -> void:
 
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var longest: Array = []
-	for branch in city.route_tree().branches:
+	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route

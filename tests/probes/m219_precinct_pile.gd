@@ -28,7 +28,7 @@ func run(t) -> void:
 		var at := map.tile_to_world(case[2])
 		city.events.stream_around(at)
 		city.crowd.start_day(day, city.run.calendar.day_rng(day, "crowd"), at)
-		city.crowd.set_gates(city.region_plan().gates)
+		city.crowd.set_gates(city.streets().region_plan().gates)
 		var most := 0
 		var total := 0
 		var frames := int(round(30.0 / STEP))

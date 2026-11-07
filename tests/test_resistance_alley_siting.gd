@@ -751,7 +751,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%d:closures:%d" % [seed_value, day])
 	city.start_day(closure_state, day, closure_rng)
-	var walled_alleys := city.region_plan().alley_walls
+	var walled_alleys := city.streets().region_plan().alley_walls
 	t.check(not walled_alleys.is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])

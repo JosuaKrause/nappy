@@ -101,7 +101,7 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 	if not _log.is_active():
 		return
 	_observer = _new_observer()
-	_observer.setup(_run, city, player, baby, day, resistance, _config.spikes_requested, edge)
+	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
 
 ## The day's clock, whose `spec` says what each day is, before the first one starts — the escape's
 ## boot hands it in ahead of `watch_escape()`, whose world is built only as its first section
@@ -169,7 +169,8 @@ func _on_day_planned(day: int) -> void:
 	_log.note("plan", "closed: %s" % _city.closure_summary())
 	_log.note("plan", "calm: %s" % _city.calm_summary())
 	_log.note("plan", "events: %s" % _city.event_summary())
-	_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans())
+	_log.write_map(_city.map, day, _city.streets().closures(), _city.streets().route_tree(),
+			_city.events.plans())
 	if _observer:
 		_observer.start_day()
 
@@ -194,8 +195,8 @@ func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapse
 		trail = _observer.trail()
 		met = _observer.met_events()
 	if _city:
-		_log.write_map(_city.map, day, _city.closures(), _city.route_tree(), _city.events.plans(),
-				true, trail, met)
+		_log.write_map(_city.map, day, _city.streets().closures(), _city.streets().route_tree(),
+				_city.events.plans(), true, trail, met)
 	elif _escape_city:
 		var no_closures: Array[RoadClosure] = []
 		_log.write_map(_escape_city.map, day, no_closures, null, _escape_city.events.plans(), true,

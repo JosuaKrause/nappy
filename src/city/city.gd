@@ -154,8 +154,12 @@ var map: CityMap
 var navigator: Navigator
 ## Where something sent at her may start (`SpawnSiting`): built once with the map, against the
 ## navigator, the events' view of her (`EventManager.visible_view()`) and the day's region
-## (`siting_region()`), and handed to the events and the resistance — never fetched.
+## (`DayStreets.siting_region()`), and handed to the events and the resistance — never fetched.
 var spawn_siting: SpawnSiting
+## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
+## closures and the region a siting reads. Made with the city, written only by the city's dawn
+## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
+var _streets := DayStreets.new()
 ## Where the city, its posters, its events and the day's closures write their own account for the
 ## run log — set before `build()`, which hands it on; silent until then.
 var trace := RunTrace.new()
@@ -220,20 +224,8 @@ var scenery: SceneryResidency
 var _tinted_route: RouteSource = null
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
-## Today's corridor: the ways from the doorstep to the calm areas still worth reaching, grown
-## before anything is placed. Everything the day sites is sited against **this** tree — the
-## closures as walls off it, the events by role, the telemetry picture that says whether any of
-## it points anywhere — so it is grown once here rather than three times from the same seed.
-var _tree: RouteTree = null
-## Today's region wall and doors, grown from `_tree` — permanent partition, per-day split. See
-## `RegionPlanner.plan_day` and `region_plan()`.
-var _region_plan: RegionPlanner.RegionPlan = null
-## The region a siting reads (`siting_region()`) and what it was built from, to hand it again while
-## the plan is unchanged.
-var _sited_region: SpawnSiting.Region = null
-var _sited_from: RegionPlanner.RegionPlan = null
-## Today's closed streets, and the barriers and wreckage that say so. Also rebuilt daily.
-var _closures: Array[RoadClosure] = []
+## The barriers and wreckage that say which streets today closed (`_streets.closures()`). Rebuilt
+## daily.
 var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
 var _buildings: Array[Building] = []
@@ -390,7 +382,7 @@ func build(city_map: CityMap) -> void:
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
-	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, siting_region)
+	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, _streets.siting_region)
 	events.setup(self, map, navigator, spawn_siting)
 	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
@@ -1087,20 +1079,21 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
 ##
-## **The escape's city is the same call with its section's spec** (`DaySpec`), since what differs is
-## settings rather than steps: `spec.closes_streets` says whether the day grows its route tree and
-## closes streets off it (`_close_streets()`) or has its walk handed in once it is planned
-## (`tint_the_route()` — the escape's chains, planned after the city is dressed, are not a tree for
-## `ClosurePlanner` or `RegionPlanner` to be stated against, so `route_tree()` and `region_plan()`
-## answer `null` and `closures()` is empty, which is what their own contract says about a city whose
-## day has grown none); `spec.pastes_posters` says whether the crews paste at dawn
-## (`PosterWalls.start_day()`) or the walls only show what the run left (`PosterWalls.show_only()`).
-## The repaint, the door, the ground, the litter, the block dressing and the street trees happen
-## either way, because the parks she walks through have to be the parks the run's seed built. The run
-## flow hands `spec` in on every day and every section (`main`, the same object the day's event
-## manager is handed); left out, as a rig that builds a city with no run flow leaves it, it is a
-## day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the last day's —
-## and `rng` the closures' stream.
+## **The escape's city is the same call with its section's spec** (`DaySpec`), since what
+## differs is settings rather than steps: `spec.closes_streets` says whether the day grows its
+## route tree and closes streets off it (`_close_streets()`) or has its walk handed in once it
+## is planned (`tint_the_route()` — the escape's chains, planned after the city is dressed, are
+## not a tree for `ClosurePlanner` or `RegionPlanner` to be stated against, so
+## `streets().route_tree()` and `streets().region_plan()` answer `null` and
+## `streets().closures()` is empty, which is what their own contract says about a city whose day
+## has grown none); `spec.pastes_posters` says whether the crews paste at dawn
+## (`PosterWalls.start_day()`) or the walls only show what the run left
+## (`PosterWalls.show_only()`). The repaint, the door, the ground, the litter, the block
+## dressing and the street trees happen either way, because the parks she walks through have to
+## be the parks the run's seed built. The run flow hands `spec` in on every day and every
+## section (`main`, the same object the day's event manager is handed); left out, as a rig that
+## builds a city with no run flow leaves it, it is a day's (`DaySpec.for_day()`). `day` is the
+## calendar's — the escape is walked on the last day's — and `rng` the closures' stream.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		spec: DaySpec = null) -> void:
 	if spec == null:
@@ -1116,7 +1109,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 	if spec.pastes_posters:
 		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
 		# off, and after `_dress_blocks()`, which is what says a front has burnt.
-		_posters.start_day(day, _tree)
+		_posters.start_day(day, _streets.route_tree())
 	else:
 		_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
@@ -1148,16 +1141,17 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 	_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
 	var edges := map.witness_only()
-	_tree = RouteTree.for_day(map, day)
-	_region_plan = RegionPlanner.plan_day(map, day, _tree)
+	var tree := RouteTree.for_day(map, day)
+	var plan := RegionPlanner.plan_day(map, day, tree)
 	map.restore_edges(edges)
-	_closures = map.recipe_closures.duplicate()
-	map.close_streets(_closures)
-	for closure in _closures:
+	var closures: Array[RoadClosure] = map.recipe_closures.duplicate()
+	_streets.begin_day(tree, plan, closures)
+	map.close_streets(closures)
+	for closure in closures:
 		_spawn_closure(closure)
 	if map.has_stretch():
 		run.posters.pasted_through = maxi(run.posters.pasted_through, day)
-	_posters.start_day(day, _tree)
+	_posters.start_day(day, tree)
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
@@ -1168,17 +1162,18 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	# Before the closures, because they are placed off it. See `ClosurePlanner._shuffled_candidates`.
 	# Tinted before the region plan or the closures, so a tree a closure has not yet touched is what
 	# the tint answers for.
-	_tree = RouteTree.for_day(map, day)
-	tint_the_route(_tree)
+	var tree := RouteTree.for_day(map, day)
+	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
-	_region_plan = RegionPlanner.plan_day(map, day, _tree)
+	var plan := RegionPlanner.plan_day(map, day, tree)
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
-			% [_region_plan.walls.size() + _region_plan.doors.size(), _region_plan.walls.size(),
-			_region_plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	_closures = ClosurePlanner.plan_day(map, day, rng, _tree, _region_plan, trace)
-	map.close_streets(_closures)
-	for closure in _closures:
+			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
+			plan.doors.size(), RegionPlanner.regions_with_calm(map)])
+	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace)
+	_streets.begin_day(tree, plan, closures)
+	map.close_streets(closures)
+	for closure in closures:
 		_spawn_closure(closure)
 
 ## The route's own curbstones, tinted — a trial of whether a faint hint on the ground can stay under
@@ -1227,9 +1222,6 @@ func tint_the_route(route: RouteSource) -> void:
 func _is_on_the_tinted_route(tile: Vector2i) -> bool:
 	return _tinted_route != null and _tinted_route.marks_the_kerb_at(tile)
 
-func closures() -> Array[RoadClosure]:
-	return _closures
-
 ## Every building this city built, fixed for the run — read by `DebugLayers` so its bounding-box
 ## layer can trace each one's own `shape` rather than a second list of them.
 func buildings() -> Array[Building]:
@@ -1248,45 +1240,11 @@ func props() -> Array[Node2D]:
 	all.append_array(_street_trees)
 	return all
 
-## Today's corridor. Grown in `_close_streets`, so it is only meaningful after `start_day`.
-func route_tree() -> RouteTree:
-	return _tree
-
-## Today's region wall and doors. Grown in `_close_streets` from `_tree`, so it is only
-## meaningful after `start_day` — the same contract as `route_tree()`.
-func region_plan() -> RegionPlanner.RegionPlan:
-	return _region_plan
-
-## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
-## and each body of the wall and of the district doors as a disc, its centre and its
-## `obstructs_radius`; null before `start_day` has grown a region plan.
-##
-## **Built once for the plan and handed again until the plan is another plan**: the resistance asks
-## for it for every candidate tile of a relocation (`ResistanceDirector._nearest_alley_within()`,
-## "cheap enough for every frame"), and a hundred-odd discs rebuilt on each ask were most of that
-## cost. A plan is never edited once the city holds it; whoever changes a day's wall, doors or
-## alleys builds another plan and hands it over (`set_region_plan()`).
-func siting_region() -> SpawnSiting.Region:
-	if not _region_plan:
-		_sited_region = null
-		_sited_from = null
-		return null
-	if _sited_region != null and _sited_from == _region_plan:
-		return _sited_region
-	var region := SpawnSiting.Region.new()
-	region.walled_alleys = _region_plan.alley_walls
-	for body: EventScheduler.Planned in _region_plan.wall_bodies + _region_plan.door_bodies:
-		region.centres.append(body.position)
-		region.radii.append(body.def.obstructs_radius)
-	_sited_region = region
-	_sited_from = _region_plan
-	return region
-
-## Replaces today's region plan with another one (a rig that authors the day's wall and doors). The
-## plan handed over is the city's from then on and is not edited: the siting's region is built from
-## it once (`siting_region()`).
-func set_region_plan(plan: RegionPlanner.RegionPlan) -> void:
-	_region_plan = plan
+## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
+## closures and the region a siting reads. The same object for the city's whole life; its answers
+## change only at a dawn that closes streets, or when a rig or a scene recipe replaces the plan.
+func streets() -> DayStreets:
+	return _streets
 
 # ------------------------------------------------------- the day's shape in words ---
 # For whoever reports it: the run log's `plan` lines and the console's day line read the same
@@ -1312,7 +1270,7 @@ func calm_summary() -> String:
 ## identical from a count.
 func closure_summary() -> String:
 	var parts: Array[String] = []
-	for closure in closures():
+	for closure in _streets.closures():
 		parts.append("%s %s%s" % [
 			RoadClosure.display_name(closure.kind).to_lower(),
 			"h" if closure.segment.horizontal else "v",

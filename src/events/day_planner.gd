@@ -81,19 +81,21 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# rather than re-read from `world.city` below, for the same reason — `SealPlanner` needs the same
 	# tree the catalogue's own placements were just stated against.
 	#
-	# **`world.city.route_tree()` can itself be null even when `world.city` is not** — a live
-	# `world.city` whose own `start_day` was never called for this day, which is the whole rig
+	# **`world.city.streets().route_tree()` can itself be null even when `world.city` is not** — a
+	# live `world.city` whose own `start_day` was never called for this day, which is the whole rig
 	# `tests/test_event_manager.gd` and `tests/test_balance.gd` drive: `EventManager.start_day` on its
 	# own, with no `City.start_day` first. The explicit null check grows one the same way
 	# `City._close_streets` does, from the same `RouteTree.for_day(map, day)`, so the fallback and the
 	# real thing can never disagree.
-	var tree: RouteTree = world.city.route_tree() if world.city else null
+	var tree: RouteTree = world.city.streets().route_tree() if world.city else null
 	if not tree:
 		tree = RouteTree.for_day(city_map, day)
 	# Grown the same way `tree` was, so the two never answer for two different days — see
-	# `City._close_streets`. `world.city.region_plan()` can itself be null for the same reason as
-	# `tree` above, and the explicit null check here falls through to growing one the same way.
-	var region_plan: RegionPlanner.RegionPlan = world.city.region_plan() if world.city else null
+	# `City._close_streets`. `world.city.streets().region_plan()` can itself be null for the same
+	# reason as `tree` above, and the explicit null check here falls through to growing one the same
+	# way.
+	var region_plan: RegionPlanner.RegionPlan = \
+			world.city.streets().region_plan() if world.city else null
 	if not region_plan:
 		region_plan = RegionPlanner.plan_day(city_map, day, tree)
 
@@ -103,15 +105,15 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# why `SealPlanner.plan_day` is planned ahead of `build_day` below (see that call's own note).
 	#
 	# A rig driving `EventManager` off a `City` that has not run its own `start_day` yet still
-	# gets no closures held: `world.city.closures()` reads `City`'s own `_closures`, which only
-	# `City.start_day()` ever populates, and there is no fallback for it the way `tree` and
-	# `region_plan` grow their own just above — closures are `ClosurePlanner`'s to plan, not this
-	# planner's, so a rig that wants them run has to run `City.start_day()` first. The wall, the
-	# doors and the home block are still held, because all three come from `region_plan` and the
-	# map alone.
+	# gets no closures held: `world.city.streets().closures()` is empty until `City.start_day()`
+	# first closes streets, and there is no fallback for it the way `tree` and `region_plan`
+	# grow their own just above — closures are `ClosurePlanner`'s to plan, not this planner's,
+	# so a rig that wants them run has to run `City.start_day()` first. The wall, the doors and
+	# the home block are still held, because all three come from `region_plan` and the map
+	# alone.
 	city_map.clear_day_holds()
 	if world.city:
-		for closure in world.city.closures():
+		for closure in world.city.streets().closures():
 			city_map.hold_segment(closure.segment.key())
 	for segment in region_plan.walls:
 		city_map.hold_segment(segment.key())

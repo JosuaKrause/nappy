@@ -124,10 +124,11 @@ func start_day(the_spec: DaySpec) -> void:
 			if first_day else doorstep
 	city.events.stream_around(start_at)
 	_start_the_crowd(start_at, today)
-	# The smallest wiring for the checkpoint gates: `City.region_plan()` is already valid by here
-	# (`city.start_day()` built it above), so the crowd just needs to be told where today's gates
-	# are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op day for `Crowd`.
-	city.crowd.set_gates(city.region_plan().gates)
+	# The smallest wiring for the checkpoint gates: `DayStreets.region_plan()` is already valid
+	# by here (`city.start_day()` built it above), so the crowd just needs to be told where
+	# today's gates are — empty before `Tuning.REGION_WALL_FIRST_DAY`, which is a harmless no-op
+	# day for `Crowd`.
+	city.crowd.set_gates(city.streets().region_plan().gates)
 	city.set_act(calendar.current_act())
 	player.reset_at(start_at)
 	prepare_city_scenery(city, player)

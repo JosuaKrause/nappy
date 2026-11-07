@@ -5,7 +5,7 @@ extends RefCounted
 ## is a park or a quiet block where the baby can settle; its calm ground is the part of its lot she
 ## settles on (`ClosurePlanner.calm_area_rect()`: a courtyard's court, a park's open rect).
 ##
-## **Worked out once and handed to whoever asks** (inbox #1156): `DayPlanner` makes the day's
+## **Worked out once and handed to whoever asks** (inbox #1156 in gray-dolphin): `DayPlanner` makes the day's
 ## with `of()` and hands it to `EventScheduler.build_day()`, which hands it to its passes, to
 ## `DayEvents` and to `DayRepairs`, and the day's plan (`DayPlanner.Plan.calm()`) carries it past
 ## dawn to the walk's events (`WalkEvents.calm()`), whose sitings read their leave-alone ground off

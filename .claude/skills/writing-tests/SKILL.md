@@ -13,9 +13,9 @@ how a test is written is this file's.
 
 **A test builds no real object it does not test, it mocks it, and a test module `test_<x>` tests
 only `<x>`: a hard rule, with an exception only for a stated good reason**
-(inbox #1159). *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a
+(inbox #1159 in gray-dolphin). *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a
 hard rule with exceptions only for good reasons on 2026-11-06, because as guidance it did not work
-(inbox #1159).*
+(inbox #1159 in gray-dolphin).*
 Break the problem into components that can be tested apart, and test each in its own suite. Confirm a
 component's correctness by injecting its dependencies through the paths the game itself uses, a
 fake or a mock that records what it is asked handed in where the game hands the real one. A test
@@ -24,25 +24,34 @@ testing too much at once, of not injecting as intended, or of testing internals 
 behaviour is what matters, and those are examples, not the only reasons. Where a component has
 nothing to hand a fake to, **designing-classes** says what its design owes.
 
-- **Only mock what you do not want to test** (inbox #1159). *Read as, the filer's reading and not
+- **Only mock what you do not want to test** (inbox #1159 in gray-dolphin). *Read as, the filer's reading and not
   the player's words:* a check whose subject is another object's answers is not this suite's; it
   moves to that object's own suite, rather than keeping that object real here.
-- **The real logic is checked once, in the real object's own suite** (inbox #1156). Do not retest
+- **The real logic is checked once, in the real object's own suite** (inbox #1156 in gray-dolphin). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
   everything that draws through it. The city is built only by a direct test of the city, or by a
-  suite that gives its reason (inbox #1156; inbox #1159).
-- **Mocking makes the suites faster** (inbox #1159): a fake holding a handful of answers is built
+  suite that gives its reason (inbox #1156 in gray-dolphin; inbox #1159 in gray-dolphin).
+- **Mocking makes the suites faster** (inbox #1159 in gray-dolphin): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
 - **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`
-  constant); only collaborators that do something are mocked (inbox #1159).
+  constant); only collaborators that do something are mocked (inbox #1159 in gray-dolphin).
+- **Which map a test uses depends on what it checks** (inbox #1172 in gray-dolphin). A test of one specific
+  interaction between her and her surroundings, an edge case, uses a hand-drawn map built to the
+  case, so no seed has to be searched for. A test of a realistic walk, and any measurement, uses a
+  real generated map: a realistic walk needs what only the generator guarantees (the whole street
+  network the crowd's lanes run on, a home, calm ground; on a hand map smaller than the full
+  11×11 blocks the crowd walks off the edge), and a measurement must come from a city the
+  generator can produce. The bullet only chooses the map: a suite that builds a `City` on either
+  kind and is not a direct test of the city gives its reason in its header, as the rule below
+  requires.
 - **A suite a pull request touches for another reason is converted only as far as the pull
-  request's change reaches** (inbox #1159).
+  request's change reaches** (inbox #1159 in gray-dolphin).
 
-**Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
+**Responsibilities are combined only for a stated good reason** (inbox #1159 in gray-dolphin), such as a guarantee
 that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
 is stated in the suite's `##` header comment, in words a reader can check, so a combined suite
 without one reads as a suite to split. **Any suite that builds a real city and is not a direct test
-of the city gives its reason** (inbox #1159), in its header as proposed above. The ones that do,
+of the city gives its reason** (inbox #1159 in gray-dolphin), in its header as proposed above. The ones that do,
 each for the reason its header states:
 
 - **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
@@ -57,7 +66,7 @@ each for the reason its header states:
 ## A realistic mock is made in two steps
 
 **First build the whole real state and read off the external information the test uses; then
-replace the state with a mock holding only that** (inbox #1159). The values a fake answers come from
+replace the state with a mock holding only that** (inbox #1159 in gray-dolphin). The values a fake answers come from
 what the real objects answered in the same situation, so the test keeps checking that situation and
 its setup stays one the game can reach (below). **The committed test holds only the mock**: neither
 the real build nor the step that read it off survives into the pull request.
@@ -69,15 +78,21 @@ the real build nor the step that read it off survives into the pull request.
   where a bug is invisible until it ruins somebody's run.
 - **Not tested, checked by eye:** layout, colour, readability, whether a cue is legible from across
   a street.
-- **A test never asserts what a setting is** (inbox #1159). *Asked for as a judgment call, a test
+- **A test never asserts what a setting is** (inbox #1159 in gray-dolphin). *Asked for as a judgment call, a test
   that only doubles the work of a change deleted (PLAYTEST-67) · overturned to absolute on
-  2026-11-06, because a test must never test configuration settings (inbox #1159).* A test that
+  2026-11-06, because a test must never test configuration settings (inbox #1159 in gray-dolphin).* A test that
   reads a setting only to restate it goes: asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is
   `[1, 4, 8, 12]` is the table restated, so moving an act boundary means editing the constant *and*
   editing the test, and no arrangement of those two numbers was ever going to disagree.
 
-  **The kept relationship tests stay, since they encode a fairness guarantee between settings**
-  (inbox #1159). `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
+  **The kept relationship tests stay, since they encode a guarantee between settings**
+  (inbox #1173 in gray-dolphin). *Kept for fairness guarantees only (inbox #1159 in gray-dolphin) · widened on 2026-11-07 to any
+  guarantee between settings (inbox #1173 in gray-dolphin).* A fairness floor, the difficulty ramp (a late day
+  holds more events than an early one) and a derived number kept in step with its setting (the
+  flash curve's shape `FINALE_DISTANT_FLASH_SHAPE_B` is solved from the mean wait
+  `FINALE_DISTANT_FLASH_MEAN_SECONDS` between the building's distant window flashes, and the test
+  catches the two going out of step) all stay; a test that only restates one setting's
+  value goes. `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
   below what is fair, because it encodes *why* the number has a floor rather than what the number
   is: it says **"you broke the thing the number was for"**, never **"you changed a number"**.
 

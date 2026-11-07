@@ -23,8 +23,8 @@ func run(t) -> void:
 	for seed_value in SEEDS:
 		var city := _start(t, seed_value)
 		var map := city.map
-		var corridor := Corridor.of(city.route_tree())
-		var region := city.region_plan()
+		var corridor := Corridor.of(city.streets().route_tree())
+		var region := city.streets().region_plan()
 		var fixed := {}
 		if region:
 			for body in region.wall_bodies:

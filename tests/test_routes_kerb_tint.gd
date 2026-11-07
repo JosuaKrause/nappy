@@ -39,7 +39,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 	rng.seed = hash("m145-route-kerbs:closures:%d" % day)
 	city.start_day(state, day, rng)
 
-	var tree := city.route_tree()
+	var tree := city.streets().route_tree()
 	var corridor := Corridor.of(tree)
 	var expected := {}
 	# Every kerb tile in the map, grouped by street segment, with which of them sit at depth 0 --

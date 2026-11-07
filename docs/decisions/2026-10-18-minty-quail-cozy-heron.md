@@ -1,6 +1,6 @@
 # minty-quail — The day's derived facts are objects built once and handed in · 2026-11-06
 
-The player's note inbox #1156, built on their word in PR #1158; no queue item. Shown the
+The player's note inbox #1156 in gray-dolphin, built on their word in PR #1158; no queue item. Shown the
 spoiled-ground rule as `EventScheduler._is_spoiled()`, the player asked why a property of the day
 was a private member of the scheduler. They asked for one object that holds what the day derives,
 built once and passed around, with no private method re-deriving it. They drew the line between a
@@ -33,7 +33,7 @@ the game grows it by `field_reach()`, and one of them did not exempt a permanent
   park's calm rect is its whole lot, which holds the playground and so the swing.
 - `DayRepairs` (`src/events/day_repairs.gd`): the two repairs, `ensure_one_usable_park()` and
   `ensure_the_city_is_still_walkable()`, made public and handed both objects. The name is for what
-  the class is, a pair of repairs, under the player's naming rule (inbox #1156); `WinnableDay`,
+  the class is, a pair of repairs, under the player's naming rule (inbox #1156 in gray-dolphin); `WinnableDay`,
   named for what a caller gets, was its first name and reads as an interface's.
 - `Planned.reaches()`, `spoils()`, `obstructs()` and `blocking_radius()` hold the rules about one
   row.

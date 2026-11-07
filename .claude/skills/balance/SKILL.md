@@ -17,8 +17,9 @@ never makes it shared; a number only tests read stays in `Tuning`. Use
 under the walking decay; a fast mover must telegraph across its whole radius. If a test fails,
 decide whether the relationship or the number is wrong. **Do not just update the test.**
 
-A test never asserts what a setting is, and the relationship tests that encode a fairness guarantee stay
-(**writing-tests**).
+A test never asserts what a setting is, and the relationship tests that encode any guarantee between settings
+(fairness, the difficulty ramp, a derived number kept in step with its setting) stay (inbox #1173 in gray-dolphin;
+**writing-tests**).
 
 ## Never derive a density — measure it
 
