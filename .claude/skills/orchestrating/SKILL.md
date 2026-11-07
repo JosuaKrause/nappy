@@ -341,6 +341,11 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 ## What the orchestrator keeps
 
+- **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
+  when no task is left to start or advance. While agents run, it briefs and spawns the next queue
+  items whose files the running agents do not own, rather than ending its turn to report and wait;
+  a report to the player goes out along the way, never as a stopping point. Work the running PRs
+  own waits for them, and the restart prompt says which.
 - **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
   entry is how a queue lies.
 - **The queue as it stands on `origin/main`, not as it stood when the session started.** More
