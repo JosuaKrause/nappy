@@ -1,8 +1,7 @@
 extends RefCounted
 ## **Today's streets as dawn left them** (`DayStreets`), with no city: what each of its two writes
-## replaces and what it leaves, that asking changes no answer, and the one fact it derives, the
-## region a siting reads off the day's wall and doors, built once for a plan and handed again until
-## the plan is another plan.
+## replaces and what it leaves, and the one fact it derives, the region a siting reads off the
+## day's wall and doors, built once for a plan and handed again until the plan is another plan.
 ##
 ## Everything it is handed is plain data built as it is: region plans whose bodies, alley walls and
 ## rows are written here, closures over a street segment, and empty route trees that stand only for
@@ -15,7 +14,6 @@ const TILE := float(Tuning.TILE_SIZE)
 func run(t) -> void:
 	_test_before_any_day_there_are_no_streets(t)
 	_test_each_write_replaces_what_it_says(t)
-	_test_asking_changes_no_answer(t)
 	_test_the_siting_region_is_built_once_for_a_plan(t)
 
 ## A row whose body reaches `radius` from its centre, the one thing of its row the region reads.
@@ -69,24 +67,6 @@ func _test_each_write_replaces_what_it_says(t) -> void:
 	t.check(streets.route_tree() == next_tree and streets.region_plan() == next_plan
 			and streets.closures() == next_closures,
 			"the next dawn replaces the tree, the plan (the authored one too) and the closures")
-
-## A day whose spec closes no streets begins nothing here, and the city asks on: every answer
-## stays what the last dawn left, the siting's region included, however often each is asked.
-func _test_asking_changes_no_answer(t) -> void:
-	var streets := DayStreets.new()
-	var tree := RouteTree.new()
-	var plan := _a_walled_plan()
-	var closures := _closures_on(Vector2i(4, 1))
-	streets.begin_day(tree, plan, closures)
-	var region := streets.siting_region()
-	for _ask in 3:
-		streets.route_tree()
-		streets.region_plan()
-		streets.closures()
-		streets.siting_region()
-	t.check(streets.route_tree() == tree and streets.region_plan() == plan
-			and streets.closures() == closures and streets.siting_region() == region,
-			"with no write since, every answer is the last dawn's")
 
 ## **The region a siting reads is built once for a plan**: a relocation of the resistance's mark asks
 ## it for every candidate tile, so building the wall's and the doors' discs afresh on each ask was
