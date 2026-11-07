@@ -12,7 +12,7 @@ how a test is written is this file's.
 ## A suite tests the one module it is named for
 
 **A test builds no real object it does not test, it mocks it, and a test module `test_<x>` tests
-only `<x>`: a hard rule, with an exception only for a good reason stated in the suite's header**
+only `<x>`: a hard rule, with an exception only for a stated good reason**
 (inbox #1159). *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a
 hard rule with exceptions only for good reasons on 2026-11-06, because as guidance it did not work
 (inbox #1159).*
@@ -30,7 +30,7 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
 - **The real logic is checked once, in the real object's own suite** (inbox #1156). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
   everything that draws through it. The city is built only by a direct test of the city, or by a
-  suite whose header gives its reason (inbox #1156; inbox #1159).
+  suite that gives its reason (inbox #1156; inbox #1159).
 - **Mocking makes the suites faster** (inbox #1159): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
 - **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`
@@ -40,9 +40,10 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
 that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
-is stated in the suite's `##` header comment, in words a reader can check, so a combined suite without one reads as a suite to split.
-**Any suite that builds a real city and is not a direct test of the city gives its reason there**
-(inbox #1159). The ones that do, each for the reason its header states:
+is stated in the suite's `##` header comment, in words a reader can check, so a combined suite
+without one reads as a suite to split. **Any suite that builds a real city and is not a direct test
+of the city gives its reason** (inbox #1159), in its header as proposed above. The ones that do,
+each for the reason its header states:
 
 - **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
   because the bugs it holds are wiring between the two (an instance freed but left in the list, a
@@ -68,8 +69,6 @@ the real build nor the step that read it off survives into the pull request.
   where a bug is invisible until it ruins somebody's run.
 - **Not tested, checked by eye:** layout, colour, readability, whether a cue is legible from across
   a street.
-- **A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
-  survives rebalancing; `intensity == 3.2` does not.
 - **A test never asserts what a setting is** (inbox #1159). *Asked for as a judgment call, a test
   that only doubles the work of a change deleted (PLAYTEST-67) · overturned to absolute on
   2026-11-06, because a test must never test configuration settings (inbox #1159).* A test that
@@ -84,7 +83,7 @@ the real build nor the step that read it off survives into the pull request.
 
   Three that look prunable and are not: a **guard that a sweep was not vacuous** (`"there were cells
   to ask (%d)"`) is what stops a passing test from having checked nothing; an **ordering between two
-  constants** survives every rebalance that respects it; and any defect **verify**'s "What each one
+  constants that encodes such a guarantee** survives every rebalance that respects it; and any defect **verify**'s "What each one
   cannot see" names, which has already shipped once.
 - **A test that is true by luck is worse than no test**: if it would pass with the code deleted,
   or passes only on the seed it was written against, it is not holding anything.

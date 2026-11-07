@@ -1,6 +1,6 @@
 ---
 name: designing-classes
-description: How a class and its collaborators are shaped — the player's principles, the layers and which way a dependency may point, dependency injection, a mode as configuration, and derived state held by one object that derives it once and is handed around. Load this BEFORE designing or changing a class under src/, or writing a brief that does.
+description: How a class and its collaborators are shaped — the player's principles, the layers and which way a dependency may point, dependency injection, a mode as configuration, derived state held by one object that derives it once and is handed around, how an API's quality is checked, and how an interface and its implementations are named. Load this BEFORE designing or changing a class under src/, or writing a brief that does.
 ---
 
 # Designing classes
@@ -53,20 +53,8 @@ private methods that each re-derive it and the risk that two of them resolve it 
   business, and everything else asks the reader.
 - **A state object's interface is chosen from what its readers want out of it** (inbox #1156):
   explore what the tests that build the real objects today want to get out of them, and use that to
-  inform the design of the state object; then mock that out. Its API is checked by these tests
-  (inbox #1156):
-
-  - would any caller miss a method, an argument or a field if it were removed? What nobody would
-    miss goes;
-  - can the implementation underneath be swapped without breaking the interface?
-
-  Three distinct implementations are a good sign that an API is robust, as a rule of thumb and not
-  a requirement: nothing adds implementations to reach three (inbox #1156). A fake or a mock is not
-  an implementation for either the swap test or that count: it only looks up what the API should
-  return in the situations its test sets, and gives no meaningful answer outside them (inbox #1156).
-- **An interface, base class or abstract class is named for what a caller gets out of it, not for
-  how it is built, and a concrete implementation is named for what the implementation is**
-  (inbox #1156).
+  inform the design of the state object; then mock that out. It is judged and named as any
+  interface is (below).
 - **The resulting objects are injectable, so a test mocks them** (inbox #1156), and a suite that is
   not about them hands in a fake holding the answers it needs (**writing-tests**).
 - **A fact derived in more than one place is a code smell to look for** (inbox #1156): the same
@@ -75,6 +63,22 @@ private methods that each re-derive it and the risk that two of them resolve it 
 - *Proposed by the filer, open to overturn:* a design where a fake has nothing to be handed to is
   wrong. Where a test can reach a reading only by building the real objects it reads from, the
   reading becomes a public piece of its own that is handed the object, and its test hands it a fake.
+
+## An interface is judged by its callers
+
+An API's quality is checked by these tests (inbox #1156):
+
+- would any caller miss a method, an argument or a field if it were removed? *Proposed by the
+  filer, open to overturn:* what nobody would miss goes;
+- can the implementation underneath be swapped without breaking the interface?
+
+Three distinct implementations are a good sign that an API is robust, as a rule of thumb and not a
+requirement: nothing adds implementations to reach three (inbox #1156). A fake or a mock is not an
+implementation for either the swap test or that count: it only looks up what the API should return
+in the situations its test sets, and gives no meaningful answer outside them (inbox #1156).
+
+**An interface, base class or abstract class is named for what a caller gets out of it, not for how
+it is built, and a concrete implementation is named for what the implementation is** (inbox #1156).
 
 ## Overrides say so
 
