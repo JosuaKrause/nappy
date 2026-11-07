@@ -61,7 +61,9 @@ private methods that each re-derive it and the risk that two of them resolve it 
   - can the implementation underneath be swapped without breaking the interface?
 
   Three distinct implementations are a good sign that an API is robust, as a rule of thumb and not
-  a requirement: nothing adds implementations to reach three (inbox #1156).
+  a requirement: nothing adds implementations to reach three (inbox #1156). A fake or a mock is not
+  an implementation for either the swap test or that count: it only looks up what the API should
+  return in the situations its test sets, and gives no meaningful answer outside them (inbox #1156).
 - **An interface, base class or abstract class is named for what a caller gets out of it, not for
   how it is built, and a concrete implementation is named for what the implementation is**
   (inbox #1156).
