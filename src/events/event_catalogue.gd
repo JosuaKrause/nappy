@@ -1005,7 +1005,7 @@ static func _fire_truck() -> EventDef:
 ## (`building_fire()`), because in there the fire is the hazard and there is no truck to call.
 ##
 ## **It always catches on a wall the city actually draws**, since the building itself is shown burnt
-## afterwards (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`).
+## afterwards (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`).
 ## `AGAINST_THE_BUILDING` only sites against an east-or-west wall
 ## (`EventScheduler._wants_this_side()`'s default branch), never a wall `building.gd` draws a facade
 ## on: every building is extruded south from its lot's south edge. `AT_THE_FRONT`, "the one face of
@@ -1042,7 +1042,7 @@ static func _burning_building() -> EventDef:
 
 ## What is left the next morning, and every morning after, never repaired: the building the fire
 ## caught on, drawn burnt. The building carries it, not an object on the sidewalk in front of it:
-## `City.mark_the_burnt_frontage()` turns the one `Building` behind the scar
+## `CityFronts.mark_the_burnt_frontage()` turns the one `Building` behind the scar
 ## `Building.Condition.BURNT`, and `EventInstance` draws nothing for this row. Almost silent: a
 ## reminder rather than a hazard, on the same corner on day 12 as on day 4.
 ##

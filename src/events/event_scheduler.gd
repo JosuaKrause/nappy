@@ -3207,7 +3207,7 @@ static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 ## - **A crossing.** A beat that reaches a junction box is one she can step off at the zebra there
 ##   while he is at the other end of it. **A junction box is where every crosswalk in the city is**,
 ##   so *his beat crosses a crosswalk* and *his beat reaches a junction* are one question —
-##   `CityGenerator._street_tile` paints `CROSSING` only where both corridor offsets are inside a
+##   `StreetLayout._street_tile` paints `CROSSING` only where both corridor offsets are inside a
 ##   street and exactly one of them is a carriageway offset, which is a junction box by definition.
 ##   It is also the crossing this whole milestone counts on: a mid-block crossing exists in play and
 ##   is not planned around.
