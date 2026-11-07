@@ -827,6 +827,20 @@
         "art/rig/mother_side_c.svg"
       ]
     },
+    "shadows": {
+      "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has somebody standing on the ground. Drawn from the shapes rather than from pictures under art/: the bake draws each picture from its GroundShape (GroundShape.shadow_image()), the one point picture every point shadow is scaled from, and one picture for each segment listed here, since a capsule's end caps cannot be scaled out of another capsule's",
+      "padding": "transparent",
+      "consumers": [
+        "src/world/ground_shadow.gd"
+      ],
+      "segments": [
+        {
+          "half_length": 11,
+          "radius": 15,
+          "shadow_of": "the crowd's car (CarStrategy.SHADOW_ALONG and SHADOW_ACROSS)"
+        }
+      ]
+    },
     "street_kit": {
       "lifetime": "held from startup for the life of the process, so nothing ever starts loading in the frame that needs it: every day has streets, signals and closures",
       "padding": "transparent",

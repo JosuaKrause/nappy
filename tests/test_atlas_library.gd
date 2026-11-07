@@ -64,6 +64,10 @@ func _test_the_bake_is_not_stale(t) -> void:
 ## out of layers and carries the whole pictures of none of them. So the expected count is this
 ## mode's two lists, and a member of the other mode's list appearing here would fail the exact
 ## count below.
+##
+## **A group that lists `segments` is drawn rather than read** (the shadow page): its regions are the
+## one point picture and one per segment, named by the shape (`GroundShape.shadow_picture_name()`),
+## each the size its shape says its picture is (`GroundShape.shadow_picture_size()`), in both modes.
 func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
 	t.check(not groups.is_empty(), "the membership file lists groups")
@@ -71,6 +75,9 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 	var expected := 0
 	for group: String in groups.keys():
 		var record: Dictionary = groups[group]
+		if record.has("segments"):
+			expected += _check_the_drawn_pictures(t, group, record)
+			continue
 		var members: Array = (record.get("members", []) as Array).duplicate()
 		members.append_array(record.get(mode_key, []))
 		expected += members.size()
@@ -92,6 +99,23 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 			% [baked, expected])
 	t.check(expected >= FEWEST_CREDIBLE_REGIONS,
 			"there were regions to ask about (%d)" % expected)
+
+## The shadow page's pictures, checked as `_test_every_member_has_a_region()` says. Answers how
+## many there are.
+func _check_the_drawn_pictures(t, group: String, record: Dictionary) -> int:
+	var shapes: Array[GroundShape] = [GroundShape.point(GroundShape.SHADOW_PICTURE_RADIUS)]
+	for segment: Dictionary in record.get("segments", []):
+		shapes.append(GroundShape.segment(segment.get("half_length", 0.0),
+				segment.get("radius", 0.0)))
+	var wrong: Array[String] = []
+	for shape in shapes:
+		var name := shape.shadow_picture_name()
+		if AtlasTable.baked().group_of(name) != StringName(group) \
+				or AtlasTable.baked().native_size(name) != shape.shadow_picture_size():
+			wrong.append(String(name))
+	t.check(wrong.is_empty(), "%s: every shadow picture is baked on its page at its shape's size (%s)"
+			% [group, ", ".join(wrong)])
+	return shapes.size()
 
 ## **A transfer PNG stands in for its own SVG and for nothing else, so a view that has no transfer
 ## of its own draws its own vector rather than a neighbour's picture.** The eight-view families

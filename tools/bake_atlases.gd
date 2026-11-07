@@ -31,12 +31,21 @@ extends SceneTree
 ## would be a build that half-draws, and the failure would land in a screenshot rather than in a
 ## log.
 ##
+## **The shadow page is drawn rather than read.** A group that lists `segments` instead of members
+## (`shadows`) holds the contact shadows, each drawn from its `GroundShape` by the shape itself
+## (`GroundShape.shadow_image()`) and named by it (`GroundShape.shadow_picture_name()`): the one
+## point picture every point shadow is scaled from, and one picture for each listed segment. The
+## shape's own script is hashed as an input, so changing how a shadow is shaped rebakes the page.
+##
 ## This script may not use an autoload: `--script` starts no scene tree of the project's own, so
-## `Tuning` and `Palette` do not exist here. It shares `AtlasLibrary`'s naming,
-## illustrated-path and packing rules instead, which is the whole of what the loader and the
-## bake have to agree on.
+## `Tuning` does not exist here. It shares `AtlasLibrary`'s naming, illustrated-path and packing
+## rules instead, which is the whole of what the loader and the bake have to agree on.
 
 const Library := preload("res://src/visuals/atlas_library.gd")
+## The shadows' own shape, which draws each shadow picture and names it.
+const Shape := preload("res://src/ground_shape.gd")
+## The script that decides every shadow picture's pixels, hashed with the bake's own two.
+const SHAPE_SCRIPT := "src/ground_shape.gd"
 
 ## Bumped whenever this script changes what it writes for unchanged inputs, so a human reading
 ## `bake_manifest.json` can tell two bakes of the same tree apart. **The wrapper does not compare
@@ -44,14 +53,16 @@ const Library := preload("res://src/visuals/atlas_library.gd")
 ## `_hash_input()` below), so any change to either, this bump included, already makes every
 ## checkout's recorded hash disagree with the tree and forces a rebake without a second constant
 ## kept in step with this one in the wrapper's own Python.
-const TOOL_VERSION := 2
+const TOOL_VERSION := 3
 
 const MEMBERSHIP_PATH := "res://assets/atlases/membership.json"
 ## Every key a group record may carry. Checked rather than ignored, because a typo in one of the
 ## two mode lists — `members_svgs`, `members_png2` — would otherwise bake a group silently short
 ## of what a mode draws, and the missing region only shows up as a tile drawing nothing.
 const MEMBERSHIP_KEYS := ["lifetime", "padding", "consumers", "members", "members_png",
-		"members_svg"]
+		"members_svg", "segments"]
+## Every key a drawn shadow segment (`segments`) carries: its two dimensions, and whose shadow it is.
+const SEGMENT_KEYS := ["half_length", "radius", "shadow_of"]
 const BAKED_DIR := "res://assets/atlases/baked"
 const REGIONS_PATH := BAKED_DIR + "/regions.json"
 const MANIFEST_PATH := BAKED_DIR + "/bake_manifest.json"
@@ -294,24 +305,22 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 		if not (key in MEMBERSHIP_KEYS):
 			_failures.append("group %s carries the unknown key '%s'" % [group, key])
 			return Vector2i.ZERO
-	var members := _members_for_this_mode(group, record)
-	if members.is_empty():
-		return Vector2i.ZERO
-	members.sort()
 	var images: Array[Image] = []
 	var names: Array[StringName] = []
+	var members: Array[String] = []
+	if record.has("segments"):
+		members = _shadow_pictures(group, record, images, names)
+	else:
+		members = _member_pictures(group, record, images, names)
+	if members.is_empty():
+		return Vector2i.ZERO
 	var sizes: Array[Vector2i] = []
-	for member: String in members:
-		var image := _member_image(member)
-		if image == null:
+	for index in images.size():
+		if regions.has(String(names[index])):
+			_failures.append("two members share the region name '%s': %s"
+					% [names[index], members[index]])
 			return Vector2i.ZERO
-		var name := Library.region_name_for(member)
-		if regions.has(String(name)):
-			_failures.append("two members share the region name '%s': %s" % [name, member])
-			return Vector2i.ZERO
-		names.append(name)
-		images.append(image)
-		sizes.append(image.get_size())
+		sizes.append(images[index].get_size())
 	var layout := Library.plan(sizes)
 	if not layout["fits"]:
 		var overflow: int = layout.get("overflow", -1)
@@ -358,6 +367,53 @@ func _bake_group(group: String, record: Dictionary, regions: Dictionary,
 	print("bake_atlases: %-16s %4d members  %dx%d  %s padding  %.0f%% fill"
 			% [group, images.size(), page_size.x, page_size.y, padding, fill])
 	return page_size
+
+## A group's pictures read from its members, in name order, into `images` and `names`. Answers the
+## members, or nothing when one failed.
+func _member_pictures(group: String, record: Dictionary, images: Array[Image],
+		names: Array[StringName]) -> Array[String]:
+	var members := _members_for_this_mode(group, record)
+	members.sort()
+	for member: String in members:
+		var image := _member_image(member)
+		if image == null:
+			return []
+		names.append(Library.region_name_for(member))
+		images.append(image)
+	return members
+
+## The shadow page's pictures, drawn from their shapes into `images` and `names`: the one point
+## picture, then each listed segment. Answers what each picture was drawn from, for a failure to
+## name, or nothing when the list is malformed. The same in both modes: a shadow has no SVG.
+func _shadow_pictures(group: String, record: Dictionary, images: Array[Image],
+		names: Array[StringName]) -> Array[String]:
+	if record.has("members") or record.has("members_png") or record.has("members_svg"):
+		_failures.append("group %s lists both members and segments" % group)
+		return []
+	var shapes: Array[Shape] = [Shape.point(Shape.SHADOW_PICTURE_RADIUS)]
+	var drawn_from: Array[String] = ["the point picture"]
+	for entry: Variant in record.get("segments", []):
+		if not entry is Dictionary:
+			_failures.append("group %s has a segment that is not an object: %s" % [group, entry])
+			return []
+		var segment: Dictionary = entry
+		for key: String in segment.keys():
+			if not (key in SEGMENT_KEYS):
+				_failures.append("group %s has a segment with the unknown key '%s'" % [group, key])
+				return []
+		var half_length: float = segment.get("half_length", 0.0)
+		var radius: float = segment.get("radius", 0.0)
+		if half_length <= 0.0 or radius <= 0.0:
+			_failures.append("group %s has a segment without a positive half_length and radius: %s"
+					% [group, segment])
+			return []
+		shapes.append(Shape.segment(half_length, radius))
+		drawn_from.append(str(segment.get("shadow_of", "a segment")))
+	for shape in shapes:
+		images.append(shape.shadow_image())
+		names.append(shape.shadow_picture_name())
+	_hash_input(SHAPE_SCRIPT)
+	return drawn_from
 
 ## Copies a picture's own edge pixels into the one-pixel border `AtlasLibrary.PADDING` reserves
 ## around its region, so a filtered sample at the edge of an opaque tile reads the tile rather
