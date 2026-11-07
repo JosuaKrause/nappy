@@ -36,6 +36,7 @@ PROJECT_ROOT = TOOLS.parent
 # standard library's job rather than this repository's.
 ENTRY_POINTS = (
     "agent-identity.py",
+    "art-defect-check.py",
     "clip.py",
     "reference.py",
     "remove-checkerboard.py",
