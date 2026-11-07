@@ -452,10 +452,11 @@ func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 		_:
 			return &""
 
-## Doors, the chandeliers and every ground decal — everything that stands above the floor rather
-## than being the floor. The doors go in their own `Doors` layer under her, from here and from
-## `_add_standing()` and `_add_threshold()`; only the chandeliers and the decals are in the
-## y-sorted layer the player joins through `add_entity()`.
+## Doors, the chandeliers and every ground decal. The doors go in their own `Doors` layer under
+## her, from here and from `_add_standing()` and `_add_threshold()`; the decals (puddle, debris,
+## rat) lie flat on the floor, so they go in the ground layer after the floor tiles and are never
+## sorted against her; only the chandeliers, which hang above her, are in the y-sorted layer the
+## player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
 	for id: String in map.doors:
 		var door: InteriorMapPlan.Door = map.doors[id]
@@ -473,7 +474,9 @@ func _rebuild_overlays() -> void:
 		var sprite := Sprite2D.new()
 		sprite.texture = atlas.region(name)
 		sprite.position = map.tile_to_world(tile)
-		add_entity(sprite)
+		# Lying flat on the floor, like the vent's grate: at the ground layer after the floor tiles,
+		# so she is never drawn under one while she stands on its northern half.
+		add_entity(sprite, DrawLayer.Layer.GROUND)
 	_add_chandeliers()
 
 func _is_edge_threshold(door_id: String) -> bool:

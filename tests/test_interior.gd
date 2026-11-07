@@ -52,6 +52,7 @@ func run(t) -> void:
 	_test_one_blow_of_steam_costs_forty_to_fifty_points(t)
 	_test_the_meter_does_not_fall_in_the_basement(t)
 	await _test_every_vent_has_its_grate_blowing_or_not(t)
+	_test_the_floor_decals_are_drawn_under_her(t)
 	await _test_an_explosion_flashes_every_hallway_window(t)
 	await _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 	await _test_the_building_shows_what_the_city_shows(t)
@@ -1755,6 +1756,33 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 			"the lobby's basement door is still ordinary ground")
 	t.check(scene.decay_multiplier(scene.map.tile_to_world(f.door("basement:entry").tile)) == 0.0,
 			"the basement's entry tile gives nothing back")
+	scene.free()
+
+## The basement's puddle, debris and rat lie flat on the floor, so each is drawn under her wherever
+## she stands on it: at the ground layer (the vent grate's own), not in the y-sorted layer she joins,
+## where she would be drawn under it on its northern half. A stand-in for her is added the way she
+## is, through `add_entity()`.
+func _test_the_floor_decals_are_drawn_under_her(t: Node) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	var her := Node2D.new()
+	scene.add_entity(her)
+	t.check(scene.map.decals.size() >= 3, "the building has its floor decals (%d)" % scene.map.decals.size())
+	var kinds := {}
+	for tile: Vector2i in scene.map.decals:
+		kinds[scene.map.decals[tile]] = true
+		var at := scene.map.tile_to_world(tile)
+		var decal: Sprite2D = null
+		for node in scene.find_children("*", "Sprite2D", true, false):
+			var sprite := node as Sprite2D
+			if sprite.position == at and sprite.get_parent() != her.get_parent():
+				decal = sprite
+		t.check(decal != null, "the decal at %s lies outside the sorted layer she stands in" % tile)
+		if decal == null:
+			continue
+		t.check(_drawn_z(decal) < _drawn_z(her),
+				"the decal at %s is drawn under her (z %d against %d)" % [tile, _drawn_z(decal), _drawn_z(her)])
+	t.check(kinds.size() == 3, "the puddle, the debris and the rat are all there (%d kinds)" % kinds.size())
 	scene.free()
 
 ## **A vent that is there all the time, blowing or not, is what a player can plan around.** Each
