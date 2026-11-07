@@ -172,9 +172,9 @@ Three rules on it, in the order they matter:
    outer radius for the whole time it is telegraphing. That is the telegraph fairness contract
    holding for an event that arrives without warning, which is the only way one is allowed to.
 3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so
-   `_ensure_the_city_is_still_walkable` never sees it and nothing checks that what it blocks
-   leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine, and
-   so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
+   `DayRepairs.ensure_the_city_is_still_walkable` never sees it and nothing checks that what it
+   blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
+   and so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
 
 **`TOWARD_PLAYER`, which is the cyclist and the loose dog.** Also no tile, also sited by
@@ -1192,11 +1192,11 @@ The **event budget** is stated *per block of lattice* and grows with the day ind
 `EventScheduler`. Each event costs budget equal to its `intensity` tier, so late days are not just
 "more cats".
 
-The budget is **not** the count: `_ensure_one_usable_park` strips whatever reaches the calmest
-block and `_ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
-Measure what a day *places*, over several seeds; deriving it from the formula gets a number that
-is too small and looks right. An `AHEAD_OF_PLAYER` event costs the same budget and takes no tile,
-so a day's `plan` line reads as *n sited, m ahead*.
+The budget is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
+calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
+the city. Measure what a day *places*, over several seeds; deriving it from the formula gets a
+number that is too small and looks right. An `AHEAD_OF_PLAYER` event costs the same budget and takes
+no tile, so a day's `plan` line reads as *n sited, m ahead*.
 
 ### Where in the city, and why
 
@@ -2045,10 +2045,10 @@ which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's r
 streets and the caps)*, each a setting the city section's spec turns off
 (`DaySpec.keeps_unused_calm_clear`, `holds_the_home_streets`, `caps_per_day`):
 
-- **The calm a day leaves alone** (`_calm_to_leave_alone()`: nothing's field may reach a calm area
-  she has not used yet). The escape is the climax and the chains pass a calm area at every stop,
-  so the rule would clear the streets round every stop: about a third of the trucks, a sixth of
-  the vans and over half the bursts would go.
+- **The calm a day leaves alone** (`CalmAreas.unused_ground()`: nothing's field may reach a calm
+  area she has not used yet). The escape is the climax and the chains pass a calm area at every
+  stop, so the rule would clear the streets round every stop: about a third of the trucks, a sixth
+  of the vans and over half the bursts would go.
 - **The home's streets.** A day places nothing on the street the front door opens onto and holds
   the streets round the home block, because she sets off from that door. The escape sets off from
   the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto

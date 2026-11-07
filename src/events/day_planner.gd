@@ -154,10 +154,13 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	var placements := EventScheduler.build_day(spec, rng, city_map, consumed,
-			world.run.attempt_spend.scars, world.run.calendar.settled_this_act(), tree,
-			world.run.resistance.progress, doors,
-			ResistanceDirector.target_ground(city_map, day, region_plan), standing, world.trace)
+	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
+	# The day's calm areas, made once here where the map, the run and the day meet, and handed
+	# to the scheduler, which hands them to every pass that asks about calm ground.
+	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(), day, target)
+	var placements := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
+			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
+			standing, world.trace).placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -219,8 +222,8 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	placements.append_array(seals)
 	if populate_events:
-		placements.append_array(EventScheduler.build_day(spec, rng, map, [], [], [], walk, 0,
-				PackedVector2Array(), [], seals, trace, kept_ground))
+		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],
+				walk, 0, PackedVector2Array(), [], seals, trace, kept_ground).placements())
 	return placements
 
 # --------------------------------------------------------------- the building ---

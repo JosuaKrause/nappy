@@ -1395,8 +1395,8 @@ static func _escape_rows_from(map: CityMap, bare: Dictionary, counts: Dictionary
 	var spec := _city_spec()
 	spec.bag = counts
 	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals)
+	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), [], seals).placements()
 
 ## Whether two plans stand the same rows in the same places.
 static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
@@ -1426,8 +1426,8 @@ static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictiona
 	var spec := _city_spec()
 	spec.bag = counts
 	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals, trace)
+	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), [], seals, trace).placements()
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
@@ -2083,7 +2083,8 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in EventScheduler.build_day(_city_spec(), rng, map, [], [], [], plan):
+		for placement in EventScheduler.build_day(_city_spec(), rng, map, CalmAreas.of(map), [],
+				[], plan).placements():
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"

@@ -66,8 +66,9 @@ func _role_and_depth_sweep() -> void:
 	var sum_solid_friction_on_corridor := 0
 	var day_count := 0
 	# The winnability guarantee, re-checked independently of `build_day`'s own
-	# `_ensure_the_city_is_still_walkable` (which already ran before `planned` came back) — a
-	# fresh flood from the home tile against every obstruction the day actually placed.
+	# `DayRepairs.ensure_the_city_is_still_walkable` (which already ran before `planned` came
+	# back) — a fresh flood from the home tile against every obstruction the day actually
+	# placed.
 	var days_unwinnable := 0
 
 	for i in SEEDS:
@@ -82,7 +83,8 @@ func _role_and_depth_sweep() -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("zz_m64:%d:%d" % [map.seed_used, day])
 			var consumed: Array[String] = []
-			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree)
+			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map,
+					CalmAreas.of(map), consumed, [], tree).placements()
 			day_count += 1
 			sum_corridor_streets += tree.streets().size()
 			var crossing_streets := {}
@@ -142,17 +144,16 @@ func _role_and_depth_sweep() -> void:
 		print("  %-16s total=%4d depth0=%4d depth1=%4d depth2+=%4d  roles: %s"
 				% [id, total, counts[0], counts[1], counts[2], ", ".join(role_bits)])
 
-## The same reachability guarantee `EventScheduler._ensure_the_city_is_still_walkable` states,
+## The same reachability guarantee `DayRepairs.ensure_the_city_is_still_walkable` states,
 ## re-checked from the outside against the day `build_day` actually returned — calling the real
-## `_park_is_reachable` so this is not a second implementation to drift from the one under test.
+## `DayRepairs._park_is_reachable` so this is not a second implementation to drift from the one
+## under test.
 func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Array) -> bool:
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan: EventScheduler.Planned in planned:
-		if not plan.is_placed():
-			continue
-		if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
+		if plan.obstructs():
 			blockers.append(plan)
-	return EventScheduler._park_is_reachable(map, grid, blockers)
+	return DayRepairs._park_is_reachable(map, grid, blockers)
 
 # ---------------------------------------------------------- closures vs the access refusal ---
 

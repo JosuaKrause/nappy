@@ -141,7 +141,7 @@ var bag_rows := {}
 ## How many marbles each street of the walk draws.
 var slots_per_street := 0
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
-## (`EventScheduler._calm_to_leave_alone()`, `_ensure_one_usable_park()`): every day's rule. The
+## (`CalmAreas.unused_ground()`, `DayRepairs.ensure_one_usable_park()`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
 var keeps_unused_calm_clear := true

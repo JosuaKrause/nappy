@@ -16,10 +16,11 @@ extends RefCounted
 ##    the way the "roll" telemetry line ("<ids> in the park she used yesterday, <tile>") reports
 ##    it. Its own count and how much of the park's open ground it actually denies.
 ## 2. **The full day's plan** — `EventScheduler.build_day` with the same park as `used_calm`,
-##    filtered to whatever reaches the park the way `_ensure_one_usable_park` already asks the
-##    question (`_reaches_rect`). This is what a player actually meets, which can be *more* than
-##    the roll alone placed: the visited park is not protected from the day's ordinary fill the
-##    way an unvisited one is (`_calm_to_leave_alone` only lists calm blocks not in `used_calm`).
+##    filtered to whatever reaches the park the way `DayRepairs.ensure_one_usable_park` already
+##    asks the question (`EventScheduler.Planned.reaches()`). This is what a player actually
+##    meets, which can be *more* than the roll alone placed: the visited park is not protected
+##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
+##    lists calm areas she has not used).
 ##
 ## "Denies" is read the way `_denial_radius` defines it: a tile is denied if it is within the
 ## radius at which the source's field still outpaces the calm-ground decay, not merely within its
@@ -100,10 +101,13 @@ func _reproduce_zero_density_visits() -> void:
 
 				# 1. The roll alone, on its own RNG stream — an independent sample of what the
 				# spoil mechanism by itself produces for this park.
-				var roll_planned: Array[EventScheduler.Planned] = []
 				var rng1 := RandomNumberGenerator.new()
 				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
-				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_planned, [block], 0)
+				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
+				var roll_events := DayEvents.over(roll_calm)
+				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_events, roll_calm,
+						0)
+				var roll_planned := roll_events.placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)
 				var rd := _tiles_denied_fraction(map, open_tiles, roll_planned)
@@ -111,17 +115,18 @@ func _reproduce_zero_density_visits() -> void:
 
 				# 2. The full day, exactly as `build_day` plans it with this park as `used_calm`,
 				# filtered to whatever actually reaches the park — matching
-				# `_ensure_one_usable_park`'s own question.
+				# `DayRepairs.ensure_one_usable_park`'s own question.
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-						DaySpec.for_day(day), rng2, map, [], [], [block], tree, 0)
+						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]),
+						[], [], tree, 0).placements()
 				var full_in_lot: Array[EventScheduler.Planned] = []
 				for plan: EventScheduler.Planned in full_planned:
 					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
 							or not plan.is_placed():
 						continue
-					if EventScheduler._reaches_rect(plan, lot_world):
+					if plan.reaches(lot_world):
 						full_in_lot.append(plan)
 				var fc := full_in_lot.size()
 				full_counts.append(fc)

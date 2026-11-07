@@ -120,26 +120,13 @@ func _signature(planned: Array) -> String:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)
 
-## The calm ground of a calm block — mirrors `EventScheduler._calm_rect`, which is the
-## definition the guarantee is actually written over.
-func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
-	var layout: BlockLayout = map.block_layouts.get(block)
-	if layout and BlockLayout.has(layout.open_rect):
-		return layout.open_rect
-	return CityMap.block_rect(block)
-
-## The calm block with the least reaching it — the one a player would find and settle in.
-func _quietest_calm_block(map: CityMap, planned: Array) -> Vector2i:
+## The calm block she would find and settle in: the one the fewest of the day's rows spoil, as
+## the day itself answers it (`DayEvents.spoilers_of()`).
+func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var fewest := 1 << 30
-	for block in map.calm_blocks:
-		var lot := map.tile_rect_to_world(_calm_rect(map, block))
-		var spoilers := 0
-		for plan in planned:
-			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
-				continue
-			if lot.grow(plan.def.outer_radius).has_point(plan.position):
-				spoilers += 1
+	for block in calm.blocks():
+		var spoilers := events.spoilers_of(block).size()
 		if spoilers < fewest:
 			fewest = spoilers
 			best = block
@@ -354,7 +341,8 @@ func _test_the_named_decisions_arrive(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
-		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded,
+				CalmAreas.of(seeded), consumed).placements():
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 		# No day-1 map may be without either of them at all, which is the failure the player
 		# actually reported: *"a restaurant — I never saw one."*
@@ -444,24 +432,21 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 
 	var used: Vector2i = map.calm_blocks[0]
 	var used_set: Array[Vector2i] = [used]
-	var lot := map.tile_rect_to_world(_calm_rect(map, used))
+	var calm := CalmAreas.of(map, used_set)
+	var lot := calm.ground_of(used)
 	var allowed := maxf(EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(lot.size.x, lot.size.y) / 16.0)
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_set)
+		var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, calm,
+				consumed, [])
+		var planned := events.placements()
 
 		var on_her_park := 0
 		var clean_elsewhere := 0
-		for block in map.calm_blocks:
-			var here := map.tile_rect_to_world(_calm_rect(map, block))
-			var spoilers := 0
-			for plan in planned:
-				if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
-					continue
-				if here.grow(plan.def.outer_radius).has_point(plan.position):
-					spoilers += 1
+		for block in calm.blocks():
+			var spoilers := events.spoilers_of(block).size()
 			if block == used:
 				on_her_park = spoilers
 			elif spoilers == 0:
@@ -499,9 +484,11 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 	# And a day that knows nothing about yesterday plans exactly as it always did.
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
-	var a := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, forgetful)
+	var a := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, CalmAreas.of(map),
+			forgetful).placements()
 	var nothing: Array[Vector2i] = []
-	var b := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, remembering, [], nothing)
+	var b := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, CalmAreas.of(map,
+			nothing), remembering, []).placements()
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
 
@@ -518,8 +505,9 @@ func _test_the_city_remembers_where_she_went(t) -> void:
 			act = Tuning.act_for_day(day)
 			used_this_act = []
 		var consumed: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], used_this_act)
-		var quietest := _quietest_calm_block(map, planned)
+		var calm_today := CalmAreas.of(map, used_this_act)
+		var quietest := _quietest_calm_block(EventScheduler.build_day(DaySpec.for_day(day),
+				_rng(day), map, calm_today, consumed, []), calm_today)
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)
 		used_this_act.append(quietest)

@@ -298,8 +298,8 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 ##
 ## The failure this is really guarding against is a zone that is four calm blocks that happen to
 ## be adjacent. That would count as four calm areas, so the closure planner would think a day
-## with two ways into one park had four; `_ensure_one_usable_park` would protect a quarter of it;
-## and M24 would spoil the corner she settled in and call the job done.
+## with two ways into one park had four; `DayRepairs.ensure_one_usable_park` would protect a
+## quarter of it; and M24 would spoil the corner she settled in and call the job done.
 ##
 ## **The shape is a rolled one since M52 and the count is not.** Every zone's footprint has to be a
 ## shape the catalogue offers, and at least one of them has to be the square — that is M21's own

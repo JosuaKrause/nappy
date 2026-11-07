@@ -87,7 +87,8 @@ func _measure_return_phase() -> void:
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m98:plan:%d:%d" % [map.seed_used, day])
 			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
+					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), [], [], tree,
+							0).placements()
 
 			var y_min := 0.0
 			var y_max: float = map.world_size().y

@@ -1011,7 +1011,8 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 	var roles := {}
 	for day in [3, 9]:
 		var tree := RouteTree.for_day(map, day)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree)
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements()
 		# Day 3's set piece is budgeted with no position and sited from the walk she takes
 		# (`EventDef.on_her_way`), so a day's plan on its own carries no set-piece mark to
 		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
@@ -1138,7 +1139,8 @@ func _test_every_routed_event_is_a_straight_line(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var consumed: Array[String] = []
 	for day in [1, 3, 7, 14]:
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed).placements():
 			if plan.path.size() < 2:
 				continue
 			t.check(plan.path.size() == 2, "%s's route is two points, not %d"
@@ -1632,8 +1634,9 @@ func _plan_signature(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], null, 0,
-			PackedVector2Array(), [], [], trace):
+	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+			consumed, [], null, 0,
+			PackedVector2Array(), [], [], trace).placements():
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
 	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
 	# is exactly the divergence this is looking for.
