@@ -47,10 +47,6 @@ func _init(layers := GROUND | POSTS, body_radius := 0.0) -> void:
 func is_blocked_by(layer: int) -> bool:
 	return blocked_by & layer != 0
 
-## The same layers at another radius.
-func with_radius(body_radius: float) -> Mover:
-	return Mover.new(blocked_by, body_radius)
-
 ## The mover of no body stopped by `layers`, shared: one is built per set of layers and handed to
 ## every caller that asks, so a question asked every frame by hundreds of walkers builds nothing.
 static func of(layers: int) -> Mover:
