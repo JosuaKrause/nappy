@@ -800,6 +800,8 @@ func is_on_the_tree(key: Vector3i) -> bool:
 
 ## Every street the tree runs along, in `StreetNetwork.segments()`' order — `RouteSource`'s question,
 ## answered from `is_on_the_tree()`.
+##
+## Overrides RouteSource.streets_on_the_walk.
 func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	for segment in _map.network.segments():
@@ -809,12 +811,16 @@ func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
 
 ## A tree answers for a whole street: a branch that is on it at all walks it end to end, so where
 ## along it the question is asked does not change the answer.
+##
+## Overrides RouteSource.walks_the_street.
 func walks_the_street(segment: StreetNetwork.Segment, _along := -1) -> bool:
 	return is_on_the_tree(segment.key())
 
 ## **An alley that opens onto the tree at either end is the way round a wall**, so the walk reaches
 ## it whether or not a branch goes down it; one that touches the tree at neither end would only join
 ## two streets off it. The two streets are the ones its two mouths open onto, across its block.
+##
+## Overrides RouteSource.reaches_the_alley.
 func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
 	var vertical := rect.size.x < rect.size.y
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
@@ -827,6 +833,8 @@ func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
 
 ## Whether a branch runs along `tile`'s own cell: the cell's node is one the tree carries, which is
 ## `Corridor.carries_a_route()`'s depth zero read without building a corridor.
+##
+## Overrides RouteSource.carries_a_route.
 func carries_a_route(tile: Vector2i) -> bool:
 	if not grid:
 		return false
@@ -836,6 +844,8 @@ func carries_a_route(tile: Vector2i) -> bool:
 ## **The street grain, where a tile has a street**: every tile of a street the tree runs along, and
 ## a tile on no street (a junction's box, a park cut, an alley the tree takes) by its own cell —
 ## `Corridor.depth()` at zero, the two halves it answers at.
+##
+## Overrides RouteSource.marks_the_kerb_at.
 func marks_the_kerb_at(tile: Vector2i) -> bool:
 	var segment := _map.network.segment_containing(tile)
 	if segment:
@@ -844,6 +854,8 @@ func marks_the_kerb_at(tile: Vector2i) -> bool:
 
 ## The home street, which the tree is grown from and nothing seals: the home is a notch with one
 ## exit, so sealing it seals her in.
+##
+## Overrides RouteSource.street_it_starts_in.
 func street_it_starts_in() -> StreetNetwork.Segment:
 	return _home_street
 
@@ -853,10 +865,14 @@ func network() -> StreetNetwork:
 	return _map.network
 
 ## The tree's own corridor, built afresh: what every placement of the day is stated against.
+##
+## Overrides RouteSource.corridor.
 func corridor() -> Corridor:
 	return Corridor.of(self)
 
 ## Her doorstep.
+##
+## Overrides RouteSource.start.
 func start() -> Vector2:
 	return _map.doorstep_world_position() if _map else Vector2.INF
 

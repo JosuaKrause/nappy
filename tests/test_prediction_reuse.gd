@@ -19,6 +19,7 @@ class CountedEvent extends EventInstance:
 	class Source extends EventExcitement:
 		var sampling_runs := 0
 
+		## Overrides ExcitementSource._sample_expected_landed.
 		func _sample_expected_landed(at: Vector2, vel: Vector2) -> float:
 			sampling_runs += 1
 			return super(at, vel)
@@ -38,6 +39,7 @@ class CountedCrowd extends CrowdAgent:
 	class Source extends CrowdExcitement:
 		var sampling_runs := 0
 
+		## Overrides ExcitementSource._sample_expected_landed.
 		func _sample_expected_landed(at: Vector2, vel: Vector2) -> float:
 			sampling_runs += 1
 			return super(at, vel)
@@ -51,6 +53,7 @@ class ReferenceEvent extends EventInstance:
 		excitement.rim = rim
 
 	class Source extends EventExcitement:
+		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
 			return Reference.event_gross(_event, at)
 
@@ -63,6 +66,7 @@ class ReferenceCrowd extends CrowdAgent:
 		excitement.rim = rim
 
 	class Source extends CrowdExcitement:
+		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
 			return Reference.crowd_gross(_agent, at)
 

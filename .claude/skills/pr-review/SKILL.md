@@ -86,7 +86,15 @@ touches (the path table in `CLAUDE.md`). Look for:
   cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
   first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
   inbox #1098 in curly-rabbit. It fails CI on a new one and on a line added to the list's no reader
-  or own file only group (against the PR's base), and on a kept line with no reason; whether a kept
+  or own file only group (against the PR's base) unless the same diff changes the checker itself, and on a
+  kept line with no reason. For each line such a diff adds, run the base's checker on the head tree: copy the base's
+  `tools/check_test_only_members.py`, `tools/check_layers.py` and `tools/layer_map.py` into a scratch folder and run
+  `uv run python <scratch>/check_test_only_members.py --root <head checkout>`. An added line it prints nothing for is a
+  member it still sees as test-only, which a checker change may not list; a `REMOVE` line, whatever its reason, is
+  fine, since the base's checker does not see the member as test-only. Each `FAILED` line is a member the base's checker
+  sees as test-only and the head's checker no longer does. Check that the new checker is right to drop it (for
+  `Main.use_sitting` in the PR that added the per-class reading, the test's call is on a `TitleScreen`), and not that
+  the change hid it. Whether a kept
   line's reason holds is the reviewer's to read, and so is the rest, including any change to the
   check's own exemptions in the tool: `ENGINE_MEMBERS` (a name never counted as a read, which exempts
   it everywhere) and `SKIPPED_TESTS` (a test file not scanned), since each switches the check off

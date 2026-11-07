@@ -36,12 +36,15 @@ var tears := 0
 
 var _dawn: Dictionary = {}
 
+## Overrides RunSubState.slot.
 func slot() -> Slot:
 	return Slot.NESTED
 
+## Overrides RunSubState.save_key.
 func save_key() -> String:
 	return "posters"
 
+## Overrides RunSubState.reset.
 func reset() -> void:
 	cells.clear()
 	pasted_through = 0
@@ -77,10 +80,14 @@ func tear(tile: Vector2i, tear_index: int) -> bool:
 	return true
 
 ## Photographs the walls as the attempt about to be played found them. See the class note.
+##
+## Overrides RunSubState.photograph.
 func photograph() -> void:
 	_dawn = _as_data()
 
 ## Puts the walls back where the photograph found them.
+##
+## Overrides RunSubState.give_back.
 func give_back() -> void:
 	if _dawn.is_empty():
 		reset()
@@ -88,12 +95,16 @@ func give_back() -> void:
 	_from_data(_dawn)
 
 ## Everything a save carries, the photograph included, as plain JSON-safe values.
+##
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	var data := _as_data()
 	data["dawn"] = _dawn.duplicate(true)
 	return data
 
 ## The other half of `to_data()`. JSON has no integer type, so every number is cast.
+##
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	_from_data(data)
 	var dawn: Variant = data.get("dawn", {})

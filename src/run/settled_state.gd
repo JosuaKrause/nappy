@@ -10,9 +10,11 @@ extends RunSubState
 ## tomorrow's events would make the game play differently with `--no-telemetry`.
 var settled_in: Dictionary = {}
 
+## Overrides RunSubState.reset.
 func reset() -> void:
 	settled_in.clear()
 
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	var settled_data: Array = []
 	for settled_day: int in settled_in:
@@ -20,6 +22,7 @@ func to_data() -> Dictionary:
 		settled_data.append({"day": settled_day, "x": block.x, "y": block.y})
 	return {"settled_in": settled_data}
 
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	settled_in.clear()
 	for raw: Dictionary in data["settled_in"]:

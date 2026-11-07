@@ -344,6 +344,7 @@ class OrderRecordingResistance extends ResistanceDirector:
 	var planned_when_started := -1
 	var watched: City
 
+	## Overrides ResistanceDirector.start_day.
 	func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 		planned_when_started = watched.events.planned_count()
 		super.start_day(day, rng, day_length)

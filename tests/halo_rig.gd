@@ -31,21 +31,26 @@ class ToldRim extends SourceRim:
 		super(Callable())
 		inner = rim
 
+	## Overrides SourceRim.set_strength.
 	func set_strength(to: float, tint: Color) -> void:
 		strength = to
 		colour = tint
 		told += 1
 		inner.set_strength(to, tint)
 
+	## Overrides SourceRim.is_held.
 	func is_held() -> bool:
 		return inner.is_held()
 
+	## Overrides SourceRim.release.
 	func release() -> void:
 		inner.release()
 
+	## Overrides SourceRim.forget.
 	func forget() -> void:
 		inner.forget()
 
+	## Overrides SourceRim.entity_halo.
 	func entity_halo() -> EntityHalo:
 		return inner.entity_halo()
 
@@ -66,6 +71,7 @@ static func told(instance: EventInstance) -> ToldRim:
 class DecayedBaby extends Baby:
 	var decay := 0.0
 
+	## Overrides Baby.decay_in_window.
 	func decay_in_window() -> float:
 		return decay
 
@@ -74,6 +80,7 @@ class DecayedBaby extends Baby:
 class ListSet extends ExcitementSources:
 	var sources: Array = []
 
+	## Overrides ExcitementSources.every_source.
 	func every_source(into: Array) -> void:
 		into.append_array(sources)
 

@@ -49,10 +49,12 @@ class CountingVerdicts extends EventScheduler.Verdicts:
 	var asked: Array = []
 	var _judged_since := {}
 
+	## Overrides EventScheduler.Verdicts.of.
 	func of(key: Array) -> Array:
 		asked.append(key)
 		return super.of(key)
 
+	## Overrides EventScheduler.Verdicts.keep.
 	func keep(key: Array, verdict: Array) -> void:
 		judged += 1
 		if _judged_since.has(key):
@@ -60,6 +62,7 @@ class CountingVerdicts extends EventScheduler.Verdicts:
 		_judged_since[key] = true
 		super.keep(key, verdict)
 
+	## Overrides EventScheduler.Verdicts.forget.
 	func forget() -> void:
 		_judged_since.clear()
 		super.forget()
@@ -69,13 +72,16 @@ class CountingVerdicts extends EventScheduler.Verdicts:
 class ForgetfulVerdicts extends EventScheduler.Verdicts:
 	var candidates := {}
 
+	## Overrides EventScheduler.Verdicts.of.
 	func of(key: Array) -> Array:
 		candidates[key] = true
 		return []
 
+	## Overrides EventScheduler.Verdicts.keep.
 	func keep(_key: Array, _verdict: Array) -> void:
 		pass
 
+	## Overrides EventScheduler.Verdicts.forget.
 	func forget() -> void:
 		candidates.clear()
 
@@ -383,6 +389,7 @@ class SpySiting extends EventScheduler.WalkSiting:
 	## leaves out.
 	var plans: Array[EventScheduler.Planned] = []
 
+	## Overrides EventScheduler.WalkSiting.ahead_of.
 	func ahead_of(def: EventDef, rng: RandomNumberGenerator,
 			already: Array[EventScheduler.Planned], at: Vector2, heading: Vector2, near: float,
 			far: float) -> EventScheduler.Planned:
@@ -398,14 +405,17 @@ class SpySiting extends EventScheduler.WalkSiting:
 		calls.append(["ask", placed, sited != null])
 		return sited
 
+	## Overrides EventScheduler.WalkSiting.begin_look.
 	func begin_look() -> void:
 		calls.append(["begin"])
 		super.begin_look()
 
+	## Overrides EventScheduler.WalkSiting.forget_the_verdicts.
 	func forget_the_verdicts() -> void:
 		calls.append(["forget"])
 		super.forget_the_verdicts()
 
+	## Overrides EventScheduler.WalkSiting.end_look.
 	func end_look() -> void:
 		calls.append(["end"])
 		super.end_look()

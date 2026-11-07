@@ -26,6 +26,8 @@ func _init(world: EventWorld, checkpoints: CheckpointController) -> void:
 
 ## Ties keep the first of the live instances, the order the day streamed them in — a stable,
 ## seed-determined answer rather than one that depends on floating-point luck.
+##
+## Overrides ExcitementSources.sources_at.
 func sources_at(at: Vector2) -> Array:
 	var inside := _checkpoints.door_holding_her_at(at)
 	if inside:
@@ -48,10 +50,12 @@ func sources_at(at: Vector2) -> Array:
 		sources.append([strongest, strongest_rate])
 	return sources
 
+## Overrides ExcitementSources.every_source.
 func every_source(into: Array) -> void:
 	for instance in _world.instances:
 		into.append(instance.excitement)
 
+## Overrides ExcitementSources.holds_her_alone.
 func holds_her_alone(at: Vector2) -> bool:
 	return _checkpoints.door_holding_her_at(at) != null
 

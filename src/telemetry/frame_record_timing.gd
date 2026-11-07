@@ -10,14 +10,18 @@ var _record: FrameTiming
 func _init(record: FrameTiming) -> void:
 	_record = record
 
+## Overrides CrowdTiming.running.
 func running() -> bool:
 	return _record.on
 
+## Overrides CrowdTiming.enter.
 func enter() -> int:
 	return _record.enter(FrameTiming.CROWD)
 
+## Overrides CrowdTiming.leave.
 func leave(previous: int) -> void:
 	_record.leave(previous)
 
+## Overrides CrowdTiming.drew.
 func drew() -> void:
 	_record.drew(FrameTiming.Draw.CROWD)

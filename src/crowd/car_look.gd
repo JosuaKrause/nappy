@@ -89,6 +89,8 @@ var travelled := 0.0
 
 ## Adds the ground this tick covered. Called once per tick, never from the drawing, which a halo
 ## ring calls several times a frame.
+##
+## Overrides AgentLook.advance.
 func advance(moving: Vector2, delta: float) -> void:
 	travelled = wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
 
@@ -98,9 +100,12 @@ func advance(moving: Vector2, delta: float) -> void:
 ## freezing mid-rise, and a stopped car sits still. `CrowdAgent._draw()` lifts the whole drawing by
 ## it and `draw_body()` draws the wheels and the shadow back down by it, which is what lets the
 ## halo's ring ride the same lift and trace the body where it is drawn.
+##
+## Overrides AgentLook.bob.
 func bob() -> float:
 	return WheelBob.lift(travelled, _agent.velocity().length() / BOB_FULL_SPEED)
 
+## Overrides AgentLook.carets.
 func carets() -> bool:
 	return true
 
@@ -111,12 +116,16 @@ func carets() -> bool:
 ## `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45 degrees
 ## clear of its neighbours and twice the hold's reach, so the ordinary update replaces the sector
 ## drawn before with no reset.
+##
+## Overrides AgentLook.sector.
 func sector() -> int:
 	view = EightDirection.update(view, _agent.velocity(), IDLE_SPEED)
 	return view
 
 ## One `velocity()` serves the bob and the sector, the value `bob()` and `sector()` would each have
 ## computed.
+##
+## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
 	var third := roundi(WheelBob.lift(travelled, moving.length() / BOB_FULL_SPEED) * BOB_STEPS_PER_PX)
 	view = EightDirection.update(view, moving, IDLE_SPEED)
@@ -126,6 +135,8 @@ func picture(moving: Vector2) -> Vector3i:
 ## the heading rather than the quantised view, because a turn is continuous and the eight views are
 ## not; keyed on the view alone, a car that has turned would keep the anchor it had at the last
 ## sector boundary and its picture would sit south of its own body for the rest of its run.
+##
+## Overrides AgentLook.heading_key.
 func heading_key() -> Vector2i:
 	return Vector2i((_agent.heading() * HEADING_STEPS).round())
 
@@ -133,6 +144,8 @@ func heading_key() -> Vector2i:
 ## overhangs are real and unequal: along a vertical lane the larger of its south reach and the
 ## rest of its canvas, along a horizontal one half its width. Only the cardinal views are asked,
 ## since a fresh entry never lands mid-turn.
+##
+## Overrides AgentLook.entry_clearance.
 func entry_clearance(vertical: bool) -> float:
 	if vertical:
 		var body := AtlasTable.baked().native_size(region_of(BODY_BY_VIEW["front"]))
@@ -141,6 +154,7 @@ func entry_clearance(vertical: bool) -> float:
 	var side := AtlasTable.baked().native_size(region_of(BODY_BY_VIEW["side"]))
 	return float(side.x) * 0.5
 
+## Overrides AgentLook.palette.
 func palette() -> Array:
 	return Palette.CAR_PAINT
 
@@ -173,6 +187,8 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 ## whole of the bob: the wheels never move, the paint and the glass above them rise and fall about a
 ## pixel. Reads the agent's library's `region()`, which is null with an engine error the moment
 ## `crowd` is not acquired; `Crowd.start_day()` acquires it before an agent exists to draw.
+##
+## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
 	var frame := sector()
 	var flip := flipped()

@@ -522,6 +522,8 @@ func street_kind(vertical: bool, index: int, along_tile: int) -> GameEnums.Stree
 
 ## The kind of street at a tile, asked about one of the two corridors it may belong to. The along
 ## coordinate is the *other* axis, which is what a stretch is measured along.
+##
+## Overrides WorldMap.street_kind_at.
 func street_kind_at(vertical: bool, tile: Vector2i) -> GameEnums.StreetKind:
 	var across: int = tile.x if vertical else tile.y
 	if corridor_offset(across) < 0:
@@ -596,6 +598,8 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 
 ## Whether the city as built lets anybody stand on `tile`: walkable ground with no post on it.
 ## `passable()` for `Mover.lattice()`, spelt out because it is the hottest question the map answers.
+##
+## Overrides WorldMap.is_walkable.
 func is_walkable(tile: Vector2i) -> bool:
 	return Tile.is_walkable(tile_at(tile)) and not blocked.posts.has(tile)
 
@@ -649,15 +653,20 @@ func post_positions() -> Array[Vector2]:
 
 ## Whether the city as built lets a mover stopped by `layers` onto `tile`: the ground's own type,
 ## a post, and street ground, as `layers` asks.
+##
+## Overrides WorldMap.has_ground.
 func has_ground() -> bool:
 	return true
 
+## Overrides WorldMap.walk_tiles.
 func walk_tiles() -> PackedByteArray:
 	return tiles
 
+## Overrides WorldMap.walkable_lut.
 func walkable_lut() -> PackedByteArray:
 	return _WALKABLE
 
+## Overrides WorldMap._ground_lets.
 func _ground_lets(tile: Vector2i, layers: int) -> bool:
 	if layers & Mover.GROUND != 0 and not Tile.is_walkable(tile_at(tile)):
 		return false
@@ -671,6 +680,8 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 ## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
 ## guard's walk to her run on (`WalkField`), laid out once for each state of the record
 ## (`day_record_version`, `obstruction_version`).
+##
+## Overrides WorldMap.ground_for.
 func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := super(mover)
 	# The authored scene's void is BUILDING to every single-tile question, while a sweep reads the
@@ -693,6 +704,8 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 ## segment is *seen* across, and a bollard blocks a body but not that sight, so a post tile is open
 ## here though no step or flood may enter it. `clear_line()`, the pursuers' notice and lunge line,
 ## asks `passable()` instead and is blocked by a post.
+##
+## Overrides WorldMap._open.
 func _open(x: int, y: int) -> bool:
 	if recipe_exterior or stretch_active:
 		return Tile.is_walkable(tile_at(Vector2i(x, y)))
@@ -703,6 +716,8 @@ func _open(x: int, y: int) -> bool:
 ## this, because a corridor may simply not be there — a four-block calm zone is painted over the
 ## streets between its blocks, and those tiles are park somebody walks on rather than street anybody
 ## drives down. A crowd agent that only checked `is_walkable` would drive across the grass.
+##
+## Overrides WorldMap.is_street.
 func is_street(tile: Vector2i) -> bool:
 	if recipe_exterior and not recipe_bounds.has_point(tile):
 		return false
@@ -710,25 +725,34 @@ func is_street(tile: Vector2i) -> bool:
 	return type == GameEnums.TileType.SIDEWALK or type == GameEnums.TileType.ROAD \
 			or type == GameEnums.TileType.CROSSING
 
+## Overrides WorldMap.has_street_lattice.
 func has_street_lattice() -> bool:
 	return true
 
 ## A road or a crossing tile: where a car that drives at her strikes her.
+##
+## Overrides WorldMap.is_carriageway.
 func is_carriageway(tile: Vector2i) -> bool:
 	return Tile.is_road(tile_at(tile))
 
+## Overrides WorldMap.is_crossing.
 func is_crossing(tile: Vector2i) -> bool:
 	return tile_at(tile) == GameEnums.TileType.CROSSING
 
 ## `corridor_offset()` of each coordinate: the lattice's own answer, whatever the tile's type, so a
 ## `ROAD` tile is asked exactly as a `SIDEWALK` one is.
+##
+## Overrides WorldMap.corridor_offsets.
 func corridor_offsets(tile: Vector2i) -> Vector2i:
 	return Vector2i(corridor_offset(tile.x), corridor_offset(tile.y))
 
+## Overrides WorldMap.junction_box_at.
 func junction_box_at(tile: Vector2i) -> Vector2i:
 	return junction_at(tile)
 
 ## The `alley_rects` entry holding `tile`, or an empty rect.
+##
+## Overrides WorldMap.alley_at.
 func alley_at(tile: Vector2i) -> Rect2i:
 	for rect in alley_rects:
 		if rect.has_point(tile):
@@ -736,6 +760,8 @@ func alley_at(tile: Vector2i) -> Rect2i:
 	return Rect2i()
 
 ## The `building_rects` entry holding `tile`, or an empty rect.
+##
+## Overrides WorldMap.lot_at.
 func lot_at(tile: Vector2i) -> Rect2i:
 	for rect in building_rects:
 		if rect.has_point(tile):
@@ -757,6 +783,8 @@ func is_closed(tile: Vector2i) -> bool:
 ## - **Anything that is not pavement** — the carriageway itself, a park a calm zone painted over
 ##   the street, a closed tile. `is_street()` is not enough here: a corridor may not be there at
 ##   all, and a tile at a pavement offset can be grass.
+##
+## Overrides WorldMap.pavement_inward.
 func pavement_inward(tile: Vector2i) -> Vector2i:
 	if tile_at(tile) != GameEnums.TileType.SIDEWALK:
 		return Vector2i.ZERO

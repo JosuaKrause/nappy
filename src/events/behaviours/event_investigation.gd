@@ -28,6 +28,8 @@ var _investigated := false
 var _left_her_once := false
 
 ## One tick: notice, stop and owe its men; wait for them; then drive its route again.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_investigate()
 	if runs_its_route() and event.def.mobile and event.path.size() > 1:
@@ -133,10 +135,12 @@ func call_back_its_officers(stopped_by: EventInstance) -> void:
 		if officer != stopped_by:
 			officer._be_done()
 
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"seen_her": _seen_her, "officers_owed": _officers_owed, "investigated": _investigated,
 			"left_her_once": _left_her_once}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	_seen_her = bool(state.get("seen_her", false))
 	_officers_owed = int(state.get("officers_owed", 0))

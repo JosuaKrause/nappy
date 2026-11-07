@@ -17,9 +17,11 @@ var _anchor: Node
 func _init(anchor: Node) -> void:
 	_anchor = anchor
 
+## Overrides CrowdView.drawn_box.
 func drawn_box() -> Rect2:
 	return DrawnView.box_of(_anchor.get_viewport())
 
+## Overrides CrowdView.camera_square.
 func camera_square() -> Rect2:
 	var camera := _anchor.get_viewport().get_camera_2d()
 	if not camera:

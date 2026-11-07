@@ -9,6 +9,7 @@ extends ShadowDrawer
 ## and the two lists copies of the tiles it was told to draw.
 var draws: Array[Dictionary] = []
 
+## Overrides ShadowDrawer.draw.
 func draw(canvas: CanvasItem, tiles: BuildingShadows.Tiles) -> void:
 	draws.append({"canvas": canvas, "full": tiles.full.duplicate(),
 		"triangles": tiles.triangles.duplicate()})

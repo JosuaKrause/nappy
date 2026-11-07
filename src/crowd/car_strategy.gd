@@ -127,22 +127,28 @@ static func _shadow_shape() -> GroundShape:
 	var radius := SHADOW_ACROSS * 0.5
 	return GroundShape.segment(SHADOW_ALONG * 0.5 - radius, radius)
 
+## Overrides LaneStrategy.ground_shape.
 func ground_shape() -> GroundShape:
 	return _shadow_shape()
 
+## Overrides LaneStrategy.lane_offsets_at.
 func lane_offsets_at(_along_tile: int) -> Array[int]:
 	return CrowdLanes.ROAD_OFFSETS
 
+## Overrides LaneStrategy.placement_problem.
 func placement_problem() -> String:
 	if _mover._direction != CrowdLanes.road_direction(_mover._vertical, _mover._lane):
 		return "car direction contradicts right-hand traffic"
 	return ""
 
+## Overrides LaneStrategy.speed_range.
 func speed_range() -> Vector2:
 	return Tuning.CAR_SPEED
 
 ## Off the map is somewhere a car may legitimately stand only on the spine, leaving by the tunnel or
 ## the bridge — the one place an entry band may begin outside the map.
+##
+## Overrides LaneStrategy.may_stand_off_the_map.
 func may_stand_off_the_map(tile: Vector2i) -> bool:
 	return _mover._map.is_main_road(_mover._vertical, _mover._corridor) \
 			and (tile.y < 0 or tile.y >= _mover._map.size.y)
@@ -151,6 +157,8 @@ func may_stand_off_the_map(tile: Vector2i) -> bool:
 ## look perfectly settled right up to the moment it drove off down the paving. Asked at placement
 ## rather than at lane-choosing time because it is a question about a *place*, and the place is not
 ## decided until the along position is rolled.
+##
+## Overrides LaneStrategy.may_be_placed_on.
 func may_be_placed_on(tile: Vector2i) -> bool:
 	return _mover._map.is_driveable_at(_mover._vertical, tile)
 
@@ -165,6 +173,8 @@ func may_be_placed_on(tile: Vector2i) -> bool:
 ## `_pocket_factor()` reads `velocity()` down to zero, which is where the stopped picture comes from
 ## for free. Make-way and bump still land from outside, since a standing body still has to be got
 ## round. It leaves the way anybody else leaves the field, once nobody can see it go.
+##
+## Overrides LaneStrategy.begin_frame.
 func begin_frame(delta: float) -> bool:
 	_mover.advance_the_picture(delta)
 	_give_way(delta)
@@ -181,11 +191,15 @@ func begin_frame(delta: float) -> bool:
 ## **A body a pocket has caught is travelling at nothing**, through `_pocket_factor()`: its field is
 ## a plain falloff rather than one stretched forward, and its projected impact and expected approach
 ## both answer "nowhere" the way a stopped body's should.
+##
+## Overrides LaneStrategy.paced_velocity.
 func paced_velocity(moving: Vector2) -> Vector2:
 	return moving * _pocket_factor()
 
 ## Nothing in the way any more, so whatever this car did about the last thing that was is over and
 ## the next blockage is a fresh approach. See `_turned_on_this_approach` and `nowhere_to_turn`.
+##
+## Overrides LaneStrategy.on_the_road_clear.
 func on_the_road_clear() -> void:
 	_turned_on_this_approach = false
 	nowhere_to_turn = false
@@ -195,12 +209,16 @@ func on_the_road_clear() -> void:
 ## depends on the way it is pointing, so a car that only flipped its heading would drive the wrong
 ## way down its own queue — and `space_out_the_traffic` would then have to resolve a head-on overlap
 ## the only way it can, by moving a body.
+##
+## Overrides LaneStrategy.on_turned_round.
 func on_turned_round() -> void:
 	_mover._lane = CrowdLanes.road_lane(_mover._vertical, _mover._direction)
 	_mover._lane_centre = lane_centre_here()
 	claim_the_road_here()
 
 ## A car has no gait, and its stride is its own length, the same 52px the body is measured over.
+##
+## Overrides LaneStrategy.stride_length.
 func stride_length() -> float:
 	return 2.0 * Tuning.CAR_STRIKE_HALF_LENGTH
 
@@ -211,6 +229,8 @@ func stride_length() -> float:
 ## holds 11.2 cars of forty with a weight five times its neighbours'. So the two decisions are one:
 ## pick among the corridors of **both** axes in proportion to how busy each is, which is what the
 ## weight was always supposed to mean.
+##
+## Overrides LaneStrategy.choose_lane.
 func choose_lane(_roll: float) -> void:
 	_mover._vertical = _pick_axis_by_weight()
 	_mover._corridor = CrowdLanes.pick_corridor_in_range(_mover._rng, _mover._map,
@@ -220,10 +240,14 @@ func choose_lane(_roll: float) -> void:
 	_mover._speed = _mover._rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
 
 ## A car sits on the tile centre of its lane.
+##
+## Overrides LaneStrategy.lane_centre_here.
 func lane_centre_here() -> float:
 	return CrowdLanes.lane_centre(_mover._corridor, _mover._lane)
 
 ## A car at a stretch's end enters on the lane that drives that way, at its ordinary speed.
+##
+## Overrides LaneStrategy.enter_at_an_end.
 func enter_at_an_end(_along_tile: int) -> bool:
 	_mover._lane = CrowdLanes.road_lane(_mover._vertical, _mover._direction)
 	_mover._speed = _mover._rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
@@ -247,6 +271,8 @@ func enter_at_an_end(_along_tile: int) -> bool:
 ## in would turn the whole pocket into a wall and give every car in one a reason to steer at it
 ## every frame, which is exactly the state `step()` avoids by asking this question ahead of the
 ## step instead: nothing below it runs while this is true.
+##
+## Overrides LaneStrategy.is_in_a_pocket.
 func is_in_a_pocket() -> bool:
 	if _mover.pockets == null:
 		return false
@@ -387,6 +413,8 @@ func _distance_to_a_figure() -> float:
 ## for a figure beyond it. **The box rule looks past the box's far side**, further than the brake's
 ## `Tuning.CAR_ZEBRA_SIGHT`: a car at the stop line is a box's width and more from a figure standing
 ## just beyond it, and one that saw the figure only from inside the box would stand there.
+##
+## Overrides LaneStrategy.road_before_a_figure.
 func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 	var separation := _mover._map.separation
 	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
@@ -414,6 +442,8 @@ func road_before_a_parked_figure() -> float:
 
 ## Whether a parked figure in its lane ahead is within the distance a car acts on a blockage at:
 ## what sends it to `divert()` beside a closed tile (`LaneMover.step()`).
+##
+## Overrides LaneStrategy.blocked_by_a_figure.
 func blocked_by_a_figure() -> bool:
 	return road_before_a_parked_figure() < INF
 
@@ -438,6 +468,8 @@ const FIGURE_WIDEST := Tuning.CAR_STRIKE_HALF_WIDTH
 ## into its flank or its tail is walking away from where it is going. Its speed falls to what the
 ## held step covers, so everything that reads how fast it goes (the strike, the horn, its field)
 ## reads a car that has stopped.
+##
+## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
 	var separation := _mover._map.separation
 	if not separation.has_keepers_for_cars():
@@ -1006,6 +1038,8 @@ const TURN_ROOM_MARGIN := float(Tuning.TILE_SIZE) - 2.0 * Tuning.CAR_STRIKE_HALF
 ##
 ## Heading out, a spine car goes at the departure depth; heading in, it is still arriving and keeps
 ## the entry depth, or it would be recycled the frame after it came into existence.
+##
+## Overrides LaneStrategy.has_left_the_map.
 func has_left_the_map(at: float, limit: float) -> bool:
 	var north_room := float(Tuning.TILE_SIZE)
 	var south_room := north_room
@@ -1042,6 +1076,8 @@ func _spine_room(south: bool) -> float:
 
 ## Pushes a spine car that has just rolled its entry past the map's edge out of anybody's sight:
 ## into the tunnel's dark and no deeper than the roof, or beyond the camera on the bridge deck.
+##
+## Overrides LaneStrategy.hide_the_spine_entry.
 func hide_the_spine_entry() -> void:
 	if not _mover._map.is_main_road(_mover._vertical, _mover._corridor):
 		return
@@ -1063,6 +1099,8 @@ func hide_the_spine_entry() -> void:
 ## looking — so an ordinary walker or car may not land past it at all. A car arriving on the
 ## spine instead lands beneath the tunnel roof or on the bridge deck, where the entry placement
 ## can keep its complete picture out of the player's view until it moves into sight.
+##
+## Overrides LaneStrategy.entry_room.
 func entry_room(south: bool) -> float:
 	if not _mover._map.is_main_road(_mover._vertical, _mover._corridor):
 		return 0.0
@@ -1089,6 +1127,8 @@ func entry_room(south: bool) -> float:
 ## that has backed up almost to a wall would otherwise place the newcomer inside it. Refusing the
 ## move leaves the car where it already is, which is the position this fallback exists to improve on
 ## rather than one it has to guarantee.
+##
+## Overrides LaneStrategy.join_the_back_of_the_queue.
 func join_the_back_of_the_queue() -> void:
 	if not _mover.traffic or has_room_here():
 		return
@@ -1104,12 +1144,16 @@ func join_the_back_of_the_queue() -> void:
 
 ## Tells the index this car is here, so that another one recycling or turning later in the same
 ## frame does not choose the same piece of road. See `TrafficIndex.claim()`.
+##
+## Overrides LaneStrategy.claim_the_road_here.
 func claim_the_road_here() -> void:
 	if not _mover.traffic:
 		return
 	_mover.traffic.claim(_mover.lane_key(), _mover.queue_position())
 
 ## Whether this car is standing in a piece of its own lane that no other car is in.
+##
+## Overrides LaneStrategy.has_room_here.
 func has_room_here() -> bool:
 	if not _mover.traffic:
 		return true
@@ -1117,6 +1161,8 @@ func has_room_here() -> bool:
 
 ## Whether this car's own centre may be on a tile: its whole predicate, the same one its
 ## look-ahead and its turns use.
+##
+## Overrides LaneStrategy.may_stand_on.
 func may_stand_on(tile: Vector2i) -> bool:
 	return not cannot_go_on(_mover._vertical, tile)
 
@@ -1127,6 +1173,8 @@ func may_stand_on(tile: Vector2i) -> bool:
 ## city — the lattice, the map's edge, a precinct's paving — and is true of a tile on every day of
 ## the run; everything after it is what *today* has placed on ground this car could otherwise
 ## travel.
+##
+## Overrides LaneStrategy.cannot_go_on.
 func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _never_a_street_here(vertical, tile):
 		return true
@@ -1174,6 +1222,8 @@ func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 ## barrier itself does. A car that carried on would drive through the barrier, and a car that
 ## vanished at the junction would be worse: at this population something popping out of existence
 ## is very visible. **A car plans a curve** — see `_plan_a_turn`.
+##
+## Overrides LaneStrategy.divert.
 func divert(delta: float) -> void:
 	_plan_a_turn(delta)
 

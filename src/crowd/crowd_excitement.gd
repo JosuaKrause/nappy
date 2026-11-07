@@ -125,6 +125,8 @@ func take_kind(kind: CrowdAgent.Kind) -> void:
 			Tuning.CAR_SPEED.y if _car else Tuning.PEDESTRIAN_SPEED.y))
 
 ## The body's own simulation clock.
+##
+## Overrides ExcitementSource.clock.
 func clock() -> float:
 	return _clock
 
@@ -176,6 +178,8 @@ func jolt_swell_after(seconds: float) -> float:
 ## **Every number it reads is its own member but the body's place and velocity**, because the whole
 ## crowd is asked this every drawn frame by `ExcitementHalo` and a member read is several times
 ## cheaper than asking another object.
+##
+## Overrides ExcitementSource._field.
 func _field(at: Vector2) -> float:
 	# d_eff = r * (1 - e * cos(theta)) is at least r * (1 - e_max), at every speed and heading.
 	# Outside this bound both falloffs are zero, so the common distant-body case needs no
@@ -197,10 +201,14 @@ func _falloff_at(distance: float) -> float:
 	return total
 
 ## The city's map the body walks, or null for a data-level rig built without one.
+##
+## Overrides ExcitementSource.wall_grid.
 func wall_grid() -> WorldMap:
 	return _agent._map
 
 ## The body's velocity, which already carries its turns, yields, door holds and pockets.
+##
+## Overrides ExcitementSource._projection_velocity.
 func _projection_velocity() -> Vector2:
 	return _agent.velocity()
 
@@ -210,6 +218,8 @@ func _projection_velocity() -> Vector2:
 ## range rather than its current speed, so a body mid-approach is not skipped early on a reach that
 ## no longer describes it. No body to add a segment's length for, unlike an event's
 ## `EventDef.field_reach()`.
+##
+## Overrides ExcitementSource._projection_reach.
 func _projection_reach() -> float:
 	var reach := _outer
 	if _jolt > 0.0:
@@ -218,6 +228,8 @@ func _projection_reach() -> float:
 
 ## Every input the samples read, by value, every jolt value afresh: the crowd can move or startle
 ## this body without advancing its own clock.
+##
+## Overrides ExcitementSource._projection_key.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 	return [_agent.global_position, player_position, player_velocity, velocity, _car,
 		_jolt, _jolt_for, _jolt_intensity, _jolt_inner, _jolt_outer]
@@ -227,6 +239,7 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 var _projected_from := Vector2.ZERO
 var _projected_silent_squared := 0.0
 
+## Overrides ExcitementSource._begin_the_projection.
 func _begin_the_projection(_velocity: Vector2) -> void:
 	_projected_from = _agent.global_position
 	_projected_silent_squared = _jolt_silent_squared if _jolt > 0.0 and _jolt_outer > _outer \
@@ -234,6 +247,8 @@ func _begin_the_projection(_velocity: Vector2) -> void:
 
 ## The field at the translated point, the same as `_field()` there; the body translates with it, so
 ## its own velocity, the one the projection runs on, orients it.
+##
+## Overrides ExcitementSource._projected_field.
 func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 	if _projected_from.distance_squared_to(sample) > _projected_silent_squared:
 		return 0.0
@@ -243,6 +258,8 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ## position held fixed, over the same rectangle `CarStrike.hits()` tests for the collision (`Crowd._strike()`): the car's
 ## front half, from its centre forward. Never for a walker — nothing about a pedestrian ends the day
 ## — and never for a car already too slow to strike at all (`CarStrike.hits()`'s own guard).
+##
+## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
 	var agent := _agent
 	if not _car or agent._speed < Tuning.CAR_STRIKE_MIN_SPEED:
