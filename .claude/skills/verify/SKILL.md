@@ -8,9 +8,12 @@ description: How to verify a change in this project — the verification command
 ## Headless unless a window is the only way
 
 **`check.sh` and `test.sh` already pass `--headless`, and nothing may take that away.**
-`shot.sh` and `run.sh` are the two that open a window, and they are the exception you have to
-earn: run one only when the thing being checked *is what the screen looks like*, and take the
-smallest number of them that answers the question.
+`shot.sh` and `run.sh` are the two that open a window, and they are the exception the
+orchestrating session has to earn: it runs one only when the thing being checked *is what the
+screen looks like*, and takes the smallest number of them that answers the question. **An agent
+never runs one, nor any other tool that opens a window** (inbox #1203; the contract in
+**orchestrating**'s `references/agent-contract.md`): it lists the capture in its report (command,
+flags, seed, moment) and the rest of this skill about windows is guidance for whoever takes it.
 
 **Why, beyond tidiness — a windowed run used to be able to hang forever, and working beside one is
 still not free** (woolly-finch 1). A rig's own window now carries three defences against exactly
@@ -26,8 +29,8 @@ kill still costs the whole of that wait before it says so.
 
 So: **never reach for a windowed run to check something a headless one can answer.** A rig that
 prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot for anything that
-is not a picture. When a picture genuinely is the question, take it once with everything you need
-already in the flags rather than iterating live.
+is not a picture. When a picture genuinely is the question, it is taken once (by the orchestrating
+session; an agent lists it) with everything needed already in the flags rather than iterating live.
 
 **A hidden window is not drawn, so a still or movie draws its own current frame.** On macOS the main loop skips its
 draw step while no window of the process passes the system's occlusion test — covered by another
@@ -102,13 +105,10 @@ no frame is ever drawn and there is no viewport texture to save. `AutoScreenshot
 and quits non-zero rather than waiting — `_capture()`'s check of `DisplayServer.get_name()` is the guard,
 and `"headless"` is the name Godot gives that null server.
 
-**Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
-some background worktrees reach a display and photograph the game perfectly well. So do not assume
-either way: **the guard is what answers it**, because a run with no display says so and exits
-instead of sitting there. If an agent reports that capture "stalls" or hangs, that is the message it
-should have got, and the branch is worth pulling and photographing from a session that does have a
-display. A missing screenshot from an agent is a missing check, never evidence that the change is
-wrong.
+**A sub-agent takes none, whatever display its environment reaches** (inbox #1203): a
+window opens on the player's own screen. The guard still answers a run that has no display, since
+it says so and exits instead of sitting there. A missing screenshot from an agent is a missing check
+for the orchestrating session to arrange from the branch, never evidence that the change is wrong.
 
 **An agent's run always carries a dev flag or `--no-save`.** Every checkout and worktree of this
 repository shares one `user://`, so the player's save is in reach of any game an agent starts.
@@ -117,7 +117,8 @@ is what a flagless `tools/run.sh` session needs to say the same thing.
 
 ---
 
-Run these before committing. They are fast and they each catch a different class of bug.
+Run these before committing. They are fast and they each catch a different class of bug. The
+`shot.sh` line is the orchestrating session's; an agent leaves it out and lists the capture.
 
 ```sh
 ./tools/check.sh              # imports, boots the project, fails on any script error
@@ -291,6 +292,9 @@ Player playtests and gameplay captures remain primary evidence under **playtest-
 
 ## Dev flags, and why a plain screenshot is useless
 
+The flags below shape a capture the orchestrating session takes; an agent uses them in headless rigs
+and in the capture it lists for the report.
+
 **A screenshot of a standing player is a screenshot of almost nothing.** The crowd and the events
 are built around her, and the director only puts something in front of her while she is going
 somewhere.
@@ -350,6 +354,7 @@ somewhere.
   screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn signal --layers 2,3 --press
   snapshot_burst 5` records from second five to eight and quits at ten; `tools/clip.sh` makes the
   video, and the **session-captures** skill says what is kept and what a frame may be said to prove.
+  An agent runs none of this: it lists the burst's command in its report (inbox #1203).
 - **`--invincible` keeps the day running so the capture can wait for its moment** (woolly-finch 17).
   A rig standing still at a busy junction pushes the meter to a hundred inside ten seconds, and a
   `--after 13` shot lands on the summary screen. Under the flag nothing ends the day, the clock
