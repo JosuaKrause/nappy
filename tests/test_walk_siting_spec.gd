@@ -1,14 +1,60 @@
 extends RefCounted
 ## **What is sited after dawn keeps the walk's own home-street rule** (`DaySpec.holds_the_home_streets`),
-## not always a day's: the rule is the spec's the manager was handed (`EventManager.start_day()`,
-## `use_the_spec()`), never the manager's own, and every placement context the events build after
-## dawn (`EventScheduler.WalkSiting`) is handed it.
+## not always a day's: the placement context the events build after dawn
+## (`EventScheduler.WalkSiting`) refuses the street her front door opens onto on a walk that holds
+## the home's streets, as the dawn placement does, and offers it on a walk that does not (the escape's
+## city, which sets off from the service exit); the rule is the spec's the manager was handed
+## (`EventManager.start_day()`, `use_the_spec()`), never the manager's own, and every siting the
+## events build is handed it.
+##
+## **Why the first check generates a city**: the home street is a generated city's, the street the
+## home's front door opens onto (`ClosurePlanner.home_street()`). Its routes are a stand-in
+## (`tests/fake_route_tree.gd`, none set) and so are the walk's events (`tests/fake_walk_events.gd`,
+## none), so only the rule under test decides.
 
 const DAY := 1
+## A row that stands on a plain sidewalk, so only the rule under test decides whether a tile of the
+## home street takes it.
+const ROW := "market_stall"
 
 func run(t) -> void:
+	_test_a_siting_takes_the_home_street_only_where_the_walk_does_not_hold_it(t)
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_every_place_that_builds_a_siting_copies_the_rule(t)
+
+## A `ROW` asked to stand where one of the day's events stands on the home street
+## (`WalkSiting.in_place_of()`, which asks the row's ground under the rule as every siting after dawn
+## does): refused on a walk that holds the home's streets, placed there on one that does not.
+func _test_a_siting_takes_the_home_street_only_where_the_walk_does_not_hold_it(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var def := EventCatalogue.by_id(ROW)
+	var home := ClosurePlanner.home_street(map).tile_rect()
+	var siting := EventScheduler.WalkSiting.new(DAY, map, FakeRouteTree.new(map), FakeWalkEvents.new(),
+			EventScheduler.Verdicts.new())
+	var tried := 0
+	var offered: Array[bool] = []
+	for tile in EventScheduler.open_ground_for(def, map, {}, -1, false):
+		if not home.has_point(tile):
+			continue
+		var old := EventScheduler.Planned.new(def, map.tile_to_world(tile))
+		siting.holds_the_home_streets = false
+		var placed := siting.in_place_of(def, old, _rng())
+		if not placed:
+			continue
+		tried += 1
+		siting.holds_the_home_streets = true
+		offered.append(siting.in_place_of(def, old, _rng()) != null)
+		t.check(map.world_to_tile(placed.placed_at()) == tile,
+				"a walk that does not hold the home's streets places it on the home street at %s" % tile)
+		if tried >= 4:
+			break
+	t.check(tried > 0, "the home street has ground the row takes (%d tiles asked)" % tried)
+	t.check(not offered.has(true), "and a walk that holds the home's streets is refused every one")
+
+func _rng() -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("walk-siting-spec:%d" % DAY)
+	return rng
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 	var manager := EventManager.new()

@@ -358,6 +358,15 @@ class Planned extends RefCounted:
 	func stands_still() -> bool:
 		return path.size() < 2
 
+	## **Whether day 13's task may put its roadblock in this plan's place** (inbox #1185): one of the
+	## day's own events, placed and unspent, not in the world (so not in her sight), standing still,
+	## blocking or not, the seals among them. Never the region wall's or a door's bodies, which are
+	## the boundary rather than the day's events, nor a scar (`is_permanent()`), which is the run's
+	## history. Where it stands is the asker's question (`ResistanceDirector._places_to_swap()`).
+	func may_be_replaced() -> bool:
+		return is_placed() and not is_spent() and not is_in_the_world() and stands_still() \
+				and not is_door() and not is_in_the_wall() and not is_permanent()
+
 	## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
 	## across: its body and her whole shape, the field it carries where it carries one (a car
 	## crash's, there to stop her walking past it), and a hard fail's lethal reach and her shape;
@@ -864,21 +873,6 @@ static func stands_beside_the_routes(map: CityMap, corridor: Corridor, tile: Vec
 		return false
 	var segment := map.network.segment_containing(tile)
 	return not map.is_main_road(not segment.horizontal, segment.a.x)
-
-## **`def` in place of `old`**, for day 13's task when no roadblock the day placed is close by: built
-## where `old` stands (`_build_placement()`), as `day` places the row, or null when the row may not
-## stand on that ground (`EventDef.placement`). Whoever asks spends `old` and puts this in its place
-## (`EventStreaming.swap()`).
-static func in_place_of(def: EventDef, day: int, map: CityMap, old: Planned,
-		rng: RandomNumberGenerator) -> Planned:
-	def = def.for_day(day)
-	var tile := map.world_to_tile(old.position)
-	if not def.placement.has(map.tile_at(tile)):
-		return null
-	var plan := _build_placement(def, map, tile, rng)
-	if plan:
-		plan.role = _role_for(def, day)
-	return plan
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
 ## `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day),
@@ -2394,6 +2388,39 @@ class WalkSiting extends RefCounted:
 	## (`EventScheduler.stands_beside_the_routes()`), against this siting's corridor.
 	func stands_beside_the_routes(tile: Vector2i) -> bool:
 		return EventScheduler.stands_beside_the_routes(_map, _corridor, tile)
+
+	## **`def` in place of `old`**, for day 13's task when no roadblock the day placed is close by:
+	## built where `old` stands, as the day places the row, and **checked before it is accepted**
+	## under the rules dawn places one under (`_place_beside_the_routes()`), or null, and no swap is
+	## made:
+	##
+	## - its own ground for its role on that tile (`_ground_for()`): a tile the row may stand on,
+	##   off every tile a route runs along (a `WALL`'s ground), not on a held street, a closed one,
+	##   the home block or, where the walk holds them, the home's streets (`holds_the_home_streets`);
+	## - every rule `_judge()` asks against the walk's other plans (`WalkEvents.everything_but()`,
+	##   `old` left out, since it is what goes): clear of the unused calm and of the ground round the
+	##   doors, the route's junctions and sidewalks left open, and **room all round**, nothing within
+	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. The dawn pass takes
+	##   the roomiest of its tries where none has room all round; a swap has one tile, so it takes
+	##   that tile only with room all round.
+	##
+	## The two rules a spec adds (`Rules`: the walk kept open past everything on it, one waiting
+	## guard's notice at a time) are the escape's and no day's, and a siting is a day's.
+	## Whoever asks spends `old` and puts this in its place (`EventStreaming.swap()`).
+	func in_place_of(def: EventDef, old: Planned, rng: RandomNumberGenerator) -> Planned:
+		def = def.for_day(_day)
+		var role := EventScheduler._role_for(def, _day)
+		var tile := _map.world_to_tile(old.placed_at())
+		if not EventScheduler._ground_for(def, _map, _ground, _corridor, role,
+				EventScheduler.NO_SITE, holds_the_home_streets).has(tile):
+			return null
+		var candidate := EventScheduler._build_placement(def, _map, tile, rng)
+		if not candidate:
+			return null
+		var already := _walk.everything_but(old)
+		var room := EventScheduler._judge(candidate, role, _map, tile, already, already, _ground,
+				_leave_alone, _corridor, _walk.doors())
+		return candidate if room == INF else null
 
 ## Fills the day's budget, **one stream per attempt**.
 ##

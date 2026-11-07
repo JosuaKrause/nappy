@@ -797,6 +797,8 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	var mark := director.current_step()
 	var plans_before := city.events.plans().size()
 	var spent_before := _spent(city)
+	var told: Array[String] = []
+	director.trace = RunTrace.recording(told)
 	if mark:
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
@@ -806,12 +808,21 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 		_tear_down(player, director, city)
 		return
 	var plans := city.events.plans()
-	var found := plans.size() == plans_before
-	var swapped: bool = plans.size() == plans_before + 1 and plans.back().live == roadblock \
-			and _spent(city) == spent_before + 1
+	# Found: one of the day's own roadblocks, placed and unspent and not the wall's or a door's, is
+	# what the task rides. Swapped: one plan more, it the roadblock, and one of the day's spent.
+	# Neither holds for a roadblock spawned on the circle's edge, which is no plan at all.
+	var found := false
+	for index in plans_before:
+		var plan := plans[index]
+		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
+				and not plan.is_door() and plan.instance() == roadblock)
+	var swapped: bool = plans.size() == plans_before + 1 \
+			and plans.back().instance() == roadblock and _spent(city) == spent_before + 1
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one swapped in for a day's event"
 			% seed_value)
+	t.check(not told.any(func(line: String) -> bool: return line.contains("nothing to swap")),
+			"seed %d: the task never falls through to the edge of the circle" % seed_value)
 	var away := roadblock.global_position.distance_to(her)
 	# She touches it from ground her paths reach within the widest ring, a tile and a half from its
 	# body at most.

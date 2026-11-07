@@ -1875,21 +1875,21 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 	return nearest
 
 ## **The day's events a roadblock may be swapped in for, nearest first**, among those her paths
-## reach within `reach` (`_touched_within()`): placed and unspent, not in the world (so not in her
-## sight) and out of her view where it stands (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`), standing
-## still, on a street beside her routes and off the main road (`EventManager.
-## stands_beside_the_routes()`), blocking or not, the seals among them. Never the region wall's or a
-## door's bodies, nor a scar (`is_permanent()`), which is the run's history rather than today's.
+## reach within `reach` (`_touched_within()`): one the plan says may be replaced
+## (`Planned.may_be_replaced()`: the day's own, placed, unspent, out of the world, standing still,
+## and not the wall's, a door's or a scar), out of her view where it stands
+## (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`), and on a street beside her routes and off the main road
+## (`EventManager.stands_beside_the_routes()`). Whether a roadblock may stand there is asked when
+## the swap is made (`EventManager.swap_in_a_task_row()`).
 func _places_to_swap(paths: Dictionary, reach: float) -> Array[EventScheduler.Planned]:
 	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
 	var found: Array = []
 	for plan in _walk.plans():
-		if not plan.is_placed() or plan.is_spent() or plan.is_in_the_world() or plan.is_door() \
-				or plan.is_in_the_wall() or plan.is_permanent() or not plan.stands_still():
+		if not plan.may_be_replaced():
 			continue
-		if not _events.stands_beside_the_routes(_map.world_to_tile(plan.position)) \
+		if not _events.stands_beside_the_routes(_map.world_to_tile(plan.placed_at())) \
 				or not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, ground,
-						plan.position):
+						plan.placed_at()):
 			continue
 		var distance := _touched_within(plan, paths, reach)
 		if distance < INF:

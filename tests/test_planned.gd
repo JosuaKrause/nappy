@@ -10,6 +10,7 @@ func run(t) -> void:
 	_test_a_door_body_never_blocks_the_way(t)
 	_test_the_wall_s_body_says_so(t)
 	_test_what_stands_clear_of_it(t)
+	_test_what_day_13s_task_may_replace(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -74,3 +75,32 @@ func _test_what_stands_clear_of_it(t) -> void:
 	t.check(body.where_it_stands_now() == Vector2(320, 320),
 			"and it stands where it was placed while it is not in the world")
 
+
+## **What day 13's task may put its roadblock in place of** (`may_be_replaced()`, inbox #1185): one of
+## the day's own events standing still, blocking or not, and never the region wall's body, a door's,
+## a scar, one that moves, one already spent or not placed, or one in the world.
+func _test_what_day_13s_task_may_replace(t) -> void:
+	var tables := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+	t.check(tables.may_be_replaced(), "the day's cafe tables, standing still, may be replaced")
+	t.check(_sealed("barricade").may_be_replaced(), "and so may a seal the day stood")
+	var wall := _sealed("roadblock")
+	wall.stand_in_the_wall()
+	t.check(not wall.may_be_replaced(), "the region wall's own body may not")
+	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
+		t.check(not _door(id).may_be_replaced(), "nor a door's %s" % id)
+	var scar := _sealed("barricade")
+	scar.permanent = true
+	t.check(not scar.may_be_replaced(), "nor a scar the run left, which is its history")
+	var walking := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320),
+			PackedVector2Array([Vector2(320, 320), Vector2(640, 320)]))
+	t.check(not walking.may_be_replaced(), "nor one that moves along a route")
+	var spent := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+	spent.spend()
+	t.check(not spent.may_be_replaced(), "nor one spent for the day")
+	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"),
+			Vector2.INF).may_be_replaced(), "nor one the day budgeted and never placed")
+	var live := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+	var instance := EventInstance.new()
+	live.live = instance
+	t.check(not live.may_be_replaced(), "nor one in the world, and so perhaps in her sight")
+	instance.free()
