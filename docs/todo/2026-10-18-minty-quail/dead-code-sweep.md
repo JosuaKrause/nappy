@@ -22,4 +22,3 @@ nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a 
 - `src/events/`: `EventsAhead.walk_siting` and `EventLook.drawn_rect_now` (test-only), and four
   members named nowhere under `src/events/views/`.
 - `src/resistance/` and `src/autoload/`: one member each named nowhere, to be found again.
-- `src/events/views/event_pictures.gd`'s comment near its atlas membership names `Stroller._sources_by_group()`, which is gone: the sentence ends after "`assets/atlases/membership.json` wants (`tests/test_atlas_events.gd`)."
