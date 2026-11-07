@@ -72,6 +72,15 @@ func _test_used_and_unused_are_read_off_the_act(t) -> void:
 	t.check(fresh.unused().size() == 2,
 			"with nothing used this act, every calm area is unused")
 
+## The first day whose narrow resistance target (`ResistanceSteps.narrow_target_on()`) is another
+## place than the swing, a door, or 0 on a calendar with none.
+func _a_day_whose_narrow_target_is_not_the_swing() -> int:
+	for step in ResistanceSteps.all():
+		var narrow := ResistanceSteps.narrow_target_on(step.day)
+		if narrow and narrow.target_kind != ResistanceSteps.TargetKind.PARK_SWING:
+			return step.day
+	return 0
+
 ## The park is the city's swing park (`BlockPlan.forced_open_on`, which
 ## `CityGenerator.swing_park()` reads), and the swing's tile stands in it.
 func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t) -> void:
@@ -86,6 +95,10 @@ func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t) -> void:
 			"on the swing day, with the swing a target, the swing's park does not count")
 	t.check(CalmAreas.of(map, none, day - 1, swing).besides() == CalmAreas.NONE,
 			"on another day every calm area counts")
+	var other := _a_day_whose_narrow_target_is_not_the_swing()
+	t.check(other > 0, "the calendar has a narrow target that is not the swing (day %d)" % other)
+	t.check(CalmAreas.of(map, none, other, swing).besides() == CalmAreas.NONE,
+			"and on a day whose narrow target is another place, with a target to reach, too")
 	t.check(CalmAreas.of(map, none, day, none).besides() == CalmAreas.NONE,
 			"and on the swing day with no swing to reach, every calm area counts")
 	map.calm_blocks = [COURT] as Array[Vector2i]

@@ -52,12 +52,12 @@ checks are one park stays usable, the calm she has not used is left alone, the c
 she went, the spent park, the scar suite's reachability and the run lesson. Their assertions now
 follow the game's own rule rather than the drifted copies, which were weaker. The #1147
 closed-streets check stays as the integration check of the day's planning choosing the clean area on
-a real day: it makes the calm areas from the day and its target as `DayPlanner` does, so it reaches
-the set-aside choice, and plans through `build_day()`. A first version of this PR handed it the
-swing park directly, so nothing tested the set-aside choice; the review's mutant (the choice always
-answering none) passed every suite. It fails both `test_calm_areas` and this check now.
-`test_resistance_reach_narrow` reads a booted day after dawn, so it asks `Planned.spoils()` of each
-row until the next PR hands the live plans a reader.
+a real day: it makes the calm areas through `DayPlanner`'s call, `CalmAreas.of()` from the day and
+its target, so it reaches the set-aside choice, and plans through `build_day()`. A first version of
+this PR handed it the swing park directly, so nothing tested the set-aside choice; the review's
+mutant (the choice always answering none) passed every suite. It fails both `test_calm_areas` and
+this check now. `test_resistance_reach_narrow` reads a booted day after dawn, so it asks
+`Planned.spoils()` of each row until the next PR hands the live plans a reader.
 
 **Times, before and after**, from local runs of the suites rewritten in place (ms). Before is `main`
 before this PR, and after is this branch merged with `main` after #1160:
