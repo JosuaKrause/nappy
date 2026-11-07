@@ -101,7 +101,7 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 	if not _log.is_active():
 		return
 	_observer = _new_observer()
-	_observer.setup(_run, city, player, baby, day, resistance, _config.spikes_requested, edge)
+	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
 
 ## The day's clock, whose `spec` says what each day is, before the first one starts — the escape's
 ## boot hands it in ahead of `watch_escape()`, whose world is built only as its first section

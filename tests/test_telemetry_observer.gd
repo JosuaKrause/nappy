@@ -58,7 +58,7 @@ class Rig extends RefCounted:
 		tree = parent.get_tree()
 		city = a_city
 		if city != null:
-			observer.setup(city.run, city, player, baby, clock, null, spikes)
+			observer.setup(city, player, baby, clock, null, spikes)
 		else:
 			observer.setup_escape(player, baby, clock, spikes)
 			if map != null:
