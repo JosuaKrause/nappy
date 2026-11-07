@@ -130,9 +130,10 @@ case "$path" in
 	*/tools/*.py|*/pyproject.toml|*/uv.lock|*/.python-version) wanted+=(python-tooling) ;;
 esac
 # Original sound recipes and the audio they generate travel together. The generic extensions catch
-# an audition wherever it is kept; the named generator catches its source before it writes anything.
+# an audition wherever it is kept; the named generator and the sound lab's runner and pass list catch their sources before they
+# write anything.
 case "$path" in
-	*/tools/synthesize-sfx.py|*.wav|*.ogg|*.flac|*.mp3) wanted+=(sound-effects) ;;
+	*/tools/synthesize-sfx.py|*/tools/sound-lab.sh|*/tools/sound-lab/passes.json|*.wav|*.ogg|*.flac|*.mp3) wanted+=(sound-effects) ;;
 esac
 # Every command-line entry point, shell or Python, and the game's own dev-flag parser: help on
 # --help/-h, and rejection of anything unknown before any work starts.
