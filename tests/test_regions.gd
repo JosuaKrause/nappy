@@ -26,6 +26,7 @@ const SEEDS := 6
 ## than one map from being the whole evidence.
 const RULE_SEEDS := 3
 const BASE_SEED := 260917
+const MapCache := preload("res://tests/city_map_cache.gd")
 
 var _maps: Array[CityMap] = []
 
@@ -45,6 +46,8 @@ func run(t) -> void:
 	_test_wall_crossing_posts_four_guards(t)
 	_test_alley_wall_bodies_post_one_guard_each(t)
 	_test_alley_wall_bodies_fit_their_own_mouth(t)
+	_test_the_main_road_is_never_walled(t)
+	_test_an_alley_mouth_stands_clear_of_a_main_road_door(t)
 	_test_winnability_holds_with_the_wall_standing(t)
 	_test_closures_and_seals_never_land_on_a_boundary(t)
 
@@ -61,12 +64,19 @@ func _alley_wall_mouths(plan: RegionPlanner.RegionPlan) -> Dictionary:
 				plan.wall_bodies[first + i * 2 + 1]]
 	return mouths
 
-## Whether `body` stands in the mouth `SealPlanner.alley_mouth_rect()` gives an alley's end: the
-## check that `_alley_wall_mouths()` read the right plan entries back for that alley and end.
-func _stands_in_the_mouth(map: CityMap, body: EventScheduler.Planned, rect: Rect2i,
-		at_start: bool) -> bool:
-	var mouth := SealPlanner.alley_mouth_rect(rect, rect.size.x < rect.size.y, at_start)
-	return map.tile_rect_to_world(mouth).grow(1.0).has_point(body.position)
+## Whether `body` stands in the mouth `SealPlanner.alley_mouth_body_rect()` gives an alley's end
+## against `plan`'s doors: the check that `_alley_wall_mouths()` read the right plan entries back for
+## that alley and end.
+func _stands_in_the_mouth(map: CityMap, plan: RegionPlanner.RegionPlan,
+		body: EventScheduler.Planned, rect: Rect2i, at_start: bool) -> bool:
+	return _mouth_body_world(map, plan, rect, at_start).grow(1.0).has_point(body.position)
+
+## The world rect an alley-mouth body stands in at one end of `rect`, clear of `plan`'s doors
+## (`SealPlanner.alley_mouth_body_rect()`).
+func _mouth_body_world(map: CityMap, plan: RegionPlanner.RegionPlan, rect: Rect2i,
+		at_start: bool) -> Rect2:
+	return map.tile_rect_to_world(SealPlanner.alley_mouth_body_rect(map, rect,
+			rect.size.x < rect.size.y, at_start, plan.door_bodies))
 
 func _repaint_for(map: CityMap, day: int) -> void:
 	var state := CityState.new()
@@ -340,11 +350,11 @@ func _test_no_wall_before_the_first_day(t) -> void:
 					plan.doors.size()])
 
 ## The day's whole shape, from `Tuning.REGION_WALL_FIRST_DAY` to the end of the run: every door is
-## on the tree, unconditionally; every wall is off the tree, unconditionally — the tree wins over
-## the partition, full stop, so there is no third rule left to check them against. The home region
-## has a door, or every calm area the tree reaches is in the home region — the unconditional form
+## on the tree or on the main road; every wall is off the tree and off the main road — the tree wins
+## over the partition, full stop, and the main road is never a wall. The home region has a door
+## the tree uses, or every calm area the tree reaches is in the home region — the unconditional form
 ## the design's own argument always supported, restated as itself now that nothing narrows it.
-## Also measures how often a calm-less region gets a door at all (the tree crossing it, which the
+## Also measures how often a calm-less region gets a tree door (the tree crossing it, which the
 ## milestone's decree says must win when it happens) and every region the day's tree actually
 ## reaches a calm area in is reached from the doorstep once only the doors are open.
 func _test_the_day_plan_shape(t) -> void:
@@ -366,19 +376,22 @@ func _test_the_day_plan_shape(t) -> void:
 
 			var this_day_had_a_calmless_door := false
 			for segment in plan.doors:
-				t.check(tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: door %s is on the day's tree" % [map.seed_used, day, segment.key()])
+				var on_the_tree := tree.is_on_the_tree(segment.key())
+				t.check(tree.is_on_the_tree(segment.key()) or map.is_main_road_segment(segment),
+						"seed %d day %d: door %s is on the day's tree or the main road"
+						% [map.seed_used, day, segment.key()])
 				var ra := RegionPlanner.region_of_junction(map, segment.a)
 				var rb := RegionPlanner.region_of_junction(map, segment.b)
-				if (ra >= 0 and ra < calm.size() and calm[ra] == 0) \
-						or (rb >= 0 and rb < calm.size() and calm[rb] == 0):
+				if on_the_tree and ((ra >= 0 and ra < calm.size() and calm[ra] == 0) \
+						or (rb >= 0 and rb < calm.size() and calm[rb] == 0)):
 					this_day_had_a_calmless_door = true
 			if this_day_had_a_calmless_door:
 				calmless_region_had_a_door += 1
 
 			for segment in plan.walls:
-				t.check(not tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: wall %s is off the day's tree" % [map.seed_used, day, segment.key()])
+				t.check(not tree.is_on_the_tree(segment.key()) and not map.is_main_road_segment(segment),
+						"seed %d day %d: wall %s is off the day's tree and the main road"
+						% [map.seed_used, day, segment.key()])
 
 			# "The home region has a door, or every calm area the tree reaches is in the home
 			# region" — unconditional: the tree-wins rule needs no premise about which regions
@@ -395,12 +408,14 @@ func _test_the_day_plan_shape(t) -> void:
 			if boundary_count > 0 and not home_reaches_only_home:
 				var home_has_door := false
 				for segment in plan.doors:
+					if not tree.is_on_the_tree(segment.key()):
+						continue
 					if RegionPlanner.region_of_junction(map, segment.a) == home \
 							or RegionPlanner.region_of_junction(map, segment.b) == home:
 						home_has_door = true
 						break
 				t.check(home_has_door,
-						("seed %d day %d: the home region has a door, or every calm area the tree " +
+						("seed %d day %d: the home region has a door the tree uses, or every calm area the tree " +
 						"reaches is in it (%d boundary segments)") % [map.seed_used, day, boundary_count])
 
 			var blocked := {}
@@ -553,8 +568,9 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 ## per mouth: "one guard in alleys on each end.")* Checked geometrically rather than by trusting
 ## the sign convention `RegionPlanner` reads out of `at_start`: the
 ## guard's own feet (`EventFootprints.guard_post_offset()`, at the mouth's own `runs_vertically()`
-## reading) fall on the far side of the alley's own long-axis extent from its interior, at both
-## mouths.
+## reading) fall on the street side of the body's own mouth rect (`SealPlanner.
+## alley_mouth_body_rect()`, the alley's end row or a tile deeper beside a main-road door), outside
+## the walled part of the alley, at both mouths.
 func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 	var checked := 0
 	for map in _maps:
@@ -568,16 +584,18 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 					% [map.seed_used, day, mouths.size(), plan.alley_walls.size()])
 			for rect in plan.alley_walls:
 				var vertical := rect.size.x < rect.size.y
-				var world := map.tile_rect_to_world(rect)
-				# The alley's own **long** axis — the one its two mouths sit at opposite ends of —
-				# y for a vertical (north-south) alley, x for a horizontal (east-west) one; the
-				# opposite axis from the one `_test_alley_wall_bodies_fit_their_own_mouth` checks.
-				var low: float = world.position.y if vertical else world.position.x
-				var high: float = world.end.y if vertical else world.end.x
 				for at_start in [true, false]:
 					checked += 1
+					# The walled part of the alley along its own **long** axis — the one its two
+					# mouths sit at opposite ends of — y for a vertical (north-south) alley, x for a
+					# horizontal (east-west) one, the opposite axis from the one
+					# `_test_alley_wall_bodies_fit_their_own_mouth` checks: from this mouth's body
+					# rect, a tile deeper than the alley's end beside a main-road door.
+					var world := _mouth_body_world(map, plan, rect, at_start)
+					var low: float = world.position.y if vertical else world.position.x
+					var high: float = world.end.y if vertical else world.end.x
 					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
-					t.check(_stands_in_the_mouth(map, body, rect, at_start),
+					t.check(_stands_in_the_mouth(map, plan, body, rect, at_start),
 							"seed %d day %d: the plan's mouth body for alley %s stands in its mouth"
 							% [map.seed_used, day, rect])
 					var sides := body.def.guard_sides
@@ -593,9 +611,9 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 					var offset := EventFootprints.guard_post_offset(spread_vertical, sides[0])
 					var guard_pos := body.position + offset
 					var guard_along: float = guard_pos.y if vertical else guard_pos.x
-					t.check(guard_along < low or guard_along > high,
+					t.check(guard_along < low if at_start else guard_along > high,
 							("seed %d day %d: alley wall guard at mouth %s (at_start %s, side %d) " +
-							"stands outside the alley's own %.0f..%.0f, not inside it")
+							"stands on the street side of its body's mouth %.0f..%.0f, not inside it")
 							% [map.seed_used, day, body.position, at_start, sides[0], low, high])
 	t.check(checked > 0, "at least one alley wall body's guard was checked (%d)" % checked)
 
@@ -703,6 +721,248 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 	# measured rather than asserted.
 	print("[test_regions] reachable without the main road too, with the wall standing: %d of %d"
 			% [without_main_road_held, without_main_road_days])
+
+## **The main road is never walled, and a car can drive it from the tunnel to the bridge**
+## *(inbox #1186: "traffic on the main road always needs to be able to go from the tunnel to the
+## bridge unhindered")*. Over every wall day: every segment of the spine is a real street; every
+## crossing of a region boundary on it is a door, whatever the tree says, never a wall; its gate
+## lets the cars through (`GateState.holds_cars()` false, the boom up from the morning); and no
+## wall body's circle reaches a tile of the spine's carriageway. Those are every body the region
+## plan stands, so with them a car meets nothing of the plan's anywhere along the main road.
+##
+## **And a main-road door takes her in only on the main road's sidewalk.** Each of its three bodies
+## stands `RegionPlanner.MAIN_ROAD_DOOR_INSET` tiles in from the junction, off the mouth row, and
+## no sidewalk tile of the junction box at either end of the street is within
+## `EventDef.detain_distance()` of any of them, so her route crossing the main road at a corner is
+## never taken in. A door off the main road still stands on the mouth row.
+##
+## **`RULE_SEEDS` maps**, for the reason the full-run sweeps beside it give: what is asked of every
+## (seed, day) pair is an unconditional rule about that day's own plan.
+func _test_the_main_road_is_never_walled(t) -> void:
+	var crossings := 0
+	var tree_crossings_at_a_box := 0
+	for map: CityMap in _maps.slice(0, RULE_SEEDS):
+		var spine: Array[StreetNetwork.Segment] = []
+		for segment in map.network.segments():
+			if map.is_main_road_segment(segment):
+				spine.append(segment)
+				t.check(map.has_street(segment.key()),
+						"seed %d: the main road's segment %s is a real street"
+						% [map.seed_used, segment.key()])
+		t.check(not spine.is_empty(), "seed %d has a main road (%d segments)"
+				% [map.seed_used, spine.size()])
+		var carriageway := {}
+		for tile in _main_road_tiles(map):
+			if map.is_carriageway(tile) or map.is_crossing(tile):
+				carriageway[tile] = true
+		for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var plan := RegionPlanner.plan_day(map, day, tree)
+			var gates := {}
+			for i in plan.doors.size():
+				gates[plan.doors[i].key()] = plan.gates[i]
+			for segment in RegionPlanner.boundary_segments(map):
+				if not map.is_main_road_segment(segment):
+					continue
+				crossings += 1
+				var gate: RegionPlanner.GateState = gates.get(segment.key())
+				t.check(gate != null,
+						"seed %d day %d: the main road's crossing %s is a door"
+						% [map.seed_used, day, segment.key()])
+				if gate:
+					t.check(not gate.holds_cars() and gate.raised,
+							"seed %d day %d: and its boom is up for the cars and does not hold them"
+							% [map.seed_used, day])
+			tree_crossings_at_a_box += _check_the_take_in(t, map, day, plan, tree)
+			for segment in plan.walls:
+				t.check(not map.is_main_road_segment(segment),
+						"seed %d day %d: wall %s is not on the main road"
+						% [map.seed_used, day, segment.key()])
+			var covered := {}
+			for body in plan.wall_bodies:
+				_add_circle(map, covered, body.position, body.def.obstructs_radius)
+			var on_the_road := 0
+			for tile in covered:
+				if carriageway.has(tile):
+					on_the_road += 1
+			t.check(on_the_road == 0,
+					"seed %d day %d: no wall body reaches the main road's carriageway (%d tiles)"
+					% [map.seed_used, day, on_the_road])
+			var spine_rng := RandomNumberGenerator.new()
+			spine_rng.seed = hash("spine:%d:%d" % [map.seed_used, day])
+			for closure in ClosurePlanner.plan_day(map, day, spine_rng, tree, plan):
+				t.check(not map.is_main_road_segment(closure.segment),
+						"seed %d day %d: closure at %s is not on the main road"
+						% [map.seed_used, day, closure.segment.key()])
+	t.check(crossings > 0, "the sampled boundaries cross the main road (%d crossings)" % crossings)
+	t.check(tree_crossings_at_a_box > 0,
+			"the sample has main-road doors whose junction her tree crosses the main road at (%d)"
+			% tree_crossings_at_a_box)
+
+## **No alley's mouth body overlaps a main-road door, and the alley is still reached through that
+## mouth** *(inbox #1186, the player's answer on where the main-road guardhouse stands: in from the
+## corner)*. A main-road door's gatehouses stand `RegionPlanner.MAIN_ROAD_DOOR_INSET` tiles in from
+## the junction, where a through-alley may open (`CityGenerator._alley_rect()`), so a body at that
+## alley's mouth stands a tile deeper (`SealPlanner.alley_mouth_body_rect()`). Over every wall day:
+##
+## - every through-alley's mouth, at the rect that function gives against the day's door bodies,
+##   holds a body of `SealPlanner.ALLEY_MOUTH_BODY_REACH` clear of every main-road door body: the
+##   rule asked of every mouth, whether or not a wall or a seal lands there today;
+## - every body the region plan and the day's seals stand (a wall's, an alley door's post, a seal's,
+##   another door's) overlaps no main-road door body;
+## - each mouth that stands a tile deeper still has its end row reached from the street it opens
+##   on, with all of those bodies standing (`ReachabilityGrid`, the alley's other end shut).
+##
+## **Two planners in one check, for a guarantee between them**: the region plan stands the doors and
+## the alleys' walls, and the seal planner the alleys' seals, handed the doors' bodies as the day
+## hands them (`DayPlanner`). **Seeds like the review's**: `RULE_SEEDS` maps, which hold 261054 (a
+## crossing alley's wall beside a gatehouse), and the generated cities of 171299 and 187137 (the
+## same) and of 771605, 5000 and 195056 (an alley a soft seal lands on beside one), from the cache of
+## generated cities. A guard checks that some mouth stood deeper, so the sweep is not vacuous.
+func _test_an_alley_mouth_stands_clear_of_a_main_road_door(t) -> void:
+	var maps: Array[CityMap] = _maps.slice(0, RULE_SEEDS)
+	for seed_value in [171299, 187137, 771605, 5000, 195056]:
+		maps.append(MapCache.of(seed_value))
+	var mouths := 0
+	var deeper := 0
+	for map in maps:
+		for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var plan := RegionPlanner.plan_day(map, day, tree)
+			var seal_rng := RandomNumberGenerator.new()
+			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng,
+					_boundary_keys(plan), {}, plan.door_bodies)
+			var on_the_spine: Array[EventScheduler.Planned] = []
+			var others: Array[EventScheduler.Planned] = []
+			others.append_array(plan.wall_bodies)
+			others.append_array(seals)
+			var spine_points: Array[Vector2] = []
+			for segment in plan.doors:
+				if map.is_main_road_segment(segment):
+					spine_points.append_array(RegionPlanner.door_positions(map, segment))
+			for body in plan.door_bodies:
+				if _is_one_of(body.position, spine_points):
+					on_the_spine.append(body)
+				else:
+					others.append(body)
+			for door in on_the_spine:
+				for body in others:
+					var apart := door.position.distance_to(body.position)
+					t.check(apart >= door.def.obstructs_radius + body.def.obstructs_radius,
+							"seed %d day %d: %s at %s stands clear of the main-road door's %s at %s (%.0fpx)"
+							% [map.seed_used, day, body.def.id, body.position, door.def.id,
+							door.position, apart])
+			var blocked := {}
+			for body in others:
+				_add_circle(map, blocked, body.position, body.def.obstructs_radius)
+			for body in on_the_spine:
+				_add_circle(map, blocked, body.position, body.def.obstructs_radius)
+			var grid: ReachabilityGrid = null
+			for rect in map.alley_rects:
+				if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+					continue
+				var vertical := rect.size.x < rect.size.y
+				for at_start in [true, false]:
+					mouths += 1
+					var stood := SealPlanner.alley_mouth_body_rect(map, rect, vertical, at_start,
+							plan.door_bodies)
+					var at := map.tile_rect_to_world(stood).get_center()
+					for door in on_the_spine:
+						t.check(at.distance_to(door.position)
+								>= door.def.obstructs_radius + SealPlanner.ALLEY_MOUTH_BODY_REACH,
+								"seed %d day %d: alley %s's mouth body at %s stands clear of the main-road door's %s at %s"
+								% [map.seed_used, day, rect, at, door.def.id, door.position])
+					var end_row := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+					if stood == end_row:
+						continue
+					deeper += 1
+					if not grid:
+						grid = ReachabilityGrid.build(map)
+					t.check(_end_row_is_reached(map, grid, blocked, rect, vertical, at_start),
+							"seed %d day %d: alley %s's end row %s is reached from its street, its body a tile deeper"
+							% [map.seed_used, day, rect, end_row.position])
+	t.check(deeper > 0, "some alley's mouth body stood a tile deeper beside a main-road door (%d of %d mouths)"
+			% [deeper, mouths])
+
+## Whether a flood from the sidewalks at both ends of the street an alley's mouth opens on reaches
+## that mouth's end row, with `blocked` standing and the alley's other end shut.
+func _end_row_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictionary, rect: Rect2i,
+		vertical: bool, at_start: bool) -> bool:
+	var shut := blocked.duplicate()
+	for tile in map.rect_tiles(SealPlanner.alley_mouth_rect(rect, vertical, not at_start)):
+		shut[tile] = true
+	var end_row := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+	var outward := (Vector2i.UP if vertical else Vector2i.LEFT) if at_start \
+			else (Vector2i.DOWN if vertical else Vector2i.RIGHT)
+	var street := map.network.segment_containing(end_row.position + outward)
+	if not street:
+		return false
+	var sources: Array = []
+	for tile in map.rect_tiles(street.mouth_rect(true)) + map.rect_tiles(street.mouth_rect(false)):
+		if not shut.has(tile):
+			sources.append(tile)
+	var reached := grid.flood(sources, shut)
+	for tile in map.rect_tiles(end_row):
+		if grid.reaches(tile, shut, reached):
+			return true
+	return false
+
+## Whether `at` is one of `points`.
+static func _is_one_of(at: Vector2, points: Array[Vector2]) -> bool:
+	for point in points:
+		if at.is_equal_approx(point):
+			return true
+	return false
+
+## Checks every street door of `plan`'s take-in against the junction boxes at the ends of its street,
+## and returns how many main-road doors have a junction her tree crosses the main road at.
+func _check_the_take_in(t, map: CityMap, day: int, plan: RegionPlanner.RegionPlan,
+		tree: RouteTree) -> int:
+	var at_a_box := 0
+	for i in plan.doors.size():
+		var segment := plan.doors[i]
+		var bodies := plan.door_bodies.slice(i * 3, i * 3 + 3)
+		var main := map.is_main_road_segment(segment)
+		for body in bodies:
+			var tile := map.world_to_tile(body.position)
+			var on_a_mouth_row := segment.mouth_rect(true).has_point(tile) \
+					or segment.mouth_rect(false).has_point(tile)
+			t.check(on_a_mouth_row != main,
+					"seed %d day %d: door %s stands %s the mouth row"
+					% [map.seed_used, day, segment.key(), "off" if main else "on"])
+		if not main:
+			continue
+		var in_reach := 0
+		for junction in [segment.a, segment.b]:
+			for tile in _junction_box_sidewalk(junction):
+				for body in bodies:
+					if map.tile_to_world(tile).distance_to(body.position) \
+							<= body.def.detain_distance():
+						in_reach += 1
+		t.check(in_reach == 0,
+				"seed %d day %d: no junction-box sidewalk tile is in reach of main-road door %s's take-in (%d)"
+				% [map.seed_used, day, segment.key(), in_reach])
+		for junction in [segment.a, segment.b]:
+			for crossing in map.network.segments():
+				if not map.is_main_road_segment(crossing) and tree.is_on_the_tree(crossing.key()) \
+						and (crossing.a == junction or crossing.b == junction):
+					at_a_box += 1
+					break
+	return at_a_box
+
+## The 16 sidewalk tiles of the junction box at `junction`: the four 2x2 corners of its 6x6 tiles,
+## outside the two crossing carriageways.
+func _junction_box_sidewalk(junction: Vector2i) -> Array[Vector2i]:
+	var origin := junction * CityMap.period()
+	var found: Array[Vector2i] = []
+	for y in Tuning.STREET_WIDTH:
+		for x in Tuning.STREET_WIDTH:
+			if (x < 2 or x >= Tuning.STREET_WIDTH - 2) and (y < 2 or y >= Tuning.STREET_WIDTH - 2):
+				found.append(origin + Vector2i(x, y))
+	return found
 
 ## Closures and seals are checked before acceptance against the same tree; this checks the region
 ## boundary is one more thing neither may land on, over the same sweep of days.

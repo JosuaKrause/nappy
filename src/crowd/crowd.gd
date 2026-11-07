@@ -206,9 +206,10 @@ var _struck := false
 var skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
 var skip_agent_drawing := false
-## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
-## `DayStreets.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no
-## city behind it. See `_stop_for_gates()`.
+## Today's checkpoint gates that hold cars — `RegionPlanner.GateState`, set once a day by
+## `main._start_day()` from `DayStreets.region_plan().gates`, less every gate whose boom stays up
+## for the traffic (`GateState.holds_cars()`, the main road's). Empty on any day before the wall
+## stands, or in a rig with no city behind it. See `_stop_for_gates()`.
 var _gates: Array[RegionPlanner.GateState] = []
 
 ## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
@@ -248,11 +249,16 @@ var _crossable_segments := {}
 ## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
 var _door_holds: Array[WalkerDoorHold] = []
 
-## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
-## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
-## gates' state other than the region plan it already has through `setup()`.
+## Told today's gates, and keeps the ones the cars have to stop for. See `_gates`'s own doc for
+## where the day's list comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no
+## route to the gates' state other than the region plan it already has through `setup()`. **A gate
+## that does not hold cars is never the crowd's**: `_stop_for_gates()` never sees it, so no car is
+## ever held at it and its boom, up from the morning, is never lowered.
 func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
-	_gates = gates
+	_gates = []
+	for gate in gates:
+		if gate.holds_cars():
+			_gates.append(gate)
 
 ## How near a boom's own ground point her centre may come and still have some of her rig under it:
 ## the boom's body (`checkpoint_gate`'s own shape, read off the row rather than copied here) plus
@@ -894,6 +900,10 @@ func _give_way_at_junctions() -> void:
 ## slowing) for `GATE_STOP_SECONDS`, the gate raises and stays up for as long as any car
 ## remains within a car's length of it — a following platoon passes without the boom slamming shut
 ## between cars — then lowers and the timer resets for whoever queues next.
+##
+## **The main road's gates are not here at all.** A gate whose boom stays up for the traffic
+## (`RegionPlanner.GateState.holds_cars()`) never reaches `_gates` (`set_gates()`), so the spine's
+## cars drive under it at speed and nothing here ever lowers it.
 ##
 ## **And it never lowers onto her.** A raised boom is ground she may walk under
 ## (`EventDef.SolidWhen.WHILE_LOWERED`), and its body goes back down with the arm, so an arm that came

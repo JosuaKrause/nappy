@@ -102,6 +102,10 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## as closure candidates: a closure on a region boundary would be two things standing in the same
 ## spot, one placed by this pass and one by the region's own wall or door.
 ##
+## **No main-road street is ever closed**, whatever the roll says — see `_shuffled_candidates`. The
+## escape, which seals the main road (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no
+## streets (`DaySpec.closes_streets` false) and never runs this planner.
+##
 ## **`CityMap.fenced_park`'s fence comes back with the streets** (one `ParkClosure` per fenced run
 ## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
 ## same way it stands them at a closed street's two mouths. Every other used area in `CityMap.
@@ -518,6 +522,12 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## Manhattan lattice with several calm areas almost always has another way round. The local version
 ## asked here needs no route search at all: it is a fact about which street an archway sits on.
 ##
+## **The main road is refused outright** (the player's inbox note #1186, not yet filed: the main
+## road's traffic always runs from the tunnel to the bridge, unhindered). A closure takes the whole
+## segment out of the network, so one on the spine would stop its cars as a roadblock does. The
+## day's closure count does not depend on the spine: the candidate pool lacks its segments and the
+## quota is filled from the rest.
+##
 ## **A region's boundary is refused outright too, wall and door alike.** A closure on a wall segment
 ## is two things in one place; a closure on a door would close a crossing the region plan is
 ## supposed to keep open (or hold shut, on its own terms) regardless of what `ClosurePlanner` rolls.
@@ -544,7 +554,8 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
-				or access.has(key) or boundary.has(key):
+				or access.has(key) or boundary.has(key) \
+				or map.is_main_road_segment(segment):
 			continue
 		pool.append(segment)
 		var weight := CLOSURE_WALL_BIAS if rim.has(key) else 1.0

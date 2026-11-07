@@ -1,7 +1,7 @@
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks v(6,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
@@ -13,7 +13,7 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks v(6,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
@@ -23,7 +23,7 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks v(6,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
@@ -33,7 +33,7 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks v(6,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
@@ -43,7 +43,7 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks v(6,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x17, cafe_tables x61, car_accident x19, cat_dash x8, chatting_mother x2, delivery_van x61, dog_walker x23, fallen_tree x2, homeless_yeller x5, leaf_blower x15, loose_dog x12, market_stall x61, moving_van x53, pigeon_flock x5, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
@@ -52,7 +52,7 @@ begin_day 1 1 4242 4242 210.0
 begin_day 2 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 contact the neighbor leaves for work, east along her street
-0.0 plan closed: roadworks v(8,6)
+0.0 plan closed: roadworks h(4,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
 0.0 plan events: alley_mouse x4, burst_water_main x21, busker x2, cafe_tables x58, car_accident x20, cat_dash x6, chatting_mother x2, construction x43, cyclist x12, delivery_van x37, dog_walker x18, fallen_tree, homeless_yeller x12, ice_cream_van x5, leaf_blower x7, loose_dog x12, market_stall x45, moving_van x43, pigeon_flock x5, playground x2, scaffolding x21, skip x22
 0.0 start doorstep (80,84), facing 180°

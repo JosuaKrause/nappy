@@ -372,8 +372,8 @@ func closures_for_day(day: int) -> int:
 ## How many regions the lattice's junctions are partitioned into. Four, the milestone's own
 ## recommendation: two is a single dividing line and offers no real choice of which way round it;
 ## eight or nine — one per calm area — puts most of the lattice's segments behind a wall and would
-## almost never let "a region with no calm area gets no doors" have anything to say, since nearly
-## every region would hold exactly one calm area and none would be empty.
+## almost never let "a region with no calm area gets no doors off the main road" have anything to
+## say, since nearly every region would hold exactly one calm area and none would be empty.
 const REGION_COUNT := 4
 
 ## The day the region wall starts standing. Before it the regions exist — the partition is a fact

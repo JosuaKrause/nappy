@@ -498,6 +498,11 @@ static func corridor_offset(coordinate: int) -> int:
 func is_main_road(vertical: bool, corridor: int) -> bool:
 	return vertical and corridor == main_road
 
+## Whether a lattice segment runs along the spine: `is_main_road()` asked of the segment's own axis
+## and corridor, so the seal planner and the region plan read one answer. False for null.
+func is_main_road_segment(segment: StreetNetwork.Segment) -> bool:
+	return segment != null and is_main_road(not segment.horizontal, segment.a.x)
+
 ## What kind of street a stretch of corridor is: the axis, the corridor index, and how far along
 ## it in tiles. `ORDINARY` for anything outside the lattice, which is what every caller means by
 ## "not a street I know about".

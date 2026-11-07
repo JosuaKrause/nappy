@@ -20,7 +20,7 @@ func run(t) -> void:
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
 func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 	var added := [0]
-	var room_days := [0]
+	var room_days := [0, 0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		# A city and a run of its own for every seed: the scar the task leaves is this run's.
 		_build_city_in_a_new_run(t, seed_value)
@@ -99,8 +99,14 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				if plan.mast_id == mast_id and plan.silenced \
 						and plan.position.distance_to(foot) < 1.0:
 					stands_again = true
-			t.check(stands_again, "seed %d: and the next day stands it again, silenced"
-					% seed_value)
+			# The mast stands again on day 12 exactly where that morning leaves it room, the rule
+			# the day-14 check above asks.
+			var no_room_next := _the_day_leaves_no_room_for(foot)
+			if not no_room_next:
+				room_days[1] += 1
+			t.check(stands_again == not no_room_next,
+					"seed %d: and the next day stands it again, silenced, where it leaves room (%s)"
+					% [seed_value, "room" if not no_room_next else "no room"])
 		elif not site_near:
 			# The scheduler may refuse every tile it was offered — its acceptance, not the
 			# director's — and then the nearest live mast is the task's, which the director says.
@@ -119,6 +125,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 			% added[0])
 	t.check(room_days[0] > 0, "some seed's last night left the mast room, so it was planned (%d)"
 			% room_days[0])
+	t.check(room_days[1] > 0, "and some seed's day 12 left it room, so the day-12 check asked something (%d)"
+			% room_days[1])
 
 ## Whether the day just planned on the test city refuses a mast at `foot`: its tile closed, held or
 ## on the home block, or a district door's checkpoint within the gap and a mast's field of it

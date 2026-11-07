@@ -48,14 +48,33 @@ extends RefCounted
 ##
 ## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY`, every
 ## boundary crossing — a segment or a crossing alley — the day's tree uses is a **door**; every
-## other one is **wall**. That is the whole rule: the tree wins. A region with no calm area
-## therefore gets no doors on every day its own boundary is off the tree, which is every day unless
-## the tree genuinely has to cross it to reach calm ground the milestone's own decree says a region
-## edge may never affect — in which case the crossing is a door and the decree is why.
+## other one is **wall**, except on the main road (below). The tree wins: a region with no calm
+## area gets no doors off the main road on every day its own boundary is off the tree, which is
+## every day unless the tree genuinely has to cross it to reach calm ground the milestone's own
+## decree says a region edge may never affect — in which case the crossing is a door and the decree
+## is why.
 ##
-## **The main road is ordinary ground to the partition.** Nothing here excludes it: a boundary may
-## cut it, and the checkpoint that results is the one place the milestone's gate over the roadway
-## means anything.
+## **The main road is never walled, and no gate holds its cars** *(inbox #1186: "there
+## shouldn't be any barricades on the main road ever. if a quadrant line goes through there it must
+## become a guardhouse" · "traffic on the main road always needs to be able to go from the tunnel
+## to the bridge unhindered")*. A boundary may cut the main road like any other street, and every
+## such crossing is a door on every day, whether or not the tree uses it: two gatehouses on its
+## sidewalks and a boom over its carriageway that stays up for the cars (`GateState.holds_cars()`),
+## so a region line never holds the spine's traffic. Other things can still stand on its
+## carriageway: event bodies the catalogue places there (`roadblock`, `protest`, `firefight`, the
+## abduction van) are not kept off it. Her side of the door is every door's: a gatehouse takes her
+## in from its own sidewalk, and walking under the boom sets the door's guard on her. **The door
+## stands `MAIN_ROAD_DOOR_INSET` tiles in from the junction**, so a gatehouse takes her in walking
+## along the main road's sidewalk past it and never in the junction, where her route crosses the
+## main road at a corner without meeting the door *(inbox #1186, the player's answer on where it
+## stands: "move it in so she doesn't accidentally trigger it")*. Two tiles in is where a
+## through-alley opens, so a body at an alley's mouth beside a gatehouse stands a tile deeper
+## (`SealPlanner.alley_mouth_body_rect()`, asked by this plan's alley walls and alley doors and by
+## the seal planner's alley seals). The tree runs along the spine only when its
+## trunk search falls back to it (`RouteTree`), so a main-road door usually decides no route; its
+## sidewalks reach every region the spine crosses, at a toll. The escape, the one walk that seals
+## the main road (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no streets and never
+## runs this planner.
 
 ## The catalogue row the wall's bodies are hard seals of: `roadblock`, the barrier that closes a
 ## street outright — renamed from `checkpoint` once the milestone's own door structure took that
@@ -63,22 +82,38 @@ extends RefCounted
 ## commit**, or the wall silently starts sealing nothing.
 const _WALL_DEF_ID := "roadblock"
 
-## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
-## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventScheduler.Planned.gate_state` (which is what it draws raised or lowered from) and
-## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
-## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
-## can never disagree about whether a boom is up.
+## The shared state of one checkpoint gate: its own ground point, whether the boom is up right
+## now, and whether it ever lowers for the cars. Built once per street door in `_add_door_bodies`,
+## held by the `checkpoint_gate` instance through `EventScheduler.Planned.gate_state` (which is
+## what it draws raised or lowered from) and by `Crowd` through `RegionPlan.gates` (which is what
+## actually raises and lowers it — see `Crowd._stop_for_gates()`). A `RefCounted` rather than two
+## separate copies, so the two systems can never disagree about whether a boom is up.
 class GateState extends RefCounted:
 	## The gate's own ground point, in world space — the same position its `checkpoint_gate`
 	## instance stands at, and what `Crowd` measures a car's distance from.
 	var position := Vector2.ZERO
 	## Whether the boom is up. `Crowd._stop_for_gates()` is the only writer; the instance only
-	## reads it, once a frame, to choose which of the four boom textures to draw.
+	## reads it, once a frame, to choose which of the four boom textures to draw. A gate that does
+	## not hold cars is up from the moment it is built and nobody writes it.
 	var raised := false
 	## Seconds the car at the front of this gate's queue has been held at the stop line —
 	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
 	var stopped_for := 0.0
+	## See `holds_cars()`.
+	var _holds_cars := true
+
+	## `holds_cars` is false for a gate whose boom stays up for the traffic, which starts it raised.
+	func _init(holds_cars := true) -> void:
+		_holds_cars = holds_cars
+		raised = not holds_cars
+
+	## Whether the boom lowers for the cars, so the crowd holds one at its stop line until it rises:
+	## every door's but the main road's on a day, whose traffic is never held (`RegionPlanner`'s
+	## class doc, "The main road is never walled").
+	## Decided once, by the planner that stands the door, so `Crowd` asks the gate rather than
+	## working out again which street it stands on.
+	func holds_cars() -> bool:
+		return _holds_cars
 
 ## One region growth's result: which crossings are wall today and which are doors, plus the
 ## bodies the wall and the doors stand as.
@@ -102,7 +137,8 @@ class RegionPlan extends RefCounted:
 	## out of the day's whole plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
 	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
-	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
+	## street door's three points (`door_positions()`), one `checkpoint_post` at each mouth of every
+	## alley door. Kept apart
 	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
 	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
 	var door_bodies: Array[EventScheduler.Planned] = []
@@ -589,15 +625,17 @@ static func home_region(map: CityMap) -> int:
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
 ## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
-## uses it and wall otherwise. The tree wins, unconditionally, over anything the partition alone
-## would say.** Forcing a wall onto a calm-less region's own boundary regardless of the tree, on the
-## reasoning that there is no reason to ever enter a region with nothing in it, breaks the
-## milestone's own decree that a region edge may never affect a path — a segment the tree is
-## actually using would turn into a wall it did not expect. **A region with no calm area still gets
-## no doors on every day its own boundary happens to be off the tree** — which is every day unless
-## the tree has a genuine reason to cross it, and on that day the reason wins, because the decree
-## that a region edge never affects a path is the stronger rule and this is what obeying it looks
-## like.
+## uses it and wall otherwise, and a crossing of the main road is a door whatever the tree says**
+## (the class doc, "The main road is never walled"). **The tree
+## wins over anything the partition alone would say.** Forcing a wall onto a calm-less region's own
+## boundary regardless of the tree, on the reasoning that there is no reason to ever enter a region
+## with nothing in it, breaks the milestone's own decree that a region edge may never affect a path
+## — a segment the tree is actually using would turn into a wall it did not expect. **A region with
+## no calm area still gets no doors off the main road on every day its own boundary happens to be
+## off the tree** — which is every day unless the tree has a genuine reason to cross it, and on that
+## day the reason wins, because the decree that a region edge never affects a path is the stronger
+## rule and this is what obeying it looks like. A region the main road crosses into has a door on
+## the spine every day, calm or not.
 ##
 ## No exemption for the home region is needed here either, for the same reason: home's own boundary
 ## was never a case the tree-wins rule could get wrong, since the tree door/wall answer only depends
@@ -609,7 +647,7 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
 		return plan
 	for segment in boundary_segments(map):
-		if tree.is_on_the_tree(segment.key()):
+		if tree.is_on_the_tree(segment.key()) or map.is_main_road_segment(segment):
 			stand_door(map, segment, plan)
 		else:
 			plan.walls.append(segment)
@@ -634,21 +672,25 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
+	# The street doors' bodies, all stood by now: an alley's mouth body stands clear of them
+	# (`SealPlanner.alley_mouth_body_rect()`).
+	var street_doors := plan.door_bodies.duplicate()
 	for rect in plan.alley_walls:
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true, street_doors))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false, street_doors))
 	for rect in plan.alley_doors:
-		_add_alley_door_bodies(map, rect, plan)
+		_add_alley_door_bodies(map, rect, plan, street_doors)
 	return plan
 
 ## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
-## placement, with its def's shape then overridden to a point of half the alley's own width
-## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
-## row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
+## placement, a tile deeper where a street door's body in `doors` stands beside the mouth
+## (`SealPlanner.alley_mouth_body_rect()`), with its def's shape then overridden to a point of half
+## the alley's own width (`SealPlanner.ALLEY_MOUTH_BODY_REACH`, 32px) rather than left at the
+## catalogue row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
 ## duplicated the def, so this touches nothing the catalogue or another instance shares.
 ##
 ## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
@@ -668,9 +710,9 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
-		at_start: bool) -> EventScheduler.Planned:
-	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+		at_start: bool, doors: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID, doors)
+	body.def.solid(GroundShape.point(SealPlanner.ALLEY_MOUTH_BODY_REACH))
 	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
 	return body
 
@@ -697,32 +739,63 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
 
-## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its
-## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
-## each of the day's street doors through, and a scene recipe's authored checkpoint
-## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
+## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its three
+## bodies and its gate join the plan (`_add_door_bodies()`). On the main road the door stands
+## `MAIN_ROAD_DOOR_INSET` tiles in from the junction and its gate never lowers for the cars. The one
+## entry `plan_day()` stands each of the day's street doors through, and a scene recipe's authored
+## checkpoint (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
+##
+## No spec decides this: the escape, the one walk that seals the main road
+## (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no streets (`DaySpec.closes_streets`
+## false) and so never runs this planner.
 static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	plan.doors.append(segment)
-	_add_door_bodies(map, segment, plan)
+	_add_door_bodies(map, segment, plan, not map.is_main_road_segment(segment))
 
-## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
-## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
-## give the wall, `SealPlanner.positions_across` at `Tuning.TILE_SIZE`, which comes out at three
-## across the street's own `STREET_WIDTH` (sidewalk, road, sidewalk, each exactly two tiles).
+## Tiles in from the junction a main-road door stands, so that its gatehouses' take-in
+## (`EventDef.detain_distance()`, 80px from a hut's centre) reaches the main road's sidewalk
+## walking past the door and none of the junction's own sidewalk, where her route crosses the main
+## road without meeting the door. At the segment's mouth tile the take-in covers 8 to 12 of the
+## junction box's 16 sidewalk tiles. Two tiles in puts the nearest box tile 96px from a hut's
+## centre. Doors off the main road stand on the mouth tile. The inset row is where a through-alley
+## opens on the street beside it, so an alley's mouth body there stands a tile deeper
+## (`SealPlanner.alley_mouth_body_rect()`).
+const MAIN_ROAD_DOOR_INSET := 2
+
+## The three points a street door on `segment` stands its bodies at, a hut on each sidewalk and the
+## gate between them, at the end its wall stands (`CityMap.boundary_wall_at_a`) and, on the main
+## road, `MAIN_ROAD_DOOR_INSET` tiles in from the junction. Day-independent, so `MastSites` keeps
+## its fields clear of the same points.
+static func door_positions(map: CityMap, segment: StreetNetwork.Segment) -> Array[Vector2]:
+	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
+	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	var mouth := segment.mouth_rect(at_a)
+	if map.is_main_road_segment(segment):
+		var inward := Vector2i.RIGHT if segment.horizontal else Vector2i.DOWN
+		mouth.position += inward * (MAIN_ROAD_DOOR_INSET if at_a else -MAIN_ROAD_DOOR_INSET)
+	return SealPlanner.positions_across(map.tile_rect_to_world(mouth), segment.horizontal,
+			Tuning.TILE_SIZE)
+
+## The three bodies a street door stands at `door_positions()`: a `checkpoint_hut` on each pavement
+## lane and a `checkpoint_gate` on the road between them, `SealPlanner.positions_across` at
+## `Tuning.TILE_SIZE`, which comes out at three across the street's own `STREET_WIDTH` (sidewalk,
+## road, sidewalk, each exactly two tiles). Off the main road they are the same three positions
+## `place_hard_on` would give the wall at the mouth; a main-road door's stand
+## `MAIN_ROAD_DOOR_INSET` tiles further in.
 ##
 ## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
-static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
-	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-	var positions := SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)
+##
+## `holds_cars` is the gate's (`GateState.holds_cars()`), false exactly for a main-road door.
+static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan,
+		holds_cars: bool) -> void:
+	var positions := door_positions(map, segment)
 	if positions.is_empty():
 		return
 	var axis := _along_axis(segment.horizontal)
 	var road_index := positions.size() / 2
-	var gate := GateState.new()
+	var gate := GateState.new(holds_cars)
 	gate.position = positions[road_index]
 	plan.gates.append(gate)
 	for i in positions.size():
@@ -735,14 +808,16 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		plan.door_bodies.append(body)
 
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
-## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
-## wall's own crossing-alley bodies use.
-static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan) -> void:
+## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_body_rect`
+## a wall's own crossing-alley bodies use, so a post stands clear of the street doors' bodies
+## `street_doors` as a wall's mouth body does.
+static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan,
+		street_doors: Array[EventScheduler.Planned]) -> void:
 	var vertical := rect.size.x < rect.size.y
 	var axis := _along_axis(not vertical)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
 	for at_start in [true, false]:
-		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+		var mouth := SealPlanner.alley_mouth_body_rect(map, rect, vertical, at_start, street_doors)
 		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.facing = axis
 		plan.door_bodies.append(body)
