@@ -111,6 +111,19 @@ func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
 		_plan_cache[key] = RegionPlanner.plan_day(map, day, tree)
 	return _plan_cache[key]
 
+## The street door bodies `plan` stands for `segment`: the ones at the three points
+## `RegionPlanner.door_positions()` gives it, which is where the planner stands them, so a test that
+## finds a door's bodies here finds every door's, wherever on its street the door stands.
+func _street_door_bodies(map: CityMap, plan: RegionPlanner.RegionPlan,
+		segment: StreetNetwork.Segment) -> Array[EventScheduler.Planned]:
+	var found: Array[EventScheduler.Planned] = []
+	for point in RegionPlanner.door_positions(map, segment):
+		for body in plan.door_bodies:
+			if body.position.is_equal_approx(point) \
+					and (body.def.id == "checkpoint_hut" or body.def.id == "checkpoint_gate"):
+				found.append(body)
+	return found
+
 # ------------------------------------------------------------------- the shape ---
 
 ## Every street door stands exactly three bodies — two `checkpoint_hut` and one `checkpoint_gate`
@@ -172,15 +185,11 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 
 		# Every door body's own tile belongs to the segment or the alley it was built for.
 		for segment in plan.doors:
-			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
-			for body in plan.door_bodies:
-				if body.def.id != "checkpoint_hut" and body.def.id != "checkpoint_gate":
-					continue
-				if not mouth.has_point(body.position):
-					continue
+			var bodies := _street_door_bodies(map, plan, segment)
+			t.check(bodies.size() == 3,
+					"seed %d day %d: door %s stands three bodies at its own points (%d)"
+					% [map.seed_used, day, segment.key(), bodies.size()])
+			for body in bodies:
 				checked += 1
 				var tile := map.world_to_tile(body.position)
 				var containing := map.network.segment_containing(tile)
@@ -193,11 +202,9 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 		# `test_regions.gd`'s own alley-mouth check runs.
 		for wall_body in plan.wall_bodies:
 			for segment in plan.doors:
-				var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-						< RegionPlanner.region_of_junction(map, segment.b)
-				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-				var mouth_centre := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
-				var distance := wall_body.position.distance_to(mouth_centre)
+				var points := RegionPlanner.door_positions(map, segment)
+				var door_centre := points[points.size() / 2]
+				var distance := wall_body.position.distance_to(door_centre)
 				t.check(distance > wall_body.def.obstructs_radius,
 						("seed %d day %d: a wall body at %s (radius %.0f) does not reach the door " +
 						"at %s (%.0fpx away)") % [map.seed_used, day, wall_body.position,
@@ -224,26 +231,24 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
 		for segment in plan.doors:
-			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
+			var street := map.tile_rect_to_world(segment.tile_rect())
 			var gate: EventScheduler.Planned = null
 			var huts: Array[EventScheduler.Planned] = []
-			for body in plan.door_bodies:
-				if not mouth.has_point(body.position):
-					continue
+			for body in _street_door_bodies(map, plan, segment):
 				if body.def.id == "checkpoint_gate":
 					gate = body
 				elif body.def.id == "checkpoint_hut":
 					huts.append(body)
+			t.check(gate != null and huts.size() == 2,
+					"seed %d day %d: door %s stands a gate and two huts (%d huts)"
+					% [map.seed_used, day, segment.key(), huts.size()])
 			if not gate or huts.size() != 2:
 				continue
 			checked += 1
 
 			# The cross-street axis, and the carriageway band on it: the middle of the street's own
 			# cross-section, with `Tuning.SIDEWALK_WIDTH` tiles of pavement on either side of it.
-			var across_low: float = (mouth.position.y if segment.horizontal else mouth.position.x) \
+			var across_low: float = (street.position.y if segment.horizontal else street.position.x) \
 					+ Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 			var road_width: float = (Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH) \
 					* Tuning.TILE_SIZE

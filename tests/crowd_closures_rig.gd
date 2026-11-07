@@ -759,6 +759,13 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 			"a walker that turns back at doors reads today's door as wall")
 	city.free()
 
+## Whether `at` is one of `points`, a door's own (`RegionPlanner.door_positions()`).
+static func _stands_at_one_of(at: Vector2, points: Array[Vector2]) -> bool:
+	for point in points:
+		if at.is_equal_approx(point):
+			return true
+	return false
+
 ## A city, a day whose region wall has an open door in it, and an **empty** crowd centred on that
 ## door's mouth — the rig the walker-at-a-door tests below drive.
 ##
@@ -794,20 +801,22 @@ func _open_a_door_day(t) -> Dictionary:
 	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
 			< RegionPlanner.region_of_junction(map, door.b)
 	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
-	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
-	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
+	# The door's own three points (`RegionPlanner.door_positions()`: a hut, the gate, a hut), where
+	# the planner stands its bodies wherever on the street the door is.
+	var points := RegionPlanner.door_positions(map, door)
+	city.crowd.start_day(used_day, _rng(used_day), points[points.size() / 2])
 	city.crowd.set_gates(city.streets().region_plan().gates)
 	city.crowd.clear()
 
 	var vertical := not door.horizontal
 	var scene := {"city": city, "map": map, "day": used_day, "door": door, "at_a": at_a,
-			"vertical": vertical, "mouth": mouth}
+			"vertical": vertical}
 	# The huts are the day's detaining door bodies on the sidewalks (the plan's `door_bodies`), and
 	# each one's hold is what a walker walking at it is handed (`door_ahead`): a probe walker is set
 	# walking at each and the hold read off it after one frame.
 	var huts: Array[WalkerDoorHold] = []
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
+		if body.def.detain_seconds <= 0.0 or not _stands_at_one_of(body.position, points):
 			continue
 		var across: float = body.position.x if vertical else body.position.y
 		if CityMap.is_road_offset(

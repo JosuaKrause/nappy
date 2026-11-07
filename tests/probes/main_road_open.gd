@@ -10,7 +10,7 @@ extends RefCounted
 ## On the seeds the region-plan suites use (`tests/test_regions.gd` and `tests/test_checkpoints.gd`)
 ## and every day from `Tuning.REGION_WALL_FIRST_DAY` on, three readings:
 ##
-## - **`PLAN`**, the region plan alone (`RegionPlanner.plan_day()` with the day's own spec): how many
+## - **`PLAN`**, the region plan alone (`RegionPlanner.plan_day()` on the day's own tree): how many
 ##   boundary segments are main road, how many of those are wall and how many door, how many of the
 ##   door gates hold a car, and how many main-road carriageway tiles a wall body covers.
 ## - **`DAY`**, the whole morning as `DayDirector.start_day()` plans it (the city's streets, then the
@@ -55,7 +55,7 @@ func run(t) -> void:
 	print("TOTAL day: main-road segments held (not a door) %d | closed %d | bodies on the carriageway %d"
 			% [totals.held, totals.closed, totals.bodies])
 	print("TOTAL street closures %d" % totals.closures)
-	print("TOTAL take-in: junction-box sidewalk tiles in a main-road door's take-in %d over %d doors (most %d on one door); doors with any %d; of the %d doors whose junction her tree crosses the main road at, %d"
+	print("TOTAL take-in: junction-box sidewalk tiles in a main-road door's take-in %d over %d doors (most %d on one door); doors with any %d; of the %d doors at whose own end's junction her tree crosses the main road, %d"
 			% [totals.box_tiles, totals.box_doors, totals.box_max, totals.box_doors_hit,
 			totals.box_crossed, totals.box_crossed_hit])
 	for id: String in rows:
@@ -115,11 +115,12 @@ func _plan(seed_value: int, day: int, totals: Dictionary) -> int:
 			totals.box_doors += 1
 			totals.box_doors_hit += 1 if covered > 0 else 0
 			totals.box_max = maxi(totals.box_max, covered)
+			# At the junction of the door's own end, the one its take-in stands beside.
+			var own_end := _own_end(map, plan.doors[i])
 			var crossed := false
 			for other in map.network.segments():
 				if not _on_the_main_road(map, other) and tree.is_on_the_tree(other.key()) \
-						and (other.a in [plan.doors[i].a, plan.doors[i].b] \
-						or other.b in [plan.doors[i].a, plan.doors[i].b]):
+						and (other.a == own_end or other.b == own_end):
 					crossed = true
 			totals.box_crossed += 1 if crossed else 0
 			totals.box_crossed_hit += 1 if crossed and covered > 0 else 0
@@ -135,11 +136,18 @@ func _plan(seed_value: int, day: int, totals: Dictionary) -> int:
 			% [seed_value, day, boundary, walls, doors, holding, wall_tiles])
 	return boundary
 
-## How many of the 16 sidewalk tiles of the junction boxes at the ends of `segment` any of the
-## door's bodies' take-in (`EventDef.detain_distance()` from its centre) covers, counted per box.
+## The junction at the end of `segment` its door stands at (`CityMap.boundary_wall_at_a`).
+static func _own_end(map: CityMap, segment: StreetNetwork.Segment) -> Vector2i:
+	var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
+			< RegionPlanner.region_of_junction(map, segment.b)
+	return segment.a if map.boundary_wall_at_a.get(segment.key(), default_at_a) else segment.b
+
+## How many of the 16 sidewalk tiles of the junction box at the door's own end of `segment` any of
+## the door's bodies' take-in (`EventDef.detain_distance()` from its centre) covers. The far end's
+## box is a street's length away, out of every body's reach.
 func _box_tiles_taken_in(map: CityMap, segment: StreetNetwork.Segment, bodies: Array) -> int:
 	var count := 0
-	for junction in [segment.a, segment.b]:
+	for junction in [_own_end(map, segment)]:
 		var origin: Vector2i = junction * CityMap.period()
 		for y in Tuning.STREET_WIDTH:
 			for x in Tuning.STREET_WIDTH:
@@ -226,10 +234,8 @@ func _crowd(t, seed_value: int, day: int) -> void:
 		if _on_the_main_road(map, segment):
 			crossing = segment
 			break
-	var default_at_a := RegionPlanner.region_of_junction(map, crossing.a) \
-			< RegionPlanner.region_of_junction(map, crossing.b)
-	var at_a: bool = map.boundary_wall_at_a.get(crossing.key(), default_at_a)
-	var at := map.tile_rect_to_world(crossing.mouth_rect(at_a)).get_center()
+	# The door's gate, the middle of its three points.
+	var at := RegionPlanner.door_positions(map, crossing)[1]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("main-road-open:%d:%d" % [seed_value, day])
 	city.crowd.start_day(day, rng, at)

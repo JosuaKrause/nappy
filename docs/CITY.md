@@ -1668,7 +1668,8 @@ yet filed). Every crossing of a region boundary on the main road is a door on ev
 not the tree uses it, and its boom stays up for the cars: the gate does not hold cars
 (`RegionPlanner.GateState.holds_cars()`), so the crowd never stops one at it (`Crowd.set_gates()`
 keeps only the gates that do). The region plan and the closures never stand anything on the spine's
-carriageway. **Event bodies still can**: the catalogue's `roadblock`, `protest`, `firefight` and the
+carriageway that holds a car: the one thing there is a main-road door's boom, which stays up.
+**Event bodies still can**: the catalogue's `roadblock`, `protest`, `firefight` and the
 abduction van are placed without keeping off it, so the main road's traffic is not yet unhindered
 end to end. Her side of the door is every door's: a gatehouse takes her in from its own sidewalk,
 and walking under the boom, which on the main road is always up, sets the door's guard on her
@@ -1693,8 +1694,10 @@ uses or a crossing of the main road, and nothing else changes that.
 
 **A door stands the same three-body geometry a wall would, passable instead of held.** A street
 door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over the road between
-them, at the wall's own three positions (`SealPlanner.positions_across` at `Tuning.TILE_SIZE`,
-which comes out at three across `STREET_WIDTH`); an alley door gets a single `checkpoint_post` at
+them, at the three points `RegionPlanner.door_positions()` gives (`SealPlanner.positions_across`
+at `Tuning.TILE_SIZE`, which comes out at three across `STREET_WIDTH`): the wall's own three
+positions at the mouth, or on the main road `MAIN_ROAD_DOOR_INSET` tiles further in (above); an
+alley door gets a single `checkpoint_post` at
 each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
 alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a gatehouse or a post —
 see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the

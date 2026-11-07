@@ -133,7 +133,8 @@ class RegionPlan extends RefCounted:
 	## out of the day's whole plan.
 	var wall_bodies: Array[EventScheduler.Planned] = []
 	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
-	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
+	## street door's three points (`door_positions()`), one `checkpoint_post` at each mouth of every
+	## alley door. Kept apart
 	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
 	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
 	var door_bodies: Array[EventScheduler.Planned] = []
@@ -765,10 +766,12 @@ static func door_positions(map: CityMap, segment: StreetNetwork.Segment) -> Arra
 	return SealPlanner.positions_across(map.tile_rect_to_world(mouth), segment.horizontal,
 			Tuning.TILE_SIZE)
 
-## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
-## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
-## give the wall, `SealPlanner.positions_across` at `Tuning.TILE_SIZE`, which comes out at three
-## across the street's own `STREET_WIDTH` (sidewalk, road, sidewalk, each exactly two tiles).
+## The three bodies a street door stands at `door_positions()`: a `checkpoint_hut` on each pavement
+## lane and a `checkpoint_gate` on the road between them, `SealPlanner.positions_across` at
+## `Tuning.TILE_SIZE`, which comes out at three across the street's own `STREET_WIDTH` (sidewalk,
+## road, sidewalk, each exactly two tiles). Off the main road they are the same three positions
+## `place_hard_on` would give the wall at the mouth; a main-road door's stand
+## `MAIN_ROAD_DOOR_INSET` tiles further in.
 ##
 ## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a

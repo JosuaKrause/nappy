@@ -1919,6 +1919,13 @@ func _test_a_walker_out_of_a_hut_is_drawn_from_where_it_comes_out(t) -> void:
 			"and drawn from where it comes out (%s, %s)" % [drawn_from, stands_at])
 	city.free()
 
+## Whether `at` is one of `points`, a door's own (`RegionPlanner.door_positions()`).
+static func _stands_at_one_of(at: Vector2, points: Array[Vector2]) -> bool:
+	for point in points:
+		if at.is_equal_approx(point):
+			return true
+	return false
+
 ## A city in a run of its own on the first day with a region door, the crowd started round the door's
 ## mouth and emptied, and the door's two sidewalk huts: the day's detaining door bodies standing on a
 ## sidewalk of the mouth, as the crowd builds its own huts from them (`Crowd.start_day()`).
@@ -1950,14 +1957,16 @@ func _open_a_door_day(t) -> Dictionary:
 	var default_at_a := RegionPlanner.region_of_junction(map, door.a) \
 			< RegionPlanner.region_of_junction(map, door.b)
 	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
-	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
-	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
+	# The door's own three points (`RegionPlanner.door_positions()`: a hut, the gate, a hut), where
+	# the planner stands its bodies wherever on the street the door is.
+	var points := RegionPlanner.door_positions(map, door)
+	city.crowd.start_day(used_day, _rng(used_day), points[points.size() / 2])
 	city.crowd.set_gates(city.streets().region_plan().gates)
 	city.crowd.clear()
 	var vertical := not door.horizontal
 	var huts: Array[Vector2] = []
 	for body in city.streets().region_plan().door_bodies:
-		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
+		if body.def.detain_seconds <= 0.0 or not _stands_at_one_of(body.position, points):
 			continue
 		var across: float = body.position.x if vertical else body.position.y
 		if CityMap.is_road_offset(

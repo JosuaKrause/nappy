@@ -373,8 +373,8 @@ func _test_the_day_plan_shape(t) -> void:
 						% [map.seed_used, day, segment.key()])
 				var ra := RegionPlanner.region_of_junction(map, segment.a)
 				var rb := RegionPlanner.region_of_junction(map, segment.b)
-				if on_the_tree and (ra >= 0 and ra < calm.size() and calm[ra] == 0) \
-						or (rb >= 0 and rb < calm.size() and calm[rb] == 0):
+				if on_the_tree and ((ra >= 0 and ra < calm.size() and calm[ra] == 0) \
+						or (rb >= 0 and rb < calm.size() and calm[rb] == 0)):
 					this_day_had_a_calmless_door = true
 			if this_day_had_a_calmless_door:
 				calmless_region_had_a_door += 1
