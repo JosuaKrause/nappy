@@ -43,11 +43,11 @@ func _test_a_siting_offers_the_home_street_only_where_the_walk_does_not_hold_it(
 	var tree := RouteTree.for_day(map, DAY)
 	var sited := {}
 	for holds: bool in [true, false]:
-		var siting := EventScheduler.WalkSiting.new(DAY, map, tree, [] as Array[Vector2i],
-				PackedVector2Array(), EventScheduler.Verdicts.new())
+		var siting := EventScheduler.WalkSiting.new(DAY, map, tree,
+				FakeWalkEvents.new().set_calm(CalmAreas.of(map)), EventScheduler.Verdicts.new())
 		siting.holds_the_home_streets = holds
-		sited[holds] = siting.near_her(EventCatalogue.by_id(ROW), Rig.rng(DAY),
-				[] as Array[EventScheduler.Planned], home_street, map.doorstep_world_position())
+		sited[holds] = siting.near_her(EventCatalogue.by_id(ROW), Rig.rng(DAY), home_street,
+				map.doorstep_world_position())
 	t.check(sited[true] == null,
 			"a walk that holds the home's streets is offered none of the home street")
 	t.check(sited[false] != null and map.world_to_tile(sited[false].position) in home_street,

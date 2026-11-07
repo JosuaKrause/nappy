@@ -95,7 +95,8 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 	var told: Array[String] = []
 	manager.trace = RunTrace.recording(told)
 	var board := _CountingBoard.new(manager.world)
-	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board)
+	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
+			manager.walk_events())
 	var director := _RetryDirector.new(map)
 	lesson.use_director(director, null)
 	var body := CharacterBody2D.new()

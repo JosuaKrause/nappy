@@ -7,12 +7,12 @@ extends RefCounted
 ##
 ## **Worked out once and handed to whoever asks** (inbox #1156): `DayPlanner` makes the day's
 ## with `of()` and hands it to `EventScheduler.build_day()`, which hands it to its passes, to
-## `DayEvents` and to `DayRepairs`, so no two of them can disagree about an area. Three places
-## still make their own until the live form after dawn is handed one:
-## `EventScheduler.WalkSiting` (for its leave-alone ground), `EventScheduler.recipe_placement()`
-## (the same, for a recipe's row) and `DayPlanner.plan_the_escape_city()` (nothing used, nothing
-## set aside). And `WalkSiting._calm_she_has_not_used()` still works out the unused areas' calm
-## tiles from the map.
+## `DayEvents` and to `DayRepairs`, and the day's plan (`DayPlanner.Plan.calm()`) carries it past
+## dawn to the walk's events (`WalkEvents.calm()`), whose sitings read their leave-alone ground off
+## it, so no two of them can disagree about an area. Two places still make their own:
+## `EventScheduler.recipe_placement()` (for a recipe's row) and `DayPlanner.plan_the_escape_city()`
+## (nothing used, nothing set aside). And `WalkSiting._calm_she_has_not_used()` still works out
+## the unused areas' calm tiles from the map.
 ##
 ## **Never saved.** What it is derived from is: the city (its seed and `CityState`), and where she
 ## settled (`SettledState`, read through `RunCalendar.settled_this_act()`). A load plans the day

@@ -92,6 +92,8 @@ var column: Array[EventInstance] = []
 
 ## Where the raid may put what it brings (`SpawnSiting`), or null.
 var _spawn_siting: SpawnSiting
+## The walk's events, handed in at `setup()`.
+var _walk: WalkEvents
 
 ## The run the happenings belong to (`RunState`): the day's stream they draw from, the scars they
 ## leave and the blocks they change. The city's (`City.run`), handed in with it.
@@ -102,10 +104,18 @@ var _run: RunState
 ## they belong to: `run`, or the city's (`City.run`) — and the siting the raid is held to
 ## (`spawn_siting`), or the city's (`City.spawn_siting`) over the same map, or none for a rig with
 ## neither, where nothing the raid puts down or the cordon's officers walk in as is ever held back
-## for being in view.
+## for being in view — and the walk's events (`WalkEvents`) every siting here is stated against:
+## `walk`, or the city's events' own (`EventManager.walk_events()`), or an empty walk for a rig with
+## no city.
 func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
-		spawn_siting: SpawnSiting = null) -> void:
+		spawn_siting: SpawnSiting = null, walk: WalkEvents = null) -> void:
 	_city = city
+	if walk:
+		_walk = walk
+	elif city and city.events:
+		_walk = city.events.walk_events()
+	else:
+		_walk = WalkEvents.new()
 	_run = run if run else (city.run if city else null)
 	_map = map
 	_navigator = navigator if navigator else (map.navigator() if map else null)
@@ -297,8 +307,8 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 ## sight, or `(-1, -1)`.
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				_run.calendar.settled_this_act(), PackedVector2Array(), EventScheduler.Verdicts.new())
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(), _walk,
+				EventScheduler.Verdicts.new())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
@@ -494,8 +504,8 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 	if not barricade:
 		return Vector2.INF
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(),
-				_run.calendar.settled_this_act(), PackedVector2Array(), EventScheduler.Verdicts.new())
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.route_tree(), _walk,
+				EventScheduler.Verdicts.new())
 	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
 	var step := Vector2i(0, 1 if going > 0.0 else -1)
 	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.
@@ -507,8 +517,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 		if _map.network.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
 			tile += step
 			continue
-		if _siting.leaves_her_a_way(_city.events.plans(),
-				EventScheduler.Planned.new(barricade, at), her):
+		if _siting.leaves_her_a_way(EventScheduler.Planned.new(barricade, at), her):
 			return at
 		refused += 1
 		tile += step * CityMap.period()

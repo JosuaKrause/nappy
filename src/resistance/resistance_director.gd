@@ -114,6 +114,8 @@ var _map: CityMap
 ## Where a pursuer the director sends at her may start (`SpawnSiting`), handed in by `setup()`: the
 ## rules a start is held to and the searches that answer one (`_draw_arrival_position()`).
 var _spawn_siting: SpawnSiting
+## The walk's events (`WalkEvents`), handed in at `setup()`.
+var _walk: WalkEvents
 var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
 ## instant `_begin_step()` activates the perform it unlocks, so `chalk_mark_touched.svg` keeps
@@ -251,12 +253,21 @@ var _mark_tiles_of_mouths: Array[Vector2i] = []
 ## none — the run it belongs to: `run`, or the city's (`City.run`) for a caller that hands none —
 ## and where a pursuer it sends may start: `spawn_siting`, or the city's (`City.spawn_siting`) for a
 ## caller that hands none over the city's map, or, for a rig with no city or a map of its own, one
-## over `map` that sees the city's view and region where there is a city and neither where not.
+## over `map` that sees the city's view and region where there is a city and neither where not —
+## and the walk's events (`WalkEvents`): `walk`, or the city's events' own
+## (`EventManager.walk_events()`) for a caller that hands none, or an empty walk for a rig with no
+## city.
 func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
-		spawn_siting: SpawnSiting = null) -> void:
+		spawn_siting: SpawnSiting = null, walk: WalkEvents = null) -> void:
 	_city = city
 	_run = run if run else (city.run if city else null)
 	_map = map
+	if walk:
+		_walk = walk
+	elif city and city.events:
+		_walk = city.events.walk_events()
+	else:
+		_walk = WalkEvents.new()
 	var moves_by := navigator if navigator else map.navigator()
 	if spawn_siting:
 		_spawn_siting = spawn_siting
@@ -276,7 +287,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState 
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.trace = trace
-	_happenings.setup(city, map, moves_by, _run, _spawn_siting)
+	_happenings.setup(city, map, moves_by, _run, _spawn_siting, _walk)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.

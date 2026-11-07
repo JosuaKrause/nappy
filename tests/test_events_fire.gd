@@ -45,7 +45,7 @@ func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Pla
 			var velocity := _last_heading * Tuning.WALK_SPEED
 			at += velocity * STEP
 			left -= STEP
-			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			director.site_what_is_on_her_way(STEP, at, velocity)
 			if until.is_valid() and until.call():
 				return at
 			toward = route[i] - at
@@ -114,19 +114,23 @@ func _fire_day_plans() -> Array[EventScheduler.Planned]:
 ## builds one. Kept as its own function so a check can ask it the same questions the director does —
 ## `still_ahead_of()`, which is what "on the branch she is walking" means.
 var _shared_fire_siting: EventScheduler.WalkSiting = null
+## The walk the shared siting is stated against: a stand-in holding the plans the director at hand
+## was started on (`_fire_director()`), and the map's calm areas, none of them used.
+var _fire_walk := FakeWalkEvents.new()
 
 ## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
 ## `EventManager.start_day` builds one, and a director started on both.
 func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
 	var director := EventDirector.new(_map())
+	_fire_walk.set_plans(plans)
 	director.start_day(day, plans, _rng(day), _fire_siting(day))
 	return director
 
 func _fire_siting(day: int) -> EventScheduler.WalkSiting:
 	if not _shared_fire_siting:
+		_fire_walk.set_calm(CalmAreas.of(_map()))
 		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
-				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array(),
-				EventScheduler.Verdicts.new())
+				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new())
 	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
@@ -377,8 +381,7 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var def := EventCatalogue.by_id("burning_building")
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
-	var nothing_else: Array[EventScheduler.Planned] = []
+			FakeWalkEvents.new().set_calm(CalmAreas.of(map)), EventScheduler.Verdicts.new())
 	var route := _fire_route(day)
 	t.check(route.size() > 8, "the day has a route out of the doorstep to stand on")
 	if route.size() <= 8:
@@ -386,11 +389,11 @@ func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
 	var at: Vector2 = route[route.size() / 2]
 
 	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
-	t.check(siting.leaves_her_a_way(nothing_else, far_off, at),
+	t.check(siting.leaves_her_a_way(far_off, at),
 			"a fire at the far end of the branch she is walking leaves the day working around it")
 
 	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
-	t.check(not siting.leaves_her_a_way(nothing_else, on_the_doorstep, at),
+	t.check(not siting.leaves_her_a_way(on_the_doorstep, at),
 			"and a fire whose field swallows the doorstep is refused, because the way home is what "
 			+ "she would have no way round")
 

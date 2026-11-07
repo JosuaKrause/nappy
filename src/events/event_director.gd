@@ -661,8 +661,8 @@ const ON_HER_WAY_LOOK := 1.0
 ## frontage, for the fire and the crews), a candidate stands in a door's clear ground,
 ## or one would close her own way out — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
-func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
-		plans: Array[EventScheduler.Planned]) -> Array[EventScheduler.Planned]:
+func site_what_is_on_her_way(delta: float, at: Vector2,
+		velocity: Vector2) -> Array[EventScheduler.Planned]:
 	var moved: Array[EventScheduler.Planned] = []
 	_forget_what_is_real()
 	var speed := velocity.length()
@@ -700,8 +700,7 @@ func site_what_is_on_her_way(delta: float, at: Vector2, velocity: Vector2,
 		var asked_without_its_body := plan.is_placed()
 		if asked_without_its_body:
 			_siting.forget_the_verdicts()
-		var sited := _siting.ahead_of(plan.def, rng, _everything_but(plans, plan), at, heading,
-				band.x, band.y)
+		var sited := _siting.ahead_of(plan.def, rng, plan, at, heading, band.x, band.y)
 		if asked_without_its_body:
 			_siting.forget_the_verdicts()
 		if not sited:
@@ -784,16 +783,6 @@ func _is_no_longer_on_her_way(plan: EventScheduler.Planned, at: Vector2, heading
 static func _siting_band() -> Vector2:
 	var near := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	return Vector2(near, near + Tuning.WALK_SPEED * ON_HER_WAY_SIGHT)
-
-## The day's other plans, for spacing and for the walkability question — everything but the one
-## being sited, which must not be spaced against the body it is about to stop standing at.
-func _everything_but(plans: Array[EventScheduler.Planned],
-		plan: EventScheduler.Planned) -> Array[EventScheduler.Planned]:
-	var others: Array[EventScheduler.Planned] = []
-	for other in plans:
-		if other != plan:
-			others.append(other)
-	return others
 
 ## Hands the day's return leg its own pressure — `docs/TODO.md`'s M98, pressure in the empty acts
 ## — the moment `EventManager` hears `EventBus.return_phase_started`. `Tuning.RETURN_PATROLS_PER_

@@ -35,6 +35,18 @@ class Plan extends RefCounted:
 	## after dawn what the day left for her walk. False for a walk planned whole before she sets
 	## off (the escape's two sections), whose plans that come again come on their own clocks.
 	var is_a_day := true
+	## The calm areas the walk was planned against (`calm()`).
+	var _calm: CalmAreas = null
+
+	## **The calm areas the walk was planned against**: a day's own (`CalmAreas.of()` made once in
+	## `_plan_a_day()`), which what is sited while she walks is stated against too; null for the
+	## escape's walks and the building, where nothing is.
+	func calm() -> CalmAreas:
+		return _calm
+
+	## Hands the plan the calm areas it was planned against. See `calm()`.
+	func use_calm(calm: CalmAreas) -> void:
+		_calm = calm
 
 ## The world the walk is planned over.
 var world: EventWorld
@@ -177,6 +189,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.placements = placements
 	result.walk = tree
 	result.doors = doors
+	result.use_calm(calm)
 	return result
 
 # ------------------------------------------------------------ the escape's city ---

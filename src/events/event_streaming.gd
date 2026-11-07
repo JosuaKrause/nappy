@@ -14,41 +14,37 @@ extends RefCounted
 ## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits for
 ## her is an event she meets.
 ##
-## Handed the world the events stand in (`EventWorld`) and the spawner every instance is made by
-## (`EventSpawner`).
+## Handed the world the events stand in (`EventWorld`), the spawner every instance is made by
+## (`EventSpawner`) and the walk's plans (`WalkEvents`), which it streams.
 
 ## The world the events stand in, the player and the live instances.
 var world: EventWorld
 ## What makes an instance of a plan, and what a finished one leaves behind.
 var _spawner: EventSpawner
+## The walk's plans, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
+var _walk: WalkEvents
 
-func _init(the_world: EventWorld, spawner: EventSpawner) -> void:
+func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> void:
 	world = the_world
 	_spawner = spawner
+	_walk = walk
 
-## Takes `plans` as the day's whole plan, the very array handed in. A walk whose plans come again
-## finds them with `find_what_repeats()`.
-func take(plans: Array[EventScheduler.Planned]) -> void:
-	_plans = plans
-
-## Adds one plan placed after dawn to the day's, its body recorded where it stands, so it streams
+## Adds one plan placed after dawn to the walk's, its body recorded where it stands, so it streams
 ## in like any planned row.
 func add(plan: EventScheduler.Planned) -> void:
-	_plans.append(plan)
+	_walk.add(plan)
 	_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 
-## Forgets the day's plan: every plan's live instance let go (the manager frees the instances), the
-## repeats and the broadcast clock.
+## Forgets the walk: every plan's live instance let go (the manager frees the instances), the walk's
+## plans, the repeats and the broadcast clock.
 func clear() -> void:
-	for plan in _plans:
+	for plan in _walk.plans():
 		plan.live = null
-	_plans.clear()
+	_walk.clear()
 	_repeating.clear()
 	broadcast_clock = 0.0
 
-## Today's whole plan, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
-var _plans: Array[EventScheduler.Planned] = []
-## The plans in `_plans` that come again (`EventScheduler.Planned.repeats()`), found once when a
+## The plans of the walk that come again (`EventScheduler.Planned.repeats()`), found once when a
 ## walk starts so the per-frame pass over them (`bring_back_what_repeats()`) asks nothing of the
 ## rest.
 var _repeating: Array[EventScheduler.Planned] = []
@@ -83,7 +79,7 @@ var stream_radius := Tuning.EVENT_STREAM_RADIUS
 ## expression, and only a route goes to `distance_from()`.
 func stream_around(at: Vector2) -> void:
 	var stream_out_beyond := stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
-	for plan in _plans:
+	for plan in _walk.plans():
 		# A plan waiting to come again is brought back on its own clock, not by her distance.
 		if plan.spent or plan.comes_in > 0.0:
 			continue
@@ -106,7 +102,7 @@ func stream_around(at: Vector2) -> void:
 ## when she walks off again. The plan's own instance rather than a second one beside it, so its
 ## field is counted once.
 func keep_live(id: String, at: Vector2) -> EventInstance:
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.def.id != id or plan.spent or not plan.is_placed() \
 				or plan.position.distance_to(at) >= Tuning.TILE_SIZE:
 			continue
@@ -174,7 +170,7 @@ func stream_in(plan: EventScheduler.Planned) -> void:
 func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 	if chosen.set_piece_group == "":
 		return
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan == chosen or plan.set_piece_group != chosen.set_piece_group:
 			continue
 		plan.spent = true
@@ -226,7 +222,7 @@ func stream_out(plan: EventScheduler.Planned) -> void:
 ## Returns how many plans it took.
 func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 	var taken := 0
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.spent or not plan.is_placed() or not (plan.def.id in ids) \
 				or not rect.has_point(plan.position):
 			continue
@@ -243,7 +239,7 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 ## records its scar at. Reads the ordinary broadcast's own
 ## plan, which always exists for a live mast's id; the curfew announcement shares the same foot.
 func mast_foot(mast_id: String) -> Vector2:
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.mast_id == mast_id and plan.def.role == EventDef.Role.MAST:
 			return plan.position
 	return Vector2.INF
@@ -261,7 +257,7 @@ func mast_foot(mast_id: String) -> Vector2:
 ## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.mast_id != mast_id:
 			continue
 		found = true
@@ -280,7 +276,7 @@ func silence_mast(mast_id: String) -> bool:
 ## it marks the plan. Returns how many masts were silenced.
 func silence_all_masts() -> int:
 	var silenced := {}
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.mast_id == "":
 			continue
 		silenced[plan.mast_id] = true
@@ -295,24 +291,10 @@ func silence_all_masts() -> int:
 ## answers "what is she standing in".
 func planned_count() -> int:
 	var total := 0
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.is_placed() and not plan.spent:
 			total += 1
 	return total
-
-## The day's plan, for the readouts and the telemetry. Not for anything that acts on it.
-func plans() -> Array[EventScheduler.Planned]:
-	return _plans
-
-## Everything the day has planned except `plan` — what a placement is spaced and checked against.
-## The one being placed is never in it: a row moved off a position it has not been seen at must not
-## be spaced against its own old body.
-func everything_but(plan: EventScheduler.Planned) -> Array[EventScheduler.Planned]:
-	var others: Array[EventScheduler.Planned] = []
-	for other in _plans:
-		if other != plan:
-			others.append(other)
-	return others
 
 func retire_finished() -> void:
 	var survivors: Array[EventInstance] = []
@@ -341,7 +323,7 @@ func retire_finished() -> void:
 ## instance would otherwise get wrong — an event is allowed to come and go while it is running,
 ## and is not allowed to come back once it is over.
 func _mark_plan_spent(instance: EventInstance) -> void:
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.live == instance:
 			if plan.repeats():
 				_done_for_now(plan)
@@ -392,7 +374,7 @@ func bring_back_what_repeats(delta: float) -> void:
 ## none; the building's vents, its masked man and its explosions outside are.
 func find_what_repeats() -> void:
 	_repeating.clear()
-	for plan in _plans:
+	for plan in _walk.plans():
 		if plan.repeats():
 			_repeating.append(plan)
 

@@ -1607,11 +1607,8 @@ class WalkSiting extends RefCounted:
 	var _tree: RouteTree
 	var _corridor: Corridor
 	var _leave_alone: Array[Rect2]
-	## The calm areas she has already settled in this act, kept beside the rects `_leave_alone`
-	## turns them into: the acceptance check is about the areas she has *not* used, which is the
-	## same list read the other way round.
-	var _used_calm: Array[Vector2i] = []
-	var _doors: PackedVector2Array
+	## The walk's events: its plans, its doors and its calm areas (`WalkEvents`).
+	var _walk: WalkEvents
 	## The same per-day cache of "which tiles may this kind of row stand on" `build_day` threads
 	## through its own placements, kept here for the day so the city is not rescanned per attempt.
 	var _ground := {}
@@ -1638,12 +1635,12 @@ class WalkSiting extends RefCounted:
 	## spec the walk was started with; a day's rule until then.
 	var holds_the_home_streets := true
 
-	## `tree` is the day's corridor tree and `used_calm` is
-	## `RunState.calendar.settled_this_act()` — the two arguments `build_day` states its own
-	## placements against, taken here rather than the finished `Corridor` and rect list so the
-	## caller passes what it already has and this stays the one place that turns them into the
-	## other. **The tree itself is kept as well as the corridor it makes**: the corridor answers
-	## *how far off the routes is this tile*, and what a siting on her own branch needs is the
+	## `tree` is the day's corridor tree and `walk` the walk's events (`WalkEvents`): its plans, which
+	## every placement is spaced and checked against, where today's doors stand and the day's calm
+	## areas, whose unused ground is the calm nothing is placed near (`CalmAreas.unused_ground()`).
+	## The tree is taken rather than the finished `Corridor` so this stays the one place that turns
+	## it into the other. **The tree itself is kept as well as the corridor it makes**: the corridor
+	## answers *how far off the routes is this tile*, and what a siting on her own branch needs is the
 	## ordered chain of cells a route actually runs along.
 	##
 	## `verdicts` is where its placements keep the verdicts of the candidates they judge
@@ -1651,21 +1648,14 @@ class WalkSiting extends RefCounted:
 	## hands each siting a store of its own: verdicts are kept under a candidate's key and judged
 	## against one siting's plans and route tree, so a siting asked while another is in a look would
 	## read verdicts judged for the other's plans and place wrongly, not only lose a cache.
-	##
-	## **It works out the calm facts it needs for itself** rather than being handed the day's
-	## `CalmAreas`: it builds one here for the leave-alone ground alone, and
-	## `_calm_she_has_not_used()` and `_what_already_blocks()` work out the unused calm tiles
-	## and what blocks the way from the map and the live plans. The live form after dawn hands
-	## it the day's objects instead.
-	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
-			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts) -> void:
+	func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
+			verdicts: EventScheduler.Verdicts) -> void:
 		_day = for_day
 		_map = map
 		_tree = tree if tree else RouteTree.for_day(map, for_day)
 		_corridor = Corridor.of(_tree)
-		_used_calm = used_calm.duplicate()
-		_leave_alone = CalmAreas.of(map, used_calm).unused_ground()
-		_doors = doors
+		_walk = walk
+		_leave_alone = walk.calm().unused_ground() if walk.calm() else ([] as Array[Rect2])
 		_verdicts = verdicts
 
 	## A placement for `def` on a tile of its own ground **on the branch of the day's route tree she
@@ -1701,18 +1691,19 @@ class WalkSiting extends RefCounted:
 	## along the way she is going" is still the way she is going, and the alternative on a short
 	## branch is a fire that waits all day. Nothing else about the candidate bends.
 	##
-	## `already` is everything else the day has planned, for spacing and for the walkability question
-	## below. **The plan being sited is not in it** — a row being moved off a position it has not yet
-	## been seen at must not be spaced against its own old body, or the second siting is refused the
+	## `besides` is the plan being sited, if it is one of the walk's: everything else the walk has
+	## planned is what the site is spaced and checked against (`WalkEvents.everything_but()`). **The
+	## plan being sited is never among them** — a row being moved off a position it has not yet been
+	## seen at must not be spaced against its own old body, or the second siting is refused the
 	## street the first one was standing in.
-	func ahead_of(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: Planned,
 			at: Vector2, heading: Vector2, near: float, far: float) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
 		# A wall by its fit alone is never put on a sidewalk a route runs along, so it is put on the
 		# street she is walking instead, just out of her sight (`ahead_on_her_street()`).
 		if (role == GameEnums.BlockerRole.WALL and not EventScheduler._is_a_wall_by_cost(def)) \
 				or def.id == _MET_ON_HER_STREET:
-			return ahead_on_her_street(def, rng, already, at, heading)
+			return ahead_on_her_street(def, rng, besides, at, heading)
 		var offer := _offer_ahead(def, at, heading, near, far)
 		match offer[0]:
 			_OFF_THE_ROUTES:
@@ -1722,8 +1713,9 @@ class WalkSiting extends RefCounted:
 			_WIDENED:
 				widened += 1
 		var offered: Array[Vector2i] = offer[1]
+		var already := _walk.everything_but(besides)
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask())
+				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
@@ -1837,7 +1829,7 @@ class WalkSiting extends RefCounted:
 	## it in a few seconds if she keeps walking that way, and like anything in the world it is not
 	## moved again. `near` and `far`, the director's band for a place it may still move, are not read.
 	## *(Proposed, not asked for: "on her route" read as the street she is walking.)*
-	func ahead_on_her_street(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+	func ahead_on_her_street(def: EventDef, rng: RandomNumberGenerator, besides: Planned,
 			at: Vector2, heading: Vector2) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
 		if heading.length_squared() < 0.5:
@@ -1868,6 +1860,7 @@ class WalkSiting extends RefCounted:
 			return _waited("no ground ahead of her on the street she is walking")
 		var bands := by_distance.keys()
 		bands.sort()
+		var already := _walk.everything_but(besides)
 		# Nearest first: a few tiles of the street at a time, so she meets it as soon as she can.
 		var offered: Array[Vector2i] = []
 		for band: int in bands:
@@ -1917,34 +1910,34 @@ class WalkSiting extends RefCounted:
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
 			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
 		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask())
+				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
 			return candidate
 		return null
 
-	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against `already` with the
-	## day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
+	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against the walk's plans
+	## with the day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
 	## gets, over a pool the caller chose: day 11's mast queued near her
 	## (`EventManager.queue_a_mast()`). Null when nothing offered passes. `null` rather than the
 	## roomiest of a refused pool: `_best_of()` already answers with nothing for a pool where every
 	## tile is illegal, and with the roomiest only among legal ones.
-	func among(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
-			offered: Array[Vector2i]) -> Planned:
+	func among(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i]) -> Planned:
 		if offered.is_empty():
 			return null
 		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler._role_for(def, _day),
-				already, _ground, _leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
+				_walk.everything_but(), _ground, _leave_alone, _corridor, _walk.doors(), [],
+				_verdicts_for_an_ask(false))
 
 	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
 	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
 	## ground `open_ground_for()` keeps it to, and for a `WALL` none a route runs along
-	## (`_copies_of()`) — then `_best_of()` against `already` with the day's own ground, corridor,
+	## (`_copies_of()`) — then `_best_of()` against the walk's plans with the day's own ground, corridor,
 	## protected calm and doors, as `among()` does, and then, since it is put down after dawn, only a
 	## site that still leaves her a way home and to a calm area from `at`
 	## (`_still_leaves_a_park_reachable()`). Null when nothing offered passes. Day 13's own roadblock,
 	## placed near the mark she read (`ResistanceDirector._place_the_roadblock_near()`).
-	func near_her(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
-			offered: Array[Vector2i], at: Vector2) -> Planned:
+	func near_her(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i],
+			at: Vector2) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
 		var by_cost := EventScheduler._is_a_wall_by_cost(def)
 		var pool := _ground_as_a_set(def)
@@ -1955,8 +1948,9 @@ class WalkSiting extends RefCounted:
 				kept.append(tile)
 		if kept.is_empty():
 			return _waited("no ground near her the day would offer the row")
+		var already := _walk.everything_but()
 		var candidate := EventScheduler._best_of(def, rng, _map, kept, role, already, _ground,
-				_leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
+				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
 		if not candidate:
 			return _waited("every site near her broke a placement rule")
 		if not _still_leaves_a_park_reachable(already, candidate, at):
@@ -1986,7 +1980,7 @@ class WalkSiting extends RefCounted:
 	## second bends and the first does not — the fallback is a site merely away from her, which is
 	## the same honest failure direction `_place_a_set_piece` takes when a covering set offers
 	## nothing: a run that owes a fire and has nowhere ideal to put it should still have its fire.
-	func off_her_path(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
+	func off_her_path(def: EventDef, rng: RandomNumberGenerator, besides: Planned,
 			away_from: Vector2) -> Planned:
 		var role := EventScheduler._role_for(def, _day)
 		var clear_of_the_routes: Array[Vector2i] = []
@@ -1999,11 +1993,12 @@ class WalkSiting extends RefCounted:
 			if not _corridor.carries_a_route(tile):
 				clear_of_the_routes.append(tile)
 		var doorstep := _map.doorstep_world_position()
+		var already := _walk.everything_but(besides)
 		for offered in [clear_of_the_routes, merely_away]:
 			if offered.is_empty():
 				continue
 			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
-					_ground, _leave_alone, _corridor, _doors, [], _verdicts_for_an_ask(false))
+					_ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
 			if candidate and _still_leaves_a_park_reachable(already, candidate, doorstep):
 				return candidate
 		return null
@@ -2023,8 +2018,8 @@ class WalkSiting extends RefCounted:
 	## Whether, with `candidate`'s field taken as closed ground, she can still reach the home and a
 	## calm area from `at` — `_still_leaves_a_park_reachable()`, for a caller placing something after
 	## dawn that is not a catalogue row sited by `ahead_of()`: the barricade day 13's column leaves.
-	func leaves_her_a_way(already: Array[Planned], candidate: Planned, at: Vector2) -> bool:
-		return _still_leaves_a_park_reachable(already, candidate, at)
+	func leaves_her_a_way(candidate: Planned, at: Vector2) -> bool:
+		return _still_leaves_a_park_reachable(_walk.everything_but(), candidate, at)
 
 	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
 	func _waited(reason: String) -> Planned:
@@ -2286,7 +2281,7 @@ class WalkSiting extends RefCounted:
 			return _unused_calm
 		_unused_calm_known = true
 		for block in _map.calm_blocks:
-			if _used_calm.has(block):
+			if _walk.calm().used().has(block):
 				continue
 			for tile in _map.rect_tiles(EventScheduler._calm_rect(_map, block)):
 				if Tile.is_calm(_map.tile_at(tile)):
@@ -2311,9 +2306,9 @@ class WalkSiting extends RefCounted:
 	## the one beat of the day she is meant to be watching. The flood from her is not among them: it
 	## starts where she stands, so it can only run when a site is asked about. Nothing here rolls, so
 	## the day is the same day whether or not this ran.
-	func prepare(def: EventDef, already: Array[Planned]) -> void:
+	func prepare(def: EventDef) -> void:
 		_ground_as_a_set(def)
-		_what_already_blocks(already)
+		_what_already_blocks([])
 
 ## Fills the day's budget, **one stream per attempt**.
 ##
@@ -2459,9 +2454,9 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## unmoved; what changes is that the catalogue now declines to stack a second body onto ground a
 ## seal or the wall has already spent. `_room_around`'s own spacing stays asked of `already`
 ## alone: density is a question about today's catalogue rows, not about the day's fixed
-## furniture. **`WalkSiting.ahead_of()`/`off_her_path()` do not pass one** — the director hands
-## them the whole of `_plans`, seals and the wall included, as their own `already`
-## (`EventManager.start_day`), so they already ask every question `standing` exists to add here.
+## furniture. **A `WalkSiting` passes none** — it is spaced and checked against the walk's whole plan
+## (`WalkEvents.everything_but()`), seals and the wall included, as its own `already`, so it
+## already asks every question `standing` exists to add here.
 ##
 ## **`rules` is what the plan's spec turns on** (`Rules`). One waiting guard's notice at a time is
 ## asked by `_judge()` with the rest. **The walk kept open (`WalkGround`) is asked of the candidate

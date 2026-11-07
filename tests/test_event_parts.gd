@@ -56,7 +56,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var plan := EventScheduler.Planned.new(def, at)
 	var plans: Array[EventScheduler.Planned] = [plan]
-	streaming.take(plans)
+	manager.walk_events().take(plans)
 	streaming.stream_around(at)
 	t.check(plan.live != null and manager.instances().has(plan.live),
 			"within reach, the plan is streamed in and joins the world's live instances")
@@ -80,7 +80,8 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 	if plan.live:
 		t.close_to(plan.live.age, age, "picking up where it left off")
 	streaming.clear()
-	t.check(plan.live == null and streaming.plans().is_empty(), "cleared, the day's plan is gone")
+	t.check(plan.live == null and manager.walk_events().plans().is_empty(),
+			"cleared, the day's plan is gone")
 	_free_manager(manager)
 
 func _test_a_warning_creates_its_row_once_its_time_is_up(t) -> void:
@@ -138,7 +139,7 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t) -> void:
 	var at := Vector2(6000.0, 6000.0)
 	var plan := EventScheduler.Planned.new(def, at)
 	var plans: Array[EventScheduler.Planned] = [plan]
-	streaming.take(plans)
+	manager.walk_events().take(plans)
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	for _i in 3:
@@ -216,7 +217,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var plan := EventScheduler.Planned.new(def, at)
-	manager.streaming.take([plan] as Array[EventScheduler.Planned])
+	manager.walk_events().take([plan] as Array[EventScheduler.Planned])
 	var her := _her(t)
 	her.global_position = at
 	await t.get_tree().physics_frame

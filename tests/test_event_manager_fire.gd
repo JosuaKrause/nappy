@@ -323,8 +323,8 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 ## A siting of the test's own over the day's tree, to ask what the director's own is asked: where a
 ## cell of a route stands, and whether a point is still ahead of her along the branch she walks.
 func _a_siting(day: int) -> EventScheduler.WalkSiting:
-	return EventScheduler.WalkSiting.new(day, _city.map, _days_tree(day), [] as Array[Vector2i],
-			PackedVector2Array(), EventScheduler.Verdicts.new())
+	return EventScheduler.WalkSiting.new(day, _city.map, _days_tree(day),
+			_city.events.walk_events(), EventScheduler.Verdicts.new())
 
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
@@ -363,7 +363,8 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
 		t.check(sighted.has("burning_building") != joystick and summoned != joystick,
 				"%s scheme: the fire under the left corner is %s" % ["joystick" if joystick else "tap",
 				"neither sighted nor sends for the engine" if joystick else "sighted, and sends for the engine"])
-		events.streaming.take(day_plans.duplicate())
+		var walk := events.walk_events()
+		walk.take(day_plans.duplicate(), walk.calm(), walk.doors())
 		events.warnings.clear()
 		instance.free()
 	EventBus.event_sighted.disconnect(on_sighted)
