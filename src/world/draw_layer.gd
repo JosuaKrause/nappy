@@ -26,6 +26,12 @@ extends RefCounted
 ##   everything that stands there, her included.
 ## - `HALO`: the glow of what is charging the meter, a picture of the ground under everything
 ##   standing on it (`ExcitementHalo`).
+## - `SHADOWS`: the contact shadows of the things standing on the ground, each drawn by its own
+##   object from its picture on the shadow page (`GroundShadow`). **A layer of their own so that
+##   they are drawn one after another from one texture**, which the renderer batches, rather than
+##   each between the sprites around it in the y-sorted entities, where every shadow is a texture
+##   switch and so a draw call of its own. A shadow lies flat on the ground, so it is under every
+##   standing thing, its own and its neighbours' alike.
 ## - `ENTITIES`: her, the crowd, every event and everything else that stands on the ground,
 ##   y-sorted.
 ## - `WARNING`: a figure whose warning must not be hidden while he gives it, drawn over the
@@ -36,8 +42,8 @@ extends RefCounted
 ##   it outlines cannot be read.
 
 ## The layers, in draw order: a layer later in the list is drawn over every earlier one.
-enum Layer { BACKDROP, GROUND, BUILDINGS, DOORS, GROUND_MARKS, HALO, ENTITIES, WARNING, OVERHEAD,
-		DEBUG }
+enum Layer { BACKDROP, GROUND, BUILDINGS, DOORS, GROUND_MARKS, HALO, SHADOWS, ENTITIES, WARNING,
+		OVERHEAD, DEBUG }
 
 ## The `z_index` a layer draws at: its place in the list, counted from `GROUND` at 0. Every layer
 ## draws at an absolute z, never one relative to its parent, so a layer means the same depth

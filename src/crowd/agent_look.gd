@@ -60,6 +60,11 @@ func heading_key() -> Vector2i:
 func bob() -> float:
 	return 0.0
 
+## The axis the agent's shadow lies along on the ground (`GroundShadow.cast()`): a walker's is a
+## point, which reads no axis.
+func shadow_axis() -> Vector2:
+	return Vector2.RIGHT
+
 ## Whether this look is marked by a caret when the agent is a danger, which is the redraw gate's
 ## second reason to redraw.
 func carets() -> bool:
