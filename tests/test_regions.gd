@@ -772,6 +772,12 @@ func _test_the_main_road_is_never_walled(t) -> void:
 			t.check(on_the_road == 0,
 					"seed %d day %d: no wall body reaches the main road's carriageway (%d tiles)"
 					% [map.seed_used, day, on_the_road])
+			var spine_rng := RandomNumberGenerator.new()
+			spine_rng.seed = hash("spine:%d:%d" % [map.seed_used, day])
+			for closure in ClosurePlanner.plan_day(map, day, spine_rng, tree, plan):
+				t.check(not map.is_main_road_segment(closure.segment),
+						"seed %d day %d: closure at %s is not on the main road"
+						% [map.seed_used, day, closure.segment.key()])
 			var sealed := RegionPlanner.plan_day(map, day, tree, sealing)
 			for segment in sealed.walls:
 				if map.is_main_road_segment(segment):

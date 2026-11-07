@@ -102,6 +102,10 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## as closure candidates: a closure on a region boundary would be two things standing in the same
 ## spot, one placed by this pass and one by the region's own wall or door.
 ##
+## `spec` is the day's, optional like `region_plan`: a day whose spec does not seal the main road
+## (`DaySpec.seals_the_main_road`, every day but the escape's) never has a main-road street
+## closed, whatever the roll says — see `_shuffled_candidates`.
+##
 ## **`CityMap.fenced_park`'s fence comes back with the streets** (one `ParkClosure` per fenced run
 ## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
 ## same way it stands them at a closed street's two mouths. Every other used area in `CityMap.
@@ -110,16 +114,17 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
-		trace: RunTrace = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, day, rng, tree, region_plan, trace)
+		trace: RunTrace = null, spec: DaySpec = null) -> Array[RoadClosure]:
+	var chosen := _close_streets(map, day, rng, tree, region_plan, trace,
+			spec if spec else DaySpec.for_day(day))
 	if map.fenced_park.x >= 0:
 		for fence in ParkClosure.fence(map, map.fenced_park):
 			chosen.append(fence)
 	return chosen
 
 static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
-		trace: RunTrace = null) -> Array[RoadClosure]:
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan, trace: RunTrace,
+		spec: DaySpec) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
@@ -149,7 +154,7 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 	var emptied: Array[Vector2i] = []
 	var today_closed := {}
 	var places := places_to_reach_today(map, day, regions)
-	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
+	for segment in _shuffled_candidates(map, home, areas, corridor, regions, spec, rng):
 		if chosen.size() >= wanted:
 			break
 		today_closed[segment.key()] = true
@@ -518,11 +523,18 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 ## Manhattan lattice with several calm areas almost always has another way round. The local version
 ## asked here needs no route search at all: it is a fact about which street an archway sits on.
 ##
+## **The main road is refused outright on every day that does not seal it** (the player's inbox
+## note #1186, not yet filed: the main road's traffic always runs from the tunnel to the bridge,
+## unhindered). A closure takes the whole segment out of the network, so a closure on the spine
+## would stop its cars as a roadblock does. `DaySpec.seals_the_main_road`, the escape's, lifts it,
+## the same flag the region plan reads. A day closes as many streets as before: the candidate pool
+## is only shorter by the spine's segments, and the quota is filled from the rest.
+##
 ## **A region's boundary is refused outright too, wall and door alike.** A closure on a wall segment
 ## is two things in one place; a closure on a door would close a crossing the region plan is
 ## supposed to keep open (or hold shut, on its own terms) regardless of what `ClosurePlanner` rolls.
 static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, areas: Array[CalmArea],
-		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
+		tree: RouteTree, region_plan: RegionPlanner.RegionPlan, spec: DaySpec,
 		rng: RandomNumberGenerator) -> Array[StreetNetwork.Segment]:
 	var rim := {}
 	for key in tree.rim():
@@ -539,12 +551,14 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 		boundary[segment.key()] = true
 	for segment in region_plan.doors:
 		boundary[segment.key()] = true
+	var keeps_the_main_road_open := not spec.seals_the_main_road
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
 	for segment in map.network.segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
-				or access.has(key) or boundary.has(key):
+				or access.has(key) or boundary.has(key) \
+				or (keeps_the_main_road_open and map.is_main_road_segment(segment)):
 			continue
 		pool.append(segment)
 		var weight := CLOSURE_WALL_BIAS if rim.has(key) else 1.0

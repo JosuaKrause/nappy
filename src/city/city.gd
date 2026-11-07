@@ -1155,7 +1155,8 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
-## `spec` is the day's, which the region plan reads (`RegionPlanner.plan_day()`).
+## `spec` is the day's, which the region plan and the closures read (`RegionPlanner.plan_day()`,
+## `ClosurePlanner.plan_day()`).
 func _close_streets(day: int, rng: RandomNumberGenerator, spec: DaySpec) -> void:
 	for node in _closure_nodes:
 		node.queue_free()
@@ -1171,7 +1172,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator, spec: DaySpec) -> void
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
 			plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace)
+	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace, spec)
 	_streets.begin_day(tree, plan, closures)
 	map.close_streets(closures)
 	for closure in closures:

@@ -37,7 +37,7 @@ static func _seeds() -> Array[int]:
 
 func run(t) -> void:
 	var totals := {"boundary": 0, "walls": 0, "doors": 0, "holding": 0, "wall_tiles": 0,
-			"held": 0, "closed": 0, "bodies": 0}
+			"held": 0, "closed": 0, "bodies": 0, "closures": 0}
 	var rows := {}
 	for seed_value in _seeds():
 		var crowd_day := -1
@@ -53,6 +53,7 @@ func run(t) -> void:
 			+ " | wall-body carriageway tiles %d" % totals.wall_tiles)
 	print("TOTAL day: main-road segments held (not a door) %d | closed %d | bodies on the carriageway %d"
 			% [totals.held, totals.closed, totals.bodies])
+	print("TOTAL street closures %d" % totals.closures)
 	for id: String in rows:
 		print("TOTAL row on the main-road carriageway: %s x%d" % [id, rows[id]])
 	t.check(true, "probe finished")
@@ -144,11 +145,16 @@ func _day(t, seed_value: int, day: int, totals: Dictionary, rows: Dictionary) ->
 				and not doors.has(segment.key()):
 			held += 1
 	var closed := 0
+	var street_closures := 0
 	for closure in city.streets().closures():
+		if closure.segment:
+			street_closures += 1
 		if closure.segment and _on_the_main_road(map, closure.segment):
 			closed += 1
 			print("DAY seed %d day %d | closure %s on %s"
 					% [seed_value, day, RoadClosure.Kind.keys()[closure.kind], closure.segment.key()])
+	totals.closures += street_closures
+	print("DAY seed %d day %d | street closures %d" % [seed_value, day, street_closures])
 	var bodies := 0
 	for body in city.events.plans():
 		if not body.is_placed():

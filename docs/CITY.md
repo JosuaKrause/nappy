@@ -1417,6 +1417,14 @@ decision, it is scenery. A closure at the mouth of a turning is read from the ju
 where the wrong way is still a choice — the same reason `RoadClosure` seals both mouths rather than
 putting one sign half way down a street.
 
+**Never on the main road, on any day that does not seal it** (the player's inbox note #1186, not yet
+filed: the main road's traffic always runs from the tunnel to the bridge, unhindered). A closure
+takes its whole street out of the network, so one on the spine would stop its cars the way a
+roadblock does. The candidate pool leaves out every `CityMap.is_main_road_segment()` unless the
+day's spec seals the main road (`DaySpec.seals_the_main_road`, the escape's), the flag the region
+plan reads for its doors. A day closes as many streets as before: the quota is filled from the
+rest of the pool, so the closure moves elsewhere rather than vanishing.
+
 **Never on a calm area's own access street, and that is a third exclusion beside the tree and the
 doorstep.** A park is walked *through*, so a barrier on any of its access streets — every street
 round its lot, since `ClosurePlanner._access_segments` finds all of them — closes nothing, and

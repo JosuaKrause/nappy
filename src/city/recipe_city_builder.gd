@@ -282,7 +282,8 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	rng.seed = map.seed_used
 	var home := ClosurePlanner.home_street(map)
 	var areas := ClosurePlanner.calm_areas(map)
-	var candidates := ClosurePlanner._shuffled_candidates(map, home, areas, tree, regions, rng)
+	var candidates := ClosurePlanner._shuffled_candidates(map, home, areas, tree, regions,
+			DaySpec.for_day(day), rng)
 	var grid := ReachabilityGrid.build(map)
 	var places := ClosurePlanner.places_to_reach_today(map, day, regions)
 	var closed := {}
