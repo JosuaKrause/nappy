@@ -8,29 +8,43 @@ extends RefCounted
 ##
 ## One run is the whole building walked at the game's own pace, so the suite makes one, and ends it
 ## once the run has shown what it checks rather than waiting out the city's walk to its exit.
+##
+## **The game it launches writes its run log into a home of its own**, a scratch folder under the
+## OS temp directory (`DirAccess.create_temp()`), removed with all it holds when `run()` ends: `HOME` and `XDG_DATA_HOME` (where Godot puts `user://` on macOS and on Linux)
+## are handed to the child through `env`, so none of its run folders reaches the player's
+## `user://telemetry`.
 
 const SEED := 7351
 ## A run still short of the city after this has hung. Generous, since a machine shared with other
 ## runs plays the game slower than its own clock.
 const TIMEOUT_SECONDS := 420.0
 const POLL_MSEC := 500
+## The run log's own folder name, which sits somewhere under the child's home.
+const LOG_FOLDER := "telemetry"
 
 func run(t) -> void:
 	var started_at := Time.get_unix_time_from_system()
-	var started_on := Time.get_date_string_from_system()
-	var pid := OS.create_process(OS.get_executable_path(), PackedStringArray([
+	# Kept alive until `run()` ends: freeing it removes the folder and all it holds, hidden files too.
+	var scratch := DirAccess.create_temp("route_building_home")
+	t.check(scratch != null, "the child's scratch home is made")
+	if scratch == null:
+		return
+	var home_root := scratch.get_current_dir()
+	var home := home_root
+	var pid := OS.create_process("/usr/bin/env", PackedStringArray([
+			"HOME=%s" % home, "XDG_DATA_HOME=%s" % home, OS.get_executable_path(),
 			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--",
 			"--start-escape", "--seed", str(SEED), "--route", "tunnel", "--no-save", "--no-title"]), false)
 	t.check(pid > 0, "the game is launched")
 	var log := PackedStringArray()
 	var waited := 0.0
 	while pid > 0 and waited < TIMEOUT_SECONDS:
-		log = _route_lines(started_at, started_on)
+		log = _route_lines(home_root, started_at)
 		if _has(log, "section ended (LOST") or _in_the_city(log) or not OS.is_process_running(pid):
 			break
 		OS.delay_msec(POLL_MSEC)
 		waited += POLL_MSEC / 1000.0
-	log = _route_lines(started_at, started_on)
+	log = _route_lines(home_root, started_at)
 	if pid > 0 and OS.is_process_running(pid):
 		OS.kill(pid)
 	t.check(not log.is_empty(), "the run leaves route lines in its run log")
@@ -45,31 +59,17 @@ func run(t) -> void:
 func _in_the_city(lines: PackedStringArray) -> bool:
 	return _has(lines, "day 16:")
 
-## The `route` lines of the newest run log of `SEED`'s run written since `started_at`, text only. The
-## run's folder is named by the day the game started, which a run that crosses midnight leaves behind
-## the clock, so every day folder from `started_on` on is read, not today's alone.
-func _route_lines(started_at: float, started_on: String) -> PackedStringArray:
+## The `route` lines of the newest run log of `SEED`'s run written since `started_at`, text only,
+## read from the run folders under the child's `home_root`.
+func _route_lines(home_root: String, started_at: float) -> PackedStringArray:
 	var lines := PackedStringArray()
-	var base := DirAccess.open("user://telemetry")
-	if base == null:
-		return lines
 	var best := ""
 	var best_time := -1.0
-	for day in base.get_directories():
-		if day < started_on:
-			continue
-		var root := "user://telemetry/%s" % day
-		var dir := DirAccess.open(root)
-		if dir == null:
-			continue
-		for name in dir.get_directories():
-			if not name.contains("-seed%d-" % SEED):
-				continue
-			var candidate := "%s/%s/run.log" % [root, name]
-			var modified := FileAccess.get_modified_time(candidate)
-			if modified >= started_at - 2.0 and modified > best_time:
-				best_time = modified
-				best = candidate
+	for candidate in _run_logs(home_root, false):
+		var modified := FileAccess.get_modified_time(candidate)
+		if modified >= started_at - 2.0 and modified > best_time:
+			best_time = modified
+			best = candidate
 	if best == "":
 		return lines
 	var file := FileAccess.open(best, FileAccess.READ)
@@ -80,6 +80,22 @@ func _route_lines(started_at: float, started_on: String) -> PackedStringArray:
 		if columns.size() >= 2 and columns[1] == "route":
 			lines.append(" ".join(columns.slice(2)))
 	return lines
+
+## The `run.log` of every run folder of `SEED` anywhere under `dir`, which is inside a folder named
+## `LOG_FOLDER` once one has been passed.
+func _run_logs(dir: String, inside_log_folder: bool) -> Array[String]:
+	var found: Array[String] = []
+	var folder := DirAccess.open(dir)
+	if folder == null:
+		return found
+	for name in folder.get_directories():
+		var path := "%s/%s" % [dir, name]
+		if inside_log_folder and name.contains("-seed%d-" % SEED):
+			if FileAccess.file_exists(path + "/run.log"):
+				found.append(path + "/run.log")
+		else:
+			found.append_array(_run_logs(path, inside_log_folder or name == LOG_FOLDER))
+	return found
 
 func _has(lines: PackedStringArray, text: String) -> bool:
 	return not _first(lines, text).is_empty()
