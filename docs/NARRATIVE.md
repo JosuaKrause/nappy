@@ -186,7 +186,8 @@ mast is one her paths reach inside that circle, or one put up on its edge. When 
 edge qualifies, the nearest place that does. **Day 13's roadblock is one the day placed**:
 dawn stands roadblocks on the streets beside her routes, off them and never on the main road, so
 that one is close by wherever she reads the mark, and the task takes the nearest her paths reach
-inside that circle, then a block further out, then a block and a half. Where none is, one of the
+inside that circle, then half a block and a street further out (896px), then a block and a street
+further (1,024px). Where none is, one of the
 day's own events beside her routes and out of her sight becomes a roadblock; where nothing is, the
 task is spawned on that edge as the other tasks' places are. Any roadblock answers the task, and
 the arrow chooses among them all.
