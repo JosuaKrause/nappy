@@ -37,6 +37,15 @@ var steps: Array[Step] = []
 ## reason.
 var forced_open_on := 0
 
+## The same arc as a plan of its own: its own steps, so a step written on one plan is not written
+## on the other (`CityMap.copy()`).
+func copy() -> BlockPlan:
+	var twin := BlockPlan.new()
+	for step in steps:
+		twin.steps.append(Step.new(step.purpose, step.from_day, step.cause))
+	twin.forced_open_on = forced_open_on
+	return twin
+
 static func of(start: GameEnums.BlockPurpose) -> BlockPlan:
 	var plan := BlockPlan.new()
 	plan.steps.append(Step.new(start, 1, GameEnums.BlockCause.SCHEDULED))

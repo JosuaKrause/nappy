@@ -583,6 +583,83 @@ func _init(map_size: Vector2i = map_tiles()) -> void:
 	tiles = PackedByteArray()
 	tiles.resize(size.x * size.y)
 
+## **A map of its own that answers every question this one does**: the ground, the lattice and
+## everything generation fixed (the block plans and layouts, the zones, the absent and built-over
+## streets, the regions, the landmarks, the home), the calm and playgrounds the last repaint left,
+## an authored scene's saved context and stretch, and today's records (the closures, the soft seals,
+## the bodies, the holds, the shut and fenced calm, the emptied tree pits), with the handovers still
+## waiting for the next `repaint()`. Nothing it holds is shared with this one, so whatever is painted,
+## closed or stood on either map leaves the other as it was.
+##
+## **The world it was drawn in is not copied**: no world has taken the copy (`world` is null until a
+## world's `build()` hands itself over), its movers' moves start empty, and its navigator is its own,
+## made on the first ask. Its street lattice is its own too, built by the constructor, since the
+## lattice is the same on every city (`StreetNetwork`). An authored scene's closures are shared,
+## since a `RoadClosure` is set once, at construction, and nothing writes it after. The cache of tiles
+## by type starts empty and fills on the first ask, as on any map.
+##
+## What the cities a test process generates are handed out as (`tests/city_map_cache.gd`): one
+## generation per seed, a copy per user.
+func copy() -> CityMap:
+	var twin := CityMap.new(size)
+	twin.tiles = tiles.duplicate()
+	twin.blocked = blocked.copy()
+	twin.day_record_version = day_record_version
+	twin.recipe_bounds = recipe_bounds
+	twin.recipe_exterior = recipe_exterior
+	twin.recipe_diagnostics = recipe_diagnostics.duplicate()
+	twin.recipe_closures = recipe_closures.duplicate()
+	twin.recipe_tree_moves = recipe_tree_moves.duplicate()
+	twin.recipe_dawn_tiles = recipe_dawn_tiles.duplicate()
+	twin.recipe_trees = recipe_trees.duplicate()
+	twin.stretch = stretch.duplicate()
+	twin.stretch_active = stretch_active
+	twin.stretch_cracks = stretch_cracks.duplicate()
+	twin.stretch_buildings = stretch_buildings.duplicate(true)
+	twin.stretch_props = stretch_props.duplicate(true)
+	twin.stretch_litter = stretch_litter.duplicate(true)
+	for block: Vector2i in block_plans:
+		twin.block_plans[block] = (block_plans[block] as BlockPlan).copy()
+	for block: Vector2i in block_layouts:
+		twin.block_layouts[block] = (block_layouts[block] as BlockLayout).copy()
+	twin.zone_rects = zone_rects.duplicate()
+	twin.zone_anchor = zone_anchor.duplicate()
+	twin.absent_segments = absent_segments.duplicate()
+	twin.built_over = built_over.duplicate()
+	twin.dead_ends = dead_ends.duplicate()
+	twin.big_buildings = big_buildings.duplicate()
+	twin.power_station = power_station
+	twin.power_station_door_key = power_station_door_key
+	twin.power_station_door = power_station_door
+	twin.power_station_industrial_blocks = power_station_industrial_blocks
+	twin.region_of_junction = region_of_junction.duplicate()
+	twin.region_has_calm = region_has_calm.duplicate()
+	twin.boundary_wall_at_a = boundary_wall_at_a.duplicate()
+	twin.main_road = main_road
+	twin.precinct_spans = precinct_spans.duplicate()
+	twin.building_rects = building_rects.duplicate()
+	twin.calm_blocks = calm_blocks.duplicate()
+	twin.playgrounds = playgrounds.duplicate()
+	twin.home_block = home_block
+	twin.alley_rects = alley_rects.duplicate()
+	twin.square_rects = square_rects.duplicate()
+	twin.courtyard_rects = courtyard_rects.duplicate()
+	twin.home_rect = home_rect
+	twin.seed_used = seed_used
+	twin.shut_calm = shut_calm.duplicate()
+	twin._shut_tiles = _shut_tiles.duplicate()
+	twin._fenced_tiles = _fenced_tiles.duplicate()
+	twin._spent_for_the_next_repaint = _spent_for_the_next_repaint.duplicate()
+	twin.fenced_park = fenced_park
+	twin.fenced_park_act = fenced_park_act
+	twin._fenced_park_state = _fenced_park_state
+	twin._fenced_park_state_act = _fenced_park_state_act
+	twin._act_for_the_next_repaint = _act_for_the_next_repaint
+	twin.held_segments = held_segments.duplicate()
+	twin._closure_tree_pits = _closure_tree_pits.duplicate()
+	twin._seal_tree_pits = _seal_tree_pits.duplicate()
+	return twin
+
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
 	if stretch_active and not in_stretch(tile):
 		return GameEnums.TileType.BUILDING

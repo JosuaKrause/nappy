@@ -15,7 +15,12 @@ extends RefCounted
 ## moves the resistance on (a mark completed) builds its own; the door day's city is built once the
 ## day-6 one is gone, since a real frame steps every city in the tree and two cities built from one
 ## seed stand their walls on the same ground.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const ContactTouches := preload("res://tests/contact_touches.gd")
@@ -115,7 +120,7 @@ func _build_fixture(t, day: int, progress_at_dawn := 0, her := true,
 	var city: City = CITY_SCENE.instantiate()
 	city.run = run
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	city.events.stream_radius = INF
 
 	var state := CityState.new()
