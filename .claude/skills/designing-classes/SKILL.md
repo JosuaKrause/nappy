@@ -32,9 +32,9 @@ API, and it is the form a script could tell apart. A property is used only insid
 the filer's reading and not the player's words:* the rule covers the vars that classes under `src/`
 declare; it does not cover an engine object's properties (`position`, `visible`, the tree's
 `paused`, as **godot** uses them) or constants and enums (`Tuning.X`). Much of `src/` still reads
-fields across objects; new code does not, and a change that touches such a read moves it behind a
-method. *Proposed by the filer, open to the player's correction:* state another class needs is kept
-in an underscore field behind a method.
+fields across objects. *Proposed by the filer, open to the player's correction:* new code does not,
+a change that touches such a read moves it behind a method, and state another class needs is kept in
+an underscore field behind a method.
 
 *Proposed by the filer, open to overturn (plush-kestrel):* the target layers are minty-quail's (data
 and configuration; the domain model; the world; simulation; run flow; observers); a fix lands in the
