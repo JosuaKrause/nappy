@@ -30,6 +30,7 @@ const DEFAULT_SEEDS: Array[int] = [4242, 90210, 555]
 const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
+## Overrides test_day13_guard.run.
 func run(t) -> void:
 	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()

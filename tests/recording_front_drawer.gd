@@ -14,10 +14,12 @@ var draws: Array[Dictionary] = []
 func _init() -> void:
 	super(null)
 
+## Overrides FrontDrawer.paint.
 func paint(canvas: CanvasItem, picture: StringName, at: Vector2, colour := Color.WHITE) -> void:
 	draws.append({"canvas": canvas, "picture": picture, "at": at, "colour": colour,
 		"standing": false, "mirrored": false, "frame": Engine.get_process_frames()})
 
+## Overrides FrontDrawer.stand.
 func stand(canvas: CanvasItem, picture: StringName, foot: Vector2, mirrored := false) -> void:
 	draws.append({"canvas": canvas, "picture": picture, "at": foot, "colour": Color.WHITE,
 		"standing": true, "mirrored": mirrored, "frame": Engine.get_process_frames()})

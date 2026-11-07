@@ -14,6 +14,7 @@ func _init(the_world: EventWorld, placements: Array[EventScheduler.Planned]) -> 
 static func hand_in(events: EventManager, placements: Array[EventScheduler.Planned]) -> void:
 	events.planner = new(events.world, placements)
 
+## Overrides DayPlanner.plan.
 func plan(_spec: DaySpec, _rng: RandomNumberGenerator, _consumed: Array[String]) -> DayPlanner.Plan:
 	var result := DayPlanner.Plan.new()
 	result.placements = _placements

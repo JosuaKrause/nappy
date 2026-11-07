@@ -33,6 +33,7 @@ class RecordingCounter extends "res://src/autoload/visit_counter.gd":
 		configure(null, run)
 		listen(bus)
 
+	## Overrides visit_counter._send_event.
 	func _send_event(name: String) -> void:
 		sent.append(name)
 

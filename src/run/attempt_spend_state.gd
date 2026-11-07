@@ -18,6 +18,7 @@ var _dawn_consumed_one_shots: Array[String] = []
 var _dawn_scars: Array[Dictionary] = []
 var _dawn_city_state := {}
 
+## Overrides RunSubState.reset.
 func reset() -> void:
 	consumed_one_shots.clear()
 	scars.clear()
@@ -26,16 +27,19 @@ func reset() -> void:
 	_dawn_scars = []
 	_dawn_city_state = {}
 
+## Overrides RunSubState.photograph.
 func photograph() -> void:
 	_dawn_consumed_one_shots = consumed_one_shots.duplicate()
 	_dawn_scars = scars.duplicate()
 	_dawn_city_state = city_state.snapshot()
 
+## Overrides RunSubState.give_back.
 func give_back() -> void:
 	consumed_one_shots = _dawn_consumed_one_shots.duplicate()
 	scars = _dawn_scars.duplicate()
 	city_state.restore(_dawn_city_state)
 
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	return {
 		"consumed_one_shots": consumed_one_shots.duplicate(),
@@ -46,6 +50,7 @@ func to_data() -> Dictionary:
 		"_dawn_city_state": _dawn_city_state.duplicate(true),
 	}
 
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	consumed_one_shots.assign(data["consumed_one_shots"])
 	scars = _scars_from_data(data["scars"])

@@ -31,6 +31,8 @@ func silent_beyond() -> float:
 ## **A body past `silent_beyond()` is skipped without a call into it**: no body's own early-out
 ## reaches further, so the answer is the same, and the several hundred bodies of a busy day out of
 ## earshot cost one distance each.
+##
+## Overrides ExcitementSources.sources_at.
 func sources_at(at: Vector2) -> Array:
 	var sources: Array = []
 	var reach := silent_beyond()
@@ -44,6 +46,7 @@ func sources_at(at: Vector2) -> Array:
 			sources.append([source, contribution])
 	return sources
 
+## Overrides ExcitementSources.every_source.
 func every_source(into: Array) -> void:
 	for agent in _crowd.agents():
 		into.append(agent.excitement)

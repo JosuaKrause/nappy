@@ -19,6 +19,8 @@ func _init() -> void:
 	_line_warning.on_expired = _keep_warning_once_it_has_run
 
 ## One tick: notice her, warn on its line, go up among her, and walk its route once noticed.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_check_for_notice()
 	_warn_on_its_line(delta)
@@ -102,10 +104,13 @@ func _flush_the_flock_if_she_is_among_them() -> void:
 
 ## His warning's start on the event's clock and its length (`INF` once it has run), and whether he
 ## noticed her inside his run distance.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"line_warned_from": _line_warning.started_at(), "line_warning_for": _line_warning.length,
 			"noticed_inside": _noticed_inside}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	_noticed_inside = bool(state.get("noticed_inside", false))
 	var from := float(state.get("line_warned_from", INF))

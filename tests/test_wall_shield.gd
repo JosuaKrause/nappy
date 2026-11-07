@@ -622,6 +622,7 @@ class _CountingMap extends CityMap:
 					counting.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
 		return counting
 
+	## Overrides WorldMap.wall_between.
 	func wall_between(from: Vector2, to: Vector2, depth := Tuning.WALL_SHIELD_DEPTH,
 			thin_depth := Tuning.THIN_WALL_SHIELD_DEPTH) -> bool:
 		asked += 1
@@ -750,10 +751,13 @@ class _Emitter extends EventInstance:
 	var chosen_shape: GroundShape
 	var chosen_axis := Vector2.RIGHT
 	var chosen_velocity := Vector2.ZERO
+	## Overrides EventInstance.travel_velocity.
 	func travel_velocity() -> Vector2:
 		return chosen_velocity
+	## Overrides EventInstance.field_shape.
 	func field_shape() -> GroundShape:
 		return chosen_shape
+	## Overrides EventInstance.solid_axis.
 	func solid_axis() -> Vector2:
 		return chosen_axis
 

@@ -1845,6 +1845,7 @@ class Rim extends SourceRim:
 		_event = event
 		band = SourceRim.new(event._build_band_halo)
 
+	## Overrides SourceRim.set_strength.
 	func set_strength(strength: float, colour: Color) -> void:
 		if _event._the_band_carries_the_rim():
 			_let_go()
@@ -1856,9 +1857,11 @@ class Rim extends SourceRim:
 			band.set_strength(0.0, colour)
 		super.set_strength(0.0 if _event.is_finished else strength, colour)
 
+	## Overrides SourceRim.is_held.
 	func is_held() -> bool:
 		return super.is_held() or band.is_held()
 
+	## Overrides SourceRim.release.
 	func release() -> void:
 		_let_go()
 		band.release()

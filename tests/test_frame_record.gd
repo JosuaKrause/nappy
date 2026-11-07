@@ -705,6 +705,7 @@ class _BucketLook extends EventLook:
 		instance.look = look
 		return look
 
+	## Overrides EventLook.redraw_if_the_picture_changed.
 	func redraw_if_the_picture_changed() -> bool:
 		redraws += 1
 		OS.delay_usec(SPENT_US)

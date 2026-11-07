@@ -68,6 +68,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 class _RetryDirector extends EventDirector:
 	var elapsed := 0.0
 	var handed := false
+	## Overrides EventDirector.due.
 	func due(delta: float, _at: Vector2, _velocity: Vector2) -> Array:
 		elapsed += delta
 		if handed:
@@ -80,6 +81,7 @@ class _RetryDirector extends EventDirector:
 ## ground below there is nowhere off screen to stand, so every ask is refused.
 class _CountingBoard extends WarningBoard:
 	var asked := 0
+	## Overrides WarningBoard.warn_first.
 	func warn_first(def: EventDef, her: Vector2, where: Callable,
 			arrive: Callable) -> PendingWarning:
 		asked += 1

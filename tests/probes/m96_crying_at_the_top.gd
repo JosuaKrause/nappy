@@ -38,11 +38,14 @@ const LOUDEST_STATIONARY_ROWS := ["night_raid", "curfew_announce", "abduction"]
 
 class FakeWorld extends WorldContext:
 	var noise := 0.0
+	## Overrides WorldContext.sleepiness_multiplier.
 	func sleepiness_multiplier(_world_position: Vector2) -> float:
 		return 1.0
+	## Overrides WorldContext.is_alley.
 	func is_alley(_world_position: Vector2) -> bool:
 		return false
 	var _noise := ExcitementSource.new(self)
+	## Overrides WorldContext.excitement_sources_at.
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 

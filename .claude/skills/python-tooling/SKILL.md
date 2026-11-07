@@ -38,15 +38,15 @@ on purpose: a typed `tools/` is the only place in this repository where a wrong 
 before it runs, since GDScript's checks are the engine's and shell has none. Where a library's own
 typing is the problem, say so beside the override rather than loosening the whole check.
 
-## Two scripts run on the host's own Python
+## Three scripts run on the host's own Python
 
-`tools/codex-hooks.py` and `tools/check_citations.py` are checked like everything else, but neither
-runs through `uv`: Codex runs the hook adapter with the host's own `python3` from
-`.codex/hooks.json`, and `tools/lint.sh` runs the citation check with it, since CI lints before it
-installs uv. So both stay **3.9-compatible**, nothing newer than what `CLAUDE.md`'s "Python 3.9+"
+`tools/codex-hooks.py`, `tools/check_citations.py` and `tools/check_overrides.py` are checked like
+everything else, but none runs through `uv`: Codex runs the hook adapter with the host's own `python3`
+from `.codex/hooks.json`, and `tools/lint.sh` runs the citation and override checks with it, since CI
+lints before it installs uv. So all three stay **3.9-compatible**, nothing newer than what `CLAUDE.md`'s "Python 3.9+"
 line promises. `X | None` is 3.10's, so it is `typing.Optional` instead, everywhere in a file
 without `from __future__ import annotations` (`tools/codex-hooks.py`); only a file with that import
-(`tools/check_citations.py`) may write `X | None` in an annotation, which the import leaves
+(`tools/check_citations.py`, `tools/check_overrides.py`) may write `X | None` in an annotation, which the import leaves
 unevaluated, and never outside one. Builtin generics such as `dict[str, Any]` are 3.9's and fine
 anywhere. And `pyproject.toml` pins ruff's per-file target for each so `UP` rules do not modernise
 them past that. Nothing in the gate proves the compatibility; run each once under an older
