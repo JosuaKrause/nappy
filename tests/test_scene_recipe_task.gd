@@ -112,8 +112,8 @@ func _day(t, day: int) -> Array:
 	city.start_recipe_day(state, day, own_run.calendar.day_rng(day, "closures"))
 	# A recipe that selects no gate or barrier stands no region wall either, the way
 	# `SceneRecipeRuntime._select_structures()` leaves the day's plan.
-	if city.region_plan():
-		city.set_region_plan(RegionPlanner.RegionPlan.new())
+	if city.streets.region_plan():
+		city.streets.replace_region_plan(RegionPlanner.RegionPlan.new())
 	var empty: Array[EventScheduler.Planned] = []
 	city.events.start_recipe(empty, DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), day,
 			map.tile_to_world(MOUTH))
@@ -330,12 +330,12 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
 			"but not with its field on the ground a door could stand beside")
 	var tile: Vector2i = city.map.world_to_tile(at)
 	var street := city.map.network.segment_containing(tile)
-	var shut: Array[RoadClosure] = city.closures().duplicate()
+	var shut: Array[RoadClosure] = city.streets.closures().duplicate()
 	shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, street))
 	city.map.close_streets(shut)
 	t.check(city.map.is_closed(tile), "fixture: the street's closure shuts the tile")
 	t.check(not _mast_installs(t, made, at), "nor on a closed tile")
-	city.map.close_streets(city.closures())
+	city.map.close_streets(city.streets.closures())
 	city.map.hold_segment(city.map.network.segment_containing(tile).key())
 	t.check(not _mast_installs(t, made, at), "nor on a held street")
 	_free_day(made)

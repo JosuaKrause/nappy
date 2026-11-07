@@ -65,7 +65,7 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("excitement-fingerprint-crowd:%d:%d" % [seed_value, day])
 	city.crowd.start_day(day, rng, start)
-	city.crowd.set_gates(city.region_plan().gates)
+	city.crowd.set_gates(city.streets.region_plan().gates)
 	var printed := _walk(t, "day seed %d day %d" % [seed_value, day], city, city.events,
 			city.crowd, start)
 	city.events.clear()

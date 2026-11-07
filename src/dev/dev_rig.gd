@@ -83,7 +83,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# `closure:<n>` picks one of the day's closures, since only one of them is a street
 	# running the way you wanted to look at.
 	if target.begins_with("closure"):
-		var closures := city.closures()
+		var closures := city.streets.closures()
 		if closures.is_empty():
 			push_warning("no streets are closed on day %d" % header.day)
 			return city.map.home_world_position()
@@ -216,7 +216,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# skipped: the hut is the picture, standing on the pavement rather than the carriageway.
 	if target.begins_with("door"):
 		var huts: Array[EventScheduler.Planned] = []
-		var plan := city.region_plan()
+		var plan := city.streets.region_plan()
 		if plan:
 			for body in plan.door_bodies:
 				if body.def.id == "checkpoint_hut":

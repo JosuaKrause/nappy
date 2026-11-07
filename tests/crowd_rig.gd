@@ -1524,12 +1524,12 @@ func _test_a_body_finds_what_stands_across_a_bucket_edge(t) -> void:
 	t.check(lanes.size() == 2 and lanes[0]["centre"] < lanes[0]["edge"]
 			and lanes[1]["centre"] > lanes[1]["edge"],
 			"a sidewalk lane stands just below a bucket edge and another just above one")
-	var city_plan := _city.region_plan()
+	var city_plan := _city.streets.region_plan()
 	await PhysicsTicks.settle(t)
 	for lane in lanes:
 		await _check_a_walker_finds_a_hut_across_a_bucket_edge(t, lane)
 	# The plan the huts were made from was the test's own: the city has the one it had, and no huts.
-	_city.set_region_plan(city_plan)
+	_city.streets.replace_region_plan(city_plan)
 	_city.crowd.start_day(1, _rng(1))
 
 ## The sidewalk lanes of this city's vertical streets whose centre is within 12px of a bucket edge that
@@ -1564,7 +1564,7 @@ func _sidewalk_lanes_beside_a_bucket_edge(bucket: float) -> Array[Dictionary]:
 
 ## A walker walking down the sidewalk lane `lane` (`_sidewalk_lanes_beside_a_bucket_edge()`'s), with huts
 ## ahead of it that a region plan stands either side of the lane's bucket edge, 16px from it, handed to
-## the city (`City.set_region_plan()`, which a scene recipe's authored plan takes) so that
+## the city (`DayStreets.replace_region_plan()`, which a scene recipe's authored plan takes) so that
 ## `Crowd.start_day()` makes a `WalkerDoorHold` of each detaining door body as it does every day. The
 ## hut the walker is asked to find is the one in its own bucket, then the one across the edge, then of
 ## two the same distance ahead the one first in the plan. The walker is pinned through
@@ -1590,7 +1590,7 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t, lane: Dictionary) -> vo
 	for case in cases:
 		var plan := RegionPlanner.RegionPlan.new()
 		plan.door_bodies.assign(case["huts"])
-		_city.set_region_plan(plan)
+		_city.streets.replace_region_plan(plan)
 		_city.crowd.start_day(1, _rng(1), Vector2(lane["centre"], along), false)
 		# A walker that walks through a door is not held at it, so it only looks.
 		var walker: CrowdAgent = _rig.agent_on(_city, _city.map, CrowdAgent.Kind.WALKER,
@@ -1939,8 +1939,8 @@ func _open_a_door_day(t) -> Dictionary:
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
 		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
-		if not city.region_plan().doors.is_empty():
-			door = city.region_plan().doors[0]
+		if not city.streets.region_plan().doors.is_empty():
+			door = city.streets.region_plan().doors[0]
 			used_day = day
 			break
 	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
@@ -1952,11 +1952,11 @@ func _open_a_door_day(t) -> Dictionary:
 	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
-	city.crowd.set_gates(city.region_plan().gates)
+	city.crowd.set_gates(city.streets.region_plan().gates)
 	city.crowd.clear()
 	var vertical := not door.horizontal
 	var huts: Array[Vector2] = []
-	for body in city.region_plan().door_bodies:
+	for body in city.streets.region_plan().door_bodies:
 		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
 			continue
 		var across: float = body.position.x if vertical else body.position.y

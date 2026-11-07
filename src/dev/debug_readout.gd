@@ -171,7 +171,7 @@ func draw_routes(map: CityMap) -> void:
 ## no streets — the escape's sections — grows none, and its lines stay as they are.
 func use_the_plan(spec: DaySpec) -> void:
 	if _route_lines and _city and spec.closes_streets:
-		_route_lines.refresh(_city.route_tree())
+		_route_lines.refresh(_city.streets.route_tree())
 
 ## The day being walked: its number and its words name the readout's day line.
 func use_the_day(spec: DaySpec) -> void:

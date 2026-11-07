@@ -308,7 +308,7 @@ class Meeting extends RefCounted:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("crowd-yields:%s" % JSON.stringify(_label))
 		_city.crowd.start_day(int(_label.day), rng, player.global_position)
-		_city.crowd.set_gates(_city.region_plan().gates)
+		_city.crowd.set_gates(_city.streets.region_plan().gates)
 		_city.crowd._player = player
 
 	func tick_the_crowd() -> void:

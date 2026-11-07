@@ -65,6 +65,8 @@ src/
 	city_map.gd           tile data, queries (walkable); holds the city's street lattice
 	city_generator.gd     seeded generation
 	city.gd               the scene: ground, buildings, props, boundary, queries (is_calm_zone, is_alley)
+	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
+	                      doors, the closures, the region a siting reads; the city writes it
 	block_plan.gd         one block's arc, planned at generation
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got

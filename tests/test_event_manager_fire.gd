@@ -299,7 +299,7 @@ func _nearest_on(route: PackedVector2Array, at: Vector2) -> int:
 ## holds a tree grown for a different day, and a rig walking a route out of a tree the fire was
 ## never sited against measures nothing.
 func _days_tree(day: int) -> RouteTree:
-	var tree := _city.route_tree()
+	var tree := _city.streets.route_tree()
 	return tree if tree else RouteTree.for_day(_city.map, day)
 
 ## The longest route of the day's own tree as the line she walks: out from the doorstep to the calm

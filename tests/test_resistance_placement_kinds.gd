@@ -402,7 +402,7 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	var the_day := _start_the_day(t, 9, director)
-	var doors := _city.region_plan().doors
+	var doors := _city.streets.region_plan().doors
 	t.check(not doors.is_empty(),
 			"day 9 (Tuning.REGION_WALL_FIRST_DAY) has at least one door, or this test "
 			+ "checks nothing")
@@ -417,7 +417,7 @@ func _test_the_door_task_sits_at_a_region_door(t) -> void:
 			"the chosen tile's own segment is ground the day already holds — the case " +
 			"`allow_held` exists for")
 	var on_a_door := false
-	for body in _city.region_plan().door_bodies:
+	for body in _city.streets.region_plan().door_bodies:
 		if body.def.redetains and body.position.distance_to(at) < 0.5:
 			on_a_door = true
 			break

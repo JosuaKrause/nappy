@@ -58,7 +58,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
 	var start := city.map.doorstep_world_position()
 	crowd.start_day(day, rng, start)
-	crowd.set_gates(city.region_plan().gates)
+	crowd.set_gates(city.streets.region_plan().gates)
 	crowd._player = rig
 	var chain := PackedByteArray()
 	chain.resize(32)

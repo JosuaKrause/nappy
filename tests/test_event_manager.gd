@@ -376,7 +376,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 			% [offered, owed_to_her_walk])
 
 ## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." `EventManager.
-## start_day` used to read the day's tree as `_city.route_tree()` whenever `_city` existed at
+## start_day` used to read the day's tree as `_city.streets.route_tree()` whenever `_city` existed at
 ## all — even before `_city.start_day()` had ever grown one, which is exactly what every rig in
 ## this suite does, this one included — so `SealPlanner.plan_day` and `RegionPlanner.plan_day`
 ## were handed a null tree and came back with nothing, while `EventScheduler.build_day` grew a
@@ -387,7 +387,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
 ## `SealPlanner`'s own RNG stream (`RunState.calendar.day_rng(day, "seals")`) does not depend on `_city`
 ## either, so every segment the fallback holds has to be held the real way too — a rig that skips
-## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.closures()`
+## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.streets.closures()`
 ## only ever has something to read once `City.start_day()` has run (see the comment in
 ## `EventManager.start_day` above `_map.clear_day_holds()`), so the "after" run legitimately holds
 ## a little more, one closure's own segment. See `tests/test_checkpoints.gd`'s

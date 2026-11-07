@@ -157,7 +157,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		return [her]
 	var hut: EventScheduler.Planned = null
-	for body in city.region_plan().door_bodies:
+	for body in city.streets.region_plan().door_bodies:
 		if body.def.redetains and body.position.distance_to(her) < 0.5:
 			hut = body
 	if hut == null:
@@ -177,7 +177,7 @@ func _draw(director: ResistanceDirector, her: Vector2, def: EventDef,
 ## Whether the straight run from `start` to `her` crosses the line of any of today's district-door
 ## bodies, the question `CheckpointController.watch_the_door_lines()` asks of her own steps.
 func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
-	var plan := city.region_plan()
+	var plan := city.streets.region_plan()
 	if not plan:
 		return false
 	for body in plan.door_bodies:

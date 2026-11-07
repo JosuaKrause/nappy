@@ -47,7 +47,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
 			var mark_step := director.current_step()
 			if mark_step != null and mark_step.is_pickup:
 				checked += 1
-				var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+				var region_plan: RegionPlanner.RegionPlan = city.streets.region_plan()
 				var walled_alleys: Array[Rect2i] = \
 						region_plan.alley_walls if region_plan else []
 				var reachability := _day_reachability(city)

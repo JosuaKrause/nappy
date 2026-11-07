@@ -148,20 +148,20 @@ func _test_the_siting_hands_the_same_region_until_the_plan_changes(t) -> void:
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, 10)
 	_city.start_day(state, 10, RandomNumberGenerator.new())
-	var first := _city.siting_region()
+	var first := _city.streets.siting_region()
 	t.check(first != null and first.centres.size() > 0, "day 10 has a region wall and doors")
-	t.check(_city.siting_region() == first and _city.spawn_siting.region() == first,
+	t.check(_city.streets.siting_region() == first and _city.spawn_siting.region() == first,
 			"asked again, the siting is handed the same region")
-	var plan := _city.region_plan()
+	var plan := _city.streets.region_plan()
 	var other := RegionPlanner.RegionPlan.new()
 	other.alley_walls.append(Rect2i(1, 1, 1, 1))
-	_city.set_region_plan(other)
-	var changed := _city.siting_region()
+	_city.streets.replace_region_plan(other)
+	var changed := _city.streets.siting_region()
 	t.check(changed != first and changed.centres.is_empty()
-			and changed.walled_alleys == other.alley_walls and _city.siting_region() == changed,
+			and changed.walled_alleys == other.alley_walls and _city.streets.siting_region() == changed,
 			"another plan is another region, itself handed again")
-	_city.set_region_plan(plan)
-	t.check(_city.siting_region() != changed and _city.siting_region().centres.size() \
+	_city.streets.replace_region_plan(plan)
+	t.check(_city.streets.siting_region() != changed and _city.streets.siting_region().centres.size() \
 			== first.centres.size(), "and the first plan again is built afresh from it")
 
 ## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:

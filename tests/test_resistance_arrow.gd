@@ -258,7 +258,7 @@ func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
 ## a cell's centre is half a tile past its first tile's centre on both axes.
 func _longest_route_points() -> Array[Vector2]:
 	var longest: Array = []
-	for branch in _city.route_tree().branches:
+	for branch in _city.streets.route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route
@@ -539,7 +539,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 			return director.rider().global_position if director.rider() else Vector2.INF
 		ResistanceSteps.TargetKind.DOOR:
 			var nearest := Vector2.INF
-			for body in _city.region_plan().door_bodies:
+			for body in _city.streets.region_plan().door_bodies:
 				if body.def.redetains and (nearest == Vector2.INF or body.position.distance_to(
 						director.contact_position()) < nearest.distance_to(director.contact_position())):
 					nearest = body.position
