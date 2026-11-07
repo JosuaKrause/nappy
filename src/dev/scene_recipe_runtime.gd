@@ -638,7 +638,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	if setup.has("column"):
 		_install_column(setup.column, at, errors)
 	_install_posters(setup.get("posters", []), errors)
-	manifest["initial_actors"] = snapshot()
+	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
 	for plan in city.events.plans():
 		manifest.installed_events.append({"row": plan.def.id,
@@ -1037,7 +1037,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 func begin() -> void:
 	if not _start_the_task():
 		return
-	manifest["initial_actors"] = snapshot()
+	manifest["initial_actors"] = _snapshot()
 	_record_crowd("initial_crowd")
 	print("[SceneRecipe] manifest " + JSON.stringify(manifest, "", true))
 	write_manifest()
@@ -1217,7 +1217,7 @@ func _physics_process(_delta: float) -> void:
 	if get_tree().paused:
 		manifest["playback_error"] = "gameplay paused before the authored action completed"
 		manifest["stopped_tick"] = tick
-		manifest["final_actors"] = snapshot()
+		manifest["final_actors"] = _snapshot()
 		print("[SceneRecipe] playback stopped: " + JSON.stringify(manifest))
 		write_manifest()
 		_active = false
@@ -1241,7 +1241,7 @@ func _physics_process(_delta: float) -> void:
 		_active = false
 		_release_input()
 		manifest["playback_complete"] = true
-		manifest["final_actors"] = snapshot()
+		manifest["final_actors"] = _snapshot()
 		_record_crowd("final_crowd")
 		write_manifest()
 		if _draft:
@@ -1270,7 +1270,7 @@ func prepare_capture() -> void:
 		manifest["capture_camera"] = {"position": [camera.global_position.x, camera.global_position.y],
 				"zoom": camera.zoom.x}
 	manifest["capture_tick"] = tick
-	manifest["capture_actors"] = snapshot()
+	manifest["capture_actors"] = _snapshot()
 	_record_crowd("capture_crowd")
 	write_manifest()
 	_active = false
@@ -1319,7 +1319,7 @@ func _exit_tree() -> void:
 	if _scripted:
 		_release_input()
 
-func snapshot() -> Dictionary:
+func _snapshot() -> Dictionary:
 	var result := {}
 	for label: String in named:
 		if not is_instance_valid(named[label]):
@@ -1412,7 +1412,7 @@ func _observe() -> void:
 		record["passed"] = passed
 		if check.condition == "appeared" and passed:
 			record["first_in_the_picture"] = _appeared[check.subject]
-		record["state"] = snapshot().get(check.subject, {})
+		record["state"] = _snapshot().get(check.subject, {})
 		if is_instance_valid(_player):
 			record["player_at"] = [snappedf(_player.global_position.x, 0.01),
 					snappedf(_player.global_position.y, 0.01)]

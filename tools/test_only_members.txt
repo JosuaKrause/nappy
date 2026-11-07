@@ -1,9 +1,10 @@
 # The public members only tests read, which tools/check_test_only_members.py lets stand: one
 # "<file> <member>" per line, sorted within a group. A group starts at a header comment whose first
 # word is its tag in brackets. The [no reader] and [own file only] groups only shrink: the check fails
-# a line added to either (against the pull request's base) and a line that has gone stale, a member
-# that gained a reader in another file, lost its tests, or is gone. The pull request that fixes a
-# member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
+# a line added to either against the pull request's base, unless the same diff changes the checker itself
+# (a better checker surfaces members the old one could not see). It also fails a line that has gone stale,
+# a member that gained a reader in another file, lost its tests, or is gone. The pull request that fixes
+# a member deletes its line. A [kept] group takes a new line, and the check fails one with no reason
 # after its '#'.
 
 # [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
@@ -20,14 +21,27 @@ src/events/views/event_look.gd mark_rect  # the rectangle the danger caret cover
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
+src/city/marble_bag.gd take  # no test reads it: the tests' `.take(` are `EventStreaming.take` and a callable's, on receivers the check cannot type, so it counts them; nothing calls it, so it is deleted
 src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
+src/crowd/crowd_field.gd contains  # no test reads it: the tests' `.contains(` are `String.contains` on untyped receivers, which the check counts; nothing calls it, so it is deleted
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
+src/player/stroller.gd family_sources
+src/world/navigator.gd open_ground
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
+src/city/building_shadows.gd compute
+src/city/poster_art.gd compose
+src/crowd/walker_look.gd gait_phase
+src/main.gd configure
+src/run/day_director.gd facts
+src/run/day_director.gd hands_over_to_the_escape
+src/run/run_calendar.gd facts
+src/telemetry/frame_recorder.gd ledger
+src/ui/badge_model.gd watch
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -47,7 +61,6 @@ src/main.gd use_quit  # a hand-in: the game uses its default, a test hands in a 
 src/main.gd use_reload  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_run_log  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_save  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
-src/main.gd use_sitting  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_sitting_home  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/resistance/resistance_director.gd use_steps  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/ui/mode_button.gd use_clock  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
