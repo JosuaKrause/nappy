@@ -219,6 +219,10 @@ static func _a_clear_line(map: CityMap, from: Vector2, to: Vector2) -> bool:
 ## Whether some walk from `from` reaches ground within `reach` of `body` without her centre coming
 ## within a guard at `guard`'s `EventDef.notice` along a clear line: a flood fill of the test's
 ## own over open, unobstructed walkable tiles, tile centres, never onto a tile his notice reaches.
+## The line is the map's (`CityMap.clear_line()` for a figure on foot), the one a waiting guard
+## notices her along in play, since he cannot see her through what the day stands on the ground (a
+## body, a closure, a soft seal) any more than through a building, and a line that only asked the
+## ground would count her noticed behind one.
 static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: float,
 		from: Vector2) -> bool:
 	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
@@ -240,7 +244,7 @@ static func _a_way_past(map: CityMap, guard: Vector2, body: Vector2, reach: floa
 					or map.is_obstructed(next):
 				continue
 			var at := map.tile_to_world(next)
-			if at.distance_to(guard) <= notice and _a_clear_line(map, guard, at):
+			if at.distance_to(guard) <= notice and map.clear_line(guard, at, Mover.on_foot()):
 				continue
 			queue.append(next)
 	return false
