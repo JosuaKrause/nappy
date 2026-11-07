@@ -134,7 +134,7 @@ const ENTRANCE_DOOR := &"buildings/entrance_door"
 const ENTRANCE_DOOR_INDUSTRIAL := &"buildings/entrance_door_industrial"
 ## The neighbor's boarded window, from day 11 on: a 32×32 overlay, the same cell and registration
 ## as `WINDOW_DARK`, drawn over whichever window picture `neighbor_window_col` already has so the
-## front's own lintel and sill stay. `City.board_neighbor_window()` is the only setter.
+## front's own lintel and sill stay. `CityFronts.board_neighbor_window()` is the only setter.
 const NEIGHBOR_WINDOW_SEALED := &"buildings/window_boarded_sealed"
 ## **A burnt building is drawn burnt, not only dark**: *"the *building* is what needs to be burnt"*
 ## (olive-koala, statement 4). Under `Condition.BURNT` every window of every style is the burnt-out
@@ -477,7 +477,7 @@ func _is_seamlessly_covered(col: int) -> bool:
 	return seamless_cover_cols[col] if col >= 0 and col < seamless_cover_cols.size() else false
 
 ## The upper-floor column the neighbor's boarded window (`NEIGHBOR_WINDOW_SEALED`) draws over,
-## from day 11 on, or -1 for every building but the one `City.board_neighbor_window()` picked: the
+## from day 11 on, or -1 for every building but the one `CityFronts.board_neighbor_window()` picked: the
 ## one lot the door notch stands in front of, on its third floor — row index 3, since the ground
 ## floor is row 0 and the first floor the one above it, as the escape counts them — the nearest
 ## column above the door itself. Her own floor, down the hall from her own door (PLAYTEST-131).
@@ -936,7 +936,7 @@ func _entrance_door_col() -> int:
 ## (`_entrance_door_col()`), else the civic portico, centred on the facade (`_draw_front_overlay()`),
 ## else the drawn storefront pair nearest `near` — and `near` itself on a front with none of them,
 ## a one-row facade, which keeps its windows and has no door. Day 8's task ends at the burnt
-## building's door (`City.way_in_behind()`): *"or better to the door"* (sandy-egret).
+## building's door (`CityFronts.way_in_behind()`): *"or better to the door"* (sandy-egret).
 func way_in_local_x(near: float) -> float:
 	var door := _entrance_door_col()
 	if door >= 0:
@@ -992,7 +992,7 @@ func _column_under_door(col: int) -> bool:
 	var min_x := global_position.x + _cell(col, 0).x
 	return min_x < door_world_x_range.y and min_x + TILE > door_world_x_range.x
 
-## Column `col`'s own world-space horizontal centre — `City.board_neighbor_window()`'s own way of
+## Column `col`'s own world-space horizontal centre — `CityFronts.board_neighbor_window()`'s own way of
 ## finding the column nearest the door without reaching into `_cell()`, which stays private to
 ## this file.
 func column_centre_x(col: int) -> float:

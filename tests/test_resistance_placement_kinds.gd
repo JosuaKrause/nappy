@@ -193,7 +193,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 	player.free()
 
 ## Every front day 3's fire can catch on, and so every place day 8's task can end, has a way in on
-## the building behind it (`City.way_in_behind()`): its entrance door's column when it has one, and
+## the building behind it (`CityFronts.way_in_behind()`): its entrance door's column when it has one, and
 ## always ground the touch is measured over — a sidewalk tile straight below it, the near half
 ## `ResistanceDirector.DOOR_REACH` is sized to.
 func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
@@ -212,7 +212,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 				drawn_on.append(building)
 	var doors := await _doors_drawn_on(t, drawn_on)
 	for tile in fronts:
-		var way := _city.way_in_behind(_city.map.tile_to_world(tile))
+		var way := _city.fronts().way_in_behind(_city.map.tile_to_world(tile))
 		var behind: Building = behind_tile.get(tile)
 		if behind == null or way == Vector2.INF:
 			wrong.append(tile)
@@ -1072,7 +1072,7 @@ func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	reloaded.run = run
 	t.add_child(reloaded)
 	reloaded.build(CityGenerator.generate(SEED))
-	reloaded.board_neighbor_window()
+	reloaded.fronts().board_neighbor_window()
 	var reloaded_building := HomeDoorReads.building(reloaded)
 	t.check(reloaded_building.neighbor_window_col == col, "and the same cell on a fresh load")
 	reloaded.free()

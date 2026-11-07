@@ -45,7 +45,7 @@ const RAID_VAN_OFFSET_TILES := 3
 const RAID_PATROL_REACH_TILES := 7
 
 ## The day the market is gone, and the day the neighbor's window is boarded on her own building's
-## front (`City.board_neighbor_window()`) — the same morning, since both are "the next morning"
+## front (`CityFronts.board_neighbor_window()`) — the same morning, since both are "the next morning"
 ## for day 10's raid. The day the column comes down the main road. Day 12's park is
 ## `ResistanceSteps.swing_day()`'s, the day its task sends her to the swing.
 const MARKET_DAY := 11
@@ -148,10 +148,10 @@ func start_day(day: int, with_its_events := true) -> void:
 	if day == NEIGHBOR_DAY:
 		_plan_the_raid()
 	# The neighbor's boarded window, from this morning on for the rest of the run
-	# (`City.board_neighbor_window()` is idempotent, so calling it again on a later day costs
+	# (`CityFronts.board_neighbor_window()` is idempotent, so calling it again on a later day costs
 	# nothing once it is set).
 	if day >= MARKET_DAY and _city:
-		_city.board_neighbor_window()
+		_city.fronts().board_neighbor_window()
 
 ## Once a tick the walk stepped, from the director (`ResistanceDirector.tick()`): brings in
 ## whatever the day is waiting to bring in. `her` is her
@@ -234,7 +234,7 @@ func _maybe_raid(her: Vector2) -> void:
 	# sight the same as the vans (PLAYTEST-131: "when returning to find the raid the door
 	# texture should also have changed. and then the change stays"). Live today; the scar is
 	# what every later day and a reloaded save read it from (`City._sync_home_door()`).
-	_city.seal_home_door()
+	_city.fronts().seal_home_door()
 	_run.add_scar(City.SEALED_DOOR_SCAR, door)
 	trace.note("contact", "the raid is at her building: %d vans and a patrol" % _raid_vans.size())
 
@@ -242,7 +242,7 @@ func _maybe_raid(her: Vector2) -> void:
 
 ## **Day 11: the market is gone, and she finds it gone.** A commercial block ahead of her on the
 ## route she is walking, out of sight, is boarded up there and then — its storefronts shuttered
-## (`City.present_block()`) and the market stalls at its frontage taken away with it
+## (`CityFronts.present_block()`) and the market stalls at its frontage taken away with it
 ## (`EventManager.take_away_within()`) — so the street she was walking toward is dark by the time
 ## she reaches it. Sited as day 3's fire is (`docs/DECISIONS.md`, M179): after she has walked long
 ## enough to have chosen a way, on the branch of the day's route tree she is on
@@ -333,7 +333,7 @@ func board_up(block: Vector2i) -> bool:
 		return false
 	_market_owed = false
 	if _city:
-		_city.present_block(block, state)
+		_city.fronts().present_block(block, state)
 	var stalls := 0
 	if _city and _city.events:
 		stalls = _city.events.take_away_within(_frontage_of(block), ["market_stall"] as Array[String])

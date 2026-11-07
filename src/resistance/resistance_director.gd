@@ -658,7 +658,7 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 
 ## Day 8's task on a run with no recorded scar, once its `burnt_shell` stands at a front
 ## (`_fronts_a_fire_catches_on()`): records the scar there, exactly as day 3's fire would have, and
-## has `City.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
+## has `CityFronts.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
 ## sent to is burnt when she gets there. Nothing else a fire does is done: no block moves along its
 ## arc, since no fire burned.
 ##
@@ -670,13 +670,13 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 ## would after a real fire.
 func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 	_run.add_scar(_step.task_event_id, shell.global_position)
-	_city.mark_the_burnt_frontage()
+	_city.fronts().mark_the_burnt_frontage()
 
 ## How far day 8's touch reaches from the burnt building's door: the whole tile of sidewalk in
 ## front of the door, its bottom corners included. *(sandy-egret: "or better to the door but the
 ## acceptance radius centered at the door should have a large enough radius for half the sidewalk
 ## to be covered".)* The sidewalk is two tiles (`Tuning.SIDEWALK_WIDTH`), so its near half is the
-## one frontage-lane tile below the door; the door's point (`City.way_in_behind()`) is the middle
+## one frontage-lane tile below the door; the door's point (`CityFronts.way_in_behind()`) is the middle
 ## of the ground-floor tile above it, so that tile's far corners are half a tile across and a tile
 ## and a half down — √(16² + 48²) ≈ 50.6px. Straight in front of the door that reaches 2.6px
 ## past the line between the frontage lane and the kerb lane and no further, so the kerb lane's far
@@ -686,7 +686,7 @@ func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
-## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
+## stands on the door of the building behind it (`CityFronts.way_in_behind()`) and reaches `DOOR_REACH`
 ## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
 ## building is what needs to be burnt, not an object next to the building"*. **Some ground within
 ## `DOOR_REACH` of the door must be ground she can stand on** (`_door_can_be_touched()`); only a
@@ -695,7 +695,7 @@ const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 ## it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws
 ## nothing from `_rng`, so the day's later draws are unmoved.
 func _ride_to_the_door(shell: EventInstance) -> void:
-	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
+	var door := _city.fronts().way_in_behind(shell.global_position) if _city else Vector2.INF
 	if door != Vector2.INF and not _door_can_be_touched(door):
 		trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
 				"within reach today — the facade behind the shell stands in")
@@ -1263,7 +1263,7 @@ const ARRIVAL_CONE := PI / 6.0
 ## Whether `step`'s target is a door on a building's front — the burnt building's (day 8) or the
 ## power station's (the last night) — where she stands on the sidewalk below the facade and the
 ## building fills the view above her. Every front in this city faces south, the way the oblique view
-## looks at it (`City.way_in_behind()`, `station_door_point()`), so the far side of her street is
+## looks at it (`CityFronts.way_in_behind()`, `station_door_point()`), so the far side of her street is
 ## always straight below her.
 static func _is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 	return step != null and (step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR
@@ -2004,7 +2004,7 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## **The station's door point on its facade**: the middle of the drawn door
 ## (`Building._draw_front_overlay()`, centred on the two pavement tiles of
 ## `CityMap.power_station_door`), half a tile up the ground floor — the same point
-## `City.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
+## `CityFronts.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
 ## front of it the same way. One tile above the pavement rect's centre, which is half a tile below
 ## the wall line.
 static func station_door_point(map: CityMap) -> Vector2:

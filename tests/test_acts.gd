@@ -114,7 +114,7 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ##
 ## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
-## reaches `City.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
+## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
 func _test_the_scarred_building_shows_burnt(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.run.header.day = 4
@@ -247,7 +247,8 @@ func _test_the_scarred_building_shows_burnt(t) -> void:
 			"and every dawn after that, the same one")
 	# Day 11's market boards its block up during the day (`present_block()`), and the burnt
 	# building is never boarded up with it.
-	city.present_block(city.map.block_at(city.map.tile_rect_to_world(scarred.lot).get_center()),
+	city.fronts().present_block(
+			city.map.block_at(city.map.tile_rect_to_world(scarred.lot).get_center()),
 			CityState.new())
 	t.check(scarred.condition == Building.Condition.BURNT,
 			"its block shown anew during the day leaves the burnt building burnt")
