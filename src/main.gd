@@ -39,6 +39,7 @@ const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 ## reach at any moment — so there is no smaller set to hold and no later moment to hold it in.
 const RESIDENT_GROUPS: Array[StringName] = [
 	&"ui", &"stroller", &"buildings", &"street_kit", &"ground", &"decoration", &"crowd", &"events",
+	&"shadows",
 ]
 ## What an ordinary day's boot holds on top of `RESIDENT_GROUPS`: nothing. Declared rather than
 ## written as a literal at the call site, because an untyped `[]` passed into an

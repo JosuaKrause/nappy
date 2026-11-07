@@ -152,7 +152,6 @@ func palette() -> Array:
 func draw_body(canvas: CanvasItem) -> void:
 	var frame := sector()
 	var flip := flipped()
-	_agent.draw_shadow(canvas, Vector2.ZERO, Vector2.RIGHT)
 	var view_name: String = VIEW_BY_SECTOR[frame]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.

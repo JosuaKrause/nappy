@@ -1203,8 +1203,9 @@ build has nothing in `project.godot` to reach:
   is what actually ends the day, is in the bounding-box layer instead.
 - **`2` shadows** — the ground extent every `GroundShape` shadow is drawn over: events, crowd
   agents, props, her and the pram. Buildings draw no shadow, so none is drawn for one here either.
-  Traced from `GroundShape.shadow_outline()`, the same polygon `draw_shadow()` itself now fills, so
-  the layer and the shadow cannot disagree.
+  Traced from `GroundShape.shadow_outline()`, the same polygon `draw_shadow()` fills and the bake
+  draws a shadow's picture from (`GroundShape.shadow_image()`), so the layer and the shadow cannot
+  disagree.
 - **`3` bounding boxes** — every enabled collision shape a body could touch, traced straight from
   the `CollisionShape2D`/`CollisionPolygon2D` nodes physics itself reads (`DebugLayers.
   collision_nodes_under()`), so the layer cannot omit one: an event's obstruction, a building's

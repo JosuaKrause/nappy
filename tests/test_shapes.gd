@@ -34,6 +34,9 @@ func run(t) -> void:
 	_test_zero_speed_gives_a_disc(t)
 	_test_approaching_costs_more_than_receding(t)
 	_test_no_emitting_segment_row_moves(t)
+	_test_every_point_shares_one_picture_and_a_segment_has_its_own(t)
+	_test_a_shadow_picture_is_its_outline_filled(t)
+	_test_the_crowd_cars_capsule_has_its_picture_baked(t)
 
 # ------------------------------------------------------------------ the datum ---
 
@@ -371,6 +374,62 @@ func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
 	t.check(shape.across() >= Tuning.CAR_STRIKE_HALF_WIDTH,
 			"and across at least as far as its strike box's half-width (%.1f >= %.1f)"
 			% [shape.across(), Tuning.CAR_STRIKE_HALF_WIDTH])
+
+# ---------------------------------------------------------------- the pictures ---
+
+func _test_every_point_shares_one_picture_and_a_segment_has_its_own(t) -> void:
+	t.check(GroundShape.point(7.0).shadow_picture_name() == GroundShape.point(12.0)
+			.shadow_picture_name(), "every point shadow is drawn from the one point picture")
+	t.check(GroundShape.point(7.0).shadow_picture_shape().radius == GroundShape.SHADOW_PICTURE_RADIUS,
+			"which is the point shape at the picture's own radius")
+	var car := GroundShape.segment(11.0, 15.0)
+	t.check(car.shadow_picture_name() == &"shadows/segment-11x15",
+			"a segment's picture is named by its two dimensions, whole pixels without a .0 (%s)"
+			% car.shadow_picture_name())
+	t.check(car.shadow_picture_shape() == car, "and is drawn from the segment itself")
+	t.check(GroundShape.segment(11.0, 16.0).shadow_picture_name() != car.shadow_picture_name(),
+			"so two capsules of different radii have two pictures")
+	t.check(GroundShape.rect(Vector2(10.0, 5.0)).shadow_picture_name() == &"",
+			"and a rectangle has none")
+
+## The picture is the polygon `draw_shadow()` fills: opaque at its centre, clear at its corners, and
+## its alpha summed over the picture is the outline's own area, so the edge's partly covered pixels
+## are neither dropped nor doubled.
+func _test_a_shadow_picture_is_its_outline_filled(t) -> void:
+	for shape: GroundShape in [GroundShape.point(GroundShape.SHADOW_PICTURE_RADIUS),
+			GroundShape.segment(11.0, 15.0)]:
+		var image := shape.shadow_image()
+		var size := shape.shadow_picture_size()
+		t.check(image.get_size() == size and size.x % 2 == 0 and size.y % 2 == 0,
+				"%s: the picture is its stated size, even on both axes (%s)"
+				% [shape.shadow_picture_name(), image.get_size()])
+		t.check(image.get_pixel(size.x / 2, size.y / 2) == Color(1.0, 1.0, 1.0, 1.0)
+				and image.get_pixel(0, 0).a == 0.0,
+				"%s: white and opaque at the centre, clear at the corner" % shape.shadow_picture_name())
+		var covered := 0.0
+		for y in size.y:
+			for x in size.x:
+				covered += image.get_pixel(x, y).a
+		var area := absf(_polygon_area(shape.shadow_outline(Vector2.ZERO)))
+		t.close_to(covered, area, "%s: the picture covers the outline's own area"
+				% shape.shadow_picture_name(), area * 0.01)
+
+func _polygon_area(points: PackedVector2Array) -> float:
+	var twice := 0.0
+	for i in points.size():
+		var a := points[i]
+		var b := points[(i + 1) % points.size()]
+		twice += a.x * b.y - b.x * a.y
+	return twice * 0.5
+
+func _test_the_crowd_cars_capsule_has_its_picture_baked(t) -> void:
+	var car := CrowdAgent.new()
+	car.kind = CrowdAgent.Kind.CAR
+	var shape: GroundShape = car.strategy.ground_shape()
+	car.free()
+	var name := shape.shadow_picture_name()
+	t.check(AtlasTable.baked().group_of(name) == GroundShape.SHADOW_GROUP,
+			"the crowd car's capsule has its own picture on the shadow page (%s)" % name)
 
 # ------------------------------------------------------------------- the field ---
 # `body ⊕ kernel`: a disc kernel standing still (`field_distance()` reduces to `distance_to_spine`,

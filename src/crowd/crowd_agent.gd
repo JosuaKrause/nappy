@@ -124,6 +124,7 @@ func end_the_frame(delta: float) -> bool:
 		# for, cached against the clock — so a mark that drops on the next frame is taken off.
 		_was_marked = _carets and excitement.caret_strength() > 0
 		queue_redraw()
+		_cast_shadow()
 		return true
 	# A marked car draws a caret that can breathe with its own horn, and a projected approach
 	# can change its strength frame to frame with nothing else about the picture moving. The
@@ -143,6 +144,12 @@ func end_the_frame(delta: float) -> bool:
 func _ready() -> void:
 	super._ready()
 	set_process(false)
+	if atlas != null:
+		_shadow = GroundShadow.new(atlas)
+		# `--skip crowd` measures a frame with the crowd's drawing gone, its shadows included.
+		_shadow.visible = not skip_draw
+		add_child(_shadow)
+		_cast_shadow()
 
 func _process(_delta: float) -> void:
 	if not excitement.is_startled():
@@ -216,13 +223,18 @@ func _dress() -> void:
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
-## The drop shadow under this agent's own `shape`, skipped for its own halo ring — the same rule
-## `EventLook._draw_shape_shadow` has: the shadow is the ground under the thing, not the thing,
-## and a cue for what is charging her right now has nothing to say about it.
-func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2) -> void:
-	if canvas == _rim.entity_halo():
-		return
-	shape.draw_shadow(canvas, at, axis)
+## The drop shadow under this agent's own `shape`, a child drawn on the shadow layer from its
+## picture (`GroundShadow`) rather than by `_draw()`, so the halo's ring, which traces
+## `AgentLook.draw_body()`, never draws it: the shadow is the ground under the thing, not the thing,
+## and a cue for what is charging her right now has nothing to say about it. Built in `_ready()`
+## from the library the crowd hands; an agent handed none draws nothing and casts nothing.
+var _shadow: GroundShadow = null
+
+## Casts the shadow of the shape and the axis the look draws now. Called with every redraw of the
+## body, so the two are of the same instant; a no-op when neither moved.
+func _cast_shadow() -> void:
+	if _shadow != null:
+		_shadow.cast(shape, Vector2.ZERO, _look.shadow_axis())
 
 func _draw() -> void:
 	if frame_timing != null and frame_timing.running():

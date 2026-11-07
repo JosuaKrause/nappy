@@ -317,8 +317,8 @@ var _map := WorldMap.open_ground()
 func set_map(map: WorldMap) -> void:
 	_map = map
 
-## Her own ground shape and the pram's, read by `_draw()` for their shadows — 9px and 12px, the
-## same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
+## Her own ground shape and the pram's, which their shadows are cast from (`_cast_shadows()`) — 9px
+## and 12px, the same two numbers the shadow always used. Fixed rather than computed in a `setup()`, since
 ## neither figure changes size. **Not the same datum as the scene's own collision body**: the
 ## `CircleShape2D` on `scenes/player/stroller.tscn`'s `CollisionShape2D` is one combined physics
 ## radius for the whole rig, `Tuning.PLAYER_BODY_RADIUS` (14px) — already checked against the
@@ -328,6 +328,11 @@ func set_map(map: WorldMap) -> void:
 ## separate, smaller datum — see `pram_body_shape` below.
 var shape := GroundShape.point(9.0)
 var pram_shape := GroundShape.point(12.0)
+## Her shadow and the pram's, each a child drawn on the shadow layer from its picture
+## (`GroundShadow`), built in `_ready()` from her library. Shadows belong to the ground plane, so
+## the layer puts both under every figure standing on it, hers included.
+var _shadow: GroundShadow = null
+var _pram_shadow: GroundShadow = null
 
 ## The pram's own body radius, smaller than `pram_shape`'s 12px — **8px is the pinned
 ## recommendation, open to overturn** if the far half still reads as too much or too little to
@@ -411,6 +416,12 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	add_to_group("player")
+	_shadow = GroundShadow.new(atlas)
+	add_child(_shadow)
+	_pram_shadow = GroundShadow.new(atlas)
+	_pram_shadow.name = "PramShadow"
+	add_child(_pram_shadow)
+	_cast_shadows()
 	if _pram_collision:
 		_pram_collision.disabled = carrying
 	# Read off the scene rather than written down here, so the camera's own smoothing stays a
@@ -488,6 +499,7 @@ func _physics_process(delta: float) -> void:
 		# every other body in the game collides in, on the circumference of her own
 		# `Tuning.PLAYER_BODY_RADIUS` circle rather than out at the pram's drawn position.
 		_pram_collision.position = facing * Tuning.PLAYER_BODY_RADIUS
+	_cast_shadows()
 	move_and_slide()
 
 	# The deflection is moved separately rather than added to `velocity`, which stays what she
@@ -505,6 +517,13 @@ func _physics_process(delta: float) -> void:
 		_alert = Alert.NONE
 	_update_camera(delta)
 	queue_redraw()
+
+## Her shadow under her and the pram's under the pram where it is drawn this frame, or none while
+## she carries the baby in her arms and there is no pram. A cast that moved nothing redraws nothing.
+func _cast_shadows() -> void:
+	_shadow.cast(shape)
+	_pram_shadow.visible = not carrying
+	_pram_shadow.cast(pram_shape, _pram_offset)
 
 ## On a diagonal flight tile, a sideways press walks the slope rather than the screen axis it was
 ## pressed on — *(2026-09-10, playtest 55: "holding right or left on the switchback stairs moves
@@ -1012,18 +1031,14 @@ func _draw() -> void:
 	var drawn := pose(gait)
 	var pram_offset := drawn.pram_offset
 
-	# Shadows belong to the ground plane, so they always go underneath both figures.
-	shape.draw_shadow(self, Vector2.ZERO)
 	if carrying:
 		_draw_mother(drawn)
+	elif facing.y < 0.0:
+		_draw_pram(drawn)
+		_draw_mother(drawn)
 	else:
-		pram_shape.draw_shadow(self, pram_offset)
-		if facing.y < 0.0:
-			_draw_pram(drawn)
-			_draw_mother(drawn)
-		else:
-			_draw_mother(drawn)
-			_draw_pram(drawn)
+		_draw_mother(drawn)
+		_draw_pram(drawn)
 
 	_draw_baby_cue(pram_offset)
 	_draw_alert()

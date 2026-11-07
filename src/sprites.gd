@@ -93,9 +93,9 @@ static func draw_caret(canvas: CanvasItem, at: Vector2, width: float, colour: Co
 	canvas.draw_colored_polygon(points, colour)
 	canvas.draw_polyline(points + PackedVector2Array([points[0]]), Palette.OUTLINE, 2.0)
 
-## The contact shadow every standing **point** thing draws first — the mother, the pram, a walker,
-## a tree, a per-part shadow inside an event, anything whose shape is a single point rather than a
-## spread. The point shortcut over `GroundShape.point(radius).draw_shadow()`: something whose
+## The contact shadow a standing **point** thing draws first inside its own drawing — a per-part
+## shadow inside an event, a traffic light, anything whose shape is a single point rather than a
+## spread. Her, the pram and the crowd draw theirs from the shadow page instead (`GroundShadow`). The point shortcut over `GroundShape.point(radius).draw_shadow()`: something whose
 ## shape is not a point reads `GroundShape` directly instead of coming through here.
 static func draw_shadow(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 	GroundShape.point(radius).draw_shadow(canvas, at)

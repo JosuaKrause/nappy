@@ -361,6 +361,120 @@ func draw_shadow(canvas: CanvasItem, at: Vector2, axis: Vector2 = Vector2.RIGHT)
 ## Half a pixel: below this every sample of the outline rounds onto the same point.
 const MIN_DRAWN_SHADOW_RADIUS := 0.5
 
+# ------------------------------------------------------------- the shadow's picture ---
+
+## The atlas group the shadow pictures are baked into (`assets/atlases/membership.json`'s
+## `shadows`), a page of their own: every shadow drawn from it shares one texture, so the shadows
+## the shadow draw layer holds (`DrawLayer.Layer.SHADOWS`) are batched together rather than each
+## being a draw call between the sprites around it, as a filled polygon is.
+const SHADOW_GROUP := &"shadows"
+
+## The radius the one point picture is baked at. **Every point shadow in the game is the same
+## ellipse at a different size**, so one picture serves them all, scaled by `radius` over this; it is
+## baked at the largest point shadow's size or near it so that a shadow is drawn smaller than its
+## picture rather than larger, which under the project's nearest-neighbour filter keeps the edge
+## the same hard edge the polygon drew instead of enlarging the picture's pixels.
+const SHADOW_PICTURE_RADIUS := 48.0
+
+## How many samples a side each pixel of a baked shadow picture is covered by — 4 is 16 samples,
+## enough that the edge's coverage steps are finer than the alpha `Palette.SHADOW` draws them at.
+const _PICTURE_SUPERSAMPLES := 4
+
+## The shape whose picture this shape's shadow is drawn from: for a point, the one point picture
+## (`SHADOW_PICTURE_RADIUS`), which `draw_shadow_picture()` scales to this radius; for a segment,
+## itself, since a capsule's end caps cannot be scaled out of another capsule's. A rectangle has no
+## picture: nothing draws a rectangle's shadow from one.
+func shadow_picture_shape() -> GroundShape:
+	match kind:
+		Kind.POINT:
+			return GroundShape.point(SHADOW_PICTURE_RADIUS)
+		Kind.SEGMENT:
+			return self
+		_:
+			return null
+
+## The region name this shape's shadow picture is baked under on the `SHADOW_GROUP` page: the one
+## point picture for every point, `shadows/segment-<half_length>x<radius>` for a segment. **The rule
+## is the shape and nothing else**, so the bake (`tools/bake_atlases.gd`) names a picture by the
+## shape it draws and an object finds its own by asking its shape, and two objects of one shape share
+## one picture. Empty for a rectangle.
+func shadow_picture_name() -> StringName:
+	match kind:
+		Kind.POINT:
+			return &"shadows/point"
+		Kind.SEGMENT:
+			return StringName("shadows/segment-%sx%s" % [_dimension_name(half_length),
+					_dimension_name(radius)])
+		_:
+			return &""
+
+## A dimension as a region name writes it: a whole number of pixels without its `.0`.
+static func _dimension_name(value: float) -> String:
+	return str(int(value)) if value == floorf(value) else str(value)
+
+## The size of this shape's baked shadow picture, in pixels: `shadow_outline()`'s own extent about
+## its centre, rounded up, with one pixel to spare on every side for the edge's partly covered
+## pixels. **Even on both axes**, so the outline's centre is a pixel corner and the picture is
+## drawn centred on `at` without a half-pixel shift.
+func shadow_picture_size() -> Vector2i:
+	var half := _shadow_half_extent()
+	return Vector2i(2 * (ceili(half.x) + 1), 2 * (ceili(half.y) + 1))
+
+## How far the shadow reaches from its centre along local X and Y, with the spine along +X.
+func _shadow_half_extent() -> Vector2:
+	match kind:
+		Kind.POINT:
+			return Vector2(radius, radius * SHADOW_SQUASH)
+		Kind.SEGMENT:
+			return Vector2(half_length + radius, radius)
+		_:
+			return Vector2(half_extents.x, half_extents.y * SHADOW_SQUASH)
+
+## **The shadow as a picture, drawn from this shape at bake time**: `shadow_outline()` along +X,
+## filled white with each pixel's alpha the share of its samples inside the outline, so the
+## picture is the polygon `draw_shadow()` fills, edge included, and is tinted `Palette.SHADOW`
+## where it is drawn. White to the transparent edge, so a filtered sample at the rim never pulls in
+## a dark fringe. `tools/bake_atlases.gd` is the caller; nothing in the running game rasterizes.
+func shadow_image() -> Image:
+	var size := shadow_picture_size()
+	var centre := Vector2(size) * 0.5
+	var outline := shadow_outline(centre, Vector2.RIGHT)
+	var image := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+	var step := 1.0 / float(_PICTURE_SUPERSAMPLES)
+	var samples := float(_PICTURE_SUPERSAMPLES * _PICTURE_SUPERSAMPLES)
+	for y in size.y:
+		for x in size.x:
+			var inside := 0
+			for sy in _PICTURE_SUPERSAMPLES:
+				for sx in _PICTURE_SUPERSAMPLES:
+					var at := Vector2(x + (sx + 0.5) * step, y + (sy + 0.5) * step)
+					if Geometry2D.is_point_in_polygon(at, outline):
+						inside += 1
+			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, float(inside) / samples))
+	return image
+
+## Draws this shape's shadow at `at` from `picture`, its baked shadow picture
+## (`shadow_picture_name()`), tinted `Palette.SHADOW`: the point picture scaled to this radius, or
+## a segment's own picture turned on the ground plane to `axis`, as `shadow_outline()` turns the
+## spine. **Sets `canvas`'s transform for a segment and puts it back to the identity**, so it is
+## drawn onto a canvas of its own (`GroundShadow`) rather than one whose transform somebody else
+## set. The same skip as `draw_shadow()` for a shadow narrower than a pixel.
+func draw_shadow_picture(canvas: CanvasItem, at: Vector2, axis: Vector2,
+		picture: Texture2D) -> void:
+	if radius < MIN_DRAWN_SHADOW_RADIUS or picture == null:
+		return
+	var size := picture.get_size()
+	match kind:
+		Kind.POINT:
+			var drawn := size * (radius / SHADOW_PICTURE_RADIUS)
+			canvas.draw_texture_rect(picture, Rect2(at - drawn * 0.5, drawn), false, Palette.SHADOW)
+		Kind.SEGMENT:
+			canvas.draw_set_transform(at, axis.angle(), Vector2.ONE)
+			canvas.draw_texture(picture, -size * 0.5, Palette.SHADOW)
+			canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_:
+			push_error("A rectangle's shadow has no picture to draw from")
+
 func _ellipse_points(centre: Vector2) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in _ELLIPSE_SAMPLES:

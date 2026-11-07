@@ -98,12 +98,20 @@ func advance(moving: Vector2, delta: float) -> void:
 ## `WheelBob.lift()` over the ground it has covered, at full height from `BOB_FULL_SPEED` up and
 ## fading to nothing as it slows, so a car braking to a light settles onto its wheels rather than
 ## freezing mid-rise, and a stopped car sits still. `CrowdAgent._draw()` lifts the whole drawing by
-## it and `draw_body()` draws the wheels and the shadow back down by it, which is what lets the
-## halo's ring ride the same lift and trace the body where it is drawn.
+## it and `draw_body()` draws the wheels back down by it, which is what lets the halo's ring ride
+## the same lift and trace the body where it is drawn. The shadow is the agent's own
+## `GroundShadow`, which the lift never reaches.
 ##
 ## Overrides AgentLook.bob.
 func bob() -> float:
 	return WheelBob.lift(travelled, _agent.velocity().length() / BOB_FULL_SPEED)
+
+## The capsule lies along the live heading, the same heading the picture's anchor reads
+## (`body_anchor()`), so the shadow turns with the car through the whole of a turn.
+##
+## Overrides AgentLook.shadow_axis.
+func shadow_axis() -> Vector2:
+	return _agent.heading()
 
 ## Overrides AgentLook.carets.
 func carets() -> bool:
@@ -182,10 +190,9 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 	return Vector2(0.0, south_reach + float(CANVAS_BOTTOM_MARGIN[view_name]))
 
 ## Draws the body, trim and wheels onto `canvas`. **Both callers have already lifted the canvas by
-## `bob()`**, so what stays on the ground, a car's wheels and its shadow, is drawn back down by the
-## same amount here, and the body and the trim are drawn where the lift puts them. That split is the
-## whole of the bob: the wheels never move, the paint and the glass above them rise and fall about a
-## pixel. Reads the agent's library's `region()`, which is null with an engine error the moment
+## `bob()`**, so what stays on the ground, a car's wheels, is drawn back down by the same amount
+## here, and the body and the trim are drawn where the lift puts them. That split is the whole of
+## the bob: the wheels never move, the paint and the glass above them rise and fall about a pixel. Reads the agent's library's `region()`, which is null with an engine error the moment
 ## `crowd` is not acquired; `Crowd.start_day()` acquires it before an agent exists to draw.
 ##
 ## Overrides AgentLook.draw_body.
@@ -194,10 +201,9 @@ func draw_body(canvas: CanvasItem) -> void:
 	var flip := flipped()
 	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())
-	_agent.draw_shadow(canvas, grounded, forward)
 	var view_name: String = VIEW_BY_SECTOR[frame]
-	# The same heading the shadow above and the debug view's bounding box are drawn on, so the
-	# picture cannot register against a car that is not there.
+	# The same heading the shadow (`shadow_axis()`) and the debug view's bounding box are drawn on,
+	# so the picture cannot register against a car that is not there.
 	var anchor := body_anchor(view_name, forward)
 	var body := _agent.atlas.region(region_of(BODY_BY_VIEW[view_name]))
 	var trim := _agent.atlas.region(region_of(TRIM_BY_VIEW[view_name]))
