@@ -87,6 +87,10 @@ nested exactly like this, the layout the player set on the board:
 - **Context carries everything an answer needs**, as `CLAUDE.md`'s question rule says: what was
   asked and when, what it collides with, what each answer costs. A game thing is named the way the
   player knows it, with a clause saying what it is.
+- **A question asks one thing** (inbox #1163): a choice with several parts goes on the board as one
+  question per part, each with its own heading, Context, My pick, You and Me, so the player answers
+  each on its own line and a question never bundles a design with its open choices, or which items
+  to build with their order.
 - **A question that blocks says so on its Question line**, ending it with `(blocks <the work>)`.
 - A name stays with its question until it leaves the board, so the player can refer to it.
 
