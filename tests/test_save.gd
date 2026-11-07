@@ -26,7 +26,6 @@ var _save := GameSave.new(_SCRATCH_PATH)
 
 
 func run(t) -> void:
-	t.gives_back_observers()
 
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)

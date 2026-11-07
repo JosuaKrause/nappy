@@ -33,7 +33,6 @@ const RUN_SEED := 2
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_reachability(t)
 	_on_screen(t)
 	_task_guards(t)

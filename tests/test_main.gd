@@ -19,6 +19,7 @@ const UI := preload("res://tests/ui_screens.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
@@ -42,8 +43,32 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	var spec: DaySpec = Boot.day(booted.main).spec
 	t.check(spec != null and is_equal_approx(spec.length, 77.0),
 			"a boot with --day-length 77 starts a day 77s long (%s)" % [spec.length if spec else "no spec"])
-	Telemetry.end_run()
 	booted.free_all()
+	home.free()
+
+## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
+## the session's): a line written through the watch's trace reaches the recording run log the boot
+## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
+## is long enough that the watch never fires and quits here.
+func _test_the_still_watch_writes_into_the_boots_run_log(t) -> void:
+	var run_log := RecordingLog.new()
+	run_log.begin_run(SEED)
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
+			Boot.config(["--quit-when-still", "600"]),
+			func(main: Node) -> void:
+				main.use_sitting_home(home)
+				main.use_run_log(run_log))
+	var watch := booted.main.get_node_or_null("StillWatch") as StillWatch
+	t.check(watch != null, "a --quit-when-still boot builds the watch")
+	if watch:
+		watch.trace.note("still", "the watch's own line")
+	t.check(run_log.lines.any(func(line: String) -> bool:
+				return line.ends_with("still the watch's own line")),
+			"and what the watch writes reaches the boot's run log (%s)" % [run_log.lines.slice(-3)])
+	booted.free_all()
+	run_log.free()
 	home.free()
 
 ## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
@@ -87,8 +112,8 @@ class ReadoutRig:
 		stroller.free()
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_a_boot_gives_the_day_its_configured_length(t)
+	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	await _test_the_readout_flag_shows_it_on_a_release_build(t)
@@ -624,7 +649,6 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 ## The first boot plays that run and day 14's hand-over reloads; the boot standing for the reload,
 ## handed only the home, opens on the escape the run was left in.
 func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
-	var observers := Boot.hold_observers()
 	var home := Node.new()
 	t.add_child(home)
 	var sitting := Sitting.new()
@@ -656,7 +680,6 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
 	t.check(run.header.day == Tuning.RUN_LENGTH_DAYS, "on day 14 still")
 	_shut(t, main)
 	home.free()
-	Boot.give_back_observers(observers)
 
 ## **A session on one booted game, in the order a session meets the screens.** The title opens once
 ## per boot, so the checks that start from it share one boot: what the boot builds, the title with

@@ -5,10 +5,10 @@ extends RefCounted
 ## real `City` in a run of its own, and drives the rig the way `main` does — `setup()`, `start_day()`
 ## and real physics frames, with a real `Stroller` walking by `move_and_slide()` — reading what the
 ## rig does from what it presses (`Input`'s move actions) and from the lines it writes in the run
-## log (a memory log, `Telemetry.begin_memory_log()`), which is what `tests/probes/m184_route_timing.gd`
-## reads a real run back from. The whole loop — resolve, plan, walk, arrive — is proven, and not
-## only its pieces (the verify skill: "a rig that steps the parts is not running the whole, and the
-## gap is silent both ways").
+## log (a recording trace, `RunTrace.recording()`, handed to the rig and to the city's events),
+## which is what `tests/probes/m184_route_timing.gd` reads a real run back from. The whole loop —
+## resolve, plan, walk, arrive — is proven, and not only its pieces (the verify skill: "a rig that
+## steps the parts is not running the whole, and the gap is silent both ways").
 ##
 ## **Each group of tests has a city of its own, and no test leans on what an earlier one left.**
 ## The day-6 city is shared by the tests that read it or put back what they change; a test that
@@ -49,7 +49,6 @@ var _stroller: Stroller
 var _clock: DayController
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_build_day(t)
 	_test_a_plan_never_cuts_a_true_diagonal(t)
 	_test_a_straight_run_on_plain_road_is_never_cut(t)
@@ -212,8 +211,11 @@ func _started_day(t, city: City, stroller: Stroller, run: RunState) -> DayContro
 	return day
 
 ## A rig built and started the way `main` builds one (`main._add_the_route_rig()`, then the day's
-## `RunFlow.day_planned`), walking `targets` over `city` on `day`, in a memory log of its own so a
-## test reads back what it wrote. The rig's own frames run from here on.
+## `RunFlow.day_planned`), walking `targets` over `city` on `day`. The rig and the city's events
+## write into one recording trace (`RunTrace.recording()`), as `main` hands both the session's, so a
+## test reads back the rig's `route` lines and the doors' `checkpoint` lines in the order they were
+## written; `_end_rig()` gives the events back the trace they had. The rig's own frames run from
+## here on.
 func _started_rig(t, city: City, stroller: Stroller, resistance: ResistanceDirector,
 		day: DayController, run: RunState, words: Array) -> RouteRig:
 	var rig := RouteRigNoQuit.new()
@@ -221,27 +223,34 @@ func _started_rig(t, city: City, stroller: Stroller, resistance: ResistanceDirec
 	var baby: Baby = stroller.get_node("Baby")
 	var targets: Array[String] = []
 	targets.assign(words)
+	_lines = []
+	var trace := RunTrace.recording(_lines)
+	rig.trace = trace
+	_rig_city = city
+	_city_trace = city.events.trace
+	city.events.trace = trace
 	rig.setup(city, stroller, baby, resistance, day, targets, run)
-	Telemetry.begin_memory_log()
 	rig.start_day(day.spec)
 	return rig
+
+## What the rig started last and its city's events wrote (`_started_rig()`), as `"<kind> <text>"`.
+var _lines: Array[String] = []
+## That rig's city, and the trace its events had before it, put back by `_end_rig()`.
+var _rig_city: City
+var _city_trace: RunTrace
 
 ## The rig's lines in the run log, in order.
 func _route_lines() -> Array[String]:
 	var lines: Array[String] = []
-	if Telemetry.current_log() == null:
-		return lines
-	for line in Telemetry.current_log().lines:
-		if line.contains(" route ") or line.contains("route  "):
+	for line in _lines:
+		if line.begins_with("route "):
 			lines.append(line)
 	return lines
 
 ## How many times the run log says she walked across a door's line rather than being let through
 ## it (the `checkpoint` line `CheckpointController.watch_the_door_lines()` writes for each).
 func _walks_under_a_boom() -> int:
-	if Telemetry.current_log() == null:
-		return 0
-	return _walks_told_in(Telemetry.current_log().lines)
+	return _walks_told_in(_lines)
 
 ## How many of `lines` tell of such a walk.
 func _walks_told_in(lines: Array) -> int:
@@ -305,9 +314,10 @@ func _frames_for(t, seconds: float) -> void:
 func _steps(t, count: int) -> void:
 	await _real_frames(t, count, Callable(), 1.0)
 
-## Ends the rig's memory log and frees what a rig test built.
+## Gives the city's events back their trace and frees what a rig test built.
 func _end_rig(rig: RouteRig, day: DayController) -> void:
-	Telemetry.end_run()
+	_rig_city.events.trace = _city_trace
+	_rig_city = null
 	rig.free()
 	day.free()
 	_release()
@@ -1561,8 +1571,9 @@ func _test_a_rig_run_never_walks_under_a_boom(t, doors: Dictionary) -> void:
 			"and the rig never walked under the boom (%d walks under)"
 			% _walks_under_a_boom())
 	_end_rig(rig, day)
-	# And the same count sees a walk under this boom when there is one — so the zero above is the
-	# rig's route and not a count that could not have counted anything.
+	# And the same count sees a walk under this boom when there is one, through the same door watch
+	# the rig's run was counted by — so the zero above is the rig's route and not a count that could
+	# not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
 	var told: Array[String] = []
 	city.events.trace = RunTrace.recording(told)

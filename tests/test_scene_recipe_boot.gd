@@ -15,7 +15,6 @@ const DAY_RECIPE := "res://scene-recipes/power-station-hall.json"
 const ESCAPE_RECIPE := "res://scene-recipes/trailer-chase.json"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_a_day_scene_runs_under_the_days_spec(t)
 	await _test_an_escape_scene_runs_under_the_sections_spec(t)
 

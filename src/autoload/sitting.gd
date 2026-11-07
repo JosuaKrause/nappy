@@ -28,6 +28,9 @@ extends Node
 ## **It is the home of the save too** (`GameSave`, a child node `main` makes on the first boot and
 ## finds there after): the web flush's page-side objects, the operation ids and the file's path
 ## outlive the reload that frees `main`. It names no save, for the reason it names no symbol.
+## The run log (`Telemetry`) and the page counter (`VisitCounter`) are children of it the same way,
+## so the log a run is writing and the counter's count of the run outlive the reload too; it names
+## neither.
 ##
 ## **It is the home of a save symbol that outlives its scene**: `SaveIndicator.outlive_the_scene()`
 ## reparents a symbol that is up under this node, and the next boot's `SaveIndicator.carried()`

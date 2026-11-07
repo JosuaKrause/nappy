@@ -51,7 +51,6 @@ static func belongs(filename: String, prefix: String) -> bool:
 	return filename.begins_with(prefix)
 
 func lifecycle(t, prefix: String) -> void:
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	var tested := 0
 	for filename in DirAccess.get_files_at("res://scene-recipes"):

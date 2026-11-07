@@ -5,7 +5,6 @@ extends "res://tests/resistance_rig.gd"
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
 ## into, with what the day it asks about needs set on it.
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_perform_contact_is_never_relocated(t)
 	await _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	await _test_the_step_completes_on_the_look_alike_she_hands_it_to(t)

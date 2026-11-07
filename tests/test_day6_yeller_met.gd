@@ -25,7 +25,6 @@ const STEP := 0.1
 const SETTLE_SECONDS := 12.0
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var met := 0
 	var outcomes: Array[String] = []
 	for seed_value in SEEDS:

@@ -83,8 +83,8 @@ func _test_every_building_region_is_baked_on_its_group(t) -> void:
 ## Acquired the moment a building enters the tree, shared by reference count rather than a page
 ## per building, and released only once the last one is gone.
 func _test_building_acquires_and_releases_buildings(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var a := Building.new()
 	a.atlas = atlas
 	t.add_child(a)
@@ -127,8 +127,8 @@ func _test_every_street_kit_region_is_baked_on_its_group(t) -> void:
 ## the count reaches zero and a consumer that took none would go unseen here unless it were freed
 ## last.
 func _test_street_kit_consumers_share_one_reference_count(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var marker := ClosureMarker.new()
 	marker.atlas = atlas
 	t.add_child(marker)
@@ -191,8 +191,9 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t) -> void:
 ## One consumer alone on a fresh library and run log: it is seen to hold `group` on entering the
 ## tree, and the group's one release line comes when it leaves.
 func _check_holds_its_own(t, make: Callable, group: StringName, label: String) -> void:
-	var pages := PageLog.new()
-	var node: Node = make.call(AtlasLibrary.new())
+	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
+	var node: Node = make.call(atlas)
 	t.add_child(node)
 	t.check(pages.held(group), "%s takes the '%s' page on its own" % [label, group])
 	node.free()
@@ -203,8 +204,8 @@ func _check_holds_its_own(t, make: Callable, group: StringName, label: String) -
 ## The city edge is the one consumer with two groups — see `city_edge.gd`'s own doc for why it
 ## acquires `ground` itself rather than relying on anything else to have done so.
 func _test_city_edge_also_holds_ground(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var edge := CityEdge.new()
 	edge.atlas = atlas
 	t.add_child(edge)
@@ -242,8 +243,8 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 ## This test is that they share one page and release it after the last; that each takes a reference
 ## of its own is `_test_each_ui_consumer_holds_its_own_reference`.
 func _test_ui_consumers_share_one_reference_count(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var button := ModeButton.new()
 	button.atlas = atlas
 	t.add_child(button)
@@ -347,8 +348,8 @@ func _test_interior_tileset_regions_are_baked_on_the_interior_group(t) -> void:
 ## A second reference `build()` took and never gave back would leave the page held once the scene is
 ## freed, so the one release line at the end is what says building again took none.
 func _test_interior_scene_acquires_and_releases_interior(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var scene := InteriorScene.new()
 	scene.atlas = atlas
 	t.add_child(scene)

@@ -42,10 +42,6 @@ func run(t) -> void:
 	await _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t)
 	await _test_learned_lessons_say_no_control_lesson(t)
 	await _test_unlearned_lessons_are_all_said(t)
-	# The page's visit counter remembers the last day the bus announced (`VisitCounter._day`, which
-	# reads `0` until one is heard); the suite announced several, so it puts the answer back to the
-	# one a page that has heard none gives.
-	EventBus.day_started.emit(0)
 	_release_actions()
 
 ## A HUD configured as `main` configures it, before it enters the tree: `debug` false is the release
