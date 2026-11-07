@@ -38,7 +38,7 @@ func _test_a_baby_with_no_world_is_neutral(t) -> void:
 func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	var run := _run_on(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var main := booted.main
 	var interior := Boot.interior(main)
@@ -132,7 +132,7 @@ func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
 func _boot_and_check(t, section: int, what: String) -> void:
 	var run := _run_on(section)
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var city := Boot.city(booted.main)
 	var baby := Boot.baby(booted.main)

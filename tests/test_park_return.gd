@@ -75,9 +75,10 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	save.free()
 	_run = RunState.new()
 	_home = Boot.home_playing(t, _run)
-	# A run with no flag at all, whatever this process's own command line says.
+	# A windowed release run whose only flag is the player's opt-out of the run log, whatever this
+	# process's own command line says: any dev flag would refuse the save the resume reads.
 	_booted = await Boot.boot(t, _SCRATCH_PATH,
-			RunConfig.parse(PackedStringArray(), "", true, false, {}, false),
+			RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false),
 			func(unbooted: Node) -> void: unbooted.use_sitting_home(_home))
 	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
