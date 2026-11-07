@@ -22,11 +22,14 @@ extends RefCounted
 ## Seed -> the `CityMap` `CityGenerator.generate()` returned for it, never handed out itself.
 static var _generated := {}
 
-## A copy of the city `seed_value` generates, generated on the first ask in this process.
-static func of(seed_value: int) -> CityMap:
+## A copy of the city `seed_value` generates, generated on the first ask in this process. `generate`
+## is what makes the map on that first ask, `CityGenerator.generate()` itself unless a suite hands a
+## wrapper of it that counts its calls (`tests/test_city_map_cache.gd`); it must return the
+## generator's real map for the seed, since the kept map is handed to every later caller.
+static func of(seed_value: int, generate: Callable = CityGenerator.generate) -> CityMap:
 	var kept: CityMap = _generated.get(seed_value)
 	if kept == null:
-		kept = CityGenerator.generate(seed_value)
+		kept = generate.call(seed_value)
 		_generated[seed_value] = kept
 	return kept.copy()
 

@@ -10,10 +10,22 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 
 const SEED := 4242
 
+## A seed no other suite asks the cache for, so the first ask here is the process's first for it.
+const _OWN_SEED := 6151
+
+## Counts the generations the cache makes, handing back the generator's real map.
+class CountingGenerator extends RefCounted:
+	var calls := 0
+
+	func generate(seed_value: int) -> CityMap:
+		calls += 1
+		return CityGenerator.generate(seed_value)
+
 func run(t) -> void:
 	_test_the_cache_hands_out_the_seeds_own_city(t)
 	_test_each_caller_gets_a_map_of_its_own(t)
 	_test_the_source_hands_the_cache(t)
+	_test_a_seed_is_generated_once(t)
 
 ## What the cache hands out for a seed is that seed's city: the ground the generator lays for it.
 func _test_the_cache_hands_out_the_seeds_own_city(t) -> void:
@@ -42,3 +54,18 @@ func _test_the_source_hands_the_cache(t) -> void:
 	var second: CityMap = source.call(SEED)
 	t.check(first != second and first.walk_tiles() == second.walk_tiles(),
 			"the source hands a copy of the seed's city each time it is asked")
+
+## The cache's one purpose: a seed is generated the first time it is asked for and never again, by
+## `of()` or by the source, whoever asks. The generator is a counting wrapper of the real one, so the
+## kept map is still the generator's own.
+func _test_a_seed_is_generated_once(t) -> void:
+	var counting := CountingGenerator.new()
+	var first := MapCache.of(_OWN_SEED, counting.generate)
+	var second := MapCache.of(_OWN_SEED, counting.generate)
+	var third: CityMap = MapCache.source().call(_OWN_SEED)
+	t.check(counting.calls == 1,
+			"seed %d is generated once however often it is asked for (%d generations)"
+			% [_OWN_SEED, counting.calls])
+	t.check(first != second and second != third
+			and first.walk_tiles() == CityGenerator.generate(_OWN_SEED).walk_tiles(),
+			"each ask is a copy of the one real city")

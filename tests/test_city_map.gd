@@ -13,12 +13,18 @@ extends RefCounted
 ## streets, the lots, the landmarks, the calm, and each block's purpose on every day of a run. The
 ## second compares every member each map declares, private ones included, member by member and into
 ## the plans, layouts and records they hold: a field that `copy()` forgets to carry is a field no
-## method may happen to ask about on these seeds, and only this comparison fails on it the day the
-## field is added. Not compared: the world a map is drawn in, its navigator and its movers' moves,
+## method may happen to ask about on these seeds, and only this comparison fails on it, for a field
+## the states this suite builds fill: a generated map as generated and repainted, one in the middle
+## of a day with holds, seals, a body and tree pits, one in act III with a street closed and a park
+## fenced, and an authored scene's map with its stretch and dawn ground. A new field empty in all
+## of those compares equal by default and is not guarded. Not compared: the world a map is drawn in, its navigator and its movers' moves,
 ## which a copy starts without (`copy()`'s doc), the street lattice, compared by its segments, and
 ## the cache of tiles by type, which fills on the first ask.
 
 const SEEDS: Array[int] = [4242, 1, 77]
+
+## The authored scene whose city is copied, for the fields only a recipe fills.
+const SCENE := "res://scene-recipes/task-07-package.json"
 
 ## What the member comparison leaves out, with `copy()`'s doc saying why for each.
 const _NOT_COMPARED: Array[String] = ["world", "_navigator", "moves", "separation", "network",
@@ -37,6 +43,8 @@ func run(t) -> void:
 		_test_a_copy_answers_what_the_map_answers(t, original, seed_value)
 		_test_a_copy_taken_during_a_day_carries_the_days_record(t, original, seed_value)
 		_test_what_one_map_is_handed_leaves_the_other_alone(t, original, seed_value)
+		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
+	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
 
 ## The copy of a generated city is one `CityGenerator.validate()` passes, every guarantee of it: the
 ## calm blocks, the home, the routes to the parks.
@@ -92,6 +100,52 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMa
 	twin.release_obstruction(7)
 	t.check(not twin.is_obstructed(body[0]) and map.is_obstructed(body[0]),
 			"seed %d: a body given back on the copy still stands on the map" % seed_value)
+
+## Act III's records: a map with a street closed and one park fenced (a repaint in act III with a
+## spent calm area, `fenced_park` set), and the fence handed over again for the next repaint, copies
+## with the closures, the fence and its handover carried. The fence is checked by name besides the
+## member comparison, so a copy that drops it fails on a check that says what.
+func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original: CityMap,
+		seed_value: int) -> void:
+	var day := 9
+	var map := original.copy()
+	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	map.set_spent_calm(spent)
+	map.set_fenced_park_state(Vector2i(-1, -1), 0, Tuning.act_for_day(day))
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.repaint(state)
+	var street := _a_street_tile(map)
+	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
+			map.network.segment_containing(street))]
+	map.close_streets(closures)
+	map.set_fenced_park_state(map.fenced_park, map.fenced_park_act, Tuning.act_for_day(day))
+	t.check(map.fenced_park.x >= 0 and map.is_closed(street),
+			"seed %d: the act III map has a fenced park and a closed street" % seed_value)
+	var twin := map.copy()
+	t.check(twin.fenced_park == map.fenced_park and twin.fenced_park_act == map.fenced_park_act,
+			"seed %d: the copy has the same fenced park" % seed_value)
+	_check_the_same(t, map, twin, "seed %d, in act III" % seed_value)
+	# The handover is carried: both maps' next repaint keeps the same fence standing.
+	var next := CityState.new()
+	next.begin_day(map.block_plans, day + 1)
+	var other := CityState.new()
+	other.begin_day(twin.block_plans, day + 1)
+	map.repaint(next)
+	twin.repaint(other)
+	_check_the_same(t, map, twin, "seed %d, the next repaint in act III" % seed_value)
+
+## An authored scene's city (`RecipeCityBuilder.build()`) copies with what only a recipe fills: its
+## saved dawn ground, its stretch and the stretch being active, its tree moves and context.
+func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t) -> void:
+	var data: Dictionary = SceneRecipe.load_file(SCENE).data
+	var map: CityMap = RecipeCityBuilder.build(data).map
+	t.check(map.stretch_active and not map.recipe_dawn_tiles.is_empty(),
+			"the authored map has an active stretch and saved dawn ground")
+	var twin := map.copy()
+	t.check(twin.stretch_active and twin.recipe_dawn_tiles == map.recipe_dawn_tiles,
+			"the copy of an authored map keeps its stretch active and its dawn ground")
+	_check_the_same(t, map, twin, "the authored scene map")
 
 ## Whatever the copy is handed, painted, closed or stood on leaves the map it was copied from as it
 ## was, and the other way round. Each map is compared with what it answered and held before (a

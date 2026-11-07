@@ -38,6 +38,49 @@ const SEED := 4242
 const _SCRATCH_SAVE := "user://test_main_scratch.json"
 var _save := GameSave.new(_SCRATCH_SAVE)
 
+## A map source that records what it is asked and hands back the cache's city of that seed, the
+## way a booted `main` is handed one (`use_city_maps()`).
+class AskedSource extends RefCounted:
+	var seeds: Array[int] = []
+	var handed: Array[CityMap] = []
+
+	func ask(seed_value: int) -> CityMap:
+		seeds.append(seed_value)
+		var map := MapCache.of(seed_value)
+		handed.append(map)
+		return map
+
+## `main` builds its city on the map its source hands it: asked once, with the run's seed, and the
+## city that stands is built on the very map it returned. A `main` that generated its own would ask
+## nothing, and one that asked twice would have two maps to repaint for one city.
+func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t) -> void:
+	var seat := Seat.new(t)
+	var source := AskedSource.new()
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED)], null, true,
+			source.ask)
+	var city := Boot.city(booted.main)
+	t.check(source.seeds == [SEED],
+			"a boot asks its map source once, with the run's seed (asked: %s)" % [source.seeds])
+	t.check(city != null and source.handed.size() == 1 and city.map == source.handed[0],
+			"the city a boot walks stands on the map its source handed it")
+	booted.free_all()
+	seat.end()
+
+## An authored scene's own map still wins: the source is never asked, and the city stands on the
+## scene's map (its stretch active), not a generated one.
+func _test_an_authored_scenes_map_wins_over_the_map_source(t) -> void:
+	var seat := Seat.new(t)
+	var source := AskedSource.new()
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE,
+			["--recipe", "res://scene-recipes/task-07-package.json"], null, true, source.ask)
+	var city := Boot.city(booted.main)
+	t.check(source.seeds.is_empty(),
+			"a boot of an authored scene never asks the map source (asked: %s)" % [source.seeds])
+	t.check(city != null and city.map.stretch_active,
+			"the city of an authored scene stands on the scene's own map")
+	booted.free_all()
+	seat.end()
+
 ## `--day-length` reaches the day a boot starts: the real `main` booted with `--day-length 77` walks
 ## a day whose clock is 77 seconds long, read off the day's own spec.
 func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
@@ -117,6 +160,8 @@ class ReadoutRig:
 		stroller.free()
 
 func run(t) -> void:
+	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
+	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
