@@ -9,7 +9,12 @@ extends RefCounted
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Builds its own
 ## `_rng()` rather than extending `events_shared_city.gd`: nothing here reads the shared city, only
 ## a seeded roll and each test's own real generated map.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
@@ -84,7 +89,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 	return rng
 
 func _test_the_day_is_placed_by_role(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	# The day's poster crews are rolled and placed at dawn by exactly these rules and only then
 	# handed to her walk (`EventScheduler._hand_to_her_walk`). What this asks is how the roll
 	# places, so the crews are read where the roll put them.
@@ -315,7 +320,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
 
 ## A city of seed 4242 painted for `day` and nothing else done to it.
 func _repainted_city(day: int) -> CityMap:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	map.repaint(state)
@@ -382,7 +387,7 @@ func _paces_a_beat_with_no_way_out(plan: EventScheduler.Planned, map: CityMap) -
 ## given a pavement side is held to it without anybody adding an id to a list. Rows with an empty
 ## `placement` are the seal pictures, sited by `SealPlanner` on ground it picks itself.
 func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var ground := {}
 	var asked := 0
 	for def in EventCatalogue.all():
@@ -428,7 +433,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 	var placed := 0
 	var refused := 0
 	for i in 3:
-		var map := CityGenerator.generate(4242 + i * 97)
+		var map := MapCache.of(4242 + i * 97)
 		for day in [4, 9, 14]:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
@@ -503,7 +508,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
 ## guards is that the sweep can still produce the case at all.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var on_the_route := 0
 	var walled := 0
 	var by_a_side_route := 0
@@ -617,7 +622,7 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## **And it cannot pass vacuously**: a day where no counted row ever stood within reach of a route
 ## junction would satisfy it with nothing checked, so the rows that do are counted and asserted.
 func _test_a_routes_junctions_stay_clear(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var junctions := 0
 	var in_reach := 0
 	var closed := 0
@@ -756,7 +761,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 ## check gives — only the reading of what a row denies is shared, since there is one place that is
 ## written down.
 func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var bands := 0
 	var bands_with_a_row := 0
 	var closed := 0
@@ -837,7 +842,7 @@ func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
 ## satisfy it having checked nothing, so those streets are counted and asserted. `homeless_yeller`
 ## (14.0 over 210px, no body, paces) is the row the sample is really about.
 func _test_a_pacing_rows_opening_stays_open(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var paced_streets := 0
 	var closed := 0
 	var first := ""
@@ -956,7 +961,7 @@ func _test_a_flock_is_scenery(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var on_corridor := 0
 	var off_corridor := 0
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var consumed: Array[String] = []
 	for day in [1, 4, 8, 11, 14]:
 		var tree := RouteTree.for_day(map, day)

@@ -1111,7 +1111,12 @@ field with its value before and after (`tests/shared_state.gd`).
   the names it gives (`City`, `Interior`, `Day`, `Resistance`, `Entities/Stroller` and her `Baby`,
   the screens), and presses the title and the summary through the viewport. `main` has no public
   read surface: no game class reads anything back off the composition root, so a suite reads its
-  tree rather than a query only tests would call.
+  tree rather than a query only tests would call. A boot handed `maps` builds its cities on what
+  that source returns (`main.use_city_maps()`) rather than generating them.
+- `city_map_cache.gd` — a helper the runner does not load: each seed's city generated once per test
+  process and kept, every caller handed its own `CityMap.copy()` of it, so the rigs that build the
+  same seed's city again and again generate it once and nothing one suite does to its map reaches
+  another. Its `source()` is what a booted suite hands `booted_main.gd`'s `boot()`.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,

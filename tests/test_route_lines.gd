@@ -8,7 +8,12 @@ extends RefCounted
 ## none of these questions need one. What the readout built is read as the node `RouteLines` under
 ## it, whether the engine would draw it (`is_visible_in_tree()`), and the keys are real events pushed
 ## through the viewport.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const SEEDS := 6
 const BASE_SEED := 5300
 const DAYS := [1, 5, 9, 14]
@@ -164,7 +169,7 @@ class _Built extends RefCounted:
 
 func _plan(seed: int, day: int) -> _Built:
 	var built := _Built.new()
-	built.map = CityGenerator.generate(seed)
+	built.map = MapCache.of(seed)
 	var state := CityState.new()
 	state.begin_day(built.map.block_plans, day)
 	built.map.repaint(state)

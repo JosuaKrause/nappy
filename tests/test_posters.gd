@@ -16,7 +16,12 @@ extends RefCounted
 ## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
 ## `PosterState`, what the fronts are handed to draw (`Building.posters`, `Building.neighbor_taken`),
 ## the signals the counter listens to and the pursuer the events hold.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 const SEEDS := [4242, 90210]
@@ -58,7 +63,7 @@ func run(t) -> void:
 ## `Stroller` in it that the events are handed, as `main` hands them (`EventManager.use_player()`).
 ## The day is started with every dawn already pasted, so the walls hold what a test puts on them.
 func _open(t, seed_value: int, day := DAY) -> void:
-	_map = CityGenerator.generate(seed_value)
+	_map = MapCache.of(seed_value)
 	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
 	_run = _city.run
 	t.add_child(_city)
@@ -203,7 +208,7 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
 	t.check(art.texture_for(atlas, kind, 0, false) == composed, "preparing again composes nothing")
 	t.check(other.texture_for(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
 			"another art holds none of the first's pictures")
-	_map = CityGenerator.generate(SEEDS[0])
+	_map = MapCache.of(SEEDS[0])
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	_city.atlas = atlas
 	_city.poster_art = art
@@ -322,7 +327,7 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t) -> void:
 
 func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
 	for seed_value in SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		var city := RunCity.with_own_run(CITY_SCENE, seed_value)
 		var run := city.run
 		t.add_child(city)

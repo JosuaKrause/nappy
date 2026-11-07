@@ -5,7 +5,12 @@ extends RefCounted
 ## 12's swing, the last night's station door) — draws no chalk picture, untouched or done, while the
 ## red arrow still ends on it. A headless draw pass leaves no picture to read, so this asks
 ## `ContactPoint.draws_a_mark()`, the one question `_draw()` asks before it draws the chalk.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
@@ -77,7 +82,7 @@ func _build_city(t) -> void:
 		_city.free()
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	_city.build(MapCache.of(SEED))
 
 func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()

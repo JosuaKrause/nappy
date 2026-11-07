@@ -59,16 +59,21 @@ class Booted:
 ## The real `main.tscn`, handed `config` (none: the process's own) and a save at `scratch_path`,
 ## put under `t` and waited on, real frames passing, until she stands in a world (see this file's
 ## doc). `before` is called with the unbooted `main` before it enters the tree, for whatever else
-## the suite hands it (`use_reload()`, `use_sitting_home()`). A boot that has not finished within
-## `BOOT_FRAMES` fails `t`'s check and is returned as it stands. **`still`** holds the boot still
-## (`until_booted()`), for a suite that reads a position or a crowd state after it.
+## the suite hands it (`use_reload()`, `use_sitting_home()`). **`still`** holds the boot still
+## (`until_booted()`), for a suite that reads a position or a crowd state after it. `maps`, when
+## given, is where the boot's cities come from (`main.use_city_maps()`), a suite passing the cache
+## of generated cities (`tests/city_map_cache.gd`'s `source()`); a boot handed none generates its
+## own. A boot that has not finished within `BOOT_FRAMES` fails `t`'s check and is returned as it
+## stands.
 static func boot(t, scratch_path: String, config: RunConfig = null,
-		before := Callable(), still := false) -> Booted:
+		before := Callable(), still := false, maps := Callable()) -> Booted:
 	var booted := Booted.new()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
 	booted.main = MAIN_SCENE.instantiate()
 	booted.main.use_save(booted.save)
+	if maps.is_valid():
+		booted.main.use_city_maps(maps)
 	if config:
 		booted.main.configure(config)
 	if before.is_valid():

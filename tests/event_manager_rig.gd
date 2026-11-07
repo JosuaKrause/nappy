@@ -2,7 +2,12 @@ extends RefCounted
 ## The rig the two event manager suites share (`tests/test_event_manager.gd` and
 ## `tests/test_event_manager_fire.gd`): a real generated city in a run of its own, the day's
 ## random stream, a day started, the walking tick, and a player the manager can find.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 
@@ -21,7 +26,7 @@ const WALK_SCALE := 6.0
 static func build_city(t) -> City:
 	var city := RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	city.events.stream_radius = INF
 	return city
 

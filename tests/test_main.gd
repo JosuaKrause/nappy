@@ -14,7 +14,12 @@ extends RefCounted
 ## their own public setup where the check is theirs.
 ##
 ## A check that steps one step by hand with an injected delta says so where it does.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const Boot := preload("res://tests/booted_main.gd")
@@ -32,6 +37,49 @@ const SEED := 4242
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_main_scratch.json"
 var _save := GameSave.new(_SCRATCH_SAVE)
+
+## A map source that records what it is asked and hands back the cache's city of that seed, the
+## way a booted `main` is handed one (`use_city_maps()`).
+class AskedSource extends RefCounted:
+	var seeds: Array[int] = []
+	var handed: Array[CityMap] = []
+
+	func ask(seed_value: int) -> CityMap:
+		seeds.append(seed_value)
+		var map := MapCache.of(seed_value)
+		handed.append(map)
+		return map
+
+## `main` builds its city on the map its source hands it: asked once, with the run's seed, and the
+## city that stands is built on the very map it returned. A `main` that generated its own would ask
+## nothing, and one that asked twice would have two maps to repaint for one city.
+func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t) -> void:
+	var seat := Seat.new(t)
+	var source := AskedSource.new()
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED)], null, true,
+			source.ask)
+	var city := Boot.city(booted.main)
+	t.check(source.seeds == [SEED],
+			"a boot asks its map source once, with the run's seed (asked: %s)" % [source.seeds])
+	t.check(city != null and source.handed.size() == 1 and city.map == source.handed[0],
+			"the city a boot walks stands on the map its source handed it")
+	booted.free_all()
+	seat.end()
+
+## An authored scene's own map still wins: the source is never asked, and the city stands on the
+## scene's map (its stretch active), not a generated one.
+func _test_an_authored_scenes_map_wins_over_the_map_source(t) -> void:
+	var seat := Seat.new(t)
+	var source := AskedSource.new()
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE,
+			["--recipe", "res://scene-recipes/task-07-package.json"], null, true, source.ask)
+	var city := Boot.city(booted.main)
+	t.check(source.seeds.is_empty(),
+			"a boot of an authored scene never asks the map source (asked: %s)" % [source.seeds])
+	t.check(city != null and city.map.stretch_active,
+			"the city of an authored scene stands on the scene's own map")
+	booted.free_all()
+	seat.end()
 
 ## `--day-length` reaches the day a boot starts: the real `main` booted with `--day-length 77` walks
 ## a day whose clock is 77 seconds long, read off the day's own spec.
@@ -112,6 +160,8 @@ class ReadoutRig:
 		stroller.free()
 
 func run(t) -> void:
+	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
+	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
@@ -185,7 +235,8 @@ class Calls:
 		quits.append(1)
 
 ## The real `main.tscn`, configured on a debug build (so the flags in `words` answer), with the
-## reload and the quit handed to `calls` and the suite's scratch save, not yet in the tree.
+## reload and the quit handed to `calls`, the suite's scratch save and the cache's city of `SEED`,
+## not yet in the tree.
 func _instance(words: Array, calls: Calls) -> Node2D:
 	var all := PackedStringArray(["--no-save", "--no-telemetry", "--seed", str(SEED)])
 	all.append_array(PackedStringArray(words))
@@ -194,6 +245,7 @@ func _instance(words: Array, calls: Calls) -> Node2D:
 	main.use_save(_save)
 	main.use_reload(calls.reload)
 	main.use_quit(calls.quit)
+	main.use_city_maps(MapCache.source())
 	return main
 
 ## Puts a configured `main` in the tree and lets real frames pass until its boot has finished, so
@@ -1045,7 +1097,7 @@ func _ground_of(city: City) -> SceneryGround:
 func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	var ground := _ground_of(city)
 
 	var half := Tuning.VIEW_HALF_EXTENT
@@ -1087,7 +1139,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 
 	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
 	var viewport := Vector2(
