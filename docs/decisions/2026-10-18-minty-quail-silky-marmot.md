@@ -30,9 +30,11 @@ inbox #1159 in gray-dolphin), with `main.use_city_maps()`, which waited for it (
 and a copy through a stored form costs more than a field copy for every user of the cache.
 
 **Open to overturn:**
-- the suites not moved: the generator's and the city's own (they test what `generate()` builds),
-  `routes_closures_rig.gd` (its determinism case needs uncached maps, its header says),
-  `test_events_scheduler` (the scheduler's determinism), and `test_telemetry` (scope only);
+- the suites not moved: the generator's and the city's own, which test what `generate()` builds;
+  `routes_closures_rig.gd`, whose parts each generate 6 maps (its "uncached" is the rig's own plan
+  cache, `_plan_uncached()` called twice on one map, not fresh maps); `test_events_scheduler`,
+  whose determinism case already replans on one shared map and whose other cases generate seed
+  4242 five more times; and `test_telemetry`. Moving those is left for scope;
 - only fixed-seed boots take the cache;
 - the copy carries the day's bodies with their owners;
 - the copy test reads members by reflection, private ones included, since it is the one check that
