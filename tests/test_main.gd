@@ -94,6 +94,61 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` hands the baby her world at every place it puts her in one** (`Baby.set_world()`): the
+## escape builds the building first and the city when she walks out of the service door, with the
+## same stroller rig, and so the same `Baby`, reparented between them, so a baby told her world once
+## would go on asking the building about a street. Booted for real on the player's seed
+## (4216201080) in the escape's building (`--start-escape`'s section), its briefs pressed through the
+## viewport and walked out through the building's `exit_requested`; and booted straight onto the
+## escape's street, and onto an ordinary day. What the baby does with the world she is handed is
+## `tests/test_baby_world.gd`'s, and what the city answers for its ground and bodies the city's.
+func _test_main_hands_the_baby_the_world_it_puts_her_in(t) -> void:
+	var run := _a_run_on(DaySpec.Section.BUILDING)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var main := booted.main
+	var interior := Boot.interior(main)
+	t.check(interior != null, "the boot stands in the building")
+	var baby := Boot.baby(main)
+	t.check(baby != null and interior != null and baby.world() == interior,
+			"in the building she is handed the building")
+	await Boot.press_continue(t, main)
+	if interior:
+		interior.exit_requested.emit()
+	await Boot.press_continue(t, main)
+	var city := Boot.city(main)
+	t.check(city != null, "the service door has put her in the city")
+	if city != null:
+		t.check(Boot.baby(main) == baby, "and it is the same baby")
+		t.check(baby.world() == city, "who is now handed the city, not the building (%s)"
+				% baby.world())
+	booted.free_all()
+	home.free()
+	await _boot_hands_the_baby_the_city(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
+	await _boot_hands_the_baby_the_city(t, DaySpec.Section.NONE, "an ordinary day's boot")
+
+## A fresh run on the player's seed, on day 1, in the escape's `section` (`DaySpec.Section.NONE` for
+## an ordinary day): what a boot is handed to play.
+func _a_run_on(section: int) -> RunState:
+	var run := RunState.new()
+	run.start_run(4216201080)
+	run.header.day = 1
+	run.facts.escape_section = section
+	return run
+
+func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
+	var run := _a_run_on(section)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var city := Boot.city(booted.main)
+	var baby := Boot.baby(booted.main)
+	t.check(city != null and baby != null and baby.world() == city,
+			"%s hands the baby the city" % what)
+	booted.free_all()
+	home.free()
+
 ## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
 ## the session's): a line written through the watch's trace reaches the recording run log the boot
 ## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
@@ -163,6 +218,7 @@ func run(t) -> void:
 	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
+	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
