@@ -14,7 +14,12 @@ extends RefCounted
 ## their own public setup where the check is theirs.
 ##
 ## A check that steps one step by hand with an injected delta says so where it does.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const Boot := preload("res://tests/booted_main.gd")
@@ -185,7 +190,8 @@ class Calls:
 		quits.append(1)
 
 ## The real `main.tscn`, configured on a debug build (so the flags in `words` answer), with the
-## reload and the quit handed to `calls` and the suite's scratch save, not yet in the tree.
+## reload and the quit handed to `calls`, the suite's scratch save and the cache's city of `SEED`,
+## not yet in the tree.
 func _instance(words: Array, calls: Calls) -> Node2D:
 	var all := PackedStringArray(["--no-save", "--no-telemetry", "--seed", str(SEED)])
 	all.append_array(PackedStringArray(words))
@@ -194,6 +200,7 @@ func _instance(words: Array, calls: Calls) -> Node2D:
 	main.use_save(_save)
 	main.use_reload(calls.reload)
 	main.use_quit(calls.quit)
+	main.use_city_maps(MapCache.source())
 	return main
 
 ## Puts a configured `main` in the tree and lets real frames pass until its boot has finished, so
@@ -1045,7 +1052,7 @@ func _ground_of(city: City) -> SceneryGround:
 func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	var ground := _ground_of(city)
 
 	var half := Tuning.VIEW_HALF_EXTENT
@@ -1087,7 +1094,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 
 	var bounds := city.map.tile_rect_to_world(Rect2i(Vector2i.ZERO, city.map.size)).grow(512.0)
 	var viewport := Vector2(

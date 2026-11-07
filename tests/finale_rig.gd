@@ -10,7 +10,12 @@ extends RefCounted
 ## across a seed — what has to be true on every seed is that there are two of them, that they do
 ## not overlap, that each passes three distinct pieces of calm ground on its way to its own edge,
 ## and that everything off them is shut.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
@@ -97,7 +102,7 @@ static func _paint_day_one(map: CityMap) -> void:
 	map.repaint(state)
 
 static func _plan_for(seed_value: int) -> Dictionary:
-	var map := CityGenerator.generate(seed_value)
+	var map := MapCache.of(seed_value)
 	_paint_day_one(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
@@ -363,7 +368,7 @@ const VAN_STREET_SEEDS := [1, 8, 39]
 func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
 	var vans := 0
 	for seed_value in VAN_STREET_SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var placed := _escape_rows_from(map, bare, {"abduction": 1}, 2)
@@ -1186,7 +1191,7 @@ func _test_an_alley_mouth_wall_fits_the_mouth(t) -> void:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
 	# Every day's own seal plan, on a city each, asked for the walls it stands on an alley's mouth.
 	var day_walls := 0
-	var map_of_days := CityGenerator.generate(SEEDS[0])
+	var map_of_days := MapCache.of(SEEDS[0])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
 		state.begin_day(map_of_days.block_plans, day)
@@ -1258,7 +1263,7 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 ## restart's plan is the first one, placement for placement, and the kept ground is the same answer. A city whose
 ## ground did change — a tile closed — is read again rather than answered from the kept copy.
 func _test_a_restart_plans_the_same_escape_on_the_kept_ground(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
+	var map := MapCache.of(SEEDS[0])
 	_paint_day_one(map)
 	var walks: Array[FinalePlanner.Plan] = []
 	var plans: Array[Array] = []
@@ -1313,7 +1318,7 @@ func _test_the_escape_bag_keeps_the_players_order(t) -> void:
 func _test_every_slot_of_every_street_draws_one_marble(t) -> void:
 	var unmet := 0
 	for seed_value in SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
@@ -1433,7 +1438,7 @@ static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictiona
 ## walkable ground, and never on the spine's own frontage.
 func _test_the_service_exit_is_beside_the_home_block(t) -> void:
 	for seed_value in SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var tile := map.world_to_tile(FinalePlanner.service_exit_world_position(map))
 		t.check(map.is_walkable(tile), "seed %d: the service exit is walkable" % seed_value)
@@ -1474,7 +1479,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 	var checked := 0
 	var on_her := 0
 	for seed_value in SPAWN_SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
@@ -1522,7 +1527,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 	var lethal := 0
 	var over_her := 0
 	for seed_value in SPAWN_SEEDS:
-		var map := CityGenerator.generate(seed_value)
+		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
@@ -1553,7 +1558,7 @@ func _test_the_manager_plans_a_restart_on_the_ground_it_kept(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	var run := city.run
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEEDS[0]))
+	city.build(MapCache.of(SEEDS[0]))
 	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend.city_state, 1,
@@ -1579,7 +1584,7 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	var run := city.run
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEEDS[0]))
+	city.build(MapCache.of(SEEDS[0]))
 	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
 	city.crowd.start_day(1, run.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
 	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
@@ -1697,7 +1702,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 	# was, through the same `aftermath.on_finish` mechanism a convoy leaves a barricade through.
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEEDS[0]))
+	city.build(MapCache.of(SEEDS[0]))
 	city.events.setup(city, city.map)
 	city.events.stream_radius = INF
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
@@ -2011,7 +2016,7 @@ func _test_every_part_word_reaches_its_own_walkable_position(t) -> void:
 ## same heat does owe rows, so "the escape owes none" is about the escape rather than about the
 ## day being one that owes nothing.
 func _test_the_escape_owes_no_return_leg(t) -> void:
-	var map := CityGenerator.generate(SEEDS[0])
+	var map := MapCache.of(SEEDS[0])
 	var an_act_iv_day := 13
 	t.check(Tuning.act_for_day(an_act_iv_day) >= 3
 			and EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(an_act_iv_day) - 1] > 0,
@@ -2022,7 +2027,7 @@ func _test_the_escape_owes_no_return_leg(t) -> void:
 
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEEDS[0]))
+	city.build(MapCache.of(SEEDS[0]))
 	city.events.setup(city, city.map)
 	city.run.header.day = an_act_iv_day
 	GivenPlanner.hand_in(city.events, [] as Array[EventScheduler.Planned])
@@ -2043,7 +2048,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t) -> void:
 	var an_act_iv_day := 13
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEEDS[0]))
+	city.build(MapCache.of(SEEDS[0]))
 	city.events.setup(city, city.map)
 	city.run.header.day = an_act_iv_day
 	var owed := {}

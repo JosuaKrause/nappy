@@ -7,7 +7,12 @@ extends RefCounted
 ## as she walks, never the director's own members. See `tests/probes/m98_return_phase.gd` for the
 ## before/after measurement this milestone asked for; this suite is the contract, not the
 ## measurement.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 ## The act IV day the walking checks play.
 const RETURN_DAY := 13
@@ -27,7 +32,7 @@ func run(t) -> void:
 # ------------------------------------------------------------------------- rig ---
 
 func _map() -> CityMap:
-	return CityGenerator.generate(SEED)
+	return MapCache.of(SEED)
 
 ## The plans a real dawn on `RETURN_DAY` buys on the suite's map, built once by the first walking
 ## check that asks and only read by every director started over them.

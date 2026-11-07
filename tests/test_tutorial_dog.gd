@@ -15,7 +15,12 @@ extends RefCounted
 ## *(2026-09-13, PLAYTEST-68: "we can sprinkle the day 3 charging dog in every now and then,
 ## too")* — `EventDirector._owe_the_sprinkled_dog()` now and then sends the same unmodified def
 ## off her heading again, unguaranteed and without the tip.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
@@ -32,7 +37,7 @@ func run(t) -> void:
 	_test_a_sprinkled_dog_is_never_the_lesson(t)
 
 func _map() -> CityMap:
-	return CityGenerator.generate(4242)
+	return MapCache.of(4242)
 
 ## Walks a director until it hands out `charging_dog`, or returns two `Vector2.INF`s if a real
 ## street's worth of walking never gets one. `due()` sites relative to wherever she has walked to
@@ -86,7 +91,7 @@ func _test_day_3_is_still_sited_on_her_heading(t) -> void:
 func _test_day_4_is_a_map_placement(t) -> void:
 	var checked := 0
 	for run_seed in [4242, 2102613802, 90210]:
-		var map := CityGenerator.generate(run_seed)
+		var map := MapCache.of(run_seed)
 		var consumed: Array[String] = []
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
 			var tree := RouteTree.for_day(map, day)

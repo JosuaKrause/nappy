@@ -6,7 +6,12 @@ extends RefCounted
 ## get trapped inside (which would end the day). the policemen must come from offscreen"; and
 ## "Cordon closes round the edge (Recommended)")*. A real `City` stands under every check, with the
 ## day planned and the swing's task reached through the director, as play reaches it.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
@@ -72,7 +77,7 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 	_run.start_run(SEED)
 	_city = RunCity.in_run(CITY_SCENE, _run)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	_city.build(MapCache.of(SEED))
 	_run.resistance.completed_steps = []
 	_run.resistance.failed_steps = []
 	_run.resistance.progress = 0

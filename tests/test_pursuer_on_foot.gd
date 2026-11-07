@@ -9,7 +9,12 @@ extends RefCounted
 ## scheduled event. it is instant! policemen get switched to guardman on day 9."; merry-stork, his
 ## catch: "Ends the day (Recommended)")*. A real `City` stands under every check that sends one,
 ## with a stand-in for her in the `"player"` group, the one thing `EventManager` asks of her here.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
@@ -42,7 +47,7 @@ func run(t) -> void:
 ## `[city, her]`, on `on_map` when one is given. She is a body the events can read a velocity off (`EventsAhead.place_what_is_owed_ahead()`
 ## asks for a `CharacterBody2D`), standing still unless a check gives her one.
 func _city_with_her(t, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
-	var map := on_map if on_map else CityGenerator.generate(seed_value)
+	var map := on_map if on_map else MapCache.of(seed_value)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
 	city.build(map)
@@ -71,7 +76,7 @@ func _a_sidewalk(map: CityMap) -> Vector2:
 ## The generated map on `seed_value` as day 8's dawn leaves it: the repaint the day's closures and
 ## decor give it, as the city does before it plans the day.
 func _the_map_of_day_8(seed_value: int) -> CityMap:
-	var map := CityGenerator.generate(seed_value)
+	var map := MapCache.of(seed_value)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 8)
 	map.repaint(state)
@@ -930,7 +935,7 @@ func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
 ## **It notices her only along a clear line**, as every notice does: within its reach but with a
 ## building between them, the car drives on rather than stopping.
 func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var found := _a_hidden_spot(map, hot.notice_within())
 	t.check(found.size() == 2, "found walkable ground in its reach behind a building")
