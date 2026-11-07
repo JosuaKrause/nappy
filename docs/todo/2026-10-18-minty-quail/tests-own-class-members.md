@@ -26,7 +26,7 @@ stay public for the same reason: the fairness tests check numbers against them.
 only]` group holds nine members, each of which gets the underscore, or a `[kept]` line with its reason, as this item's work: `BuildingShadows.compute`,
 `PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
 `DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
-`[no reader]` group holds `Stroller.family_sources`, `Navigator.open_ground`,
+`[no reader]` group holds `Stroller.family_sources`,
 `StreetTrees.STREET_TREE_MAX_LINED_FRACTION`, `CrowdField.contains` and `MarbleBag.take`, which this item owns, beside the older lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
 check cannot see, below.
 

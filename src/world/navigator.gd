@@ -18,8 +18,9 @@ extends RefCounted
 ## lane-following held step is a different motion model from the navigator's swept step, and it
 ## stays off the navigator (inbox #1155 in gray-dolphin).
 ##
-## A navigator over open ground (`open_ground()`, `WorldMap.open_ground()`) takes every step whole,
-## sees every line clear and walks every way straight: what a data rig with no world walks on.
+## A navigator over open ground (`Navigator.new()`, whose map is `WorldMap.open_ground()`) takes
+## every step whole, sees every line clear and walks every way straight: what a data rig with no
+## world walks on.
 
 ## How far, at most, past where a step lands the ground has to be open, whatever the mover's own
 ## radius: under half a tile, since every way between solids is a tile wide at least and a walk
@@ -35,10 +36,6 @@ var _map: WorldMap
 ## A navigator over `map`, or over open ground where none is named.
 func _init(map: WorldMap = null) -> void:
 	_map = map if map else WorldMap.open_ground()
-
-## A navigator over open ground: every step is taken whole and every line is clear.
-static func open_ground() -> Navigator:
-	return Navigator.new()
 
 ## The map this navigator walks.
 func map() -> WorldMap:
