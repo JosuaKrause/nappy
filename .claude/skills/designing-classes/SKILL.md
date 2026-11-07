@@ -24,6 +24,14 @@ over inheritance (inbox #1173), as `EventBehaviours.compose()` builds an event's
 data. *Read as, the filer's reading and not the player's words:* the same holds for anything many
 classes use.
 
+**Fields are not API** (inbox #1173). One object never reads or writes another object's fields: every
+interaction between objects goes through the other's methods, so a stored field can become a
+computation without any of its readers changing. The calls are methods rather than GDScript
+properties because a property and a plain field look the same where they are read, and GDScript has
+no private fields, only the underscore convention; only a method call shows a reader, and a check,
+that a member is API. A property is used only inside its own class (inbox #1173). State another class
+needs is kept in an underscore field behind a method.
+
 *Proposed by the filer, open to overturn (plush-kestrel):* the target layers are minty-quail's (data
 and configuration; the domain model; the world; simulation; run flow; observers); a fix lands in the
 shared mechanism rather than a branch keyed on one row's id or picture; new code follows the target
