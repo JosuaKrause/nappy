@@ -41,7 +41,6 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 var _save := GameSave.new(_scratch_path)
 
 func run(t) -> void:
-	t.gives_back_observers()
 
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
@@ -395,7 +394,6 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	EventBus.went_back_to_a_checkpoint.disconnect(on_back)
 	EventBus.run_begun.disconnect(on_begun)
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	t.check(home.get_child_count() == 1 and not (home.get_child(0) as Sitting).carry_the_run_over,
 			"and the next boot took that sitting and spent the carry")
 	playing.free_all()
@@ -469,7 +467,6 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 	t.check(heading.visible and heading.text == "GAME OVER", "on the GAME OVER screen")
 	t.check(not UI.control(summary, "ContinueColumn").visible, "which has no continue button")
 
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -499,7 +496,6 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 	var body: Label = Boot.summary(main).get_node("Root/Center/Lines/Body")
 	t.check(Boot.summary(main).is_showing() and body.text.contains(Texts.nerve_stars(3)),
 			"and the city's brief shows the same count ('%s')" % body.text)
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -617,7 +613,6 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 			title.open(true)
 			t.check(not _box_shown(title) and Boot.mode_name_drawn(title) == "",
 					"nor does the --start-escape epilogue show a box or a name")
-		Telemetry.end_run()
 		booted.free_all()
 		home.free()
 
@@ -805,7 +800,6 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 	await Boot.press_title(t, booted.main, "Tap")
 	t.check(run.calendar.hard_mode and modes.is_empty(),
 			"a resumed run keeps the mode its save carries, and reports none")
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -822,7 +816,6 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
 					% [modes])
 
 	EventBus.run_mode_chosen.disconnect(listen)
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 

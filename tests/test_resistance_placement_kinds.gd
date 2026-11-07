@@ -18,7 +18,6 @@ const FrontReads := preload("res://tests/front_reads.gd")
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	await _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	await _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)

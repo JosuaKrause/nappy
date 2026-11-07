@@ -12,7 +12,6 @@ extends "res://tests/resistance_rig.gd"
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)

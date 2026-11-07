@@ -65,7 +65,6 @@ var _city: City
 var _streams := "day13-guard:"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
 	_test_the_move_reads_the_soft_seals_and_bodies_round_her(t)

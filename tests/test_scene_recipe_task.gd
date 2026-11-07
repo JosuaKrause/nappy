@@ -21,7 +21,6 @@ const MARK := Vector2i(92, 68)
 const RECIPE_SEED := 11
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_an_authored_mast_carries_its_own_id(t)

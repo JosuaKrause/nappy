@@ -139,7 +139,7 @@ static func build_tile_set(authored: TileSet, recipe: GroundRecipe, atlas: Atlas
 				continue
 		pictures[source_id] = picture
 	_register_route_kerb_twins(result, manifest, page, pictures)
-	_upload_one_sheet(result, pictures, started)
+	_upload_one_sheet(result, pictures, started, atlas)
 	return result
 
 ## The composition recipe, or `{}` for "compose nothing and draw the authored tiles".
@@ -175,11 +175,13 @@ static func _layer_recipe(recipe: GroundRecipe) -> Dictionary:
 ## **One upload, synchronous, not a `WorkerThreadPool` task.** This runs inside `build_tile_set()`,
 ## which is called before the first day is drawn and again at each day's repaint, and a `TileSet`
 ## has no "until it is ready" state to draw from in the meantime. Its cost is a `texture` line in
-## the run log for exactly that reason.
+## the run log for exactly that reason, written through the atlas library it was built from
+## (`AtlasLibrary.note()`), where the page lines it sits beside go.
 ##
 ## Two source ids sharing one picture — grass and forest — are laid down once and given the same
 ## margin, since the authored TileSet is allowed to give two ids the same art.
-static func _upload_one_sheet(tile_set: TileSet, pictures: Dictionary, started: int) -> void:
+static func _upload_one_sheet(tile_set: TileSet, pictures: Dictionary, started: int,
+		atlas: AtlasLibrary) -> void:
 	var ids: Array[int] = []
 	for source_id: int in pictures.keys():
 		ids.append(source_id)
@@ -221,7 +223,7 @@ static func _upload_one_sheet(tile_set: TileSet, pictures: Dictionary, started: 
 		source.margins = (regions[placement_of[source_id]] as Rect2i).position
 		for cell in picture.get_width() / TILE_SIZE.x:
 			source.create_tile(Vector2i(cell, 0))
-	Telemetry.note("texture", "ground composed: %d sources over %d pictures into %dx%d in %.1f ms"
+	atlas.note("texture", "ground composed: %d sources over %d pictures into %dx%d in %.1f ms"
 			% [ids.size(), images.size(), sheet_size.x, sheet_size.y,
 			(Time.get_ticks_usec() - started) / 1000.0])
 

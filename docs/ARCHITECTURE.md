@@ -32,13 +32,14 @@ src/
   autoload/
 	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
-	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
+	telemetry.gd          the run log (`Telemetry`); inert until asked; not an autoload, a node
+	                      `main` parks under the `Sitting` and hands to `RunSession`
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
 	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
 	                      autoload, a node `main` parks at the tree's root (see "`Sitting`")
-	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
-	                                                       (autoload: VisitCounter)
+	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens; not an
+	                      autoload, a node `main` parks under the `Sitting`
   run/                  the run's state, a domain model — one registered list of sub-states —
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
 	run_state.gd          the run (`RunState`), as a registry of its parts; held by the `Sitting`
@@ -779,8 +780,8 @@ free the `main` holding a run, so the `Sitting` is its home and no static holds 
 builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
 `ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
-puts no run back between suites; the visit counter autoload holds only the sitting's run that `main`
-hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
+puts no run back between suites; the visit counter, under the sitting, holds only the run that
+`main` hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
 `Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
 the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`

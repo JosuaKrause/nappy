@@ -15,7 +15,6 @@ func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
 	return rig.atlas.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_seeded_equal_choice_and_lifetime(t)
 	await _test_main_binds_both_complete_families_before_drawing(t)
 	_test_every_family_source_is_a_baked_region(t)
@@ -47,7 +46,6 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 		var escape_seat := Seat.new(t)
 		var escape: Boot.Booted = await _boot_catching(t, escape_seat,
 				["--parent", parent, "--start-escape"], in_the_escape)
-		Telemetry.end_run()
 		escape.free_all()
 		escape_seat.end()
 		var on_a_day: Array[bool] = []
@@ -77,7 +75,6 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.is_male == male and seat.run.header.player_is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
-		Telemetry.end_run()
 		booted.free_all()
 		seat.end()
 

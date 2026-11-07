@@ -97,6 +97,12 @@ var _resident: Dictionary = {}
 ## call's `region()` is one lookup. Each page lists the names it handed out, and its last release
 ## drops them from here.
 var _textures: Dictionary = {}
+## Where the library's own `texture` lines go, and the ground's (`note()`): a `Callable(kind,
+## text)`, the boot's run trace's `note`, which `main` hands the sitting's library each boot. Empty,
+## the default, writes nowhere: the bake (`tools/bake_atlases.gd`), and a suite's library it hands
+## none. A `Callable` rather than a `RunTrace`, which sits on the domain model's layer, above this
+## one.
+var trace_note := Callable()
 
 ## Group name -> the loaded page `Texture2D`, its reference count and its size.
 class Page extends RefCounted:
@@ -493,7 +499,7 @@ func acquire(group: StringName) -> void:
 	# Written before the error below, so an offending load is in the log whichever way the run
 	# ends. `texture` is the kind docs/TELEMETRY.md already gives to "when a picture was loaded
 	# and what it cost".
-	_note("texture", "atlas page '%s' loaded in the %s: %.1f ms, %d x %d"
+	note("texture", "atlas page '%s' loaded in the %s: %.1f ms, %d x %d"
 			% [group, moment, (Time.get_ticks_usec() - started) / 1000.0,
 			page.size.x, page.size.y])
 	if moment == MOMENT_OUTSIDE:
@@ -501,22 +507,11 @@ func acquire(group: StringName) -> void:
 				+ "at startup or in a day brief and nowhere else — see AtlasLibrary's own doc.")
 				% group)
 
-## One line in the run log, reached by node path rather than by naming the `Telemetry` autoload.
-##
-## **`--script` skips autoloads** (the **godot** skill), and `tools/bake_atlases.gd` is a headless
-## `--script` run that compiles this file for `region_name_for()` and `plan()`: a bare
-## `Telemetry.note(...)` here is "Identifier not found: Telemetry" at compile time, which takes
-## the whole bake down. Looked up instead, so it is the autoload in the running game and nothing
-## at all in the bake. `call()` rather than `.note()` because the node is only a `Node` to the
-## type checker.
-static func _note(kind: String, text: String) -> void:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null or tree.root == null:
-		return
-	var telemetry: Node = tree.root.get_node_or_null(^"Telemetry")
-	if telemetry == null:
-		return
-	telemetry.call(&"note", kind, text)
+## One line about the textures in the run log, written where `trace_note` says: the library's own
+## page lines, and the composed ground's (`GroundLayers`, which builds it from this library's page).
+func note(kind: String, text: String) -> void:
+	if trace_note.is_valid():
+		trace_note.call(kind, text)
 
 ## Drops a reference on `group`, freeing its page and every region handed out over it on the
 ## last one. A `release()` with nothing acquired is a programming error and says so.
@@ -545,7 +540,7 @@ func release(group: StringName) -> void:
 	page.texture = null
 	var held := Time.get_ticks_usec() - page.loaded_at_usec
 	page.loaded_at_usec = -1
-	_note("texture", "atlas page '%s' released after %.1f s: %d x %d"
+	note("texture", "atlas page '%s' released after %.1f s: %d x %d"
 			% [group, held / 1000000.0, page.size.x, page.size.y])
 
 # ---------------------------------------------------------------- the regions ---
