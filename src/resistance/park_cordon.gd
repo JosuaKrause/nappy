@@ -277,7 +277,7 @@ var trace := RunTrace.new()
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
-## the day's obstruction the last gap is checked under (`ResistanceDirector`'s `_reach_blocked`).
+## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
 ## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `siting` is
 ## the one the officers are placed by: the ground they may stand on and the camera's whole view.
 func _init(map: CityMap, navigator: Navigator, city: City, block: Vector2i,

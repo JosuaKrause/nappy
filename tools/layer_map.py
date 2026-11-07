@@ -136,6 +136,7 @@ FILES: dict[str, str] = {
     "src/events/vehicle_spec.gd": "data",
     "src/events/calm_areas.gd": "model",
     "src/events/day_events.gd": "model",
+    "src/events/day_reach.gd": "model",
     "src/events/event_scheduler.gd": "model",
     "src/events/day_repairs.gd": "model",
     "src/events/mast_sites.gd": "model",

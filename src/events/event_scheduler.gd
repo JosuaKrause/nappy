@@ -335,12 +335,13 @@ class Planned extends RefCounted:
 			return false
 		return reaches(ground)
 
-	## **Whether this event blocks the way**: placed, and either a body she cannot pass
-	## (`obstructs_radius`) or a hard fail. An abduction in progress is not something she walks
-	## through to reach the park behind it. What the walkability repair drops from, and what the
-	## reachability floods stand as discs (`blocking_radius()`).
+	## **Whether this event blocks the way**: placed, not a region door's body (`is_door()`), and
+	## either a body she cannot pass (`obstructs_radius`) or a hard fail. An abduction in progress is
+	## not something she walks through to reach the park behind it; a door is a crossing she walks
+	## through. What the walkability repair drops from (`DayEvents.obstructions()`), and what the
+	## day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 	func obstructs() -> bool:
-		return is_placed() and (def.obstructs_radius > 0.0 or def.hard_fail)
+		return is_placed() and not _is_door and (def.obstructs_radius > 0.0 or def.hard_fail)
 
 	## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
 	## when that is wider.
@@ -2286,12 +2287,14 @@ class WalkSiting extends RefCounted:
 		return _unused_calm
 
 	## Everything in `already` that stands in the way, and — the first time it is asked — the grid.
+	## A region door's bodies count here, as they always have for this check, until day 13's two
+	## beats leave it and it goes.
 	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
 		if not _grid:
 			_grid = ReachabilityGrid.build(_map)
 		var blockers: Array[Planned] = []
 		for plan in already:
-			if plan.obstructs():
+			if plan.obstructs() or (plan.is_door() and plan.is_placed()):
 				blockers.append(plan)
 		return blockers
 

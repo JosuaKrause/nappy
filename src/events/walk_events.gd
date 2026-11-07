@@ -1,8 +1,9 @@
 class_name WalkEvents
 extends RefCounted
 ## **What the walk's events are, read through one object while she walks it**: the walk's plans in
-## the order they stream, and what the walk was planned against that a placement made while she
-## walks is stated against too — where today's region doors stand and the day's calm areas.
+## the order they stream, what the walk was planned against that a placement made while she walks
+## is stated against too — where today's region doors stand and the day's calm areas — and where she
+## can get to from home as the walk was planned (`DayReach`).
 ## `DayEvents` is the day while dawn plans it; this is the walk once it has started.
 ##
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
@@ -24,17 +25,20 @@ extends RefCounted
 var _plans: Array[EventScheduler.Planned] = []
 var _calm: CalmAreas = null
 var _doors := PackedVector2Array()
+var _reach: DayReach = null
 
 # ------------------------------------------------------------------- writes ---
 
 ## Takes `plans` as the walk's whole plan, the very array handed in, planned against `calm` (the
-## day's calm areas, or none for a walk that is not a day in the city) and with today's region doors
-## standing at `doors`.
+## day's calm areas, or none for a walk that is not a day in the city), with today's region doors
+## standing at `doors`, and `reach`, where she can get to from home as it was planned (none for a
+## walk that is not in the city).
 func take(plans: Array[EventScheduler.Planned], calm: CalmAreas = null,
-		doors := PackedVector2Array()) -> void:
+		doors := PackedVector2Array(), reach: DayReach = null) -> void:
 	_plans = plans
 	_calm = calm
 	_doors = doors
+	_reach = reach
 
 ## Adds one plan placed while she walks, after every plan already in the walk.
 func add(plan: EventScheduler.Planned) -> void:
@@ -45,6 +49,7 @@ func clear() -> void:
 	_plans.clear()
 	_calm = null
 	_doors = PackedVector2Array()
+	_reach = null
 
 # ---------------------------------------------------------------- questions ---
 
@@ -72,3 +77,8 @@ func doors() -> PackedVector2Array:
 ## city: the escape's walks and the building, where nothing is sited while she walks.
 func calm() -> CalmAreas:
 	return _calm
+
+## Where she can get to from home as the walk was planned (`DayReach`), or null for a walk that is
+## not in the city (the building) and before a walk starts.
+func reach() -> DayReach:
+	return _reach

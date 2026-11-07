@@ -7,6 +7,7 @@ extends RefCounted
 
 func run(t) -> void:
 	_test_a_door_body_is_never_against_the_line(t)
+	_test_a_door_body_never_blocks_the_way(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -30,3 +31,11 @@ func _test_a_door_body_is_never_against_the_line(t) -> void:
 	var unplaced := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2.INF)
 	t.check(not unplaced.counts_against_the_line(),
 			"a row not yet placed stands nowhere, so it counts against nothing")
+
+func _test_a_door_body_never_blocks_the_way(t) -> void:
+	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
+		t.check(not _door(id).obstructs(),
+				"a %s stood at a door is a crossing she walks through, not a block" % id)
+	t.check(_sealed("roadblock").obstructs(), "while the region wall's own body blocks the way")
+	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2.INF).obstructs(),
+			"and a row not yet placed blocks nothing")

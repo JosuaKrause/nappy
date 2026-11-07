@@ -228,19 +228,10 @@ var _steps: Array[ResistanceSteps.Step] = ResistanceSteps.all()
 ## in before `setup()`, which passes it on to the happenings; silent until then.
 var trace := RunTrace.new()
 
-## The day's own reachability answer, built lazily (`_ensure_reachability()`) the first time a
-## placement asks it and kept for the rest of the day — cleared in `start_day()` so a new day
-## never reads yesterday's obstruction. `ReachabilityGrid.build()` is cheap enough to do once a
-## day (`DayRepairs.ensure_the_city_is_still_walkable()`'s own doc says the same); this
-## director asks the same grid the same way, not a second implementation of it.
-var _reach_grid: ReachabilityGrid
-## `EventScheduler.blocked_by()`'s own set: today's closures plus every placed, obstructing or
-## hard-fail plan's own disc — the whole day's obstruction, exactly as it stands when this
-## director places, per M188's item 3.
-var _reach_blocked: Dictionary
-## `_reach_grid.flood()`'s own answer for `_reach_blocked`, from the home block — kept so
-## `reaches()` never has to recompute the dirty-cell set flood() already built.
-var _reach_reached: Dictionary
+## Where she can get to from home today, for a walk the events started with none (`_reach()`): a
+## rig's, which places on a map no walk was started over. Built the first time it is asked, and
+## cleared in `start_day()`.
+var _own_reach: DayReach = null
 ## Every alley mouth of `_mouths_of` (`_alley_mouths()`), built the first time a mark asks.
 var _mouths: Array[Vector2i] = []
 var _mouths_of: CityMap
@@ -340,11 +331,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_task_guard_found_nothing_age = 0.0
 	_task_guard_moves = null
 	_taken_neighbor = null
-	# Rebuilt lazily on the first placement that asks — see `_ensure_reachability()` — rather than
-	# here, so a rig that never places anything today never pays for a grid it never needed.
-	_reach_grid = null
-	_reach_blocked = {}
-	_reach_reached = {}
+	_own_reach = null
 	# A fresh attempt at the day starts without the package, whether this is the first try
 	# or a retry after a nerve — see _run.resistance.carrying_package.
 	_run.resistance.carrying_package = false
@@ -1036,7 +1023,7 @@ class HerSide extends RefCounted:
 		her = at_her
 
 ## Whether `tile` is on `side`'s ground (`HerSide`), working that ground out the first time it is
-## asked: the director's reachability grid (`_ensure_reachability()`, two-tile cells, the day's
+## asked: the day's reachability grid (`_reach()`, two-tile cells, the day's
 ## obstruction) flooded from her tile with every tile within `_guard_notice_reach()` of the body
 ## shut as well — a fill over cells rather than over the city's tiles one by one.
 func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
@@ -1047,8 +1034,7 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 		side.made = true
 		if side.her.distance_to(side.body) < reach:
 			return false
-		_ensure_reachability()
-		side.blocked = _reach_blocked.duplicate()
+		side.blocked = _reach().shut()
 		side.blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS | Mover.BODIES))
 		var centre := _map.world_to_tile(side.body)
 		var span := ceili(reach / Tuning.TILE_SIZE)
@@ -1057,8 +1043,8 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 				var near := centre + Vector2i(dx, dy)
 				if _map.tile_to_world(near).distance_to(side.body) < reach:
 					side.blocked[near] = true
-		side.reached = _reach_grid.flood([_map.world_to_tile(side.her)], side.blocked)
-	return _reach_grid.reaches(tile, side.blocked, side.reached)
+		side.reached = _reach().grid().flood([_map.world_to_tile(side.her)], side.blocked)
+	return _reach().grid().reaches(tile, side.blocked, side.reached)
 
 ## How far from a roadblock's body any guard round it can notice her: the farthest he stands
 ## (`TASK_GUARD_FARTHEST`), his notice (`EventDef.notice`), and a tile.
@@ -1702,7 +1688,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 
 ## **Where her paths first reach the edge of the circle** of `NEAR_THE_MARK` round `her`, where she
 ## read the mark, and the ground inside it they cross on the way: walked tile by tile from her own
-## tile over walkable ground the day's obstruction leaves open (`_reach_blocked`), going on only
+## tile over walkable ground the day's obstruction leaves open (`_reach()`), going on only
 ## from a tile inside the circle, so each tile at or past its edge is the first a path reaches it
 ## at. *(The player, quiet-yak, inbox #500: "create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the circle";
@@ -1710,7 +1696,7 @@ const NEAR_THE_MARK := (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH + Tuning.BLOCK_S
 ## anything like that".)* `_circle_edge` and `_circle_inside` hold the
 ## answer for the placement that follows; both are empty before one is measured.
 func _follow_the_paths_to_the_edge(her: Vector2) -> void:
-	_ensure_reachability()
+	var reach := _reach()
 	_circle_edge = {}
 	_circle_inside = {}
 	var start := _map.world_to_tile(her)
@@ -1727,7 +1713,7 @@ func _follow_the_paths_to_the_edge(her: Vector2) -> void:
 			var next := tile + step
 			if _circle_inside.has(next) or _circle_edge.has(next):
 				continue
-			if not _map.is_walkable(next) or _reach_blocked.has(next):
+			if not _map.is_walkable(next) or reach.is_shut(next):
 				continue
 			if _map.tile_to_world(next).distance_to(centre) >= NEAR_THE_MARK:
 				_circle_edge[next] = true
@@ -1868,10 +1854,10 @@ func _roadblock_ground(def: EventDef, tiles: Dictionary) -> Array[Vector2i]:
 
 ## The tiles her paths from `her` reach at least `near` and less than `far` from her own tile's
 ## centre, walked tile by tile over walkable ground the day's obstruction leaves open
-## (`_reach_blocked`), as `_follow_the_paths_to_the_edge()` walks them but on past the circle's edge.
+## (`_reach()`), as `_follow_the_paths_to_the_edge()` walks them but on past the circle's edge.
 ## `tile -> true`.
 func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
-	_ensure_reachability()
+	var reach := _reach()
 	var found := {}
 	var start := _map.world_to_tile(her)
 	if not _map.is_walkable(start):
@@ -1885,7 +1871,7 @@ func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
 		head += 1
 		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 			var next := tile + step
-			if seen.has(next) or not _map.is_walkable(next) or _reach_blocked.has(next):
+			if seen.has(next) or not _map.is_walkable(next) or reach.is_shut(next):
 				continue
 			seen[next] = true
 			var distance := _map.tile_to_world(next).distance_to(centre)
@@ -2218,7 +2204,7 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ## Day 10's neighbor, out in the city and walking home: spawned on a sidewalk about
 ## `NEIGHBOR_WALK_HOME_SECONDS` of their own walk from her door, off screen from her, and
 ## given the walk itself as a path — down the day's own walking distance to the doorstep, over
-## ground the day's closures and bodies leave open (`_reach_blocked`, the director's own
+## ground the day's closures and bodies leave open (`_reach()`, the day's own
 ## reachability answer), on sidewalks and crossings where they reach and over any walkable ground
 ## where they do not. **The walk is the deadline**: `EventCatalogue.neighbor_heading_home()` stops
 ## at the door (`stops_where_it_arrives`), and `tick()` reads a parked neighbor as the task
@@ -2231,12 +2217,12 @@ func _send_the_neighbor_home() -> EventInstance:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
-	_ensure_reachability()
-	var on_foot := _reach_blocked.duplicate()
+	var shut := _reach().shut()
+	var on_foot := shut.duplicate()
 	for tile in _map.tiles_of_type(GameEnums.TileType.ROAD):
 		on_foot[tile] = true
 	var wanted := roundi(NEIGHBOR_WALK_HOME_SECONDS * def.speed / Tuning.TILE_SIZE)
-	for blocked: Dictionary in [on_foot, _reach_blocked]:
+	for blocked: Dictionary in [on_foot, shut]:
 		var field := _map.walk_field(door, blocked)
 		var start := _a_neighbor_start(field, wanted)
 		if start == NO_TILE:
@@ -2492,74 +2478,38 @@ static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i,
 			nearest = tile
 	return nearest
 
-## Builds `_reach_grid`/`_reach_blocked`/`_reach_reached` the first time a placement in this file
-## asks whether a tile is reachable, and never again this day. `_reach_grid` alone is the sentinel:
-## a fresh `RandomNumberGenerator`-style build-once-per-day, not a per-call cost.
+## **Where she can get to from home today** (`DayReach`): the walk's own, worked out once as the
+## walk started (`WalkEvents.reach()`), so this director's answer to "can she get there" is the
+## day's rather than a second reading of it. It asks whether *one specific tile* is reachable, and
+## never drops anything: a candidate that fails is redrawn, the same "reject rather than repair"
+## rule `_pick_reachable()` keeps for `is_obstructed()`.
 ##
-## **`EventScheduler.blocked_by()`, asked the same way
-## `DayRepairs.ensure_the_city_is_still_walkable()` asks it** — every placed plan whose
-## `obstructs_radius > 0.0` or `hard_fail` is true contributes its own disc, on top of
-## `_map.closed_tiles` — so this director's answer to "can she get there" is never a second
-## implementation of the city's own, only a second question put to it: that function asks
-## whether *some* calm area, and on a narrow target's day *some* tile of the target, is still
-## reachable, and drops the widest of the catalogue's obstructions until they are
-## (`docs/CITY.md`, "Guarantees"); this asks whether *one specific tile* is, and never drops
-## anything — a candidate that fails is redrawn, the same "reject rather than repair" rule
-## `_pick_reachable()` already keeps for `is_obstructed()`. The blockers are the same list both
-## times: the catalogue's own bodies, the seals and the region wall's, never a region door's.
+## **The soft seals' bands are shut in it, which the city's own question does not ask**: the red
+## arrow reads them as ground she cannot walk (`_ground_for_the_arrow()`), so a mark or contact
+## reached only through one is a place the arrow cannot lead her to.
 ##
-## **And the soft seals' bands on top (`CityMap.soft_sealed_tiles`), which the city's own question
-## does not ask**: the red arrow reads them as ground she cannot walk (`_ground_for_the_arrow()`),
-## so a mark or contact reached only through one is a place the arrow cannot lead her to. A thinned
-## soft pair's one body leaves a lane by its disc while its band shuts the whole sidewalk, so where
-## that band stands in front of an alley at both ends the disc alone answers the alley reachable and
-## the arrow does not.
-##
-## **Without a `_city` (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
-## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
-## nothing ever calls `City.start_day()` on them either — so every walkable tile answers reachable
-## and this check is a silent no-op.
-func _ensure_reachability() -> void:
-	if _reach_grid:
-		return
-	_reach_grid = ReachabilityGrid.build(_map)
-	var blockers: Array[EventScheduler.Planned] = []
-	if _city and _city.events:
-		# A region door's own bodies are never a block (`Planned.is_door()`): `event_scheduler.gd`'s
-		# own corridor-cost rule already carries this exemption ("a region door costs by design")
-		# and this check needs the same one, for the same reason. With every door body counted,
-		# `blocked_by()`'s disc approximation — right for a point hazard, wrong for a hut-gate-hut
-		# door three tiles wide — closes every door in the wall along with it, so day 9 onward
-		# would answer every mark and contact unreachable outside the home's own region.
-		for plan in _city.events.plans():
-			if not plan.is_placed() or plan.is_door():
-				continue
-			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
-				blockers.append(plan)
-	_reach_blocked = EventScheduler.blocked_by(_map, blockers)
-	# The arrow's own reading of a soft seal; see the doc above.
-	_reach_blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS))
-	_reach_reached = _reach_grid.flood([_map.home_rect.position], _reach_blocked)
+## **A walk the events started with none** — a rig placing on a bare map, or on a city whose events
+## were never started — gets one of its own over this director's map and the walk's plans, built the
+## first time it is asked and kept for the day.
+func _reach() -> DayReach:
+	if _walk.reach():
+		return _walk.reach()
+	if not _own_reach:
+		_own_reach = DayReach.of(_map, _walk.plans())
+	return _own_reach
 
-## Whether `tile` is reachable from home under the day's full obstruction, as it stands right now:
-## closures alone can leave a mark's own alley reachable while the day's events and seals together
-## seal every route to it. `docs/CITY.md`'s guarantees promise a route to a calm area and to one
-## tile of the day's narrow resistance target (`target_ground()`), never to any one alley or
-## sidewalk, so this is asked of every draw. See `_ensure_reachability()`.
+## Whether `tile` is reachable from home under the day's full obstruction (`_reach()`): closures
+## alone can leave a mark's own alley reachable while the day's events and seals together seal every
+## route to it. `docs/CITY.md`'s guarantees promise a route to a calm area and to one tile of the
+## day's narrow resistance target (`target_ground()`), never to any one alley or sidewalk, so this is
+## asked of every draw.
 func _reachable_from_home(tile: Vector2i) -> bool:
-	_ensure_reachability()
-	return _reach_grid.reaches(tile, _reach_blocked, _reach_reached)
+	return _reach().reaches(tile)
 
-## **The tiles the day's obstruction shuts** (`tile -> true`: the catalogue's bodies and discs,
-## today's closures, the seals and the soft seals' bands), as they stood when the day's first
-## placement asked and until the day ends — a body a task puts up after that (day 11's added mast)
-## is not in it, so the ground its own task stands on is not shut by it. A read builds that snapshot
-## if no placement has asked yet (`start_day()` asks first, so on a played day it is the day's first
-## placement's). A copy; the director's own is never handed out. What the day leaves her of the way
-## home is `_reachable_from_home()`'s answer over these tiles.
+## **The tiles the day's obstruction shuts** (`tile -> true`: the bodies' discs, today's closures,
+## the seals and the soft seals' bands), as the walk was planned (`_reach()`). A copy.
 func _reach_obstruction() -> Dictionary:
-	_ensure_reachability()
-	return _reach_blocked.duplicate()
+	return _reach().shut()
 
 ## **One tick of the resistance's day**, run by `main` on every physics tick the walk stepped, the
 ## same tick its play time counts (`main._physics_process()`): the happenings, the note's lingering
@@ -3025,7 +2975,6 @@ func _on_contact_completed(step_index: int) -> void:
 	# reached the swing, and stays taken — see `ResistanceHappenings.take_the_park()`. Its last gap
 	# is checked under this director's own answer to what the day has blocked.
 	if step and step.target_kind == ResistanceSteps.TargetKind.PARK_SWING:
-		_ensure_reachability()
 		_happenings.take_the_park(_reach_obstruction())
 	# Every task but the roadblock and the neighbor sends a pursuer after her from off screen; the
 	# roadblock keeps its guard waiting at the contact instead (`_begin_step()`), and done, sets him

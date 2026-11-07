@@ -808,10 +808,10 @@ func _test_the_sabotage_silences_the_city(t) -> void:
 	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
 	# `Planned.mast_id`, which only a real plan carries.
 	var site := MastSites.compute(_city.map)[0]
-	# The real day order, `City.start_day()` first: it is what holds today's region plan, and
-	# without it the director cannot tell a region door's own bodies from the wall's
-	# (`ResistanceDirector._ensure_reachability()`), counts every door shut, and finds the
-	# station's front door — and everything else outside the home's region — out of reach.
+	# The real day order, `City.start_day()` first: it is what holds today's region plan and
+	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
+	# without it the station's front door — and everything else outside the home's region — is
+	# measured against a day the game never starts.
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, Tuning.RUN_LENGTH_DAYS)
 	_city.start_day(state, Tuning.RUN_LENGTH_DAYS, _rng(Tuning.RUN_LENGTH_DAYS, "closures"))

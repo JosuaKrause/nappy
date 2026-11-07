@@ -285,7 +285,10 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	world.day = spec.number if plan.is_a_day else world.run.header.day
 	_encounters.day = spec.number
 	_walk = plan.walk
-	_walk_events.take(plan.placements, plan.calm(), plan.doors)
+	# Where she can get to from home, worked out once as the walk starts, from what it planned and
+	# the map's closures and soft seals as they stand now (`DayReach`).
+	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
+	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach)
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
