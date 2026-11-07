@@ -53,7 +53,15 @@ private methods that each re-derive it and the risk that two of them resolve it 
   business, and everything else asks the reader.
 - **A state object's interface is chosen from what its readers want out of it** (inbox #1156):
   explore what the tests that build the real objects today want to get out of them, and use that to
-  inform the design of the state object; then mock that out.
+  inform the design of the state object; then mock that out. Its API is checked by these tests
+  (inbox #1156):
+
+  - would any caller miss a method, an argument or a field if it were removed? What nobody would
+    miss goes;
+  - can the implementation underneath be swapped without breaking the interface?
+
+  Three distinct implementations are a good sign that an API is robust, as a rule of thumb and not
+  a requirement: nothing adds implementations to reach three (inbox #1156).
 - **An interface, base class or abstract class is named for what a caller gets out of it, not for
   how it is built, and a concrete implementation is named for what the implementation is**
   (inbox #1156).
