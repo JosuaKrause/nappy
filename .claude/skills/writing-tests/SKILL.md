@@ -35,6 +35,11 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   in no time, where generating a city and planning a day is slow setup.
 - **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`
   constant); only collaborators that do something are mocked (inbox #1159).
+- **Which map a test uses depends on what it checks** (inbox #1172). A test of one specific
+  interaction between her and her surroundings, an edge case, uses a hand-drawn map built to the
+  case, so no seed has to be searched for. A test of a realistic walk, and any measurement, uses a
+  real generated map: on a hand map the crowd walks off the streets, and a measurement must come
+  from a city the generator can produce.
 - **A suite a pull request touches for another reason is converted only as far as the pull
   request's change reaches** (inbox #1159).
 
@@ -76,8 +81,12 @@ the real build nor the step that read it off survives into the pull request.
   `[1, 4, 8, 12]` is the table restated, so moving an act boundary means editing the constant *and*
   editing the test, and no arrangement of those two numbers was ever going to disagree.
 
-  **The kept relationship tests stay, since they encode a fairness guarantee between settings**
-  (inbox #1159). `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
+  **The kept relationship tests stay, since they encode a guarantee between settings** (inbox
+  #1159). *Kept for fairness guarantees only · widened on 2026-11-07 to any guarantee between
+  settings (inbox #1173).* A fairness floor, the difficulty ramp (a late day holds more events than
+  an early one) and a derived number kept in step with its setting (the building's distant window
+  flashes average the wait their setting names) all stay; a test that only restates one setting's
+  value goes. `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
   below what is fair, because it encodes *why* the number has a floor rather than what the number
   is: it says **"you broke the thing the number was for"**, never **"you changed a number"**.
 
