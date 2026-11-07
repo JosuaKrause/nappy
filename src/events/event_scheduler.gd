@@ -2271,13 +2271,14 @@ class WalkSiting extends RefCounted:
 	## **Falls back to every calm tile where she has used them all**, which is the same case
 	## `DayRepairs.ensure_one_usable_park` names: with nothing unused left, what the day owes
 	## is calm ground rather than fresh calm ground, and refusing every site instead would be a
-	## day 3 with no fire.
+	## day 3 with no fire. A walk with no calm areas of its own (a rig's bare walk) has used none.
 	func _calm_she_has_not_used() -> Array[Vector2i]:
 		if _unused_calm_known:
 			return _unused_calm
 		_unused_calm_known = true
+		var used: Array[Vector2i] = _walk.calm().used() if _walk.calm() else ([] as Array[Vector2i])
 		for block in _map.calm_blocks:
-			if _walk.calm().used().has(block):
+			if used.has(block):
 				continue
 			for tile in _map.rect_tiles(EventScheduler._calm_rect(_map, block)):
 				if Tile.is_calm(_map.tile_at(tile)):
