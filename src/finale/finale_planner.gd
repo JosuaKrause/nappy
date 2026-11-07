@@ -76,11 +76,14 @@ class Plan extends RouteSource:
 	## The escape city's street lattice (`CityMap.network`), which names the street a tile is on.
 	var _network: StreetNetwork
 
+	## Overrides RouteSource.streets_on_the_walk.
 	func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
 		return open_streets
 
 	## Asked at the street's midpoint, or at `along`: a chain that only turns at a street's end
 	## does not walk it (`SealPlanner.runs_through()`).
+	##
+	## Overrides RouteSource.walks_the_street.
 	func walks_the_street(segment: StreetNetwork.Segment, along := -1) -> bool:
 		return SealPlanner.runs_through(segment, open_cells, along)
 
@@ -88,6 +91,8 @@ class Plan extends RouteSource:
 	## midpoint worth distinguishing. A cell is two tiles square and every cell is wholly street or
 	## wholly block (see `ReachabilityGrid`), so this is an exact question rather than an overlap
 	## test. An alley the chains do not take is a second way through, so it is not reached.
+	##
+	## Overrides RouteSource.reaches_the_alley.
 	func reaches_the_alley(_map: CityMap, rect: Rect2i) -> bool:
 		for y in range(rect.position.y, rect.end.y):
 			for x in range(rect.position.x, rect.end.x):
@@ -95,22 +100,28 @@ class Plan extends RouteSource:
 					return true
 		return false
 
+	## Overrides RouteSource.carries_a_route.
 	func carries_a_route(tile: Vector2i) -> bool:
 		return open_cells.has(tile / ReachabilityGrid.CELL)
 
 	## **The same grain as a day's**: both kerb lines of every street either chain runs through,
 	## from intersection to intersection. A street a chain only turns at is sealed and carries no
 	## tint, and a junction resolves to no street, exactly as on a day.
+	##
+	## Overrides RouteSource.marks_the_kerb_at.
 	func marks_the_kerb_at(tile: Vector2i) -> bool:
 		var segment := _network.segment_containing(tile)
 		return segment != null and _open_keys.has(segment.key())
 
+	## Overrides RouteSource.street_it_starts_in.
 	func street_it_starts_in() -> StreetNetwork.Segment:
 		return _starts_in
 
+	## Overrides RouteSource.start.
 	func start() -> Vector2:
 		return _start
 
+	## Overrides RouteSource.ends.
 	func ends() -> Array[Vector2]:
 		return _ends
 

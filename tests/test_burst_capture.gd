@@ -102,12 +102,15 @@ class Screen extends TelemetryScreen:
 	signal drew
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 
+	## Overrides TelemetryScreen.can_draw.
 	func can_draw() -> bool:
 		return true
 
+	## Overrides TelemetryScreen.drawn.
 	func drawn() -> void:
 		await drew
 
+	## Overrides TelemetryScreen.picture.
 	func picture() -> Image:
 		return image
 
@@ -131,9 +134,11 @@ class Clock extends BurstRecorder.Clock:
 	var now := 5000000
 	var waits: Array[Wait] = []
 
+	## Overrides BurstRecorder.Clock.usec.
 	func usec() -> int:
 		return now
 
+	## Overrides BurstRecorder.Clock.after.
 	func after(seconds: float) -> Signal:
 		var wait := Wait.new(now + roundi(seconds * 1000000.0))
 		waits.append(wait)

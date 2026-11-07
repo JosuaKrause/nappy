@@ -20,6 +20,7 @@ func run(t) -> void:
 class Clocked extends ExcitementSource:
 	var now := 0.0
 
+	## Overrides ExcitementSource.clock.
 	func clock() -> float:
 		return now
 
@@ -28,9 +29,11 @@ class Fixed extends ExcitementSources:
 	var pairs: Array = []
 	var alone := false
 
+	## Overrides ExcitementSources.sources_at.
 	func sources_at(_at: Vector2) -> Array:
 		return pairs
 
+	## Overrides ExcitementSources.holds_her_alone.
 	func holds_her_alone(_at: Vector2) -> bool:
 		return alone
 

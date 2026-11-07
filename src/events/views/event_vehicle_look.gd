@@ -4,6 +4,7 @@ extends EventLook
 ## fire engine, drawn over their own bodies on wheels that stay on the ground), the van that takes
 ## a victim, and the stationary wrecks and moving van.
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.DELIVERY_VAN:

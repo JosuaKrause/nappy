@@ -155,9 +155,11 @@ func _test_an_authored_scene_configures_the_rest_of_the_run(t) -> void:
 class _LearnedScene extends AuthoredScene:
 	var map: CityMap
 
+	## Overrides AuthoredScene.city_map.
 	func city_map() -> CityMap:
 		return map
 
+	## Overrides AuthoredScene.lessons_learned.
 	func lessons_learned() -> bool:
 		return true
 

@@ -63,10 +63,12 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	atlas.release(&"street_kit")
 
+## Overrides ScenerySprite.set_scenery_resident.
 func set_scenery_resident(resident: bool) -> void:
 	super.set_scenery_resident(resident)
 	set_process(resident and not _faces_away)
 
+## Overrides ScenerySprite.scenery_bounds.
 func scenery_bounds() -> Rect2:
 	return Rect2(global_position - Vector2(16, 48), Vector2(32, 64))
 

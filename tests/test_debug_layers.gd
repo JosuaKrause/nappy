@@ -396,6 +396,7 @@ func _count_enabled_bodies(root: Node) -> int:
 class DrawCount extends DebugLayers:
 	var draws := 0
 
+	## Overrides DebugLayers._draw.
 	func _draw() -> void:
 		draws += 1
 

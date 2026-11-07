@@ -233,6 +233,13 @@ is the only part that governs the code in front of them.
   Class doc comments say what the thing is **for**, not what it contains.
 - **Document the why and the edge cases; do not restate the implementation.** The code is right
   there.
+- **GDScript has no `@override`, so a method that overrides one of a project class says so**: a line
+  `## Overrides Class.method.` among its `##` lines, which `tools/lint.sh` holds true through
+  `tools/check_overrides.py`: an override without it, a misspelled method that carries it, a line naming
+  other than the nearest declaring ancestor and a malformed line fail, while a misspelled method with no
+  line at all is a new method to the check (inbox #1154). *Proposed, not asked for, open to the player's
+  correction:* the line names the nearest declaring ancestor (its `class_name`, `Outer.Inner`, or the file's
+  stem), an engine virtual no project class declares needs none, and `src/` and `tests/` are the scope.
 - Section dividers inside longer files:
   `# ---------------------------------------------------------------- drawing ---`
 - Leading underscore for private members and methods. Godot lifecycle methods (`_ready`, `_draw`,

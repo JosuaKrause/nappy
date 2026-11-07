@@ -272,9 +272,11 @@ class LongFrontage extends WorldMap:
 	const FRONT_ROW := 5
 	const LOT := Rect2i(-1, -5, 20, FRONT_ROW + 5)
 
+	## Overrides WorldMap.pavement_inward.
 	func pavement_inward(tile: Vector2i) -> Vector2i:
 		return Vector2i(0, -1) if tile.y == FRONT_ROW else Vector2i.ZERO
 
+	## Overrides WorldMap.lot_at.
 	func lot_at(tile: Vector2i) -> Rect2i:
 		return LOT if LOT.has_point(tile) else Rect2i()
 

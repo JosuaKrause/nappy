@@ -43,6 +43,7 @@ class RecordingCounter extends VisitCounter:
 		configure(null, run)
 		listen(EventBus)
 
+	## Overrides VisitCounter._send_event.
 	func _send_event(name: String) -> void:
 		sent.append(name)
 

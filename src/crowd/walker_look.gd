@@ -70,12 +70,16 @@ var gait_phase := 0.0
 
 ## A placement starts the stride at rest, which keeps it deterministic for a given seed, the same
 ## reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
+##
+## Overrides AgentLook.restart.
 func restart() -> void:
 	gait_phase = 0.0
 
 ## Adds the ground this tick covered, `velocity()` being the along-lane speed the crowd already
 ## stops to zero at a give-way, a queue or a light. Not idempotent, so it runs once per tick rather
 ## than from the drawing, which a halo ring calls several times a frame.
+##
+## Overrides AgentLook.advance.
 func advance(moving: Vector2, delta: float) -> void:
 	gait_phase = wrapf(gait_phase + moving.length() * delta * GAIT_RATE, 0.0, TAU)
 
@@ -114,12 +118,16 @@ func heading_at(along: Vector2) -> Vector2:
 ## leaves no cross-lane steering running, so the heading is exactly along the new lane axis, a
 ## sector centre 45 degrees clear of its neighbours and twice the hold's reach, and the ordinary
 ## test replaces the sector drawn before with no reset.
+##
+## Overrides AgentLook.sector.
 func sector() -> int:
 	view = EightDirection.update(view, _heading_now(), IDLE_SPEED)
 	return view
 
 ## One `velocity()` serves the gait and the sector: the value `gait_frame()` and `_heading_now()`
 ## would each have computed, since nothing between them moves it.
+##
+## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
 	var third := gait_frame_at(moving)
 	view = EightDirection.update(view, heading_at(moving), IDLE_SPEED)
@@ -130,13 +138,17 @@ func picture(moving: Vector2) -> Vector3i:
 ## its width either side. The larger of the two is kept for both edges of the axis, so one number
 ## clears whichever edge a placement is beside. `native_size()` answers from the region table with
 ## nothing acquired, which matters because a placement roll asks before `Crowd.start_day()` acquires.
+##
+## Overrides AgentLook.entry_clearance.
 func entry_clearance(vertical: bool) -> float:
 	var walker := AtlasTable.baked().native_size(region_of(BODY_BY_VIEW["front"]))
 	return float(walker.y) if vertical else float(walker.x) * 0.5
 
+## Overrides AgentLook.palette.
 func palette() -> Array:
 	return Palette.COATS
 
+## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
 	var frame := sector()
 	var flip := flipped()

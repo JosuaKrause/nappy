@@ -238,6 +238,7 @@ class _PictureAtlas extends AtlasLibrary:
 	func watch(control: Control) -> void:
 		control.draw.connect(_close_the_pass)
 
+	## Overrides AtlasLibrary.region.
 	func region(name: StringName) -> AtlasTexture:
 		_asked.append(name)
 		return super.region(name)

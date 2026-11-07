@@ -4,6 +4,7 @@ extends EventLook
 ## `docs/GRAPHICS.md` binds each row to the file it draws; `RegionPlanner` says where the bodies
 ## stand and `CheckpointController` holds her at them.
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.CHECKPOINT_HUT:

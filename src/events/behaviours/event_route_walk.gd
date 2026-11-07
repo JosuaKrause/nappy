@@ -8,6 +8,8 @@ extends EventBehaviour
 
 ## One tick of a plain mobile row that walks its route: not while it holds still through its
 ## telegraph, nor once it has parked.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	if event.path.size() > 1 and not event.is_telegraphing_still() and not event.is_parked:
 		advance(delta)

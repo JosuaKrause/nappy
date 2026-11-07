@@ -16,29 +16,40 @@ var draws := 0
 
 var _dawn := 0
 
+## Overrides RunSubState.slot.
 func slot() -> Slot:
 	return Slot.NESTED
 
+## Overrides RunSubState.save_key.
 func save_key() -> String:
 	return "pelican"
 
+## Overrides RunSubState.reset.
 func reset() -> void:
 	draws = 0
 	_dawn = 0
 
 ## Photographs the count as the attempt about to be played found it.
+##
+## Overrides RunSubState.photograph.
 func photograph() -> void:
 	_dawn = draws
 
 ## Puts the count back where the photograph found it.
+##
+## Overrides RunSubState.give_back.
 func give_back() -> void:
 	draws = _dawn
 
 ## Everything a save carries, the photograph included, as plain JSON-safe values.
+##
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	return {"draws": draws, "dawn": _dawn}
 
 ## The other half of `to_data()`. JSON has no integer type, so every number is cast.
+##
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	draws = int(data.get("draws", 0))
 	_dawn = int(data.get("dawn", 0))

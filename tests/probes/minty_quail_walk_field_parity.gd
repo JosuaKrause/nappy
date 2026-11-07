@@ -26,6 +26,7 @@ const POSITIONS := 12
 const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
+## Overrides test_day13_guard.run.
 func run(t) -> void:
 	for seed_value in GUARD_SEEDS:
 		for walks in [false, true]:

@@ -23,6 +23,7 @@ var real: RoofDrawer = null
 func _init() -> void:
 	super(null)
 
+## Overrides RoofDrawer.draw.
 func draw(layer: Node2D, cell: Vector2i, texture_key: StringName, at: Vector2, duct_links: int,
 		rotor_frame_b: bool) -> Building.RoofObject:
 	var object: Building.RoofObject = real.draw(layer, cell, texture_key, at, duct_links,

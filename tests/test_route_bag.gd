@@ -332,6 +332,7 @@ func _test_after_the_mark_the_task_row_is_put_on_her_route(t) -> void:
 class RefusingSiting extends EventScheduler.WalkSiting:
 	var asked := 0
 
+	## Overrides EventScheduler.WalkSiting.ahead_of.
 	func ahead_of(def: EventDef, _rng: RandomNumberGenerator,
 			_already: Array[EventScheduler.Planned], _at: Vector2, _heading: Vector2,
 			_near: float, _far: float) -> EventScheduler.Planned:

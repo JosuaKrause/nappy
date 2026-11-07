@@ -3,6 +3,7 @@ extends EventLook
 ## A man on foot who comes after her: the robbers, the policeman, the masked man and the guards who
 ## give chase, each drawn by the stage he is in (waiting, warning with a hand raised, running).
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:

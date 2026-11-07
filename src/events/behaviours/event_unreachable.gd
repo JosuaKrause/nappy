@@ -19,6 +19,7 @@ var _gap_looked_at := INF
 var _look_clock := 0.0
 var _not_closing_for := 0.0
 
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	if event.is_finished or event.is_leaving or event.player_at == Vector2.INF:
 		return
@@ -40,10 +41,12 @@ func step(delta: float) -> void:
 	if _not_closing_for >= GIVES_UP:
 		event._finish()
 
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"gap_looked_at": _gap_looked_at, "look_clock": _look_clock,
 			"not_closing_for": _not_closing_for}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	_gap_looked_at = float(state.get("gap_looked_at", INF))
 	_look_clock = float(state.get("look_clock", 0.0))

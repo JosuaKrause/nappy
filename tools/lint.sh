@@ -18,6 +18,9 @@
 # which are history and primary sources and are allowed to say what was true then, and
 # docs/evidence/README.md, whose job is filenames that embed hashes.
 #
+# One check reads the code rather than a doc: every override of a project class carries its
+# `## Overrides Class.method.` line (tools/check_overrides.py).
+#
 # Four checks are about the queue's layout rather than a sentence, and run on the history too:
 # a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
 # docs/review and docs/playtests; a checkbox anywhere under
@@ -56,7 +59,9 @@ and docs/review/). Also checks the queue's layout: a name used for two things ac
 docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
 docs/TODO.md to an entry folder that does not exist, and every entry's band line (through
 tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
-.claude/skills/**/*.md (tools/check_citations.py). Given file arguments, scans only those --
+.claude/skills/**/*.md (tools/check_citations.py), and that every method of src/ and tests/ overriding a
+method of a project class carries its `## Overrides Class.method.` doc line and every such line is true
+(tools/check_overrides.py; run on a full lint and when a .gd file is named). Given file arguments, scans only those --
 how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
 A named file that does not exist is an error, not a silent skip.
 
@@ -410,7 +415,35 @@ lint_citations() {
     fi
 }
 
+# Every override of a project class carries its `## Overrides Class.method.` doc line, and every such
+# line is true (tools/check_overrides.py, under the host's python3, reading src/ and tests/ as text).
+# It reads the whole tree, so it runs on a full lint and when a `.gd` file is among the arguments.
+lint_overrides() {
+    local f run=0 out status
+    [[ $# -eq 0 ]] && run=1
+    for f in "$@"; do
+        [[ "$f" == *.gd ]] && run=1
+    done
+    [[ "$run" -eq 0 ]] && return
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check the overrides and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    out="$(python3 tools/check_overrides.py 2>&1)"
+    status=$?
+    if [[ "$status" -ne 0 ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            printf '%s\n' "$line"
+            # The script's own summary line is not a hit; each `path:line:` line is.
+            [[ "$line" == tools/check_overrides.py:* ]] || hits=$((hits + 1))
+        done <<< "$out"
+    fi
+}
+
 lint_svgs "$@"
+lint_overrides "$@"
 if [[ $# -eq 0 ]]; then
     lint_citations
 else

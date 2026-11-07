@@ -20,6 +20,7 @@ class FakeWorld extends WorldContext:
 
 	var _noise := ExcitementSource.new(self)
 
+	## Overrides WorldContext.excitement_sources_at.
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 

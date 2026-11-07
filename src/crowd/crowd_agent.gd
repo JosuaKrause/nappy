@@ -98,6 +98,8 @@ const DRAWN_REACH := Rect2(-ENTRY_PICTURE_ROOM, -(MARK_HEIGHT + 10.0 + MARK_WIDT
 ## The one thing that moves between ticks is the camera, and the drawn box's margin
 ## (`DrawnView.MARGIN`, two tiles) is far wider than it moves in a tick. **The one exception is a
 ## marked car's caret while its horn runs**, redrawn every drawn frame by `_process()`.
+##
+## Overrides LaneMover.end_the_frame.
 func end_the_frame(delta: float) -> bool:
 	# The clocks only a crowd member keeps, its excitement's clock and the seconds of agitation a
 	# contact or a horn left, run here because every tick that is not skipped ends here.
@@ -136,6 +138,8 @@ func end_the_frame(delta: float) -> bool:
 ## is redrawn at the screen's rate (`_draw_mark()`), the only crowd drawing that is. A car's bob
 ## and the walkers' gait are drawn on the tick (30 times a second): redrawing every car on every
 ## frame would cost the per-frame work the crowd's step on the tick gave up.
+##
+## Overrides LaneMover._ready.
 func _ready() -> void:
 	super._ready()
 	set_process(false)
@@ -185,23 +189,30 @@ func _init() -> void:
 	excitement.rim = _rim
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
+##
+## Overrides LaneMover._kind_installed.
 func _kind_installed() -> void:
 	_look = CarLook.new(self) if kind == Kind.CAR else WalkerLook.new(self)
 	_carets = _look.carets()
 	excitement.take_kind(kind)
 
+## Overrides LaneMover.restart_the_picture.
 func restart_the_picture() -> void:
 	_look.restart()
 
+## Overrides LaneMover.advance_the_picture.
 func advance_the_picture(delta: float) -> void:
 	_look.advance(velocity(), delta)
 
 ## The coat, or the paintwork. Authored near-white and multiplied, the same trick the buildings use,
 ## so a crowd is not one silhouette in one colour ninety times over.
+##
+## Overrides LaneMover._dress.
 func _dress() -> void:
 	var palette := _look.palette()
 	colour = palette[_rng.randi_range(0, palette.size() - 1)]
 
+## Overrides LaneMover._entry_picture_clearance.
 func _entry_picture_clearance() -> float:
 	return _look.entry_clearance(_vertical)
 
