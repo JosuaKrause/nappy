@@ -27,8 +27,12 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
    `destination_drawing`, `debug_layers`);
 4. scene recipes (`scene_recipe_*`, `recipe_*`);
-5. the night group (`blackout`, `power_station`, `heat`, `bollards`, and `masts` once the events
-   allow);
+5. the night group: `Blackout` takes the whole `City`, so `test_blackout`'s stand-in is a
+   never-built `City`, until `Blackout` takes a narrower hand-in; `test_heat` reads the event
+   instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
+   it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
+   to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
+   `test_frame_record`; `test_masts` waits for the events;
 6. the crowd (`crowd_bodies`, `crowd_contributions`, `crowd_yields`, `danger`, `wall_shield`);
 7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
