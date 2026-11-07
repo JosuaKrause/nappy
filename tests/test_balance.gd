@@ -39,8 +39,6 @@ var _config := RunConfig.parse(PackedStringArray(), "", true)
 var _days: DayDirector
 
 func run(t) -> void:
-	# The days are announced on the bus as the game announces them, so the observers count them.
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)

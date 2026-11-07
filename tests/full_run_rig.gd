@@ -26,8 +26,6 @@ const TICK_FACTOR := 4
 ## Plays the run of `seed_value` (the parts of this suite are one seed each, so none runs two minutes
 ## serial).
 func run(t, seed_value: int) -> void:
-	# The days are announced on the bus as the game announces them, so the observers count them.
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	await _play_a_run(t, seed_value)
 

@@ -36,9 +36,11 @@ spent calm areas. Tests only.
 - `tests/fixtures/calm_spot.gd` (`CalmSpot.of()`): the calm tile of an area's calm ground
   (`ClosurePlanner.calm_area_rect()`, the rect the scheduler keeps clean) nearest its centre, where
   both rigs stand her.
-- Both suites call `t.gives_back_observers()` first: the days are announced on the bus as the game
-  announces them, so the page's visit counter counts them. The first run without it failed on
-  `VisitCounter._day` going from 0 to 14.
+- The days are announced on the bus as the game announces them. Before the run log and the page
+  counter were handed in (#1160), the counter heard them and the first run failed the shared-state
+  check on `VisitCounter._day` going from 0 to 14, so both suites gave the observers back; with
+  #1160 merged that call is gone and nothing here needs it, since neither suite boots `main` or
+  hands a run log in.
 
 **What it exposed.** No game bug: the three full runs passed every check, old and new, on their
 first run through the director. One rig bug: the balance suite measured each calm area at the
