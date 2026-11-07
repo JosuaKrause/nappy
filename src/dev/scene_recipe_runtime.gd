@@ -763,7 +763,8 @@ func _install_column(column: Dictionary, errors: Array[String]) -> void:
 		return
 	var happening := ResistanceHappenings.new()
 	happening.trace = _city.trace
-	happening.setup(_city, map)
+	happening.setup(map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	happening.start_day(_run.header.day)
 	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
 			bottom)

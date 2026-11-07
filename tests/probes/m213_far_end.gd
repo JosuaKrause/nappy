@@ -61,7 +61,8 @@ func _task_guards(t) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city, city.map)
+			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+					city.spawn_siting)
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var mark := director.current_step()
 			if mark == null or not mark.is_pickup:
@@ -114,7 +115,7 @@ func _reachability(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, own_run)
+		director.setup(map, own_run, null, null, null, null)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-probe:%d:2" % seed_value)
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
@@ -167,8 +168,8 @@ func _on_screen(t) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
-		director.setup(null, map, null, own_run, SpawnSiting.new(map, map.navigator(),
-				func() -> VisibleView: return view))
+		director.setup(map, own_run, null, null, null, null, null,
+				SpawnSiting.new(map, map.navigator(), func() -> VisibleView: return view))
 		director._day = 6
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)

@@ -111,8 +111,8 @@ standing on.
 | Main road | 0.35 | 2.1/s |
 
 A rate rather than a state is what makes a precinct worth walking to although it is loud.
-`is_calm_zone` stays a threshold beside it, because the *sleepiness* half genuinely is one: only
-calm ground puts a baby to sleep.
+`CityMap.is_calm_zone()` stays a threshold beside it, because the *sleepiness* half genuinely is
+one: only calm ground puts a baby to sleep.
 
 **The multipliers are ratios; the absolute rates on the right are the design.** A change to the
 walking decay moves all five to keep each ground's own rate where it was put — which is why the
@@ -1745,7 +1745,7 @@ the city coherent — a fire in a park leaves a burnt shell and does not turn th
 burnt-out block.
 
 **The one building the fire actually touched is shown burnt regardless of its block's own
-purpose or arc.** `City.mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
+purpose or arc.** `CityFronts.mark_the_burnt_frontage()` reads the `burnt_shell` scar's position, finds
 the single `Building` whose facade it stands against, and sets that one building's own
 `Building.Condition` to `BURNT` — the look `BURNT_OUT` gives every building of a block (windows
 black and broken under soot, the door boarded, the parapet charred, the wall drained to ash),
@@ -1774,7 +1774,7 @@ requisitioned park are the same walkable ground, so neither half moves a walkabl
 `CityState.advance_now()` takes the step a block's arc is waiting on today, and only if it becomes
 the purpose asked for — when moves, never what. Day 11's market is a commercial block whose arc is
 waiting to board up, boarded ahead of her and out of her sight, its buildings shuttered there and
-then (`City.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and the
+then (`CityFronts.present_block()`), except a building day 3's fire burned, which stays burnt. Day 12's park is taken the instant she reaches its swing, and the
 police cordon it off (`ParkCordon`): its ground stays grass, and its edge is taped a stretch at a
 time from the side opposite the last gap until only that gap is open. The gap is checked before it
 is accepted, as a closure is: of the edges whose outside ground still reaches home with the park

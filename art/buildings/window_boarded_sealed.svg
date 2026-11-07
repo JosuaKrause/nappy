@@ -7,7 +7,7 @@
      style's frame onto the brick: the whole plain casement's glass, clear of its lintel and
      sill, and on a tall sash a sliver of dark glass still shows above and below them. The notice is the posters' own paper: pale sheet, dark
      header bar, gray print lines and the red stamp as home_door_sealed.svg draws it (a ring with
-     a solid centre), no letters. `City.board_neighbor_window()` sets `Building.
+     a solid centre), no letters. `CityFronts.board_neighbor_window()` sets `Building.
      neighbor_window_col` to the cell this draws over, from day 11 on for the rest of the run. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
   <!-- Three planks, each a little askew, their shadow on the glass and brick below them. -->

@@ -67,7 +67,7 @@ static func _window_pictures(building: Building) -> Array[StringName]:
 static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 	var rects: Array[Rect2i] = []
 	for rect in map.building_rects:
-		if _block_of(rect) == map.home_block:
+		if City.block_of(rect) == map.home_block:
 			rects.append(rect)
 	rects.sort_custom(func(a, b): return a.position < b.position)
 	return rects
@@ -77,12 +77,11 @@ static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 	var deepest := Rect2i()
 	for rect in map.building_rects:
-		if _block_of(rect) == map.home_block and rect.size.y > deepest.size.y:
+		if City.block_of(rect) == map.home_block and rect.size.y > deepest.size.y:
 			deepest = rect
 	return deepest
 
-## Every home-block `Building`, keyed by its own lot — `City._block_of()`'s own formula, repeated
-## here since it is a private instance method with no static twin to call.
+## Every home-block `Building`, keyed by its own lot.
 static func _home_buildings_by_lot(city: City) -> Dictionary:
 	var result := {}
 	for building: Building in city.buildings():
@@ -130,9 +129,6 @@ func _check_the_units_are_seen(t, city: City, label: String) -> void:
 	t.check(with_units > 0, "%s: some building off the home block carries roof units (%d)" % [label, with_units])
 	t.check(seen == _roof_units_in(city),
 			"%s: every roof unit in the city stands on one lot (%d of %d)" % [label, seen, _roof_units_in(city)])
-
-static func _block_of(rect: Rect2i) -> Vector2i:
-	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
 # ------------------------------------------------------------- the lot geometry ---
 
@@ -315,7 +311,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
 		for building: Building in city.buildings():
 			if building.is_home_building or building.power_station:
 				continue
-			var block := _block_of(building.lot)
+			var block := City.block_of(building.lot)
 			by_block[block] = by_block.get(block, []) + [building]
 			var key := [block, building.lot.size.y]
 			by_block_and_depth[key] = by_block_and_depth.get(key, []) + [building]

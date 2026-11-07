@@ -477,7 +477,8 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 		# vans' feet and the patrol car's beat (`EventInstance.path`), which are put in the
 		# street and then taken out again before the raid this test waits for.
 		var scout := ResistanceHappenings.new()
-		scout.setup(_city, _city.map)
+		scout.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+				_city.atlas, null, _city.spawn_siting)
 		scout.start_day(day)
 		events.visible_view().look(Rect2(Vector2(-4000.0, -4000.0),
 				Tuning.VIEW_HALF_EXTENT * 2.0), covered)
@@ -492,7 +493,8 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 				vans.append(arrived.global_position)
 			events.retire(arrived)
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(_city, _city.map)
+		happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+				_city.atlas, null, _city.spawn_siting)
 		happenings.start_day(day)
 		t.check(beat.size() == 2 and vans.size() == 2,
 				"%s scheme: the raid has its vans and a beat at her building" % scheme)

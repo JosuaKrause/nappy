@@ -77,7 +77,8 @@ func _do_the_sabotage() -> void:
 	var director := ResistanceDirector.new()
 	_city.add_child(director)
 	director.set_process(false)
-	director.setup(_city, _city.map)
+	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	director.start_day(Tuning.RUN_LENGTH_DAYS, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 

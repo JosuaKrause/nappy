@@ -91,7 +91,8 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city, _city.map)
+	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
 	var mark := director.current_step()
 	director.contact().complete_now()
@@ -111,7 +112,8 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 		director.contact().complete_now()
 	else:
 		happenings = ResistanceHappenings.new()
-		happenings.setup(_city, _city.map)
+		happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+				_city.atlas, null, _city.spawn_siting)
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,
@@ -206,7 +208,8 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
+		var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, _city.atlas,
+				fixture.park, siting,
 				ResistanceReads.day_reachability(_city)[1])
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
@@ -592,8 +595,9 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
-					_city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
+			var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city,
+					_city.atlas, fixture.park, _city.spawn_siting,
+					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				_look(_city, null)

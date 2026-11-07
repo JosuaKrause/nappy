@@ -916,6 +916,13 @@ func world_size() -> Vector2:
 func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 	return tile_at(world_to_tile(world_position))
 
+## Whether `world_position` is calm ground at all — park, forest, quiet square, courtyard or
+## playground — for the run log's arrivals and the debug readout, which want the yes or no. The baby
+## asks how fast the sleepiness fills instead (`City.sleepiness_multiplier()`), because calm ground
+## is a rate to it rather than a kind of place.
+func is_calm_zone(world_position: Vector2) -> bool:
+	return Tile.is_calm(tile_type_at_world(world_position))
+
 func home_world_position() -> Vector2:
 	return tile_rect_to_world(home_rect).get_center()
 

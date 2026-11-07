@@ -162,7 +162,8 @@ func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int,
 	if t != null:
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city, city.map)
+		director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+				city.spawn_siting)
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 
 func _rng(seed_value: int, stream: String) -> RandomNumberGenerator:

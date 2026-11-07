@@ -938,7 +938,8 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	_seen_through = city.events.visible_view()
 	_seen_through.look(_view, null)
 	director.set_sight(city.events.sees)

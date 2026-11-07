@@ -171,7 +171,7 @@ class Stretch extends RefCounted:
 	func across() -> bool:
 		return outward.y != 0
 
-## One officer: where he is, what he is walking, and his figure when there is a city to draw in.
+## One officer: where he is, what he is walking, and his figure when there is a world to draw in.
 class Officer extends RefCounted:
 	enum Job { TAPE, ESCORT }
 	enum Phase { WAITING, APPROACH, TAPING, ESCORTING, LEAVING, GONE }
@@ -219,7 +219,13 @@ class Officer extends RefCounted:
 	var move := MoveProposal.new()
 
 var _map: CityMap
-var _city: City
+## The day's events (`EventManager`), handed in: what the line is checked clear of, the park's people
+## it walks out and what it takes away. Null for none: a rig with no events, where nothing is asked.
+var _events: EventManager
+## The world the tape, the posts and the officers are drawn in (`WorldContext`), and the art's pages
+## they draw from (`AtlasLibrary`), handed in. A null world draws nothing: the line is only geometry.
+var _world: WorldContext
+var _atlas: AtlasLibrary
 ## The map's navigator, handed in: what every officer's walk is laid by and walked through.
 var _navigator: Navigator
 ## Where an officer may stand and what the camera sees, handed in (`SpawnSiting`), with what it is
@@ -278,16 +284,20 @@ var trace := RunTrace.new()
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
 ## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
-## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `siting` is
-## the one the officers are placed by: the ground they may stand on and the camera's whole view.
-func _init(map: CityMap, navigator: Navigator, city: City, block: Vector2i,
-		siting: SpawnSiting, blocked: Dictionary = {}) -> void:
+## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `events` the
+## day's, or null for none; `world` where its pieces are drawn, from `atlas`, or null to draw
+## nothing; `siting` is the one the officers are placed by: the ground they may stand on and the
+## camera's whole view.
+func _init(map: CityMap, navigator: Navigator, events: EventManager, world: WorldContext,
+		atlas: AtlasLibrary, block: Vector2i, siting: SpawnSiting, blocked: Dictionary = {}) -> void:
 	_map = map
 	_siting = siting
 	_drawn = siting.ask_of_drawing(EventFootprints.footprint_of(EventCatalogue.by_id(OFFICER_ROW)))
 	_stands_on = siting.ask_of_ground(Rect2(), _officer_walks)
 	_navigator = navigator
-	_city = city
+	_events = events
+	_world = world
+	_atlas = atlas
 	_blocked = blocked
 	park = block
 	_rect = ClosurePlanner.calm_area_rect(map, block)
@@ -517,9 +527,9 @@ func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:
 ## lethal reach of anything that ends the day. The park's own people are not asked: they are being
 ## walked out.
 func _clear_of_the_day(point: Vector2) -> bool:
-	if not _city or not _city.events:
+	if not _events:
 		return true
-	for plan in _city.events.plans():
+	for plan in _events.plans():
 		if plan.spent or not plan.is_placed() or _area.has_point(plan.position):
 			continue
 		var def := plan.def
@@ -935,9 +945,9 @@ func _way_in() -> PackedVector2Array:
 ## ambient row with no figure), and not anything that came for her or drives (a pursuer, a car).
 ## Each escort comes in along the way out, from its far end, which is out of her sight.
 func _send_escorts() -> void:
-	if not _city or not _city.events:
+	if not _events:
 		return
-	for plan in _city.events.plans():
+	for plan in _events.plans():
 		if plan.spent or plan.live or not plan.is_placed() or not _area.has_point(plan.position):
 			continue
 		if plan.def.kind == GameEnums.EventKind.AMBIENT:
@@ -947,7 +957,7 @@ func _send_escorts() -> void:
 		plan.spent = true
 		_map.release_obstruction(plan.get_instance_id())
 	var sent := 0
-	for live in _city.events.instances():
+	for live in _events.instances():
 		if not _walks_out(live):
 			continue
 		if live.is_leaving or sent >= PARK_CLOSING_ESCORTS:
@@ -988,8 +998,8 @@ func _send_off(person: EventInstance) -> void:
 		return
 	var speed := PARK_CLOSING_LEAVE_SPEED if person.def.departure_speed() <= 0.0 else 0.0
 	if not person.leave_along(_way_out_from(person.global_position), speed, _rect):
-		if _city and _city.events:
-			_city.events.retire(person)
+		if _events:
+			_events.retire(person)
 		return
 	_leaving.append(person)
 
@@ -1288,10 +1298,10 @@ func _still_to_come_out() -> bool:
 func _tape_up(stretch: Stretch) -> void:
 	stretch.taped = true
 	_map.obstruct_tiles(stretch.get_instance_id(), stretch.tiles)
-	if not _city:
+	if not _world:
 		return
 	var tape := CordonTape.new()
-	tape.atlas = _city.atlas
+	tape.atlas = _atlas
 	tape.piece = CordonTape.Piece.TAPE
 	tape.across = stretch.across()
 	tape.length = stretch.length()
@@ -1299,7 +1309,7 @@ func _tape_up(stretch: Stretch) -> void:
 	# A tile-long stretch is one slice of the park's edge, standing at its own feet: the middle of a
 	# broadside stretch, the near end of an end-on one (`DrawLayer.slice_feet()`).
 	var slices: Array[Node2D] = [tape]
-	DrawLayer.add_slices(_city, slices, DrawLayer.slice_feet(stretch.a, stretch.b, 1))
+	DrawLayer.add_slices(_world, slices, DrawLayer.slice_feet(stretch.a, stretch.b, 1))
 
 ## The posts the tape is strung on, one at every stretch end an officer reaches, never two at one.
 var _posts: Array[CordonTape] = []
@@ -1310,14 +1320,14 @@ func _plant_a_post(at: Vector2) -> void:
 		if point.distance_to(at) < 1.0:
 			return
 	_post_points.append(at)
-	if not _city:
+	if not _world:
 		return
 	var post := CordonTape.new()
-	post.atlas = _city.atlas
+	post.atlas = _atlas
 	post.piece = CordonTape.Piece.POST
 	post.position = at
 	_posts.append(post)
-	_city.add_entity(post)
+	_world.add_entity(post)
 
 ## An escort on his way in, along the way out from its far end and through the gap, then up to
 ## his person (`_way_up_to()`, laid again whenever they have moved off where it was laid for), whom
@@ -1371,8 +1381,8 @@ func _escort(officer: Officer, delta: float) -> void:
 func _close(her: Vector2) -> void:
 	_closed_at = _elapsed
 	var trapped := her != Vector2.INF and _line.has_point(her)
-	if _city and _city.events:
-		_city.events.take_away_within(_area, ["playground"] as Array[String])
+	if _events:
+		_events.take_away_within(_area, ["playground"] as Array[String])
 	for officer in _officers:
 		if officer.job == Officer.Job.TAPE:
 			officer.phase = Officer.Phase.LEAVING
@@ -1416,13 +1426,13 @@ func _let_go(officer: Officer) -> void:
 	_free_figure(officer)
 
 func _make_figure(officer: Officer) -> void:
-	if not _city:
+	if not _world:
 		return
 	var figure := CordonOfficer.new()
-	figure.atlas = _city.atlas
+	figure.atlas = _atlas
 	figure.position = officer.at
 	officer.node = figure
-	_city.add_entity(figure)
+	_world.add_entity(figure)
 
 func _show(officer: Officer) -> void:
 	var figure := officer.node

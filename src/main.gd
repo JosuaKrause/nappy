@@ -436,8 +436,9 @@ func _ready() -> void:
 		add_child(_resistance)
 		_pauses_with_the_game(_resistance)
 		_resistance.trace = _the_trace()
-		_resistance.setup(_city, _city.map, _city.navigator, null, _city.spawn_siting,
-				_city.events.walk_events())
+		_resistance.use_atlas(_city.atlas)
+		_resistance.setup(_city.map, _run, _city.events, _city.streets(), _city.fronts(), _city,
+				_city.navigator, _city.spawn_siting)
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a

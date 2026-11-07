@@ -161,7 +161,8 @@ func measure(t, seed_value: int) -> Dictionary:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
 	var mark := director.current_step()
@@ -173,7 +174,8 @@ func measure(t, seed_value: int) -> Dictionary:
 		# hands it to its own when the swing is reached (`ResistanceReads.day_reachability()`), so the
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(city, city.map)
+		happenings.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city,
+				city.atlas, null, city.spawn_siting)
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
 		result = _measure_the_day(city, director, happenings, swing)
@@ -217,8 +219,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map, city.navigator, city, cordon.park,
-			city.spawn_siting, ResistanceReads.day_reachability(city)[1])
+	var again := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas,
+			cordon.park, city.spawn_siting, ResistanceReads.day_reachability(city)[1])
 	her[0] = swing
 	_tick(city, again, her[0])
 	var walking := _play(city, again, her, shows, true, result.people == 0)
@@ -247,7 +249,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map, city.navigator, city, park,
+	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
 			city.spawn_siting, ResistanceReads.day_reachability(city)[1])
 	var her := [swing]
 	var shows := _camera_on(her)
