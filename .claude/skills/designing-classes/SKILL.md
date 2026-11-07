@@ -54,7 +54,9 @@ private methods that each re-derive it and the risk that two of them resolve it 
 - **A state object's interface is chosen from what its readers want out of it** (inbox #1156):
   explore what the tests that build the real objects today want to get out of them, and use that to
   inform the design of the state object; then mock that out.
-- **A class is named for what a caller gets out of it, not for how it is built** (inbox #1156).
+- **An interface, base class or abstract class is named for what a caller gets out of it, not for
+  how it is built, and a concrete implementation is named for what the implementation is**
+  (inbox #1156).
 - **The resulting objects are injectable, so a test mocks them** (inbox #1156), and a suite that is
   not about them hands in a fake holding the answers it needs (**writing-tests**).
 - **A fact derived in more than one place is a code smell to look for** (inbox #1156): the same
