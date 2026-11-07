@@ -13,8 +13,8 @@ extends RefCounted
 ## `DayController.new()`) and not faked: the observer is typed against those classes and has no
 ## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
 ## meters, the clock's reading) is state a case sets on the real node, as the game does. The
-## event source it watches is a stand-in where a case needs one (`StandInSource`, one stand-in
-## event), since the observer asks it only for `instances()` and its `sources`.
+## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
+## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its `sources`.
 ##
 ## **Three cases build a real `City`, because narrowing needs a `src/` change**: the observer is
 ## handed a whole `City` (`setup()`, `watch_city()`) and reads its map, events, calm ground,
@@ -101,23 +101,6 @@ func _lines_of(kind: String) -> Array[String]:
 			found.append(line)
 	return found
 
-## One live event of the masked man's row, standing where it is put: what the observer reads of an
-## instance (its row, its position, whether it is over or telegraphing or waiting), answered with
-## the row's own values and a phase of its own. The row is the catalogue's, the data the real
-## building's masked man is made from.
-class StandInEvent extends EventInstance:
-	## Overrides EventInstance.is_waiting.
-	func is_waiting() -> bool:
-		return false
-
-	## Overrides EventInstance.is_telegraphing.
-	func is_telegraphing() -> bool:
-		return false
-
-	## Overrides EventInstance.warns_by_radius.
-	func warns_by_radius() -> bool:
-		return false
-
 ## The sum of the event fields at a point, which the stand-in source answers as nothing.
 class NoFields:
 	func total_at(_at: Vector2) -> float:
@@ -186,16 +169,16 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 ## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
 ## watched by the day's own observer, handed the day's clock and told which world she is in — so
-## this drives the calls the run session makes, in its order, against a building of one stand-in
-## masked man and a real city: a section entered, a frame of every watcher, the masked man met, the section lost through
+## this drives the calls the run session makes, in its order, against a building of one masked man
+## (a plain `EventInstance` set up with the catalogue's `masked_pursuer` row, as the real building's
+## answers: waiting, not telegraphing, warning by radius) and a real city: a section entered, a frame of every watcher, the masked man met, the section lost through
 ## the day's own `day_finished()`, the same section again, then the city entered and left by the
 ## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
 ## mark — must stay silent rather than crash.
 func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	var start := Vector2(100.0, 100.0)
-	var man := StandInEvent.new()
+	var man := EventInstance.new()
 	man.setup(EventCatalogue.by_id("masked_pursuer"), start + Vector2(0.0, -200.0))
-	man.phase = EventInstance.Phase.ACTIVE
 	var events := StandInSource.new()
 	events.live.append(man)
 	var player := Stroller.new()
@@ -534,7 +517,8 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## code, and this is the test that would catch it being wrong: it drives both across four hundred
 ## real frames of a real day, with the log on, and requires the day after to plan exactly as it
 ## would have if the drive had never happened — the only way that can hold is if nothing either
-## watcher did reached `map`, `city.events` or a `day_rng()` stream.
+## watcher did changed `map`, the one input the next day's plan reads here (the plan is made from
+## a fresh random stream and a fresh one-shot ledger, so what the check pins is the map).
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
