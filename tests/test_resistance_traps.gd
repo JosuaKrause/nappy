@@ -215,8 +215,17 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t, day: int, perform
 ## *(grassy-goose, inbox #556, asked which tasks switch to a robber arriving off screen: "Every
 ## guarded target (Recommended)", the option that keeps the roadblock's own guard.)* The roadblock
 ## is guarded exactly where it waits, like a chalk mark, and touching it sends nobody after her.
+## Day 13 is planned through the real day order (`City.start_day()`, then the events), since the
+## task's roadblock is one the day placed, or one of the day's events swapped for one.
 func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
-	_build_city_in_a_new_run(t)
+	var run := _build_city_in_a_new_run(t)
+	run.header.day = 13
+	var state := CityState.new()
+	run.attempt_spend.city_state = state
+	state.begin_day(_city.map.block_plans, 13)
+	_city.start_day(state, 13, _rng(13, "closures"))
+	_city.events.start_day(DaySpec.for_day(13), _rng(13, "events"), [],
+			_city.map.doorstep_world_position())
 	var mark_row := EventCatalogue.mark_guard().id
 	var task_row := EventCatalogue.task_guard().id
 	var director := _director(t)
