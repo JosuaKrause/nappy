@@ -162,7 +162,7 @@ class CheckOverridesTests(unittest.TestCase):
                 child = f"class_name Child\nextends Base\n\n{bad}\nfunc {method}() -> int:\n\treturn 2\n"
                 found = hits(src__base=BASE, src__child=child)
                 self.assertEqual(len(found), 1, (bad, method))
-                self.assertIn("is not the form", found[0])
+                self.assertIn("reword the prose, or write the mark in its exact form", found[0])
 
     def test_two_lines_on_one_method_are_both_checked(self) -> None:
         child = (
@@ -197,7 +197,7 @@ class CheckOverridesTests(unittest.TestCase):
         self.assertIn("Overrides Base.f.", found[0])
 
     def test_an_extends_that_cannot_be_resolved_is_a_hit(self) -> None:
-        for extends, why in (('"uid://abc123"', "uid://"), ('"nowhere.gd"', "names no file")):
+        for extends, why in (('"uid://abc123"', "cannot resolve"), ('"nowhere.gd"', "names no file")):
             found = hits(src__base=BASE, src__child=f"extends {extends}\n\nfunc f() -> int:\n\treturn 2\n")
             self.assertEqual(len(found), 1, extends)
             self.assertIn(why, found[0])
@@ -205,6 +205,12 @@ class CheckOverridesTests(unittest.TestCase):
         found = hits(src__child=alias)
         self.assertEqual(len(found), 1)
         self.assertIn("names no file", found[0])
+
+    def test_a_missing_inner_class_of_an_extends_is_a_hit(self) -> None:
+        child = "extends Base.Nope\n\nfunc f() -> int:\n\treturn 2\n"
+        found = hits(src__base=BASE, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("inner class Nope is not found", found[0])
 
     def test_the_command_line_reports_and_rejects(self) -> None:
         tool = str(Path(__file__).resolve().parent / "check_overrides.py")

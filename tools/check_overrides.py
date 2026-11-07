@@ -89,6 +89,8 @@ class GdClass:
 def scan_line(line: str, in_triple: bool) -> tuple[str, bool]:
     """The code of one line, its comment and the inside of a `\"\"\"` string removed, and whether a
     triple-quoted string is still open at its end. Single-line strings stay as written."""
+    if not in_triple and '"' not in line and "'" not in line and "#" not in line:
+        return line, False
     out: list[str] = []
     i = 0
     while i < len(line):
@@ -279,7 +281,14 @@ def check(files: dict[str, str]) -> list[str]:
                     nearest = None
                 marks = cls.marks[method]
                 for text in marks.malformed:
-                    hits.append((path, line, f"{method}: `{text}` is not the form `## Overrides Class.method.`"))
+                    hits.append(
+                        (
+                            path,
+                            line,
+                            f"{method}: `{text}` starts with Overrides but is not a mark: reword the prose,"
+                            " or write the mark in its exact form `## Overrides Class.method.`",
+                        )
+                    )
                 if nearest is None:
                     for mark in marks.good:
                         hits.append(
