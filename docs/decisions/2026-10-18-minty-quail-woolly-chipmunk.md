@@ -49,7 +49,8 @@ line, so the two say the same thing.
 
 **Two checks that could not fail now can.** `main` handed `--quit-when-still`'s watch no trace in
 the first build, so its `still` line went nowhere; `main` hands it the session's, and
-`tests/test_main.gd` boots with the flag and a recording log and reads the watch's line back. The
+`tests/test_main.gd` boots with the flag and a recording log, writes a line through the watch's
+trace and finds it in the boot's log, which proves `main` hands the watch the trace. The
 route rig suite's check that the rig never walks under a checkpoint boom counted `checkpoint` lines
 from a city whose events wrote nowhere, on `main` as here; its rig and the city's events now write
 into one recording trace. Measured by hand, not committed: with her walked under the boom through

@@ -46,12 +46,10 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	booted.free_all()
 	home.free()
 
-## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
-## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
-## `--quit-when-still` writes its `still` line into the boot's run log: `main` hands the watch the
-## trace it hands every other writer (`StillWatch.trace`, the session's), so a line the watch writes
-## reaches the recording run log the boot is handed (`tests/recording_log.gd`). The hold is long
-## enough that the watch never fires and quits here.
+## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
+## the session's): a line written through the watch's trace reaches the recording run log the boot
+## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
+## is long enough that the watch never fires and quits here.
 func _test_the_still_watch_writes_into_the_boots_run_log(t) -> void:
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
@@ -73,6 +71,8 @@ func _test_the_still_watch_writes_into_the_boots_run_log(t) -> void:
 	run_log.free()
 	home.free()
 
+## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
+## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
 class ReadoutRig:
 	var readout := DebugReadout.new()
 	var label := Label.new()
