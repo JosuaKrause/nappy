@@ -8,7 +8,7 @@ case once the plan object exists (inbox #1156 in gray-dolphin).
 **Read as:** one fact derived from raw data in more than one place, or a private method re-deriving
 what another place already worked out, is moved into one object that derives it once and is handed
 to whoever asks (designing-classes). The dawn cases were built with `DayEvents`, `CalmAreas` and
-`DayRepairs` (#1158); the after-dawn cases are `walk-placed-blockers.md`.
+`DayRepairs` (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
 **What is left: four cases, as the orchestrator's notes name them.** The survey that described them
 is gone, and the board's numbering of the cases (3, 4, 6 and 7 among them) was not kept with the

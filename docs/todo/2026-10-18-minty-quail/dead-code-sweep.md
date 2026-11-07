@@ -7,8 +7,8 @@ it fresh which also guarantees that it adheres to the new design principles" (in
 **Read as:** code nothing reaches, and code that only serves a feature the game no longer has, is
 deleted rather than kept; a feature wanted back is built fresh under the current design. The rule
 is designing-classes'. The first
-case, the covering-set path (`EventScheduler._place_a_set_piece()`), goes in #1169. This item is the
-sweep for the rest, across `src/` and `tools/`, one module per pull request.
+case is the covering-set path (`EventScheduler._place_a_set_piece()`), which no catalogue row
+reaches. This item is the sweep, across `src/` and `tools/`, one module per pull request.
 
 *Proposed, not asked for:* the method. Start from `tools/check_test_only_members.py`'s no-reader group
 (members nothing under `src/` reads) and the members only their own file uses, then the catalogue
