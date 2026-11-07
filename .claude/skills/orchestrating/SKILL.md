@@ -96,8 +96,12 @@ queue entry is not finished yet. That is the same test the **playtest-feedback**
 *somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
-**A milestone with an open design question is not ready for one.** The question goes to the player
-first, and "draft and put back" items never go to an agent at all.
+**A milestone with an open design question that blocks is not ready for one**: one where changing
+course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194).
+That question goes to the player first. An open question that does not block goes on the board and
+the work goes to an agent at once, built on My pick, with the brief naming the pick as open to the
+player's answer; a pick that would overturn something the player asked for is never built ahead of
+their answer (**playtest-feedback**, "Never silently overturn a decision the player took"). "Draft and put back" items never go to an agent at all.
 
 ## Code is designed by layer
 
@@ -341,6 +345,17 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 ## What the orchestrator keeps
 
+- **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
+  when no task is left to start or advance. While agents run, it briefs and spawns every queue item
+  it can start whose files the running agents do not own; holding startable work back, to limit
+  the reviews to come or for any other reason, is stopping early. **Once everything startable is
+  running, it ends its turn to wait for the agents** (inbox #1196): their reports wake it, and
+  waiting that way is not ending the session. A report to the player goes out along the way, never
+  as a stopping point. A running agent or a
+  pull request still to review or land is a task to advance, so the session stays open while one
+  is left. *Proposed, not asked for, open to the player's correction:* a task that waits only on
+  the player, a blocking board question or a review item, does not keep the session open, since
+  nothing this side can advance it.
 - **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
   entry is how a queue lies.
 - **The queue as it stands on `origin/main`, not as it stood when the session started.** More
