@@ -72,9 +72,11 @@ func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
 	# The boot and the title take as many physics ticks as the wall clock gives them frames, so the
 	# game runs them at a scale so small that a tick's delta moves nothing a pixel can show (never 0:
-	# the crowd divides a step by its delta), and the walk starts from the same dawn.
+	# the crowd divides a step by its delta), and the walk starts from the same dawn. The boot's own
+	# hold (`Boot.boot()`'s `still`) is not enough here: it ends when the boot does, and the hold has
+	# to span the title press and the mark's completion as well.
 	var clock := Engine.time_scale
-	Engine.time_scale = 0.0000001
+	Engine.time_scale = Boot.STILL_SCALE
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
 	await Boot.press_title(t, booted.main, "Right")
 	var summary := Boot.summary(booted.main)

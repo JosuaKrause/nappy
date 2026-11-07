@@ -38,6 +38,9 @@ const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 ## (an authored scene that did not stand) reaches it.
 const BOOT_FRAMES := 30
 
+## The time scale a still boot runs at: a tick moves nothing a pixel can show, and is not zero.
+const STILL_SCALE := 0.0000001
+
 ## A booted `main` and the scratch save it was handed. `free_all()` frees both and removes the
 ## scratch file.
 class Booted:
@@ -56,12 +59,14 @@ class Booted:
 ## The real `main.tscn`, handed `config` (none: the process's own) and a save at `scratch_path`,
 ## put under `t` and waited on, real frames passing, until she stands in a world (see this file's
 ## doc). `before` is called with the unbooted `main` before it enters the tree, for whatever else
-## the suite hands it (`use_reload()`, `use_sitting_home()`). `maps`, when given, is where the boot's
-## cities come from (`main.use_city_maps()`), a suite passing the cache of generated cities
-## (`tests/city_map_cache.gd`'s `source()`); a boot handed none generates its own. A boot that has
-## not finished within `BOOT_FRAMES` fails `t`'s check and is returned as it stands.
+## the suite hands it (`use_reload()`, `use_sitting_home()`). **`still`** holds the boot still
+## (`until_booted()`), for a suite that reads a position or a crowd state after it. `maps`, when
+## given, is where the boot's cities come from (`main.use_city_maps()`), a suite passing the cache
+## of generated cities (`tests/city_map_cache.gd`'s `source()`); a boot handed none generates its
+## own. A boot that has not finished within `BOOT_FRAMES` fails `t`'s check and is returned as it
+## stands.
 static func boot(t, scratch_path: String, config: RunConfig = null,
-		before := Callable(), maps := Callable()) -> Booted:
+		before := Callable(), still := false, maps := Callable()) -> Booted:
 	var booted := Booted.new()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
@@ -74,19 +79,30 @@ static func boot(t, scratch_path: String, config: RunConfig = null,
 	if before.is_valid():
 		before.call(booted.main)
 	t.add_child(booted.main)
-	await until_booted(t, booted.main)
+	await until_booted(t, booted.main, still)
 	return booted
 
 ## Lets real frames pass until `main`'s boot has finished: a frame has passed with her in a world
 ## and the boot's own camera freed.
 ## Fails `t`'s check after `BOOT_FRAMES`.
-static func until_booted(t, main: Node) -> void:
+##
+## **`still` runs the boot at a time scale of `STILL_SCALE`.** A boot takes as many physics ticks as
+## the wall clock gives it frames, so the crowd a suite takes hold of has walked a few ticks more or
+## fewer from run to run; at that scale a tick's delta moves nothing a pixel can show (never 0: the
+## crowd divides a step by its delta), and every boot starts its suite from the same dawn. The
+## engine's scale is put back before this returns, so no tick passes between the boot and the suite.
+static func until_booted(t, main: Node, still := false) -> void:
+	var clock := Engine.time_scale
+	if still:
+		Engine.time_scale = STILL_SCALE
 	var frames := 0
 	while frames < BOOT_FRAMES:
 		await t.get_tree().process_frame
 		frames += 1
 		if player(main) != null and main.get_node_or_null("BootCamera") == null:
+			Engine.time_scale = clock
 			return
+	Engine.time_scale = clock
 	t.check(false, "the boot finished within %d frames" % BOOT_FRAMES)
 
 ## A node of the suite's own under `t`, standing for the tree's root, with a sitting parked in it

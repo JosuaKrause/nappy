@@ -207,7 +207,7 @@ func _instance(words: Array, calls: Calls) -> Node2D:
 ## the run, the day and the title are built.
 func _enter(t, main: Node2D) -> void:
 	t.add_child(main)
-	await Boot.until_booted(t, main)
+	await Boot.until_booted(t, main, true)
 
 ## `home`, when given, stands for the tree's root the boot parks its sitting in before a reload and
 ## takes it from at boot (`main.use_sitting_home()`).
