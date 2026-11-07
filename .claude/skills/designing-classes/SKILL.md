@@ -15,6 +15,11 @@ callback it was handed, never by calling it; a component is handed what it depen
 fetching it from an autoload, a group or a static, so a test hands it fakes. A mode, the escape
 included, is a configuration of the shared code, never a parallel copy of it (minty-lemur #785).
 
+**Code that nothing reaches is deleted, not kept, and so is code that only serves a feature the game
+no longer has** (inbox #1180). It costs maintenance, and it misleads whoever reads it, an agent
+included: a doc comment on unreached code reads as live behavior. A feature wanted back is built
+fresh, which also makes it keep to the current principles.
+
 **An event is asked through one consistent interface** (inbox #1173). A caller uses it without
 knowing its details: it never reads an event's settings or fields to work out an answer the event can
 give itself, and callers never filter the raw list of the day's event plans themselves, since the
