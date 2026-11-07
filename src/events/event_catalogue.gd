@@ -466,12 +466,12 @@ static func neighbor_heading_home() -> EventDef:
 ## A permanent feature of the calmest ground in the city, and free: the swing frame it draws is
 ## `map.playgrounds`' own prop (`City._dress_blocks`), not this row.
 ##
-## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius` (150)
-## reaches past half of a 256px park block, so a playground with any real cost denied nearly the
-## whole lot rather than merely contesting its middle. `EventKind.AMBIENT` is exempt from
-## `EventScheduler._ensure_one_usable_park` and `_spoil_the_parks_she_used`, which both skip every
-## `AMBIENT` plan before asking what it costs, so a park is still contested on the days the
-## scheduler spoils it, just never by its own swings.
+## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius`
+## (150) reaches past half of a 256px park block, so a playground with any real cost denied
+## nearly the whole lot rather than merely contesting its middle. `EventKind.AMBIENT` is exempt
+## from `WinnableDay.ensure_one_usable_park` and `_spoil_the_parks_she_used`, which both skip
+## every `AMBIENT` plan before asking what it costs, so a park is still contested on the days
+## the scheduler spoils it, just never by its own swings.
 ##
 ## **The row stays rather than being deleted**: `tests/test_events.gd` looks it up by id and reads
 ## its `kind`, `EventInstance._field_distance()` names it as the row with no shape to fall back to,
@@ -899,9 +899,9 @@ static func _busker() -> EventDef:
 	def.pulse_period = 7.0
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.0
-	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the only
-	# calm ground there is, and `_ensure_one_usable_park` pays for every one that lands on the
-	# block it ends up protecting.
+	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the
+	# only calm ground there is, and `WinnableDay.ensure_one_usable_park` pays for every one
+	# that lands on the block it ends up protecting.
 	def.max_per_day = 10
 	return def
 

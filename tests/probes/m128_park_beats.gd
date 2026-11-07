@@ -269,7 +269,8 @@ func _busker_street_side(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m128:%d" % city_seed)
 		var no_one_shots: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(BUSKER_DAY), rng, map, no_one_shots)
+		var planned := EventScheduler.build_day(DaySpec.for_day(BUSKER_DAY), rng, map,
+				CalmAreas.of(map), no_one_shots).placements()
 		for plan in planned:
 			if plan.def.id != "busker":
 				continue

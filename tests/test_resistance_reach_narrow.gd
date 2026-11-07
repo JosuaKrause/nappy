@@ -155,9 +155,11 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 	t.check(checked > 0, "the sweep actually checked some day (%d)" % checked)
 
 ## Whether some calm area other than the day's swing park has calm ground reached under
-## `_day_reachability()`'s flood and no field of the day's catalogue on it — the rows the day rolled
-## (every one of them given a role) and the masts, which is what `_ensure_one_usable_park()` counts
-## as spoiling; the seals and the region wall are the street's, and it does not.
+## `_day_reachability()`'s flood and no field of the day's catalogue on it — the rows the day
+## rolled (every one of them given a role) and the masts, each asked the spoil rule's own
+## question (`EventScheduler.Planned.spoils()`); the seals and the region wall are the street's,
+## and do not count. The booted day's live plans are read, since nothing after dawn hands out
+## its `DayEvents`.
 func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked: Dictionary,
 		reached: Dictionary) -> bool:
 	var swing := CityGenerator.swing_park(city.map)
@@ -169,7 +171,8 @@ func _a_second_clean_park_is_reached(city: City, grid: ReachabilityGrid, blocked
 		if block == swing:
 			continue
 		var rect := ClosurePlanner.calm_area_rect(city.map, block)
-		if SpoiledGround.by(city.map, catalogue, rect):
+		var ground := city.map.tile_rect_to_world(rect)
+		if catalogue.any(func(plan: EventScheduler.Planned) -> bool: return plan.spoils(ground)):
 			continue
 		for tile in city.map.rect_tiles(rect):
 			if Tile.is_calm(city.map.tile_at(tile)) and grid.reaches(tile, blocked, reached):

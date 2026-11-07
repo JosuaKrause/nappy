@@ -247,17 +247,19 @@ func _test_heat_is_derived_once_and_kept(t) -> void:
 func _test_a_day_is_a_function_of_its_heat(t) -> void:
 	var day := 9
 	var consumed: Array[String] = []
-	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed.duplicate(),
-			[], [], null, Tuning.RESISTANCE_GOAL)
-	var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map, consumed.duplicate(),
-			[], [], null, Tuning.RESISTANCE_GOAL)
+	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+			CalmAreas.of(_map), consumed.duplicate(),
+			[], null, Tuning.RESISTANCE_GOAL).placements()
+	var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+			CalmAreas.of(_map), consumed.duplicate(),
+			[], null, Tuning.RESISTANCE_GOAL).placements()
 	t.check(first.size() == second.size(),
 			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
 	for i in mini(first.size(), second.size()):
 		t.check(first[i].def.id == second[i].def.id and first[i].position == second[i].position,
 				"placement %d of a hot day is where it was" % i)
 	# And nothing in the heated catalogue can plan a day that has no park left to walk to — the
-	# guarantee `_ensure_one_usable_park` makes cold has to survive the escalation.
+	# guarantee `WinnableDay.ensure_one_usable_park` makes cold has to survive the escalation.
 	t.check(not first.is_empty(), "a hot day places events at all")
 
 # ------------------------------------------------------------ the patrol presses ---
@@ -678,9 +680,11 @@ func _test_a_hot_day_places_more_patrols(t) -> void:
 		cold_rng.seed = rng_seed
 		var hot_rng := RandomNumberGenerator.new()
 		hot_rng.seed = rng_seed
-		var cold := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map, [], [], [], null, 0))
-		var hot := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map, [], [], [], null,
-				Tuning.RESISTANCE_GOAL))
+		var cold := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
+				CalmAreas.of(map), [], [], null, 0).placements())
+		var hot := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
+				CalmAreas.of(map), [], [], null,
+				Tuning.RESISTANCE_GOAL).placements())
 		t.check(hot >= cold,
 				"seed %d: a fully heated day places at least as many patrols as a cold one (%d vs %d)"
 				% [run_seed, hot, cold])

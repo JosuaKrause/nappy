@@ -41,36 +41,13 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-## Whether a plan's field reaches a rect — mirrors `EventScheduler._reaches_rect`.
-func _reaches(plan, rect: Rect2) -> bool:
-	var grown := rect.grow(plan.def.outer_radius)
-	if grown.has_point(plan.position):
-		return true
-	for point in plan.path:
-		if grown.has_point(point):
-			return true
-	return false
-
-## The calm ground of a calm block — mirrors `EventScheduler._calm_rect`, which is the
-## definition the guarantee is actually written over.
-func _calm_rect(map: CityMap, block: Vector2i) -> Rect2i:
-	var layout: BlockLayout = map.block_layouts.get(block)
-	if layout and BlockLayout.has(layout.open_rect):
-		return layout.open_rect
-	return CityMap.block_rect(block)
-
-## The calm block with the least reaching it — the one a player would find and settle in.
-func _quietest_calm_block(map: CityMap, planned: Array) -> Vector2i:
+## The calm block she would find and settle in: the one the fewest of the day's rows spoil, as
+## the day itself answers it (`DayEvents.spoilers_of()`).
+func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var fewest := 1 << 30
-	for block in map.calm_blocks:
-		var lot := map.tile_rect_to_world(_calm_rect(map, block))
-		var spoilers := 0
-		for plan in planned:
-			if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
-				continue
-			if lot.grow(plan.def.outer_radius).has_point(plan.position):
-				spoilers += 1
+	for block in calm.blocks():
+		var spoilers := events.spoilers_of(block).size()
 		if spoilers < fewest:
 			fewest = spoilers
 			best = block
@@ -81,15 +58,19 @@ func _test_scheduler_is_deterministic(t) -> void:
 	for day in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
-		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_a)
-		var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed_b)
+		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed_a).placements()
+		var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed_b).placements()
 		t.check(_signature(first) == _signature(second),
 				"day %d replans identically from the same seed" % day)
 
 	var consumed: Array[String] = []
-	var day_one := EventScheduler.build_day(DaySpec.for_day(1), _rng(1), map, consumed)
+	var day_one := EventScheduler.build_day(DaySpec.for_day(1), _rng(1), map, CalmAreas.of(map),
+			consumed).placements()
 	consumed.clear()
-	var day_two := EventScheduler.build_day(DaySpec.for_day(2), _rng(2), map, consumed)
+	var day_two := EventScheduler.build_day(DaySpec.for_day(2), _rng(2), map, CalmAreas.of(map),
+			consumed).placements()
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 func _test_scheduler_respects_placement_and_caps(t) -> void:
@@ -146,7 +127,8 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 			return rng
 		for day in range(1, 15):
 			var groups := {}
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map, consumed):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map,
+					CalmAreas.of(map), consumed).placements():
 				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 					continue
 				t.check(int(seen.get(plan.def.id, day)) == day,
@@ -184,7 +166,8 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
+					CalmAreas.of(map), consumed, [], tree).placements():
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -331,33 +314,16 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 ##
 ## "Usable" is the calm **ground**, not the whole block lot, and the distinction is M15's:
 ## a courtyard's calm is a four-tile court inside a residential block, so an event on the
-## street outside spoils the lot and not the court. This test used to measure the lot, which
-## asserted more than `_ensure_one_usable_park` has ever promised — invisible at thirteen
-## events a day and false on nine days out of fourteen at M28's density, where every block
-## has something on the street beside it. The guarantee it exists to protect is unchanged:
-## somewhere in the city there is calm ground with nothing emitting into it.
+## street outside spoils the lot and not the court. The guarantee: somewhere in the city there
+## is calm ground with nothing emitting into it, read off the day as the scheduler answers it
+## (`DayEvents.is_spoiled()`, whose own logic `tests/test_day_events.gd` checks).
 func _test_one_park_stays_usable(t) -> void:
-	var map := _map()
+	var calm := CalmAreas.of(_map())
 	for day in range(1, 15):
-		var planned := _planned(day)
+		var events := _day_events(day)
 		var clean := 0
-		for block in map.calm_blocks:
-			var lot := map.tile_rect_to_world(_calm_rect(map, block))
-			var spoiled := false
-			for plan in planned:
-				if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
-					continue
-				var grown := lot.grow(plan.def.outer_radius)
-				if grown.has_point(plan.position):
-					spoiled = true
-					break
-				for point in plan.path:
-					if grown.has_point(point):
-						spoiled = true
-						break
-				if spoiled:
-					break
-			if not spoiled:
+		for block in calm.blocks():
+			if not events.is_spoiled(block):
 				clean += 1
 		t.check(clean >= 1, "day %d leaves at least one park unspoiled" % day)
 
@@ -391,21 +357,17 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 			if Tuning.act_for_day(day) != act:
 				act = Tuning.act_for_day(day)
 				used_this_act = []
-			var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [],
-					used_this_act)
-			for block in map.calm_blocks:
-				if used_this_act.has(block):
-					continue
-				var lot := map.tile_rect_to_world(_calm_rect(map, block))
-				for plan in planned:
-					if plan.def.kind == GameEnums.EventKind.AMBIENT or not plan.is_placed():
-						continue
-					if plan.permanent:
-						continue
-					t.check(not _reaches(plan, lot),
-							"seed %d day %d: %s is not near the unused calm at %s"
-							% [run_seed, day, plan.def.id, block])
-			used_this_act.append(_quietest_calm_block(map, planned))
+			var calm := CalmAreas.of(map, used_this_act)
+			var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, calm,
+					consumed, [])
+			for block in calm.unused():
+				var near: Array[String] = []
+				for plan in events.spoilers_of(block):
+					near.append(plan.def.id)
+				t.check(near.is_empty(),
+						"seed %d day %d: nothing is near the unused calm at %s (%s)"
+						% [run_seed, day, block, ", ".join(near)])
+			used_this_act.append(_quietest_calm_block(events, calm))
 
 func _test_successors_resolve(t) -> void:
 	for def in EventCatalogue.all():
@@ -560,7 +522,8 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
-		var before := EventScheduler.build_day(every_wall, _rng(day), map, consumed)
+		var before := EventScheduler.build_day(every_wall, _rng(day), map, CalmAreas.of(map),
+				consumed).placements()
 		var after := _planned(day)
 		# `after` has to be `before` with entries taken out and nothing else: walked in step, every
 		# plan of `after` is met in `before` in the same order.
@@ -608,20 +571,22 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 func _same_plan(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
 	return a.def.id == b.def.id and a.position == b.position
 
-## The city, and the seed of the day's draw, where the walkability repair has to choose between two
-## calm areas (see the test below). Found by building this day for cities 1000 + 31k and draw seeds
-## `hash("zz:<city>:<area>:<try>")`, once with `_is_spoiled()` as the game has it and once answering
-## "not spoiled" (a temporary edit), until the two kept different bodies; the first hit is pinned. If
-## the guard in the test trips because the catalogue, the planner or the tuning moved, search again
-## the same way for a city and a draw where the plans differ, and pin those.
+## The city, and the seed of the day's draw, where the walkability repair has to choose between
+## two calm areas (see the test below). Found by building this day for cities 1000 + 31k and
+## draw seeds `hash("zz:<city>:<area>:<try>")`, once with `DayEvents.is_spoiled()` as the game
+## has it and once answering "not spoiled" (a temporary edit), until the two kept different
+## bodies; the first hit is pinned. If the guard in the test trips because the catalogue, the
+## planner or the tuning moved, search again the same way for a city and a draw where the plans
+## differ, and pin those.
 const _CHOICE_CITY_SEED := 1000
 const _CHOICE_DRAW_SEED := 3855935560
 
-## **The repair keeps a route to a clean calm area, not to a spoiled one.** On day 12, with the swing
-## park as the target, `EventScheduler` keeps a route to the calm ground *besides* the swing's that
-## no event's field reaches (`_ensure_the_city_is_still_walkable()`); when the bodies placed cut that
-## clean area off, it drops them, widest first, until it is reached. Counting the spoiled area as
-## well would stop at the first drop that left *it* reachable.
+## **The repair keeps a route to a clean calm area, not to a spoiled one.** On day 12, with the
+## swing park as the target, `EventScheduler` keeps a route to the calm ground *besides* the
+## swing's that no event's field reaches (`WinnableDay.ensure_the_city_is_still_walkable()`);
+## when the bodies placed cut that clean area off, it drops them, widest first, until it is
+## reached. Counting the spoiled area as well would stop at the first drop that left *it*
+## reachable.
 ##
 ## The route tree keeps calm ground reachable, so no day the game plans on its own puts a body on the
 ## one street to a clean area. The day here is built so it does: every street but the three the home,
@@ -643,11 +608,11 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 		return
 	var clean_block := others[0]
 	var spoiled_block := others[1]
+	var used: Array[Vector2i] = [spoiled_block]
+	var calm := CalmAreas.of(map, used, park)
 	var calm_tile := func(block: Vector2i) -> Vector2i:
-		for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
-			if Tile.is_calm(map.tile_at(tile)):
-				return tile
-		return Vector2i(-1, -1)
+		var tiles := calm.calm_tiles_of(block)
+		return tiles[0] if not tiles.is_empty() else Vector2i(-1, -1)
 	var walks := {}   # which place -> the street segments its walk from home uses
 	var keep := {}
 	for place: String in ["target", "clean", "spoiled"]:
@@ -667,27 +632,21 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
 	var consumed: Array[String] = []
-	var used: Array[Vector2i] = [spoiled_block]
-	var plans := EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], used, null,
-			0, PackedVector2Array(), target, [])
-	var clean_rect := ClosurePlanner.calm_area_rect(map, clean_block)
-	var spoiled_rect := ClosurePlanner.calm_area_rect(map, spoiled_block)
-	t.check(not SpoiledGround.by(map, plans, clean_rect),
+	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, consumed, [],
+			null, 0, PackedVector2Array(), target, [])
+	t.check(not events.is_spoiled(clean_block),
 			"the area she has not used is clean after the repair")
-	t.check(SpoiledGround.by(map, plans, spoiled_rect),
+	t.check(events.is_spoiled(spoiled_block),
 			"the area she used is spoiled after the repair")
-	var blockers: Array[EventScheduler.Planned] = []
-	for plan in plans:
-		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
-			blockers.append(plan)
+	var blockers := events.obstructions()
 	var blocked := EventScheduler.blocked_by(map, blockers)
 	var grid := ReachabilityGrid.build(map)
 	var reached := grid.flood([map.home_rect.position], blocked)
 	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
 			"with every body the day kept standing, the clean calm area is still reached from home")
-	# **The case is live**: the clean area has one way in, the streets only its walk uses, and a body
-	# the day kept stands on them. Were it opened another way, or no body to stand there, the
-	# check above would pass whatever `_is_spoiled()` answered.
+	# **The case is live**: the clean area has one way in, the streets only its walk uses, and a
+	# body the day kept stands on them. Were it opened another way, or no body to stand there,
+	# the check above would pass whatever `DayEvents.is_spoiled()` answered.
 	var access := {}   # the tiles of the streets only the clean area's walk uses
 	for key: Vector3i in walks["clean"]:
 		if not walks["target"].has(key) and not walks["spoiled"].has(key):

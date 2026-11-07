@@ -231,7 +231,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("route-bag:%d" % seed_value)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+				CalmAreas.of(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
@@ -283,7 +284,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("route-bag:lesson:%d" % seed_value)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+				CalmAreas.of(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
@@ -356,7 +358,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	var tree := RouteTree.for_day(map, day)
 	var plan_rng := RandomNumberGenerator.new()
 	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
-	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map, [], [], [], tree, 0)
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+			CalmAreas.of(map), [], [], tree, 0).placements()
 	var no_calm: Array[Vector2i] = []
 	var siting := RefusingSiting.new(day, map, tree, no_calm, PackedVector2Array(),
 			EventScheduler.Verdicts.new())

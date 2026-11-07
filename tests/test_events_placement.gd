@@ -115,7 +115,8 @@ func _test_the_day_is_placed_by_role(t) -> void:
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
 		var ground := {}
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements():
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
@@ -514,7 +515,8 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements():
 			if not plan.def.paces or not plan.counts_against_the_line():
 				continue
 			if not plan.def.reaches_the_far_lane():
@@ -626,7 +628,8 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
@@ -764,7 +767,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements():
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.def.paces:
@@ -848,7 +852,8 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
@@ -956,7 +961,8 @@ func _test_a_flock_is_scenery(t) -> void:
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], tree):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+				consumed, [], tree).placements():
 			if plan.def.id != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role == GameEnums.BlockerRole.NONE,

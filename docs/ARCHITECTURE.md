@@ -183,6 +183,12 @@ src/
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
 	                      day, or the escape city's streets from its marble bag
+	day_events.gd         the day's planned rows read through one object: what each spoils, what
+	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
+	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
+	                      which she used this act, the one that does not count today
+	winnable_day.gd       the two repairs that keep a planned day winnable: one calm area clean,
+	                      and a route to it from home
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over

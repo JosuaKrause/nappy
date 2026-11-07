@@ -436,9 +436,10 @@ func _test_a_never_used_park_is_unaffected(t) -> void:
 	t.check(compared > 0, "the sweep compared unused parks on days with a park shut (%d)"
 			% compared)
 
-## The scheduler's calm-ground pass spoils every used area the tree has taken off the route — the
-## day still has a clean open calm area, which `_ensure_one_usable_park` guarantees — and places
-## nothing inside `CityMap.fenced_park`, whose fence is the whole of what it shows.
+## The scheduler's calm-ground pass spoils every used area the tree has taken off the route —
+## the day still has a clean open calm area, which `WinnableDay.ensure_one_usable_park`
+## guarantees — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
+## what it shows.
 func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 	var offered := 0
 	var spoiled := 0
@@ -457,8 +458,10 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 			rng.seed = hash("events:%d:%d" % [map.seed_used, day])
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
-			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map, no_one_shots, no_scars, used,
-					tree)
+			var calm := CalmAreas.of(map, used)
+			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm,
+					no_one_shots, no_scars, tree)
+			var planned := events.placements()
 			if map.fenced_park.x >= 0:
 				var fenced_tiles := {}
 				for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, map.fenced_park)):
@@ -470,15 +473,14 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 							"seed %d day %d: '%s' is not placed inside the fenced park"
 							% [map.seed_used, day, plan.def.id])
 			for block in used:
-				if block == map.fenced_park or not block in map.calm_blocks:
+				if block == map.fenced_park or not block in calm.blocks():
 					continue
 				offered += 1
-				if SpoiledGround.by(map, planned, ClosurePlanner.calm_area_rect(map, block)):
+				if events.is_spoiled(block):
 					spoiled += 1
 			var clean := 0
-			for block in map.calm_blocks:
-				if not SpoiledGround.by(map, planned,
-						ClosurePlanner.calm_area_rect(map, block)):
+			for block in calm.blocks():
+				if not events.is_spoiled(block):
 					clean += 1
 			t.check(clean >= 1, "seed %d day %d leaves an open calm area clean"
 					% [map.seed_used, day])

@@ -229,7 +229,7 @@ var trace := RunTrace.new()
 ## The day's own reachability answer, built lazily (`_ensure_reachability()`) the first time a
 ## placement asks it and kept for the rest of the day — cleared in `start_day()` so a new day
 ## never reads yesterday's obstruction. `ReachabilityGrid.build()` is cheap enough to do once a
-## day (`EventScheduler._ensure_the_city_is_still_walkable()`'s own doc says the same); this
+## day (`WinnableDay.ensure_the_city_is_still_walkable()`'s own doc says the same); this
 ## director asks the same grid the same way, not a second implementation of it.
 var _reach_grid: ReachabilityGrid
 ## `EventScheduler.blocked_by()`'s own set: today's closures plus every placed, obstructing or
@@ -2485,12 +2485,13 @@ static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i,
 ## asks whether a tile is reachable, and never again this day. `_reach_grid` alone is the sentinel:
 ## a fresh `RandomNumberGenerator`-style build-once-per-day, not a per-call cost.
 ##
-## **`EventScheduler.blocked_by()`, asked the same way `_ensure_the_city_is_still_walkable()` asks
-## it** — every placed plan whose `obstructs_radius > 0.0` or `hard_fail` is true contributes its
-## own disc, on top of `_map.closed_tiles` — so this director's answer to "can she get there" is
-## never a second implementation of the city's own, only a second question put to it: that
-## function asks whether *some* calm area, and on a narrow target's day *some* tile of the target,
-## is still reachable, and drops the widest of the catalogue's obstructions until they are
+## **`EventScheduler.blocked_by()`, asked the same way
+## `WinnableDay.ensure_the_city_is_still_walkable()` asks it** — every placed plan whose
+## `obstructs_radius > 0.0` or `hard_fail` is true contributes its own disc, on top of
+## `_map.closed_tiles` — so this director's answer to "can she get there" is never a second
+## implementation of the city's own, only a second question put to it: that function asks
+## whether *some* calm area, and on a narrow target's day *some* tile of the target, is still
+## reachable, and drops the widest of the catalogue's obstructions until they are
 ## (`docs/CITY.md`, "Guarantees"); this asks whether *one specific tile* is, and never drops
 ## anything — a candidate that fails is redrawn, the same "reject rather than repair" rule
 ## `_pick_reachable()` already keeps for `is_obstructed()`. The blockers are the same list both

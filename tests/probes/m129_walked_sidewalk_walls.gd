@@ -307,52 +307,54 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	var corridor := Corridor.of(tree)
 	var ground := {}
-	var no_calm: Array[Vector2i] = []
-	var leave_alone := EventScheduler._calm_to_leave_alone(map, no_calm)
+	var calm := CalmAreas.of(map)
+	var leave_alone := calm.unused_ground()
 	var rng := _rng(map, day, "events")
 	var base: int = rng.seed
 
-	var planned: Array[EventScheduler.Planned] = []
+	var events := DayEvents.over(calm)
 	var provenance := {}   # Planned instance id -> Source
 
 	var ambient := EventScheduler._place_ambient(day, map, 0)
-	planned.append_array(ambient)
+	events.add_all(ambient)
 	for plan: EventScheduler.Planned in ambient:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
 	var no_scars: Array[Dictionary] = []
 	var scars := EventScheduler._place_scars(day, no_scars, 0)
-	planned.append_array(scars)
+	events.add_all(scars)
 	for plan: EventScheduler.Planned in scars:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
-	var before := planned.size()
-	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), map, planned, ground,
+	var before := events.size()
+	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), map, events, ground,
 			leave_alone, corridor, 0)
-	_tag_new(planned, provenance, before, Source.CANDIDATE_LOOP)
+	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
-	before = planned.size()
+	before = events.size()
 	var consumed: Array[String] = []
-	EventScheduler._place_one_shots(day, EventScheduler._stream(base, 2), map, consumed, planned,
+	EventScheduler._place_one_shots(day, EventScheduler._stream(base, 2), map, consumed, events,
 			ground, leave_alone, corridor, 0)
-	_tag_new(planned, provenance, before, Source.CANDIDATE_LOOP)
+	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
-	before = planned.size()
-	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, planned,
-			no_calm, 0)
-	_tag_new(planned, provenance, before, Source.CALM_GROUND)
+	before = events.size()
+	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
+			calm, 0)
+	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
-	before = planned.size()
-	EventScheduler._fill_with_recurring(day, base, map, planned, ground, leave_alone, corridor, 0)
-	_tag_new(planned, provenance, before, Source.CANDIDATE_LOOP)
+	before = events.size()
+	EventScheduler._fill_with_recurring(day, base, map, events, ground, leave_alone, corridor,
+			0)
+	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
-	before = planned.size()
-	EventScheduler._ensure_the_run_is_taught(day, planned, 0)
-	_tag_new(planned, provenance, before, Source.OTHER)
+	before = events.size()
+	EventScheduler._ensure_the_run_is_taught(day, events, 0)
+	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
 	# Removal-only passes: monotonic, never add a body, so tagging is complete before they run.
-	EventScheduler._ensure_one_usable_park(map, planned, no_calm)
-	EventScheduler._ensure_the_city_is_still_walkable(map, planned)
+	WinnableDay.ensure_one_usable_park(events, calm)
+	WinnableDay.ensure_the_city_is_still_walkable(map, events, calm)
+	var planned := events.placements()
 
 	for plan: EventScheduler.Planned in seals:
 		provenance[plan.get_instance_id()] = Source.SEAL

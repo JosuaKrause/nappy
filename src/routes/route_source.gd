@@ -58,8 +58,8 @@ func corridor() -> Corridor:
 func start() -> Vector2:
 	return Vector2.INF
 
-## Where the walk has to get to, in world space: the escape's two ways out. Empty for a walk whose
-## ends are the calm areas a day's guarantees reach through its own corridor
-## (`EventScheduler._ensure_the_city_is_still_walkable()`), rather than points.
+## Where the walk has to get to, in world space: the escape's two ways out. Empty for a walk
+## whose ends are the calm areas a day's guarantees reach through its own corridor
+## (`WinnableDay.ensure_the_city_is_still_walkable()`), rather than points.
 func ends() -> Array[Vector2]:
 	return []

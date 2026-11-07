@@ -819,7 +819,8 @@ func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []
 	var plans := EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
-			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, consumed)
+			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, CalmAreas.of(map),
+			consumed).placements()
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:
 		t.check(plan.def.id != id,

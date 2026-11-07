@@ -40,10 +40,11 @@ extends RouteSource
 ## is fine, because both go to the same place. The constraint is on the graph and never on
 ## spacing; anything here that enforced a distance between branches would have misread it.
 ##
-## **A second route is an offer, not a promise.** *"Having two distinct paths is really a niceness
-## to the user. If we cannot construct a path B at all, let's not try."* An area with one way in
-## is a legitimate area. What must still hold absolutely is only that *some* calm is reachable,
-## which is `EventScheduler._ensure_the_city_is_still_walkable`'s job and not this class's.
+## **A second route is an offer, not a promise.** *"Having two distinct paths is really a
+## niceness to the user. If we cannot construct a path B at all, let's not try."* An area with
+## one way in is a legitimate area. What must still hold absolutely is only that *some* calm is
+## reachable, which is `WinnableDay.ensure_the_city_is_still_walkable`'s job and not this
+## class's.
 ##
 ## **A step is a `ReachabilityGrid` node, one per 4-connected component of a cell — not a street
 ## and not a tile.** M69 moved the growth here from the junction graph: a tree of whole streets
@@ -471,11 +472,12 @@ func _carries(node: int, colour: int) -> bool:
 ## because it answers a proximity question about the physical lattice rather than proposing a way to
 ## walk, and both kinds of ground are real either way.
 ##
-## **It is a filter on this class's own view and nothing else.** `ReachabilityGrid` is untouched, so
-## every guarantee stated over walkable ground — `ClosurePlanner`'s two-calm-areas invariant,
-## `EventScheduler._ensure_the_city_is_still_walkable`, `Corridor.depth()`'s own proximity field —
-## still sees the city the player can walk, which is the city she can walk: **she may cross a street
-## anywhere and stand in the road if she likes.** What changes is only what the day plans against.
+## **It is a filter on this class's own view and nothing else.** `ReachabilityGrid` is
+## untouched, so every guarantee stated over walkable ground — `ClosurePlanner`'s two-calm-areas
+## invariant, `WinnableDay.ensure_the_city_is_still_walkable`, `Corridor.depth()`'s own
+## proximity field — still sees the city the player can walk, which is the city she can walk:
+## **she may cross a street anywhere and stand in the road if she likes.** What changes is only
+## what the day plans against.
 func _ways(node: int) -> Array:
 	var cached: Variant = _ways_cache.get(node)
 	if cached != null:
@@ -638,9 +640,9 @@ func _resettle_the_tails() -> void:
 ## `docs/DECISIONS.md`, M64: "grow the day's tree from the doorstep and exempt the trunk with it, so
 ## home-to-corridor is tree ground like any other."
 ##
-## A no-op when nothing grew at all — there is no tree to join home to, and that day's walkability
-## is somebody else's question (`EventScheduler._ensure_the_city_is_still_walkable`, `Tuning.
-## MIN_CALM_AREAS_REACHABLE`), not this one's.
+## A no-op when nothing grew at all — there is no tree to join home to, and that day's
+## walkability is somebody else's question (`WinnableDay.ensure_the_city_is_still_walkable`,
+## `Tuning. MIN_CALM_AREAS_REACHABLE`), not this one's.
 func _grow_the_trunk() -> void:
 	if _colours.is_empty():
 		return
@@ -693,9 +695,10 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 ## search, so the spur joins whichever of them is nearest the tree. Tried without the main road
 ## first and with it only if nothing else joins, as the trunk is.
 ##
-## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first leaves
-## the day to `EventScheduler._ensure_the_city_is_still_walkable`, the second cannot happen on a
-## city `CityGenerator.validate()` accepted, since every walkable tile is reachable from the home.
+## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first
+## leaves the day to `WinnableDay.ensure_the_city_is_still_walkable`, the second cannot happen
+## on a city `CityGenerator.validate()` accepted, since every walkable tile is reachable from
+## the home.
 func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:
 	if _colours.is_empty() or not grid:
 		return
