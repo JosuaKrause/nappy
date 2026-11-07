@@ -14,9 +14,9 @@ extends RefCounted
 ## body clear: the ground its radius reaches past where it would land, in the way it is going, has
 ## to be open too.
 ##
-## **The one exception is the crowd's lane step** (`CrowdLanes`): a lane-following held step is a
-## different motion model from the navigator's swept step, and it stays off the navigator (inbox
-## #1155 in gray-dolphin).
+## **The one exception is the crowd's lane step** (`LaneMover`, with `LaneStrategy`): a
+## lane-following held step is a different motion model from the navigator's swept step, and it
+## stays off the navigator (inbox #1155 in gray-dolphin).
 ##
 ## A navigator over open ground (`open_ground()`, `WorldMap.open_ground()`) takes every step whole,
 ## sees every line clear and walks every way straight: what a data rig with no world walks on.
