@@ -40,7 +40,7 @@ API, and it is the form a script could tell apart. A property is used only insid
 the filer's reading and not the player's words:* the rule covers the vars that classes under `src/`
 declare; it does not cover an engine object's properties (`position`, `visible`, the tree's
 `paused`, as **godot** uses them) or constants and enums (`Tuning.X`). Much of `src/` still reads
-fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that adds such a read, today's being listed in `tools/field_reads.txt`, a list that only shrinks, so a change that touches a listed read deletes its line. *Proposed by the filer, open to the player's correction:* new code does not,
+fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that adds a reader file's first read of a field whose receiver's class it can tell by static reading, today's being listed in `tools/field_reads.txt`, a list that only shrinks. It cannot see a read through an untyped receiver, or a further read of a field its reader file is already listed for, so review still reads the diff for those; and a change that converts a file's last read of a field deletes its line. *Proposed by the filer, open to the player's correction:* new code does not,
 a change that touches such a read moves it behind a method, and state another class needs is kept in
 an underscore field behind a method.
 
