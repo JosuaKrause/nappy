@@ -309,16 +309,17 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 
 ## **Day 13's task roadblock in place of `old`**, one of the day's own events, when no roadblock the
 ## day placed is close by where she read the mark (`ResistanceDirector._place_the_roadblock_near()`,
-## inbox #1185): `def` built where `old` stands and checked under the rules a roadblock is placed
-## under (`EventScheduler.WalkSiting.in_place_of()`), `old` spent and its body given back, and the
-## roadblock put in the world at once and kept there for the rest of the day
-## (`EventStreaming.swap()`), since the task's contact rides it. Answers its live instance, or null
-## when a rule refuses it there, and nothing is swapped.
+## inbox #1185): `def` built where `old` stands, or on its own ground beside it, out of her view as
+## `in_view` (the row and a world point) answers, and checked under the rules a roadblock is placed
+## under (`EventScheduler.WalkSiting.in_place_of()`); `old` spent, taken out of the world if it is
+## in it, and its body given back, and the roadblock put in the world at once and kept there for the
+## rest of the day (`EventStreaming.swap()`), since the task's contact rides it. Answers its live
+## instance, or null when a rule refuses it there, and nothing is swapped.
 func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
-		rng: RandomNumberGenerator) -> EventInstance:
+		rng: RandomNumberGenerator, in_view := Callable()) -> EventInstance:
 	if not def or not old:
 		return null
-	var plan := _day_siting().in_place_of(def, old, rng)
+	var plan := _day_siting().in_place_of(def, old, rng, in_view)
 	if not plan:
 		return null
 	return _streaming.swap(old, plan)

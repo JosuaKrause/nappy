@@ -77,8 +77,9 @@ func _test_what_stands_clear_of_it(t) -> void:
 
 
 ## **What day 13's task may put its roadblock in place of** (`may_be_replaced()`, inbox #1185): one of
-## the day's own events standing still, blocking or not, and never the region wall's body, a door's,
-## a scar, one that moves, one already spent or not placed, or one in the world.
+## the day's own events standing still, blocking or not, in the world or not, and never the region
+## wall's body, a door's, a scar, one that moves, one already spent or not placed, or one in the world
+## that has noticed her.
 func _test_what_day_13s_task_may_replace(t) -> void:
 	var tables := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
 	t.check(tables.may_be_replaced(), "the day's cafe tables, standing still, may be replaced")
@@ -101,6 +102,18 @@ func _test_what_day_13s_task_may_replace(t) -> void:
 			Vector2.INF).may_be_replaced(), "nor one the day budgeted and never placed")
 	var live := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
 	var instance := EventInstance.new()
+	instance.setup(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320), PackedVector2Array())
 	live.live = instance
-	t.check(not live.may_be_replaced(), "nor one in the world, and so perhaps in her sight")
+	t.check(live.may_be_replaced(),
+			"one in the world may be, since whether she sees it is asked where it stands")
 	instance.free()
+	var guard_row := EventCatalogue.by_id("alley_robbery")
+	var waiting := EventScheduler.Planned.new(guard_row, Vector2(320, 320))
+	var guard := EventInstance.new()
+	guard.setup(guard_row, Vector2(320, 320), PackedVector2Array())
+	waiting.live = guard
+	t.check(waiting.may_be_replaced(), "and so may a waiting robber who has not noticed her")
+	guard.notice_her_at(Vector2(380, 320))
+	t.check(guard.has_noticed_her() and not waiting.may_be_replaced(),
+			"but not once he has noticed her, since his warning is on her")
+	guard.free()

@@ -54,14 +54,10 @@ func reaches(tile: Vector2i) -> bool:
 func is_shut(tile: Vector2i) -> bool:
 	return _shut.has(tile)
 
-## The shut tiles (`tile -> true`), a copy: for a caller that shuts more on top of them and floods
-## again (`ResistanceDirector._on_her_side()`, the park cordon's last gap).
+## The shut tiles (`tile -> true`), a copy: for a caller that shuts more on top of them and checks
+## again (the park cordon's last gap).
 func shut() -> Dictionary:
 	return _shut.duplicate()
-
-## The reachability grid the reach is flooded on: the city's walkable tiles in two-tile cells.
-func grid() -> ReachabilityGrid:
-	return _grid
 
 ## **The ground her paths reach from `seeds` without leaving the circle of `radius` round `centre`**,
 ## walked tile by tile over walkable ground the reach leaves open, going on only from a tile inside

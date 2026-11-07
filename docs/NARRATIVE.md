@@ -253,17 +253,19 @@ touch".)*
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never notices them on their way to it; between them, which side the player
   approaches from decides whether he notices them before they touch it. He stands where he has a
-  clear line to the roadblock, since he notices her only along one, and not on her only way to
-  it: he is put where she can still walk to it without coming within his notice, on the far side
-  of it from her where he can be, and only where no spot round it leaves her such a way is the
-  task's own guard put on the first spot anyway. Any roadblock answers the task, so he waits at the one she
+  clear line to the roadblock, since he notices her only along one, and on the far side of it from
+  the way she comes, so she reaches it before she comes near him. The way she comes is decided
+  once, the first moment the roadblock she approaches is on screen, and kept: walking round it
+  afterwards does not move him to its other side. Before then the side follows where she stands,
+  and only where the far side has no spot at all is the task's own guard put on her side. Nothing
+  is checked for a way past him. Any roadblock answers the task, so he waits at the one she
   approaches: each time the red arrow moves to another roadblock, he guards it from where he stands
   if he is already that near it, or is moved to it, however often — into its band, or, while all
   of the band is in her view, to ground just past it, in line with it, where no touch is within his
   notice, until it is not — and only while neither where he stands nor where he goes is in her
   view, so he is never seen to vanish or to appear. So he waits at the one she approaches unless he
-  is in her view from the moment she turns toward another until she reaches it, or no spot round it
-  leaves her a way past him. Wherever he stands when she has done the task — in the band, past it,
+  is in her view from the moment she turns toward another until she reaches it, or the far side
+  of it has no spot for him. Wherever he stands when she has done the task — in the band, past it,
   at another roadblock — he starts after her the moment she has, if he has not noticed her yet, an
   ordinary chase from there, except that he walks round the buildings between them rather than
   stalling behind one, so from another roadblock he comes all the way to her unless she leaves him

@@ -724,10 +724,11 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return ahead.queue_a_mast(offered, rng)
 
-## Day 13's task roadblock in place of one of the day's events (`EventsAhead.swap_in_a_task_row()`).
+## Day 13's task roadblock in place of one of the day's events, out of her view as `in_view`
+## answers (`EventsAhead.swap_in_a_task_row()`).
 func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
-		rng: RandomNumberGenerator) -> EventInstance:
-	return ahead.swap_in_a_task_row(def, old, rng)
+		rng: RandomNumberGenerator, in_view := Callable()) -> EventInstance:
+	return ahead.swap_in_a_task_row(def, old, rng, in_view)
 
 ## Whether `tile` is on a street beside the day's routes and off the main road
 ## (`EventsAhead.stands_beside_the_routes()`).
