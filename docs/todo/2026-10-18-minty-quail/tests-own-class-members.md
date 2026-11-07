@@ -23,7 +23,7 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
-only]` group holds nine members, each of which gets the underscore as this item's work: `BuildingShadows.compute`,
+only]` group holds nine members, each of which gets the underscore, or a `[kept]` line with its reason, as this item's work: `BuildingShadows.compute`,
 `PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
 `DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
 `[no reader]` group holds `Stroller.family_sources`, `Navigator.open_ground`,
@@ -45,4 +45,4 @@ also removing a check that holds nothing once its member is gone (curly-rabbit #
 becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,
 takes a `[kept]` line with its reason (curly-rabbit #1098). A `[no reader]` member gets a reader in the game, is tested
 through what the game shows, or is deleted, or takes a `[kept]` line where the information cannot be had another way
-(curly-rabbit #1095); `CrowdField.contains` and `MarbleBag.take` have no test reader, so they are deleted. A builder deletes the member's line from the CI check's list as it goes.
+and the test needs it to confirm the behavior (curly-rabbit #1095); `CrowdField.contains` and `MarbleBag.take` have no test reader, so they are deleted. A builder deletes the member's line from the CI check's list as it goes.
