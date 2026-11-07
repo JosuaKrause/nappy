@@ -64,6 +64,8 @@ src/
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
+	street_layout.gd      the street lattice painted onto a map's tiles; the generator lays every
+	                      city's streets through it, and a test's street map does too
 	city.gd               the scene: ground, buildings, props, boundary, queries (is_alley)
 	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
 	                      doors, the closures, the region a siting reads; the city writes it

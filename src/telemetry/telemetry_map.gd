@@ -42,7 +42,7 @@ const SCALE := 4
 ##
 ## **There is no precinct mark and that is the correction, not an omission.** *(2026-08-31: "why
 ## blue? why not just take the sidewalk colour and use it for those road segments".)* A precinct
-## has no carriageway — `CityGenerator._street_tile` lays its whole six-tile corridor as
+## has no carriageway — `StreetLayout._street_tile` lays its whole six-tile corridor as
 ## `SIDEWALK` — so the ground pass already draws it as an unbroken pale band where every other
 ## street has a dark stripe down the middle. The blue line was an overlay standing in for a fact
 ## the picture was already telling, and an overlay that repeats the ground is the one kind that can

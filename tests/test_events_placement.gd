@@ -550,7 +550,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			% [unavoidable_on_the_route, "" if first == "" else ": " + first])
 
 ## Whether a beat's straight run touches a junction box, which is the only ground in the city a
-## crosswalk is painted on (`CityGenerator._street_tile`).
+## crosswalk is painted on (`StreetLayout._street_tile`).
 func _a_beat_touches_a_junction(map: CityMap, plan: EventScheduler.Planned) -> bool:
 	for at in _beat_tiles(map, plan):
 		if CityMap.junction_at(at) != Vector2i(-1, -1):

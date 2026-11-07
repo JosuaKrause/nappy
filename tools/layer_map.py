@@ -108,6 +108,7 @@ FILES: dict[str, str] = {
     "src/city/tile.gd": "model",
     "src/city/traffic_signals.gd": "model",
     "src/city/street_trees.gd": "model",
+    "src/city/street_layout.gd": "model",
     "src/city/blackout.gd": "simulation",
     "src/city/poster_walls.gd": "simulation",
     "src/city/recipe_city_builder.gd": "root",
