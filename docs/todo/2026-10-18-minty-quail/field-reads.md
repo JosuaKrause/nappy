@@ -20,10 +20,11 @@ many of the same reads.
 *Proposed, not asked for:* a design on the board first, listing the reads by class and the methods
 that replace them, then one pull request per area.
 
-**Open on the board, not blocking** (each pick runs unless the player answers otherwise):
+**Decided on the board** (inbox #1182 in gray-dolphin):
 
-- **tests-read-fields:** whether a test counts as another object, so it too reads through methods.
-  Pick: yes.
-- **field-read-check:** whether a script fails a change that adds a read of another class's plain
-  field, with today's reads in a list that only shrinks, as the test-only-members list does. Pick:
-  yes.
+- **tests-read-fields, "yes":** a test counts as another object, so it too reads its subject through
+  methods (`tests-one-module.md`).
+- **field-read-check, "yes":** a script fails a change that adds a read of another class's plain
+  field under `src/`, with today's reads listed once in a list that only shrinks, as the
+  test-only-members list does. *Proposed, not asked for:* it is built first, so the conversion
+  shrinks a list rather than chasing a moving count.

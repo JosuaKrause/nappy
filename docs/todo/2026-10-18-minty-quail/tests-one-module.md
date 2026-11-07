@@ -13,9 +13,9 @@ answers moved to that object's suite). This item is the pass that brings the exi
 them, one module at a time, once the hand-ins (`city-hand-ins.md`) give each class something to hand
 a fake to. Each module's pull request says each suite's time before and after.
 
-**Open on the board, not blocking:** whether a test counts as another object under "fields are not
-API", so it too reads its subject only through methods (tests-read-fields; the pick, yes, runs unless
-the player answers otherwise).
+**A test reads its subject only through methods** too: on the board's tests-read-fields, whether a
+test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A var a test reads
+gets a method, and suites move as a pull request touches them.
 
 **The order** is the test survey's module by module; that survey's file is gone, so whoever picks
 this up lists the suites again with `rg` for the ones that build a `City`, a day or `main`, and what

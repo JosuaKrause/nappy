@@ -720,3 +720,33 @@
 3. **Read as:** (the assistant's interpretation, not the player's words)
 
    A standing rule: code nothing reaches, and code that only serves a feature the game no longer has, is deleted rather than kept, since it costs maintenance and misleads whoever reads it; a feature wanted back is built fresh under the current design principles. Applies now to the covering-set path, and to a sweep for the rest.
+
+## #1182
+
+1. **Context** (the assistant's):
+
+   Board question tests-read-fields, answered on the You line on 2026-11-07. Question: "does a test count as "another object" under fields-are-not-API, so it too reads its subject only through methods? (does not block)". My pick: "Yes: a test is a caller like any other, and writing-tests already reads a test that reaches into internals as a sign of testing too much." / "If you leave this, it is built that way."
+
+2. **The note.**
+
+   > yes
+
+3. **Context** (the assistant's):
+
+   Board question field-read-check, answered on the You line. Question: "should a script fail a change that adds a read of another class's plain field? (does not block)". Context: "How: a check like the existing test-only-members check finds every read under src/ of a var another class declares." / "Today's reads: listed once in a shrinking list, as the test-only list does; a new one fails CI." / "Cost: one new tool and its list; no game change." / "Without it: the rule rests on review alone." My pick: "Yes, with the shrinking list." / "If you leave this, it is built that way."
+
+4. **The player's words.**
+
+   > yes
+
+5. **Context** (the assistant's):
+
+   Board question barricade-reads-as-blocking, the player's reply under the orchestrator's "settled:" Me line. That Me line read: "settled: non-blocking by your full-sidewalk rule. The far sidewalk stays fully open at all 360 column stops, and the same holds for the task roadblock at all 2,334 sites, so neither takes a swap and the four roadblock questions are gone. Both are placed near her, out of sight, under the day's normal placement rules; a test holds that each leaves a full sidewalk open." The question's context: the column barricade's body covers two road tiles and the inner sidewalk tile (the builder's later count: per line across the street, the far sidewalk keeps both its tiles and the near side keeps 1).
+
+6. **The player's words.**
+
+   > You: if you place it in the middle of the street it is blocking. The gaps are at either end not contiguous so they don't read as opening.
+
+7. **Read as:** (the assistant's interpretation, not the player's words)
+
+   A body placed in the middle of the street counts as blocking even when tiles stay open beside it, because the open tiles on either side are not one contiguous gap and do not read as a way through. So the column's barricade and day 13's task roadblock, both mid-street, count as blocking; the orchestrator's "settled: non-blocking" is overturned. (The leading "You:" was typed by the player as part of the line.)

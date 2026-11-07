@@ -26,20 +26,27 @@ such point whose barricade still leaves her a way home and to a calm area
 **What counts as blocking.** Told day 13's task roadblock leaves a sidewalk tile open: "even if she
 can technically walk through it everything about it tells the player to not do that. so let's not
 assume that a player would use it", then "unless there is a gap with a full sidewalk" (inbox #1179 in gray-dolphin).
-*Read as:* a body counts as blocking her way unless it leaves a gap at least a full sidewalk wide
-(`Tuning.SIDEWALK_WIDTH`, 2 tiles) for her to pass.
+Told then that the column's barricade was settled as non-blocking: "if you place it in the middle of
+the street it is blocking. The gaps are at either end not contiguous so they don't read as opening"
+(inbox #1182 in gray-dolphin). *Read as:* a body counts as blocking her way unless it leaves one contiguous gap at
+least a full sidewalk wide (`Tuning.SIDEWALK_WIDTH`, 2 tiles); open tiles split on both sides of a
+body placed mid-street are not such a gap.
 
-**So nothing placed during the walk takes a swap.** The builder of #1169 measured both beats against
-that rule: the column's barricade at every stop sampled and the task roadblock at every site sampled
-keep the far sidewalk fully open, so neither blocks.
-
-- **Day 13's task roadblock** is placed near her, out of her sight, under dawn's own placement rules,
-  with no reachability check. A roadblock the day already placed close by answers the task first:
-  "yes only swap if you can't find one. but we could also place roadblocks route adjacent during
-  dawn. swap only is needed if there is nothing close by" (inbox #1177 in gray-dolphin), since "Any roadblock answers
-  the task" (docs/NARRATIVE.md, day 13's task).
-- **Day 13's column barricade** stands where the column stops: "the column barricade is also non
-  blocking so none of the blocking rules apply anyway. it can be placed whenever" (inbox #1177 in gray-dolphin).
+- **Day 13's task roadblock is blocking**, so it keeps the swap plan: "yes only swap if you can't
+  find one. but we could also place roadblocks route adjacent during dawn. swap only is needed if
+  there is nothing close by" (inbox #1177 in gray-dolphin), since "Any roadblock answers the task" (docs/NARRATIVE.md,
+  day 13's task). *Read as* (#1177, #1179, #1182): a roadblock the day already placed close by answers
+  the task first; dawn places roadblocks next to her routes, so one usually is; the swap, below, is
+  the fallback when nothing is close by.
+- **Day 13's column barricade is open** on the board as barricade-placement: either it stands to one
+  side of the street, so it leaves a contiguous full-sidewalk gap and does not block (the
+  orchestrator's pick), or it stays mid-street and takes the swap. Before #1182 it read as
+  non-blocking: "the column barricade is also non blocking so none of the blocking rules apply
+  anyway. it can be placed whenever" (inbox #1177 in gray-dolphin).
+- **Open on the board, each with the orchestrator's pick:** roadblocks-at-dawn (how dawn places
+  roadblocks next to her routes), roadblock-close-by (what counts as close by), roadblock-none-near
+  (what the task does when no roadblock is close by and no swap candidate is either), and
+  swap-replaces-seals (whether the act IV hard seals may be the events a swap replaces).
 - **Day 3's fire and day 11's added mast** are sited on her way like the bag's events: "day 3 file
   is non-blocking so it doesn't need the swap, no?" (inbox #1177 in gray-dolphin; *read as* day 3's fire).
 - **The resistance's reachability moves to dawn** (the orchestrator's proposal, agreed: "I agree on
@@ -49,8 +56,7 @@ keep the far sidewalk fully open, so neither blocks.
   (agreed in the same words): it asks whether anything stands in day 12's last gap, not whether she
   can get somewhere.
 
-**The swap stays as the rule for a beat that would block**, for any future beat placed near her that
-leaves no full sidewalk: "replace already placed off-route blocking events with them off screen. of
+**The swap, for a beat that blocks**: "replace already placed off-route blocking events with them off screen. of
 course only replace events that were placed there, not things like guard houses or district
 barriers", the one replaced being route-adjacent: "the off route events need to be route adjacent.
 anything deep wouldn't be reachable at all" (inbox #1173 in gray-dolphin). *Proposed, not asked for (agreed with the
