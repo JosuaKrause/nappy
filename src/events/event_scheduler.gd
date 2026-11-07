@@ -279,9 +279,32 @@ class Planned extends RefCounted:
 	## he left among it (`EventBarrierPost.save()`), so a re-streamed barrier is only the barrier.
 	var behaviours := {}
 
+	## Whether this body is a region door's (`is_door()`). Private: set once, by
+	## `stand_as_a_door()`.
+	var _is_door := false
+
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
 		return position != Vector2.INF
+
+	## True once the event has run its course (`spent`), so walking back past it does not start it
+	## again.
+	func is_spent() -> bool:
+		return spent
+
+	## **Whether this body is one of a region door's**: a `checkpoint_hut` or the `checkpoint_gate`
+	## at a street door's mouth, or a `checkpoint_post` at an alley door's. What makes a body a door
+	## is `RegionPlanner` standing it at one, not anything on its def, so the placement says it once
+	## and every reader asks it here: the zero-cost line (`counts_against_the_line()`), the
+	## director's clear ground round the doors (`EventDirector.start_day()`) and the resistance's
+	## reachability.
+	func is_door() -> bool:
+		return _is_door
+
+	## Makes this body a region door's. Called by `RegionPlanner._add_door_bodies()` and
+	## `_add_alley_door_bodies()` as they make each one, and by nothing else.
+	func stand_as_a_door() -> void:
+		_is_door = true
 
 	## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
 	## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
@@ -383,8 +406,9 @@ class Planned extends RefCounted:
 	## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
 	##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
 	##   reaches here as a plan with no position at all.
-	## - **a region door** costs by design — *"it costs by design"* — so `checkpoint_hut` and
-	##   `checkpoint_gate` are never a block. The region wall's own body is not a door and still counts.
+	## - **a region door** costs by design — *"it costs by design"* — so a door's bodies (`is_door()`:
+	##   its huts and gate, or an alley door's posts) are never a block. The region wall's own body is
+	##   not a door and still counts.
 	## - **a mobile row that does not pace** is passed by crossing, waiting and crossing back — *"the
 	##   player can cross the street, wait, then come back without ever getting excited by it"*. A row
 	##   that **paces** is not mobile in that sense: it comes back, so it is read over its beat.
@@ -403,7 +427,7 @@ class Planned extends RefCounted:
 	## untouched — `Planned.keeps_its_field_clear()` is about keeping other events out of a lethal field, not
 	## about whether a line exists past one.
 	func counts_against_the_line() -> bool:
-		return is_placed() and mast_id == "" and def.role != EventDef.Role.MAST \
+		return is_placed() and not _is_door and mast_id == "" and def.role != EventDef.Role.MAST \
 				and def.has_a_line_to_avoid()
 
 	## Whether a row denies a point, under the beat-opening reading.

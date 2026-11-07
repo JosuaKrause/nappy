@@ -1629,14 +1629,12 @@ func silent_beyond() -> float:
 	var body := shape.reach() if shape != null else 0.0
 	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 
-## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
-## id, since what makes a door a door is `RegionPlanner` choosing it rather than any field on the
-## def.
-const _DOOR_ID_PREFIX := "checkpoint"
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
 ## about: `EventScheduler._role_for()` decides a role before any tile is chosen. Everything a
-## placement adds (*is it actually standing anywhere*) is the caller's own question:
-## `EventScheduler.Planned.counts_against_the_line()` asks it of a placement.
+## placement adds is the caller's own question, asked by
+## `EventScheduler.Planned.counts_against_the_line()`: *is it actually standing anywhere*, and *is
+## it a region door* (`Planned.is_door()`), since what makes a door a door is `RegionPlanner`
+## standing it at one rather than any field on the def. No row the catalogue places is a door.
 ##
 ## **A row the day sites from her own walk is a sixth kind outside the line, and the only one
 ## exempt because closing the way is the point** (PLAYTEST-119 24). Day 3's fire is put on the
@@ -1651,7 +1649,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 ## dawn and judged as any other before its position is handed to her walk
 ## (`EventScheduler._hand_to_her_walk()`).
 func has_a_line_to_avoid() -> bool:
-	if role == EventDef.Role.SCENERY or pursuit != null or id.begins_with(_DOOR_ID_PREFIX):
+	if role == EventDef.Role.SCENERY or pursuit != null:
 		return false
 	if on_her_way != null and kind == GameEnums.EventKind.ONE_SHOT:
 		return false

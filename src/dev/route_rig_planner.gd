@@ -656,10 +656,10 @@ func _gate_ground() -> Dictionary:
 	_gate_ground_ready = true
 	_gate_ground_tiles = {}
 	var doors: Array[EventScheduler.Planned] = []
-	# Every door body — the huts and posts by `redetains`, the boom by its `GateState` — since the
-	# ground kept off is the ground nearer the boom than any of the others.
+	# Every door body (`Planned.is_door()`: the huts, the posts and the boom), since the ground
+	# kept off is the ground nearer the boom than any of the others.
 	for plan: EventScheduler.Planned in _city.events.plans():
-		if plan.is_placed() and not plan.spent and (plan.def.redetains or plan.gate_state != null):
+		if plan.is_placed() and not plan.is_spent() and plan.is_door():
 			doors.append(plan)
 	for gate in doors:
 		if gate.gate_state == null:

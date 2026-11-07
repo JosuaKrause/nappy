@@ -223,11 +223,10 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	var lesson: EventDef = null
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
-		# by the plan, rather than by a second wire from the region planner to here. The huts and
-		# posts are the bodies that inspect her and the boom is the one that does not; all three
-		# keep their clear ground.
-		if (plan.def.redetains or plan.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED) \
-				and plan.is_placed():
+		# by the plan (`Planned.is_door()`), rather than by a second wire from the region planner to
+		# here. The huts and posts are the bodies that inspect her and the boom is the one that does
+		# not; all three keep their clear ground.
+		if plan.is_door() and plan.is_placed():
 			_doors.append(plan.position)
 		# A place the day budgeted and left unsited, read off the same list for the same reason.
 		if plan.def.on_her_way != null and not plan.is_placed():

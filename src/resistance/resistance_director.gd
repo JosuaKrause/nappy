@@ -2514,23 +2514,14 @@ func _ensure_reachability() -> void:
 	_reach_grid = ReachabilityGrid.build(_map)
 	var blockers: Array[EventScheduler.Planned] = []
 	if _city and _city.events:
-		# A region door's own bodies are never a block — `event_scheduler.gd`'s own corridor-cost
-		# rule already carries this exemption ("a region door costs by design ... `checkpoint_hut`
-		# and `checkpoint_gate` are never a block. The region wall's own body is not a door and
-		# still counts") and this check needs the same one, for the same reason. Found while
-		# building this item: with every door body counted, `blocked_by()`'s disc approximation —
-		# right for a point hazard, wrong for a hut-gate-hut door three tiles wide — closed every
-		# door in the wall along with it, so day 9 onward answered every mark and contact
-		# unreachable outside the home's own region, on a seed the real game's own route rig
-		# crosses those same doors on. `region_plan.door_bodies` is exactly the set the wall
-		# building code itself keeps apart from `wall_bodies` for this reason; excluded by identity
-		# rather than by matching `def.id`, so a new door-body row never needs a second list here.
-		var door_bodies: Array[EventScheduler.Planned] = []
-		var region_plan: RegionPlanner.RegionPlan = _city.region_plan()
-		if region_plan:
-			door_bodies = region_plan.door_bodies
+		# A region door's own bodies are never a block (`Planned.is_door()`): `event_scheduler.gd`'s
+		# own corridor-cost rule already carries this exemption ("a region door costs by design")
+		# and this check needs the same one, for the same reason. With every door body counted,
+		# `blocked_by()`'s disc approximation — right for a point hazard, wrong for a hut-gate-hut
+		# door three tiles wide — closes every door in the wall along with it, so day 9 onward
+		# would answer every mark and contact unreachable outside the home's own region.
 		for plan in _city.events.plans():
-			if not plan.is_placed() or plan in door_bodies:
+			if not plan.is_placed() or plan.is_door():
 				continue
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
 				blockers.append(plan)
