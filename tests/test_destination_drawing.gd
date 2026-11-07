@@ -42,7 +42,8 @@ func _test_every_task_days_destination_draws_no_mark(t) -> void:
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(_city, _city.map)
+		director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+				_city.spawn_siting)
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var offered := director.current_step()
 		if not finale:

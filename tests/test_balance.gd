@@ -105,7 +105,8 @@ func _build_rig(t) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city, _city.map)
+	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	_days = DayDirector.new(_city.run.calendar, _city.run.facts, _city.run.attempt_spend, _config)
 	_days.use_the_world(_city, _city.events, _resistance, _stroller, _baby, _clock)
 

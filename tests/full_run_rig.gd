@@ -46,7 +46,8 @@ func _play_a_run(t, seed_value: int) -> void:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city, city.map)
+	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
 	# parent; and the day's clock, set up the way `main` sets it up, so falling asleep on calm ground

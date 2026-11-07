@@ -358,7 +358,8 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city, _city.map)
+	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	director.watched = _city
 	var seen := {}
 	var on_started := func(_day: int) -> void:

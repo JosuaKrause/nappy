@@ -765,7 +765,8 @@ func _resistance_director(t, city: City) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	return director
 
 ## **A lost day gives back what the attempt did to the city**, not only what it did to the
