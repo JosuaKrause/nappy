@@ -17,6 +17,23 @@ a fake to. Each module's pull request says each suite's time before and after.
 test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A var a test reads
 gets a method, and suites move as a pull request touches them.
 
-**The order** is the test survey's module by module; that survey's file is gone, so whoever picks
-this up lists the suites again with `rg` for the ones that build a `City`, a day or `main`, and what
-each reads from it.
+**The order** is by module, those whose suites build a city before those that boot `main`, one
+pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
+`booted_main` and `build_day`/`start_day`/`begin_day` first:
+
+1. telemetry (`test_telemetry`, `test_frame_record`);
+2. the player and the baby (`player_presentation`, `baby_world`, `move_poses`, `camera_start`,
+   `pelican`, `loose_dog_arrives`, `tutorial_dog`);
+3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
+   `destination_drawing`, `debug_layers`);
+4. scene recipes (`scene_recipe_*`, `recipe_*`);
+5. the night group (`blackout`, `power_station`, `heat`, `bollards`, and `masts` once the events
+   allow);
+6. the crowd (`crowd_bodies`, `crowd_contributions`, `crowd_yields`, `danger`, `wall_shield`);
+7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
+   `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
+   `park_cordon`, `burnt_door`);
+8. the routes, city and regions suites that test something other than the city itself;
+9. run flow, save and pause (`run_flow`, `run_config`, `run_checkpoints`, `save`, `save_wiring`,
+   `boot_handing`, `pause`, `observers`, `main`, `day_loop`, `dev_rig`, `park_return`), which
+   boot the real run and are combined by composition, each with its reason stated.
