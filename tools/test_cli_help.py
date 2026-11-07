@@ -37,6 +37,7 @@ PROJECT_ROOT = TOOLS.parent
 ENTRY_POINTS = (
     "agent-identity.py",
     "art-defect-check.py",
+    "art-rulers.py",
     "clip.py",
     "reference.py",
     "remove-checkerboard.py",
