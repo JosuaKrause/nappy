@@ -16,6 +16,7 @@ extends RefCounted
 ## `tests/test_event_strides.gd`; every picture being on the `events` page is
 ## `tests/test_atlas_events.gd`, through `EventPictures.family_sources()`.
 
+const RecordingLog := preload("res://tests/recording_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -35,7 +36,6 @@ var _city: City
 var _run: RunState
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	_run = RunState.new()
 	_run.start_run(1)
@@ -367,15 +367,16 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	EventBus.pelican_sighted.connect(on_sighted)
 	EventBus.pelican_excited_her.connect(on_excited)
 	EventBus.pelican_struck_her.connect(on_struck)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
+	var run_log := RecordingLog.new()
+	run_log.begin_run(SEED, false)
+	run_log.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
 	# The manager's own lines reach the run log through the trace a booted city hands it.
-	events.trace = RunTrace.new(Telemetry.note)
+	events.trace = RunTrace.new(run_log.note)
 	# The observer is handed what `main` hands it, and hears the pelican's moments as they happen.
 	var baby := stroller.get_node("Baby") as Baby
 	var clock := DayController.new()
 	clock.start(180.0)
-	var observer := TelemetryObserver.new()
+	var observer := TelemetryObserver.new(run_log)
 	observer.setup(_run, _city, stroller, baby, clock, null, false)
 
 	# The director owes her one cyclist from a route bag holding nothing else, as a scene's recipe
@@ -435,7 +436,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	t.check(pelican != null and pelican.is_pelican,
 			"the warning ends in a pelican, %.2fs after it went up" % (ticks * STEP))
 	if pelican == null:
-		_untangle(events, stroller, [on_spawned, on_sighted, on_excited, on_struck], observer, clock)
+		_untangle(events, stroller, [on_spawned, on_sighted, on_excited, on_struck], observer, clock,
+				run_log)
 		return
 	t.check(told["spawned"] == 1, "its creation is told once (%d)" % told["spawned"])
 
@@ -470,7 +472,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 			LossCause.of(GameEnums.DayResult.LOST_HARD_FAIL, def.id,
 				events.what_struck_her()))
 
-	var lines: Array[String] = Telemetry.current_log().lines
+	var lines: Array[String] = run_log.lines
 	var ahead := false
 	var on_screen := false
 	var struck := false
@@ -499,7 +501,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	t.check(events.what_struck_her() == "cyclist" and told["struck"] == 1,
 			"where a kid's reach names the cyclist, and tells nothing of a pelican ('%s')"
 			% events.what_struck_her())
-	_untangle(events, stroller, [on_spawned, on_sighted, on_excited, on_struck], observer, clock)
+	_untangle(events, stroller, [on_spawned, on_sighted, on_excited, on_struck], observer, clock,
+				run_log)
 
 ## Starts the day again as a scene's walk starts it (`EventManager.start_recipe()`, which
 ## `SceneRecipeRuntime` calls): nothing planned and nothing sited ahead of her, while warnings keep
@@ -511,8 +514,8 @@ func _quiet_day(events: EventManager) -> void:
 
 ## Gives the city's manager back as the other tests left it, and lets go of the pelican signals.
 func _untangle(events: EventManager, stroller: Stroller, listeners: Array,
-		observer: TelemetryObserver, clock: DayController) -> void:
-	Telemetry.end_run()
+		observer: TelemetryObserver, clock: DayController, run_log: Telemetry) -> void:
+	run_log.free()
 	events.trace = RunTrace.new()
 	events.use_player(null)
 	observer.free()

@@ -25,7 +25,7 @@ extends RefCounted
 
 const DEPTH := 3
 const MAX_ITEMS := 64
-const AUTOLOADS: Array[String] = ["Tuning", "EventBus", "Telemetry", "VisitCounter"]
+const AUTOLOADS: Array[String] = ["Tuning", "EventBus"]
 
 ## The only fields whose change is not a leak, each named with the one-line reason. A field is
 ## exempt by its own name, never its owner: a new field of the same script is checked until it is
@@ -50,41 +50,6 @@ const EXEMPT: Dictionary[String, String] = {
 	"entity_halo._shared_material": "the shared halo material, created on first use",
 	"mover._shared": "movers shared by their flags, a pure function of the flags",
 }
-
-## The fields a suite that boots `main` (or drives a run the observers watch) moves on: the
-## configuration, the screen and the burst recorder `main` hands the observers, and the observers'
-## count of the run so far. A suite that does so declares it with `t.gives_back_observers()` as its
-## first line, and the runner puts these back to what they were then once the suite is over; any
-## other suite that changes one fails.
-const OBSERVER_FIELDS: Dictionary[String, Array] = {
-	"Telemetry": ["_config", "_run_dir", "_day_attempts", "_attempt", "_screen", "_bursts"],
-	"VisitCounter": ["_config", "_run", "_day", "_open_tasks", "_reported_run_begun"],
-}
-
-## The values of `OBSERVER_FIELDS` now, copied.
-static func observers() -> Dictionary:
-	var held := {}
-	for owner: String in OBSERVER_FIELDS:
-		for field: String in OBSERVER_FIELDS[owner]:
-			var value: Variant = _observer_get(owner, field)
-			held["%s.%s" % [owner, field]] = value.duplicate(true) if value is Dictionary or value is Array else value
-	return held
-
-## Puts the fields of `held` (from `observers()`) back.
-static func put_back_observers(held: Dictionary) -> void:
-	for key: String in held:
-		var value: Variant = held[key]
-		_observer_set(key.get_slice(".", 0), key.get_slice(".", 1),
-				value.duplicate(true) if value is Dictionary or value is Array else value)
-
-static func _observer_target(owner: String) -> Object:
-	return Engine.get_main_loop().root.get_node(owner)
-
-static func _observer_get(owner: String, field: String) -> Variant:
-	return _observer_target(owner).get(field)
-
-static func _observer_set(owner: String, field: String, value: Variant) -> void:
-	_observer_target(owner).set(field, value)
 
 static var _static_fields: Array[Array] = []
 static var _static_scanned := false

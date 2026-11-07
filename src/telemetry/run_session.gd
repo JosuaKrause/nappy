@@ -15,9 +15,9 @@ extends Node
 ## **And it is where game logic's trace comes from.** `trace` writes into the run log; `main`
 ## hands it to everything it builds, so nothing that decides anything names the log itself.
 
-## The run log: the `Telemetry` autoload, handed in by `setup()`. Untyped because an autoload's
-## script has no `class_name` of its own.
-var _log
+## The run log (`Telemetry`), handed in by `setup()`: the one `main` keeps under the sitting, or a
+## suite's own.
+var _log: Telemetry
 var _config: RunConfig
 ## The run this boot plays, handed in by `setup()`: whose seed each day's header names, and what the
 ## day's observer is handed for the day it plans.
@@ -44,7 +44,7 @@ var _escape_city: City
 
 ## Hands the session the run log, the run's configuration, the bus whose events it writes down and
 ## the run it is the log of.
-func setup(run_log: Node, config: RunConfig, bus: Node, run: RunState) -> void:
+func setup(run_log: Telemetry, config: RunConfig, bus: Node, run: RunState) -> void:
 	_log = run_log
 	_config = config
 	_run = run
@@ -64,15 +64,14 @@ func setup(run_log: Node, config: RunConfig, bus: Node, run: RunState) -> void:
 ##
 ## **`keep_an_open_log` keeps a log already open**: the run is the same one going on, so it keeps
 ## writing the log it has — the escape's boot after day 14's hand-over, and a normal run carried on
-## from its checkpoint. `Telemetry` is an autoload and outlives the scene reload either came
+## from its checkpoint. The log lives under the sitting and outlives the scene reload either came
 ## through, and opening again would close it and start a second folder for one run.
 func open(run_seed: int, played: bool, keep_an_open_log: bool) -> void:
 	if _config.no_telemetry:
 		return
 	if keep_an_open_log and _log.is_active():
 		return
-	# The folder is handed in here, the game's default, so that a test can hand its own.
-	_log.begin_run(run_seed, played, _log.DIRECTORY)
+	_log.begin_run(run_seed, played)
 
 ## Closes the run log: the run is left, by the held restart, a quit or the window closing. Every
 ## line is already on disk; this closes the handle tidily.
@@ -131,7 +130,7 @@ func watch_escape(player: Stroller, baby: Baby, clock: DayController, edge: Dang
 func _new_observer() -> TelemetryObserver:
 	if get_parent():
 		get_parent().move_child(self, -1)
-	var watcher := TelemetryObserver.new()
+	var watcher := TelemetryObserver.new(_log)
 	watcher.name = "Telemetry"
 	# Part of the game, not the frame around it: it stops with the pause like the day it watches.
 	watcher.process_mode = Node.PROCESS_MODE_PAUSABLE

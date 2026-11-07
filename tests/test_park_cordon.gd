@@ -34,9 +34,7 @@ var _line_rect := Rect2()
 func run(t) -> void:
 	# Finishing the swing's task the game's way makes the director's own happenings take the park
 	# first, so the suite's own `take_the_park()` would return false. The director therefore leaves
-	# the task open in `VisitCounter._open_tasks`, and this is the runner's declared way to put it
-	# back.
-	t.gives_back_observers()
+	# the task open.
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
 	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)

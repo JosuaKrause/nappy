@@ -21,7 +21,6 @@ const FORCED_SCALE := 3.0
 const FORCED_WITHIN := 6.0
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_release_build_reads_no_command_line_flag(t)
 	_test_a_debug_build_reads_them(t)
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
@@ -224,7 +223,6 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				and f["forced_row"] == "cyclist" and is_equal_approx(f["forced_interval"], 3.0)
 				and not f["scenery_frame_locked"],
 				"the city is handed what the flags chose before it builds")
-		Telemetry.end_run()
 		booted.free_all()
 		home.free()
 
@@ -461,7 +459,6 @@ func _the_screens_answer(t, flagged: bool) -> void:
 		await UI.frames(t, 4)
 		t.check(not pause.is_open(), "%s, and a finger on it goes on" % label)
 
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 

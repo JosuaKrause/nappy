@@ -84,7 +84,6 @@ const CASES: Array[String] = [
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
 func run_cases(t, indices: Array[int]) -> void:
-	t.gives_back_observers()
 	for index in indices:
 		await call(CASES[index], t)
 
@@ -1140,7 +1139,6 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		t.check(crossings > 0, "seed %d: there were roadblock crossings to walk (%d)"
 				% [PLAYERS_SEED, crossings])
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -1930,7 +1928,6 @@ func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringAr
 
 func _free_the_escape(t, escape: Escape) -> void:
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	(escape.booted as Boot.Booted).free_all()
 	# A `--route` boot is a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
 	# the scene must give them back, or every later suite in this process hears no key as an action.
@@ -2301,7 +2298,6 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 
 	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas.close_loading_window()
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	booted.free_all()
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
 			"freeing the escape leaves the keys bound to their actions")

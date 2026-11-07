@@ -1,10 +1,17 @@
+class_name Telemetry
 extends Node
-## The run log, as a global every system can write one line into.
+## The run log: one per sitting, handed to everything that writes a line into it.
+##
+## **Handed in, never fetched.** `main`, the composition root, makes one under the sitting on its
+## first boot (`Sitting`), so it outlives the scene reloads a run makes as the save does, and finds
+## it there after; it hands it to `RunSession`, which opens and closes it and hands it to the
+## `TelemetryObserver`, and whatever else writes a line is handed the session's `RunTrace` over its
+## `note()`. A suite that reads what was logged hands a recording fake the same way
+## (`main.use_run_log()`), and only the run log's own suite makes a real one, over a scratch folder.
 ##
 ## **Inert until `begin_run()`.** Nothing writes a file, opens a directory or costs a string
-## concatenation until the game itself asks for a run to be traced — which is why the test
-## suite, which never calls it, neither writes logs nor slows down. `note()` on a dormant
-## Telemetry is a boolean check and a return.
+## concatenation until the game itself asks for a run to be traced. `note()` on a dormant log is a
+## boolean check and a return.
 ##
 ## Three constraints govern everything here, and all three are non-negotiable:
 ##
@@ -34,13 +41,20 @@ extends Node
 ## and it does that because somebody ran it, not on its own.
 const DIRECTORY := "user://telemetry"
 
+## The name `main` gives the sitting's log, and what the next boot looks for under the sitting.
+const NODE_NAME := "RunLog"
+
+## Where this log's day folders go: `DIRECTORY` for the game's, a scratch folder for the run log's
+## own suite.
+var _directory := DIRECTORY
+
 var _log: TelemetryLog
 ## Seconds into the current day, fed by the observer from the day clock so that a timestamp
 ## in the log and the clock in the HUD are the same number.
 var _clock := 0.0
 var _day_open := false
 ## The current run's own folder, absolute — every artefact of this run is written under it.
-## `""` when the log is in memory only, which is what the test suite runs on.
+## `""` while no run is open.
 var _run_dir := ""
 ## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
 ## at the same day without the calendar advancing — see `RunCalendar.finish_day()` — so
@@ -57,6 +71,11 @@ var _attempt := 1
 ## read for `--invincible`'s header note and for the page's `?telemetry=1`.
 var _config: RunConfig
 
+## A log whose runs go under `directory`; the game makes one with none, which is the player's own
+## folder (`DIRECTORY`).
+func _init(directory := DIRECTORY) -> void:
+	_directory = directory
+
 ## Hands this log the run's configuration. `null` puts it back to none, which reads as a run with
 ## no flag at all.
 func configure(config: RunConfig) -> void:
@@ -69,9 +88,9 @@ func _invincible() -> bool:
 func is_active() -> bool:
 	return _log != null
 
-## Opens a log for a run, in its own folder under `DIRECTORY`. Called by `main.gd` and by nothing
-## else — a system that wants to be traced calls `note()` and lets this decide whether anyone is
-## listening.
+## Opens a log for a run, in its own folder under the log's directory (`_directory`). Called by
+## `RunSession.open()` and by nothing else — a system that wants to be traced calls `note()` and
+## lets this decide whether anyone is listening.
 ##
 ## **The folder is `<day>/<run>`; the date and each run are independently removable.**
 ## *(2026-09-03: "hmm, the commit hash makes it hard to find a run maybe let's remove it from the
@@ -123,27 +142,14 @@ func _web_override_requested() -> bool:
 ## on the one platform where nobody would ever read or clear it without also reintroducing the one
 ## way to override that. See `_web_override_requested()` for what turns it back on.
 ##
-## **`directory` is where the day folders go.** `RunSession.open()` hands `DIRECTORY` explicitly; a
-## suite that opens a real run hands a scratch one so it writes nothing under the player's own.
-func begin_run(run_seed: int, played := true, directory := DIRECTORY) -> void:
+## **The day folders go under the directory the log was made with** (`_init()`): the game's makes
+## its runs under `DIRECTORY`; the run log's own suite makes its log over a scratch one, so it
+## writes nothing under the player's own.
+func begin_run(run_seed: int, played := true) -> void:
 	end_run()
 	if OS.has_feature("web") and not _web_override_requested():
 		return
-	if not DirAccess.dir_exists_absolute(directory) \
-			and DirAccess.make_dir_recursive_absolute(directory) != OK:
-		push_warning("telemetry: cannot create %s" % directory)
-		return
-	# "YYYY-MM-DDTHH:MM:SS" — split rather than reformatted, so the date half is exactly what a
-	# person reads as today's date and the time half needs only its colons stripped to be a
-	# folder-safe word.
-	var stamp := Time.get_datetime_string_from_system(false, false)
-	var day_folder := stamp.get_slice("T", 0)
-	var time_part := stamp.get_slice("T", 1).replace(":", "")
-	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [directory, day_folder,
-			"run" if played else "rig", time_part, run_seed, _file_tag()]
-	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
-		push_warning("telemetry: cannot create %s" % _run_dir)
-		_run_dir = ""
+	if not _open_the_run_folder(run_seed, played):
 		return
 	_log = TelemetryLog.new("%s/run.log" % _run_dir)
 	_clock = 0.0
@@ -158,22 +164,26 @@ func begin_run(run_seed: int, played := true, directory := DIRECTORY) -> void:
 	if _log.path != "":
 		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
 
-## Opens a log that goes nowhere, for tests.
-##
-## The load-bearing promise here is that switching the log on changes nothing about the run,
-## and the only way to check a promise like that is to run something twice with it on and off.
-## Doing that against `begin_run()` would put a file on disk for every check in the suite, so
-## the same log with no file behind it is the honest way to test it. See tests/test_telemetry.gd.
-func begin_memory_log() -> void:
-	end_run()
-	_log = TelemetryLog.new()
-	_run_dir = ""
-	_clock = 0.0
-	_day_open = false
-	_shots.restart_names()
-	_day_attempts = {}
-	_attempt = 1
-	_log.header("nappy run log  (memory)")
+## Makes the run's own folder under `_directory` and sets `_run_dir` to it, or warns and answers
+## false when it cannot be made, which leaves the run untraced.
+func _open_the_run_folder(run_seed: int, played: bool) -> bool:
+	if not DirAccess.dir_exists_absolute(_directory) \
+			and DirAccess.make_dir_recursive_absolute(_directory) != OK:
+		push_warning("telemetry: cannot create %s" % _directory)
+		return false
+	# "YYYY-MM-DDTHH:MM:SS" — split rather than reformatted, so the date half is exactly what a
+	# person reads as today's date and the time half needs only its colons stripped to be a
+	# folder-safe word.
+	var stamp := Time.get_datetime_string_from_system(false, false)
+	var day_folder := stamp.get_slice("T", 0)
+	var time_part := stamp.get_slice("T", 1).replace(":", "")
+	_run_dir = "%s/%s/%s-%s-seed%d-%s" % [_directory, day_folder,
+			"run" if played else "rig", time_part, run_seed, _file_tag()]
+	if DirAccess.make_dir_recursive_absolute(_run_dir) != OK:
+		push_warning("telemetry: cannot create %s" % _run_dir)
+		_run_dir = ""
+		return false
+	return true
 
 ## Starts a day's section. Everything after this is timestamped from zero.
 ##
@@ -291,19 +301,19 @@ const SHOT_SPACING := TelemetryShots.SPACING
 var _shots := TelemetryShots.new()
 
 ## What the run log photographs, asked by every still picture whether a frame can be drawn at all.
-## `main` hands in the game's own viewport (`use_screen()`); a path that does not boot `main` (a
-## tool, a probe, a suite that drives `Telemetry` alone) keeps the same viewport screen built here.
+## `main` hands the log it makes the game's own viewport (`use_screen()`); a log `main` did not make
+## (a suite's own) keeps the same viewport screen built here, over itself.
 var _screen: TelemetryScreen = TelemetryViewportScreen.new(self)
 
 ## The animation bursts a person asks for (`start_burst()`), over the screen, the engine's clock and
 ## the tree's timers, and this log's `note`. A day or the run ending cuts its sequence short.
-## `main` hands in the game's recorder (`use_bursts()`); a path that does not boot `main` keeps the
-## one built here over the screen above.
+## `main` hands the log it makes the game's recorder (`use_bursts()`); a log `main` did not make
+## keeps the one built here over the screen above.
 var _bursts := _default_bursts()
 
-## Hands this log the screen it photographs, and returns the one it had. `main` calls it at boot
-## with the game's viewport; a suite hands one that can draw into a scratch folder and hands the
-## returned one back when it is done. It does not rebuild the bursts, which hold the screen they
+## Hands this log the screen it photographs, and returns the one it had. `main` calls it on the log
+## it makes, with the game's viewport; a suite hands its own log one that can draw into a scratch
+## folder. It does not rebuild the bursts, which hold the screen they
 ## were built over (`use_bursts()`).
 func use_screen(screen: TelemetryScreen) -> TelemetryScreen:
 	var before := _screen
@@ -311,8 +321,8 @@ func use_screen(screen: TelemetryScreen) -> TelemetryScreen:
 	return before
 
 ## Hands this log the recorder of the bursts a person asks for, and returns the one it had. `main`
-## calls it at boot with the recorder it builds over the game's screen; a suite hands one over a
-## bench screen and clock and hands the returned one back when it is done.
+## calls it on the log it makes, with the recorder it builds over the game's screen; a suite hands
+## its own log one over a bench screen and clock.
 func use_bursts(recorder: BurstRecorder) -> BurstRecorder:
 	var before := _bursts
 	_bursts = recorder
@@ -348,9 +358,9 @@ func snapshot(kind: String) -> void:
 ## context, because this file must not start asking the world questions.
 ## **The note is written whenever there is a log at all, and only the picture needs a file to sit
 ## beside.** The two halves are guarded separately on purpose: a log with no path is a real state —
-## it is what `begin_memory_log()` produces and what the whole suite runs on — and folding the two
-## guards together made the entry disappear along with the PNG, which is the valuable half going
-## missing in exactly the configuration that can still keep it.
+## it is what a run keeps when its file cannot be opened (`TelemetryLog`'s own fallback) — and
+## folding the two guards together made the entry disappear along with the PNG, which is the
+## valuable half going missing in exactly the configuration that can still keep it.
 func snapshot_now(context: String) -> void:
 	if not _log:
 		return

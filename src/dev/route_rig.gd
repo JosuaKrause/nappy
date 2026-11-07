@@ -205,6 +205,9 @@ var _day_number := 0
 ## Where each target is and the walk there (`RouteRigPlanner`), built in `setup()` over the city
 ## and her.
 var _planner: RouteRigPlanner
+## Where its `route` lines go: the boot's run trace, which `main` hands it before `setup()`; one
+## nobody handed writes nowhere.
+var trace := RunTrace.new()
 
 var _done := false
 
@@ -309,7 +312,7 @@ func _try_resolve(delta: float) -> void:
 		return
 	_resolve_elapsed += delta
 	if _resolve_elapsed >= _RESOLVE_TIMEOUT:
-		Telemetry.note("route", "day %d: '%s' unavailable, skipping" % [_day_number, _current_word])
+		trace.note("route", "day %d: '%s' unavailable, skipping" % [_day_number, _current_word])
 		_advance_target()
 
 func _begin_leg(target_world: Vector2) -> void:
@@ -323,7 +326,7 @@ func _begin_leg(target_world: Vector2) -> void:
 	var target_tile := _city.map.world_to_tile(target_world)
 	var path := _planner.plan(here_tile, target_tile)
 	if path.is_empty():
-		Telemetry.note("route", "day %d: no path to '%s', skipping" % [_day_number, _current_word])
+		trace.note("route", "day %d: no path to '%s', skipping" % [_day_number, _current_word])
 		_advance_target()
 		return
 	_current_target_tile = target_tile
@@ -531,7 +534,7 @@ func _retarget_if_moved() -> bool:
 		return false
 	_current_target_world = now
 	_current_target_tile = _city.map.world_to_tile(now)
-	Telemetry.note("route", "day %d: '%s' moved to %s, re-planning"
+	trace.note("route", "day %d: '%s' moved to %s, re-planning"
 			% [_day_number, _current_word, RunTrace.tile(_current_target_tile)])
 	_replan()
 	return true
@@ -575,7 +578,7 @@ func _event_owning(collider: Object) -> EventInstance:
 
 ## A leg given up on after too many stalls, logged with where she was and what held her there.
 func _give_up_stuck() -> void:
-	Telemetry.note("route", "day %d: '%s' stuck fast at %s against %s, skipping"
+	trace.note("route", "day %d: '%s' stuck fast at %s against %s, skipping"
 			% [_day_number, _current_word, RunTrace.tile(_caught_tile), _caught_by])
 	_release()
 	_advance_target()
@@ -588,14 +591,14 @@ func _replan() -> void:
 	var here_tile := _planner.standing_tile()
 	var path := _planner.plan(here_tile, _current_target_tile, _leg_avoid)
 	if path.is_empty():
-		Telemetry.note("route", "day %d: '%s' no longer reachable from %s, skipping"
+		trace.note("route", "day %d: '%s' no longer reachable from %s, skipping"
 				% [_day_number, _current_word, RunTrace.tile(here_tile)])
 		_release()
 		_advance_target()
 		return
 	_waypoints = _planner.to_world(path)
 	_waypoints[_waypoints.size() - 1] = _current_target_world
-	Telemetry.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
+	trace.note("route", "day %d: re-planned to '%s' (%.1fs, %d waypoints)"
 			% [_day_number, _current_word, _elapsed(), _waypoints.size()])
 
 # --------------------------------------------------------------------- waiting ---
@@ -718,7 +721,7 @@ func _end_unstick(cleared: bool) -> void:
 func _arrive() -> void:
 	_release()
 	var distance := _leg_start_position.distance_to(_player.global_position)
-	Telemetry.note("route", "day %d: reached '%s' at %.1fs (day time), %.0fpx walked"
+	trace.note("route", "day %d: reached '%s' at %.1fs (day time), %.0fpx walked"
 			% [_day_number, _current_word, _elapsed(), distance])
 	if _current_word.begins_with("calm"):
 		_settling = true
@@ -744,7 +747,7 @@ func _check_settled() -> void:
 		_settling = false
 		_settle_anchor = Vector2.INF
 		_release()
-		Telemetry.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
+		trace.note("route", "day %d: baby settled at 'calm', %.1fs (day time)"
 				% [_day_number, _elapsed()])
 		_advance_target()
 		return
@@ -752,7 +755,7 @@ func _check_settled() -> void:
 		# The ground she is pacing on has gone — see `RouteRigPlanner.resolve()`'s `calm`, which offers only ground still calm — so she looks again.
 		_settling = false
 		_settle_anchor = Vector2.INF
-		Telemetry.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
+		trace.note("route", "day %d: the calm ground at %s is gone, looking again, %.1fs"
 				% [_day_number, RunTrace.tile(_current_target_tile), _elapsed()]
 				+ " (day time)")
 		_begin_resolving(_current_word)
@@ -790,7 +793,7 @@ func _quit() -> void:
 func _finish() -> void:
 	_done = true
 	_release()
-	Telemetry.note("route", "day %d: route done, %.1fs (day time)" % [_day_number, _elapsed()])
+	trace.note("route", "day %d: route done, %.1fs (day time)" % [_day_number, _elapsed()])
 	_quit()
 
 ## The day's own length gone by on this rig's clock under `--invincible`, which stands the day's
@@ -802,7 +805,7 @@ func _finish() -> void:
 func _out_of_day() -> void:
 	_done = true
 	_release()
-	Telemetry.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
+	trace.note("route", "day %d: the day's %.0fs ran out before reaching '%s', %.1fs (day time)"
 			% [_day_number, _day.time_total, _current_word, _elapsed()])
 	_quit()
 
@@ -829,10 +832,10 @@ func _on_day_finished(result: GameEnums.DayResult) -> void:
 	_done = true
 	_release()
 	if result == GameEnums.DayResult.WON:
-		Telemetry.note("route", "day %d: day won at %.1fs (day time), still walking to '%s'"
+		trace.note("route", "day %d: day won at %.1fs (day time), still walking to '%s'"
 				% [_day_number, _elapsed(), _current_word])
 	else:
-		Telemetry.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
+		trace.note("route", "day %d: day ended (%s) before reaching '%s', %.1fs (day time)"
 				% [_day_number, GameEnums.DayResult.keys()[result], _current_word, _elapsed()])
 	_quit()
 

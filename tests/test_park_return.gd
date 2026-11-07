@@ -208,7 +208,6 @@ func _check_no_cordon_stands(t, main: Node2D, label: String, when: String) -> vo
 
 func _finish(t) -> void:
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	_booted.free_all()
 	_home.free()
 

@@ -13,7 +13,6 @@ extends "res://tests/resistance_rig.gd"
 ## stand are worked out from the map alone (`AlleyMarks`).
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)

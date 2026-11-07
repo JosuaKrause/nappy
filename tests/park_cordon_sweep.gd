@@ -65,9 +65,7 @@ const PLACES: Array[Array] = [
 func sweep(t, seeds: Array[int]) -> void:
 	# Finishing the swing's task the game's way makes the director's own happenings take the park
 	# first, so the sweep's own `take_the_park()` would return false. The director therefore leaves
-	# the task open in `VisitCounter._open_tasks`, and this is the runner's declared way to put it
-	# back.
-	t.gives_back_observers()
+	# the task open.
 	var measured := 0
 	var walked_out := 0
 	var largest := 0.0

@@ -55,7 +55,8 @@ several releases being one mixed window. Its `--site` option and the
 old site's key read that site's history.
 
 **The game counts how far a run gets, as anonymous GoatCounter events.**
-`VisitCounter` (`src/autoload/visit_counter.gd`) is an autoload that only listens — every method
+`VisitCounter` (`src/autoload/visit_counter.gd`) is a node `main` keeps under the sitting, handed
+the game's `EventBus` and the page's outbox, and it only listens — every method
 answers an `EventBus` signal, decides nothing, and changes nothing about play, the same "telemetry
 must not touch gameplay" invariant the run log keeps. It calls the page's own
 `window.goatcounter.count({path, title, event: true})` (see
@@ -474,8 +475,9 @@ anything happened**: the timestamp column only moves while one is open.
 
 A run that reaches the escape from its own day 14 keeps writing the log it already has, rather
 than opening a second directory for one run: the handover passes through a scene reload and
-`Telemetry` is an autoload, so the log outlives it. A cold launch straight into a section — the
-flag, or a game closed in one and opened again — has no log yet and opens one.
+`Telemetry` lives under the sitting, which `main` parks at the tree's root, so the log outlives it.
+A cold launch straight into a section — the flag, or a game closed in one and opened again — has
+no log yet and opens one.
 
 The clock is pushed by the same `TelemetryObserver` a day has, off the day's own clock — the one
 the HUD draws, so a log entry and the screen never disagree.
@@ -1036,8 +1038,12 @@ window is exactly the run worth reading and a buffered log of it would be empty.
 
 ## Who writes it
 
-**The run log is an observer: nothing that decides anything calls it.** Three hands write into it,
-each through something it was handed:
+**The run log is an observer: nothing that decides anything calls it, and nothing fetches it.** The
+log itself (`Telemetry`, `src/autoload/telemetry.gd`) is a node `main` keeps under the sitting, made
+on the sitting's first boot and found there after, so a run's log outlives the scene reloads it
+makes; `main` hands it to `RunSession`, and a suite that reads what a boot logged hands it a
+recording fake (`main.use_run_log()`, `tests/recording_log.gd`). Three hands write into it, each
+through something it was handed:
 
 - **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
   calls only its `open()` (once per boot, keeping a log a reload carried over) and `close()` (the
@@ -1049,11 +1055,13 @@ each through something it was handed:
   walked in and writes its `start` line — and holds the `TelemetryObserver` it builds when a log is
   open.
 - **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
-  point of decision.
+  point of decision, into the log `RunSession` hands it as it makes it.
 - **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink
   `RunSession` makes, which `main` hands to the run it takes from the sitting (`RunState`, and its `CityState`), to the `City` (and
   from there its posters, its `EventManager`, every instance it creates and the day's planners) and
-  to the `ResistanceDirector`. A component handed none writes nowhere, so a test builds the part it
+  to the `ResistanceDirector`, and to the observers and rigs that write a line of their own: the save
+  (`GameSave.trace`), the atlas pages and the composed ground (`AtlasLibrary.trace_note`, the
+  trace's `note`), `--route`'s walkers and `--quit-when-still`. A component handed none writes nowhere, so a test builds the part it
   wants and hands it a trace that records into a list. These are the lines a decision writes at the
   point of its roll — why a placement went where it did, which way a roll fell, what a director set
   in motion — built from what is in scope there; the facts other observers need (a nerve, a
@@ -1152,7 +1160,7 @@ create an unbounded backlog. A second request is refused while one is active; a 
 the capture leaves metadata with `status: "cancelled"` when possible. The target is not a promise
 that every desktop reaches 12 fps; inspect the timestamps for the achieved timing. Headless and
 unwritable runs are refused without fabricating images. The capture is `BurstRecorder`
-(`src/telemetry/burst_recorder.gd`), which `Telemetry` builds and hands the screen it photographs
+(`src/telemetry/burst_recorder.gd`), which `main` builds for the log it makes and hands the screen it photographs
 (`TelemetryScreen`, the game's viewport, which can draw nothing headless), the engine's clock and
 the tree's timers, and the run's `asked/` folder at each start; `tests/test_burst_capture.gd` hands
 it a screen whose frames it draws, a clock it moves and a scratch folder. Run `./tools/clip.sh` to scan the whole

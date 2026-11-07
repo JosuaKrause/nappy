@@ -44,7 +44,6 @@ const STEP := 0.1
 const RUN_SEED := 2
 
 func run(t) -> void:
-	t.gives_back_observers()
 	for day in DAYS:
 		var ticks: Array[int] = []
 		var slices: Array[int] = []

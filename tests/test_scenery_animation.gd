@@ -25,8 +25,8 @@ func run(t) -> void:
 ## a hundred thousand times its length always crosses it, so no check depends on how long a frame
 ## takes.
 func _test_roof_rotors(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var drawer := RecordingRoofDrawer.new()
 	var scenery := RecordingSceneryDrawer.new()
 	drawer.real = RoofDrawer.new(atlas, scenery)
@@ -361,10 +361,17 @@ func _test_water_ownership(t) -> void:
 	t.check(water.material != ripples
 			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
-	# A surface of its own, handed no library, makes one when it enters the tree.
-	# Watched from here, so the only lines about the `ground` page are the ones its own library writes.
-	var pages := PageLog.new()
+	# A surface handed no library makes one when it enters the tree.
+	var bare := SceneryWater.new()
+	city.scenery_ground.add_child(bare)
+	t.check(bare.atlas != null, "a surface handed no library makes one of its own")
+	bare.free()
+	# A surface of its own on a library of the test's own, watched from here, so the only lines
+	# about the `ground` page are the ones that library writes.
+	var own := AtlasLibrary.new()
+	var pages := PageLog.new(own)
 	var other := SceneryWater.new()
+	other.atlas = own
 	city.scenery_ground.add_child(other)
 	other.configure(cells.slice(0, 1))
 	await t.get_tree().process_frame

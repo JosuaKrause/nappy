@@ -22,8 +22,6 @@ config/icon="res://icon.png"
 
 Tuning="*res://src/autoload/tuning.gd"
 EventBus="*res://src/autoload/event_bus.gd"
-Telemetry="*res://src/autoload/telemetry.gd"
-VisitCounter="*res://src/autoload/visit_counter.gd"
 
 [display]
 

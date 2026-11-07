@@ -52,7 +52,6 @@ const ARRIVED := 160.0
 const RUN_SEED := 2
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var totals := {"walks": 0, "guarding": 0, "near": 0, "elsewhere": 0, "none": 0, "moves": 0,
 			"noticed": 0, "on_his_tile": 0, "no_way": 0, "placed": 0, "placed_without_a_way": 0}
 	var elsewhere: Array[String] = []

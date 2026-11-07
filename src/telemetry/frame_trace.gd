@@ -10,10 +10,13 @@ const WARMUP_USEC := 5000000
 var buffer := FrameTraceBuffer.new()
 ## What the screen is showing, asked of whoever runs it and handed in by `setup()`: whether the
 ## title is up (sampled frames stop there, since nobody is playing), and whether the readout's and
-## the frame graph's layers are on (each sample records both, since either costs a frame).
+## the frame graph's layers are on (each sample records both, since either costs a frame), and
+## whether the run log is being written (`Telemetry.is_active()` on the boot's log), which costs one
+## too.
 var _in_the_title: Callable
 var _readout_on: Callable
 var _graph_on: Callable
+var _log_on: Callable
 var _city: City
 var _player: Stroller
 var _day: DayController
@@ -25,12 +28,13 @@ var _metadata: Dictionary = {}
 ## The developer flags the run was given, handed in by `main` from its `RunConfig`.
 var _user_flags: Array = []
 
-func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, city: City,
-		player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, log_on: Callable,
+		city: City, player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
 	_run = run
 	_in_the_title = in_the_title
 	_readout_on = readout_on
 	_graph_on = graph_on
+	_log_on = log_on
 	_city = city
 	_player = player
 	_day = day
@@ -69,7 +73,7 @@ func _sample() -> void:
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),
 		roundi(here.x * 1000.0), roundi(here.y * 1000.0), _run.header.day,
 		int(_readout_on.call()), int(_graph_on.call()),
-		int(Telemetry.is_active())])
+		int(_log_on.call())])
 	buffer.append(now, Engine.get_process_frames(), Engine.get_frames_drawn(), counters)
 
 ## Startup/export metadata uses the driver-reported VSync mode, not the project setting.

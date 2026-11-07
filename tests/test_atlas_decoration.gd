@@ -98,8 +98,8 @@ func _test_street_tree_footprint_matches_the_region_table(t) -> void:
 ## `push_error` it raises is a real engine error, and an engine error fails the whole run
 ## (`docs/DECISIONS.md`, M164), which would be a worse silence than the state checks below.
 func _test_the_city_reads_the_group_once(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
@@ -123,8 +123,8 @@ func _test_the_city_reads_the_group_once(t) -> void:
 ## `City._exit_tree()` owes `build()`'s `acquire()` a matching `release()` — a city freed without
 ## one would leave the page counted, and resident, for a city that no longer exists.
 func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas

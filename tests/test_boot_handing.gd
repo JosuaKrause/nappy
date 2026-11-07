@@ -27,7 +27,6 @@ const CARRIED_AWAY := Vector2(600.0, 0.0)
 const SEED := 4242
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	await _test_the_crowd_does_not_meet_her_behind_the_title(t)
 	await _test_the_escapes_city_is_handed_the_controls_cover(t)

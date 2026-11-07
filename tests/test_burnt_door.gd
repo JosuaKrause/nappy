@@ -17,7 +17,6 @@ const SEED := 1
 const DAY := 8
 
 func run(t) -> void:
-	t.gives_back_observers()
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))

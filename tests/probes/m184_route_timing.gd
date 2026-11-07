@@ -126,7 +126,7 @@ func _find_log(started_at: float, seed_value: int) -> String:
 				best = candidate
 	return best
 
-## Every `route` line, in order — the exact sentences `RouteRig`'s own `Telemetry.note()` calls
+## Every `route` line, in order — the exact sentences `RouteRig`'s own `trace.note()` calls
 ## write (`src/dev/route_rig.gd`), read back rather than re-derived. Two regexes carry the whole
 ## grammar: the day-time before `s (day time)`, and the first quoted target name — `[a-z:]+` rather
 ## than `[a-z]+` so `calm:home` (item 3's rig option) parses the same as the plain words.

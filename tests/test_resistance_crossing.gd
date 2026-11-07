@@ -9,7 +9,6 @@ extends "res://tests/resistance_rig.gd"
 ## (`Stroller.teleport_to()`: an outright move, which the next look at her compares nothing across).
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
 	await _test_standing_at_the_door_completes_nothing(t)
 	_test_a_crossing_taken_back_does_not_do_day_nine(t)
