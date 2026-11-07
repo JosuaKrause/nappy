@@ -13,9 +13,11 @@ extends RefCounted
 ## the rest miss. Run by name: `tools/test.sh day6_yeller_met`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
+## Ten walks: which of them miss depends on where the day's closures fall, so a sweep of five has
+## too little room between its floor and its ceiling to hold across a closure moving.
+const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99, 7, 123, 2024, 8675309, 1234567]
 ## Most of the walks, not all: a walk that never passes a sidewalk of its own is not a defect.
-const AT_LEAST := 4
+const AT_LEAST := 6
 const DAY := 6
 ## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
 ## on it: it holds on seed 1 as well.

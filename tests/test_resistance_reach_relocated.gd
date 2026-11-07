@@ -99,8 +99,13 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 				if plan.mast_id == mast_id and plan.silenced \
 						and plan.position.distance_to(foot) < 1.0:
 					stands_again = true
-			t.check(stands_again, "seed %d: and the next day stands it again, silenced"
-					% seed_value)
+			# Day 12's own closures may now close its street (a closure no longer lands on the
+			# main road, so the day's closures sit elsewhere), as day 14's may: it stands again
+			# exactly where that morning leaves it room.
+			var no_room_next := _the_day_leaves_no_room_for(foot)
+			t.check(stands_again == not no_room_next,
+					"seed %d: and the next day stands it again, silenced, where it leaves room (%s)"
+					% [seed_value, "room" if not no_room_next else "no room"])
 		elif not site_near:
 			# The scheduler may refuse every tile it was offered — its acceptance, not the
 			# director's — and then the nearest live mast is the task's, which the director says.
