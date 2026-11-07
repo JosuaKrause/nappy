@@ -1068,7 +1068,8 @@ field with its value before and after (`tests/shared_state.gd`).
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.
 - `test_event_manager.gd` — the manager against a real generated city: retirement,
-  successors, summed excitement. Wiring bugs live here and are invisible to data tests.
+  successors, summed excitement. Its header gives the reason it builds one: an instance freed but
+  left in the list and a successor spawned but never tracked are invisible to a data-level test.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.

@@ -17,8 +17,8 @@ never makes it shared; a number only tests read stays in `Tuning`. Use
 under the walking decay; a fast mover must telegraph across its whole radius. If a test fails,
 decide whether the relationship or the number is wrong. **Do not just update the test.**
 
-**A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
-survives rebalancing; `intensity == 3.2` does not.
+A test never asserts what a setting is, and the relationship tests that encode a guarantee stay
+(**writing-tests**).
 
 ## Never derive a density — measure it
 
