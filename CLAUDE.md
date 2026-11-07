@@ -79,7 +79,7 @@ is the moment somebody is about to touch the file.
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
-| `tests/**` | **verify** |
+| `tests/**` | **verify**, **writing-tests** |
 | `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |
 | `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
@@ -87,6 +87,7 @@ is the moment somebody is about to touch the file.
 | `docs/evidence/**` | **verify** |
 | `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
 | any `*.gd` | **godot** |
+| `src/**/*.gd` | **designing-classes** |
 | any `*.svg` | **svg-art** |
 | `src/**`, `tests/**` | **orchestrating** |
 | spawning a sub-agent (the `Agent`/`Task` tool, not a path) | **orchestrating** |

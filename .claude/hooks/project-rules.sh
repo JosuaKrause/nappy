@@ -139,8 +139,9 @@ esac
 case "$path" in
 	*/tools/*|*/src/dev/dev_flags.gd|*/src/dev/auto_screenshot.gd) wanted+=(cli-tools) ;;
 esac
+# How a change is verified (verify) and how a test is written (writing-tests) both govern a suite.
 case "$path" in
-	*/tests/*)                 wanted+=(verify) ;;
+	*/tests/*)                 wanted+=(verify writing-tests) ;;
 esac
 # The queue (TODO.md's header, every entry's folder under docs/todo/), the review items and the
 # playtests: what the player asked for, written down before anything is built.
@@ -149,6 +150,10 @@ case "$path" in
 esac
 case "$path" in
 	*.gd)                      wanted+=(godot) ;;
+esac
+# How a class and its collaborators are shaped: the layers, injection, derived state held once.
+case "$path" in
+	*/src/*.gd)                wanted+=(designing-classes) ;;
 esac
 # A backstop, and it should never fire: session-rules.sh loads the orchestrating rules at the
 # start of the session and writes the same marker, because *who implements this* is decided
