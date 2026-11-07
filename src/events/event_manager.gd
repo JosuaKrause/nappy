@@ -708,14 +708,15 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return ahead.queue_a_mast(offered, rng)
 
-## A task's own row, placed the way the day places one, near her (`EventsAhead.queue_a_task_row()`).
-func queue_a_task_row(def: EventDef, offered: Array[Vector2i], rng: RandomNumberGenerator,
-		her: Vector2) -> EventInstance:
-	return ahead.queue_a_task_row(def, offered, rng, her)
+## Day 13's task roadblock in place of one of the day's events (`EventsAhead.swap_in_a_task_row()`).
+func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
+		rng: RandomNumberGenerator) -> EventInstance:
+	return ahead.swap_in_a_task_row(def, old, rng)
 
-## Does at dawn the one-time work of a task row's placement (`EventsAhead.prepare_a_task_row()`).
-func prepare_a_task_row(def: EventDef) -> void:
-	ahead.prepare_a_task_row(def)
+## Whether `tile` is on a street beside the day's routes and off the main road
+## (`EventsAhead.stands_beside_the_routes()`).
+func stands_beside_the_routes(tile: Vector2i) -> bool:
+	return ahead.stands_beside_the_routes(tile)
 
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int) -> Array:

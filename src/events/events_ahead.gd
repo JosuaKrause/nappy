@@ -5,7 +5,7 @@ extends RefCounted
 ## ahead of her, down her line or her heading, warned first where they come from off screen
 ## (`place_what_is_owed_ahead()`); the men a stopped vehicle lets out (`let_the_officers_out()`);
 ## the pursuer on foot a torn poster sends (`send_a_pursuer()`); the mast and the task row a
-## resistance task places after dawn (`queue_a_mast()`, `queue_a_task_row()`); and the set piece she
+## resistance task places after dawn (`queue_a_mast()`, `swap_in_a_task_row()`); and the set piece she
 ## never met, lit at dusk (`light_what_she_never_met()`). Nothing here is planned at dawn: the day's
 ## plan is `EventStreaming`'s, and what this places joins it.
 ##
@@ -307,51 +307,42 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	_streaming.add(plan)
 	return plan
 
-## **A task's own row, placed the way the day places one, near where she read its mark**: day 13's
-## roadblock (`ResistanceDirector._place_the_roadblock_near()`, the player: "let's place one
-## properly and guide to that -- just make sure it's closeby"). Placed by
-## `EventScheduler.WalkSiting.near_her()` among `offered` — the tiles the director found near her
-## and out of her view — under every rule a planned row is placed under, against the whole of the
-## day's plan, and refused where it would close her way home or to a calm area from `her`. Appended
-## to the day's plan with its body recorded, and put in the world at once and kept there for the
-## rest of the day (`EventStreaming.keep_live()`'s rule), since a task's contact rides it and must not lose it to
-## the streaming. Answers its live instance, or null when no offered tile passes.
-func queue_a_task_row(def: EventDef, offered: Array[Vector2i], rng: RandomNumberGenerator,
-		her: Vector2) -> EventInstance:
-	if offered.is_empty() or not def:
+## **Day 13's task roadblock in place of `old`**, one of the day's own events, when no roadblock the
+## day placed is close by where she read the mark (`ResistanceDirector._place_the_roadblock_near()`,
+## inbox #1185): `def` built where `old` stands (`EventScheduler.in_place_of()`), `old` spent and its
+## body given back, and the roadblock put in the world at once and kept there for the rest of the
+## day (`EventStreaming.swap()`), since the task's contact rides it. Answers its live instance, or
+## null when `def` may not stand on `old`'s ground.
+func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
+		rng: RandomNumberGenerator) -> EventInstance:
+	if not def or not old:
 		return null
-	var plan := _task_siting().near_her(def, rng, offered, her)
+	var plan := EventScheduler.in_place_of(def, world.day, world.city_map, old, rng)
 	if not plan:
 		return null
-	_streaming.add(plan)
-	_streaming.stream_in(plan)
-	plan.kept_live = true
-	return plan.live
+	return _streaming.swap(old, plan)
 
-## Does at dawn the one-time work `queue_a_task_row()` would otherwise do on the frame she reads the
-## mark: the scan for the ground `def` may stand on and the reachability grid
-## (`EventScheduler.WalkSiting.prepare()`). Nothing here rolls, so the day is the same day whether
-## or not this ran.
-func prepare_a_task_row(def: EventDef) -> void:
-	if def:
-		_task_siting().prepare(def)
+## Whether `tile` is on a street beside the day's routes and off the main road
+## (`EventScheduler.stands_beside_the_routes()`): the ground day 13's task may swap a roadblock in on.
+func stands_beside_the_routes(tile: Vector2i) -> bool:
+	return _day_siting().stands_beside_the_routes(tile)
 
-## The day's placement context for `queue_a_task_row()`: the one the day kept for her walk, or one
-## built from what the day was planned against and kept for the rest of the day (`_day_tree` names
-## the day it was built for), so the ground scans, the corridor and the reachability grid it builds
-## are paid for once however often a placement is asked.
-func _task_siting() -> EventScheduler.WalkSiting:
+## The day's placement context for a question asked of the day's routes after dawn: the one the day
+## kept for her walk, or one built from what the day was planned against and kept for the rest of
+## the day (`_day_tree` names the day it was built for), so the corridor it builds is paid for once
+## however often it is asked.
+func _day_siting() -> EventScheduler.WalkSiting:
 	if _siting:
 		return _siting
-	if not _task_siting_cache or _task_siting_tree != _day_tree:
-		_task_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
+	if not _day_siting_cache or _day_siting_tree != _day_tree:
+		_day_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
 				_walk, EventScheduler.Verdicts.new())
-		_task_siting_cache.holds_the_home_streets = holds_the_home_streets
-		_task_siting_tree = _day_tree
-	return _task_siting_cache
+		_day_siting_cache.holds_the_home_streets = holds_the_home_streets
+		_day_siting_tree = _day_tree
+	return _day_siting_cache
 
-var _task_siting_cache: EventScheduler.WalkSiting
-var _task_siting_tree: RouteTree
+var _day_siting_cache: EventScheduler.WalkSiting
+var _day_siting_tree: RouteTree
 
 ## Events the day has budgeted for the director to put in front of the player and has not
 ## spent yet.

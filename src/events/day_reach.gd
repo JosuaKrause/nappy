@@ -29,14 +29,22 @@ var _reached := {}
 static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
 	var reach := DayReach.new()
 	reach._grid = ReachabilityGrid.build(map)
+	reach._shut = shut_by(map, plans)
+	reach._reached = reach._grid.flood([map.home_rect.position], reach._shut)
+	return reach
+
+## **The ground `plans` shut on `map`** (`tile -> true`), as `map` stands now: the disc of every plan
+## that blocks the way, today's closures and the soft seals' bands. What a reach is flooded over, for
+## a caller that needs only the ground: dawn, placing day 13's roadblocks before the walk is planned
+## (`EventScheduler._place_beside_the_routes()`).
+static func shut_by(map: CityMap, plans: Array[EventScheduler.Planned]) -> Dictionary:
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan in plans:
 		if plan.obstructs():
 			blockers.append(plan)
-	reach._shut = EventScheduler.blocked_by(map, blockers)
-	reach._shut.merge(map.blocked.tiles_of(Mover.SOFT_SEALS))
-	reach._reached = reach._grid.flood([map.home_rect.position], reach._shut)
-	return reach
+	var shut := EventScheduler.blocked_by(map, blockers)
+	shut.merge(map.blocked.tiles_of(Mover.SOFT_SEALS))
+	return shut
 
 ## Whether `tile` is reached from home over the ground left open.
 func reaches(tile: Vector2i) -> bool:
@@ -54,3 +62,41 @@ func shut() -> Dictionary:
 ## The reachability grid the reach is flooded on: the city's walkable tiles in two-tile cells.
 func grid() -> ReachabilityGrid:
 	return _grid
+
+## **The ground her paths reach from `seeds` without leaving the circle of `radius` round `centre`**,
+## walked tile by tile over walkable ground the reach leaves open, going on only from a tile inside
+## the circle: `tile -> its distance from centre`, the seeds among them. How close by is measured for
+## day 13's task (`ResistanceDirector._place_the_roadblock_near()`), from where she read the mark.
+func paths_within(map: CityMap, seeds: Array[Vector2i], centre: Vector2, radius: float) -> Dictionary:
+	return paths_over(map, _shut, seeds, centre, radius)
+
+## `paths_within()` over `shut` rather than a reach's own: the one walk both the task's measure and
+## dawn's (`EventScheduler._place_beside_the_routes()`) take, so the two cannot disagree about what
+## close by is.
+static func paths_over(map: CityMap, shut: Dictionary, seeds: Array[Vector2i], centre: Vector2,
+		radius: float) -> Dictionary:
+	var found := {}
+	var queue: Array[Vector2i] = []
+	for tile in seeds:
+		# A seed is walked from even where the ground is shut: she may stand inside a body's disc.
+		if found.has(tile) or not map.is_walkable(tile):
+			continue
+		var distance := map.tile_to_world(tile).distance_to(centre)
+		if distance >= radius:
+			continue
+		found[tile] = distance
+		queue.append(tile)
+	var head := 0
+	while head < queue.size():
+		var tile: Vector2i = queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := tile + step
+			if found.has(next) or not map.is_walkable(next) or shut.has(next):
+				continue
+			var distance := map.tile_to_world(next).distance_to(centre)
+			if distance >= radius:
+				continue
+			found[next] = distance
+			queue.append(next)
+	return found

@@ -282,6 +282,9 @@ class Planned extends RefCounted:
 	## Whether this body is a region door's (`is_door()`). Private: set once, by
 	## `stand_as_a_door()`.
 	var _is_door := false
+	## Whether this body is the region wall's own (`is_in_the_wall()`). Private: set once, by
+	## `stand_in_the_wall()`.
+	var _in_the_wall := false
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
@@ -305,6 +308,31 @@ class Planned extends RefCounted:
 	## `_add_alley_door_bodies()` as they make each one, and by nothing else.
 	func stand_as_a_door() -> void:
 		_is_door = true
+
+	## **Whether this body is the region wall's own**: the hard seal `RegionPlanner` stands across a
+	## wall street or an alley mouth. Structure the boundary is made of, so day 13's task never takes
+	## one in place of a roadblock the day placed, nor replaces one (`ResistanceDirector.
+	## _place_the_roadblock_near()`).
+	func is_in_the_wall() -> bool:
+		return _in_the_wall
+
+	## Makes this body the region wall's. Called by `DayPlanner._plan_a_day()` for each of the day's
+	## region plan's wall bodies, and by nothing else.
+	func stand_in_the_wall() -> void:
+		_in_the_wall = true
+
+	## Whether this plan's instance is in the world now (`live`).
+	func is_in_the_world() -> bool:
+		return live != null
+
+	## Whether this is something the run left here rather than something today rolled
+	## (`permanent`): a scar, which the day may not tidy away.
+	func is_permanent() -> bool:
+		return permanent
+
+	## Whether this plan stands at one point rather than moving along a route (`path`).
+	func stands_still() -> bool:
+		return path.size() < 2
 
 	## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
 	## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
@@ -593,6 +621,11 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `kept_ground` is the ground the escape's bag draw reads again on a replan of the same city
 ## (`KeptGround`); a day's draw does not read it.
 ##
+## `beside_the_routes` is the task row dawn stands beside the day's routes before the fill, so that
+## one is close by wherever she reads the task's mark: day 13's roadblock
+## (`_place_beside_the_routes()`). Null on every other day, which is then planned exactly as it would
+## be without it.
+##
 ## **Answers the plan as a `DayEvents`**, made here and written only here: every pass below is
 ## handed it, and the caller reads the rows (`DayEvents.placements()`) and the facts derived
 ## from them through it.
@@ -600,7 +633,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 		consumed_one_shots: Array[String] = [], scars: Array[Dictionary] = [],
 		route: RouteSource = null, heat: int = 0, doors := PackedVector2Array(),
 		target: Array[Vector2i] = [], standing: Array[Planned] = [], trace: RunTrace = null,
-		kept_ground: KeptGround = null) -> DayEvents:
+		kept_ground: KeptGround = null, beside_the_routes: EventDef = null) -> DayEvents:
 	var events := DayEvents.over(calm, standing)
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		_fill_the_walk_from_the_bag(spec, rng, map, route,
@@ -612,7 +645,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
 	var filled := _plan_through_the_fill(day, base, map, consumed_one_shots, scars, calm, route,
-			heat, doors, events, trace, spec)
+			heat, doors, events, trace, spec, beside_the_routes)
 	_thin_the_walls(spec.wall_row_share, _stream(base, WALL_THINNING_SALT), events, filled)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
@@ -628,14 +661,16 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	return events
 
 ## `build_day` up to and including the fill, added to `events`: the ambient rows, the scars, the
-## masts, the scripted rows, the one-shots, the spoilers in a park she used and the recurring
-## fill, each phase on its own stream off `base` (`_stream`). Answers the fill's own placements,
-## in the order placed, which is what `_thin_the_walls` asks about. `spec` is the day's
-## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
+## masts, the task row beside the routes (`beside_the_routes`, day 13's roadblock), the scripted
+## rows, the one-shots, the spoilers in a park she used and the recurring fill, each phase on its
+## own stream off `base` (`_stream`). Answers the fill's own placements, in the order placed, which
+## is what `_thin_the_walls` asks about. `spec` is the day's placement settings, a day's own
+## (`DaySpec.for_day()`) where none is handed in.
 static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
-		trace: RunTrace = null, spec: DaySpec = null) -> Array[Planned]:
+		trace: RunTrace = null, spec: DaySpec = null,
+		beside_the_routes: EventDef = null) -> Array[Planned]:
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
@@ -656,6 +691,8 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 	events.add_all(_place_ambient(day, map, heat))
 	events.add_all(_place_scars(day, scars, heat))
 	events.add_all(_place_masts(day, map, heat, doors, scars))
+	_place_beside_the_routes(beside_the_routes, day, base, map, events, ground, leave_alone,
+			corridor, doors, rules, trace)
 	_place_scripted(day, _stream(base, 1), map, events, ground, leave_alone, corridor, heat,
 			doors, rules)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, ground,
@@ -663,6 +700,141 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, heat, trace)
 	return _fill_with_recurring(day, base, map, events, ground, leave_alone, corridor, heat,
 			doors, spec.caps_per_day, rules)
+
+## **Day 13's roadblocks, stood beside her routes at dawn so that one is close by wherever she reads
+## the task's mark** (inbox #1185: the day's routes first, then roadblocks next to them, then the
+## ordinary placement). `def` is the task's row, null on every other day, which this leaves exactly
+## as it was.
+##
+## **Beside the routes** is a street no route runs along, one of whose junction boxes a route
+## crosses (`Corridor.is_beside_the_routes()`), and never the main road (inbox #1186): close to her
+## way, and off it, so a roadblock there closes none of her routes. A roadblock is a `WALL`
+## (`_role_for()`), so its own ground (`_ground_for()`) is already off every tile a route runs along.
+##
+## **As few as leave every stretch of her routes one close by, under the task's own measure**: the
+## walk her paths take from a tile without leaving the circle of `TASK_ROW_CLOSE_BY` round it
+## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.
+## ROADBLOCK_WIDER_REACH`). The route tiles are taken in the map's order, and the first one with no
+## roadblock close by yet is given one: drawn by `_best_of()` from the ground beside the routes its
+## paths reach, under every rule a roadblock the fill places is under, the spacing between two of a
+## row (`EVENT_SPACING_SAME`) among them, so the roadblocks spread rather than bunch. A route tile
+## whose paths reach no such ground, or whose draw is refused, is passed over. Each placed roadblock
+## is read, from the ground she can touch it from, as close by every route tile its own paths reach
+## in the same circle, and its body shuts its ground for the next.
+##
+## **Outside the budget and on streams of its own** (`BESIDE_THE_ROUTES_SALT` and up): the fill after
+## it rolls the rows it always rolled, spaced against these as against anything already down.
+static func _place_beside_the_routes(def: EventDef, day: int, base: int, map: CityMap,
+		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
+		doors: PackedVector2Array, rules: Rules, trace: RunTrace) -> void:
+	if def == null:
+		return
+	def = def.for_day(day)
+	var role := _role_for(def, day)
+	var standing := events.standing()
+	var offered: Array[Vector2i] = []
+	for tile in _ground_for(def, map, ground, corridor, role, NO_SITE,
+			rules.holds_the_home_streets if rules else true):
+		if stands_beside_the_routes(map, corridor, tile):
+			offered.append(tile)
+	if offered.is_empty():
+		_note(trace, "plan", "no ground beside the day's routes takes a %s" % def.id)
+		return
+	var down := events.placements().duplicate()
+	down.append_array(standing)
+	var shut := DayReach.shut_by(map, down)
+	var covered := {}
+	var placed := 0
+	var attempt := 0
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if covered.has(tile) or not corridor.carries_a_route(tile) or not map.is_walkable(tile) \
+					or shut.has(tile):
+				continue
+			covered[tile] = true
+			var near := DayReach.paths_over(map, shut, [tile] as Array[Vector2i],
+					map.tile_to_world(tile), TASK_ROW_CLOSE_BY)
+			var pool: Array[Vector2i] = []
+			var far: Array[Vector2i] = []
+			for candidate in offered:
+				if near.has(candidate):
+					pool.append(candidate)
+					if float(near[candidate]) >= TASK_ROW_CLOSE_BY * BESIDE_THE_ROUTES_FAR_SHARE:
+						far.append(candidate)
+			if pool.is_empty():
+				continue
+			# The far half first: a roadblock at the edge of the tile's reach is close by more of the
+			# route beyond it, so fewer stand.
+			if not far.is_empty():
+				pool = far
+			var plan := _best_of(def, _stream(base, BESIDE_THE_ROUTES_SALT + attempt), map, pool,
+					role, events.placements(), ground, leave_alone, corridor, doors, standing, null,
+					rules)
+			attempt += 1
+			if not plan:
+				continue
+			events.add(plan)
+			placed += 1
+			block_a_disc(map, shut, plan.position, plan.blocking_radius())
+			for reached: Vector2i in DayReach.paths_over(map, shut, _touched_from(map, shut, plan),
+					plan.position, TASK_ROW_CLOSE_BY):
+				covered[reached] = true
+	_note(trace, "plan", "%d %s placed beside the day's routes" % [placed, def.id])
+
+## The widest a task's row is searched for round where she read its mark: half a block and a block
+## past the mark's own block and the next (`ResistanceDirector.ROADBLOCK_WIDER_REACH`'s last ring),
+## 1,024px. What dawn stands day 13's roadblocks within of every stretch of her routes
+## (`_place_beside_the_routes()`).
+const TASK_ROW_CLOSE_BY := (Tuning.BLOCK_SIZE * 2.5 + Tuning.STREET_WIDTH * 2.0) * Tuning.TILE_SIZE
+
+## The share of `TASK_ROW_CLOSE_BY` past which `_place_beside_the_routes()` offers a route tile's
+## roadblock first, when any of its ground lies that far.
+const BESIDE_THE_ROUTES_FAR_SHARE := 0.5
+
+## The phase salt `_place_beside_the_routes()` draws its streams from, one per roadblock it asks for:
+## after `WALL_THINNING_SALT` and far below `FILL_SALT`, so it never shares a stream with the fill.
+const BESIDE_THE_ROUTES_SALT := 5
+
+## The walkable ground left open within a tile and a half of `plan`'s body: where she touches it
+## from.
+static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Array[Vector2i]:
+	var reach := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
+	var centre := map.world_to_tile(plan.position)
+	var span := ceili(reach / Tuning.TILE_SIZE)
+	var found: Array[Vector2i] = []
+	for dy in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if map.in_bounds(tile) and map.is_walkable(tile) and not shut.has(tile) \
+					and map.tile_to_world(tile).distance_to(plan.position) <= reach:
+				found.append(tile)
+	return found
+
+## **Whether `tile` is on a street beside the day's routes** (`Corridor.is_beside_the_routes()`)
+## and not the main road, which nothing that closes a street stands on outside the escape
+## (inbox #1186). Where dawn stands day 13's roadblocks, and what the task's swap may replace
+## (`ResistanceDirector._place_the_roadblock_near()`).
+static func stands_beside_the_routes(map: CityMap, corridor: Corridor, tile: Vector2i) -> bool:
+	if not corridor.is_beside_the_routes(tile):
+		return false
+	var segment := map.network.segment_containing(tile)
+	return not map.is_main_road(not segment.horizontal, segment.a.x)
+
+## **`def` in place of `old`**, for day 13's task when no roadblock the day placed is close by: built
+## where `old` stands (`_build_placement()`), as `day` places the row, or null when the row may not
+## stand on that ground (`EventDef.placement`). Whoever asks spends `old` and puts this in its place
+## (`EventStreaming.swap()`).
+static func in_place_of(def: EventDef, day: int, map: CityMap, old: Planned,
+		rng: RandomNumberGenerator) -> Planned:
+	def = def.for_day(day)
+	var tile := map.world_to_tile(old.position)
+	if not def.placement.has(map.tile_at(tile)):
+		return null
+	var plan := _build_placement(def, map, tile, rng)
+	if plan:
+		plan.role = _role_for(def, day)
+	return plan
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
 ## `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day),
@@ -1601,8 +1773,8 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## nothing to check live (inbox #1173: "there should be no live reachability check. that's a hard
 ## no"). What is sited here is what the day's own placement rules (`EventScheduler._best_of()`)
 ## accept and no more: the fire, which has no body (PLAYTEST-144 12), the poster crews, the places
-## her route's bag hands her walk, and day 11's mast. Day 13's task roadblock (`near_her()`) still
-## asks `_still_leaves_a_park_reachable()` until it takes a roadblock the day placed instead.
+## her route's bag hands her walk, and day 11's mast. Day 13's task roadblock is one the day placed
+## (`ResistanceDirector._place_the_roadblock_near()`), never one sited here.
 class WalkSiting extends RefCounted:
 	var _day: int
 	var _map: CityMap
@@ -1616,16 +1788,11 @@ class WalkSiting extends RefCounted:
 	## The same per-day cache of "which tiles may this kind of row stand on" `build_day` threads
 	## through its own placements, kept here for the day so the city is not rescanned per attempt.
 	var _ground := {}
-	var _grid: ReachabilityGrid = null
-	## The calm tiles of the areas she has not used, worked out once for the day. See
-	## `_calm_she_has_not_used()`.
-	var _unused_calm: Array[Vector2i] = []
-	var _unused_calm_known := false
 
 	## Why attempts placed nothing, as `reason -> how many attempts ended that way`. Nothing in the
 	## game reads it: it is what lets `tests/probes/m179_fire_on_her_way.gd` report *what* a long wait
 	## was made of, which is the difference between a branch with no frontage on it and a day whose
-	## every site would close her way out.
+	## every site breaks a placement rule.
 	var waits := {}
 	## How many sitings had to widen past the band to the end of her branch, for the same probe.
 	var widened := 0
@@ -1927,35 +2094,6 @@ class WalkSiting extends RefCounted:
 				_walk.everything_but(), _ground, _leave_alone, _corridor, _walk.doors(), [],
 				_verdicts_for_an_ask(false))
 
-	## A placement for `def` among `offered`, near her at `at`, **under every rule a row the day plans
-	## is placed under**: only the tiles of `offered` its own dawn pool would offer it — the open
-	## ground `open_ground_for()` keeps it to, and for a `WALL` none a route runs along
-	## (`_copies_of()`) — then `_best_of()` against the walk's plans with the day's own ground, corridor,
-	## protected calm and doors, as `among()` does, and then, since it is put down after dawn, only a
-	## site that still leaves her a way home and to a calm area from `at`
-	## (`_still_leaves_a_park_reachable()`). Null when nothing offered passes. Day 13's own roadblock,
-	## placed near the mark she read (`ResistanceDirector._place_the_roadblock_near()`).
-	func near_her(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i],
-			at: Vector2) -> Planned:
-		var role := EventScheduler._role_for(def, _day)
-		var by_cost := EventScheduler._is_a_wall_by_cost(def)
-		var pool := _ground_as_a_set(def)
-		var kept: Array[Vector2i] = []
-		for tile in offered:
-			if pool.has(tile) and EventScheduler._copies_of(tile, _corridor, role, def.hard_fail,
-					by_cost) > 0:
-				kept.append(tile)
-		if kept.is_empty():
-			return _waited("no ground near her the day would offer the row")
-		var already := _walk.everything_but()
-		var candidate := EventScheduler._best_of(def, rng, _map, kept, role, already, _ground,
-				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
-		if not candidate:
-			return _waited("every site near her broke a placement rule")
-		if not _still_leaves_a_park_reachable(already, candidate, at):
-			return _waited("the site would close her way out")
-		return candidate
-
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
 	## the site is ground she was never near enough to have it exist in front of her.
 	const DUSK_CLEAR_OF_HER := Tuning.EVENT_STREAM_RADIUS
@@ -2201,105 +2339,17 @@ class WalkSiting extends RefCounted:
 		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
-	## **Whether the day still works around this site**, asked by day 13's task roadblock alone
-	## (`near_her()`), until it takes a roadblock the day placed instead and this goes: from where she
-	## is standing, with **the candidate's field taken as closed ground**, she can still reach the home
-	## and a calm area she has not used.
-	##
-	## **Both ends, one flood.** Reachability is symmetric, so a flood from her that finds the home
-	## and an unused area has also shown that the home reaches that area: she can retreat, she can
-	## get there, and she can get back. Flooding from the home as well would be the same component
-	## asked a second time.
-	##
-	## **A field is closed ground here, and that is the strong reading on purpose.** `outer_radius`
-	## rather than `field_reach()`: the engine is parked, so nothing about it is stretched forward by
-	## its own speed, and the question is what ground she will not walk through rather than what the
-	## row would charge a passer-by. `EventSpawner.where_the_summoned_row_stops()` says where the
-	## engine will be, so the check and the summons cannot disagree about it.
-	##
-	## **Checked before accepting, never repaired.** `EventScheduler._ensure_the_city_is_still_
-	## walkable()` asks the dawn version of this of the whole day and *drops* what seals the city; a
-	## placement made after dawn has nothing it is allowed to drop, so it asks of itself and declines
-	## instead. A refusal is ordinary and costs a second of walking.
-	##
-	## **Asked as a difference rather than as an absolute**, because the list it is asked over is the
-	## whole of what the manager is holding — the catalogue's rows, the day's seals, the region wall
-	## and its door structure — which is a stricter set than the dawn pass ever saw. If she is
-	## already cut off from the home or from every unused area without the candidate, nothing here
-	## did it, and refusing for ever would leave the beat with nowhere at all. The baseline flood runs
-	## only when the candidate fails, so an accepted site costs one flood rather than two.
-	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned,
-			at: Vector2) -> bool:
-		var blockers := _what_already_blocks(already)
-		var her := _map.world_to_tile(at)
-		var blocked := EventScheduler.blocked_by(_map, blockers)
-		EventScheduler.block_a_disc(_map, blocked, candidate.position, candidate.def.outer_radius)
-		var parked := EventSpawner.where_the_summoned_row_stops(_map, candidate.position)
-		var summoned := EventCatalogue.by_id(candidate.def.aftermath.on_sight) \
-				if candidate.def.aftermath.on_sight != "" else null
-		if summoned and parked != Vector2.INF:
-			EventScheduler.block_a_disc(_map, blocked, parked, summoned.outer_radius)
-		if _she_can_still_get_away(her, blocked):
-			return true
-		# Only now: was the day already like this without us?
-		return not _she_can_still_get_away(her, EventScheduler.blocked_by(_map, blockers))
-
-	## Whether a flood from her tile, over `blocked`, still finds the home and some calm area she has
-	## not settled in this act. Both, because either one alone is a day that cannot be won or a day
-	## that cannot be ended.
-	func _she_can_still_get_away(her: Vector2i, blocked: Dictionary) -> bool:
-		var reached := _grid.flood([her], blocked)
-		if not _grid.reaches(_map.home_rect.position, blocked, reached):
-			return false
-		for tile in _calm_she_has_not_used():
-			if _grid.reaches(tile, blocked, reached):
-				return true
-		return false
-
-	## The calm tiles of every area she has not settled in this act — the ground the day's own
-	## placement rules already keep clean (`CalmAreas.unused_ground()`), read here as the
-	## destination that has to stay reachable.
-	##
-	## **Falls back to every calm tile where she has used them all**, which is the same case
-	## `DayRepairs.ensure_one_usable_park` names: with nothing unused left, what the day owes
-	## is calm ground rather than fresh calm ground, and refusing every site instead would be a
-	## day 3 with no fire. A walk with no calm areas of its own (a rig's bare walk) has used none.
-	func _calm_she_has_not_used() -> Array[Vector2i]:
-		if _unused_calm_known:
-			return _unused_calm
-		_unused_calm_known = true
-		var used: Array[Vector2i] = _walk.calm().used() if _walk.calm() else ([] as Array[Vector2i])
-		for block in _map.calm_blocks:
-			if used.has(block):
-				continue
-			for tile in _map.rect_tiles(EventScheduler._calm_rect(_map, block)):
-				if Tile.is_calm(_map.tile_at(tile)):
-					_unused_calm.append(tile)
-		if _unused_calm.is_empty():
-			_unused_calm = _map.calm_tiles()
-		return _unused_calm
-
-	## Everything in `already` that stands in the way, and — the first time it is asked — the grid.
-	## A region door's bodies count here, as they always have for this check, until day 13's
-	## roadblock leaves it and it goes.
-	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
-		if not _grid:
-			_grid = ReachabilityGrid.build(_map)
-		var blockers: Array[Planned] = []
-		for plan in already:
-			if plan.obstructs() or (plan.is_door() and plan.is_placed()):
-				blockers.append(plan)
-		return blockers
-
 	## Does at dawn the work the first `ahead_of()` would otherwise do in the middle of a walk: the
-	## scan for ground `def` may stand on and the set a cell asks about, and the reachability grid.
-	## Both are scans of the whole city, which at dawn is part of a load and mid-walk is a hitch on
-	## the one beat of the day she is meant to be watching. The flood from her is not among them: it
-	## starts where she stands, so it can only run when a site is asked about. Nothing here rolls, so
-	## the day is the same day whether or not this ran.
+	## scan for ground `def` may stand on and the set a cell asks about. It is a scan of the whole
+	## city, which at dawn is part of a load and mid-walk is a hitch on the one beat of the day she is
+	## meant to be watching. Nothing here rolls, so the day is the same day whether or not this ran.
 	func prepare(def: EventDef) -> void:
 		_ground_as_a_set(def)
-		_what_already_blocks([])
+
+	## Whether `tile` is on a street beside the day's routes and off the main road
+	## (`EventScheduler.stands_beside_the_routes()`), against this siting's corridor.
+	func stands_beside_the_routes(tile: Vector2i) -> bool:
+		return EventScheduler.stands_beside_the_routes(_map, _corridor, tile)
 
 ## Fills the day's budget, **one stream per attempt**.
 ##

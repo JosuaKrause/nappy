@@ -176,7 +176,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
 		_city.events.stream_radius = INF
 		return
 	t.check(warning.left <= Tuning.WARNING_ALONE_MAX, "its badge is up alone for at most a second")
-	var stop := EventSpawner.where_the_summoned_row_stops(_city.map, plan.position)
+	var stop := EventSpawner._where_the_summoned_row_stops(_city.map, plan.position)
 	var offset := warning.offset
 	var looked := [0]
 	var jumped := [0]

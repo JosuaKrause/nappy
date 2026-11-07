@@ -617,11 +617,11 @@ const ON_HER_WAY_BEHIND := -0.5
 ## question, because both are asked of the same walk and neither is worth a frame's answer.
 ##
 ## A refusal is ordinary — there is no tile of the row's own ground on the branch ahead of her, or
-## the one there is stands in a door's clear ground or would close her way out — and the answer is
-## to ask again a street later rather than to place it somewhere illegal. A placement already made
-## is asked on the same beat whether the walk has left it behind, which is a walk of the route tree
-## rather than a dot product and does not belong in a physics frame: a refused attempt scans her
-## branch, rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates and floods the reachability grid, and
+## the one there is stands in a door's clear ground or breaks another of the day's rules — and the
+## answer is to ask again a street later rather than to place it somewhere illegal. A placement
+## already made is asked on the same beat whether the walk has left it behind, which is a walk of
+## the route tree rather than a dot product and does not belong in a physics frame: a refused
+## attempt scans her branch and rolls `EventScheduler.EVENT_PLACEMENT_TRIES` candidates, and
 ## doing that sixty times a second while she walks into a corner is the one hitch on the beat of the
 ## day she is meant to be watching.
 const ON_HER_WAY_LOOK := 1.0
@@ -658,8 +658,7 @@ const ON_HER_WAY_LOOK := 1.0
 ## **Nothing is moved to satisfy the guarantee, and nothing is ever sited off the path.** When the
 ## branch ahead of her offers no legal tile of the row's own ground — she has stepped off the tree
 ## through a thinned seal or into an alley, the window holds none of that ground (no building
-## frontage, for the fire and the crews), a candidate stands in a door's clear ground,
-## or one would close her own way out — this answers with nothing and asks again a second later, from
+## frontage, for the fire and the crews), or a candidate stands in a door's clear ground — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
 func site_what_is_on_her_way(delta: float, at: Vector2,
 		velocity: Vector2) -> Array[EventScheduler.Planned]:

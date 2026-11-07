@@ -1282,7 +1282,7 @@ var is_parked: bool:
 ## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
-## the building (`EventSpawner.where_the_summoned_row_stops()`) and stays there for the rest of the
+## the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the rest of the
 ## day, because a standing field beside a fire she was led to is the cost that makes the pair a
 ## street to turn round on rather than one to hurry past.
 ##

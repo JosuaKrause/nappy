@@ -390,11 +390,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "EventSpawner",
-        "placement rules live on the spawner the planner and the city both reach into",
-        (
-            "src/city/city.gd",
-            "src/events/event_scheduler.gd",
-        ),
+        "placement rules live on the spawner the city reaches into",
+        ("src/city/city.gd",),
     ),
     Exception_(
         "names",

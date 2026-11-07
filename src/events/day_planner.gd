@@ -168,13 +168,22 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
+	# The wall's own bodies say so, as a door's do (`Planned.stand_as_a_door()`): day 13's task never
+	# takes one for a roadblock the day placed, nor swaps one out.
+	for body in region_plan.wall_bodies:
+		body.stand_in_the_wall()
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
 	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(), day, target)
+	# The day's guarded-band task row, day 13's roadblock, stood beside her routes at dawn so that one
+	# is close by wherever she reads its mark; none on any other day.
+	var guarded := ResistanceSteps.guarded_row_on(day)
+	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
+			world.run.resistance.progress) if guarded != "" else null
 	var placements := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
-			standing, world.trace).placements()
+			standing, world.trace, null, beside).placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that

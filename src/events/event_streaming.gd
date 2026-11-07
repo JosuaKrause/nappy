@@ -35,6 +35,20 @@ func add(plan: EventScheduler.Planned) -> void:
 	_walk.add(plan)
 	_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 
+## **`new` in place of `old`**: `old` spent, its body given back and taken out of the world if it
+## is in it, and `new` added with its body recorded, put in the world now and kept there for the
+## rest of the day, since a task's contact rides it (day 13's swap, `EventsAhead.
+## swap_in_a_task_row()`). Answers `new`'s live instance.
+func swap(old: EventScheduler.Planned, new: EventScheduler.Planned) -> EventInstance:
+	old.spent = true
+	world.map.release_obstruction(old.get_instance_id())
+	if old.live:
+		stream_out(old)
+	add(new)
+	stream_in(new)
+	new.kept_live = true
+	return new.live
+
 ## Forgets the walk: every plan's live instance let go (the manager frees the instances), the walk's
 ## plans, the repeats and the broadcast clock.
 func clear() -> void:
