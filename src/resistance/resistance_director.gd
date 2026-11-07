@@ -276,7 +276,9 @@ func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState 
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.trace = trace
-	_happenings.setup(city, map, moves_by, _run, _spawn_siting)
+	_happenings.setup(map, _run, city.events if city else null, city.streets() if city else null,
+			city.fronts() if city else null, city, city.atlas if city else null, moves_by,
+			_spawn_siting)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.

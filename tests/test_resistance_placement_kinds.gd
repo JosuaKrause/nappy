@@ -941,7 +941,8 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city, _city.map)
+	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var before := _street()
 	var door := _city.map.doorstep_world_position()
@@ -985,7 +986,8 @@ func _test_the_raid_seals_her_street_door(t) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city, _city.map)
+	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
 	t.check(not HomeDoorReads.is_sealed(_city), "the door is ordinary at day 10's start")
@@ -1022,7 +1024,8 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city, _city.map)
+	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
 	var door := _city.map.doorstep_world_position()
 	var before := _street()
@@ -1048,7 +1051,8 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city, _city.map)
+	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	var building := HomeDoorReads.building(_city)
 	t.check(building != null, "the door notch stands in front of exactly one home-block building")
 	t.check(building.wall_tiles() >= 4,
@@ -1088,7 +1092,8 @@ func _happenings_on_day(day: int, state: CityState) -> ResistanceHappenings:
 	_city.start_day(state, day, _rng(day, "closures"))
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city, _city.map)
+	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+			_city.atlas, null, _city.spawn_siting)
 	happenings.start_day(day)
 	return happenings
 

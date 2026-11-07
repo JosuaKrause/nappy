@@ -109,7 +109,8 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 		director.contact().complete_now()
 	else:
 		happenings = ResistanceHappenings.new()
-		happenings.setup(_city, _city.map)
+		happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
+				_city.atlas, null, _city.spawn_siting)
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(_city)[1])
 	return {"director": director, "happenings": happenings, "state": state,

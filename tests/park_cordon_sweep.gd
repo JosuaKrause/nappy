@@ -173,7 +173,8 @@ func measure(t, seed_value: int) -> Dictionary:
 		# hands it to its own when the swing is reached (`ResistanceReads.day_reachability()`), so the
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
-		happenings.setup(city, city.map)
+		happenings.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city,
+				city.atlas, null, city.spawn_siting)
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
 		result = _measure_the_day(city, director, happenings, swing)
