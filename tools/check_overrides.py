@@ -7,8 +7,13 @@ doc comment, `## Overrides <Class>.<method>.`, and this check holds that true ag
 (inbox #1154):
 
 - an override of a method a project ancestor declares, with no such line, **fails**;
-- a line on a method that overrides nothing (the misspelled name the line exists for), or one naming
-  a class that is not the nearest ancestor declaring the method, **fails**.
+- a line on a method that overrides nothing (a misspelled name that carries the line), one naming
+  a class that is not the nearest ancestor declaring the method, any further line of the same method
+  that is false, and any `##` line starting with `Overrides` (in any case) that is not exactly that
+  form, **fails**. A misspelled method with no line at all is a new method to this check;
+- an `extends` it cannot resolve (a `uid://` path, a path naming no file under `src/` or `tests/`, a
+  `preload` constant naming none) **fails**; a bare name that is none of the project's is taken to be an
+  engine class.
 
 `<Class>` is the nearest ancestor that declares the method: its `class_name`, `Outer.Inner` for an
 inner class, and the file's stem for a class extended by path that has no `class_name`. Only
@@ -17,8 +22,8 @@ project ancestors count (the `.gd` files under `src/` and `tests/`): an engine v
 an override, and takes none. The line sits among the doc-comment (`##`) lines directly above the
 `func` (an annotation line such as `@abstract` may stand between).
 
-`extends` is resolved by `class_name`, by path (`extends "res://tests/rig.gd"`), and through inner
-classes (`class Step extends Base:`, a sibling inner class by its short name). The files are read
+`extends` is resolved by `class_name`, by path (`res://`, or relative to the file), through a `preload`
+constant, and through inner classes (a sibling's or a base's, by its short name). The files are read
 as text, so no engine is needed. `--root` reads another checkout, `--rev` the tree of a commit.
 
 This runs under the host's own `python3` (tools/lint.sh calls it), so it stays 3.9-compatible.
@@ -30,6 +35,7 @@ This runs under the host's own `python3` (tools/lint.sh calls it), so it stays 3
 from __future__ import annotations
 
 import argparse
+import posixpath
 import re
 import subprocess
 import sys
@@ -52,6 +58,19 @@ ANNOTATION_ONLY = re.compile(r"^[ \t]*@\w+(?:\([^)]*\))?[ \t]*$")
 MARK = re.compile(r"^##[ \t]*Overrides[ \t]+([\w.]+)\.(\w+)\.[ \t]*$")
 
 
+CONST_LOAD = re.compile(
+    r"^[ \t]*const[ \t]+(\w+)[ \t]*(?::[ \t]*\w*)?[ \t]*:?=[ \t]*(?:preload|load)\([ \t]*(\"[^\"]+\")"
+)
+
+
+@dataclass
+class Marks:
+    """What the `##` lines directly above a method say: the well-formed lines and the malformed ones."""
+
+    good: list[str] = field(default_factory=list)
+    malformed: list[str] = field(default_factory=list)
+
+
 @dataclass
 class GdClass:
     """One class: a file's top level or an inner class."""
@@ -60,13 +79,40 @@ class GdClass:
     path: str
     extends: str | None
     parent_scope: GdClass | None = None
+    extends_line: int = 1
     inner: dict[str, GdClass] = field(default_factory=dict)
+    consts: dict[str, str] = field(default_factory=dict)
     methods: dict[str, int] = field(default_factory=dict)
-    marks: dict[str, tuple[int, str]] = field(default_factory=dict)
+    marks: dict[str, Marks] = field(default_factory=dict)
 
 
-def strip_comment(line: str) -> str:
-    return line.split("#", 1)[0]
+def scan_line(line: str, in_triple: bool) -> tuple[str, bool]:
+    """The code of one line, its comment and the inside of a `\"\"\"` string removed, and whether a
+    triple-quoted string is still open at its end. Single-line strings stay as written."""
+    out: list[str] = []
+    i = 0
+    while i < len(line):
+        if in_triple:
+            end = line.find('"""', i)
+            if end < 0:
+                return "".join(out), True
+            i = end + 3
+            in_triple = False
+        elif line.startswith('"""', i):
+            in_triple = True
+            i += 3
+        elif line[i] in "\"'":
+            j = i + 1
+            while j < len(line) and line[j] != line[i]:
+                j += 2 if line[j] == "\\" else 1
+            out.append(line[i : j + 1])
+            i = j + 1
+        elif line[i] == "#":
+            break
+        else:
+            out.append(line[i])
+            i += 1
+    return "".join(out), in_triple
 
 
 def parse_file(path: str, text: str) -> GdClass:
@@ -76,55 +122,59 @@ def parse_file(path: str, text: str) -> GdClass:
     stack: list[tuple[int, GdClass]] = []
     in_string = False
     for number, raw in enumerate(lines, start=1):
-        was_in_string = in_string
-        if raw.count('"""') % 2 == 1:
-            in_string = not in_string
-        if was_in_string:
-            continue
-        code = strip_comment(raw)
-        if not code.strip():
+        began_in_string = in_string
+        code, in_string = scan_line(raw, in_string)
+        if began_in_string or not code.strip():
             continue
         indent = len(code) - len(code.lstrip())
         while stack and indent <= stack[-1][0]:
             stack.pop()
         scope = stack[-1][1] if stack else top
+        body = stack[-1][0] + 1 if stack else 0
         if scope is top and indent == 0:
             named = HEADER_CLASS_NAME.match(code)
             if named:
                 top.name = named.group(1)
                 if named.group(2):
                     top.extends = named.group(2)
+                    top.extends_line = number
         ext = HEADER_EXTENDS.match(code.strip())
-        if ext and scope.extends is None and indent == (stack[-1][0] + 1 if stack else 0):
+        if ext and scope.extends is None and indent == body:
             scope.extends = ext.group(1)
+            scope.extends_line = number
+        loaded = CONST_LOAD.match(code)
+        if loaded and indent == body:
+            scope.consts[loaded.group(1)] = loaded.group(2)
         inner = INNER_CLASS.match(code)
         if inner:
-            made = GdClass(scope.name + "." + inner.group(2), path, inner.group(3), scope)
+            made = GdClass(scope.name + "." + inner.group(2), path, inner.group(3), scope, number)
             scope.inner[inner.group(2)] = made
             stack.append((len(inner.group(1)), made))
             continue
         func = FUNC.match(code)
-        if func and len(func.group(1)) == (stack[-1][0] + 1 if stack else 0):
+        if func and len(func.group(1)) == body:
             scope.methods.setdefault(func.group(2), number)
-            mark = doc_mark(lines, number - 1)
-            if mark:
-                scope.marks[func.group(2)] = (number, mark)
+            scope.marks[func.group(2)] = doc_marks(lines, number - 1)
     return top
 
 
-def doc_mark(lines: list[str], index: int) -> str:
-    """The `Overrides X.f.` text among the `##` lines directly above `lines[index]`, or ''."""
+def doc_marks(lines: list[str], index: int) -> Marks:
+    """The `Overrides X.f.` lines among the `##` lines directly above `lines[index]`, and any `##` line that
+    starts with `Overrides` (in any case) but is not exactly that form."""
+    found = Marks()
     i = index - 1
     while i >= 0:
         text = lines[i].strip()
         if text.startswith("##"):
-            found = MARK.match(text)
-            if found:
-                return found.group(1) + "." + found.group(2)
+            mark = MARK.match(text)
+            if mark:
+                found.good.append(mark.group(1) + "." + mark.group(2))
+            elif text[2:].strip().lower().startswith("overrides"):
+                found.malformed.append(text)
         elif not ANNOTATION_ONLY.match(lines[i]):
             break
         i -= 1
-    return ""
+    return found
 
 
 class Tree:
@@ -133,43 +183,78 @@ class Tree:
     def __init__(self, files: dict[str, str]) -> None:
         self.by_path: dict[str, GdClass] = {}
         self.by_name: dict[str, GdClass] = {}
+        self.resolving: set[int] = set()
         for path in sorted(files):
             parsed = parse_file(path, files[path])
             self.by_path[path] = parsed
             if re.search(r"^[ \t]*(?:@\w+(?:\([^)]*\))?[ \t]+)*class_name[ \t]", files[path], re.M):
                 self.by_name[parsed.name] = parsed
 
-    def resolve(self, cls: GdClass) -> GdClass | None:
-        """The project class `cls` extends, or None when it extends an engine class."""
+    def by_file(self, quoted: str, relative_to: str) -> tuple[GdClass | None, str]:
+        """The top-level class of a quoted path (`res://`, or relative to the file naming it), or a problem."""
+        path = quoted.strip('"')
+        if path.startswith("uid://"):
+            return None, f"extends {quoted}, a uid:// path this check cannot resolve; name the file by its path"
+        if path.startswith("res://"):
+            path = path[len("res://") :]
+        else:
+            path = posixpath.normpath(posixpath.join(posixpath.dirname(relative_to), path))
+        found = self.by_path.get(path)
+        if found is None:
+            return None, f"extends {quoted}, which names no file under src/ or tests/"
+        return found, ""
+
+    def resolve(self, cls: GdClass) -> tuple[GdClass | None, str]:
+        """The project class `cls` extends, or None when it extends an engine class or something this check
+        cannot resolve; the second item is then the problem, '' for an engine class."""
         ext = cls.extends
         if not ext:
-            return None
+            return None, ""
+        found: GdClass | None
         if ext.startswith('"'):
-            path, _, inner = ext[1:].partition('"')
-            found = self.by_path.get(path.removeprefix("res://"))
-            for part in [p for p in inner.split(".") if p]:
-                found = found.inner.get(part) if found else None
-            return found
-        head, *rest = ext.split(".")
-        scope: GdClass | None = cls.parent_scope or cls
-        found = None
-        while scope is not None and found is None:
-            found = scope.inner.get(head)
-            scope = scope.parent_scope
-        if found is None:
-            found = self.by_name.get(head)
+            split = re.match(r'("[^"]+")((?:\.\w+)*)$', ext)
+            quoted, inner = (split.group(1), split.group(2)) if split else (ext, "")
+            found, problem = self.by_file(quoted, cls.path)
+            rest = [p for p in inner.split(".") if p]
+        else:
+            head, *rest = ext.split(".")
+            found, problem = self.lexical(cls, head)
         for part in rest:
-            found = found.inner.get(part) if found else None
-        return found
+            if found is None:
+                break
+            found = found.inner.get(part)
+            if found is None:
+                problem = f"extends {ext}, whose inner class {part} is not found"
+        return found, problem
+
+    def lexical(self, cls: GdClass, head: str) -> tuple[GdClass | None, str]:
+        """A bare `extends` name: an inner class of an enclosing class or of its ancestors, a `preload` constant,
+        a global `class_name`; otherwise an engine class, which is not looked into."""
+        self.resolving.add(id(cls))
+        try:
+            scope = cls.parent_scope
+            while scope is not None:
+                if head in scope.inner:
+                    return scope.inner[head], ""
+                if head in scope.consts:
+                    return self.by_file(scope.consts[head], scope.path)
+                if id(scope) not in self.resolving:
+                    for ancestor in self.ancestors(scope):
+                        if head in ancestor.inner:
+                            return ancestor.inner[head], ""
+                scope = scope.parent_scope
+        finally:
+            self.resolving.discard(id(cls))
+        return self.by_name.get(head), ""
 
     def ancestors(self, cls: GdClass) -> list[GdClass]:
         chain: list[GdClass] = []
         seen = {id(cls)}
-        parent = self.resolve(cls)
+        parent, _ = self.resolve(cls)
         while parent is not None and id(parent) not in seen:
             chain.append(parent)
             seen.add(id(parent))
-            parent = self.resolve(parent)
+            parent, _ = self.resolve(parent)
         return chain
 
     def walk(self, cls: GdClass) -> list[GdClass]:
@@ -185,35 +270,37 @@ def check(files: dict[str, str]) -> list[str]:
     for path, top in tree.by_path.items():
         for cls in tree.walk(top):
             chain = tree.ancestors(cls)
+            problem = tree.resolve(cls)[1]
+            if problem:
+                hits.append((path, cls.extends_line, problem))
             for method, line in cls.methods.items():
                 nearest = next((a for a in chain if method in a.methods), None)
-                mark = cls.marks.get(method)
                 if method in CONSTRUCTORS:
                     nearest = None
+                marks = cls.marks[method]
+                for text in marks.malformed:
+                    hits.append((path, line, f"{method}: `{text}` is not the form `## Overrides Class.method.`"))
                 if nearest is None:
-                    if mark:
+                    for mark in marks.good:
                         hits.append(
-                            (
-                                path,
-                                mark[0],
-                                f"{method} overrides nothing in a project class, but says `Overrides {mark[1]}.`",
-                            )
+                            (path, line, f"{method} overrides nothing in a project class, but says `Overrides {mark}.`")
                         )
                     continue
                 want = f"{nearest.name}.{method}"
-                if mark is None:
+                if not marks.good and not marks.malformed:
                     hits.append(
                         (path, line, f"{method} overrides {want} and does not say so: add `## Overrides {want}.`")
                     )
-                elif mark[1] != want:
-                    hits.append(
-                        (
-                            path,
-                            mark[0],
-                            f"{method} says `Overrides {mark[1]}.` but the nearest ancestor declaring it is {want}",
+                for mark in marks.good:
+                    if mark != want:
+                        hits.append(
+                            (
+                                path,
+                                line,
+                                f"{method} says `Overrides {mark}.` but the nearest ancestor declaring it is {want}",
+                            )
                         )
-                    )
-    return [f"{p}:{n}: {message}" for p, n, message in sorted(hits)]
+    return [f"{p}:{n}: {message}" for p, n, message in sorted(set(hits))]
 
 
 def read_checkout(root: Path) -> dict[str, str]:

@@ -436,7 +436,8 @@ lint_overrides() {
         while IFS= read -r line; do
             [[ -z "$line" ]] && continue
             printf '%s\n' "$line"
-            hits=$((hits + 1))
+            # The script's own summary line is not a hit; each `path:line:` line is.
+            [[ "$line" == tools/check_overrides.py:* ]] || hits=$((hits + 1))
         done <<< "$out"
     fi
 }

@@ -1672,8 +1672,8 @@ func _add_the_return_window(viewport: Viewport) -> void:
 ## `set_mode()` with `config.controls_word`'s mode and steering side gives it what a rig gets if
 ## the title screen is never reached at all (`--no-title`, a screenshot rig) — `--controls`, then
 ## the page's own `?controls=` in the open bundle, then `TAP`. This is only ever the **pre-title**
-## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()`
-## overrides it the moment a player actually presses one of the title screen's own buttons.
+## answer: `_title` does not exist yet at this point in `_ready()`, and `main._on_title_start()` overrides
+## it the moment a player actually presses one of the title screen's own buttons.
 ##
 ## **Except on the two boots that open no title of their own** while the title's answer is still in
 ## this process: the day-14 hand-over to the escape (`RunFlow.escape_from_a_run()`) and a normal run

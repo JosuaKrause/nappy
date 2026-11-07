@@ -130,9 +130,81 @@ class CheckOverridesTests(unittest.TestCase):
         self.assertEqual(len(found), 1)
         self.assertIn("Overrides Base.f.", found[0])
 
-    def test_a_func_in_a_comment_or_a_string_is_not_a_method(self) -> None:
-        child = 'class_name Child\nextends Base\n\n# func f() -> int:\nvar text := """\nfunc f() -> int:\n"""\n'
+    def test_a_func_in_a_string_is_not_a_method(self) -> None:
+        child = 'class_name Child\nextends Base\n\nvar text := """\nfunc f() -> int:\n"""\n'
         self.assertEqual(hits(src__base=BASE, src__child=child), [])
+
+    def test_a_comment_at_column_zero_does_not_end_an_inner_class(self) -> None:
+        child = (
+            "class_name C\nextends RefCounted\nclass I extends Base:\n#"
+            " a note at column 0\n\tfunc f() -> int:\n\t\treturn 2\n"
+        )
+        found = hits(src__base=BASE, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("src/child.gd:5:", found[0])
+
+    def test_a_triple_quote_in_a_comment_or_a_string_opens_nothing(self) -> None:
+        for opener in ('# write """ for long text', 'var q := \'"""\'', 'var r := "a" # """'):
+            child = f"class_name C\nextends Base\n{opener}\nfunc f() -> int:\n\treturn 2\n"
+            found = hits(src__base=BASE, src__child=child)
+            self.assertEqual(len(found), 1, opener)
+            self.assertIn("src/child.gd:4:", found[0])
+
+    def test_a_malformed_line_is_a_hit_of_its_own(self) -> None:
+        for bad in (
+            "## Overrides Base.f().",
+            "## Overrides Base.f",
+            "## overrides Base.f.",
+            "## Overrides: Base.f.",
+            "## Overrides `Base.f`.",
+        ):
+            for method in ("f", "ff"):
+                child = f"class_name Child\nextends Base\n\n{bad}\nfunc {method}() -> int:\n\treturn 2\n"
+                found = hits(src__base=BASE, src__child=child)
+                self.assertEqual(len(found), 1, (bad, method))
+                self.assertIn("is not the form", found[0])
+
+    def test_two_lines_on_one_method_are_both_checked(self) -> None:
+        child = (
+            "class_name Child\nextends Base\n\n## Overrides Nope.f.\n"
+            "## Overrides Base.f.\nfunc f() -> int:\n\treturn 2\n"
+        )
+        found = hits(src__base=BASE, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("Overrides Nope.f.", found[0])
+
+    def test_an_inner_class_inherited_from_a_base_is_resolved(self) -> None:
+        outer = "class_name B\nextends RefCounted\n\nclass Step extends Base:\n\tpass\n"
+        child = "class_name C\nextends B\n\nclass Fast extends Step:\n\tfunc f() -> int:\n\t\treturn 2\n"
+        found = hits(src__base=BASE, src__outer=outer, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("src/child.gd:5:", found[0])
+        self.assertIn("Overrides Base.f.", found[0])
+
+    def test_a_preload_alias_is_resolved(self) -> None:
+        child = (
+            'extends RefCounted\n\nconst B := preload("res://src/base.gd")\n'
+            "\nclass I extends B:\n\tfunc f() -> int:\n\t\treturn 2\n"
+        )
+        found = hits(src__base=BASE, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("src/child.gd:6:", found[0])
+
+    def test_a_relative_path_is_resolved(self) -> None:
+        child = 'extends "base.gd"\n\nfunc f() -> int:\n\treturn 2\n'
+        found = hits(src__base=BASE, src__child=child)
+        self.assertEqual(len(found), 1)
+        self.assertIn("Overrides Base.f.", found[0])
+
+    def test_an_extends_that_cannot_be_resolved_is_a_hit(self) -> None:
+        for extends, why in (('"uid://abc123"', "uid://"), ('"nowhere.gd"', "names no file")):
+            found = hits(src__base=BASE, src__child=f"extends {extends}\n\nfunc f() -> int:\n\treturn 2\n")
+            self.assertEqual(len(found), 1, extends)
+            self.assertIn(why, found[0])
+        alias = 'extends RefCounted\n\nconst B := preload("res://src/gone.gd")\n\nclass I extends B:\n\tpass\n'
+        found = hits(src__child=alias)
+        self.assertEqual(len(found), 1)
+        self.assertIn("names no file", found[0])
 
     def test_the_command_line_reports_and_rejects(self) -> None:
         tool = str(Path(__file__).resolve().parent / "check_overrides.py")
