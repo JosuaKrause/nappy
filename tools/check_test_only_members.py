@@ -21,7 +21,7 @@ A member read by a test is test-only, and belongs to one of two groups of the li
 internal: it gets the underscore and its tests go through what the class does outward; inbox
 #1098). The group, like the test, is a word count. The own-file rule applies to functions, vars and
 signals, **not to constants**: the player's words on it are about functions, and a test reading a
-constant to assert a relationship is what the testing policy wants, so a constant used in its own file is
+constant to assert a relationship is what writing-tests wants, so a constant used in its own file is
 exempt and one is test-only only with no use anywhere under `src/`. Reaching vars, signals and the exemption
 of constants is a proposal of the orchestrator, not asked for, open to the player's correction.
 

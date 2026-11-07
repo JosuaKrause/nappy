@@ -3,7 +3,7 @@ extends RefCounted
 ##
 ## Whether the result *reads* — the colour, the softness, whether a ring picks an entity's own
 ## silhouette out of a busy corner — is a screenshot's question and is out of this suite on
-## purpose, the same line `docs/DECISIONS.md`'s testing policy draws for every other cue: "not
+## purpose, the same line the **writing-tests** skill draws for every other cue: "not
 ## tested, checked by eye: layout, colour, readability." *(2026-09-07, the player, on this cue
 ## specifically: "proof for the UI is my playtest don't try to come up with a complicated rig to
 ## test it. that's wasted effort.")* That is why the size — a ring of offsets around each entity's

@@ -1,7 +1,7 @@
 extends RefCounted
 ## M122, the shadow every building casts. `BuildingShadows.compute()` is pure tile arithmetic over
 ## `CityMap.building_rects`, so this suite asserts the tile sets directly rather than through a
-## built `City` scene — see the **verify** skill, "test what a screenshot cannot see."
+## built `City` scene — see the **writing-tests** skill, "test what a screenshot cannot see."
 
 const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 

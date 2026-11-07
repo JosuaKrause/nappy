@@ -14,7 +14,7 @@ extends RefCounted
 ## about a selector asks the selector the look asks (`select_view()`, the `_BY_VIEW` tables). The
 ## rendered evidence sheets under
 ## `docs/evidence/m108-event-people-2026-09-11/` and `docs/evidence/m108-event-vehicles-2026-09-11/`
-## are what a screenshot answers that a test cannot — see the **verify** skill, "test what a
+## are what a screenshot answers that a test cannot — see the **writing-tests** skill, "test what a
 ## screenshot cannot see, screenshot what a test cannot judge."
 
 const STEP := 1.0 / 60.0

@@ -190,8 +190,8 @@ var _last_tick_usec := 0
 
 ## Where this save lives: the player's own (`_DEFAULT_PATH`) unless the one that makes it hands in
 ## another. A suite makes its own with a scratch file and hands it to the boot it drives
-## (`main.use_save()`), so an agent's run never lands in a saved game — see the **verify** skill's
-## testing policy.
+## (`main.use_save()`), so an agent's run never lands in a saved game — see the **writing-tests**
+## skill.
 var _file_path: String
 
 ## A save at `file_path`; the game builds one with none, which is the player's own.

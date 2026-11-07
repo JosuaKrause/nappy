@@ -1,6 +1,6 @@
 """The layer map `tools/check_layers.py` holds the game's code to, as data.
 
-The layers are orchestrating's "Code is designed by layer" (minty-quail's: data and configuration,
+The layers are designing-classes's "Code is designed by layer" (minty-quail's: data and configuration,
 the domain model, the world, simulation, run flow, observers), with the screen's own view beside the
 observers and the composition root at the top. A layer may name only what is on its own layer or
 below, and the observers and the view, which stand at one level, name neither the other (the

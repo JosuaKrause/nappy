@@ -21,7 +21,7 @@ are true. This file is the one place the questions are worded; every other text 
    scene tree?
 7. Which docs say where it lives (`docs/ARCHITECTURE.md`'s listing), and are they updated?
 
-The layers are **orchestrating**'s "Code is designed by layer"; which folder and file sits in which
+The layers are **designing-classes**'s "Code is designed by layer"; which folder and file sits in which
 is `tools/layer_map.py`. `tools/check_layers.py` answers the second and third questions
 mechanically: CI fails a new upward name, and a group lookup, an autoload or a stateful static read
 in the world or simulation layers, that its list of standing breaks does not name. An answer to
