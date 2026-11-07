@@ -56,9 +56,11 @@ class _Her extends Stroller:
 		camera.name = "Camera2D"
 		add_child(camera)
 
+	## Overrides Stroller.camera_screen_center.
 	func camera_screen_center() -> Vector2:
 		return global_position
 
+	## Overrides Stroller.run_excess_ratio.
 	func run_excess_ratio() -> float:
 		return 1.0 if running else 0.0
 

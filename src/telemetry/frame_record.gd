@@ -31,27 +31,35 @@ func start(with: FrameLedger) -> void:
 func stop() -> void:
 	on = false
 
+## Overrides FrameTiming.enter.
 func enter(bucket: int) -> int:
 	return ledger.enter(bucket, Time.get_ticks_usec())
 
+## Overrides FrameTiming.leave.
 func leave(previous: int) -> void:
 	ledger.switch_to(previous, Time.get_ticks_usec())
 
 ## A count, not a time: the page's clock steps in 100µs.
+##
+## Overrides FrameTiming.drew.
 func drew(kind: int) -> void:
 	ledger.add(FrameLedger.DRAWS_CROWD + kind, 1)
 
+## Overrides FrameTiming.scenery_deferred_begins.
 func scenery_deferred_begins() -> void:
 	if on:
 		ledger.deferred_scenery_begins(Time.get_ticks_usec())
 
+## Overrides FrameTiming.scenery_deferred_ends.
 func scenery_deferred_ends() -> void:
 	if on:
 		ledger.deferred_scenery_ends(Time.get_ticks_usec())
 
+## Overrides FrameTiming.scenery_job.
 func scenery_job(kind: int) -> void:
 	ledger.add(FrameLedger.JOBS_GROUND + kind, 1)
 
+## Overrides FrameTiming.scenery_update.
 func scenery_update(elapsed_usec: int, budget_usec: int) -> void:
 	ledger.add(FrameLedger.SCENERY_UPDATES, 1)
 	ledger.add(FrameLedger.SCENERY_OVER_BUDGET, maxi(0, elapsed_usec - budget_usec))

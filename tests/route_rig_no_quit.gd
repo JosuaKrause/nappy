@@ -5,5 +5,6 @@ extends RouteRig
 ## suite that drives a rig to its end would stop the whole run after that suite, silently and
 ## with a zero exit.
 
+## Overrides RouteRig._quit.
 func _quit() -> void:
 	pass

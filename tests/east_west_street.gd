@@ -5,5 +5,6 @@ extends WorldMap
 ## wide scene runs down the screen. Everything else is open ground's. `tests/test_halo_behind.gd`
 ## and `tests/test_draw_layers.gd` hand it to `EventInstance.setup()`.
 
+## Overrides WorldMap.corridor_offsets.
 func corridor_offsets(_tile: Vector2i) -> Vector2i:
 	return Vector2i(-1, 0)

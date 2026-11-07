@@ -39,14 +39,18 @@ func stop() -> void:
 ## mother's conversation ending is what starts her departure. **Nothing here shows her again**:
 ## the release that moves her (`CheckpointController._release_finished_holds()`), later on the same
 ## physics tick as this step, shows her as it moves her.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_seconds_left = maxf(0.0, _seconds_left - delta)
 	if _seconds_left <= 0.0 and not event.def.redetains:
 		event._be_done()
 
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"has_chatted": _has_chatted, "seconds_left": _seconds_left}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	_has_chatted = bool(state.get("has_chatted", false))
 	_seconds_left = float(state.get("seconds_left", 0.0))

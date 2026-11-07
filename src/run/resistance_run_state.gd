@@ -24,6 +24,8 @@ var _dawn_sabotage_done := false
 var _dawn_carrying_package := false
 
 ## A fresh run's dawn is its start: nothing done, and nothing to give back but nothing.
+##
+## Overrides RunSubState.reset.
 func reset() -> void:
 	completed_steps.clear()
 	failed_steps.clear()
@@ -32,6 +34,7 @@ func reset() -> void:
 	carrying_package = false
 	photograph()
 
+## Overrides RunSubState.photograph.
 func photograph() -> void:
 	_dawn_completed_steps = completed_steps.duplicate()
 	_dawn_failed_steps = failed_steps.duplicate()
@@ -39,6 +42,7 @@ func photograph() -> void:
 	_dawn_sabotage_done = sabotage_done
 	_dawn_carrying_package = carrying_package
 
+## Overrides RunSubState.give_back.
 func give_back() -> void:
 	completed_steps = _dawn_completed_steps.duplicate()
 	failed_steps = _dawn_failed_steps.duplicate()
@@ -54,6 +58,7 @@ func differs_from_dawn() -> bool:
 			or sabotage_done != _dawn_sabotage_done \
 			or carrying_package != _dawn_carrying_package
 
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	return {
 		"resistance_progress": progress,
@@ -68,6 +73,7 @@ func to_data() -> Dictionary:
 		"_dawn_carrying_package": _dawn_carrying_package,
 	}
 
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	progress = int(data["resistance_progress"])
 	completed_steps = _to_int_array(data["completed_resistance_steps"])

@@ -19,9 +19,11 @@ class FakeWorld extends WorldContext:
 	# The ground answers with a **rate** since M52, and a fake that answers with a bool would be
 	# testing an interface the baby no longer has. `calm` stands for the base four-block zone;
 	# nothing here is about size, which is `City`'s question and `test_generator`'s to check.
+	## Overrides WorldContext.sleepiness_multiplier.
 	func sleepiness_multiplier(_world_position: Vector2) -> float:
 		return Tuning.sleepiness_calm_multiplier(Tuning.CALM_ZONE_BLOCKS ** 2) if calm else 1.0
 
+	## Overrides WorldContext.is_alley.
 	func is_alley(_world_position: Vector2) -> bool:
 		return alley
 
@@ -31,6 +33,7 @@ class FakeWorld extends WorldContext:
 	## meter arithmetic `noise` feeds.
 	var _noise := ExcitementSource.new(self)
 
+	## Overrides WorldContext.excitement_sources_at.
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 

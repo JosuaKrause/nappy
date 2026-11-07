@@ -42,6 +42,8 @@ var last_range := INF
 
 ## One tick: stand with her once its man has stopped her (`EventOfficer`), else walk its route while
 ## it still waits, then the chase.
+##
+## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	if event.has_stopped_her():
 		return
@@ -174,9 +176,11 @@ func _close_through_the_telegraph(delta: float, step: float, range_to_her: float
 		step = 0.0
 	return step
 
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"lunge_held": lunge_held, "outrun_for": outrun_for, "last_range": last_range}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	lunge_held = bool(state.get("lunge_held", false))
 	outrun_for = float(state.get("outrun_for", 0.0))

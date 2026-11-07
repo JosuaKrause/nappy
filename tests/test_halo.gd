@@ -1101,9 +1101,11 @@ class ChurnSource extends Node2D:
 
 	## `strength` everywhere, and always enough landed for a full-alpha rim.
 	class Excitement extends ExcitementSource:
+		## Overrides ExcitementSource._field.
 		func _field(_at: Vector2) -> float:
 			return (body as ChurnSource).strength
 
+		## Overrides ExcitementSource.landed.
 		func landed() -> float:
 			return ExcitementHalo.LOW_EMPHASIS_POINTS
 
@@ -1122,6 +1124,7 @@ class ChurnEvents extends Node:
 		func _init(events: ChurnEvents) -> void:
 			_events = events
 
+		## Overrides ExcitementSources.every_source.
 		func every_source(into: Array) -> void:
 			for body: ChurnSource in _events.list:
 				into.append(body.excitement)

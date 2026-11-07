@@ -60,14 +60,18 @@ class Edge extends StreetNetwork.Segment:
 		b = anchor
 		run = strip
 
+	## Overrides StreetNetwork.Segment.key.
 	func key() -> Vector3i:
 		return Vector3i(run.position.x, run.position.y, 2 if horizontal else 3)
 
+	## Overrides StreetNetwork.Segment.tile_rect.
 	func tile_rect() -> Rect2i:
 		return run
 
 	## Both ends are the strip itself: the fence stands along the whole of it rather than at two
 	## mouths.
+	##
+	## Overrides StreetNetwork.Segment.mouth_rect.
 	func mouth_rect(_at_a: bool) -> Rect2i:
 		return run
 
@@ -191,12 +195,16 @@ static func _edge_tile(rect: Rect2i, out: Vector2i, i: int) -> Vector2i:
 ## How long this fence's one line is: from `_from_along` to `_to_along`, in pixels — never a
 ## street's width. Overrides `RoadClosure.barrier_width()`, which `City._spawn_barrier()` reads
 ## instead of assuming `Tuning.STREET_WIDTH`; see the class doc.
+##
+## Overrides RoadClosure.barrier_width.
 func barrier_width() -> float:
 	return _to_along - _from_along
 
 ## Where the one line of barrier stands: the middle of its span, across it half a barrier's depth
 ## inside the area's edge. One point is the whole of it — `barrier_width()` already says how wide
 ## `City._spawn_barrier()` draws it, so nothing here has to split a long run into several.
+##
+## Overrides RoadClosure.mouth_centres.
 func mouth_centres(_map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = [_point((_from_along + _to_along) * 0.5)]
 	return found
@@ -204,6 +212,8 @@ func mouth_centres(_map: CityMap) -> Array[Vector2]:
 ## The posts this run ends on (`RoadClosure.posts()`). A corner two runs turn on has one post, and
 ## the north or south run owns it, so the west or east run only stands posts at ends that turn no
 ## corner. An open end's post stands `POST_HALF` in from the end, on the run's own ground.
+##
+## Overrides RoadClosure.posts.
 func posts(_map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	var horizontal := outward.y != 0
@@ -230,10 +240,14 @@ func _point(along: float) -> Vector2:
 
 ## The middle of the shut area — nothing is lying there, but `DevRig`'s `closure:<n>` spawn reads the
 ## line from here out through a fence to stand her on the pavement looking at it.
+##
+## Overrides RoadClosure.cause_centre.
 func cause_centre(map: CityMap) -> Vector2:
 	return map.tile_rect_to_world(area).get_center()
 
 ## A fence along a north or south edge runs left to right across the screen; one along a west or
 ## east edge runs down it. The opposite of a street's, whose barrier lies across the street.
+##
+## Overrides RoadClosure.barrier_runs_across.
 func barrier_runs_across() -> bool:
 	return outward.y != 0

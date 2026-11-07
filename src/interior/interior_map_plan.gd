@@ -86,6 +86,8 @@ var _cut_cells := {}
 
 ## Whether a walker may stand here. **The rubble is asked first**, since its cells carry ordinary
 ## walkable floor and are closed by the collapse rather than by the kind painted under it.
+##
+## Overrides WorldMap.is_walkable.
 func is_walkable(tile: Vector2i) -> bool:
 	if rubble.has_point(tile):
 		return false
@@ -123,10 +125,13 @@ func finish() -> void:
 
 # ------------------------------------------------------------------- WorldMap ---
 
+## Overrides WorldMap.has_ground.
 func has_ground() -> bool:
 	return true
 
 ## The ground as built: walkable floor for anything the floor stops, and no street ground at all.
+##
+## Overrides WorldMap._ground_lets.
 func _ground_lets(tile: Vector2i, layers: int) -> bool:
 	if layers & Mover.STREETS != 0:
 		return false
@@ -137,6 +142,8 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 ## cut part of it passes and only one that meets the part left standing is stopped. A figure walking
 ## a flight's own cells corner to corner — the masked man running the shaft — goes where she can.
 ## Every other closed tile stops it whole.
+##
+## Overrides WorldMap._ground_stops.
 func _ground_stops(tile: Vector2i, layers: int, from: Vector2, to: Vector2) -> bool:
 	if layers & Mover.STREETS != 0 or not _cut_cells.has(tile):
 		return true
@@ -149,16 +156,21 @@ func _ground_stops(tile: Vector2i, layers: int, from: Vector2, to: Vector2) -> b
 			return true
 	return false
 
+## Overrides WorldMap._open.
 func _open(x: int, y: int) -> bool:
 	return is_walkable(Vector2i(x, y))
 
+## Overrides WorldMap.walk_tiles.
 func walk_tiles() -> PackedByteArray:
 	return _grid
 
+## Overrides WorldMap.walkable_lut.
 func walkable_lut() -> PackedByteArray:
 	return PackedByteArray([0, 1])
 
 ## No carriageway indoors.
+##
+## Overrides WorldMap.is_carriageway.
 func is_carriageway(_tile: Vector2i) -> bool:
 	return false
 
@@ -167,6 +179,8 @@ func is_carriageway(_tile: Vector2i) -> bool:
 ## asked for is the same here — the short way across is across her path, and a spread laid in one
 ## closes it — so the basement's mouse darts across the passage it stands in, wall to wall, as an
 ## alley's mouse darts across its alley (`EventInstance._alley_crossing_path()`).
+##
+## Overrides WorldMap.alley_at.
 func alley_at(tile: Vector2i) -> Rect2i:
 	if not is_walkable(tile):
 		return Rect2i()
@@ -191,6 +205,8 @@ func _one_wide(tile: Vector2i, across: Vector2i) -> bool:
 ## `Stroller._physics_process()` asks every frame to redirect a sideways press along a flight's own
 ## slope (`InteriorTile.flight_direction()`). Off a flight, a landing tile included, she walks the
 ## way she presses (inbox #782 in minty-lemur).
+##
+## Overrides WorldMap.slope_dir_at.
 func slope_dir_at(world_position: Vector2) -> int:
 	return InteriorTile.flight_direction(tiles.get(world_to_tile(world_position),
 			InteriorTile.Kind.NONE))

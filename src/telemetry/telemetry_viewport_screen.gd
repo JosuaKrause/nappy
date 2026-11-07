@@ -12,12 +12,15 @@ var _node: Node
 func _init(node: Node) -> void:
 	_node = node
 
+## Overrides TelemetryScreen.can_draw.
 func can_draw() -> bool:
 	return DisplayServer.get_name() != "headless"
 
+## Overrides TelemetryScreen.drawn.
 func drawn() -> void:
 	await DrawnFrame.wait(_node.get_tree())
 
+## Overrides TelemetryScreen.picture.
 func picture() -> Image:
 	var viewport := _node.get_viewport()
 	return viewport.get_texture().get_image() if viewport else null

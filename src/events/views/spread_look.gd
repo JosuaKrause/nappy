@@ -5,6 +5,7 @@ extends EventLook
 ## and the slices every long picture is drawn in, so each part sorts against her on its own. The
 ## ranks (`RankLook`) and the roadblock (`RoadblockLook`) are drawn in slices too.
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.ROADWORKS:
@@ -41,6 +42,8 @@ var _sceneries: Array[EventScenery] = []
 ## The crash's and the burst main's visible scene: retained painter-order layers behind each of
 ## its slices (`EventScenery`), shown while the instance is, on the frame its own clock picks. The
 ## whole A/B sources remain the badge and halo pictures.
+##
+## Overrides EventLook._update_scenery.
 func _update_scenery() -> void:
 	if _sceneries.is_empty():
 		return
@@ -409,21 +412,27 @@ static func _cap_offset(half: float, cap_along: float, side: float) -> float:
 static func _cap_along(cap_size: Vector2) -> float:
 	return cap_size.x
 
+## Overrides EventLook.build_nodes.
 func build_nodes() -> void:
 	_build_the_slices()
 
+## Overrides EventLook.enter_tree.
 func enter_tree() -> void:
 	if _sliced and _slices.is_empty():
 		_build_the_slices()
 
+## Overrides EventLook.move_nodes.
 func move_nodes(redraw := false) -> void:
 	_move_the_slices(redraw)
 
+## Overrides EventLook.release_nodes.
 func release_nodes() -> void:
 	_release_the_slices()
 
 ## The first slice, which every other part of a long picture is drawn after, so a rim behind it
 ## is behind the whole picture.
+##
+## Overrides EventLook.rim_holder.
 func rim_holder() -> Node2D:
 	if not _slices.is_empty() and _slices[0].is_inside_tree():
 		return _slices[0]

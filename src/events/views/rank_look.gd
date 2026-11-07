@@ -3,6 +3,7 @@ extends SpreadLook
 ## A row drawn as people across its ground, each a slice of his own: the café's tables and sitters,
 ## the protest's two ranks and the firefight's two gunmen.
 
+## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.CAFE:
@@ -205,6 +206,7 @@ func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> 
 ## silently repaints the other.
 const MUZZLE_FLASH := Color("e8b64a")
 
+## Overrides SpreadLook._slice_plan.
 func _slice_plan() -> PackedVector2Array:
 	match event.def.look:
 		EventDef.Look.PROTEST:
@@ -217,6 +219,7 @@ func _slice_plan() -> PackedVector2Array:
 			return DrawLayer.slice_feet(tables[0], tables[1], _cafe_table_count())
 	return PackedVector2Array()
 
+## Overrides SpreadLook._draw_a_slice.
 func _draw_a_slice(slice: Slice) -> void:
 	var origin := -_slice_feet[slice.index]
 	match event.def.look:

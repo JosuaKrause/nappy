@@ -30,12 +30,15 @@ func play_seconds() -> float:
 
 ## Back to day 1 with every nerve and no ending. The seed and the presentation are the run's
 ## identity and are set by `RunState.start_run()`, not here.
+##
+## Overrides RunSubState.reset.
 func reset() -> void:
 	day = 1
 	nerves = Tuning.STARTING_NERVES
 	ending = GameEnums.Ending.NONE
 	play_ticks = 0
 
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	return {
 		"run_seed": run_seed,
@@ -46,6 +49,7 @@ func to_data() -> Dictionary:
 		"play_seconds": play_seconds(),
 	}
 
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	run_seed = int(data["run_seed"])
 	player_is_male = bool(data["player_is_male"])

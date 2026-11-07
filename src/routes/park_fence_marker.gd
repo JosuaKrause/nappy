@@ -18,6 +18,7 @@ var rail_offset := 0.0
 ## The mounted sign's true ground point relative to the panel that draws in front of its rails.
 var sign_offset := Vector2.ZERO
 
+## Overrides ClosureMarker._draw.
 func _draw() -> void:
 	if not scenery_resident:
 		return
@@ -29,6 +30,7 @@ func _draw() -> void:
 	else:
 		super._draw()
 
+## Overrides ClosureMarker._draw_panel.
 func _draw_panel() -> void:
 	if across:
 		super._draw_panel()

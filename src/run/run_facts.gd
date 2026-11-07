@@ -29,9 +29,11 @@ var fenced_park := Vector2i(-1, -1)
 ## The act that chose `fenced_park`.
 var fenced_park_act := 0
 
+## Overrides RunSubState.slot.
 func slot() -> Slot:
 	return Slot.RIDER
 
+## Overrides RunSubState.reset.
 func reset() -> void:
 	escape_section = 0
 	completed_resistance_alley_tiles.clear()
@@ -49,6 +51,7 @@ func remember_fenced_park(block: Vector2i, act: int) -> void:
 		fenced_park = block
 		fenced_park_act = act
 
+## Overrides RunSubState.to_data.
 func to_data() -> Dictionary:
 	var alley_tiles: Array = []
 	for tile: Vector2i in completed_resistance_alley_tiles:
@@ -60,6 +63,7 @@ func to_data() -> Dictionary:
 		"fenced_park_act": fenced_park_act,
 	}
 
+## Overrides RunSubState.restore.
 func restore(data: Dictionary) -> void:
 	escape_section = int(data.get("escape_section", 0))
 	completed_resistance_alley_tiles.clear()

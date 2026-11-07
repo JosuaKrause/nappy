@@ -3,6 +3,7 @@ extends SpreadLook
 ## The roadblock: its band of barrier drawn in slices, a guard posted at each end, the one who sets
 ## off after her, and the far guard who walks off once his partner has left for good.
 
+## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.ROADBLOCK:
@@ -60,6 +61,8 @@ func _draw_roadblock(canvas: CanvasItem) -> void:
 
 ## The band and the guard posted at each end of it, drawn at `band_at` in `canvas`; on the band's
 ## own node only the guards, its segments being its slices (`_draw_spread()`).
+##
+## Overrides EventLook.draw_the_band.
 func draw_the_band(canvas: CanvasItem, band_at: Vector2) -> void:
 	_draw_the_spread(canvas, band_at)
 	if event.barrier_post == null or event.barrier_post.far.has_left():
@@ -194,14 +197,17 @@ func _draw_posted_guard(canvas: CanvasItem, band_at: Vector2, side: int) -> void
 			false, {}, false, feet)
 	_view_sector = kept
 
+## Overrides SpreadLook.build_nodes.
 func build_nodes() -> void:
 	_build_the_band()
 	super()
 
+## Overrides SpreadLook.move_nodes.
 func move_nodes(redraw := false) -> void:
 	_move_the_band(redraw)
 	_move_the_far_guard()
 
+## Overrides SpreadLook.release_nodes.
 func release_nodes() -> void:
 	if _band != null and is_instance_valid(_band):
 		_band.queue_free()
@@ -209,11 +215,14 @@ func release_nodes() -> void:
 	_release_the_far_guard()
 	super()
 
+## Overrides EventLook.band_node.
 func band_node() -> Node2D:
 	return _band
 
 ## A roadblock's rim stays on the event: its slices are the band's, and the rim it lights traces the
 ## man who sets off from it.
+##
+## Overrides SpreadLook.rim_holder.
 func rim_holder() -> Node2D:
 	if _band != null:
 		return null
@@ -225,6 +234,7 @@ func band_rim_holder() -> Node2D:
 		return _slices[0]
 	return _band
 
+## Overrides EventLook._shows_its_nodes.
 func _shows_its_nodes(reach: Rect2) -> bool:
 	return _band != null and _band.is_inside_tree() and DrawnView.shows(_band, reach)
 
