@@ -100,7 +100,8 @@ an agent can take it is not overhead on top of the work — it **is** the orches
 course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194).
 That question goes to the player first. An open question that does not block goes on the board and
 the work goes to an agent at once, built on My pick, with the brief naming the pick as open to the
-player's answer. "Draft and put back" items never go to an agent at all.
+player's answer; a pick that would overturn something the player asked for is never built ahead of
+their answer (**playtest-feedback**, "Never silently overturn a decision the player took"). "Draft and put back" items never go to an agent at all.
 
 ## Code is designed by layer
 

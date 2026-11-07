@@ -57,8 +57,8 @@ Top to bottom, every part present even when empty:
 That is the Main tab. **The review items have a tab of their own, Review, in the same overall style,
 and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A review item under
 `docs/review/` is a sign-off check that needs a set-up run or a device and is answered one at a
-time, while the Main tab's questions are design decisions that block work and are answered in a
-batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
+time, while the Main tab's questions are design decisions about work in flight and are answered in
+a batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
 shows it. The answer goes to a playtest file as before, which closes the item's file
 (**playtest-feedback**). *Proposed, not asked for, open to the player's correction:* the tab holds
 a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
@@ -114,12 +114,15 @@ the work it names stops until it is answered, and other work goes on.
 pull requests stand on. Everything else is built on My pick at once, and the work changes to the
 player's answer when it comes, before the pull request merges or in a later one, if the answer
 differs. A pick on a placement, a number, a merge order, or a choice between two cheap
-implementations never blocks.
+implementations never blocks. The exception is a pick that would drop, narrow or reinterpret
+something the player asked for: **playtest-feedback**'s "Never silently overturn a decision the
+player took" holds, and that part is not built until they answer, however cheap it would be to undo.
 
-**A question the player's recorded words already answer is not asked** (inbox #1194). Before a
-question goes on the board, the note it comes from, its appended words and the settled questions
-on the same work are read for an answer; where they give one, it is built, and the reading is
-stated in the pull request's description, open to the player's correction there.
+**A question the player's recorded words already answer is not asked** (inbox #1185, inbox
+#1194): putting one up costs them a round trip to repeat themselves. Before a question goes on the
+board, the note it comes from, its appended words and the settled questions on the same work are
+read for an answer; where they give one, it is built, and the reading is stated in the brief and in
+the pull request's description, open to the player's correction there.
 
 ## Answering
 
