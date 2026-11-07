@@ -151,8 +151,7 @@ var _carriageway := 0.0
 ## The day's corridor, the very tree the day was planned on (`DayStreets.route_tree()`, read off
 ## the city at `start_day()`), so that a trace says whether she was on a path or off it on the
 ## streets she actually played, and the dawn and dusk maps `RunSession` writes are drawn on the
-## same tree. Null in the escape, whose chains are not a route tree, and on a city whose dawn grew
-## none (a rig that never ran `City.start_day()`); either keeps `path` silent.
+## same tree. Null in the escape, whose chains are not a route tree, which keeps `path` silent.
 var _tree: RouteTree
 ## The tile-level translation of `_tree` — since M69 the tree grows on `ReachabilityGrid` cells, so
 ## a park cut or an alley the tree actually took answers `on` here exactly like a street would.
@@ -327,7 +326,7 @@ func start_section(restarted: bool) -> void:
 func start_day() -> void:
 	_forget_the_walk()
 	_tree = _city.streets().route_tree()
-	_corridor = Corridor.of(_tree) if _tree else null
+	_corridor = Corridor.of(_tree)
 	_log.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
 		RunTrace.compass(_player.facing)])
