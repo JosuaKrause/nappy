@@ -92,9 +92,9 @@ func setup(in_the_title: Callable, city: City, player: Stroller, day: DayControl
 	var resolution := _clock_resolution()
 	var pair := _calibrate()
 	_record = _sitting.frame_timing as FrameRecord
-	_record.start(_record.ledger if _record.ledger != null
+	_record.start(_record.frame_ledger() if _record.frame_ledger() != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
-	ledger = _record.ledger
+	ledger = _record.frame_ledger()
 	_listen_for_draws()
 	_metadata = {"refresh_hz": refresh, "refresh_assumed": refresh <= 0.0,
 		"display_budget_usec": budget_usec, "timer_pair_usec": pair,
@@ -122,8 +122,8 @@ func _process(_delta: float) -> void:
 ## the start of drawing. The counters are read here, before the clock moves to `draw`, so their
 ## own cost is the process step's.
 func at_process_end() -> void:
-	ledger.keep = not get_tree().paused and not _in_the_title.call() and _day.is_running()
-	if ledger.keep:
+	ledger.keep_this_frame(not get_tree().paused and not _in_the_title.call() and _day.is_running())
+	if ledger.is_keeping():
 		var here := _player.global_position
 		ledger.set_counter(FrameLedger.CROWD_AGENTS, _city.crowd.agent_count())
 		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
@@ -187,7 +187,7 @@ static func _draw_kind(node: Node) -> int:
 	return node.get_meta(FrameTiming.DRAW_KIND_META, -1)
 
 func _drew(kind: int) -> void:
-	if _record.on:
+	if _record.is_on():
 		_record.drew(kind)
 
 ## What one `FrameRecord.enter()`/`leave()` pair costs on this device, in microseconds, timed over
@@ -314,16 +314,16 @@ func _report_text() -> String:
 ## file is the slowest thing in it.
 func save() -> String:
 	var text := _report_text()
-	ledger.keep = false
+	ledger.keep_this_frame(false)
 	if OS.get_name() == "Web":
 		var file_name := "nappy-frames-seed%d-%s.json" % [_run.header.run_seed,
 			Time.get_datetime_string_from_system().replace(":", "-")]
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
-	if _sitting.frame_record_path == "":
+	if _sitting.frame_record_file() == "":
 		_sitting.frame_record_path = "%s/record-%s-seed%d.json" % [_records_dir,
 			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
-	var path := _sitting.frame_record_path
+	var path := _sitting.frame_record_file()
 	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")
 		return ""

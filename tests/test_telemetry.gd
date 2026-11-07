@@ -130,7 +130,7 @@ func _put_back_the_suite_log() -> void:
 
 ## The file names in one of the open run's picture folders (`auto`, `asked`), sorted.
 func _pictures(kind: String) -> PackedStringArray:
-	var dir := DirAccess.open("%s/%s" % [_log.current_log().path.get_base_dir(), kind])
+	var dir := DirAccess.open("%s/%s" % [_log.current_log().file_path().get_base_dir(), kind])
 	if dir == null:
 		return PackedStringArray()
 	var names := dir.get_files()
@@ -159,15 +159,15 @@ func _test_a_line_is_a_time_a_kind_and_a_sentence(t) -> void:
 	log.note(96.42, "home", "WON")
 	log.note(1234.5, "near", "busker 62px")
 
-	t.check(log.lines.size() == 3, "three notes make three lines")
-	t.check(log.lines[0] == "   0.0  start    doorstep (52,88), facing 0°",
+	t.check(log.recorded_lines().size() == 3, "three notes make three lines")
+	t.check(log.recorded_lines()[0] == "   0.0  start    doorstep (52,88), facing 0°",
 			"a line is a right-aligned time, two spaces, a padded kind, then the sentence")
-	t.check(log.lines[1].begins_with("  96.4  home"), "the time is one decimal place")
+	t.check(log.recorded_lines()[1].begins_with("  96.4  home"), "the time is one decimal place")
 	# A four-digit timestamp is a run far longer than fourteen days, but the column must not
 	# collapse if one ever happens: an unaligned log is a log nobody scans.
-	for line in log.lines:
+	for line in log.recorded_lines():
 		t.check(line.substr(6, 2) == "  ", "the kind column starts in the same place")
-	t.check(log.path == "", "a log with no path writes no file")
+	t.check(log.file_path() == "", "a log with no path writes no file")
 
 ## An aggregate can always be computed from an ordered log; the order can never be recovered
 ## from an aggregate. This is the property the format exists for, so it is asserted rather
@@ -177,10 +177,10 @@ func _test_order_is_the_record(t) -> void:
 	log.header("day 3")
 	for i in 20:
 		log.note(float(i), "near", "thing %d" % i)
-	t.check(log.lines[0] == "day 3", "a header carries no timestamp")
+	t.check(log.recorded_lines()[0] == "day 3", "a header carries no timestamp")
 	var in_order := true
 	for i in 20:
-		if not log.lines[i + 1].ends_with("thing %d" % i):
+		if not log.recorded_lines()[i + 1].ends_with("thing %d" % i):
 			in_order = false
 	t.check(in_order, "twenty entries come back in the order they were written")
 
@@ -293,7 +293,7 @@ func _test_a_day_header_opens_a_day(t) -> void:
 	_log.set_clock(999.0)
 	_log.note("nerve", "spent a nerve")
 
-	var lines := _log.current_log().lines
+	var lines := _log.current_log().recorded_lines()
 	_log.end_run()
 
 	t.check(lines.size() == 5, "a preamble, a blank line, a header and two entries")
@@ -323,7 +323,7 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 	_log.set_clock(96.25)
 	_log.note("lost", "lost_hard_fail in the building after 96.2s")
 
-	var lines := _log.current_log().lines
+	var lines := _log.current_log().recorded_lines()
 	_log.end_run()
 	t.check(lines.size() == 6, "a preamble, an entry, a blank line, a header and two entries (%d)"
 			% lines.size())
@@ -701,12 +701,12 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
 	var log := _log.current_log()
-	var before := log.lines.size()
+	var before := log.recorded_lines().size()
 	for i in TelemetryShots.PER_DAY * 2 + 1:
 		_log.snapshot_now("press %d" % i)
-	t.check(log.lines.size() - before == TelemetryShots.PER_DAY * 2 + 1,
+	t.check(log.recorded_lines().size() - before == TelemetryShots.PER_DAY * 2 + 1,
 			"every press writes its line, well past the heuristic's own daily cap")
-	t.check(log.lines[log.lines.size() - 1].contains("shot"),
+	t.check(log.recorded_lines().back().contains("shot"),
 			"and the line is a shot entry")
 	_log.end_run()
 	t.check(not _log.is_active(), "and the suite is left dormant again")
@@ -821,11 +821,11 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812345, false)
-	var log_path := _log.current_log().path
+	var log_path := _log.current_log().file_path()
 	t.check(log_path != "", "a real run opens a file")
-	t.check(_log.current_log().path.begins_with(scratch + "/"),
+	t.check(_log.current_log().file_path().begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% _log.current_log().path)
+			% _log.current_log().file_path())
 	t.check(log_path.get_file() == "run.log",
 			"the log is named plainly — the folder is what says which run it belongs to (got '%s')"
 			% log_path.get_file())
@@ -860,10 +860,10 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812347, false)
-	var run_dir := _log.current_log().path.get_base_dir()
-	t.check(_log.current_log().path.begins_with(scratch + "/"),
+	var run_dir := _log.current_log().file_path().get_base_dir()
+	t.check(_log.current_log().file_path().begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% _log.current_log().path)
+			% _log.current_log().file_path())
 	_log.begin_day(6, 2, 1, 1, 10.0)
 	_log.write_map(map, 6)
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
@@ -896,10 +896,10 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812346, false)
-	var run_dir := _log.current_log().path.get_base_dir()
-	t.check(_log.current_log().path.begins_with(scratch + "/"),
+	var run_dir := _log.current_log().file_path().get_base_dir()
+	t.check(_log.current_log().file_path().begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% _log.current_log().path)
+			% _log.current_log().file_path())
 
 	_log.begin_day(6, 2, 778812346, 778812346, 10.0)
 	_log.write_map(map, 6)
@@ -1078,7 +1078,7 @@ func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 	atlas.stop_holding(group)
 	var loaded: Array[String] = []
 	var released: Array[String] = []
-	for line: String in _log.current_log().lines:
+	for line: String in _log.current_log().recorded_lines():
 		if not line.contains("atlas page '%s'" % group):
 			continue
 		if line.contains("released"):
@@ -1173,11 +1173,11 @@ func _test_the_day_header_notes_the_invincible_flag_once_per_day(t) -> void:
 
 	_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
 	_log.begin_day(1, 1, 4242, 4242, 144.0)
-	var on_lines := _log.current_log().lines.duplicate()
+	var on_lines := _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(RunConfig.parse(PackedStringArray(), "", true))
 	_log.begin_day(2, 1, 4242, 4242, 144.0)
-	var off_lines := _log.current_log().lines.duplicate()
+	var off_lines := _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(null)
 	_log.end_run()
@@ -1197,8 +1197,9 @@ func _test_a_headless_burst_is_refused_without_a_capture_wait(t) -> void:
 	_log.begin_run(0, false)
 	t.check(not _log.start_burst("headless test"),
 			"headless capture refuses without beginning a renderer wait")
-	var lines := _log.current_log().lines
-	t.check(not _log.start_burst("headless again")
+	var refused_again := not _log.start_burst("headless again")
+	var lines := _log.current_log().recorded_lines()
+	t.check(refused_again
 				and lines.filter(func(line: String) -> bool:
 					return line.contains("burst refused: no drawable viewport")).size() == 2
 				and lines.filter(func(line: String) -> bool:

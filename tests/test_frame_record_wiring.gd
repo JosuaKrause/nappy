@@ -42,7 +42,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var sitting: Sitting = home.get_node(Sitting.NODE_NAME)
-	sitting.frame_timing = record
+	sitting.use_frame_timing(record)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
 			func(unbooted: Node) -> void:
 				unbooted.use_sitting_home(home)
@@ -57,7 +57,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			and edge.timing == record and halo.timing == record,
 			"main hands the sitting's record to every system that is timed")
 	var recorder: FrameRecorder = main.get_node("FrameRecorder")
-	t.check(record.on and record.ledger == recorder.ledger and recorder.ledger == restarted,
+	t.check(record.is_on() and record.frame_ledger() == restarted,
 			"setting up the recorder switches the timing on, keeping the record a restart left")
 	await t.get_tree().process_frame
 	Boot.player(main).queue_redraw()
@@ -89,16 +89,16 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 			and end.process_mode == Node.PROCESS_MODE_ALWAYS, "both markers run through a pause")
 	# A frame is stored as the next one begins (its first physics tick or its process step, which
 	# comes first depends on the frame's length), so a frame is read once the one after it has begun.
-	var ledger := recorder.ledger
+	var ledger := record.frame_ledger()
 	t.get_tree().paused = true
 	await UI.frames(t, 3)
-	var kept := ledger.count
-	t.check(not ledger.keep, "a paused frame is not kept")
+	var kept := ledger.rows().size()
+	t.check(not ledger.is_keeping(), "a paused frame is not kept")
 	await UI.frames(t)
-	t.check(ledger.count == kept, "and closing it stores nothing")
+	t.check(ledger.rows().size() == kept, "and closing it stores nothing")
 	t.get_tree().paused = false
 	await UI.frames(t)
-	t.check(ledger.count > kept, "a played frame is kept")
+	t.check(ledger.rows().size() > kept, "a played frame is kept")
 	var row: PackedInt64Array = ledger.rows().back()
 	t.check(row[FrameLedger.FIRST_COUNTER + FrameLedger.CROWD_AGENTS] == city.crowd.agent_count()
 			and row[FrameLedger.FIRST_COUNTER + FrameLedger.DAY] == run.header.day,
@@ -107,16 +107,16 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	await _check_the_crowd_is_timed_once(t, city.crowd, record, ledger)
 	record.start(ledger)
 	var written := recorder.save()
-	t.check(written == ProjectSettings.globalize_path(sitting.frame_record_path)
-			and sitting.frame_record_path.begins_with(_SCRATCH_RECORDS + "/"),
+	t.check(written == ProjectSettings.globalize_path(sitting.frame_record_file())
+			and sitting.frame_record_file().begins_with(_SCRATCH_RECORDS + "/"),
 			"a desktop save writes the file its sitting keeps, which outlives the recorder")
 	t.check(recorder.save() == written, "and every later save rewrites the same file")
 	DirAccess.remove_absolute(written)
 	booted.free_all()
-	t.check(not record.on, "leaving the tree switches the timing off")
-	t.check(FileAccess.get_file_as_string(sitting.frame_record_path).contains("nappy-frame-record"),
+	t.check(not record.is_on(), "leaving the tree switches the timing off")
+	t.check(FileAccess.get_file_as_string(sitting.frame_record_file()).contains("nappy-frame-record"),
 			"and writes the record on the desktop as the scene exits")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(sitting.frame_record_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(sitting.frame_record_file()))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
 	home.free()
 
@@ -216,9 +216,9 @@ func _one_tick_steps_each_once(t, crowd: Crowd, agents: Array[CrowdAgent]) -> bo
 
 ## Lets `count` frames pass and be stored, and answers how many rows the ledger stored meanwhile.
 func _frames_counted(t, ledger: FrameLedger, count: int) -> int:
-	var before := ledger.count
+	var before := ledger.rows().size()
 	await UI.frames(t, count + 1)
-	return ledger.count - before
+	return ledger.rows().size() - before
 
 ## The last `count` rows the ledger stored.
 func _rows_over(ledger: FrameLedger, count: int) -> Array[PackedInt64Array]:

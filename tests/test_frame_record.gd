@@ -49,7 +49,7 @@ func _test_a_frame_adds_up(t) -> void:
 	var before_events := ledger.enter(FrameRecord.EVENTS, 2200)
 	ledger.switch_to(before_events, 2300)
 	ledger.switch_to(before_scenery, 2900)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(3000)
 	ledger.add(FrameLedger.DRAWS_CROWD, 2)
 	ledger.pre_draw(3500)
@@ -96,10 +96,10 @@ func _test_slow_frames_are_marked(t) -> void:
 func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
-	ledger.keep = false
+	ledger.keep_this_frame(false)
 	ledger.process_end(5000)
 	ledger.process_start(16000)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(20000)
 	ledger.process_start(32000)
 	var rows := ledger.rows()
@@ -112,7 +112,7 @@ func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
 func _test_a_headless_frame_draws_nothing(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(3000)
 	ledger.process_start(16000)
 	var row: PackedInt64Array = ledger.rows()[0]
@@ -129,7 +129,7 @@ func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	record.start(ledger)
 	ledger.process_start(0)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(1000)
 	record.drew(FrameTiming.Draw.SCENERY)
 	record.drew(FrameTiming.Draw.SCENERY)
@@ -137,7 +137,7 @@ func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
 	ledger.pre_draw(2500)
 	ledger.drawn(6000)
 	ledger.process_start(16000)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(17000)
 	ledger.process_start(32000)
 	var first: PackedInt64Array = ledger.rows()[0]
@@ -178,7 +178,7 @@ func _test_the_readout_line(t) -> void:
 	ledger.switch_to(FrameRecord.SCENERY, 13000)
 	ledger.switch_to(FrameRecord.CUES, 20000)
 	ledger.switch_to(FrameRecord.PROCESS_REST, 21000)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(29000)
 	ledger.process_start(40000)
 	var line := ledger.readout_line()
@@ -198,7 +198,7 @@ func _test_the_readout_line(t) -> void:
 	waited.switch_to(FrameRecord.DRAW, 16100)
 	waited.switch_to(FrameRecord.SCENERY, 21100)
 	waited.switch_to(FrameRecord.PROCESS_REST, 23100)
-	waited.keep = true
+	waited.keep_this_frame()
 	waited.process_end(23200)
 	waited.pre_draw(23300)
 	waited.drawn(23400)
@@ -215,7 +215,7 @@ func _test_the_readout_line(t) -> void:
 	wide.switch_to(FrameRecord.EVENTS, 300100)
 	wide.switch_to(FrameRecord.CROWD, 500100)
 	wide.switch_to(FrameRecord.PROCESS_REST, 650100)
-	wide.keep = true
+	wide.keep_this_frame()
 	wide.process_end(650200)
 	wide.process_start(650300)
 	var wide_record := FrameRecord.new()
@@ -245,7 +245,7 @@ func _test_the_record_charges_its_ledger(t) -> void:
 	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(8, 16667)
 	record.start(ledger)
-	t.check(record.on, "a started record is on")
+	t.check(record.is_on(), "a started record is on")
 	ledger.process_start(Time.get_ticks_usec())
 	var outer := record.enter(FrameRecord.INFLUENCE)
 	OS.delay_usec(SPENT_US)
@@ -260,9 +260,9 @@ func _test_the_record_charges_its_ledger(t) -> void:
 	t.check(after_leaving[FrameLedger.FIRST_BUCKET + FrameRecord.PROCESS_REST] >= SPENT_US,
 			"leave goes back to it: the time after it is charged to the bucket that was running")
 	record.stop()
-	t.check(not record.on and record.ledger == ledger, "stopping switches it off and keeps its ledger")
+	t.check(not record.is_on() and record.frame_ledger() == ledger, "stopping switches it off and keeps its ledger")
 	var none := FrameTiming.new()
-	t.check(not none.on and none.enter(FrameTiming.CROWD) == 0, "the null sink is off and charges nothing")
+	t.check(not none.is_on() and none.enter(FrameTiming.CROWD) == 0, "the null sink is off and charges nothing")
 	none.leave(0)
 	none.drew(FrameTiming.Draw.OTHER)
 	none.scenery_job(FrameTiming.Job.GUARD)
@@ -318,11 +318,11 @@ func _test_draws_are_counted_by_listening(t) -> void:
 	prop.draw.emit()
 	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 1,
 			"a node that re-enters the tree is counted once")
-	record.on = false
+	record.stop()
 	prop.draw.emit()
 	t.check(_row_so_far(ledger)[counters + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 0,
 			"a record that is off counts nothing")
-	record.on = true
+	record.start(ledger)
 	# Each node of a counted class lands on the counter of its kind when it draws; one that is
 	# not counted (a label) lands on none. Every node enters the tree, as the game's do.
 	var kinds := {Prop.new(): FrameTiming.Draw.SCENERY, SceneryLayer.new(): FrameTiming.Draw.SCENERY,
@@ -377,7 +377,7 @@ func _test_the_deferred_scenery_window(t) -> void:
 	ledger.process_start(0)
 	var outer := ledger.enter(FrameRecord.SCENERY, 100)
 	ledger.switch_to(outer, 600)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(1000)
 	ledger.deferred_scenery_begins(1500)
 	ledger.deferred_scenery_ends(2500)
@@ -398,7 +398,7 @@ func _test_the_deferred_scenery_window(t) -> void:
 func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(2000)
 	ledger.drawn(3000)
 	ledger.process_start(40000)
@@ -408,7 +408,7 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
 	var outer := ledger.enter(FrameRecord.SCENERY, 40100)
 	ledger.add(FrameLedger.JOBS_GROUND, 1)
 	ledger.switch_to(outer, 70100)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(70200)
 	_drive(ledger, 80000, 40000, FrameRecord.CROWD, 30000)
 	ledger.process_start(120000)
@@ -516,7 +516,7 @@ func _event(t, def: EventDef) -> EventInstance:
 ## it, as the row it writes — what the ledger records of a frame is its rows, and a frame a test is
 ## partway through is read by ending it. The next frame starts at once, counters at zero.
 func _row_so_far(ledger: FrameLedger) -> PackedInt64Array:
-	ledger.keep = true
+	ledger.keep_this_frame()
 	var at := Time.get_ticks_usec()
 	ledger.process_end(at)
 	ledger.process_start(at + 1)
@@ -528,7 +528,7 @@ func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: in
 	ledger.process_start(start)
 	var outer := ledger.enter(bucket, start + 100)
 	ledger.switch_to(outer, start + 100 + spent)
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(start + 200 + spent)
 
 
@@ -552,7 +552,7 @@ func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
 	var rig := _rig(t, FrameRecord.new())
 	rig.recorder.save()
 	var environment: Dictionary = JSON.parse_string(
-			FileAccess.get_file_as_string(rig.sitting.frame_record_path))["environment"]
+			FileAccess.get_file_as_string(rig.sitting.frame_record_file()))["environment"]
 	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		# A headless window reports 0 by 0, so only the keys and the ratio are pinned.
 		t.check(environment.has(key), "the record's environment carries %s" % key)
@@ -568,7 +568,7 @@ func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
 func _rig(t, record: FrameRecord) -> _Rig:
 	var rig := _Rig.new()
 	rig.sitting = Sitting.new()
-	rig.sitting.frame_timing = record
+	rig.sitting.use_frame_timing(record)
 	rig.recorder = FrameRecorder.new()
 	t.add_child(rig.recorder)
 	rig.recorder.setup(func() -> bool: return false, null, null, null, RunState.new(), rig.sitting,
@@ -582,7 +582,7 @@ class _Rig extends RefCounted:
 	func free_all() -> void:
 		# Leaving the tree writes the record to the sitting's path.
 		recorder.free()
-		var written := sitting.frame_record_path
+		var written := sitting.frame_record_file()
 		sitting.free()
 		if written != "":
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(written))

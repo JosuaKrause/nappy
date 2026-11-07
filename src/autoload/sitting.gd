@@ -68,10 +68,18 @@ var restarted_at_msec := -INF
 ## `""` until then.
 var frame_record_path := ""
 
+## Where the desktop frame record is written, `""` until the first save.
+func frame_record_file() -> String:
+	return frame_record_path
+
 ## Where the frame record is kept, handed to every system that is timed: the null sink until `main`
 ## replaces it with a `FrameRecord` for a run that asks for one (`--frame-record`, `?framerecord=1`).
 ## The record and its ledger live here so a recording spans a scene reload, as the path above does.
 var frame_timing := FrameTiming.new()
+
+## Hands the sitting the frame record `timing` to keep, as `main` does for a run that asks for one.
+func use_frame_timing(timing: FrameTiming) -> void:
+	frame_timing = timing
 
 ## The ground's composition recipe, read from disk by the first city built this sitting and held
 ## here after, so a reload and every day's repaint compose from the same read (`GroundRecipe`).
