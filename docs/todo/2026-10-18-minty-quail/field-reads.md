@@ -11,7 +11,10 @@ objects and a property only inside its own class (inbox #1173 in gray-dolphin).
 consistent interface"). This item is the survey and the conversion of the code that predates it,
 events first: outside `src/events/`, 20 files under `src/` read an event definition's settings
 directly (its body's width, whether it holds her again, how long, whether it ends the day), and many
-more classes read each other's fields. It comes after the hand-ins (`city-hand-ins.md`), which move
+more classes read each other's fields. An event's abilities (a body, a hold on her, a lethal field, a
+pursuit) become parts it has, each answering its own questions, rather than subclasses or settings
+read from outside: composition over inheritance, the half of events-one-interface's context the
+player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins (`city-hand-ins.md`), which move
 many of the same reads.
 
 *Proposed, not asked for:* a design on the board first, listing the reads by class and the methods

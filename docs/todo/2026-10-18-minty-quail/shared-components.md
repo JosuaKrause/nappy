@@ -5,5 +5,6 @@ lane-following held step, a different motion model from the navigator's swept st
 cannot stay at test parity. Whether it moves later is sunny-osprey, the crowd's lanes on the map's
 one navigator, which waits on this entry's remeasuring (inbox #1155 in gray-dolphin).
 
-**Build:** `src/world/navigator.gd`'s header says it is "The one way anything that walks or drives
-across a world moves"; it names the crowd's lane step as the exception, so the header is true.
+**Build:** `src/world/navigator.gd`'s header still says it is "The one way anything that walks or
+drives across a world moves" and names no exception; it is changed to name the crowd's lane step as
+the exception, so the header is true.

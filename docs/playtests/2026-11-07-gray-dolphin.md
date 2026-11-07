@@ -82,7 +82,7 @@
 
 7. **Note** (the assistant's):
 
-   The board question crowd-lanes-on-navigator is removed at the player's word above. Its standing pick, from the chat: lane movement on the navigator is not part of the refactor; it is filed as a piece of work of its own after the refactor's remeasuring, with the navigator's header corrected meanwhile to name the crowd's lane step as the exception.
+   The board question crowd-lanes-on-navigator is removed at the player's words in the next item, said in the session as a rule for the board's questions that were fully discussed in the chat. Its standing pick, from the chat: lane movement on the navigator is not part of the refactor; it is filed as a piece of work of its own after the refactor's remeasuring, with the navigator's header corrected meanwhile to name the crowd's lane step as the exception.
 
 8. **The player's words.**
 
@@ -680,3 +680,43 @@
 6. **Read as:** (the assistant's interpretation, not the player's words)
 
    Day 13's task uses a roadblock the day already placed when one is close by; dawn may place roadblocks route-adjacent so one usually is; the swap (replacing a route-adjacent, off-route blocking event the day placed, out of sight) is used only when nothing is close by.
+
+## #1179
+
+1. **Context** (the assistant's):
+
+   Said in the chat on 2026-11-07, answering the orchestrator's question: "So: is the roadblock non-blocking, so day 13 needs no swap? My pick is yes, with the docs corrected to say it leaves the sidewalks open. If you mean it to close the street, its body has to grow to the full width, and then the swap plan stands." The orchestrator had reported the builder's measurement: day 13's task roadblock's body covers two road tiles and the inner sidewalk tile, and both sidewalks keep an open tile at all 2,334 sites sampled.
+
+2. **The note.**
+
+   > even if she can technically walk through it everything about it tells the player to not do that. so let's not assume that a player would use it.
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   The roadblock counts as blocking her way for planning: what a street shows the player decides it, not whether the body leaves a tile open. So day 13's task roadblock keeps the swap plan (a nearby day-placed roadblock first, route-adjacent roadblocks placed at dawn, a swap only when nothing is close by), and its body is not widened.
+
+4. **Context** (the assistant's):
+
+   Said in the chat right after the note's first words ("let's not assume that a player would use it"), as their continuation.
+
+5. **The player's words.**
+
+   > unless there is a gap with a full sidewalk
+
+6. **Read as:** (the assistant's interpretation, not the player's words)
+
+   An event counts as blocking her way unless it leaves a gap at least a full sidewalk wide (Tuning.SIDEWALK_WIDTH, 2 tiles) for her to pass.
+
+## #1180
+
+1. **Context** (the assistant's):
+
+   Said in the chat on 2026-11-07, after the orchestrator reported that the covering-set path (`EventScheduler._place_a_set_piece`, a set piece offered at every site of a covering set) is reached by no catalogue row any more, and that the orchestrator had earlier read its doc comment as live behaviour and told the player the fire had copies on every route.
+
+2. **The note.**
+
+   > remove dead code or code needed for features that don't exist anymore. it adds to the cost of maintaining the code base and confuses you. if we want a feature back we can just implement it fresh which also guarantees that it adheres to the new design principles.
+
+3. **Read as:** (the assistant's interpretation, not the player's words)
+
+   A standing rule: code nothing reaches, and code that only serves a feature the game no longer has, is deleted rather than kept, since it costs maintenance and misleads whoever reads it; a feature wanted back is built fresh under the current design principles. Applies now to the covering-set path, and to a sweep for the rest.

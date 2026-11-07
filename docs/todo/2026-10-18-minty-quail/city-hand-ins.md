@@ -30,8 +30,9 @@ every caller reading `city.streets`, is being built on #1166.
   (`walk-placed-blockers.md`), since both change the same files.
 - **The run log reads today's route tree from `DayStreets`** and grows none of its own: "of course,
   the observer needs to read the actual tree from DayStreets" (inbox #1173 in gray-dolphin). Done in whichever of
-  these pull requests hands the observer `DayStreets`, after checking on a few seeds and days whether
-  the two trees ever differed.
+  these pull requests hands the observer `DayStreets`. *The orchestrator's pick on
+  observer-route-tree, not the player's words:* first check on a few seeds and days whether the two
+  trees ever differ, and report it if they do.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
