@@ -9,8 +9,8 @@ extends RefCounted
 ## One run is the whole building walked at the game's own pace, so the suite makes one, and ends it
 ## once the run has shown what it checks rather than waiting out the city's walk to its exit.
 ##
-## **The game it launches writes its run log into a home of its own**, a scratch folder this suite
-## makes and removes: `HOME` and `XDG_DATA_HOME` (where Godot puts `user://` on macOS and on Linux)
+## **The game it launches writes its run log into a home of its own**, a scratch folder under the
+## OS temp directory (`DirAccess.create_temp()`), removed with all it holds when `run()` ends: `HOME` and `XDG_DATA_HOME` (where Godot puts `user://` on macOS and on Linux)
 ## are handed to the child through `env`, so none of its run folders reaches the player's
 ## `user://telemetry`.
 
@@ -24,9 +24,13 @@ const LOG_FOLDER := "telemetry"
 
 func run(t) -> void:
 	var started_at := Time.get_unix_time_from_system()
-	var home_root := "user://route_building_home_%d" % OS.get_process_id()
-	var home := ProjectSettings.globalize_path(home_root)
-	DirAccess.make_dir_recursive_absolute(home)
+	# Kept alive until `run()` ends: freeing it removes the folder and all it holds, hidden files too.
+	var scratch := DirAccess.create_temp("route_building_home")
+	t.check(scratch != null, "the child's scratch home is made")
+	if scratch == null:
+		return
+	var home_root := scratch.get_current_dir()
+	var home := home_root
 	var pid := OS.create_process("/usr/bin/env", PackedStringArray([
 			"HOME=%s" % home, "XDG_DATA_HOME=%s" % home, OS.get_executable_path(),
 			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--",
@@ -50,7 +54,6 @@ func run(t) -> void:
 			"the building is not lost (%s)" % [_first(log, "section ended")])
 	t.check(_has(log, "section ended (WON)"), "the building is won (%s)" % [_first(log, "section ended")])
 	t.check(_in_the_city(log), "and the city's rig takes the walk on (%s)" % [log[-1] if not log.is_empty() else ""])
-	_remove_all(home_root)
 
 ## Whether the city's rig has said anything: it plans its first leg or reaches a target.
 func _in_the_city(lines: PackedStringArray) -> bool:
@@ -93,17 +96,6 @@ func _run_logs(dir: String, inside_log_folder: bool) -> Array[String]:
 		else:
 			found.append_array(_run_logs(path, inside_log_folder or name == LOG_FOLDER))
 	return found
-
-## Removes `dir` and everything in it.
-func _remove_all(dir: String) -> void:
-	var folder := DirAccess.open(dir)
-	if folder == null:
-		return
-	for name in folder.get_directories():
-		_remove_all("%s/%s" % [dir, name])
-	for name in folder.get_files():
-		DirAccess.remove_absolute("%s/%s" % [dir, name])
-	DirAccess.remove_absolute(dir)
 
 func _has(lines: PackedStringArray, text: String) -> bool:
 	return not _first(lines, text).is_empty()
