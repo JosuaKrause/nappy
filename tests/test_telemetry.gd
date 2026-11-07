@@ -18,6 +18,8 @@ extends RefCounted
 ## What the `TelemetryObserver` writes into the log, and when, is `tests/test_telemetry_observer.gd`'s,
 ## on a recording log; this suite is the real log's own, the file and the pictures it writes.
 
+## What a planned day is, as a string to compare.
+const PlanSignature := preload("res://tests/plan_signature.gd")
 ## The burst suite, whose bench (`Bench`) the burst test here hands the run log.
 const BurstSuite := preload("res://tests/test_burst_capture.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
@@ -242,12 +244,12 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 
 	var quiet: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		quiet.append(_plan_signature(map, day))
+		quiet.append(PlanSignature.of(map, day))
 
 	var lines: Array[String] = []
 	var traced: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		traced.append(_plan_signature(map, day, RunTrace.recording(lines)))
+		traced.append(PlanSignature.of(map, day, RunTrace.recording(lines)))
 
 	# Day 3 is the one that matters: `burning_building` is the catalogue's only one-shot, and the
 	# `roll` line saying what became of it is written while the day is being planned. If the trace
@@ -332,8 +334,8 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 ## `snapshot()`'s spacing gate (the clock less the last shot's time under `SHOT_SPACING`) reads as
 ## "a shot just happened". `restart_section_clock()` clears the schedule the way `begin_section()`
 ## and `begin_day()` do. Asked through the pictures that land in the run's `auto/` folder, on a
-## screen that can draw. That the observer's `start_section()` calls it is
-## `tests/test_telemetry_observer.gd`'s.
+## screen that can draw. That the observer's `start_section()` goes through it, and not through
+## `set_clock(0.0)`, is `tests/test_telemetry_observer.gd`'s, asked of a log that counts the calls.
 func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 	var scratch := _open_a_scratch_run("retry")
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
@@ -1102,23 +1104,6 @@ func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [4242, day])
 	return rng
-
-## Everything a planned day is, as one comparable string: what was placed, where, and in what
-## order. Positions to the pixel, because a shifted RNG moves an event without changing the
-## set of events.
-func _plan_signature(map: CityMap, day: int, trace: RunTrace = null) -> String:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
-	var consumed: Array[String] = []
-	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
-			consumed, [], null, 0,
-			PackedVector2Array(), [], [], trace).placements():
-		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
-	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
-	# is exactly the divergence this is looking for.
-	parts.append("consumed:" + ",".join(consumed))
-	return "|".join(parts)
 
 ## Where every block ends up after a whole run of scheduled advances.
 func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:

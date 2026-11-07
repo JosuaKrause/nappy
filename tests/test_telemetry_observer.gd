@@ -6,19 +6,28 @@ extends RefCounted
 ## The observer is handed the log it writes into (`TelemetryObserver.new(run_log)`), so every case
 ## here hands it the recording fake and asserts the lines it was handed, in the fake's shape
 ## (`"<clock> <kind> <text>"`). How the real log lays a line out on disk, and the pictures it
-## writes, are `tests/test_telemetry.gd`'s. The observer is the one object under test; it reads a
-## player, a baby and a day's clock built bare, with real frames passing so its per-frame
-## watchers run as they do in play.
+## writes, are `tests/test_telemetry.gd`'s. The observer is the one object under test, with real
+## frames passing so its per-frame watchers run as they do in play.
 ##
-## **The cases that build a real `City` give their reason**: the observer reads the city it is
-## handed for the day's route tree, the events it streams and the map's tiles, and the cases that
-## ask what it does with them (a rewound day's trail, entering an event's outer radius, the
-## escape's second section) have nothing narrower to hand it. The case that plans a day beside it
-## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) is a guarantee that spans the
-## observer and the scheduler: its per-frame watchers read gameplay objects and must change
-## nothing a later day plans.
+## **The player, the baby and the day's clock are built bare** (`Stroller.new()`, `Baby.new()`,
+## `DayController.new()`) and not faked: the observer is typed against those classes and has no
+## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
+## meters, the clock's reading) is state a case sets on the real node, as the game does. The
+## event source it watches is a stand-in where a case needs one (`StandInSource`, one stand-in
+## event), since the observer asks it only for `instances()` and its `sources`.
+##
+## **Three cases build a real `City`, because narrowing needs a `src/` change**: the observer is
+## handed a whole `City` (`setup()`, `watch_city()`) and reads its map, events, calm ground,
+## closures, run and crowd off it, so the rewound day's trail, the entering of an event's outer
+## radius and the escape's city section have no narrower hand-in to give a fake to. That change
+## belongs with the city hand-ins, not with this suite.
+##
+## The case that plans a day beside the observer
+## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) pins one thing: four hundred
+## frames of the observer's watchers leave the map a later day is planned from as it was, so that
+## day plans identically. The observer is handed no random stream, so it has none to disturb.
 
-const BuildingEvents := preload("res://tests/building_events.gd")
+const PlanSignature := preload("res://tests/plan_signature.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 ## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
 const RUN_SEED := 2
@@ -69,8 +78,58 @@ class Rig extends RefCounted:
 
 ## The recording log the case in hand writes into, made by `_fresh_log()` so no case reads another's
 ## lines. Freed with the suite.
-var _log: Telemetry
-var _made: Array[Telemetry] = []
+var _log: CountingLog
+var _made: Array[CountingLog] = []
+
+## The recording log, counting how often the observer restarts a section's clock through
+## `restart_section_clock()`, which also restarts the real log's snapshot schedule, as against
+## `set_clock(0.0)`, which moves the clock alone.
+class CountingLog extends RecordingLog:
+	var restarts := 0
+
+	## Overrides recording_log.restart_section_clock.
+	func restart_section_clock() -> void:
+		restarts += 1
+		super()
+
+## The lines of `kind`, by the kind field the log keeps them in (`"<clock> <kind> <text>"`), so a
+## word in a line's text is never taken for its kind.
+func _lines_of(kind: String) -> Array[String]:
+	var found: Array[String] = []
+	for line in _log.lines:
+		if line.get_slice(" ", 1) == kind:
+			found.append(line)
+	return found
+
+## One live event of the masked man's row, standing where it is put: what the observer reads of an
+## instance (its row, its position, whether it is over or telegraphing or waiting), answered with
+## the row's own values and a phase of its own. The row is the catalogue's, the data the real
+## building's masked man is made from.
+class StandInEvent extends EventInstance:
+	## Overrides EventInstance.is_waiting.
+	func is_waiting() -> bool:
+		return false
+
+	## Overrides EventInstance.is_telegraphing.
+	func is_telegraphing() -> bool:
+		return false
+
+	## Overrides EventInstance.warns_by_radius.
+	func warns_by_radius() -> bool:
+		return false
+
+## The sum of the event fields at a point, which the stand-in source answers as nothing.
+class NoFields:
+	func total_at(_at: Vector2) -> float:
+		return 0.0
+
+## The event source of a building with one live event, as `EventManager` answers the observer.
+class StandInSource extends Node:
+	var live: Array[EventInstance] = []
+	var sources := NoFields.new()
+
+	func instances() -> Array[EventInstance]:
+		return live
 
 func run(t) -> void:
 	await _test_the_escape_is_in_the_run_log_as_a_day_is(t)
@@ -90,11 +149,12 @@ func run(t) -> void:
 
 ## Makes a recording log and makes it the one the next case writes into.
 func _fresh_log() -> void:
-	_log = RecordingLog.new()
+	_log = CountingLog.new()
 	_made.append(_log)
 
-## A retried section's clock starts at zero: `start_section(true)` puts the log's clock back, which
-## the real log's own snapshot schedule rides on (`tests/test_telemetry.gd`).
+## A retried section's clock starts at zero, and it gets there through the log's
+## `restart_section_clock()`, which clears the automatic-snapshot schedule the real log keeps
+## (`tests/test_telemetry.gd` asserts what that call does to the schedule).
 func _test_a_retried_section_restarts_the_clock(t) -> void:
 	_fresh_log()
 	var player := Stroller.new()
@@ -106,6 +166,9 @@ func _test_a_retried_section_restarts_the_clock(t) -> void:
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	_log.set_clock(45.0)
 	observer.start_section(true)
+	t.check(_log.restarts == 1,
+			"a retry puts the clock back through restart_section_clock(), which restarts the "
+			+ "snapshot schedule with it, and not through set_clock(0.0) (%d calls)" % _log.restarts)
 	t.check(_log.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
 	t.check(_log.lines.back().begins_with("0.0 start restarted"),
 			"and the start line says it began again, timed from its own start (got '%s')"
@@ -121,45 +184,22 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d" % [4242, day])
 	return rng
 
-## Everything a planned day is, as one comparable string, for the case that plans beside the
-## observer: what was placed and where, to the pixel, and the one-shot ledger.
-func _plan_signature(map: CityMap, day: int) -> String:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
-	var consumed: Array[String] = []
-	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
-			consumed, [], null, 0, PackedVector2Array(), [], [], null).placements():
-		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
-	parts.append("consumed:" + ",".join(consumed))
-	return "|".join(parts)
-
 ## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
 ## watched by the day's own observer, handed the day's clock and told which world she is in — so
-## this drives the calls the run session makes, in its order, against the real building and a real
-## city: a section entered, a frame of every watcher, the masked man met, the section lost through
+## this drives the calls the run session makes, in its order, against a building of one stand-in
+## masked man and a real city: a section entered, a frame of every watcher, the masked man met, the section lost through
 ## the day's own `day_finished()`, the same section again, then the city entered and left by the
 ## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
 ## mark — must stay silent rather than crash.
 func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
-	const STEP := 1.0 / 60.0
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	var run := RunState.new()
-	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
-			man = instance
-	t.check(man != null, "the building has a masked man to meet")
-	if not man:
-		events.free()
-		scene.free()
-		return
+	var start := Vector2(100.0, 100.0)
+	var man := StandInEvent.new()
+	man.setup(EventCatalogue.by_id("masked_pursuer"), start + Vector2(0.0, -200.0))
+	man.phase = EventInstance.Phase.ACTIVE
+	var events := StandInSource.new()
+	events.live.append(man)
 	var player := Stroller.new()
-	player.global_position = scene.start_world_position()
+	player.global_position = start
 	player.facing = Vector2.UP
 	var baby := Baby.new()
 	var clock := DayController.new()
@@ -170,7 +210,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 
 	_log.begin_run(0)
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	observer.watch_building(scene.map, events)
+	observer.watch_building(CityMap.new(), events)
 	observer.start_section(false)
 	clock.start(180.0)
 	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and
@@ -181,7 +221,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	await t.get_tree().process_frame
 	clock.failure_reason = "They were on the stairs."
 	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
-	player.global_position = scene.start_world_position()
+	player.global_position = start
 	observer.start_section(true)
 
 	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
@@ -197,22 +237,16 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	clock.exit_reached = CityEdge.Kind.TUNNEL
 	observer.day_finished(GameEnums.DayResult.WON)
 
-	var lines: Array = _log.lines
 	_log.end_run()
-	var text := "\n".join(lines)
-	var starts: Array[String] = []
-	var lost := ""
-	var near := ""
-	var home := ""
-	for line: String in lines:
-		if line.contains(" start "):
-			starts.append(line)
-		elif line.contains(" lost "):
-			lost = line
-		elif line.contains(" near ") and near == "":
-			near = line
-		elif line.contains(" home "):
-			home = line
+	var starts := _lines_of("start")
+	var losts := _lines_of("lost")
+	var lost := losts[0] if losts.size() == 1 else ""
+	var nears := _lines_of("near")
+	var near := nears[0] if not nears.is_empty() else ""
+	var homes := _lines_of("home")
+	var home := homes[0] if homes.size() == 1 else ""
+	t.check(losts.size() == 1 and homes.size() == 1,
+			"one lost line and one home line (%d, %d)" % [losts.size(), homes.size()])
 	t.check(starts.size() == 3, "each section start writes a start line (%d)" % starts.size())
 	if starts.size() == 3:
 		t.check(starts[0].contains("entered the building at ("),
@@ -232,7 +266,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 			"with the meter breakdown a day's losing line carries (got '%s')" % lost)
 	t.check(home.contains("escaped by the tunnel, 140.0s to spare"),
 			"and getting out is a home line with the way out and the margin (got '%s')" % home)
-	t.check(not text.contains(" path ") and not text.contains(" contact "),
+	t.check(_lines_of("path").is_empty() and _lines_of("contact").is_empty(),
 			"no corridor and no chalk mark are written for a walk that has neither")
 
 	observer.free()
@@ -240,8 +274,8 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	baby.free()
 	player.free()
 	city.free()
+	man.free()
 	events.free()
-	scene.free()
 
 ## A bare observer in the tree on a running day clock, with a map of no streets for the tile in the
 ## sentence: `Rig.new(t, _log, CityMap.new())` hands the observer what `main` hands the escape's —
@@ -263,14 +297,9 @@ func _hold_against_a_wall(rig: Rig, action: String, here: Vector2, hold: float) 
 		await rig.frame()
 	Input.action_release(action)
 
-func _blocked_lines(t) -> Array:
-	var lines: Array = _log.lines
+func _blocked_lines() -> Array[String]:
 	_log.end_run()
-	var blocked: Array = []
-	for line in lines:
-		if line.contains("blocked"):
-			blocked.append(line)
-	return blocked
+	return _lines_of("blocked")
 
 ## Held for a couple of seconds against a wall that never gives: one line, not one a frame, and
 ## it is not written until the hold has actually run past `BLOCKED_HOLD_TIME`.
@@ -281,7 +310,7 @@ func _test_a_stuck_player_is_logged_once(t) -> void:
 
 	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 2.0)
 
-	var blocked := _blocked_lines(t)
+	var blocked := _blocked_lines()
 	t.check(blocked.size() == 1,
 			"pressing into a wall for 2s writes exactly one blocked entry (got %d)"
 			% blocked.size())
@@ -306,11 +335,11 @@ func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
 		await rig.frame()
 	Input.action_release("move_right")
 
-	t.check(_blocked_lines(t).is_empty(), "walking freely for 3s is never logged as blocked")
+	t.check(_blocked_lines().is_empty(), "walking freely for 3s is never logged as blocked")
 	rig.free_all()
 
-## `is_idle()` elsewhere in this file is the legitimate stand-still, and it is a different
-## condition from this one on purpose: idling asks nothing about input at all, so a player who
+## `Stroller.is_idle()`, which the observer's idling watch reads, is the legitimate stand-still,
+## and a different condition from this one on purpose: idling asks nothing about input at all, so a player who
 ## simply lets go of every key must never be told she is blocked.
 func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
 	var rig := _blocked_rig(t)
@@ -321,14 +350,14 @@ func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
 	for i in int(round(3.0 / Rig.STEP)):
 		await rig.frame()
 
-	t.check(_blocked_lines(t).is_empty(),
+	t.check(_blocked_lines().is_empty(),
 			"standing idle with no direction held is never logged as blocked")
 	rig.free_all()
 
 ## M59's own interaction: `chatting_mother` locks input with `Stroller.detain()`, and a captured
 ## player may well be holding a key the whole way through it — which is exactly what
 ## the blocked watcher reads. Without the gate on `_player.is_detained()` a capture would write
-## itself down twice: once as `chat`, by `EventManager`, and once as `blocked`, by this file, for
+## itself down twice: once as `chat`, by `EventManager`, and once as `blocked`, by the observer, for
 ## the same held key. And the gate has to let go the instant the capture ends, or a real stall
 ## picked up right after one hides behind a stale anchor.
 func _test_a_capture_is_never_logged_as_blocked(t) -> void:
@@ -344,15 +373,12 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 	# The capture is over — a Stroller out of the tree has no physics frames to count it down, so
 	# she is put back where she stands the way `main` puts her back (`reset_at()` ends a detention)
 	# — and the same held key against the same wall is a genuine stall again.
-	var during := 0
-	for line: String in _log.lines:
-		if line.contains("blocked"):
-			during += 1
+	var during := _lines_of("blocked").size()
 	t.check(during == 0, "a held key through the capture itself writes no blocked entry (got %d)" % during)
 	rig.player.reset_at(Vector2(100.0, 100.0))
 	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 1.5)
 
-	var blocked := _blocked_lines(t)
+	var blocked := _blocked_lines()
 	t.check(blocked.size() == 1,
 			"the capture writes nothing, and a real stall right after it is still caught (got %d)"
 			% blocked.size())
@@ -529,7 +555,7 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	city.events.stream_around(plan.position)
 
 	# What day 4 plans, computed before the trail is ever walked.
-	var quiet := _plan_signature(map, 4)
+	var quiet := PlanSignature.of(map, 4)
 
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, city)
@@ -552,24 +578,21 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	t.check(not rig.observer.met_events().is_empty(),
 			"and walked close enough to mark the plan met, so the scan actually ran")
 
-	var traced := _plan_signature(map, 4)
+	var traced := PlanSignature.of(map, 4)
 	t.check(quiet == traced, "four hundred frames of trail sampling and met-events scanning, "
 			+ "with the log on, leave what day 4 plans untouched")
 
 	rig.free_all()
 	city.free()
 
-## The observer on real frames, `--spikes` given, in a real city with her standing at home: it hands
-## its frame watch each frame's length and, for the spike line, her tile and the live events, so a
-## `frame` line reaches the run log once a second of frames has passed. The engine's time scale
-## makes that second a handful of frames, and is put back after.
+## The observer on real frames, `--spikes` given, on the bare map rig: it hands its frame watch each
+## frame's length and, for the spike line, her tile and the live events (none), so a `frame` line
+## reaches the run log once a second of frames has passed. The engine's time scale makes that
+## second a handful of frames, and is put back after.
 func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(9001))
 	_fresh_log()
-	var rig := Rig.new(t, _log, null, city, true)
-	rig.player.global_position = city.map.home_world_position()
+	var rig := Rig.new(t, _log, CityMap.new(), null, true)
+	rig.player.global_position = Vector2(100.0, 100.0)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, Rig.LENGTH)
 	var scale := Engine.time_scale
@@ -577,12 +600,10 @@ func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
 	var framed := false
 	for i in 400:
 		await rig.frame()
-		framed = _log.lines.any(
-				func(line: String) -> bool: return line.contains(" frame "))
+		framed = not _lines_of("frame").is_empty()
 		if framed:
 			break
 	Engine.time_scale = scale
 	t.check(framed, "the observer's frames write the frame line once a second of them has passed")
 	_log.end_run()
 	rig.free_all()
-	city.free()
