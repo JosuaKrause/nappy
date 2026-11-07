@@ -285,6 +285,12 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
 			return _nearest_walkable(city.map, plan.position + stand_off)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
+		# A detainer (`checkpoint_hut`, `checkpoint_post`) takes her in from within
+		# `detain_distance()` (its body plus the detain reach), which is nearer than its field's
+		# 60% step: stood there she is inspected on the first frame. Clear that hold by a tile.
+		if plan.def.detain_distance() > 0.0:
+			offset = pavement_offset(city.map, plan.position,
+					plan.def.detain_distance() + Tuning.TILE_SIZE, 1.0)
 		return _nearest_walkable(city.map, plan.position + offset)
 	if waits_for_her_walk:
 		var reason := (("'%s' is planned today with no position: it is sited from her walk, so "
