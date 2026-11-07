@@ -650,6 +650,11 @@ func keep_live(id: String, at: Vector2) -> EventInstance:
 func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 	return streaming.take_away_within(rect, ids)
 
+## Takes today's plans inside `rect` not yet in the world out of the day, all but the ambient rows
+## (`EventStreaming.take_away_the_unseen_within()`).
+func take_away_the_unseen_within(rect: Rect2) -> int:
+	return streaming.take_away_the_unseen_within(rect)
+
 ## Today's foot for a mast id (`EventStreaming.mast_foot()`).
 func mast_foot(mast_id: String) -> Vector2:
 	return streaming.mast_foot(mast_id)

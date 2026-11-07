@@ -69,6 +69,20 @@ func everything_but(besides: EventScheduler.Planned = null) -> Array[EventSchedu
 			others.append(plan)
 	return others
 
+## **Whether `point` stands clear of the walk's events** for a figure `her_reach` across: farther
+## from every placed, unspent plan than its clearance (`Planned.clearance()`: its body and her shape,
+## its field where it carries one, a hard fail's lethal reach), measured from where it stands now.
+## A plan placed inside `besides` is not asked: the park cordon's own park, whose people are being
+## walked out (`ParkCordon._clear_of_the_day()`).
+func is_clear_at(point: Vector2, her_reach: float, besides := Rect2()) -> bool:
+	for plan in plans():
+		if plan.is_spent() or not plan.is_placed() or besides.has_point(plan.placed_at()):
+			continue
+		var reach := plan.clearance(her_reach)
+		if reach > 0.0 and point.distance_to(plan.where_it_stands_now()) < reach:
+			return false
+	return true
+
 ## Where today's region doors stand: a day's, and empty for every other walk.
 func doors() -> PackedVector2Array:
 	return _doors

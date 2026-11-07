@@ -8,6 +8,7 @@ func run(t) -> void:
 	_test_a_plan_placed_while_she_walks_joins_the_walk(t)
 	_test_everything_but_leaves_out_the_plan_being_placed(t)
 	_test_clearing_forgets_the_walk(t)
+	_test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t)
 
 func _row(id: String, at: Vector2) -> EventScheduler.Planned:
 	return EventScheduler.Planned.new(EventCatalogue.by_id(id), at)
@@ -42,3 +43,25 @@ func _test_clearing_forgets_the_walk(t) -> void:
 	walk.clear()
 	t.check(walk.plans().is_empty() and walk.calm() == null and walk.doors().is_empty(),
 			"a cleared walk holds nothing of the last one")
+
+## **Whether a point stands clear of the walk's events** (`is_clear_at()`, what the park cordon keeps
+## its last gap clear of): inside a body's clearance is not clear, past it is; a spent plan, one not
+## placed, and one inside the ground left out are not asked.
+func _test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t) -> void:
+	var her := 14.0
+	var block := _row("barricade", Vector2(320, 320))
+	var reach := block.clearance(her)
+	var walk := WalkEvents.new()
+	walk.take([block] as Array[EventScheduler.Planned])
+	t.check(not walk.is_clear_at(block.placed_at() + Vector2(reach - 2.0, 0), her),
+			"a point inside a barricade's clearance is not clear of the walk")
+	t.check(walk.is_clear_at(block.placed_at() + Vector2(reach + 2.0, 0), her),
+			"and a point just past it is")
+	var near := block.placed_at() + Vector2(reach * 0.5, 0)
+	t.check(walk.is_clear_at(near, her, Rect2(block.placed_at() - Vector2(8, 8), Vector2(16, 16))),
+			"a plan inside the ground left out is not asked")
+	block.spend()
+	t.check(walk.is_clear_at(near, her), "nor is a plan spent for the day")
+	var unplaced := _row("barricade", Vector2.INF)
+	walk.take([unplaced] as Array[EventScheduler.Planned])
+	t.check(walk.is_clear_at(near, her), "nor one the day never placed")

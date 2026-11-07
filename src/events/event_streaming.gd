@@ -248,6 +248,23 @@ func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 		world.map.release_obstruction(plan.get_instance_id())
 	return taken
 
+## **Takes today's plans standing inside `rect` that are not in the world out of the day**, every
+## row but an ambient one (a playground, which has no figure to walk out): what day 12's park owes
+## the day as its cordon closes it (`ParkCordon`), its people walked out and what has not come yet
+## never coming. Each is spent and its body's ground opened, as `take_away_within()` does with a plan
+## not yet in the world. Not in the world means out of her sight, since it would be streamed in
+## otherwise. Only ever a removal. Returns how many plans it took.
+func take_away_the_unseen_within(rect: Rect2) -> int:
+	var taken := 0
+	for plan in _walk.plans():
+		if plan.spent or plan.live or not plan.is_placed() or not rect.has_point(plan.position) \
+				or plan.def.kind == GameEnums.EventKind.AMBIENT:
+			continue
+		taken += 1
+		plan.spent = true
+		world.map.release_obstruction(plan.get_instance_id())
+	return taken
+
 ## Today's own foot for a mast id, or `Vector2.INF` if today carries no mast with that id — the
 ## point day 11's task (silence a mast by reaching its foot, the way she touches a chalk mark)
 ## records its scar at. Reads the ordinary broadcast's own

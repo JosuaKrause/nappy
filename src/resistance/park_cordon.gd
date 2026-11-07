@@ -524,18 +524,10 @@ func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:
 ## Whether `point` stands clear of everything the day put down that bounds or bites: farther from
 ## each body than its obstruction and her whole shape (`HER_REACH`), and outside the field of any
 ## body that carries one (a car crash's, which is there to stop her walking past it) and the
-## lethal reach of anything that ends the day. The park's own people are not asked: they are being
-## walked out.
+## lethal reach of anything that ends the day (`WalkEvents.is_clear_at()`). The park's own people
+## are not asked: they are being walked out.
 func _clear_of_the_day(point: Vector2) -> bool:
-	if not _events:
-		return true
-	for plan in _events.plans():
-		if plan.is_spent() or not plan.is_placed() or _area.has_point(plan.position):
-			continue
-		var reach := plan.clearance(HER_REACH)
-		if reach > 0.0 and point.distance_to(plan.where_it_stands_now()) < reach:
-			return false
-	return true
+	return not _events or _events.walk_events().is_clear_at(point, HER_REACH, _area)
 
 # -------------------------------------------------------------- setting out ---
 
@@ -938,15 +930,8 @@ func _way_in() -> PackedVector2Array:
 func _send_escorts() -> void:
 	if not _events:
 		return
-	for plan in _events.plans():
-		if plan.spent or plan.live or not plan.is_placed() or not _area.has_point(plan.position):
-			continue
-		if plan.def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		# Not in the world yet, and out of her sight by construction (it would be streamed in
-		# otherwise): the same removal `EventManager.take_away_within()` makes of a plan.
-		plan.spent = true
-		_map.release_obstruction(plan.get_instance_id())
+	# Not in the world yet, and out of her sight by construction (it would be streamed in otherwise).
+	_events.take_away_the_unseen_within(_area)
 	var sent := 0
 	for live in _events.instances():
 		if not _walks_out(live):
