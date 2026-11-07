@@ -17,6 +17,16 @@ extends RefCounted
 ##
 ## What the `TelemetryObserver` writes into the log, and when, is `tests/test_telemetry_observer.gd`'s,
 ## on a recording log; this suite is the real log's own, the file and the pictures it writes.
+##
+## **The one combination, and its reason.** The two tests of the promise above plan a real day and
+## walk a real city's arcs, so they build a real city (generated once per process, handed as a copy:
+## `tests/city_map_cache.gd`) and run the real scheduler and city state. That is a guarantee that spans
+## modules, which is what the promise is: a trace handed to the scheduler or the city state must not
+## move what they decide, and no fake of either can show a roll that moved. `_test_every_routed_event_
+## is_a_straight_line` asks the scheduler's own answers over a real city, and belongs to the
+## scheduler's suite once the events are outside the fence of the pull requests that own them. Every
+## other test here builds no city: the map pictures are drawn from a hand-built map, a footprint of
+## a corridor and plans made by hand (`_picture_map()`), and the files from a hand-built map too.
 
 ## What a planned day is, as a string to compare.
 const PlanSignature := preload("res://tests/plan_signature.gd")
@@ -24,6 +34,8 @@ const PlanSignature := preload("res://tests/plan_signature.gd")
 const BurstSuite := preload("res://tests/test_burst_capture.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
+## The generated cities a test process builds once and hands out as copies.
+const CityMapCache := preload("res://tests/city_map_cache.gd")
 
 func run(t) -> void:
 	var suite_scratch := "user://telemetry-test-suite-%d" % Time.get_ticks_usec()
@@ -240,7 +252,7 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 ## a run handed no trace, plan them again handed one that keeps every line, and require the two to
 ## agree exactly.
 func _test_tracing_a_day_does_not_change_it(t) -> void:
-	var map := CityGenerator.generate(31337)
+	var map := CityMapCache.of(31337)
 
 	var quiet: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -262,7 +274,7 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 ## The other hoist: `CityState._advance` names the purpose it is leaving, which means it reads the
 ## arc twice instead of once. Reading is free and must stay free.
 func _test_tracing_the_arcs_does_not_change_them(t) -> void:
-	var map := CityGenerator.generate(8812)
+	var map := CityMapCache.of(8812)
 	var quiet := _arc_signature(map)
 	var lines: Array[String] = []
 	var traced := _arc_signature(map, RunTrace.recording(lines))
@@ -380,7 +392,7 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 ## — three of them are stated over data the generator could legitimately return empty
 ## (`precinct_spans`, closures), so those are asserted only when there is something to assert.
 func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	var image := TelemetryMap.render(map)
 	t.check(image.get_size() == map.size * TelemetryMap.SCALE,
 			"the picture is the whole map at SCALE pixels a tile")
@@ -438,9 +450,8 @@ func _check_a_precinct_shows_as_paving(t, map: CityMap, image: Image) -> void:
 ## would have to know the ground under every cell, and would be asserting the alpha rather than
 ## the drawing.
 func _test_the_map_picture_draws_the_corridor(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var tree := RouteTree.for_day(map, 1)
-	t.check(not tree.branches.is_empty(), "the day has a corridor to draw")
+	var map := _picture_map()
+	var tree := _FixedTree.along_a_street()
 
 	var plain := TelemetryMap.render(map)
 	var drawn := TelemetryMap.render(map, [], tree)
@@ -512,40 +523,59 @@ func _mark_of(role: GameEnums.BlockerRole) -> Color:
 ## drawn at the mark's own strength and read as corridor, and "she reached this one" was a fade
 ## before it was a pip.
 func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var consumed: Array[String] = []
-	var roles := {}
-	for day in [3, 9]:
-		var tree := RouteTree.for_day(map, day)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements()
-		# Day 3's set piece is budgeted with no position and sited from the walk she takes
-		# (`EventDef.on_her_way`), so a day's plan on its own carries no set-piece mark to
-		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
-		# stands in for the walk, which is nothing this test has or wants.
-		for plan in plans:
-			if plan.def.on_her_way != null and not plan.is_placed():
-				plan.position = map.tile_to_world(
-						map.tiles_of_type(GameEnums.TileType.SIDEWALK)[0])
-		var plain := TelemetryMap.render(map, [], tree)
-		var drawn := TelemetryMap.render(map, [], tree, plans)
-		t.check(plain.get_data() != drawn.get_data(),
-				"day %d's placements are drawn over the corridor they were placed against" % day)
+	var map := _picture_map()
+	var tree := _FixedTree.along_a_street()
+	var plans := _what_a_day_placed(map)
+	var plain := TelemetryMap.render(map, [], tree)
+	var drawn := TelemetryMap.render(map, [], tree, plans)
+	t.check(plain.get_data() != drawn.get_data(),
+			"the placements are drawn over the corridor they were placed against")
 
-		var placed := {}
-		for plan in plans:
-			if plan.is_placed():
-				placed[plan.role] = true
-				roles[plan.role] = true
-		var seen := _colours_in(drawn)
-		for role: GameEnums.BlockerRole in placed:
-			t.check(seen.has(_mark_of(role)),
-					"and every role day %d placed in is in the picture (%s is not)"
-					% [day, GameEnums.BlockerRole.keys()[role]])
-		if day == 9:
-			_check_a_glyph_says_what_it_is(t, map, plans)
-	t.check(roles.size() == 4,
-			"and between them the two days draw all four roles (%d of 4)" % roles.size())
+	var seen := _colours_in(drawn)
+	var roles := {}
+	for plan in plans:
+		if plan.is_placed():
+			roles[plan.role] = true
+			t.check(seen.has(_mark_of(plan.role)),
+					"and every role the day placed in is in the picture (%s is not)"
+					% GameEnums.BlockerRole.keys()[plan.role])
+	t.check(roles.size() == 4, "and the four roles are all drawn (%d of 4)" % roles.size())
+	_check_a_glyph_says_what_it_is(t, map, plans)
+
+## **Plans the picture draws**, one of each role, a lethal stationary one and a costly stationary
+## one, a routed one and one the day budgeted and never sited, on clear street tiles of `map`. Plain
+## data: the picture asks of a plan only where it is, its path, its role and whether its row
+## ends the day, so no day is planned.
+func _what_a_day_placed(map: CityMap) -> Array[EventScheduler.Planned]:
+	var lethal := _a_row(true)
+	var costly := _a_row(false)
+	var along := CityMap.period() * 3 + 2
+	var plans: Array[EventScheduler.Planned] = []
+	for i in 4:
+		var role: GameEnums.BlockerRole = [GameEnums.BlockerRole.WALL,
+				GameEnums.BlockerRole.FRICTION, GameEnums.BlockerRole.SET_PIECE,
+				GameEnums.BlockerRole.NONE][i]
+		var plan := EventScheduler.Planned.new(lethal if i % 2 == 0 else costly,
+				map.tile_to_world(Vector2i(along, 20 + i * 12)))
+		plan.role = role
+		plans.append(plan)
+	# A routed one: a band between two points, both on the same street.
+	var routed := EventScheduler.Planned.new(costly, map.tile_to_world(Vector2i(along, 80)),
+			PackedVector2Array([map.tile_to_world(Vector2i(along, 80)),
+			map.tile_to_world(Vector2i(along, 100))]))
+	routed.role = GameEnums.BlockerRole.FRICTION
+	plans.append(routed)
+	var unsited := EventScheduler.Planned.new(costly, Vector2.INF)
+	unsited.role = GameEnums.BlockerRole.SET_PIECE
+	plans.append(unsited)
+	return plans
+
+## The first catalogue row that ends the day (`lethal`) or only costs.
+func _a_row(lethal: bool) -> EventDef:
+	for def in EventCatalogue.all():
+		if def.hard_fail == lethal:
+			return def
+	return null
 
 ## One event's glyph, rendered alone so nothing else can be what the pixels are.
 ##
@@ -554,42 +584,12 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 ## a corner is where the two would be confused. The third is the `met` pip, which is the only thing
 ## the dusk picture says that the dawn one does not — and it is checked by handing `render` a `met`
 ## dictionary directly rather than by playing a day, because what is being tested is the drawing and
-## not `TelemetryObserver.watch_met_events`, which has its own test.
+## not `TelemetryObserver.watch_met_events`, which has its own test. A plan the day never sited
+## draws nothing.
 func _check_a_glyph_says_what_it_is(t, map: CityMap,
 		plans: Array[EventScheduler.Planned]) -> void:
-	# **The glyph is only readable where nothing is drawn over it**, and four marks are laid over
-	# the events on purpose — the calm outlines, the dead ends, the closures and the home, which
-	# `render` calls the picture's fixed points. So a plan standing under one of those is a plan
-	# whose shape this test cannot see, and *which* plan the day happens to put there changes with
-	# every change to how routes are grown. The bare render is the oracle for that: a tile the
-	# overlays touch is a tile that is already not its ground colour before any event is drawn.
-	var bare := TelemetryMap.render(map)
-	var unobstructed := func(plan: EventScheduler.Planned) -> bool:
-		var at := map.world_to_tile(plan.position)
-		for probe in [Vector2i.ZERO, Vector2i(1, 0), Vector2i(1, 1)]:
-			var tile: Vector2i = at + probe
-			if not Rect2i(Vector2i.ZERO, map.size).has_point(tile):
-				return false
-			if _tile_colour(bare, tile) != Tile.ground_colour(map.tile_at(tile)):
-				return false
-		return true
-
-	var lethal: EventScheduler.Planned = null
-	var costly: EventScheduler.Planned = null
-	for plan in plans:
-		# A routed event lays a band over its own corners, so the shape is read off a stationary one.
-		if not plan.is_placed() or plan.path.size() >= 2:
-			continue
-		if not unobstructed.call(plan):
-			continue
-		if plan.def.hard_fail and lethal == null:
-			lethal = plan
-		elif not plan.def.hard_fail and costly == null:
-			costly = plan
-	t.check(lethal != null and costly != null, "the day places something lethal and something costly")
-	if lethal == null or costly == null:
-		return
-
+	var lethal: EventScheduler.Planned = plans[0]
+	var costly: EventScheduler.Planned = plans[1]
 	var corner := Vector2i(1, 1)
 	for plan in [costly, lethal]:
 		var only: Array[EventScheduler.Planned] = [plan]
@@ -612,13 +612,20 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 				"while one she reached does, in the middle of the same mark")
 		t.check(_tile_colour(met_image, at + Vector2i(1, 0)) == colour,
 				"and the pip does not change the glyph around it")
+	var unsited: EventScheduler.Planned = plans[plans.size() - 1]
+	var none: Array[EventScheduler.Planned] = [unsited]
+	t.check(TelemetryMap.render(map, [], null, none).get_data()
+			== TelemetryMap.render(map).get_data(), "and a plan the day never sited draws nothing")
+	var routed: Array[EventScheduler.Planned] = [plans[plans.size() - 2]]
+	t.check(TelemetryMap.render(map, [], null, routed).get_data()
+			!= TelemetryMap.render(map).get_data(), "a routed plan is drawn as the band it covers")
 
 ## The trail draws at all, and a point taken while running reads differently from one taken at a
 ## walk — the two claims `TelemetryObserver.watch_the_trail` makes about a sample, checked the way
 ## the corridor's own stroke is: by whether the pixel changed, since both are blended into the
 ## ground rather than painted over it.
 func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	# The middle of the map rather than the home or a calm area: both are drawn *after* the trail
 	# on purpose (they are the picture's fixed points) and would silently paint over a trail point
 	# placed on top of them, which is a fact about draw order and not about the trail.
@@ -642,7 +649,7 @@ func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
 ## is a plausible-looking rectangle rather than an obvious error. It is the same shape as the rest
 ## of this file — *an identity standing in for the property* — caught before it can happen.
 func _test_every_routed_event_is_a_straight_line(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := CityMapCache.of(4242)
 	var consumed: Array[String] = []
 	for day in [1, 3, 7, 14]:
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
@@ -673,7 +680,7 @@ func _tile_colour(image: Image, tile: Vector2i) -> Color:
 ## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own
 ## check because this one draws from a `CityMap` that is mutable by design.
 func _test_the_map_picture_reads_the_map_and_nothing_else(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	var before := map.tiles.duplicate()
 	var calm_before := map.calm_blocks.size()
 	var first := TelemetryMap.render(map)
@@ -810,7 +817,7 @@ func _delete_recursive(path: String) -> void:
 ## scripted check rather than a person at the controls, the same reason `check.sh` and `shot.sh`
 ## write `rig-`.
 func _test_a_runs_files_share_one_folder(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812345, false)
@@ -849,7 +856,7 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 ## included. Driven through a real run's `maps/` folder, where `write_map()` names the picture: a
 ## question about the attempts counted per day, answered by the files that land.
 func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812347, false)
@@ -885,7 +892,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 ## once per attempt by `RunSession`. Without the attempt in the name the second call's map would
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := _picture_map()
 	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.begin_run(778812346, false)
@@ -1097,6 +1104,43 @@ func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 				"saying how long the page was resident and how big it was (got '%s')" % line)
 
 # ------------------------------------------------------------------ helpers ---
+
+## **A full-size map of the test's own for the picture**, its streets laid and marked by hand: the
+## home, one calm block, a street taken by a hard blocker, a vertical street laid paved from end to
+## end as a precinct is, and the main road down corridor `StreetMap.MAIN_ROAD`. The picture reads
+## only what the map holds, so no city is generated (writing-tests, "Which map a test uses": a test
+## of one interaction uses a map built to the case).
+func _picture_map() -> CityMap:
+	var map := StreetMap.full()
+	map.seed_used = 4242
+	map.home_block = Vector2i(1, 1)
+	map.home_rect = Rect2i(CityMap.block_rect(Vector2i(1, 1)).position + Vector2i(2, 2),
+			Vector2i(3, 2))
+	map.calm_blocks = [Vector2i(8, 8)] as Array[Vector2i]
+	var period := CityMap.period()
+	map.built_over[Vector3i(1, 4, 6)] = Rect2i(Vector2i(4 * period, 6 * period + 8),
+			Vector2i(Tuning.STREET_WIDTH, 2))
+	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size.y)),
+			GameEnums.TileType.SIDEWALK)
+	map.precinct_spans.append(Vector4i(1, 7, 2, 3))
+	return map
+
+## A route tree that is only a footprint: the cells the picture draws as the corridor.
+class _FixedTree extends RouteTree:
+	var footprint: Array[Vector2i] = []
+
+	## Three cells across the vertical street at corridor 3, from the top of the map to well down.
+	static func along_a_street() -> _FixedTree:
+		var tree := _FixedTree.new()
+		var first := CityMap.period() * 3 / ReachabilityGrid.CELL
+		for x in Tuning.STREET_WIDTH / ReachabilityGrid.CELL:
+			for y in range(4, 30):
+				tree.footprint.append(Vector2i(first + x, y))
+		return tree
+
+	## Overrides RouteTree.cells.
+	func cells() -> Array[Vector2i]:
+		return footprint
 
 ## A day's own stream, fixed to one city so a picture test is asserting the drawing rather than
 ## whichever day the generator happened to hand it.
