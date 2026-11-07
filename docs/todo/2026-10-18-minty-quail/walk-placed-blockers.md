@@ -38,15 +38,19 @@ body placed mid-street are not such a gap.
   day 13's task). *Read as* (#1177, #1179, #1182): a roadblock the day already placed close by answers
   the task first; dawn places roadblocks next to her routes, so one usually is; the swap, below, is
   the fallback when nothing is close by.
-- **Day 13's column barricade is blocking too**, since #1182 answered that very question, and it
-  follows the task roadblock's rules: it stands only route-adjacent and off her routes, out of her
+- **Day 13's column barricade, mid-street, is blocking:** "if you place it in the middle of the street
+  it is blocking" (inbox #1182 in gray-dolphin), given under the orchestrator's "settled: non-blocking" line on the
+  barricade. *Asked for as non-blocking: "the column barricade is also non blocking so none of the
+  blocking rules apply anyway. it can be placed whenever" (inbox #1177 in gray-dolphin) · superseded on 2026-11-07
+  by that answer.* *Read as, the orchestrator's reading and not the player's words:* the barricade
+  follows the task roadblock's rules. It stands only route-adjacent and off her routes, out of her
   sight, and the column's rear truck stops there; a blocking body the day placed close by comes
-  first, and a swap only when nothing is close by. *Asked for as non-blocking: "the column
-  barricade is also non blocking so none of the blocking rules apply anyway. it can be placed
-  whenever" (inbox #1177 in gray-dolphin) · superseded on 2026-11-07 by "if you place it in the middle of the street
-  it is blocking" (inbox #1182 in gray-dolphin), given on the barricade's own question.*
-- **Open on the board, for both beats.** Each pick is the orchestrator's, not the player's words,
-  and stands only until the player answers:
+  first, and a swap only when nothing is close by. The player's later question in the chat, whether
+  the barricade was still considered open, was read as the question being decided; those words are
+  captured as inbox #1183 for the next filing. On that reading the to-one-side option, placing the
+  barricade so one unbroken full-sidewalk gap stays open and it does not block, was set aside.
+- **Open on the board, for the task roadblock and, on the reading above, the barricade.** Each pick
+  is the orchestrator's, not the player's words, and stands only until the player answers:
   - **roadblocks-at-dawn**, how dawn places blocking bodies next to her routes. Pick: an extra pass
     after the day's fill, outside its budget, on a random stream of its own, placing at most 6.
   - **roadblock-close-by**, what counts as close by. Pick: today's walking-distance measure, with
