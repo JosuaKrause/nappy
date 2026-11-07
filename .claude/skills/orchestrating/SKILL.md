@@ -96,8 +96,11 @@ queue entry is not finished yet. That is the same test the **playtest-feedback**
 *somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
-**A milestone with an open design question is not ready for one.** The question goes to the player
-first, and "draft and put back" items never go to an agent at all.
+**A milestone with an open design question that blocks is not ready for one**: one where changing
+course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194).
+That question goes to the player first. An open question that does not block goes on the board and
+the work goes to an agent at once, built on My pick, with the brief naming the pick as open to the
+player's answer. "Draft and put back" items never go to an agent at all.
 
 ## Code is designed by layer
 
