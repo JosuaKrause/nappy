@@ -82,10 +82,16 @@ func _play_a_run(t, seed_value: int) -> void:
 		t.check(run.header.day == day,
 				"seed %d: the calendar is on day %d (%d)" % [seed_value, day, run.header.day])
 		days.start_day(DaySpec.for_day(day, config.day_length_for(day)))
-		# Counted only when every area off today's tree is one she used this act (or the fenced park,
-		# which is one too), so a wiring that shut the wrong area fails here as well as one that shut
-		# none.
-		if _shuts_only_what_she_used(city.map, run.calendar.settled_this_act()):
+		# Every area off today's tree is one she used earlier this act, the fenced park included —
+		# it is chosen from the areas handed over as used, so it holds no exemption here; a wiring
+		# that shut the wrong area fails on the day it does. Whether any day shuts one at all is
+		# counted apart and checked once the run is over.
+		var used := run.calendar.settled_this_act()
+		for block: Vector2i in city.map.shut_calm:
+			t.check(used.has(block),
+					"seed %d day %d: calm area %s off the tree is one she used this act %s"
+					% [seed_value, day, block, used])
+		if not city.map.shut_calm.is_empty():
 			days_with_a_used_area_shut += 1
 		if city.crowd.agent_count() > 0:
 			days_with_a_crowd += 1
@@ -159,8 +165,8 @@ func _play_a_run(t, seed_value: int) -> void:
 	t.check(run.attempt_spend.scars.size() > 0,
 			"seed %d: the run left marks on the city" % seed_value)
 	t.check(days_with_a_used_area_shut > 0,
-			("seed %d: only calm areas she used earlier in an act come off a later day's route tree,"
-			+ " on some day (%d days)") % [seed_value, days_with_a_used_area_shut])
+			"seed %d: some day takes a calm area she used off its route tree (%d days)"
+			% [seed_value, days_with_a_used_area_shut])
 	t.check(days_with_a_crowd == Tuning.RUN_LENGTH_DAYS,
 			"seed %d: every day has its crowd (%d days)" % [seed_value, days_with_a_crowd])
 
@@ -195,13 +201,3 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	if best != Vector2.INF:
 		player.global_position = best
 	baby.force_sleep()
-
-## Whether today's tree leaves out at least one calm area, and only areas she has used this act
-## (`used`) or the fenced park.
-func _shuts_only_what_she_used(map: CityMap, used: Array[Vector2i]) -> bool:
-	if map.shut_calm.is_empty():
-		return false
-	for block: Vector2i in map.shut_calm:
-		if not used.has(block) and block != map.fenced_park:
-			return false
-	return true

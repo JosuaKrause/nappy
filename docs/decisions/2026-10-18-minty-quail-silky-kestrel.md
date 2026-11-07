@@ -20,10 +20,11 @@ spent calm areas. Tests only.
   off, and the baby falls asleep there (`Baby.force_sleep()`, which announces it the way falling
   asleep does). The clock hears it and remembers the area (`RunCalendar.remember_where_she_settled()`),
   and the events owe the return patrols. New checks: the day is still under way when she settles,
-  the area is remembered, on at least one day of the run the areas off the day's tree
-  (`CityMap.shut_calm`) are some and are all ones she used this act or the fenced park, and every
-  day has its crowd. With `set_spent_calm()` dropped from the director the shut-area check fails
-  (0 days). The day's checkpoint gates, the street-tree refresh and the fenced park are run through,
+  the area is remembered, every area off each day's tree (`CityMap.shut_calm`) is one she used this
+  act, at least one day of the run takes one off, and every day has its crowd. The fenced park has no
+  exemption: it is chosen from the areas handed over as used, so excusing it would excuse a wrong
+  shut. Handing the director one unused area besides the used ones fails the per-day check, and
+  dropping `set_spent_calm()` fails the count. The day's checkpoint gates, the street-tree refresh and the fenced park are run through,
   so a throw in them fails the run, and nothing reads them back.
 - The day is still banked with `RunCalendar.finish_day(WON)`, not `DayDirector.finish_day()`: a won
   day 14 with every task done hands over to the escape there and leaves the ending unset, so the
