@@ -31,8 +31,6 @@ since both change the same files:
   onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map
   with the run's city state, so it moves onto `CityMap`, asked with the city state handed in.
 
-`main`'s map is handed in with the city cache (`city-cache.md`), not here (inbox #1173 in gray-dolphin).
-
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
 
