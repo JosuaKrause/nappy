@@ -668,21 +668,25 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 		var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 		plan.wall_bodies.append_array(SealPlanner.place_hard_on(map, segment, _WALL_DEF_ID, at_a))
+	# The street doors' bodies, all stood by now: an alley's mouth body stands clear of them
+	# (`SealPlanner.alley_mouth_body_rect()`).
+	var street_doors := plan.door_bodies.duplicate()
 	for rect in plan.alley_walls:
 		var info := _alley_border_segments(map, rect)
 		if info.is_empty():
 			continue
 		var vertical: bool = info[2]
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true))
-		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, true, street_doors))
+		plan.wall_bodies.append(_alley_mouth_wall_body(map, rect, vertical, false, street_doors))
 	for rect in plan.alley_doors:
-		_add_alley_door_bodies(map, rect, plan)
+		_add_alley_door_bodies(map, rect, plan, street_doors)
 	return plan
 
 ## The wall's own body at one mouth of a crossing alley — `SealPlanner.alley_mouth_wall()`'s own
-## placement, with its def's shape then overridden to a point of half the alley's own width
-## (`Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0`, 32px) rather than left at the catalogue
-## row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
+## placement, a tile deeper where a street door's body in `doors` stands beside the mouth
+## (`SealPlanner.alley_mouth_body_rect()`), with its def's shape then overridden to a point of half
+## the alley's own width (`SealPlanner.ALLEY_MOUTH_BODY_REACH`, 32px) rather than left at the
+## catalogue row's own 60px reach. Safe to mutate after the call: `SealPlanner.sealed_variant()` already
 ## duplicated the def, so this touches nothing the catalogue or another instance shares.
 ##
 ## **The same reach `place_hard_on` already overrides, at the alley's own mouth this time.** The
@@ -702,9 +706,9 @@ static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
-		at_start: bool) -> EventScheduler.Planned:
-	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
-	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
+		at_start: bool, doors: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID, doors)
+	body.def.solid(GroundShape.point(SealPlanner.ALLEY_MOUTH_BODY_REACH))
 	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
 	return body
 
@@ -798,14 +802,16 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		plan.door_bodies.append(body)
 
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
-## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_rect` a
-## wall's own crossing-alley bodies use.
-static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan) -> void:
+## mouths `_seal_alley_mouths` would wall, read through the same `SealPlanner.alley_mouth_body_rect`
+## a wall's own crossing-alley bodies use, so a post stands clear of the street doors' bodies
+## `street_doors` as a wall's mouth body does.
+static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan,
+		street_doors: Array[EventScheduler.Planned]) -> void:
 	var vertical := rect.size.x < rect.size.y
 	var axis := _along_axis(not vertical)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
 	for at_start in [true, false]:
-		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+		var mouth := SealPlanner.alley_mouth_body_rect(map, rect, vertical, at_start, street_doors)
 		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.facing = axis
 		plan.door_bodies.append(body)

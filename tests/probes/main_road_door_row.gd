@@ -1,43 +1,37 @@
 extends RefCounted
-## Measurement probe for where on its street a main-road door can stand (inbox #1186, the review of
-## #1188): for each candidate row, how much of the junction box a gatehouse's take-in reaches,
-## whether she can be taken in walking along the main road's sidewalk at the gatehouse from the
-## junction side, and whether a gatehouse overlaps another solid body of the day. Not a suite: it
-## prints numbers rather than asserting relationships, so it lives under `tests/probes/`, where the
-## runner never discovers it, and runs only by name:
+## Measurement probe for a main-road door two tiles in from its junction (inbox #1186, the
+## player's answer on where it stands: in from the corner, so crossing the main road there never
+## takes her in): how much of the junction box its gatehouses' take-in reaches, whether a gatehouse
+## overlaps any other solid body of the day, and whether an alley opening beside a gatehouse is
+## still reached through that mouth. Not a suite: it prints numbers rather than asserting
+## relationships, so it lives under `tests/probes/`, where the runner never discovers it, and runs
+## only by name:
 ##
 ##     tools/test.sh probes/main_road_door_row.gd
 ##
 ## **Forty seeds, days `Tuning.REGION_WALL_FIRST_DAY` to the end**: the ten the region-plan suites
 ## use (`tests/test_regions.gd`'s six and `tests/test_checkpoints.gd`'s four) and thirty more at
-## `5000 + i * 7919`, the review's own sample, which holds the three seeds a gatehouse two tiles in
-## overlapped a crossing alley's wall on.
+## `5000 + i * 7919`, the review's own sample, which holds the three seeds a gatehouse overlapped a
+## crossing alley's wall on (261054, 171299, 187137) and the three a gatehouse overlapped an alley's
+## soft seal on (771605, 5000, 195056). Each day is planned whole, as `DayDirector.start_day()`
+## plans it: the city's streets, then the seals and the events.
 ##
-## **The rows** are tiles in from the junction at the door's own end (`CityMap.boundary_wall_at_a`):
-## 0 is the mouth row every other door stands on, 2 is `RegionPlanner.MAIN_ROAD_DOOR_INSET`. A row's
-## three points are worked out here as `RegionPlanner.door_positions()` would at that inset; the day
-## itself is planned once, as the game plans it, and its other bodies are read off it.
+## For each main-road door (its three points, `RegionPlanner.door_positions()`):
 ##
-## For each main-road door and row:
-##
-## - **`box`**: of the 16 sidewalk tiles of the junction box at the door's end, how many have their
-##   centre within `EventDef.detain_distance()` (80px) of a gatehouse, the take-in measured by
-##   distance alone as `CheckpointController.hold_that_would_begin()` does today;
-## - **`from the junction`**: for each gatehouse, where her centre stops walking straight at it
-##   along its sidewalk from the junction side, the gatehouse's solid edge plus her reach ahead
-##   (her body's centre to the pram's far edge: `Tuning.PLAYER_BODY_RADIUS` +
-##   `Stroller.PRAM_BODY_RADIUS`), and whether that point is on the door's own street
-##   (`Segment.tile_rect()`) rather than in the box. A take-in confined to the street can take her in
-##   from the junction side only where it is;
+## - **`box`**: of the 16 sidewalk tiles of the junction boxes at both ends of its street, how many
+##   have their centre within `EventDef.detain_distance()` (80px) of a gatehouse, the take-in
+##   measured by distance alone as `CheckpointController.hold_that_would_begin()` does;
 ## - **`overlap`**: whether a gatehouse's solid circle overlaps any other solid body the day stands:
 ##   the region wall's (a crossing alley's mouth walls included), another door's, a seal's, an
 ##   event's.
 ##
-## And for each door off the main road, at its own mouth row, the `box` and `from the junction`
-## readings, which say what confining its take-in to its own street would change.
+## And for each through-alley mouth beside a main-road door (one whose body
+## `SealPlanner.alley_mouth_body_rect()` stands a tile deeper): what stands in it (the region wall,
+## an alley door's post, a seal, or nothing), and **`reached`**, whether a flood from the sidewalks
+## at both ends of the street it opens on (`ReachabilityGrid`, every solid body of the day blocked
+## as a circle, the alley's other mouth shut) reaches the alley's end row there.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const ROWS: Array[int] = [0, 1, 2]
 
 static func _seeds() -> Array[int]:
 	var found: Array[int] = []
@@ -50,42 +44,20 @@ static func _seeds() -> Array[int]:
 	return found
 
 func run(t) -> void:
-	var totals := {}
-	for row in ROWS:
-		totals[row] = {"doors": 0, "box": 0, "box_doors": 0, "huts": 0, "inside": 0,
-				"overlaps": 0, "overlap_seeds": {}, "overlap_days": 0}
-	var off := {"doors": 0, "box": 0, "box_doors": 0, "huts": 0, "inside": 0}
+	var totals := {"doors": 0, "box": 0, "huts": 0, "overlaps": 0, "overlap_seeds": {},
+			"mouths": 0, "reached": 0, "kinds": {}}
 	var seed_days := 0
 	for seed_value in _seeds():
 		for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 			seed_days += 1
-			_day(t, seed_value, day, totals, off)
+			_day(t, seed_value, day, totals)
 	print("TOTAL %d seed-days over %d seeds" % [seed_days, _seeds().size()])
-	for row in ROWS:
-		var r: Dictionary = totals[row]
-		print(("TOTAL row %d | main-road doors %d | box tiles in reach %d (doors with any %d) | " +
-				"gatehouses %d, taken in from the junction side possible at %d | overlapping " +
-				"gatehouses %d on %d seed-days, %d seeds %s")
-				% [row, r.doors, r.box, r.box_doors, r.huts, r.inside, r.overlaps, r.overlap_days,
-				r.overlap_seeds.size(), r.overlap_seeds.keys()])
-	print(("TOTAL off the main road, mouth row | doors %d | box tiles in reach %d (doors with any " +
-			"%d) | gatehouses %d, stop point from the junction side on the street %d")
-			% [off.doors, off.box, off.box_doors, off.huts, off.inside])
+	print(("TOTAL main-road doors %d | junction-box sidewalk tiles in a take-in %d | gatehouses %d, " +
+			"overlapping another body %d (seeds %s)")
+			% [totals.doors, totals.box, totals.huts, totals.overlaps, totals.overlap_seeds.keys()])
+	print("TOTAL alley mouths beside a main-road door %d, stood a tile deeper by %s | end row reached %d"
+			% [totals.mouths, totals.kinds, totals.reached])
 	t.check(true, "probe finished")
-
-## The three points a street door on `segment` stands at `row` tiles in from its end's junction:
-## `RegionPlanner.door_positions()`'s arithmetic with the inset as a parameter.
-static func _points_at(map: CityMap, segment: StreetNetwork.Segment, row: int) -> Array[Vector2]:
-	var mouth := segment.mouth_rect(_at_a(map, segment))
-	var inward := Vector2i.RIGHT if segment.horizontal else Vector2i.DOWN
-	mouth.position += inward * (row if _at_a(map, segment) else -row)
-	return SealPlanner.positions_across(map.tile_rect_to_world(mouth), segment.horizontal,
-			Tuning.TILE_SIZE)
-
-static func _at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
-	var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-			< RegionPlanner.region_of_junction(map, segment.b)
-	return map.boundary_wall_at_a.get(segment.key(), default_at_a)
 
 ## The 16 sidewalk tiles of the junction box at `junction`.
 static func _box_sidewalk(junction: Vector2i) -> Array[Vector2i]:
@@ -97,31 +69,8 @@ static func _box_sidewalk(junction: Vector2i) -> Array[Vector2i]:
 				found.append(origin + Vector2i(x, y))
 	return found
 
-## `box` and `from the junction` for one door's two gatehouses at `huts`, added to `into`.
-static func _take_in(map: CityMap, segment: StreetNetwork.Segment, huts: Array[Vector2],
-		hut_def: EventDef, into: Dictionary) -> void:
-	var at_a := _at_a(map, segment)
-	var junction := segment.a if at_a else segment.b
-	var covered := 0
-	for tile in _box_sidewalk(junction):
-		for hut in huts:
-			if map.tile_to_world(tile).distance_to(hut) <= hut_def.detain_distance():
-				covered += 1
-				break
-	into.doors += 1
-	into.box += covered
-	into.box_doors += 1 if covered > 0 else 0
-	var street := map.tile_rect_to_world(segment.tile_rect())
-	var along := Vector2.RIGHT if segment.horizontal else Vector2.DOWN
-	var toward_the_junction := -along if at_a else along
-	var stops := hut_def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
-	for hut in huts:
-		into.huts += 1
-		if street.has_point(hut + toward_the_junction * stops):
-			into.inside += 1
-
 ## One seed-day, planned as `DayDirector.start_day()` plans it.
-func _day(t, seed_value: int, day: int, totals: Dictionary, off: Dictionary) -> void:
+func _day(t, seed_value: int, day: int, totals: Dictionary) -> void:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day
@@ -147,34 +96,93 @@ func _day(t, seed_value: int, day: int, totals: Dictionary, off: Dictionary) -> 
 			continue
 		seen[body] = true
 		solids.append(body)
+	var main_road_doors: Array[EventScheduler.Planned] = []
 	for i in plan.doors.size():
 		var segment := plan.doors[i]
-		var own := RegionPlanner.door_positions(map, segment)
 		if not map.is_main_road_segment(segment):
-			var mouth_huts: Array[Vector2] = [own[0], own[own.size() - 1]]
-			_take_in(map, segment, mouth_huts, hut_def, off)
 			continue
-		for row in ROWS:
-			var r: Dictionary = totals[row]
-			var points := _points_at(map, segment, row)
-			var huts: Array[Vector2] = [points[0], points[points.size() - 1]]
-			_take_in(map, segment, huts, hut_def, r)
-			var overlapping := 0
-			for hut in huts:
-				for body in solids:
-					if _is_one_of(body.position, own):
-						continue
-					var apart := hut.distance_to(body.position)
-					if apart < hut_def.obstructs_radius + body.def.obstructs_radius:
-						overlapping += 1
-						print("OVERLAP seed %d day %d row %d | door %s | gatehouse %s | %s at %s, %.0fpx apart"
-								% [seed_value, day, row, segment.key(), hut, body.def.id,
-								body.position, apart])
-			r.overlaps += overlapping
-			if overlapping > 0:
-				r.overlap_days += 1
-				r.overlap_seeds[seed_value] = true
+		var own := RegionPlanner.door_positions(map, segment)
+		var huts: Array[Vector2] = [own[0], own[own.size() - 1]]
+		totals.doors += 1
+		for junction in [segment.a, segment.b]:
+			for tile in _box_sidewalk(junction):
+				for hut in huts:
+					if map.tile_to_world(tile).distance_to(hut) <= hut_def.detain_distance():
+						totals.box += 1
+						break
+		for body in solids:
+			if _is_one_of(body.position, own):
+				main_road_doors.append(body)
+		for hut in huts:
+			totals.huts += 1
+			for body in solids:
+				if _is_one_of(body.position, own):
+					continue
+				var apart := hut.distance_to(body.position)
+				if apart < hut_def.obstructs_radius + body.def.obstructs_radius:
+					totals.overlaps += 1
+					totals.overlap_seeds[seed_value] = true
+					print("OVERLAP seed %d day %d | door %s | gatehouse %s | %s at %s, %.0fpx apart"
+							% [seed_value, day, segment.key(), hut, body.def.id, body.position,
+							apart])
+	if not main_road_doors.is_empty():
+		_alleys_beside(map, main_road_doors, solids, totals)
 	city.free()
+
+## The through-alley mouths beside `doors`, a main-road door's bodies: what stands in each, and
+## whether its end row is reached from the street it opens on.
+static func _alleys_beside(map: CityMap, doors: Array[EventScheduler.Planned],
+		solids: Array[EventScheduler.Planned], totals: Dictionary) -> void:
+	var grid: ReachabilityGrid = null
+	for rect in map.alley_rects:
+		if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
+			continue
+		var vertical := rect.size.x < rect.size.y
+		for at_start in [true, false]:
+			var end_row := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
+			var stood := SealPlanner.alley_mouth_body_rect(map, rect, vertical, at_start, doors)
+			if stood == end_row:
+				continue
+			totals.mouths += 1
+			var kind := "nothing"
+			var deeper := map.tile_rect_to_world(stood)
+			for body in solids:
+				if deeper.grow(1.0).has_point(body.position):
+					kind = body.def.id
+			totals.kinds[kind] = totals.kinds.get(kind, 0) + 1
+			if not grid:
+				grid = ReachabilityGrid.build(map)
+			var blocked := {}
+			for body in solids:
+				_add_circle(map, blocked, body.position, body.def.obstructs_radius)
+			for tile in map.rect_tiles(SealPlanner.alley_mouth_rect(rect, vertical, not at_start)):
+				blocked[tile] = true
+			var outward := (Vector2i.UP if vertical else Vector2i.LEFT) if at_start \
+					else (Vector2i.DOWN if vertical else Vector2i.RIGHT)
+			var street := map.network.segment_containing(end_row.position + outward)
+			if not street:
+				print("ALLEY %s mouth %s opens on no street" % [rect, end_row])
+				continue
+			var sources: Array = []
+			for tile in map.rect_tiles(street.mouth_rect(true)) + map.rect_tiles(street.mouth_rect(false)):
+				if not blocked.has(tile):
+					sources.append(tile)
+			var reached := grid.flood(sources, blocked)
+			var reached_it := false
+			for tile in map.rect_tiles(end_row):
+				reached_it = reached_it or grid.reaches(tile, blocked, reached)
+			totals.reached += 1 if reached_it else 0
+			print("ALLEY seed %d | %s mouth %s | stood a tile deeper by %s | end row reached %s"
+					% [map.seed_used, rect, end_row.position, kind, reached_it])
+
+static func _add_circle(map: CityMap, blocked: Dictionary, at: Vector2, radius: float) -> void:
+	var reach := ceili(radius / float(Tuning.TILE_SIZE))
+	var centre := map.world_to_tile(at)
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var tile := centre + Vector2i(dx, dy)
+			if map.tile_to_world(tile).distance_to(at) <= radius:
+				blocked[tile] = true
 
 static func _is_one_of(at: Vector2, points: Array[Vector2]) -> bool:
 	for point in points:
