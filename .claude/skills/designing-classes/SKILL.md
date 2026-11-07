@@ -47,10 +47,13 @@ passed around; nothing derives it again** (inbox #1156). One object holding the 
 private methods that each re-derive it and the risk that two of them resolve it differently.
 
 - **How the game is stored is free, as long as one unified reader has the job of deriving the
-  current state from it** (inbox #1156). A save file and a save state are not the same thing: what
-  is stored and what is derived from it are two objects, and the reader turns the one into the other.
+  current state from it** (inbox #1156). A save file and a save state are not necessarily the same
+  thing: the reader is what derives the current state from whatever is stored.
 - **That is encapsulation and isolation** (inbox #1156): the stored form is the reader's own
   business, and everything else asks the reader.
+- **A state object's interface is chosen from what its readers want out of it** (inbox #1156):
+  explore what the tests that build the real objects today want to get out of them, and use that to
+  inform the design of the state object; then mock that out.
 - **The resulting objects are injectable, so a test mocks them** (inbox #1156), and a suite that is
   not about them hands in a fake holding the answers it needs (**writing-tests**).
 - **A fact derived in more than one place is a code smell to look for** (inbox #1156): the same

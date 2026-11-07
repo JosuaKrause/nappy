@@ -110,6 +110,8 @@ rather than a place:
 |---|---|
 | run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
+| write a brief or a design that shapes classes | **designing-classes** |
+| brief an agent to write or change tests, or write them | **writing-tests** |
 | commit, branch, merge, cut a release, or write a commit message | **committing** |
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |

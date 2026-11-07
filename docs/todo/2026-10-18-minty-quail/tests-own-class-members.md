@@ -18,7 +18,7 @@ check's list of kept members.
 *Proposed by the orchestrator, not asked for, open to the player's correction:* the rule covers
 functions and variables, a public variable only its own class uses being the same probe of state,
 and not constants, since a test reading a constant to assert a relationship ("the horn lasts at
-least as long as the fairness floor needs") is what **verify**'s testing policy asks for. The
+least as long as the fairness floor needs") is what **writing-tests** asks for. The
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 

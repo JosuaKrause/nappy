@@ -22,20 +22,26 @@ testing too much at once, of not injecting as intended, or of testing internals 
 behaviour is what matters, and those are examples, not the only reasons. Where a component has
 nothing to hand a fake to, **designing-classes** says what its design owes.
 
-- **Only mock what you do not want to test** (inbox #1159). A check whose subject is another
-  object's answers is not this suite's: it moves to that object's own suite, rather than keeping
-  that object real here.
+- **Only mock what you do not want to test** (inbox #1159). *Read as, the filer's reading and not
+  the player's words:* a check whose subject is another object's answers is not this suite's; it
+  moves to that object's own suite, rather than keeping that object real here.
 - **The real logic is checked once, in the real object's own suite** (inbox #1156). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
   everything that draws through it. The city is never built for a test that does not test the city
   (inbox #1156).
 - **Mocking makes the suites faster** (inbox #1159): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
+- *Proposed by the filer, open to the player's correction:* plain values and data (a position, a
+  day's spec, a `Tuning` constant) are not real objects to mock; only collaborators that do
+  something are mocked.
+- *Proposed by the filer, open to the player's correction:* a suite touched for another reason is
+  converted only as far as the change reaches.
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
 that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
 is stated in the suite's `##` header comment, in words a reader can check, so a combined suite
-without one reads as a suite to split. The standing ones, kept for their reason:
+without one reads as a suite to split. *Proposed by the filer, open to overturn:* the standing
+ones, kept for the reason each header states:
 
 - **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
   because the bugs it holds are wiring between the two (an instance freed but left in the list, a

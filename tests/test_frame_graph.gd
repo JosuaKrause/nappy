@@ -2,7 +2,7 @@ extends RefCounted
 ## `FrameGraph`'s own arithmetic — the ring, the mean and the classification — driven with literal
 ## deltas rather than a live `Performance` reading, the same reason `tests/test_performance.gd`
 ## drives `FrameCost`'s window that way. What a bar actually looks like is not tested here: see the
-## **verify** skill, "layout, colour, readability" is checked by eye, and the milestone's own
+## **writing-tests** skill, "layout, colour, readability" is checked by eye, and the milestone's own
 ## `tools/shot.sh` still.
 ##
 ## `FrameGraph` is a `Control`, so every instance this suite builds is freed by hand — nodes are

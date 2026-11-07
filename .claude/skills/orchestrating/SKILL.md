@@ -1,6 +1,6 @@
 ---
 name: orchestrating
-description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one work item per agent, what a task description must contain for the result to be mergeable, and the design principles every brief and change keeps. Loaded at session start because who does the work is decided before the first tool call.
+description: How implementation work is delegated to sub-agents — delegating is the default, isolated worktrees, one work item per agent, what a task description must contain for the result to be mergeable, and that every brief and change keeps to designing-classes. Loaded at session start because who does the work is decided before the first tool call.
 ---
 
 # Orchestrating sub-agents
@@ -102,8 +102,10 @@ first, and "draft and put back" items never go to an agent at all.
 ## Code is designed by layer
 
 Every design, brief and change keeps to **designing-classes** — the player's principles, the
-layering, dependency injection, a mode as configuration and derived state held by one object — and
-a brief names the layer its work belongs to.
+layering, dependency injection, a mode as configuration and derived state held by one object — and,
+*proposed by the filer, open to overturn (plush-kestrel)*, a brief names the layer its work belongs
+to. The orchestrator reads **designing-classes** before writing a brief for code work, and
+**writing-tests** before one that writes or changes tests (the invoke table in `CLAUDE.md`).
 
 ## The task description is the contract
 

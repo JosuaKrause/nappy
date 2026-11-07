@@ -12,8 +12,8 @@ leaves the DEV-only tier below unscheduled; the second and third are the player'
 from the rule alone:
 
 - **A caller under `src/dev` counts as a game caller.** The rigs and the scene-recipe runtime are
-  the composition root in `tools/layer_map.py`'s layering (**orchestrating**, "Code is designed by
-  layer"), and `tests-public-seams.md` already accepts `Crowd.add_recipe_actor()` (only the recipe
+  the composition root in `tools/layer_map.py`'s layering (**designing-classes**, "Code is
+  designed by layer"), and `tests-public-seams.md` already accepts `Crowd.add_recipe_actor()` (only the recipe
   runtime calls it) as a seam. About 55 names stand on this reading.
 - **A caller in the member's own class is no caller.** Told that about 250 public members are
   called only by their own class and the tests, the player asked "so basically they're not part of
