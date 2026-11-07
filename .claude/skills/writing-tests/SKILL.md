@@ -38,8 +38,11 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
 - **Which map a test uses depends on what it checks** (inbox #1172). A test of one specific
   interaction between her and her surroundings, an edge case, uses a hand-drawn map built to the
   case, so no seed has to be searched for. A test of a realistic walk, and any measurement, uses a
-  real generated map: on a hand map the crowd walks off the streets, and a measurement must come
-  from a city the generator can produce.
+  real generated map: a realistic walk needs what only the generator guarantees (the whole street
+  network the crowd's lanes run on, a home, calm ground; on a hand map smaller than the full
+  11×11 blocks the crowd walks off the edge), and a measurement must come from a city the
+  generator can produce. The bullet only chooses the map: a suite that builds a `City` on either
+  kind gives its reason in its header, as the rule below requires.
 - **A suite a pull request touches for another reason is converted only as far as the pull
   request's change reaches** (inbox #1159).
 
@@ -81,11 +84,13 @@ the real build nor the step that read it off survives into the pull request.
   `[1, 4, 8, 12]` is the table restated, so moving an act boundary means editing the constant *and*
   editing the test, and no arrangement of those two numbers was ever going to disagree.
 
-  **The kept relationship tests stay, since they encode a guarantee between settings** (inbox
-  #1159). *Kept for fairness guarantees only · widened on 2026-11-07 to any guarantee between
-  settings (inbox #1173).* A fairness floor, the difficulty ramp (a late day holds more events than
-  an early one) and a derived number kept in step with its setting (the building's distant window
-  flashes average the wait their setting names) all stay; a test that only restates one setting's
+  **The kept relationship tests stay, since they encode a guarantee between settings**
+  (inbox #1173). *Kept for fairness guarantees only (inbox #1159) · widened on 2026-11-07 to any
+  guarantee between settings (inbox #1173).* A fairness floor, the difficulty ramp (a late day
+  holds more events than an early one) and a derived number kept in step with its setting (the
+  flash curve's shape `FINALE_DISTANT_FLASH_SHAPE_B` is solved from the mean wait
+  `FINALE_DISTANT_FLASH_MEAN_SECONDS` between the building's distant window flashes, and the test
+  catches the two going out of step) all stay; a test that only restates one setting's
   value goes. `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
   below what is fair, because it encodes *why* the number has a floor rather than what the number
   is: it says **"you broke the thing the number was for"**, never **"you changed a number"**.
