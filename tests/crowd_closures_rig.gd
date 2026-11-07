@@ -13,7 +13,12 @@ extends RefCounted
 ##
 ## This runs against a real generated City, for the same reason `crowd_rig.gd` does: these
 ## failures are geometric and invisible to a data-level test.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
@@ -54,7 +59,7 @@ func run_scenarios(t, indices: Array[int]) -> void:
 		var scenario := all[index]
 		_city = RunCity.with_own_run(CITY_SCENE, SEED)
 		t.add_child(_city)
-		_city.build(CityGenerator.generate(SEED))
+		_city.build(MapCache.of(SEED))
 		scenario.call(t)
 		_city.free()
 
@@ -662,7 +667,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 ## wall and door segments on it, over however many sampled days it takes this seed's tree to cross
 ## its own boundary at least once.
 func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
@@ -767,7 +772,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 ## put back are placed by hand, one at a time, on the lane the hut stands beside. `start_day` still
 ## runs first, because that is what builds the day's huts out of the region plan.
 func _open_a_door_day(t) -> Dictionary:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
@@ -1208,7 +1213,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## shape `door_segments` already is. Driven off a real day — `held_segments` has to be genuinely
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)
@@ -1717,7 +1722,7 @@ func _entry_clearance(agent: CrowdAgent) -> float:
 ## in view rather than on a hand-placed field. A city of its own for the same reason the test above
 ## has one: nothing another test closed or sealed stands in it.
 func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(map)

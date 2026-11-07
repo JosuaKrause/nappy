@@ -5,7 +5,12 @@ extends RefCounted
 ##
 ## `Blackout` is the design; these ask a real city what it did, since a window, a lamp and a mast
 ## are three different classes that each have to hear about it in the same call.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const RecordingTrafficLightDrawer := preload("res://tests/recording_traffic_light_drawer.gd")
@@ -48,7 +53,7 @@ func _begin(t) -> void:
 	_went_dark = 0
 	EventBus.city_gone_dark.connect(_count_dark)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	_city.build(MapCache.of(SEED))
 	_start_the_last_day()
 
 func _count_dark() -> void:
@@ -398,7 +403,7 @@ func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
 	var count_it := func() -> void: gone_dark[0] += 1
 	EventBus.city_gone_dark.connect(count_it)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	EventBus.city_gone_dark.disconnect(count_it)
 	t.check(gone_dark[0] == 1, "the escape's city is dark from the moment it is built (%d)" % gone_dark[0])
 	t.check(not city.signals.powered, "its lights with it")

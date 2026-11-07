@@ -28,7 +28,12 @@ extends RefCounted
 ## building, asks that everything it built draws from the one library its sitting holds; the other
 ## reads the run log across a played day, a held restart and day 14's hand-over for a page loaded on a
 ## library of a node's own.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const HeadIndicators := preload("res://tests/head_indicators.gd")
 const MAIN_SCRIPT := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
@@ -137,7 +142,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	for male in [false, true]:
 		# Handed the watch's log: a boot points the sitting's library at the log it writes.
 		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
-				"father" if male else "mother"], pages.boot_log())
+				"father" if male else "mother"], pages.boot_log(), false, MapCache.source())
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
 		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
@@ -229,7 +234,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	var atlas := seat.sitting.atlas
 	var pages := PageLog.new(atlas)
 	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"],
-			pages.boot_log())).free_all()
+			pages.boot_log(), false, MapCache.source())).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
@@ -442,7 +447,7 @@ func _city(t, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	return city
 
 ## A hand-built rig, the shape `tests/test_stroller.gd` uses: a `Camera2D` named for the lookup

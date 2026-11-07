@@ -9,7 +9,12 @@ extends RefCounted
 ## rules on small hand-built ground, a walker here runs every catalogue row that moves on a real
 ## city, its route laid straight through whatever stands there, and fails on any step that enters
 ## ground its mover may not.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 ## The day the walker runs: one with the region wall, seals and bodies standing.
@@ -110,7 +115,7 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 ## `CityMap.is_walkable()` is `passable()` for the lattice, spelt out for speed: they answer the same
 ## over a whole generated city.
 func _test_is_walkable_is_the_lattice(t) -> void:
-	var map := CityGenerator.generate(SEED)
+	var map := MapCache.of(SEED)
 	var disagree := 0
 	for y in map.size.y:
 		for x in map.size.x:
@@ -338,7 +343,7 @@ func _in_a_day(t, check: Callable) -> void:
 	run_state.start_run(SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run_state)
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	var state := CityState.new()
 	run_state.attempt_spend.city_state = state
 	state.begin_day(city.map.block_plans, WALK_DAY)

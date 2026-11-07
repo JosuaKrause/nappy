@@ -31,6 +31,20 @@ var _owners := {}
 ## second body is counted onto a tile already standing.
 var body_version := 0
 
+## The same record as one of its own, every tile and every body's owner carried, so a tile
+## recorded or released on one record is not on the other (`CityMap.copy()`).
+func copy() -> BlockedLayer:
+	var twin := BlockedLayer.new()
+	twin.posts = posts.duplicate()
+	twin.closed = closed.duplicate()
+	twin.soft_sealed = soft_sealed.duplicate()
+	twin.bodies = bodies.duplicate()
+	for owner: int in _owners:
+		var tiles: Array[Vector2i] = _owners[owner]
+		twin._owners[owner] = tiles.duplicate()
+	twin.body_version = body_version
+	return twin
+
 ## Whether anything on this record of `layers` (a `Mover`'s `blocked_by`, or part of it) stands on
 ## `tile`. The ground's own type is the map's question (`CityMap.passable()`).
 func blocks(tile: Vector2i, layers: int) -> bool:

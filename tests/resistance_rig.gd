@@ -17,7 +17,12 @@ extends RefCounted
 ## touch is a real physics frame with her standing on the contact (`_step_a_frame()`), and a read
 ## that is only setup for what a test asks, not a touch it measures, completes the contact as an
 ## action does (`ContactPoint.complete_now()`), which runs the same completion a touch runs.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const ContactTouches := preload("res://tests/contact_touches.gd")
 const AlleyMarks := preload("res://tests/alley_marks.gd")
@@ -84,7 +89,7 @@ func _build_city_in_a_new_run(t, seed_value := SEED) -> RunState:
 	_city = CITY_SCENE.instantiate()
 	_city.run = run
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(seed_value))
+	_city.build(MapCache.of(seed_value))
 	return run
 
 ## Frees the test city when the suite built it one.
