@@ -139,8 +139,8 @@ report. A brief carries its task, its task-specific read-first items, the layer 
 (proposed in **designing-classes**), for a pull request that changes code the ask for the
 architecture questions' answers (**pr-review**'s `references/architecture-questions.md`) in the
 report and the description, **the GitHub role the agent
-acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
-invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
+acts as**, its fence, the capture for this session to take and the agent to list (a still or a
+burst; an agent takes none, inbox #1203), whether it may be invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
 The spawn prompt `agent-setup.sh` prints names the brief and the contract. Every later
 `SendMessage` that changes the agent's scope or task is appended under `## Amendment <ISO
@@ -194,19 +194,21 @@ role named has nothing to check `status` against:
   size, since CI runs the same suite on a better tree, and a local full run is a wait long enough
   to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
-- **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
-  (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
-  `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
-  can lean on — the **verify** skill carries the rig traps that make one look like it worked when
-  it did not. **Say in the brief whether the evidence is a still or a burst**: anything about
-  motion — a turn, a gait, a wing beat, a shadow rotating — is a burst
-  (`--press snapshot_burst <seconds>` on the same `shot.sh` call, see **verify** and
-  **session-captures**), and an agent told to take a screenshot of motion will spend its budget
-  on stills that land beside the moment. **And say whether the capture may be invincible**:
-  `--invincible` keeps the day running while a rig waits for a junction, a chase or a crossing
-  to happen in front of it, where a rig left to itself dies to the meter or the clock before the
-  moment arrives; an agent not told about it will burn runs landing on the summary screen. Leave
-  it off only for a capture whose subject is a cost or a loss.
+- **Headless first.** Verification lives in the test rigs, not in watching the game. Any tool
+  that opens a window (`tools/run.sh`, `tools/shot.sh`, `tools/scene-recipes.sh --screenshots`,
+  `tools/record.sh`, `tools/trailer.sh`, `browser-check.mjs`, the editor) opens it on the player's
+  own screen, so no agent takes one, a reviewer included (inbox #1203,
+  `references/agent-contract.md`): the brief names the capture, and the agent lists it in its
+  report for this session to arrange. A windowed run is also the least reliable thing to lean on:
+  the **verify** skill carries the rig traps that make one look like it worked when it did not.
+  **Name the capture in the brief as a still or a burst**: anything about motion (a turn, a gait,
+  a wing beat, a shadow rotating) is a burst (`--press snapshot_burst <seconds>` on the same
+  `shot.sh` call, see **verify** and **session-captures**), and the agent lists it as such, since
+  a still of motion lands beside the moment. **And name whether the capture may be invincible**:
+  `--invincible` keeps the day running while a rig waits for a junction, a chase or a crossing to
+  happen in front of it, where a rig left to itself dies to the meter or the clock before the
+  moment arrives; the agent lists the flag with the command. Leave it off only for a capture whose
+  subject is a cost or a loss.
 - **An agent's run carries a dev flag or `--no-save`** (see **verify**), because every worktree
   shares the player's save.
 - **Visual attempts come back early.** The player welcomes repeated feedback and prefers seeing

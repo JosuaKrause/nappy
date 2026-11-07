@@ -216,7 +216,7 @@ for painting a button in `_draw()`.
 
 **The reason is the feedback loop, and it is decisive** (woolly-finch 3): An SVG can be opened and
 looked at — by a person, or by an agent reading the file — and judged on its own. A picture
-assembled in `_draw()` can only be judged by booting the game and taking a screenshot, and **the
+assembled in `_draw()` can only be judged by booting the game and taking a screenshot (taken by the orchestrating session; an agent opens no window, inbox #1203), and **the
 same headless run that proves the code correct proves nothing about whether it looks like anything
 at all.** And an asset is **replaceable without touching code**: a consumer holds the region name
 `ui/joystick`, which is whatever `art/ui/joystick.svg` was baked from, so a better drawing is a
