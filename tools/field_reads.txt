@@ -368,7 +368,6 @@ src/events/day_planner.gd held_segments
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/day_repairs.gd closed_tiles
-src/events/day_repairs.gd home_rect
 src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd held_segments
 src/events/event_scheduler.gd network
@@ -1828,7 +1827,6 @@ src/interior/interior_scene.gd world
 src/main.gd world
 src/resistance/happenings.gd size
 src/resistance/park_cordon.gd moves
-src/resistance/resistance_director.gd blocked
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version
 src/routes/closure_planner.gd size

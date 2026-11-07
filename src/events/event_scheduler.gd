@@ -295,6 +295,19 @@ class Planned extends RefCounted:
 	func is_spent() -> bool:
 		return spent
 
+	## Spends this plan for the rest of the day (`is_spent()`): it is not streamed in again.
+	func spend() -> void:
+		spent = true
+
+	## The id of the row this plan places (`EventDef.id`).
+	func row_id() -> String:
+		return def.id
+
+	## Where the day placed this plan, `Vector2.INF` while it is unsited (`is_placed()`). Its instance
+	## may have moved since: `where_it_stands_now()` answers where it is.
+	func placed_at() -> Vector2:
+		return position
+
 	## **Whether this body is one of a region door's**: a `checkpoint_hut` or the `checkpoint_gate`
 	## at a street door's mouth, or a `checkpoint_post` at an alley door's. What makes a body a door
 	## is `RegionPlanner` standing it at one, not anything on its def, so the placement says it once
@@ -325,6 +338,16 @@ class Planned extends RefCounted:
 	## Whether this plan's instance is in the world now (`live`).
 	func is_in_the_world() -> bool:
 		return live != null
+
+	## This plan's instance while it is in the world, null otherwise: the node the streaming made of it
+	## (`EventStreaming.stream_in()`), which knows it as the live event it is.
+	func instance() -> Node2D:
+		return live
+
+	## Keeps this plan's instance in the world for the rest of the day, wherever she walks: the
+	## streaming never takes it out (`kept_live`).
+	func keep_in_the_world() -> void:
+		kept_live = true
 
 	## Whether this is something the run left here rather than something today rolled
 	## (`permanent`): a scar, which the day may not tidy away.

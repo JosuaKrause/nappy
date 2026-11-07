@@ -40,14 +40,14 @@ func add(plan: EventScheduler.Planned) -> void:
 ## rest of the day, since a task's contact rides it (day 13's swap, `EventsAhead.
 ## swap_in_a_task_row()`). Answers `new`'s live instance.
 func swap(old: EventScheduler.Planned, new: EventScheduler.Planned) -> EventInstance:
-	old.spent = true
+	old.spend()
 	world.map.release_obstruction(old.get_instance_id())
-	if old.live:
+	if old.is_in_the_world():
 		stream_out(old)
 	add(new)
 	stream_in(new)
-	new.kept_live = true
-	return new.live
+	new.keep_in_the_world()
+	return new.instance() as EventInstance
 
 ## Forgets the walk: every plan's live instance let go (the manager frees the instances), the walk's
 ## plans, the repeats and the broadcast clock.

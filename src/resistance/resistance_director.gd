@@ -1045,7 +1045,7 @@ func _on_her_side(side: HerSide, tile: Vector2i) -> bool:
 		if side.her.distance_to(side.body) < reach:
 			return false
 		side.blocked = _reach().shut()
-		side.blocked.merge(_map.blocked.tiles_of(Mover.SOFT_SEALS | Mover.BODIES))
+		side.blocked.merge(_map.tiles_shut_to(Mover.SOFT_SEALS | Mover.BODIES))
 		var centre := _map.world_to_tile(side.body)
 		var span := ceili(reach / Tuning.TILE_SIZE)
 		for dy in range(-span, span + 1):
@@ -1827,19 +1827,19 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 	for reach in reaches:
 		var found := _a_roadblock_the_day_placed(def.id, paths, reach)
 		if found:
-			var kept := _events.keep_live(def.id, found.position)
+			var kept := _events.keep_live(def.id, found.placed_at())
 			if kept:
 				trace.note("contact", "the task takes the roadblock the day placed at %s, %.0fpx from the mark"
-						% [RunTrace.tile(_map.world_to_tile(found.position)),
-						found.position.distance_to(mark)])
+						% [RunTrace.tile(_map.world_to_tile(found.placed_at())),
+						found.placed_at().distance_to(mark)])
 				return kept
 	for reach in reaches:
 		for old in _places_to_swap(paths, reach):
 			var swapped := _events.swap_in_a_task_row(def, old, _rng)
 			if swapped:
 				trace.note("contact", "a %s at %s becomes the task's roadblock, %.0fpx from the mark"
-						% [old.def.id, RunTrace.tile(_map.world_to_tile(old.position)),
-						old.position.distance_to(mark)])
+						% [old.row_id(), RunTrace.tile(_map.world_to_tile(old.placed_at())),
+						old.placed_at().distance_to(mark)])
 				return swapped
 	trace.note("contact", ("no roadblock the day placed and nothing to swap is within %.0fpx " +
 			"of her paths; the task is put on the edge of the %.0fpx circle instead")
@@ -1865,7 +1865,7 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 	var nearest: EventScheduler.Planned = null
 	var nearest_distance := INF
 	for plan in _walk.plans():
-		if plan.def.id != id or not plan.is_placed() or plan.is_spent() or plan.is_door() \
+		if plan.row_id() != id or not plan.is_placed() or plan.is_spent() or plan.is_door() \
 				or plan.is_in_the_wall():
 			continue
 		var distance := _touched_within(plan, paths, reach)
@@ -1905,7 +1905,7 @@ func _places_to_swap(paths: Dictionary, reach: float) -> Array[EventScheduler.Pl
 ## closer than `reach`.
 func _touched_within(plan: EventScheduler.Planned, paths: Dictionary, reach: float) -> float:
 	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := _map.world_to_tile(plan.position)
+	var centre := _map.world_to_tile(plan.placed_at())
 	var span := ceili(touch / Tuning.TILE_SIZE)
 	var nearest := INF
 	for dy in range(-span, span + 1):
@@ -1915,7 +1915,7 @@ func _touched_within(plan: EventScheduler.Planned, paths: Dictionary, reach: flo
 				continue
 			var distance: float = paths[tile]
 			if distance >= reach or distance >= nearest \
-					or _map.tile_to_world(tile).distance_to(plan.position) > touch \
+					or _map.tile_to_world(tile).distance_to(plan.placed_at()) > touch \
 					or not _reachable_from_home(tile):
 				continue
 			nearest = distance
