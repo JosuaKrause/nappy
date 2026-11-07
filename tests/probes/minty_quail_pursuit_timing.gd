@@ -101,7 +101,8 @@ func _a_day(t, city: City, seed_value: int, day: int) -> void:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.use_player(player)
 	director.set_sight(city.events.sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -216,8 +217,8 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var before := city.events.instances().duplicate()
 	var busker := city.events.spawn_extra(EventCatalogue.by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
-	var cordon := ParkCordon.new(city.map, city.navigator, city, park, city.spawn_siting,
-			director._reach_blocked)
+	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
+			city.spawn_siting, director._reach_blocked)
 	var run := Run.new(before)
 	var chain := HashingContext.new()
 	chain.start(HashingContext.HASH_SHA256)

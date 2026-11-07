@@ -159,7 +159,11 @@ var sources := CrowdSources.new(self)
 ## and skipping the other kind cost one pass each.
 var _cars: Array[CrowdAgent] = []
 var _walkers: Array[CrowdAgent] = []
-var _city: City
+## The world the crowd's walkers and cars are drawn in (`WorldContext`), handed in by `setup()`.
+var _world: WorldContext
+## Today's streets as dawn left them (`DayStreets`), handed in by `setup()`: the region's doors and
+## huts the crowd holds walkers at. Null for none, a rig with no streets behind it.
+var _streets: DayStreets
 var _map: CityMap
 ## How a walker pushed out of her way moves (`_bump()`): over `_map` through the city's navigator,
 ## so a contact never shoves anybody into a wall, a barrier or a body.
@@ -210,9 +214,9 @@ var _gates: Array[RegionPlanner.GateState] = []
 ## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
 ## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
 ## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from
-## `_city.streets().region_plan()`, which is already valid by the time this runs the same way it
+## `_streets.region_plan()`, which is already valid by the time this runs the same way it
 ## already is by the time `main.gd` calls `set_gates()` — `City.start_day()` builds it before
-## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no city,
+## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no streets,
 ## which then holds nothing a door either.
 var _door_segments := {}
 
@@ -240,13 +244,13 @@ var _crossable_segments := {}
 
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
 ## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_bodies`. Empty before
-## the wall stands or for a rig with no city, which then holds nobody at anything. See
+## the wall stands or for a rig with no streets, which then holds nobody at anything. See
 ## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
 var _door_holds: Array[WalkerDoorHold] = []
 
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
 ## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
-## city's `streets().region_plan()` other than the one it already has through `setup()`.
+## gates' state other than the region plan it already has through `setup()`.
 func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
 	_gates = gates
 
@@ -266,14 +270,18 @@ func _is_she_under(gate: RegionPlanner.GateState) -> bool:
 	return _player != null \
 			and _player.global_position.distance_to(gate.position) <= _under_the_boom_within()
 
-## Hands the crowd its city, the map it walks and drives and the navigator a push moves a walker by
-## — the city's own (`City.navigator`), or the map's
-## own (`WorldMap.navigator()`) for a rig that hands none.
-func setup(city: City, map: CityMap, navigator: Navigator = null) -> void:
-	_city = city
+## Hands the crowd the world it is drawn in, the map it walks and drives, the lights its traffic
+## obeys (`TrafficSignals`), today's streets (`DayStreets`, or null for none) and the navigator a
+## push moves a walker by — the city's own (`City.navigator`), or the map's own
+## (`WorldMap.navigator()`) for a rig that hands none. The city builds its crowd and hands it its
+## own; a test hands a bare `WorldContext` and a map of its own.
+func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: DayStreets,
+		navigator: Navigator = null) -> void:
+	_world = world
 	_map = map
 	_navigator = navigator if navigator else map.navigator()
-	_signals = city.signals
+	_signals = signals
+	_streets = streets
 	_field = CrowdField.new(map, map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, map.size)).get_center())
 
@@ -323,8 +331,8 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# place.
 	_door_segments = {}
 	_door_holds = []
-	if _city:
-		var plan := _city.streets().region_plan()
+	if _streets:
+		var plan := _streets.region_plan()
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true
@@ -440,7 +448,7 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 			agent.free()
 			return {"error": "car placement overlaps an existing traffic queue"}
 	agent.name = actor_name
-	_city.add_entity(agent)
+	_world.add_entity(agent)
 	_agents.append(agent)
 	_resolve_and_settle()
 	return {"actor": agent, "error": ""}
@@ -532,7 +540,7 @@ func _populate(kind: CrowdAgent.Kind, count: int, rng: RandomNumberGenerator) ->
 	for i in count:
 		var agent := _make_an_agent()
 		agent.setup(kind, _map, _field, rng.randi(), 0.0 if i % 2 == 0 else 1.0)
-		_city.add_entity(agent)
+		_world.add_entity(agent)
 		_agents.append(agent)
 
 ## A recipe's even street population is sampled along actual eligible sidewalk lanes.
@@ -566,7 +574,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 	for i in mini(count, candidates.size()):
 		var index := floori((i + 0.5) * candidates.size() / mini(count, candidates.size()))
 		selected[index] = true
-		_city.add_entity(candidates[index])
+		_world.add_entity(candidates[index])
 		_agents.append(candidates[index])
 	for index in candidates.size():
 		if not selected.has(index):

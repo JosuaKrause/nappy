@@ -16,11 +16,12 @@ extends RefCounted
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
 ## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its `sources`.
 ##
-## **Three cases build a real `City`, because narrowing needs a `src/` change**: the observer is
-## handed a whole `City` (`setup()`, `watch_city()`) and reads its map, events, calm ground,
-## closures, run and crowd off it, so the rewound day's trail, the entering of an event's outer
-## radius and the escape's city section have no narrower hand-in to give a fake to. That change
-## belongs with the city hand-ins, not with this suite.
+## **Three cases build a real `City` and hand the observer its parts**: the observer is handed the
+## run, the city's map, its events, today's streets and the crowd's sources (`setup()`,
+## `watch_city()`), and these cases hand the real city's, so the rewound day's trail, the entering
+## of an event's outer radius and the escape's city section keep the situation they had when the
+## observer took the whole city. Handing fakes of those parts in their place is the suite's own
+## conversion, which this suite has not had yet.
 ##
 ## The case that plans a day beside the observer
 ## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) pins one thing: four hundred
@@ -58,9 +59,10 @@ class Rig extends RefCounted:
 		tree = parent.get_tree()
 		city = a_city
 		if city != null:
-			observer.setup(city, player, baby, clock, null, spikes)
+			observer.setup(city.run, city.map, city.events, city.streets(), city.crowd.sources,
+					player, baby, clock, null, spikes)
 		else:
-			observer.setup_escape(player, baby, clock, spikes)
+			observer.setup_escape(null, player, baby, clock, spikes)
 			if map != null:
 				observer.watch_building(map, null)
 		parent.add_child(observer)
@@ -144,7 +146,7 @@ func _test_a_retried_section_restarts_the_clock(t) -> void:
 	var baby := Baby.new()
 	var clock := DayController.new()
 	var observer := TelemetryObserver.new(_log)
-	observer.setup_escape(player, baby, clock, false)
+	observer.setup_escape(null, player, baby, clock, false)
 	_log.begin_run(0)
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	_log.set_clock(45.0)
@@ -187,8 +189,11 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	var baby := Baby.new()
 	var clock := DayController.new()
 	_fresh_log()
+	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.
+	var run := RunState.new()
+	run.start_run(RUN_SEED)
 	var observer := TelemetryObserver.new(_log)
-	observer.setup_escape(player, baby, clock, false)
+	observer.setup_escape(run, player, baby, clock, false)
 	t.add_child(observer)
 
 	_log.begin_run(0)
@@ -207,11 +212,11 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	player.global_position = start
 	observer.start_section(true)
 
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
+	var city: City = RunCity.in_run(preload("res://scenes/world/city.tscn"), run)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	player.global_position = city.map.home_world_position()
-	observer.watch_city(city)
+	observer.watch_city(city.map, city.events, city.streets(), city.crowd.sources)
 	observer.start_section(false)
 	clock.start(180.0)
 	await t.get_tree().process_frame

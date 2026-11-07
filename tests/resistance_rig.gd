@@ -5,9 +5,9 @@ extends RefCounted
 ## `_city` is freed by whichever suite built it, at the end of its `run()` (`_free_city()`).
 ##
 ## **A test hands the director everything it reads** (minty-quail, tests through public seams):
-## the city, and with it the run (`City.run`, which `ResistanceDirector.setup()` takes when it is
-## handed none), the day's stream (`start_day()`'s `rng`), the day's length and every tick
-## (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
+## the city's parts and its run (`ResistanceDirector.setup()`: the map, the run, the events, the
+## streets, the fronts, the city as the world and its siting), the day's stream (`start_day()`'s
+## `rng`), the day's length and every tick (`tick()`), her (`use_player()`) and what she can see (`set_sight()`). A test that builds its city
 ## with `_build_city_in_a_new_run()` owns the run that city stands in, so the state it needs — the
 ## steps done, the alleys used, the scars — is set on that run, by the test, and gone with it.
 ##
@@ -118,7 +118,8 @@ func _director(t) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city, _city.map)
+	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	return director
 
 func _rng(day: int, stream: String, seed_value := SEED) -> RandomNumberGenerator:

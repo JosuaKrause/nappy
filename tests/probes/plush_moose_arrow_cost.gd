@@ -135,7 +135,8 @@ func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirec
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var mark := director.current_step()
 	if mark != null and mark.is_pickup:

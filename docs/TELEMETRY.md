@@ -1374,10 +1374,8 @@ touches.
 It is the one mark in the picture that is a **plan rather than a fact about the ground**, which is
 why `render` takes it as an argument and draws nothing when there is none: a picture that invented
 a plan when it was given none would be worse than a picture without one. `Telemetry.write_map`
-grows one when the caller has none to hand, and that is safe rather than convenient —
-`RouteTree.for_day` is a pure function of the city's seed, the day and what is shut, so the tree
-drawn is the same tree anything else asking for today's would get, and growing it touches no
-gameplay stream.
+draws the tree it is handed, the one the city grew at dawn (`DayStreets.route_tree()`), and grows
+none of its own; the escape's city hands none, since its walk is two chains and not a tree.
 
 **Cells rather than a stroke down the middle of every street.** `RouteTree` grows on
 `ReachabilityGrid` cells, so a strand can cut a corner through a park or take an alley — a tree

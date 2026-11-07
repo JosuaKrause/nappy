@@ -334,7 +334,8 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	city.events.start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map.doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()

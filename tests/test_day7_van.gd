@@ -51,7 +51,8 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 	var resistance := ResistanceDirector.new()
 	t.add_child(resistance)
 	resistance.set_process(false)
-	resistance.setup(city, city.map)
+	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	resistance.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var mark := resistance.current_step()
 	t.check(mark != null and mark.is_pickup and mark.day == DAY,

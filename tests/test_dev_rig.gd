@@ -60,7 +60,8 @@ func _build_day(t) -> void:
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
-	_resistance.setup(_city, _city.map)
+	_resistance.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
 func _teardown(t) -> void:

@@ -2,40 +2,39 @@
 
 **The ask.** "the city should never be built for tests that don't test the actual city"
 (inbox #1156 in gray-dolphin), "no test should build a real object that it doesn't test (it should mock it)" (inbox #1159 in gray-dolphin),
-and, on the board's test-isolation-plan, "yes" to its third step: hand-ins for the six classes that
+and, on the board's test-isolation-plan, "yes" to its third step: hand-ins for the classes that
 demand a whole city, a way to hand `main` its map, and one shared writer for small test maps
 (inbox #1159 in gray-dolphin). On the design in PR #1166: "yes three prs is fine" (inbox #1173 in gray-dolphin).
 
-**Read as:** six classes take a whole `City` today (the resistance director, the resistance
-happenings, day 12's park cordon, the crowd, the run log's observer, and `main`'s city map), so no
-test of them can avoid building a city. Each is handed only the parts it reads, by `main`, `City`,
-the director or the happenings, as #1166's description designs: `DayStreets` (today's route tree,
-region plan, closures and siting region, as dawn left them) and `CityFronts` (the building fronts the
-story changes) are new, and the event manager is handed as itself.
+**Read as:** no class takes a whole `City` when it reads only parts of it, so no test of it has to
+build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance director, its
+happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
+#1166's description, under "The step's design".
 
-**What is in flight.** The first of the three pull requests, the `DayStreets` move off `City` with
-every caller reading `city.streets`, is being built on #1166.
+**What is left, the third pull request**, after the after-dawn work (`walk-placed-blockers.md`),
+since both change the same files:
 
-**What is left after it:**
+- the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
+- the smaller cases: scenery residency and ground, the blackout, the still watch, the debug
+  readout, the developer's rigs (`dev_rig.gd`, `route_rig_planner.gd`), `day_director.gd`,
+  `main.gd` and `day_planner.gd`, as 3c's row in #1166's "Files it touches" lists them;
+- `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
+  path reaches it. The rigs that drive the event manager without `City.start_day()`
+  (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead;
+- three doc comments under `src/events/` still name the places #1187 moved code from:
+  `event_catalogue.gd`'s two on `City.mark_the_burnt_frontage()` (now `CityFronts`), and
+  `event_scheduler.gd`'s on `CityGenerator._street_tile` (now `StreetLayout`). The after-dawn pull
+  request is asked to fix them once #1187 merges; whichever lands, the third pull request checks
+  they are gone;
+- *proposed by the hand-ins' builder (where `calm_summary()` goes, by the orchestrator), open to the player's correction:* the city's three summary
+  lines move off `City`, so `RunSession.watch_day()` takes the parts too. `closure_summary()` moves
+  onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map
+  with the run's city state, so it moves onto `CityMap`, asked with the city state handed in.
 
-- **The second pull request:** `CityFronts`, the six hand-ins, the calm-ground question moved onto
-  `CityMap`, the generator's street pass moved into `StreetLayout`, and the shared test-map writer
-  (`tests/fixtures/street_map.gd`), with `tests/test_navigator_fallbacks.gd` as its first consumer.
-  *Proposed, not asked for (the orchestrator's add, which stands unless the player overturns it):*
-  the same pull request moves one resistance-happenings test onto `FakeEventManager` and
-  `FakeCityFronts`, so no new seam lands without a test using it (inbox #1156 in gray-dolphin).
-- **The third pull request:** the event manager's own city (`EventManager.setup(city, …)` and
-  `EventWorld.city`) and the smaller cases (scenery residency and ground, the blackout, the still
-  watch, the debug readout, the developer's rigs), after the after-dawn work
-  (`walk-placed-blockers.md`), since both change the same files.
-- **The run log reads today's route tree from `DayStreets`** and grows none of its own: "of course,
-  the observer needs to read the actual tree from DayStreets" (inbox #1173 in gray-dolphin). Done in whichever of
-  these pull requests hands the observer `DayStreets`. *The orchestrator's pick on
-  observer-route-tree, not the player's words:* first check on a few seeds and days whether the two
-  trees ever differ, and report it if they do.
+`main`'s map is handed in with the city cache (`city-cache.md`), not here (inbox #1173 in gray-dolphin).
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
 
-**Fields are not API** (designing-classes, inbox #1173 in gray-dolphin): `DayStreets` and `CityFronts` keep their
-state in underscore fields behind methods, and a read this work rewrites goes through a method.
+**Fields are not API** (designing-classes, inbox #1173 in gray-dolphin): new state is kept in underscore fields
+behind methods, and a read this work rewrites goes through a method.

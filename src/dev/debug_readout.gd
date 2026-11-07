@@ -313,7 +313,7 @@ func _where_she_is_lines() -> Array:
 		return [
 			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
 			"calm  %s    alley  %s" % [
-				"yes" if _city.is_calm_zone(here) else "no",
+				"yes" if _city.map.is_calm_zone(here) else "no",
 				"yes" if _city.is_alley(here) else "no"],
 		]
 	if _map:

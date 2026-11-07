@@ -74,9 +74,9 @@ func _test_plain_pose_with_no_objective(t) -> void:
 # The same city-and-director rig `tests/resistance_rig.gd` builds `ResistanceDirector` with, kept
 # separate rather than shared so this file never writes to one the resistance suite also owns.
 
-## The city of `SEED` in a run of its own (`RunCity.with_own_run()`), which it hands every director
-## built over it (`ResistanceDirector.setup()` takes the city's run when it is handed none): the run
-## starts fresh, with no step done and nothing carried, and goes with the city.
+## The city of `SEED` in a run of its own (`RunCity.with_own_run()`), which every director built over
+## it is handed (`ResistanceDirector.setup()`'s `run`): the run starts fresh, with no step done and
+## nothing carried, and goes with the city.
 ##
 ## Freed rather than left standing: `City.build()` adds an `EventManager` child that acquires
 ## the "events" `AtlasLibrary` group in its own `_enter_tree()` and only gives it back in
@@ -95,7 +95,8 @@ func _director(t) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(_city, _city.map)
+	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
+			_city.spawn_siting)
 	return director
 
 func _rng(day: int) -> RandomNumberGenerator:
