@@ -59,7 +59,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `vehicle` | A `VehicleSpec`, or null: a **car that drives**, solid at its own `shape` in every state and lethal only in front of it while it drives its route — `police_patrol` and every copy of it, and `fire_truck`. `vehicle.field_from_its_centre` prices its field from its centre rather than its body (`fire_truck`) — see "Solid things are solid" |
 | `stands_as` | What its figure is to a crowd walker that meets it **standing still** (`EventDef.StandsAs`), declared by every row (`validate()` refuses `UNDECLARED`): `SOMEBODY`, a person or an animal, which a walker may walk through while it stands; `SOMETHING`, an object or a vehicle, which a walker walks round (inbox #905 in freckled-moose); `NOTHING`, no picture on the ground — `Look.NONE`, the fire on a facade, a crater, a steam vent — walked through like a person. A figure under way is given way to whatever it is — see `docs/MECHANICS.md`, "The crowd gives way to event figures" |
 | `when_it_stops` | Whether its figure, once it stands, **stands there for good** (`EventDef.WhenItStops`), declared by every row (`validate()` refuses `UNDECLARED`): `PARKS`, a crowd car standing behind it in its lane turns round as at a blocked street (inbox #909 in freckled-moose) — a row that never moves, or one that stops where it arrives (`stops_where_it_arrives`, which requires it); `GOES_ON`, a car behind it waits for it to move — anything that drives on, leaves, chases her or wheels as a flock (`validate()` refuses `PARKS` for a row that moves any other way). The instance says when it has parked (`MoveProposal.parked`): from the start for a row that never moves, and only once it has stopped where it arrives for one that drives. See `docs/MECHANICS.md`, "The crowd gives way to event figures" |
-| `aftermath` | An `Aftermath`, empty on most rows, never null: the rows this one brings after it — `scar`, left at its position for the rest of the run (a fire's `burnt_shell`); `on_finish`, spawned where it ends (a convoy's `barricade`); `on_sight`, called in the moment she first sees it (the burning building's `fire_truck`). `EventCatalogue.without_its_aftermath()` takes all three off for the escape |
+| `aftermath` | An `Aftermath`, empty on most rows, never null: the rows this one brings after it — `scar`, left at its position for the rest of the run (a fire's `burnt_shell`); `on_finish`, spawned where it ends (the escape's explosion's `impact_crater`); `on_sight`, called in the moment she first sees it (the burning building's `fire_truck`). `EventCatalogue.without_its_aftermath()` takes all three off for the escape |
 | `abduction` | An `AbductionSpec`, or null: it takes a bystander first, walked to it over `taken_over` seconds from `standing_offset` px aside (`abduction`, the unmarked van) |
 | `counts_charges_as` | The name its charges are counted under when that is not its own id: `task_guard` on day 13's task guard sent from out of her view (`EventCatalogue.task_guard_sent()`). `""` for every other row |
 | `role` | The part the row plays in a system beside the catalogue, which that system finds it by rather than by its id (`EventDef.Role`): `SCENERY` (`pigeon_flock`, exempt from the cost rule's wall and friction placement) and `MAST` (`loudspeaker`, which the masts' sites, the day's masts and the resistance's mast task ask for, `EventCatalogue.mast()`). `NONE` for every other row |
@@ -568,8 +568,8 @@ on the sidewalk".)* Each kind of row has its own ground:
   fire itself is out of view, where it arrives and parks unseen.
 - **Day 13's column, in its lane of the main road** (`PendingWarning.in_its_lane()`), level with her
   along the road and just off screen up it, held on the map where the road leaves it. The trucks,
-  `Tuning.COLUMN_SPACING` apart behind the first, and the place the rear one stops to leave its
-  barricade are both decided when the column arrives, from where she is standing then.
+  `Tuning.COLUMN_SPACING` apart behind the first, are placed when the column arrives, from where
+  she is standing then, and every one drives on to the end of the road.
 - **The resistance's robber and guard, and a torn poster's pursuer on foot**, by the rules every
   start a pursuer is sent from is held to, each by its name (`SpawnSiting.Rule`: legal ground, out
   of sight, off the camera's whole view, clear of the region's wall and doors, a clear run at her,
@@ -1138,8 +1138,8 @@ Four things worth keeping straight:
   going; the dog walker carries on down the street. `departs_at` is for the rest — a flock, which
   has to fly, and a pursuer that has lost interest and trots off.
 - **Three things never leave**, and each would break something that reads the finishing position:
-  an event with an `aftermath.on_finish` stops **where the thing it leaves belongs** (a military
-  convoy's barricade is where it stopped, not two streets past it); anything with no departure
+  an event with an `aftermath.on_finish` stops **where the thing it leaves belongs** (the escape's
+  explosion leaves its crater where it went off, not two streets past it); anything with no departure
   speed is simply over, which is right for a café that closes; and a row with
   `EventDef.stops_where_it_arrives` **parks and stays**, which is the fire engine at its fire.
   Parking is not an ending: it still emits, still carries its cue, and is still the same event —
@@ -1854,8 +1854,8 @@ neighbourhood's own rather than a patrol's.
 
 | id | kind | from | Behaviour |
 | --- | --- | --- | --- |
-| `military_convoy` | RECURRING | 13 | Drives its street and stops where what it leaves belongs: a `barricade`, through `aftermath.on_finish`. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Only the rear truck keeps its `barricade`, stopping `Tuning.OUT_OF_SIGHT` plus its own field reach beyond her, mid-street rather than in a junction, at the first such point whose barricade still leaves her a way home and to a calm area (`EventScheduler.WalkSiting.leaves_her_a_way()`); the trucks ahead of it drive on to the map's edge and leave nothing. |
-| `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. Two things place it: left where a convoy stopped, and — via `aftermath.scar` — left there for the rest of the **run**; or placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
+| `military_convoy` | RECURRING | 13 | Drives its street and on out of it, leaving nothing: nothing a convoy does during the walk closes a street. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
+| `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. It is placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
 | `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `_role_for` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
 
@@ -1945,8 +1945,7 @@ city's plan places the first two on the open chains `FinalePlanner` grows
 (`DayPlanner.plan_the_escape_city()`) and the building places the last two inside it
 (`BuildingPlan`, its own placements); both are planned and run by the day's `EventManager` like any
 walk (`start_day()` with the section's spec). Three rows the escape uses are not new —
-`military_convoy` is the army truck (with the barricade it ordinarily leaves stripped, since a
-convoy in the escape is traffic rather than the aftermath of something), `abduction` is the masked
+`military_convoy` is the army truck, traffic in the escape as on a day, `abduction` is the masked
 men in a van, and `roadblock` at full heat is the masked man on foot who leaves the post — the
 barrier he was standing at stays where it is and stays shut.
 
@@ -2100,14 +2099,13 @@ routes through its corridor's own rules instead.
 
 `aftermath.scar` records an event's position in `run.attempt_spend.scars`, and the scheduler places that
 event again on every **later day of the run**. The building the day-3 fire caught is still
-drawn burnt on that corner on day 12, never repaired; barricades from Act IV
-convoys accumulate. This is most of how the escalation is told — the city remembers, and
+drawn burnt on that corner on day 12, never repaired. This is most of how the escalation is told — the city remembers, and
 the route you memorised on day 2 stops existing.
 
 ## Keeping a late day walkable
 
-From Act II several events physically close streets, and from Act IV a run accumulates
-permanent barricades. Any combination that seals the home off from every park makes the day
+From Act II several events physically close streets, and from Act IV the seals close every
+street off the day's routes. Any combination that seals the home off from every park makes the day
 unwinnable in a way the player cannot see coming, so after planning, obstructions are
 dropped — widest first — until a route exists again. Hard-fail events count as walls for
 this check: an abduction in progress is not something you walk through to reach the park

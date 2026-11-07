@@ -643,7 +643,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	if data.get("kind", "city") == "escape" or baby.sleepiness >= Tuning.METER_MAX:
 		baby.force_sleep()
 	if setup.has("column"):
-		_install_column(setup.column, at, errors)
+		_install_column(setup.column, errors)
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
@@ -748,7 +748,7 @@ func _bind_task_names() -> void:
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
-func _install_column(column: Dictionary, player_at: Vector2, errors: Array[String]) -> void:
+func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var map := _city.map
 	var at := position_of(column.at, errors)
 	if not errors.is_empty():
@@ -765,8 +765,8 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 	happening.trace = _city.trace
 	happening.setup(_city, map)
 	happening.start_day(_run.header.day)
-	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
-			lane, going, top, bottom)
+	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
+			bottom)
 	for i in happening.column.size():
 		named["truck_%d" % (i + 1)] = happening.column[i]
 

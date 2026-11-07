@@ -11,7 +11,7 @@ extends RefCounted
 ## 11's market is **found gone**, a block ahead of her boarded up before she gets there, and it
 ## stays boarded; day 12's park **closes in front of her** once she has reached its swing, the
 ## police taping it off round its edge, and stays requisitioned; day 13's column **comes down the
-## main road on her way**, and the barricade it stops at stays for the rest of the run.
+## main road on her way**, and drives on and off again, leaving nothing behind.
 ##
 ## **Deterministic from the run seed and the day**, like every other placement: its own stream
 ## (`RunState.calendar.day_rng(day, "happenings")`), so nothing here moves a draw the director
@@ -405,13 +405,8 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 ## their lane level with her and just out of sight (`PendingWarning.in_its_lane()`), their telegraph
 ## spent, and drive on past her.
 ##
-## **What it leaves is the barricade** its rear truck stops at, out of her sight beyond where she
-## stood — or, where nothing beyond her will do, short of her on the stretch it drives in on — the
-## row's own `aftermath.on_finish`, so it is a scar and stands for the rest of the run, but only where
-## she can still reach home and a calm area with it standing
-## (`EventScheduler.WalkSiting.leaves_her_a_way()`), checked before the stop is accepted, a block
-## further on at a time, from where she is standing when the trucks arrive. The trucks ahead of it
-## drive on without one. A column with nowhere to stop leaves nothing and says so.
+## **It leaves nothing**: every truck drives on down the road and off the map, so nothing the column
+## does closes a street (inbox #1183).
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _city or not _city.events or _map.main_road < 0:
 		return
@@ -439,14 +434,12 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	# About as far up the lane as the front truck is created, just out of sight.
 	var lead := SpawnSiting.lead_up_a_lane(EventFootprints.box_of(def))
-	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
-	# From the end with room for its place behind her and a stop beyond her, when only one end has
-	# it; with neither, from the end with more road behind her. The spine leaves the map by a tunnel
-	# and a bridge, so a lead the map cannot hold starts at its edge.
+	# From the end with room for its place behind her, when only one end has it; with neither, from
+	# the end with more road behind her. The spine leaves the map by a tunnel and a bridge, so a lead
+	# the map cannot hold starts at its edge.
 	var fits := func(way: float) -> bool:
 		var behind := her.y - top if way > 0.0 else bottom - her.y
-		var ahead := bottom - her.y if way > 0.0 else her.y - top
-		return behind >= lead and ahead >= past
+		return behind >= lead
 	if not fits.call(going):
 		if fits.call(-going):
 			going = -going
@@ -458,8 +451,8 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom,
 				_city.events.visible_view())
-	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		_bring_the_column(def, place, at, lane_x, going, top, bottom)
+	var arrive := func(place: Vector2, _at: Vector2) -> bool:
+		_bring_the_column(def, place, lane_x, going, top, bottom)
 		return true
 	var warning := _city.events.warn_first(def, her, where, arrive)
 	if warning:
@@ -468,60 +461,18 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 	return warning
 
 ## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the
-## road, each on its own path down the lane — the rear one to where it stops and leaves its
-## barricade, decided now from where she is standing (`her`), the others on to the end of the road.
-func _bring_the_column(def: EventDef, place: Vector2, her: Vector2, lane_x: float, going: float,
-		top: float, bottom: float) -> void:
-	var past := Tuning.OUT_OF_SIGHT + def.field_reach()
+## road, each on its own path down the lane to the end of the road.
+func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: float, top: float,
+		bottom: float) -> void:
 	var start_y := place.y
-	# Beyond her first, the way it is going; and where no stop ahead of her will do, short of her,
-	# on the stretch it drives in on, before it has reached her at all.
-	var stop := _where_the_column_stops(her, lane_x, her.y + going * past, going, INF, def)
-	if stop == Vector2.INF:
-		stop = _where_the_column_stops(her, lane_x, her.y - going * past, -going,
-				absf(start_y - her.y), def)
 	var far_y := bottom if going > 0.0 else top
-	var trailing := EventCatalogue.without_its_aftermath(def)
 	for i in Tuning.COLUMN_TRUCKS:
 		var back := -going * Tuning.COLUMN_SPACING * i
 		var from := Vector2(lane_x, clampf(start_y + back, top, bottom))
-		var rear := i == Tuning.COLUMN_TRUCKS - 1
-		var to := Vector2(lane_x, stop.y if rear and stop != Vector2.INF else far_y)
-		var truck := def if rear and stop != Vector2.INF else trailing
-		column.append(_city.events.spawn_warned(truck, PackedVector2Array([from, to])))
-	trace.note("contact", "a column of %d trucks comes down the main road %s%s" % [
-		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north",
-		", and stops at %s" % RunTrace.tile(_map.world_to_tile(stop)) if stop != Vector2.INF
-				else ", with nowhere to stop"])
-
-## Where the rear truck stops and leaves its barricade: from `wanted_y` on along the road in the
-## direction `going`, no further than `limit` from her, the first point in the middle of a street
-## (never a junction, which would close the crossing with it) whose barricade leaves her a way home
-## and to a calm area — or `Vector2.INF`.
-func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going: float,
-		limit: float, def: EventDef) -> Vector2:
-	var barricade := EventCatalogue.by_id(def.aftermath.on_finish)
-	if not barricade:
-		return Vector2.INF
-	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.streets().route_tree(), _walk,
-				EventScheduler.Verdicts.new())
-	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
-	var step := Vector2i(0, 1 if going > 0.0 else -1)
-	# A block at a time once a stop is refused, three blocks at most: each refusal is a flood.
-	var refused := 0
-	while _map.in_bounds(tile) and refused < 3:
-		var at := Vector2(lane_x, _map.tile_to_world(tile).y)
-		if absf(at.y - her.y) > limit:
-			return Vector2.INF
-		if _map.network.segment_containing(tile) == null or not _map.is_driveable_at(true, tile):
-			tile += step
-			continue
-		if _siting.leaves_her_a_way(EventScheduler.Planned.new(barricade, at), her):
-			return at
-		refused += 1
-		tile += step * CityMap.period()
-	return Vector2.INF
+		var to := Vector2(lane_x, far_y)
+		column.append(_city.events.spawn_warned(def, PackedVector2Array([from, to])))
+	trace.note("contact", "a column of %d trucks comes down the main road %s" % [
+		Tuning.COLUMN_TRUCKS, "south" if going > 0.0 else "north"])
 
 ## The neighbor, leaving for work as she does: out of the same door and along the same sidewalk,
 ## away from her, until the street runs out or something closes it, then off the ordinary way a

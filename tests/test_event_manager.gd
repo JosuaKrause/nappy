@@ -141,41 +141,29 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
 ##
-## `military_convoy`/`barricade` rather than the fire engine: `fire_truck` no longer sets
-## `aftermath.on_finish` — the day the fire is found before the engine reversed that link, so it is
-## `burning_building` that now names something, in the opposite direction
-## (`EventDef.aftermath.on_sight`, checked in `tests/test_events.gd`, not here). The convoy is the
-## row `aftermath.on_finish` still governs, and the wiring this test exists for is the same either
-## way.
+## `finale_explosion`/`impact_crater`, the one row `aftermath.on_finish` governs: a burst that has
+## run its course leaves its crater where it went off. Spawned directly, since the escape's rows are
+## not a day's.
 func _test_successor_replaces_its_parent(t) -> void:
 	_start(12)
-	var convoy: EventInstance = null
-	for instance in _city.events.instances():
-		if instance.def.id == "military_convoy":
-			convoy = instance
-			break
-	if not convoy:
-		# The convoy is a recurring row rather than a one-shot; this seed may not have rolled
-		# one on this day. Spawn one directly rather than skip the check.
-		convoy = _city.events.spawner.spawn(EventCatalogue.by_id("military_convoy"),
-				Vector2(500, 500), PackedVector2Array([Vector2(500, 500), Vector2(900, 500)]))
-
+	var burst := _city.events.spawner.spawn(EventCatalogue.by_id("finale_explosion"),
+			Vector2(500, 500))
 	var before := _city.events.active_count()
-	t.check(_run_to_its_end(convoy), "the convoy runs out on its own")
-	var where := convoy.global_position
+	t.check(_run_to_its_end(burst), "the burst runs out on its own")
+	var where := burst.global_position
 	await PhysicsTicks.pass_ticks(t, 1)
 
 	t.check(_city.events.active_count() == before,
 			"a one-for-one replacement keeps the count the same")
-	var barricade: EventInstance = null
+	var crater: EventInstance = null
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
-		if instance.def.id == "barricade":
-			barricade = instance
-	t.check(barricade != null, "the convoy leaves a barricade behind it")
-	if barricade:
-		t.close_to(barricade.global_position.distance_to(where), 0.0,
-				"the barricade starts where the convoy stopped", 1.0)
+		if instance.def.id == "impact_crater":
+			crater = instance
+	t.check(crater != null, "the burst leaves a crater behind it")
+	if crater:
+		t.close_to(crater.global_position.distance_to(where), 0.0,
+				"the crater starts where the burst went off", 1.0)
 
 func _test_excitement_sums_over_instances(t) -> void:
 	_start(5)

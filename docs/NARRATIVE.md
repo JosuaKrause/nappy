@@ -39,7 +39,7 @@ colder. Warm afternoon → drained → cold and overcast → smoke.
 
 The loudest part is that **the city remembers**. `EventDef.aftermath`'s scar makes a one-off event permanent
 for the rest of the run: the building that burned on day 3 still stands burnt on day 12,
-its windows black under soot, and every barricade an Act IV convoy drops stays dropped. The
+its windows black under soot. The
 route you memorised on day 2 stops existing, one closure at a time.
 
 ### Act I — "It's a nice neighbourhood" (days 1–3)
@@ -93,7 +93,7 @@ it stays boarded for the rest of the run: she finds it gone rather than sees it 
 
 ### Act IV — "Open" (days 12–14)
 
-Smoke, sirens, barricades. Military convoys re-shape the map as they pass. Protests grow.
+Smoke, sirens, barricades across the side streets. Military convoys roll through. Protests grow.
 Whole districts close.
 
 **Day 12 the parks are being fenced off**, one at a time, and the one she is sent to is next: it is
@@ -107,8 +107,7 @@ grass stays grass, and the park stays taken. The day has kept another park open 
 the baby.
 
 **Day 13 the army arrives.** The convoys start that morning, and the first is a column of army
-trucks coming down the main road on her way; the barricade it stops at, out of her sight, is still
-there on the last night.
+trucks coming down the main road on her way, and on past her and out of the city.
 
 **Day 14** is the last night — either the sabotage (good ending) or simply the last walk home
 (neutral ending). The sabotage is a hand-over at the power station's front door, and she is

@@ -1601,9 +1601,8 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## nothing to check live (inbox #1173: "there should be no live reachability check. that's a hard
 ## no"). What is sited here is what the day's own placement rules (`EventScheduler._best_of()`)
 ## accept and no more: the fire, which has no body (PLAYTEST-144 12), the poster crews, the places
-## her route's bag hands her walk, and day 11's mast. Day 13's two blocking beats, the task's
-## roadblock (`near_her()`) and the barricade the column leaves (`leaves_her_a_way()`), still ask
-## `_still_leaves_a_park_reachable()` until they take a blocking body the day placed instead.
+## her route's bag hands her walk, and day 11's mast. Day 13's task roadblock (`near_her()`) still
+## asks `_still_leaves_a_park_reachable()` until it takes a roadblock the day placed instead.
 class WalkSiting extends RefCounted:
 	var _day: int
 	var _map: CityMap
@@ -2013,12 +2012,6 @@ class WalkSiting extends RefCounted:
 	func cell_centre(cell: Vector2i) -> Vector2:
 		return _cell_centre(_map, cell)
 
-	## Whether, with `candidate`'s field taken as closed ground, she can still reach the home and a
-	## calm area from `at` — `_still_leaves_a_park_reachable()`, for a caller placing something after
-	## dawn that is not a catalogue row sited by `ahead_of()`: the barricade day 13's column leaves.
-	func leaves_her_a_way(candidate: Planned, at: Vector2) -> bool:
-		return _still_leaves_a_park_reachable(_walk.everything_but(), candidate, at)
-
 	## Records why an attempt placed nothing and answers with the nothing. See `waits`.
 	func _waited(reason: String) -> Planned:
 		waits[reason] = int(waits.get(reason, 0)) + 1
@@ -2208,9 +2201,8 @@ class WalkSiting extends RefCounted:
 		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
-	## **Whether the day still works around this site**, asked by day 13's two blocking beats alone
-	## (`near_her()`, the task's roadblock, and `leaves_her_a_way()`, the barricade the column
-	## leaves), until they take a blocking body the day placed instead and this goes: from where she
+	## **Whether the day still works around this site**, asked by day 13's task roadblock alone
+	## (`near_her()`), until it takes a roadblock the day placed instead and this goes: from where she
 	## is standing, with **the candidate's field taken as closed ground**, she can still reach the home
 	## and a calm area she has not used.
 	##
@@ -2288,8 +2280,8 @@ class WalkSiting extends RefCounted:
 		return _unused_calm
 
 	## Everything in `already` that stands in the way, and — the first time it is asked — the grid.
-	## A region door's bodies count here, as they always have for this check, until day 13's two
-	## beats leave it and it goes.
+	## A region door's bodies count here, as they always have for this check, until day 13's
+	## roadblock leaves it and it goes.
 	func _what_already_blocks(already: Array[Planned]) -> Array[Planned]:
 		if not _grid:
 			_grid = ReachabilityGrid.build(_map)

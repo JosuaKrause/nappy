@@ -194,8 +194,7 @@ static func escape_roadblock() -> EventDef:
 
 ## **A row with the marks it leaves on a run taken off it**: the scar it records, the row it spawns
 ## when it finishes and the row it calls in when it is first seen. What the escape's rows are made
-## of where those marks mean nothing: the convoy whose barricade would close a street for thirteen
-## more days, the building's fire whose fire engine has no street to come down, the explosion whose
+## of where those marks mean nothing: the building's fire whose fire engine has no street to come down, the explosion whose
 ## crater has no road to stand in indoors.
 ##
 ## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives. `shape` is
@@ -2412,8 +2411,8 @@ static func _night_raid() -> EventDef:
 
 # ------------------------------------------------------------ Act IV: open (12+) ---
 
-## Like the fire engine, but it does not leave a fire. It leaves a barricade, and the barricade is
-## still there tomorrow.
+## An army truck down its street and off again, leaving nothing behind: nothing a convoy does
+## during the walk closes a street (inbox #1183).
 ##
 ## **From day 13, the morning the army arrives** (PLAYTEST-122), with the column on the main road
 ## that day (`ResistanceHappenings`); day 12 is the parks.
@@ -2441,12 +2440,12 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
-	def.aftermath.on_finish = "barricade"
 	def.weight = 2.0
 	def.cost = 4
 	return def
 
-## Left where a convoy stopped, and left there for the rest of the run.
+## The widest hard seal: placed every morning from act IV on across a street off the day's route
+## tree (`SealPlanner`'s `barricade_seal`, and the escape's `finale_barricade`).
 ##
 ## **Silent**: this is the widest hard seal in the game (`obstructs_radius` 62, the whole street),
 ## so its route cost is already the largest in the catalogue; an ambient field on top would bill

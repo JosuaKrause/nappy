@@ -401,8 +401,8 @@ static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2
 ## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
 ## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
 ## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
-## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, the barricade a stopped convoy
-## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
+## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, a barricade seal across a
+## street) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
 ## (`WorldMap.corridor_offsets()`).
 ##
 ## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
@@ -1278,8 +1278,8 @@ var is_parked: bool:
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
-## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — a convoy's
-## barricade is across the street it shut, not two streets past it. Anything with no departure
+## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — the escape's
+## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
 ## the building (`EventSpawner.where_the_summoned_row_stops()`) and stays there for the rest of the

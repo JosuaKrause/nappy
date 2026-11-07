@@ -1188,10 +1188,9 @@ func _test_the_market_waits_while_she_can_see_it(t) -> void:
 ## Day 13: the column. The convoys start that morning; the column is `Tuning.COLUMN_TRUCKS` trucks
 ## in one lane of the main road, warned of first: its badge goes up with no truck in the world, its
 ## place in the lane just off screen level with her, and the trucks arrive there once the row's
-## telegraph is over, coming toward the point level with her. The rear one stops out of her sight —
-## beyond her, or short of her where nothing beyond will do — on a street rather than a junction,
-## where its barricade still leaves her a way home; the trucks ahead of it leave nothing. It comes
-## once she nears the main road, or at `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
+## telegraph is over, coming toward the point level with her. Every truck drives on to the end of
+## the road and leaves nothing behind it. It comes once she nears the main road, or at
+## `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
 	_build_city_in_a_new_run(t)
@@ -1232,7 +1231,8 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 			"once the warning is over, a column of %d trucks comes (%d)"
 			% [Tuning.COLUMN_TRUCKS, trucks.size()])
 	var edge := minf(her.y, map.size.y * Tuning.TILE_SIZE - her.y) - Tuning.TILE_SIZE
-	var leaving := 0
+	var top := Tuning.TILE_SIZE * 0.5
+	var bottom := map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	for i in trucks.size():
 		var truck := trucks[i]
 		t.check(truck.def.id == "military_convoy" and truck.path.size() == 2,
@@ -1242,15 +1242,9 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 				"in one lane of the main road")
 		t.check(truck.path[0].distance_to(her) >= minf(lead, edge) - 1.0,
 				"far enough up the road (%.0fpx)" % truck.path[0].distance_to(her))
-		if truck.def.aftermath.on_finish != "":
-			leaving += 1
-			var stop := truck.path[1]
-			t.check(i == trucks.size() - 1, "only the rear truck leaves anything")
-			t.check(stop.distance_to(her) >= Tuning.OUT_OF_SIGHT,
-					"and it stops out of her sight")
-			t.check(map.network.segment_containing(map.world_to_tile(stop)) != null,
-					"on a street, not a junction")
-	t.check(leaving == 1, "one barricade's worth, from the rear truck (%d)" % leaving)
+		t.check(truck.def.aftermath.on_finish == "", "and leaves nothing behind it")
+		t.check(is_equal_approx(truck.path[1].y, top) or is_equal_approx(truck.path[1].y, bottom),
+				"driving on to the end of the road (%.0f)" % truck.path[1].y)
 	# **Where the front truck is created and how long after the badge it can reach her, on the
 	# real siting.** Its forward reach (395px) is deeper than the view is from her, so standing
 	# by its road she may be inside its field from its first frame: what she is owed is the

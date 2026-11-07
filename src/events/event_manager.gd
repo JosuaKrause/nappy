@@ -259,7 +259,7 @@ func _owe_the_return() -> void:
 ## (`EventScheduler.Planned.repeats()`) comes on its own clock
 ## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
 ## detentions and the hard fails are the same for all three: an explosion leaves its crater through
-## exactly the `aftermath.on_finish` mechanism a convoy leaves a barricade through.
+## the same `aftermath.on_finish` mechanism on the escape's streets as it would anywhere.
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
