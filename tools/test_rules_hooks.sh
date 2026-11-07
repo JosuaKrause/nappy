@@ -528,6 +528,15 @@ assert_eq "src/autoload/telemetry.gd -> telemetry" \
 assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
     "cli-tools,python-tooling,sound-effects," \
     "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
+assert_sound_lab_files_load_sound_effects() {
+    assert_eq "tools/sound-lab.sh -> cli-tools + sound-effects" \
+        "cli-tools,sound-effects," \
+        "$(project_rules_skills sound-lab-runner-session "" "tools/sound-lab.sh")"
+    assert_eq "tools/sound-lab/passes.json -> cli-tools + sound-effects" \
+        "cli-tools,sound-effects," \
+        "$(project_rules_skills sound-lab-passes-session "" "tools/sound-lab/passes.json")"
+}
+assert_sound_lab_files_load_sound_effects
 assert_eq "a generated WAV under docs/evidence -> sound-effects + verify" \
     "sound-effects,verify," \
     "$(project_rules_skills sound-asset-session "" "docs/evidence/sound-lab/example.wav")"
