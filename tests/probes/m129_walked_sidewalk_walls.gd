@@ -352,8 +352,8 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
 	# Removal-only passes: monotonic, never add a body, so tagging is complete before they run.
-	WinnableDay.ensure_one_usable_park(events, calm)
-	WinnableDay.ensure_the_city_is_still_walkable(map, events, calm)
+	DayRepairs.ensure_one_usable_park(events, calm)
+	DayRepairs.ensure_the_city_is_still_walkable(map, events, calm)
 	var planned := events.placements()
 
 	for plan: EventScheduler.Planned in seals:

@@ -492,8 +492,8 @@ class Planned extends RefCounted:
 ## correct.
 ##
 ## **The budget is not the count**, and the difference is not small: part of it is spent on
-## events the day then throws away, because `WinnableDay.ensure_one_usable_park` strips whatever
-## reaches the calm she has not used and `WinnableDay.ensure_the_city_is_still_walkable` drops
+## events the day then throws away, because `DayRepairs.ensure_one_usable_park` strips whatever
+## reaches the calm she has not used and `DayRepairs.ensure_the_city_is_still_walkable` drops
 ## obstructions that would seal the city. So the number is set by *measuring what a day places*
 ## over several seeds. Re-measure it, do not re-derive it, if the catalogue's costs move.
 ##
@@ -509,7 +509,7 @@ static func budget_for(day: int) -> int:
 ## 49-block lattice it was measured on so the arithmetic stays exact.
 ##
 ## **The floor accounts for the strip, which is the part that is easy to miss.**
-## `WinnableDay.ensure_one_usable_park` removes the spoilers of every calm area she has not
+## `DayRepairs.ensure_one_usable_park` removes the spoilers of every calm area she has not
 ## used, *after* the fill has already spent its budget — on a seed where no calm area comes out
 ## clean that is twenty events gone — so a floor set to the target plans to target and then
 ## falls short of it.
@@ -560,7 +560,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## director makes of the tile itself — and `standing` is what obstructs the day whatever this
 ## plans: the seals and the region wall's own bodies, both planned before this runs. Both empty
 ## on every other day, and then the day is planned exactly as it would be without them. See
-## `WinnableDay.ensure_the_city_is_still_walkable()`.
+## `DayRepairs.ensure_the_city_is_still_walkable()`.
 ##
 ## `trace` is where the planning writes its own account for the run log — a one-shot's roll, a
 ## lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
@@ -597,8 +597,8 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# *other* than `calm.besides()`: one of those areas is left clean, and a route to it is
 	# kept.
 	if spec.keeps_unused_calm_clear:
-		WinnableDay.ensure_one_usable_park(events, calm)
-	WinnableDay.ensure_the_city_is_still_walkable(map, events, calm, target, trace)
+		DayRepairs.ensure_one_usable_park(events, calm)
+	DayRepairs.ensure_the_city_is_still_walkable(map, events, calm, target, trace)
 	_hand_to_her_walk(events)
 	return events
 
@@ -661,8 +661,8 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## **Only ever a removal, so it is safe where a repair would not be**: every guarantee the
 ## passes after this make, and the corridor's own, is about reaching somewhere, and a wall taken
 ## off the ground only adds ground she can reach — the **city** skill's monotonic exception.
-## Before `WinnableDay.ensure_one_usable_park` and
-## `WinnableDay.ensure_the_city_is_still_walkable`, so those two judge the day that actually
+## Before `DayRepairs.ensure_one_usable_park` and
+## `DayRepairs.ensure_the_city_is_still_walkable`, so those two judge the day that actually
 ## stands.
 static func _thin_the_walls(share: float, rng: RandomNumberGenerator, events: DayEvents,
 		filled: Array[Planned]) -> void:
@@ -1120,7 +1120,7 @@ static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0
 ## - **It spoils with events, not by taking the ground away.** The park is still there, still
 ##   calm ground, still walkable. Things are standing in it, and she can see that from
 ##   the street and decide. An event that could seal or end the day is never chosen for this.
-## - **`WinnableDay.ensure_one_usable_park` is told to protect a different one**, so the day it
+## - **`DayRepairs.ensure_one_usable_park` is told to protect a different one**, so the day it
 ##   creates is still winnable and the alternative is still real rather than nominal.
 ## - **They are ordinary events, placed like any other.** They compete for no budget of their own
 ##   and are drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
@@ -1572,7 +1572,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## nothing at dawn knows which way that is. See `EventDef.on_her_way`.
 ##
 ## **What a late placement may not do is repair.** It cannot drop something the day already
-## placed to make room, and `WinnableDay.ensure_the_city_is_still_walkable` has already run and
+## placed to make room, and `DayRepairs.ensure_the_city_is_still_walkable` has already run and
 ## cannot run again — so the walkability question that pass answers for the whole day is asked
 ## of this one candidate *before* it is accepted, in `_still_leaves_a_park_reachable()` below.
 class WalkSiting extends RefCounted:
@@ -1627,6 +1627,12 @@ class WalkSiting extends RefCounted:
 	## hands each siting a store of its own: verdicts are kept under a candidate's key and judged
 	## against one siting's plans and route tree, so a siting asked while another is in a look would
 	## read verdicts judged for the other's plans and place wrongly, not only lose a cache.
+	##
+	## **It works out the calm facts it needs for itself** rather than being handed the day's
+	## `CalmAreas`: it builds one here for the leave-alone ground alone, and
+	## `_calm_she_has_not_used()` and `_what_already_blocks()` work out the unused calm tiles
+	## and what blocks the way from the map and the live plans. The live form after dawn hands
+	## it the day's objects instead.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, used_calm: Array[Vector2i],
 			doors: PackedVector2Array, verdicts: EventScheduler.Verdicts) -> void:
 		_day = for_day
@@ -2248,7 +2254,7 @@ class WalkSiting extends RefCounted:
 	## destination that has to stay reachable.
 	##
 	## **Falls back to every calm tile where she has used them all**, which is the same case
-	## `WinnableDay.ensure_one_usable_park` names: with nothing unused left, what the day owes
+	## `DayRepairs.ensure_one_usable_park` names: with nothing unused left, what the day owes
 	## is calm ground rather than fresh calm ground, and refusing every site instead would be a
 	## day 3 with no fire.
 	func _calm_she_has_not_used() -> Array[Vector2i]:

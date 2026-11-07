@@ -4,11 +4,11 @@ extends RefCounted
 ## order they were placed, and the facts derived from them — which calm areas each spoils, which
 ## block the way, whether one is a pursuit — kept in step with every row added or taken away.
 ##
-## *(inbox #1156: "have an object that contains the derived information -- don't rederive over and
-## over again -- then pass that object around".)* `EventScheduler.build_day()` makes one per walk with
-## `over()` and is its only writer; its passes, `WinnableDay`'s two repairs and `DayPlanner` are
-## handed it, and nothing reads the rows any other way. So a fact is worked out once, when the row
-## arrives, and every question answers from the plan as it stands.
+## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
+## and over again -- then pass that object around".)* `EventScheduler.build_day()` makes one per
+## walk with `over()` and is its only writer; its passes, `DayRepairs`' two repairs and
+## `DayPlanner` are handed it, and nothing reads the rows any other way. So a fact is worked out
+## once, when the row arrives, and every question answers from the plan as it stands.
 ##
 ## **A calm area is spoiled for the day** when a row's field reaches its calm ground
 ## (`EventScheduler.Planned.spoils()`): a park she can see is noisy and walk away from. That is a fact

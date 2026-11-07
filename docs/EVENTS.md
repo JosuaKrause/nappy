@@ -172,7 +172,7 @@ Three rules on it, in the order they matter:
    outer radius for the whole time it is telegraphing. That is the telegraph fairness contract
    holding for an event that arrives without warning, which is the only way one is allowed to.
 3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so
-   `WinnableDay.ensure_the_city_is_still_walkable` never sees it and nothing checks that what it
+   `DayRepairs.ensure_the_city_is_still_walkable` never sees it and nothing checks that what it
    blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
    and so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
@@ -1192,8 +1192,8 @@ The **event budget** is stated *per block of lattice* and grows with the day ind
 `EventScheduler`. Each event costs budget equal to its `intensity` tier, so late days are not just
 "more cats".
 
-The budget is **not** the count: `WinnableDay.ensure_one_usable_park` strips whatever reaches the
-calmest block and `WinnableDay.ensure_the_city_is_still_walkable` drops obstructions that would seal
+The budget is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
+calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
 the city. Measure what a day *places*, over several seeds; deriving it from the formula gets a
 number that is too small and looks right. An `AHEAD_OF_PLAYER` event costs the same budget and takes
 no tile, so a day's `plan` line reads as *n sited, m ahead*.

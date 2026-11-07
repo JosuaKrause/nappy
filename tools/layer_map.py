@@ -137,7 +137,7 @@ FILES: dict[str, str] = {
     "src/events/calm_areas.gd": "model",
     "src/events/day_events.gd": "model",
     "src/events/event_scheduler.gd": "model",
-    "src/events/winnable_day.gd": "model",
+    "src/events/day_repairs.gd": "model",
     "src/events/mast_sites.gd": "model",
     "src/events/walk_ground.gd": "model",
     # interior: the plan and its tiles are the model; the tileset and the scene are the world.

@@ -188,7 +188,7 @@ src/
 	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
 	                      which she used this act, the one that does not count today
-	winnable_day.gd       the two repairs that keep a planned day winnable: one calm area clean,
+	day_repairs.gd        the two repairs that keep a planned day winnable: one calm area clean,
 	                      and a route to it from home
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks

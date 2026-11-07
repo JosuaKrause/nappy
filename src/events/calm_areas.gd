@@ -5,10 +5,14 @@ extends RefCounted
 ## is a park or a quiet block where the baby can settle; its calm ground is the part of its lot she
 ## settles on (`ClosurePlanner.calm_area_rect()`: a courtyard's court, a park's open rect).
 ##
-## **Worked out once and handed to whoever asks** (inbox #1156): `DayPlanner` makes one per walk with
-## `of()` and hands it to `EventScheduler.build_day()`, which hands it to its passes, to `DayEvents`
-## and to `WinnableDay`. Nothing that reads it works any of it out again, so no two answers about one
-## area can disagree.
+## **Worked out once and handed to whoever asks** (inbox #1156): `DayPlanner` makes the day's
+## with `of()` and hands it to `EventScheduler.build_day()`, which hands it to its passes, to
+## `DayEvents` and to `DayRepairs`, so no two of them can disagree about an area. Three places
+## still make their own until the live form after dawn is handed one:
+## `EventScheduler.WalkSiting` (for its leave-alone ground), `EventScheduler.recipe_placement()`
+## (the same, for a recipe's row) and `DayPlanner.plan_the_escape_city()` (nothing used, nothing
+## set aside). And `WalkSiting._calm_she_has_not_used()` still works out the unused areas' calm
+## tiles from the map.
 ##
 ## **Never saved.** What it is derived from is: the city (its seed and `CityState`), and where she
 ## settled (`SettledState`, read through `RunCalendar.settled_this_act()`). A load plans the day
@@ -31,15 +35,16 @@ var _calm_tiles := {}
 var _used: Array[Vector2i] = []
 var _besides := NONE
 
-## **The calm areas of `map` today.** `used` is every area she has settled in this act, most recent
-## first (`RunCalendar.settled_this_act()`); it may name an area that is no longer calm, which counts
-## for nothing here. `besides` is the area that does not count today: day 12's swing park, which is
-## taken once she has reached it, so the clean ground the day owes her has to be somewhere else.
-## `NONE` on every other day.
+## **The calm areas of `map` today.** `used` is every area she has settled in this act, most
+## recent first (`RunCalendar.settled_this_act()`); it may name an area that is no longer calm,
+## which counts for nothing here. `day` and `target` (the tiles of the day's narrow resistance
+## target, `ResistanceDirector.target_ground()`) decide the area that does not count today
+## (`besides()`).
 ##
 ## `map` is read as it stands when this is called, so it is called once the map is repainted for the
 ## day; the calm blocks and their tiles do not move again before the day is planned.
-static func of(map: CityMap, used: Array[Vector2i] = [], besides := NONE) -> CalmAreas:
+static func of(map: CityMap, used: Array[Vector2i] = [], day := 0,
+		target: Array[Vector2i] = []) -> CalmAreas:
 	var areas := CalmAreas.new()
 	for block in map.calm_blocks:
 		var rect := ClosurePlanner.calm_area_rect(map, block)
@@ -52,8 +57,22 @@ static func of(map: CityMap, used: Array[Vector2i] = [], besides := NONE) -> Cal
 		areas._grounds[block] = map.tile_rect_to_world(rect)
 		areas._calm_tiles[block] = tiles
 	areas._used = used.duplicate()
-	areas._besides = besides
+	areas._besides = _set_aside(map, day, target)
 	return areas
+
+## **The calm area that does not count today**: day 12's swing park
+## (`CityGenerator.swing_park()`), on the day the resistance sends her to the swing and while
+## she can still reach it there (`target` holds the swing's tile, and the park is calm). Once
+## she has reached the swing the park is taken, so the clean calm ground the day owes her has to
+## be in another one (PLAYTEST-122: "the day guarantees a second open park she can reach from
+## the swing"). `NONE` on every other day.
+static func _set_aside(map: CityMap, day: int, target: Array[Vector2i]) -> Vector2i:
+	var step := ResistanceSteps.narrow_target_on(day)
+	if not step or step.target_kind != ResistanceSteps.TargetKind.PARK_SWING \
+			or target.is_empty():
+		return NONE
+	var park := CityGenerator.swing_park(map)
+	return park if park in map.calm_blocks else NONE
 
 ## Today's calm blocks, in the map's order.
 func blocks() -> Array[Vector2i]:

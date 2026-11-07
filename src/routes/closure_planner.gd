@@ -287,7 +287,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ## stays fully on the tree's table, when excluding it would:
 ##
 ## - **leave fewer than `MIN_CALM_AREAS_REACHABLE` calm areas open** — the count every
-##   closure is held to, and what leaves `WinnableDay.ensure_one_usable_park` a park to keep
+##   closure is held to, and what leaves `DayRepairs.ensure_one_usable_park` a park to keep
 ##   clean;
 ## - **cut anything off** — any tile the doorstep reaches with nothing excluded that it no longer
 ##   reaches with this area and every area already accepted, both simulated as if their ground were

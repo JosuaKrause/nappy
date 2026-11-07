@@ -1,16 +1,21 @@
 extends RefCounted
-## `WinnableDay`, the two repairs that keep a planned day winnable: one calm area left clean, and a
-## route from home to it kept open. Each is handed stand-ins for the day's events and calm areas
-## with the answers set (`FakeDayEvents`, `FakeCalmAreas`), so no city is generated and no day is
-## planned; which rows spoil which area, and which block the way, is `DayEvents`' to work out and is
-## checked once in `tests/test_day_events.gd`.
+## `DayRepairs`, the two repairs that keep a planned day winnable: one calm area left clean, and
+## a route from home to it kept open. Each is handed stand-ins for the day's events and calm
+## areas with the answers set (`FakeDayEvents`, `FakeCalmAreas`), so no city is generated and no
+## day is planned; which rows spoil which area, and which block the way, is `DayEvents`' to work
+## out and is checked once in `tests/test_day_events.gd`.
 ##
 ## The clean-park checks take their areas and spoiler counts from what a real day answers: seed
-## 4242's day 4 with every calm area used, as `CalmAreas.of()` and `build_day()` answer it. The
-## walkable checks stand on a street laid out by hand, the map the repair floods.
+## 4242's nine calm areas on day 4 with every one of them used, and the rows spoiling each
+## before the repair runs, as `CalmAreas.of()` and `build_day()` answer them. The walkable
+## checks stand on a street laid out by hand, the map the repair floods.
 
-## Calm areas of seed 4242 and how many rows spoil each on day 4 with every area used.
-const SPOILED_COUNTS := {Vector2i(1, 6): 4, Vector2i(1, 9): 4, Vector2i(2, 2): 6, Vector2i(9, 9): 3}
+## Seed 4242's calm areas, and how many rows spoil each on day 4 with every area used, before
+## the clean-park repair runs.
+const SPOILED_COUNTS := {
+	Vector2i(1, 4): 2, Vector2i(1, 6): 4, Vector2i(1, 9): 4, Vector2i(2, 2): 6, Vector2i(4, 8): 13,
+	Vector2i(5, 2): 6, Vector2i(9, 2): 5, Vector2i(9, 4): 7, Vector2i(9, 9): 3,
+}
 
 func run(t) -> void:
 	_test_a_day_with_a_clean_area_keeps_every_row(t)
@@ -30,6 +35,12 @@ func _rows(id: String, count: int) -> Array[EventScheduler.Planned]:
 		rows.append(EventScheduler.Planned.new(EventCatalogue.by_id(id), Vector2(i * 64, 0)))
 	return rows
 
+## Every area of `SPOILED_COUNTS`.
+func _every_area() -> Array[Vector2i]:
+	var blocks: Array[Vector2i] = []
+	blocks.assign(SPOILED_COUNTS.keys())
+	return blocks
+
 ## The areas of `SPOILED_COUNTS`, each `used`, and a stand-in plan in which each is spoiled by as
 ## many rows as the real day answered. Answers `[calm, events, spoilers by block]`.
 func _all_spoiled(used: Array[Vector2i]) -> Array:
@@ -37,7 +48,7 @@ func _all_spoiled(used: Array[Vector2i]) -> Array:
 	var events := FakeDayEvents.new()
 	var by_block := {}
 	for block: Vector2i in SPOILED_COUNTS:
-		calm.set_area(block, Rect2i(), Rect2(), [], used.has(block))
+		calm.set_area(block, Rect2(), [], used.has(block))
 		var rows := _rows("leaf_blower", SPOILED_COUNTS[block])
 		events.set_spoilers(block, rows)
 		by_block[block] = rows
@@ -45,53 +56,46 @@ func _all_spoiled(used: Array[Vector2i]) -> Array:
 
 func _test_a_day_with_a_clean_area_keeps_every_row(t) -> void:
 	var calm := FakeCalmAreas.new() \
-			.set_area(Vector2i(1, 4), Rect2i(), Rect2()) \
-			.set_area(Vector2i(1, 6), Rect2i(), Rect2(), [], true)
+			.set_area(Vector2i(1, 4), Rect2()) \
+			.set_area(Vector2i(1, 6), Rect2(), [], true)
 	var events := FakeDayEvents.new().set_spoilers(Vector2i(1, 6), _rows("busker", 4))
-	WinnableDay.ensure_one_usable_park(events, calm)
+	DayRepairs.ensure_one_usable_park(events, calm)
 	t.check(events.removed.is_empty(), "a day that leaves one calm area clean loses no row")
 
 func _test_every_area_used_clears_the_least_disturbed(t) -> void:
-	var made := _all_spoiled([Vector2i(1, 6), Vector2i(1, 9), Vector2i(2, 2), Vector2i(9, 9)])
+	var made := _all_spoiled(_every_area())
 	var events: FakeDayEvents = made[1]
-	WinnableDay.ensure_one_usable_park(events, made[0])
-	t.check(events.removed == made[2][Vector2i(9, 9)],
+	DayRepairs.ensure_one_usable_park(events, made[0])
+	t.check(events.removed == made[2][Vector2i(1, 4)],
 			"with every area used and spoiled, the least disturbed one is cleared, and only it")
-	t.check(not events.is_spoiled(Vector2i(9, 9)) and events.is_spoiled(Vector2i(1, 6)),
+	t.check(not events.is_spoiled(Vector2i(1, 4)) and events.is_spoiled(Vector2i(9, 9)),
 			"so the day has one clean area and the rest stand")
 
 func _test_an_unused_area_is_cleared_whoever_else_is_spoiled(t) -> void:
-	var made := _all_spoiled([Vector2i(1, 6), Vector2i(9, 9)])
+	var used: Array[Vector2i] = []
+	for block: Vector2i in SPOILED_COUNTS:
+		if block != Vector2i(1, 9) and block != Vector2i(4, 8):
+			used.append(block)
+	var made := _all_spoiled(used)
 	var events: FakeDayEvents = made[1]
-	WinnableDay.ensure_one_usable_park(events, made[0])
+	DayRepairs.ensure_one_usable_park(events, made[0])
 	var expected: Array[EventScheduler.Planned] = []
 	expected.append_array(made[2][Vector2i(1, 9)])
-	expected.append_array(made[2][Vector2i(2, 2)])
+	expected.append_array(made[2][Vector2i(4, 8)])
 	t.check(events.removed == expected,
-			"every area she has not used is cleared, the more disturbed one too, and none she used")
+			"every area she has not used is cleared, the most disturbed too, and none she used")
 
 func _test_the_area_set_aside_neither_counts_nor_is_cleared(t) -> void:
-	var calm := FakeCalmAreas.new() \
-			.set_area(Vector2i(1, 4), Rect2i(), Rect2(), [], true) \
-			.set_area(Vector2i(1, 6), Rect2i(), Rect2(), [], true) \
-			.set_area(Vector2i(2, 2), Rect2i(), Rect2(), [], true) \
-			.set_besides(Vector2i(1, 4))
-	var nearer := _rows("busker", 4)
-	var events := FakeDayEvents.new() \
-			.set_spoilers(Vector2i(1, 6), nearer) \
-			.set_spoilers(Vector2i(2, 2), _rows("busker", 6))
-	WinnableDay.ensure_one_usable_park(events, calm)
-	t.check(events.removed == nearer,
-			"the swing's clean park does not count as the clean one: the least disturbed other is "
-			+ "cleared")
-	var swing := _rows("busker", 1)
-	events = FakeDayEvents.new() \
-			.set_spoilers(Vector2i(1, 4), swing) \
-			.set_spoilers(Vector2i(1, 6), _rows("busker", 4)) \
-			.set_spoilers(Vector2i(2, 2), _rows("busker", 6))
-	WinnableDay.ensure_one_usable_park(events, calm)
-	t.check(not events.removed.has(swing[0]),
-			"and the swing's park is never the one cleared, however little stands in it")
+	var swing := Vector2i(1, 4)
+	var made := _all_spoiled(_every_area())
+	var calm: FakeCalmAreas = made[0]
+	calm.set_besides(swing)
+	var events: FakeDayEvents = made[1]
+	DayRepairs.ensure_one_usable_park(events, calm)
+	t.check(events.removed == made[2][Vector2i(9, 9)],
+			"with the swing's park set aside, the least disturbed of the others is cleared")
+	t.check(events.is_spoiled(swing),
+			"and the swing's park is not, though fewer rows stand in it")
 
 # ---------------------------------------------------------------- the city walkable ---
 
@@ -120,9 +124,9 @@ func _barricade_at(map: CityMap, x: int, id := "barricade") -> EventScheduler.Pl
 
 func _street_calm(map: CityMap, besides := CalmAreas.NONE) -> FakeCalmAreas:
 	return FakeCalmAreas.new() \
-			.set_area(NEAR, NEAR_GROUND, map.tile_rect_to_world(NEAR_GROUND),
+			.set_area(NEAR, map.tile_rect_to_world(NEAR_GROUND),
 					map.rect_tiles(NEAR_GROUND)) \
-			.set_area(FAR, FAR_GROUND, map.tile_rect_to_world(FAR_GROUND),
+			.set_area(FAR, map.tile_rect_to_world(FAR_GROUND),
 					map.rect_tiles(FAR_GROUND)) \
 			.set_besides(besides)
 
@@ -133,7 +137,7 @@ func _test_a_body_cutting_off_every_calm_area_is_dropped(t) -> void:
 	var beyond := _barricade_at(map, 20)
 	var events := FakeDayEvents.new() \
 			.set_obstructions([beyond, across] as Array[EventScheduler.Planned])
-	WinnableDay.ensure_the_city_is_still_walkable(map, events, _street_calm(map))
+	DayRepairs.ensure_the_city_is_still_walkable(map, events, _street_calm(map))
 	t.check(events.removed == ([across] as Array[EventScheduler.Planned]),
 			"a body between home and every calm area is dropped, widest first; one past the nearer "
 			+ "area is not (%d dropped)" % events.removed.size())
@@ -144,14 +148,14 @@ func _test_the_route_kept_is_to_clean_ground_when_one_area_is_set_aside(t) -> vo
 	var events := FakeDayEvents.new() \
 			.set_obstructions([beyond] as Array[EventScheduler.Planned]) \
 			.set_spoilers(NEAR, _rows("busker", 2))
-	WinnableDay.ensure_the_city_is_still_walkable(map, events, _street_calm(map, SWING))
+	DayRepairs.ensure_the_city_is_still_walkable(map, events, _street_calm(map, SWING))
 	t.check(events.removed == ([beyond] as Array[EventScheduler.Planned]),
 			"on the swing day the route kept is to the clean area: the body cutting it off goes, "
 			+ "though the spoiled one is reached")
 	var plain := FakeDayEvents.new() \
 			.set_obstructions([beyond] as Array[EventScheduler.Planned]) \
 			.set_spoilers(NEAR, _rows("busker", 2))
-	WinnableDay.ensure_the_city_is_still_walkable(map, plain, _street_calm(map))
+	DayRepairs.ensure_the_city_is_still_walkable(map, plain, _street_calm(map))
 	t.check(plain.removed.is_empty(),
 			"while on an ordinary day any calm ground reached is enough, and the body stays")
 
@@ -160,14 +164,13 @@ func _test_a_target_the_seals_cut_off_asks_nothing_of_the_rows(t) -> void:
 	var target: Array[Vector2i] = [Vector2i(39, 5)]
 	var beyond := _barricade_at(map, 20)
 	var events := FakeDayEvents.new().set_obstructions([beyond] as Array[EventScheduler.Planned])
-	WinnableDay.ensure_the_city_is_still_walkable(map, events, _street_calm(map), target)
+	DayRepairs.ensure_the_city_is_still_walkable(map, events, _street_calm(map), target)
 	t.check(events.removed == ([beyond] as Array[EventScheduler.Planned]),
 			"a body between home and the resistance's target is dropped")
 	var seal := _barricade_at(map, 36)
 	var sealed := FakeDayEvents.new() \
 			.set_obstructions([beyond] as Array[EventScheduler.Planned]) \
-			.set_standing([seal] as Array[EventScheduler.Planned],
-					[seal] as Array[EventScheduler.Planned])
-	WinnableDay.ensure_the_city_is_still_walkable(map, sealed, _street_calm(map), target)
+			.set_standing_obstructions([seal] as Array[EventScheduler.Planned])
+	DayRepairs.ensure_the_city_is_still_walkable(map, sealed, _street_calm(map), target)
 	t.check(sealed.removed.is_empty(),
 			"when the day's own seals cut the target off, no row is dropped for it")

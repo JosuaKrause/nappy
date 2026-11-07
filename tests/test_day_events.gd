@@ -25,8 +25,8 @@ func run(t) -> void:
 
 func _calm() -> FakeCalmAreas:
 	return FakeCalmAreas.new() \
-			.set_area(COURT, Rect2i(22, 63, 4, 4), COURT_GROUND) \
-			.set_area(PARK, Rect2i(29, 95, 10, 10), PARK_GROUND)
+			.set_area(COURT, COURT_GROUND) \
+			.set_area(PARK, PARK_GROUND)
 
 func _row(id: String, at: Vector2) -> EventScheduler.Planned:
 	return EventScheduler.Planned.new(EventCatalogue.by_id(id), at)

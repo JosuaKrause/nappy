@@ -10,6 +10,16 @@ extends "res://tests/events_shared_city.gd"
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
 ## combined file measured close to the two-minute budget on its own -- `test_events_costs.gd` keeps
 ## the cost side, which shares nothing but the inherited `_map()`/`_planned()` with this half.
+##
+## **Why these checks build a city.** The scheduler is planned on the city's own ground, so its
+## guarantees are stated over a generated map. One check reaches past the scheduler on purpose:
+## the closed-streets day
+## (`_test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled`) is the
+## integration check of the day's planning choosing the clean area on a real day. It makes the
+## day's calm areas the way `DayPlanner` does (`CalmAreas.of()` from the day and its target,
+## which is where the swing's park is set aside) and plans the day through `build_day()`, which
+## runs the repair. Each part has its own check with stand-ins (`tests/test_calm_areas.gd`,
+## `tests/test_day_repairs.gd`); this one holds that they choose together.
 
 const STEP := 1.0 / 60.0
 
@@ -583,7 +593,7 @@ const _CHOICE_DRAW_SEED := 3855935560
 
 ## **The repair keeps a route to a clean calm area, not to a spoiled one.** On day 12, with the
 ## swing park as the target, `EventScheduler` keeps a route to the calm ground *besides* the
-## swing's that no event's field reaches (`WinnableDay.ensure_the_city_is_still_walkable()`);
+## swing's that no event's field reaches (`DayRepairs.ensure_the_city_is_still_walkable()`);
 ## when the bodies placed cut that clean area off, it drops them, widest first, until it is
 ## reached. Counting the spoiled area as well would stop at the first drop that left *it*
 ## reachable.
@@ -609,7 +619,8 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 	var clean_block := others[0]
 	var spoiled_block := others[1]
 	var used: Array[Vector2i] = [spoiled_block]
-	var calm := CalmAreas.of(map, used, park)
+	var calm := CalmAreas.of(map, used, day, target)
+	t.check(calm.besides() == park, "the swing day sets the swing's park aside")
 	var calm_tile := func(block: Vector2i) -> Vector2i:
 		var tiles := calm.calm_tiles_of(block)
 		return tiles[0] if not tiles.is_empty() else Vector2i(-1, -1)

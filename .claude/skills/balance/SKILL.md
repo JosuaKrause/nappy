@@ -24,8 +24,8 @@ survives rebalancing; `intensity == 3.2` does not.
 
 **Change the event density:** `max_per_day` in the catalogue **first**, then
 `EventScheduler.budget_for()`, because **a budget the catalogue cannot spend is not density**. Then
-**measure what a day places**, over several seeds, since `_ensure_the_city_is_still_walkable` drops
-obstructions that would seal the city.
+**measure what a day places**, over several seeds, since
+`DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
 
 A temporary probe suite that prints per-day counts takes two minutes and is the only honest way to
 set it. **Measure four things and not one:**

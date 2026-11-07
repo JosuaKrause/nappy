@@ -157,8 +157,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
-	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(),
-			_set_aside(city_map, day, target))
+	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(), day, target)
 	var placements := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
 			standing, world.trace).placements()
@@ -179,20 +178,6 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.walk = tree
 	result.doors = doors
 	return result
-
-## **The calm area that does not count today** (`CalmAreas.besides()`): day 12's swing park, the
-## park the swing stands in (`CityGenerator.swing_park()`), on the day the resistance sends her
-## to the swing and while she can still reach it there (`target` holds the swing's tile). Once
-## she has reached the swing the park is taken, so the clean calm ground the day owes her has to
-## be in another one (PLAYTEST-122: "the day guarantees a second open park she can reach from
-## the swing"). `CalmAreas.NONE` on every other day.
-static func _set_aside(map: CityMap, day: int, target: Array[Vector2i]) -> Vector2i:
-	var step := ResistanceSteps.narrow_target_on(day)
-	if not step or step.target_kind != ResistanceSteps.TargetKind.PARK_SWING \
-			or target.is_empty():
-		return CalmAreas.NONE
-	var park := CityGenerator.swing_park(map)
-	return park if park in map.calm_blocks else CalmAreas.NONE
 
 # ------------------------------------------------------------ the escape's city ---
 
@@ -237,8 +222,7 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	placements.append_array(seals)
 	if populate_events:
-		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [],
-				[],
+		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],
 				walk, 0, PackedVector2Array(), [], seals, trace, kept_ground).placements())
 	return placements
 

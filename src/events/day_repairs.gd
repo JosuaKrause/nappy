@@ -1,4 +1,4 @@
-class_name WinnableDay
+class_name DayRepairs
 extends RefCounted
 ## **The two repairs that keep a planned day winnable**: calm ground nothing spoils, and a route to
 ## it from home. A day can only be won on calm ground, so these are the difference between a hard day
@@ -9,9 +9,13 @@ extends RefCounted
 ## taking a body off the ground can only add reachable ground, so nothing another pass decided
 ## becomes false here.
 ##
-## `EventScheduler.build_day()` asks both once the day is planned, in this order, and hands each the
-## day's `DayEvents` (the rows and what they spoil and block) and its `CalmAreas`. They read the day
-## only through those two, so a test hands them stand-ins with the answers set.
+## `EventScheduler.build_day()` asks both once the day is planned, in this order, and hands each
+## the day's `DayEvents` (the rows and what they spoil and block) and its `CalmAreas`, so a test
+## hands them stand-ins with the answers set. They read the day through those two with one
+## exception: on a day with no area set aside, the walkable repair asks the map itself for its
+## calm tiles (`CityMap.calm_tiles()`, every calm tile in the city), as it always has, rather
+## than the calm areas' own; moving that to `CalmAreas` is left to the live form after dawn,
+## with `EventScheduler.WalkSiting`'s own copies.
 
 ## **At least one calm area stays clean every day**, or the day has no safe ground and the player has
 ## no move (docs/CITY.md). The least disturbed one keeps its quiet.

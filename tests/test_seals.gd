@@ -763,8 +763,8 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## beside the day's seals and the region wall, asked the exact question
 ## `_leaves_the_route_junctions_open` asks at placement time, over the day's whole final set
 ## rather than only each row's own insertion moment: sound because nothing after insertion ever
-## *adds* obstruction at a junction (`WinnableDay.ensure_the_city_is_still_walkable`/
-## `WinnableDay.ensure_one_usable_park` only ever remove, the **city** skill's one monotonic
+## *adds* obstruction at a junction (`DayRepairs.ensure_the_city_is_still_walkable`/
+## `DayRepairs.ensure_one_usable_park` only ever remove, the **city** skill's one monotonic
 ## exception), so a junction the rule kept open at every insertion is open in the finished set
 ## too, however the finished set is re-asked.
 ##
