@@ -51,6 +51,11 @@ var _connected := false
 ## colour it would draw identically to what it drew last time. `-1` so the day's first tick,
 ## whatever `time_remaining` starts at, always counts as a change.
 var _last_emitted_second := -1
+## Whether she stood on a carriageway tile / on calm ground at the last tick, so a step onto either is
+## one `EventBus.road_entered` / `calm_ground_entered` and standing on it is none. Read afresh by
+## every `start()`, so what she stands on at dawn is not an arrival.
+var _was_on_road := false
+var _was_on_calm := false
 ## `--invincible`, handed in by whoever builds the day: nothing but a win ends it and its clock
 ## stands still. See `tick()` and `_ignores_loss()`.
 var invincible := false
@@ -74,6 +79,8 @@ func start(length: float) -> void:
 	hard_fail_reason = ""
 	exit_reached = -1
 	_last_emitted_second = int(time_remaining)
+	_was_on_road = _standing_on_road()
+	_was_on_calm = _standing_on_calm()
 	EventBus.day_time_changed.emit(time_remaining, time_total)
 
 ## 1.0 at dawn, 0.0 at dusk. Drives the light.
@@ -133,8 +140,28 @@ func tick(delta: float) -> void:
 			_end(GameEnums.DayResult.LOST_TIMEOUT)
 			return
 
+	_tell_of_arrivals()
 	if _reached_the_goal():
 		_end(GameEnums.DayResult.WON)
+
+## Says on `EventBus` when she steps onto the road or onto calm ground, for `VisitCounter`'s day-one
+## milestones. It reads her tile and changes nothing: no map (the building) means nothing to say.
+func _tell_of_arrivals() -> void:
+	var on_road := _standing_on_road()
+	if on_road and not _was_on_road:
+		EventBus.road_entered.emit()
+	_was_on_road = on_road
+	var on_calm := _standing_on_calm()
+	if on_calm and not _was_on_calm:
+		EventBus.calm_ground_entered.emit()
+	_was_on_calm = on_calm
+
+func _standing_on_road() -> bool:
+	return _map != null and _player != null \
+			and Tile.is_road(_map.tile_type_at_world(_player.global_position))
+
+func _standing_on_calm() -> bool:
+	return _map != null and _player != null and _map.is_calm_zone(_player.global_position)
 
 ## **A drawn frame only shows the escape's hundredths**: between two ticks, a clock that reads to the
 ## hundredth (`DaySpec.clock_hundredths`) is told the tick's countdown advanced by how far the frame

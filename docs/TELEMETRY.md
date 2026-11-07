@@ -255,6 +255,15 @@ The events:
   tear's own `poster-torn`, the moment his warning goes up (`EventManager.send_a_pursuer()`): one
   per pursuer sent. A marble drawn while one is still on his way or after her sends nobody and
   nothing here, and nothing is sent during the escape.
+- `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` / `nappy-day-1-asleep` — day one's
+  milestones, so `tools/goatcounter.sh` shows where a new player stops: the first step onto a
+  road or crossing (`EventBus.road_entered`), the first onto calm ground of any kind, park, forest,
+  square, courtyard or alley (`EventBus.calm_ground_entered`), and the baby put to sleep
+  (`EventBus.return_phase_started`). `DayController.tick()` emits the first two as she steps onto
+  the ground. Each is sent **once per attempt at day 1** — a fresh day 1, a retry after a lost day
+  and a return to checkpoint day 1 each begin one (`day_started`) — and on no other day. The last
+  milestone, home, is the existing `nappy-day-1-won`. *(striped-marten, the player: "agree with the
+  goat measuring", curly-moose #819.)*
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached. `bad` is a
