@@ -155,15 +155,6 @@ func _city_area(at: Vector2, half: float) -> float:
 	var down := minf(extent.y, at.y + half) - maxf(0.0, at.y - half)
 	return maxf(0.0, across) * maxf(0.0, down)
 
-## True while a point is inside the box. `slack` widens it, which is how an agent is allowed a
-## little way past the edge before it is recycled — otherwise one that recycles onto the
-## boundary can qualify to be recycled again on the next frame.
-func contains(at: Vector2, slack := 0.0) -> bool:
-	if city_view:
-		return Rect2(Vector2.ZERO, map.world_size()).grow(slack).has_point(at)
-	return absf(at.x - centre.x) <= radius + slack \
-			and absf(at.y - centre.y) <= radius + slack
-
 ## The lowest and highest coordinate the box spans along an axis, clamped to the map. Agents
 ## enter at one of these and leave at the other.
 func along_bounds(vertical: bool) -> Vector2:
