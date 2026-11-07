@@ -16,25 +16,33 @@ extends RefCounted
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
 ## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its `sources`.
 ##
-## **Three cases build a real `City` and hand the observer its parts**: the observer is handed the
-## run, the city's map, its events, today's streets and the crowd's sources (`setup()`,
-## `watch_city()`), and these cases hand the real city's, so the rewound day's trail, the entering
-## of an event's outer radius and the escape's city section keep the situation they had when the
-## observer took the whole city. Handing fakes of those parts in their place is the suite's own
-## conversion, which this suite has not had yet.
+## **No case builds a real `City`**: the observer is handed the run, the city's map, its events,
+## today's streets and the crowd's sources (`setup()`, `watch_city()`), and the cases hand it a
+## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans as the case
+## sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds a null tree and no closures
+## as a day with none does) and the base `ExcitementSources`, which answers nothing. A map is a
+## hand-drawn one (`StreetMap.full()`) for a case that needs only streets under her feet, and a
+## generated one (`CityMapCache.of()`, a copy of a city built once per process, no `City` node) for
+## the one case that plans a day from it.
 ##
 ## The case that plans a day beside the observer
-## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) pins one thing: four hundred
-## frames of the observer's watchers leave the map a later day is planned from as it was, so that
-## day plans identically. The observer is handed no random stream, so it has none to disturb.
+## (`_test_the_trail_and_the_met_events_scan_do_not_touch_gameplay`) is a combined suite for a
+## stated reason: it pins a guarantee between the observer and the planner, that four hundred frames
+## of the observer's watchers leave the map a later day is planned from as it was, so that day plans
+## identically. Only the planner's input can show it, so that case plans a day over a generated map
+## (a hand-drawn one has no calm ground or home for a day to plan on); the observer is handed no
+## random stream, so it has none to disturb.
 
 const PlanSignature := preload("res://tests/plan_signature.gd")
+const CityMapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
-## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
+## The seed of the run the observer is handed, a run of the test's own.
 const RUN_SEED := 2
+## The seed of the generated city the one planning case runs on.
+const CITY_SEED := 4242
 
 ## One observer in the tree watching a running day clock, with the player, the baby and the clock
-## it is handed — what `main` hands a day's observer (`city` given: `setup()`) or the escape's
+## it is handed — what `main` hands a day's observer (`world` given: `setup()`) or the escape's
 ## (`setup_escape()`, then the building's map or none). A test places the player, lets time pass
 ## through `frame()`, which moves the day's clock on and waits for a real frame — the observer
 ## mirrors that clock into the run log's as every real frame does — and reads the run log or the
@@ -49,17 +57,15 @@ class Rig extends RefCounted:
 	var player := Stroller.new()
 	var baby := Baby.new()
 	var clock := DayController.new()
-	var city: City
 	var tree: SceneTree
 	var elapsed := 0.0
 
-	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, a_city: City = null,
+	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: DayWorld = null,
 			spikes := false) -> void:
 		observer = TelemetryObserver.new(run_log)
 		tree = parent.get_tree()
-		city = a_city
-		if city != null:
-			observer.setup(city.run, city.map, city.events, city.streets(), city.crowd.sources,
+		if day != null:
+			observer.setup(day.run, day.map, day.events, day.streets, day.crowd,
 					player, baby, clock, null, spikes)
 		else:
 			observer.setup_escape(null, player, baby, clock, spikes)
@@ -77,6 +83,44 @@ class Rig extends RefCounted:
 	func free_all() -> void:
 		for node: Node in [observer, player, baby, clock]:
 			node.free()
+
+## What a day's observer is handed besides her, the baby and the clock: the run, the city's map, the
+## day's events, today's streets and the crowd's sources, each a plain value or a stand-in.
+class DayWorld extends RefCounted:
+	var run := RunState.new()
+	var map: CityMap
+	var events := StandInEvents.new()
+	var streets := DayStreets.new()
+	var crowd := ExcitementSources.new()
+
+	func _init(a_map: CityMap) -> void:
+		run.start_run(RUN_SEED)
+		map = a_map
+
+	## Frees the stand-in events and every instance a case set up on them.
+	func free_all() -> void:
+		for plan in events.placed:
+			if is_instance_valid(plan.live):
+				plan.live.free()
+		events.free()
+
+## A day's events as the observer asks them (`plans()`): the plans a case sets, each placed with its
+## instance live where the case put it. The base fake answers nothing else, and the real manager's
+## streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
+class StandInEvents extends FakeEventManager:
+	var placed: Array[EventScheduler.Planned] = []
+
+	## A plan of `row` placed at `at`, its instance live there.
+	func place(row: String, at: Vector2) -> EventScheduler.Planned:
+		var plan := EventScheduler.Planned.new(EventCatalogue.by_id(row), at)
+		plan.live = EventInstance.new()
+		plan.live.setup(plan.def, at)
+		placed.append(plan)
+		return plan
+
+	## Overrides EventManager.plans.
+	func plans() -> Array[EventScheduler.Planned]:
+		return placed
 
 ## The recording log the case in hand writes into, made by `_fresh_log()` so no case reads another's
 ## lines. Freed with the suite.
@@ -163,17 +207,20 @@ func _test_a_retried_section_restarts_the_clock(t) -> void:
 	baby.free()
 	player.free()
 
-## The random stream a day's events are started from, for the cases that start a day.
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("%d:%d" % [4242, day])
-	return rng
+## A point on the first sidewalk tile of `map`, where she can stand for a case that needs only a
+## street under her feet.
+func _on_a_sidewalk(map: CityMap) -> Vector2:
+	for y in map.size.y:
+		for x in map.size.x:
+			if map.tile_at(Vector2i(x, y)) == GameEnums.TileType.SIDEWALK:
+				return map.tile_to_world(Vector2i(x, y))
+	return Vector2.ZERO
 
 ## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
 ## watched by the day's own observer, handed the day's clock and told which world she is in — so
 ## this drives the calls the run session makes, in its order, against a building of one masked man
 ## (a plain `EventInstance` set up with the catalogue's `masked_pursuer` row, as the real building's
-## answers: waiting, not telegraphing, warning by radius) and a real city: a section entered, a frame of every watcher, the masked man met, the section lost through
+## answers: waiting, not telegraphing, warning by radius) and a city of streets only: a section entered, a frame of every watcher, the masked man met, the section lost through
 ## the day's own `day_finished()`, the same section again, then the city entered and left by the
 ## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
 ## mark — must stay silent rather than crash.
@@ -190,10 +237,9 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	var clock := DayController.new()
 	_fresh_log()
 	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.
-	var run := RunState.new()
-	run.start_run(RUN_SEED)
+	var day := DayWorld.new(StreetMap.full())
 	var observer := TelemetryObserver.new(_log)
-	observer.setup_escape(run, player, baby, clock, false)
+	observer.setup_escape(day.run, player, baby, clock, false)
 	t.add_child(observer)
 
 	_log.begin_run(0)
@@ -212,11 +258,8 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	player.global_position = start
 	observer.start_section(true)
 
-	var city: City = RunCity.in_run(preload("res://scenes/world/city.tscn"), run)
-	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
-	player.global_position = city.map.home_world_position()
-	observer.watch_city(city.map, city.events, city.streets(), city.crowd.sources)
+	player.global_position = _on_a_sidewalk(day.map)
+	observer.watch_city(day.map, day.events, day.streets, day.crowd)
 	observer.start_section(false)
 	clock.start(180.0)
 	await t.get_tree().process_frame
@@ -261,7 +304,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	clock.free()
 	baby.free()
 	player.free()
-	city.free()
+	day.free_all()
 	man.free()
 	events.free()
 
@@ -435,16 +478,12 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
 func _test_a_lost_day_restarts_the_trail(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	city.run.header.day = 1
-	t.add_child(city)
-	city.build(map)
+	var day := DayWorld.new(StreetMap.full())
 	_fresh_log()
-	var rig := Rig.new(t, _log, null, city)
+	var rig := Rig.new(t, _log, null, day)
 	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
 	# it is normally instanced from provides, and `start_day()` reads nothing that needs one.
-	rig.player.global_position = city.map.home_world_position()
+	rig.player.global_position = _on_a_sidewalk(day.map)
 	rig.player.facing = Vector2.DOWN
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -460,7 +499,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 
 	_log.end_run()
 	rig.free_all()
-	city.free()
+	day.free_all()
 
 ## The dusk map's whole reason to exist: `was_live` marks a plan the moment
 ## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
@@ -468,48 +507,30 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 ## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
 func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(map)
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
-
-	var plan: EventScheduler.Planned = null
-	for candidate in city.events.plans():
-		if candidate.is_placed():
-			plan = candidate
-			break
-	t.check(plan != null, "day 3 places something sited to test against")
-	if plan == null:
-		city.free()
-		return
-
-	city.events.stream_around(plan.position)
-	t.check(plan.live != null, "streaming in from right on top of it brings it live")
+	var day := DayWorld.new(StreetMap.full())
+	var at := _on_a_sidewalk(day.map)
+	# A plan live where it was placed, as streaming leaves one that has not telegraphed: in the
+	# world, with her still outside its reach.
+	var plan := day.events.place("loudspeaker", at)
 
 	_fresh_log()
-	var rig := Rig.new(t, _log, null, city)
+	var rig := Rig.new(t, _log, null, day)
 	_log.begin_run(0)
 	_log.begin_day(3, 1, 1, 1, 180.0)
 
-	# Asserted about `plan` specifically rather than "the dict is empty": `stream_around` from right
-	# on top of it may well have streamed in a neighbour too, and a neighbour being met at `far` is
-	# not what this test is about.
-	rig.player.global_position = plan.live.global_position + Vector2(plan.def.outer_radius + 200.0, 0.0)
+	rig.player.global_position = at + Vector2(plan.def.outer_radius + 200.0, 0.0)
 	await rig.frame()
 	t.check(not rig.observer.met_events().has(plan),
 			"being streamed in is not being met — she has not come within the outer radius yet")
-	t.check(plan.was_live, "the plan is 'was_live' regardless, which answers the looser question")
 
-	rig.player.global_position = plan.live.global_position + Vector2(plan.def.outer_radius - 10.0, 0.0)
+	rig.player.global_position = at + Vector2(plan.def.outer_radius - 10.0, 0.0)
 	await rig.frame()
 	t.check(rig.observer.met_events().has(plan),
 			"entering the outer radius — the field she can actually feel — is what counts as met")
 
 	_log.end_run()
 	rig.free_all()
-	city.free()
+	day.free_all()
 
 ## `_test_tracing_a_day_does_not_change_it` is the invariant's own test, and it does not reach
 ## either of these two: it calls `EventScheduler.build_day` directly and never instantiates an
@@ -525,36 +546,22 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## watcher did changed `map`, the one input the next day's plan reads here (the plan is made from
 ## a fresh random stream and a fresh one-shot ledger, so what the check pins is the map).
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(map)
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
-
-	var plan: EventScheduler.Planned = null
-	for candidate in city.events.plans():
-		if candidate.is_placed():
-			plan = candidate
-			break
-	t.check(plan != null, "day 3 places something sited to walk near")
-	if plan == null:
-		city.free()
-		return
-	city.events.stream_around(plan.position)
+	var map := CityMapCache.of(CITY_SEED)
+	var day := DayWorld.new(map)
+	var at := map.doorstep_world_position()
+	var plan := day.events.place("loudspeaker", at)
 
 	# What day 4 plans, computed before the trail is ever walked.
 	var quiet := PlanSignature.of(map, 4)
 
 	_fresh_log()
-	var rig := Rig.new(t, _log, null, city)
-	rig.player.global_position = plan.live.global_position \
-			+ Vector2(plan.def.outer_radius + 200.0, 0.0)
+	var rig := Rig.new(t, _log, null, day)
+	rig.player.global_position = at + Vector2(plan.def.outer_radius + 200.0, 0.0)
 
 	_log.begin_run(0)
 	_log.begin_day(3, 1, 1, 1, 180.0)
 	var here: Vector2 = rig.player.global_position
-	var towards := (plan.live.global_position - here).normalized()
+	var towards := (at - here).normalized()
 	for i in 400:
 		here += towards * TelemetryObserver.TRAIL_SAMPLE_DISTANCE
 		rig.player.global_position = here
@@ -572,7 +579,7 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 			+ "with the log on, leave what day 4 plans untouched")
 
 	rig.free_all()
-	city.free()
+	day.free_all()
 
 ## The observer on real frames, `--spikes` given, on the bare map rig: it hands its frame watch each
 ## frame's length and, for the spike line, her tile and the live events (none), so a `frame` line

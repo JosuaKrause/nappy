@@ -346,9 +346,12 @@ worktrees — merging is what collides — so parallelism is planned at the file
 ## What the orchestrator keeps
 
 - **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
-  when no task is left to start or advance. While agents run, it briefs and spawns the next queue
-  items whose files the running agents do not own, rather than ending its turn to report and wait;
-  a report to the player goes out along the way, never as a stopping point. A running agent or a
+  when no task is left to start or advance. While agents run, it briefs and spawns every queue item
+  it can start whose files the running agents do not own; holding startable work back, to limit
+  the reviews to come or for any other reason, is stopping early. **Once everything startable is
+  running, it ends its turn to wait for the agents** (inbox #1196): their reports wake it, and
+  waiting that way is not ending the session. A report to the player goes out along the way, never
+  as a stopping point. A running agent or a
   pull request still to review or land is a task to advance, so the session stays open while one
   is left. *Proposed, not asked for, open to the player's correction:* a task that waits only on
   the player, a blocking board question or a review item, does not keep the session open, since
