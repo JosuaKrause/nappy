@@ -16,7 +16,7 @@ extends RefCounted
 ## held restart hands the sitting a fresh one, which the next boot starts (`start_run()`). `main`,
 ## the composition root, takes it off the sitting once a boot and hands it, typed `RunState`, to
 ## `GameSave` and to every reader it builds, so a test hands a reader whichever run it built; the
-## resistance is handed it with its city (`City.run`) or by `ResistanceDirector.setup()`.
+## resistance is handed it by `ResistanceDirector.setup()`, which hands it on to its happenings.
 ##
 ## **A plain `RefCounted`, not a node**: the sitting holds it by reference, and it goes when the
 ## last holder lets it go, so no test frees one. It reaches nothing in the scene tree, and no

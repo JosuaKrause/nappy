@@ -25,8 +25,9 @@ extends Node2D
 ## hands over both, the run flow hands the building its events. The city and the building answer the
 ## baby the same way, through this one combination, and the halo reads the same sets.
 ##
-## `City` still has an `is_calm_zone` of its own, for the debug overlay and the telemetry, which
-## genuinely do want the yes/no. It is not on this interface because `Baby` has no use for it.
+## Whether a point is calm ground at all is the map's question (`CityMap.is_calm_zone()`), for the
+## debug overlay and the telemetry, which genuinely do want the yes/no. It is not on this interface
+## because `Baby` has no use for it.
 
 ## What this ground multiplies the sleepiness gain by while she walks. 1.0 is anywhere that is not
 ## calm; calm ground is worth many times that, and a small calm area more again.

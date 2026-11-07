@@ -109,8 +109,23 @@ const NO_TILE := Vector2i(-1, -1)
 ## to overturn against a played day rather than against that printout.
 const NOTE_HANDOVER_LINGER_SECONDS := 2.5
 
-var _city: City
 var _map: CityMap
+## The day's events (`EventManager`), handed in by `setup()`: what every row the director puts in the
+## street is spawned, moved and retired through, and what a placement asks of the day's plan. Null
+## for none, the bare-map rigs that place on a map alone.
+var _events: EventManager
+## Today's streets as dawn left them (`DayStreets`), handed in by `setup()`: the day's region wall and
+## doors. Null for none.
+var _streets: DayStreets
+## The fronts the story changes (`CityFronts`), handed in by `setup()`: day 8's burnt building and its
+## door, and what the happenings change. Null for none.
+var _fronts: CityFronts
+## The world the marks and the happenings' cordon are drawn in (`WorldContext`), handed in by
+## `setup()`.
+var _world: WorldContext
+## The art's pages the marks and the cordon draw from (`AtlasLibrary`), handed in by `use_atlas()`
+## before `setup()` passes it on; null, a mark makes its own (`ContactPoint`).
+var _atlas: AtlasLibrary
 ## Where a pursuer the director sends at her may start (`SpawnSiting`), handed in by `setup()`: the
 ## rules a start is held to and the searches that answer one (`_draw_arrival_position()`).
 var _spawn_siting: SpawnSiting
@@ -214,7 +229,7 @@ var _rng: RandomNumberGenerator
 ## The player, handed in by `use_player()`, or null for none in the world — a rig's bare director.
 var _player: Stroller
 ## The run this director belongs to (`RunState`): the resistance's progress and steps, the scars,
-## the alleys of completed tasks. The city's, handed in with it (`setup()`).
+## the alleys of completed tasks. Handed in by `setup()`.
 var _run: RunState
 ## What the story puts in the street besides the task — see `ResistanceHappenings`.
 var _happenings := ResistanceHappenings.new()
@@ -246,37 +261,46 @@ var _mouths_of: CityMap
 ## order and built with them.
 var _mark_tiles_of_mouths: Array[Vector2i] = []
 
-## Hands the director its city, the map it places on, the navigator its happenings move by — the
-## city's own (`City.navigator`), or the map's own (`WorldMap.navigator()`) for a rig that hands
-## none — the run it belongs to: `run`, or the city's (`City.run`) for a caller that hands none —
-## and where a pursuer it sends may start: `spawn_siting`, or the city's (`City.spawn_siting`) for a
-## caller that hands none over the city's map, or, for a rig with no city or a map of its own, one
-## over `map` that sees the city's view and region where there is a city and neither where not.
-func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState = null,
+## Hands the director the art's pages its marks and its happenings' cordon draw from — the city's
+## own (`City.atlas`), handed by `main` before `setup()`, which hands it on to the happenings. A
+## director handed none draws each mark from a library of the mark's own.
+func use_atlas(atlas: AtlasLibrary) -> void:
+	_atlas = atlas
+
+## Hands the director the map it places on, the run it belongs to, the day's events, today's
+## streets, the fronts its tasks and happenings change and the world its marks are drawn in — the
+## city's own, from `main`, or null for each but the map and the run for a rig that places on a map
+## alone — the navigator its happenings move by — the city's own (`City.navigator`), or the map's
+## own (`WorldMap.navigator()`) for a rig that hands none — and where a pursuer it sends may start:
+## `spawn_siting`, the city's own, or, for a rig that hands none, one over `map` that sees the
+## events' view and the streets' region where there are events and streets and neither where not.
+func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreets,
+		fronts: CityFronts, world: WorldContext, navigator: Navigator = null,
 		spawn_siting: SpawnSiting = null) -> void:
-	_city = city
-	_run = run if run else (city.run if city else null)
 	_map = map
+	_run = run
+	_events = events
+	_streets = streets
+	_fronts = fronts
+	_world = world
 	var moves_by := navigator if navigator else map.navigator()
 	if spawn_siting:
 		_spawn_siting = spawn_siting
-	elif city and city.spawn_siting and city.spawn_siting.map() == map:
-		_spawn_siting = city.spawn_siting
 	else:
 		_spawn_siting = SpawnSiting.new(map, moves_by,
-				city.events.visible_view if city and city.events else Callable(),
-				city.streets().siting_region if city else Callable())
-	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
-		city.events.door_crossed.connect(_on_door_crossed)
+				events.visible_view if events else Callable(),
+				streets.siting_region if streets else Callable())
+	if events and not events.door_crossed.is_connected(_on_door_crossed):
+		events.door_crossed.connect(_on_door_crossed)
 	# A protest's placards point where this director's red arrow does (`_pointable_objective()`):
-	# the city's events are handed the question rather than looking the director up.
-	if city and city.events:
-		city.events.points_at = _pointable_objective
+	# the day's events are handed the question rather than looking the director up.
+	if events:
+		events.points_at = _pointable_objective
 	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
 	_happenings.trace = trace
-	_happenings.setup(city, map, moves_by, _run, _spawn_siting)
+	_happenings.setup(map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
 ## a neighbor placed out of sight of and a task's arrow pointed from.
@@ -346,8 +370,8 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	# placement needs once a day are done now, at dawn, rather than on that frame.
 	var task := ResistanceSteps.by_index(step.index + 1, _steps) if step and step.is_pickup \
 			else null
-	if task and task.is_a_guarded_band and _city and _city.events:
-		_city.events.prepare_a_task_row(EventCatalogue.by_id(task.task_event_id))
+	if task and task.is_a_guarded_band and _events:
+		_events.prepare_a_task_row(EventCatalogue.by_id(task.task_event_id))
 
 ## **A scene recipe's task** (`SceneRecipeRuntime`, `setup.task`; `docs/SCENE_RECIPES.md`): the
 ## day's own step, offered the way `start_day()` offers it, except that the chalk mark stands at
@@ -499,7 +523,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 		else:
 			_contact.queue_free()
 	_contact = ContactPoint.new()
-	_contact.atlas = _city.atlas if _city else null
+	_contact.atlas = _atlas
 	_contact.use_player(_player)
 	if neighbor:
 		_rider = neighbor
@@ -519,7 +543,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			_step = null
 			_contact = null
 			return
-		_rider = placed_row if placed_row else _city.events.spawn_extra(task_def, at)
+		_rider = placed_row if placed_row else _events.spawn_extra(task_def, at)
 		if no_recorded_scar:
 			_burn_a_front_for_the_task(_rider)
 		if _step.target_kind == ResistanceSteps.TargetKind.SCAR:
@@ -530,7 +554,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	_contact.completed.connect(_on_contact_completed)
 	# A mark on the ground belongs under everything that stands on it, including her, standing on it
 	# to read it.
-	_city.add_entity(_contact, DrawLayer.Layer.GROUND_MARKS)
+	_world.add_entity(_contact, DrawLayer.Layer.GROUND_MARKS)
 	# Where several places answer, the arrow starts on the one the contact was placed on, and
 	# `tick()` moves it to the closest on foot once the first sweep has finished.
 	if ResistanceSteps.answers_at_several_places(_step):
@@ -648,17 +672,17 @@ func _recorded_scar(scar_id: String) -> Vector2:
 ## instance of its own at the recorded position instead.
 func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 	var at := _recorded_scar(scar_id)
-	if at == Vector2.INF or not _city or not _city.events:
+	if at == Vector2.INF or not _events:
 		return null
-	var shell := _city.events.keep_live(scar_id, at)
+	var shell := _events.keep_live(scar_id, at)
 	if shell:
 		return shell
 	var def := EventCatalogue.by_id(scar_id)
-	return _city.events.spawn_extra(def, at) if def else null
+	return _events.spawn_extra(def, at) if def else null
 
 ## Day 8's task on a run with no recorded scar, once its `burnt_shell` stands at a front
 ## (`_fronts_a_fire_catches_on()`): records the scar there, exactly as day 3's fire would have, and
-## has `City.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
+## has `CityFronts.mark_the_burnt_frontage()` burn the building behind it now, so the building she is
 ## sent to is burnt when she gets there. Nothing else a fire does is done: no block moves along its
 ## arc, since no fire burned.
 ##
@@ -670,13 +694,13 @@ func _ride_the_recorded_scar(scar_id: String) -> EventInstance:
 ## would after a real fire.
 func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 	_run.add_scar(_step.task_event_id, shell.global_position)
-	_city.mark_the_burnt_frontage()
+	_fronts.mark_the_burnt_frontage()
 
 ## How far day 8's touch reaches from the burnt building's door: the whole tile of sidewalk in
 ## front of the door, its bottom corners included. *(sandy-egret: "or better to the door but the
 ## acceptance radius centered at the door should have a large enough radius for half the sidewalk
 ## to be covered".)* The sidewalk is two tiles (`Tuning.SIDEWALK_WIDTH`), so its near half is the
-## one frontage-lane tile below the door; the door's point (`City.way_in_behind()`) is the middle
+## one frontage-lane tile below the door; the door's point (`CityFronts.way_in_behind()`) is the middle
 ## of the ground-floor tile above it, so that tile's far corners are half a tile across and a tile
 ## and a half down — √(16² + 48²) ≈ 50.6px. Straight in front of the door that reaches 2.6px
 ## past the line between the frontage lane and the kerb lane and no further, so the kerb lane's far
@@ -686,7 +710,7 @@ func _burn_a_front_for_the_task(shell: EventInstance) -> void:
 const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 
 ## Day 8's contact: it rides the burnt shell `shell` (so `rider_alive()` keeps answering for it) but
-## stands on the door of the building behind it (`City.way_in_behind()`) and reaches `DOOR_REACH`
+## stands on the door of the building behind it (`CityFronts.way_in_behind()`) and reaches `DOOR_REACH`
 ## from there. The shell has no body and draws nothing, so the door is where the task *is* — *"the
 ## building is what needs to be burnt, not an object next to the building"*. **Some ground within
 ## `DOOR_REACH` of the door must be ground she can stand on** (`_door_can_be_touched()`); only a
@@ -695,7 +719,7 @@ const DOOR_REACH := Tuning.TILE_SIZE * sqrt(0.5 * 0.5 + 1.5 * 1.5)
 ## it, which `DOOR_REACH` covers from the shell's own frontage-lane tile the same way. Draws
 ## nothing from `_rng`, so the day's later draws are unmoved.
 func _ride_to_the_door(shell: EventInstance) -> void:
-	var door := _city.way_in_behind(shell.global_position) if _city else Vector2.INF
+	var door := _fronts.way_in_behind(shell.global_position) if _fronts else Vector2.INF
 	if door != Vector2.INF and not _door_can_be_touched(door):
 		trace.note("contact", ("step %d: the burnt building's door at %s has no ground " +
 				"within reach today — the facade behind the shell stands in")
@@ -788,7 +812,7 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 		return
 	var existing: EventInstance = _guard if for_mark else _task_guard
 	if existing and is_instance_valid(existing):
-		_city.events.retire(existing)
+		_events.retire(existing)
 	if for_mark:
 		_guard = null
 	else:
@@ -812,9 +836,9 @@ func _maybe_set_a_trap(day: int, rng: RandomNumberGenerator, at: Vector2, for_ma
 	trace.note("roll", "%s guarded (%s): robber %.0fpx away"
 			% [kind, placement, at.distance_to(guard_at)])
 	if for_mark:
-		_guard = _city.events.spawn_extra(robbery, guard_at)
+		_guard = _events.spawn_extra(robbery, guard_at)
 	else:
-		_task_guard = _city.events.spawn_extra(robbery, guard_at)
+		_task_guard = _events.spawn_extra(robbery, guard_at)
 
 ## Where `_maybe_set_a_trap()` stands a guard for the contact at `at`, without spawning him: for a
 ## chalk mark, two-thirds through its alley (`_guard_two_thirds_through()`) or at a courtyard's inner
@@ -1138,7 +1162,7 @@ static func _sets_a_trap_on_her(step: ResistanceSteps.Step) -> bool:
 ## it, or crossing its door. Nothing is sent when `_draw_arrival_position()` finds no ground, then
 ## or when the badge's time is up, which the run log says.
 func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
-	if _day < TRAP_FIRST_DAY or not _city or not _city.events:
+	if _day < TRAP_FIRST_DAY or not _events:
 		return
 	var def := EventCatalogue.by_id(step.trap_row)
 	if not def:
@@ -1151,7 +1175,7 @@ func _set_the_trap_on_her(step: ResistanceSteps.Step) -> void:
 ## task_guard_sent()`, whose charges count as the task guard's). `who` is how the run log names him
 ## (`ResistanceSteps.Step.trap_noun` for a task's trap; the task guard is logged as a robber).
 func _send_at_her(def: EventDef, front_door: bool, who := "a robber") -> void:
-	if not _city or not _city.events:
+	if not _events:
 		return
 	var her := _player_position()
 	if her == Vector2.INF:
@@ -1161,9 +1185,9 @@ func _send_at_her(def: EventDef, front_door: bool, who := "a robber") -> void:
 	var search := func(standing: Vector2, prefer: Vector2) -> SpawnSiting.Start:
 		return _draw_arrival_position(_rng, standing, def, front_door, prefer)
 	var arrive := func(place: Vector2, standing: Vector2, start: SpawnSiting.Start) -> void:
-		_city.events.spawn_warned(def, PackedVector2Array([place]))
+		_events.spawn_warned(def, PackedVector2Array([place]))
 		_note_the_trap(who, place, standing, start)
-	if not _city.events.send_from_out_of_sight(def, her, search, arrive):
+	if not _events.send_from_out_of_sight(def, her, search, arrive):
 		trace.note("roll", "task handed over unguarded: no walkable ground out of sight of her "
 				+ "in %d draws" % (TRAP_DRAW_LIMIT + 4))
 
@@ -1263,7 +1287,7 @@ const ARRIVAL_CONE := PI / 6.0
 ## Whether `step`'s target is a door on a building's front — the burnt building's (day 8) or the
 ## power station's (the last night) — where she stands on the sidewalk below the facade and the
 ## building fills the view above her. Every front in this city faces south, the way the oblique view
-## looks at it (`City.way_in_behind()`, `station_door_point()`), so the far side of her street is
+## looks at it (`CityFronts.way_in_behind()`, `station_door_point()`), so the far side of her street is
 ## always straight below her.
 static func _is_at_a_front_door(step: ResistanceSteps.Step) -> bool:
 	return step != null and (step.target_kind == ResistanceSteps.TargetKind.STATION_DOOR
@@ -1805,16 +1829,16 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ## (`_pick_near()`).
 func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 	var def := EventCatalogue.by_id(_step.task_event_id) if _step else null
-	if not def or not _city or not _city.events:
+	if not def or not _events:
 		return null
 	var her := _where_she_read_it(mark)
 	_follow_the_paths_to_the_edge(her)
-	var placed := _city.events.queue_a_task_row(def, _roadblock_ground(def, _circle_edge), _rng,
+	var placed := _events.queue_a_task_row(def, _roadblock_ground(def, _circle_edge), _rng,
 			her)
 	for reach: float in ROADBLOCK_WIDER_REACH:
 		if placed:
 			break
-		placed = _city.events.queue_a_task_row(def,
+		placed = _events.queue_a_task_row(def,
 				_roadblock_ground(def, _paths_reach_between(her, NEAR_THE_MARK, reach)), _rng, her)
 	if not placed:
 		trace.note("contact", ("no ground her paths reach within %.0fpx takes a roadblock " +
@@ -2004,7 +2028,7 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 ## **The station's door point on its facade**: the middle of the drawn door
 ## (`Building._draw_front_overlay()`, centred on the two pavement tiles of
 ## `CityMap.power_station_door`), half a tile up the ground floor — the same point
-## `City.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
+## `CityFronts.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
 ## front of it the same way. One tile above the pavement rect's centre, which is half a tile below
 ## the wall line.
 static func station_door_point(map: CityMap) -> Vector2:
@@ -2041,12 +2065,12 @@ static func station_door_point(map: CityMap) -> Vector2:
 ## them all.
 func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector2:
 	_mast_id = ""
-	if not _city or not _city.events:
+	if not _events:
 		return Vector2.INF
 	var ground := _spawn_siting.ask_of_ground()
 	var offered: Array[EventScheduler.Planned] = []
 	var beside: Array[Vector2i] = []
-	for plan in _city.events.plans():
+	for plan in _events.plans():
 		if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
 				or not plan.is_placed():
 			continue
@@ -2111,7 +2135,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 ##   off a calm interior and off every place a region door could stand).
 func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector2i]:
 	var added: Array[Vector2i] = []
-	if not _city or not _city.events:
+	if not _events:
 		return added
 	var ground := _spawn_siting.ask_of_ground(TASK_BOX)
 	var feet: Array[Vector2i] = []
@@ -2134,7 +2158,7 @@ func _add_a_mast_near(mark: Vector2, rng: RandomNumberGenerator) -> Array[Vector
 					feet.append(tile)
 					beside_of[tile] = next
 					break
-	var plan := _city.events.queue_a_mast(feet, rng)
+	var plan := _events.queue_a_mast(feet, rng)
 	if not plan:
 		trace.note("contact", "no ground where her paths reach the %.0fpx circle can take a mast"
 				% NEAR_THE_MARK)
@@ -2188,10 +2212,10 @@ func _weighted_mast_index(beside: Array[Vector2i], rng: RandomNumberGenerator) -
 ## scar is — a permanent mark on the city left by what happened on an earlier day — and so it is
 ## saved, and given back with a lost day, by what already does both for the burnt shell.
 func _silence_the_mast() -> void:
-	if _mast_id == "" or not _city or not _city.events:
+	if _mast_id == "" or not _events:
 		return
-	var foot := _city.events.mast_foot(_mast_id)
-	_city.events.silence_mast(_mast_id)
+	var foot := _events.mast_foot(_mast_id)
+	_events.silence_mast(_mast_id)
 	if foot != Vector2.INF:
 		_run.add_scar(EventScheduler.SILENCED_MAST, foot)
 	trace.note("contact", "mast %s is silenced for the rest of the run" % _mast_id)
@@ -2216,7 +2240,7 @@ const NEIGHBOR_WALK_BAND_TILES := 8
 ## The start is drawn by the day's RNG from the band of tiles `NEIGHBOR_WALK_BAND_TILES` either side
 ## of the walk asked for, in `tiles_of_type()`'s own order, so the same day draws the same start.
 func _send_the_neighbor_home() -> EventInstance:
-	if not _city or not _city.events:
+	if not _events:
 		return null
 	var def := EventCatalogue.neighbor_heading_home()
 	var door := _map.world_to_tile(_map.doorstep_world_position())
@@ -2233,7 +2257,7 @@ func _send_the_neighbor_home() -> EventInstance:
 		var path := _walk_home(field, start)
 		trace.note("contact", "the neighbor is %d tiles of walk from home at %s"
 				% [_map.distance_at(field, start), RunTrace.tile(start)])
-		return _city.events.spawn_extra(def, path[0], path)
+		return _events.spawn_extra(def, path[0], path)
 	if _pinned_neighbor != Vector2.INF:
 		_scene_task_errors.append(("setup.task.neighbor %s is not a start the day could draw: a " +
 				"sidewalk tile centre %d±%d tiles of walk from home, %.0fpx or more from her")
@@ -2304,7 +2328,7 @@ func _take_the_neighbor_away() -> void:
 		return
 	if _drawing_shows(_taken_neighbor.def, _taken_neighbor.global_position):
 		return
-	_city.events.retire(_taken_neighbor)
+	_events.retire(_taken_neighbor)
 	_taken_neighbor = null
 	trace.note("contact", "the neighbor is taken with the raid")
 
@@ -2319,9 +2343,9 @@ func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
 	return null
 
 ## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance_*.gd`
-## build with no `_city`.
+## build with no streets.
 func _region_plan() -> RegionPlanner.RegionPlan:
-	return _city.streets().region_plan() if _city else null
+	return _streets.region_plan() if _streets else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
 ## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
@@ -2504,7 +2528,7 @@ static func _nearest_open_in_pool(pool: Array[Vector2i], from: Vector2i,
 ## that band stands in front of an alley at both ends the disc alone answers the alley reachable and
 ## the arrow does not.
 ##
-## **Without a `_city` (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
+## **Without events (the bare-map rigs several tests in this file build)**, `_reach_blocked` is
 ## built from an empty blocker list — today's closures alone, which is `{}` for the same rigs since
 ## nothing ever calls `City.start_day()` on them either — so every walkable tile answers reachable
 ## and this check is a silent no-op.
@@ -2513,7 +2537,7 @@ func _ensure_reachability() -> void:
 		return
 	_reach_grid = ReachabilityGrid.build(_map)
 	var blockers: Array[EventScheduler.Planned] = []
-	if _city and _city.events:
+	if _events:
 		# A region door's own bodies are never a block — `event_scheduler.gd`'s own corridor-cost
 		# rule already carries this exemption ("a region door costs by design ... `checkpoint_hut`
 		# and `checkpoint_gate` are never a block. The region wall's own body is not a door and
@@ -2526,10 +2550,10 @@ func _ensure_reachability() -> void:
 		# building code itself keeps apart from `wall_bodies` for this reason; excluded by identity
 		# rather than by matching `def.id`, so a new door-body row never needs a second list here.
 		var door_bodies: Array[EventScheduler.Planned] = []
-		var region_plan: RegionPlanner.RegionPlan = _city.streets().region_plan()
+		var region_plan: RegionPlanner.RegionPlan = _streets.region_plan()
 		if region_plan:
 			door_bodies = region_plan.door_bodies
-		for plan in _city.events.plans():
+		for plan in _events.plans():
 			if not plan.is_placed() or plan in door_bodies:
 				continue
 			if plan.def.obstructs_radius > 0.0 or plan.def.hard_fail:
@@ -2650,12 +2674,12 @@ func _tick_lingering_rider(delta: float) -> void:
 ## a rider with a body is touched from any side of it (`ContactPoint.touches_the_body()`), and one
 ## without is touched where it stands, so the contact already answers for wherever she is round it.
 func _follow_her_between_look_alikes() -> void:
-	if not _player or not is_instance_valid(_player) or not _city or not _city.events:
+	if not _player or not is_instance_valid(_player) or not _events:
 		return
 	var here := _player.global_position
 	var best: EventInstance = null
 	var best_distance := INF
-	for instance in _city.events.instances():
+	for instance in _events.instances():
 		if instance.def.id != _step.task_event_id or instance.is_finished:
 			continue
 		var distance := here.distance_to(instance.global_position)
@@ -2721,7 +2745,7 @@ func _move_the_task_guard_to_her_target() -> void:
 			or not _task_guard.is_waiting():
 		return
 	var target := _live_instance(_arrow_key)
-	if not target or not _city or not _city.events:
+	if not target or not _events:
 		return
 	if _guards_the_roadblock(_task_guard.global_position, target):
 		if not over:
@@ -2753,7 +2777,7 @@ func _move_the_task_guard_to_her_target() -> void:
 		_task_guard_found_nothing_age = 0.0
 		return
 	# Moved with everything he is in the middle of, never retired and made again.
-	_city.events.move_extra(_task_guard, at)
+	_events.move_extra(_task_guard, at)
 	_task_guard_over = _arrow_key
 	_task_guard_in_band = in_band
 	trace.note("roll", "the task's guard moves, unseen, to the roadblock she approaches, "
@@ -2801,7 +2825,7 @@ func _set_the_task_guard_on_her() -> void:
 				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
 		return
 	var away := _task_guard.global_position.distance_to(her)
-	_city.events.retire(_task_guard)
+	_events.retire(_task_guard)
 	_task_guard = null
 	trace.note("roll", "the roadblock is done: the task's guard, out of her view %.0fpx away, "
 			% away + "is sent at her under a badge")
@@ -3060,7 +3084,7 @@ func _on_contact_completed(step_index: int) -> void:
 ## and the van is a second van on her way while the task stays the one near the mark (inbox #650 in
 ## mossy-beaver: "I guess that leaves only the van?").
 func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
-	if not task or not _city or not _city.events:
+	if not task or not _events:
 		return
 	if task.rigs_within <= 0:
 		return
@@ -3068,7 +3092,7 @@ func _rig_her_route_for(task: ResistanceSteps.Step) -> void:
 			else task.task_event_id
 	var size := task.rigs_within
 	var ids: Array[String] = [row]
-	var rigged := _city.events.rig_her_route(ids, size)
+	var rigged := _events.rig_her_route(ids, size)
 	if rigged.is_empty():
 		return
 	# Which marbles the rest of the rigged bag took depends on how far into her bag the day had got,
@@ -3226,8 +3250,8 @@ func _arrow_position() -> Vector2:
 		if is_instance_valid(found) and found is EventInstance \
 				and not (found as EventInstance).is_finished:
 			return (found as EventInstance).global_position
-	elif _arrow_key is String and _city and _city.events:
-		return _city.events.mast_foot(_arrow_key)
+	elif _arrow_key is String and _events:
+		return _events.mast_foot(_arrow_key)
 	return Vector2.INF
 
 ## The key of the target the contact itself is on: the mast it was sent to, or the instance it
@@ -3249,16 +3273,16 @@ static func _same_key(a: Variant, b: Variant) -> bool:
 ## any of his beat is beside him.
 func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
-	if not _city or not _city.events or not _map:
+	if not _events or not _map:
 		return found
 	if step.target_kind == ResistanceSteps.TargetKind.MAST:
 		var ground := _spawn_siting.ask_of_ground()
-		for plan in _city.events.plans():
+		for plan in _events.plans():
 			if _mast_answers(plan, ground):
 				found.append({"key": plan.mast_id, "at": plan.position, "reach": _mast_reach(),
 						"beat": PackedVector2Array()})
 		return found
-	for instance in _city.events.instances():
+	for instance in _events.instances():
 		if instance.def.id == step.task_event_id and not instance.is_finished:
 			found.append({"key": instance.get_instance_id(), "at": instance.global_position,
 					"reach": _touch_reach(instance),
@@ -3441,13 +3465,13 @@ func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) 
 ## last chose — the arrow is chosen twice a second, and she covers ground in that time.
 func _follow_her_between_masts() -> void:
 	var here := _player_position()
-	if here == Vector2.INF or not _city or not _city.events:
+	if here == Vector2.INF or not _events:
 		return
 	var reach := _mast_reach()
 	if _contact.global_position.distance_to(here) <= reach:
 		return
 	var ground := _spawn_siting.ask_of_ground()
-	for plan in _city.events.plans():
+	for plan in _events.plans():
 		if plan.mast_id == _mast_id or plan.position.distance_to(here) > reach:
 			continue
 		if _mast_answers(plan, ground):

@@ -62,11 +62,16 @@ src/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
   city/
-	city_map.gd           tile data, queries (walkable); holds the city's street lattice
+	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
-	city.gd               the scene: ground, buildings, props, boundary, queries (is_calm_zone, is_alley)
+	street_layout.gd      the street lattice painted onto a map's tiles; the generator lays every
+	                      city's streets through it, and a test's street map does too
+	city.gd               the scene: ground, buildings, props, boundary, queries (is_alley)
 	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
 	                      doors, the closures, the region a siting reads; the city writes it
+	city_fronts.gd        the building fronts the story changes (the burnt frontage, a block
+	                      shown during the day, the neighbor's window, her sealed door); the
+	                      city builds it over its buildings and her door
 	block_plan.gd         one block's arc, planned at generation
 	block_layout.gd       one block's carves, also fixed at generation
 	city_state.gd         run-scoped: how far along each arc the run has got
@@ -785,8 +790,8 @@ checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the
 fires. The run is handed per call rather than held; what the save holds (the web flush's page-side
 objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that
 free the `main` holding a run, so the `Sitting` is its home and no static holds any of it. A test
-builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
-`ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
+builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it by
+`ResistanceDirector.setup()`, with the parts of the city it reads. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
 puts no run back between suites; the visit counter, under the sitting, holds only the run that
 `main` hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
@@ -915,9 +920,11 @@ choice (`main`), which hands that world's map down.
 
 ## WorldContext
 
-`Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
-`is_calm_zone()`, `is_alley()`, `excitement_sources_at()` — and that is the entire surface
-between the meters and the world. The debug world answers with hand-placed test data; the generated
+`Baby` never learns what a tile or an event is. It asks a `WorldContext` four questions —
+`sleepiness_multiplier()`, `decay_multiplier()`, `is_alley()`, `excitement_sources_at()` — and that
+is the entire surface between the meters and the world. Whether a point is calm ground at all is
+the map's question (`CityMap.is_calm_zone()`), asked by the run log and the debug readout.
+The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. **No world sums its events itself**: it is handed the
 sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the
 world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars

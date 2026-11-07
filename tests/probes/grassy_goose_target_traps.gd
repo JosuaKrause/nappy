@@ -89,7 +89,8 @@ func run(t) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city, city.map)
+			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+					city.spawn_siting)
 			director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 			var offered := director.current_step()
 			if offered and offered.is_pickup:
@@ -170,7 +171,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 ## unrotated 640x360 screen round her.
 func _draw(director: ResistanceDirector, her: Vector2, def: EventDef,
 		front_door: bool) -> SpawnSiting.Start:
-	director._city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
+	director._events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 	return director._draw_arrival_position(director._rng, her, def, front_door)
 

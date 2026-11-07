@@ -494,7 +494,8 @@ func _task_scene(t, day: int, task: Dictionary) -> Dictionary:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, map)
+	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(player)
 	var mark := map.tile_to_world(MARK)

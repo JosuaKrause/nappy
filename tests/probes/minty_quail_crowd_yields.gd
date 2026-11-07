@@ -115,7 +115,8 @@ func _a_day(t, city: City, seed_value: int, day: int) -> void:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.use_player(player)
 	director.set_sight(city.events.sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -184,8 +185,8 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var before := city.events.instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map, city.navigator, city, park, city.spawn_siting,
-			director._reach_blocked)
+	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
+			city.spawn_siting, director._reach_blocked)
 	for tick in CORDON_TICKS:
 		_tick_events(city)
 		city.events.visible_view().look(camera, null)

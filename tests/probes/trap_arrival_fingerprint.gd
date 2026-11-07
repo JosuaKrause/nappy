@@ -79,7 +79,8 @@ func _a_day(t, city: City, seed_value: int, day: int) -> int:
 	director.set_process(false)
 	_lines.clear()
 	director.trace = RunTrace.recording(_lines)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.use_player(player)
 	director.set_sight(city.events.sees)
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)

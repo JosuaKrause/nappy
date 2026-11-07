@@ -120,7 +120,8 @@ func _day(t, day: int) -> Array:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, map)
+	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	return [city, director, own_run]
 
 func _free_day(made: Array) -> void:

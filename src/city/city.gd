@@ -274,16 +274,22 @@ const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
 ## `_sync_home_door()` both run after `RunCalendar.begin_day()`'s dawn photograph, so the
 ## scar's mere presence already answers "sealed as of this dawn" for every day after the one it
-## was added on, and the moment it happens on its own day is `seal_home_door()`'s, called live.
+## was added on, and the moment it happens on its own day is `CityFronts.seal_home_door()`'s,
+## called live.
 const SEALED_DOOR_SCAR := "sealed_door"
 ## `run.attempt_spend.scars` id day 3's fire leaves (`EventCatalogue._burning_building()`'s own
-## `aftermath.scar`), read by `mark_the_burnt_frontage()` the same way `_door_texture_for_today()` reads
-## `SEALED_DOOR_SCAR` above.
+## `aftermath.scar`), read by `CityFronts.mark_the_burnt_frontage()` the same way
+## `_door_texture_for_today()` reads `SEALED_DOOR_SCAR` above.
 const BURNT_FRONTAGE_SCAR := "burnt_shell"
-## The street door sprite `_spawn_home()` built, kept so `seal_home_door()` can swap its texture
-## live, the moment day 10's raid actually arrives, instead of waiting for a day that never
+## The street door sprite `_spawn_home()` built, kept so the dawn can put it right
+## (`_sync_home_door()`) and handed to the fronts, which swap its texture live the moment day 10's
+## raid actually arrives (`CityFronts.seal_home_door()`), instead of waiting for a day that never
 ## rebuilds it — `build()` runs once for the whole run (see the class doc).
 var _home_door: HomeDoor
+## The fronts the run's story changes (`CityFronts`), over `_buildings` and `_home_door`: built in
+## `build()` once both stand, asked by the city's own dawn dressing, and handed to whoever asks
+## (`fronts()`). Null before `build()`.
+var _fronts: CityFronts
 
 ## The sealed/unsealed fact survives unloading; only the Sprite's texture reference is resident.
 class HomeDoor extends Sprite2D:
@@ -365,6 +371,7 @@ func build(city_map: CityMap) -> void:
 	_building_shadows.set_buildings(shown_rects)
 	if _recipe_contains(map.home_world_position()):
 		_spawn_home()
+	_fronts = CityFronts.over(_buildings, _home_door, _door_world_x_range(), map, run, trace)
 	_spawn_street_trees()
 	_spawn_boundary()
 	if map.has_stretch():
@@ -393,7 +400,7 @@ func build(city_map: CityMap) -> void:
 	crowd.timing = crowd_timing
 	crowd.atlas = atlas
 	add_child(crowd)
-	crowd.setup(self, map, navigator)
+	crowd.setup(self, map, signals, _streets, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
 	excitement_sources = [events.sources, crowd.sources]
 	_blackout = Blackout.new()
@@ -431,12 +438,6 @@ func set_daylight(fraction: float) -> void:
 	_daylight.color = Color(light.r * tint.r, light.g * tint.g, light.b * tint.b)
 
 # ------------------------------------------------------------ WorldContext ---
-
-## Whether this is calm ground at all, for the debug overlay and the telemetry. **Not** a
-## `WorldContext` question: `Baby` asks `sleepiness_multiplier` instead, because calm ground is a
-## rate rather than a kind of place.
-func is_calm_zone(world_position: Vector2) -> bool:
-	return Tile.is_calm(map.tile_type_at_world(world_position)) if map else false
 
 ## How much faster the sleepiness meter fills on this ground.
 ##
@@ -527,8 +528,8 @@ func _spawn_home() -> void:
 	_home_door.atlas = atlas
 	# Sealed already on a boot that resumes on day 11 or later, or reloads a save written after
 	# the raid — `_door_texture_for_today()` reads the run's scars (`run.attempt_spend`), already loaded by the
-	# time `main.gd` calls `City.build()`. Day 10 itself is `seal_home_door()`'s, called live the
-	# moment the raid actually arrives.
+	# time `main.gd` calls `City.build()`. Day 10 itself is `CityFronts.seal_home_door()`'s, called
+	# live the moment the raid actually arrives.
 	_home_door.picture = _door_texture_for_today()
 	# Feet-anchored like everything else: the NODE sits on the ground plane at the back of
 	# the notch and the art is offset upward from there. Putting the node at the sprite's
@@ -562,14 +563,6 @@ func _sync_home_door() -> void:
 	if _home_door:
 		_home_door.picture = _door_texture_for_today()
 
-## Swaps her street door to the sealed picture, live, the moment day 10's raid actually arrives
-## (`ResistanceHappenings._maybe_raid()`, while she is out of sight of it) — the one day
-## `_sync_home_door()`'s own dawn read is too early for, since the raid has not happened yet when
-## it runs.
-func seal_home_door() -> void:
-	if _home_door:
-		_home_door.picture = SEALED_DOOR_TEXTURE
-
 ## The door's own world-space x-span, `[min, max)` — `DOOR_TEXTURE`'s native width, centred on
 ## `map.home_rect` the way `_spawn_home()`'s own sprite is. Read before the door itself exists
 ## (`_spawn_buildings()` runs first — see `build()`), so it stands on `map.home_rect` and
@@ -579,46 +572,6 @@ func _door_world_x_range() -> Vector2:
 	var centre_x := map.tile_rect_to_world(map.home_rect).get_center().x
 	var half_width := AtlasTable.baked().native_size(DOOR_TEXTURE).x * 0.5
 	return Vector2(centre_x - half_width, centre_x + half_width)
-
-## Boards the neighbor's window for the rest of the run: the third-floor window cell — row index
-## 3, ground floor is row 0 — nearest above her own door, on the one home-block `Building` the
-## door notch actually stands in front of (`_home_door_building()`). Her own floor, the top one at
-## this height, down the hall from her own door. It stands above the top of the screen at the
-## normal camera on her doorstep, facing away down the street — turning to face the building
-## brings it into frame (PLAYTEST-134, statement 4 revisited). Idempotent, so
-## `ResistanceHappenings.start_day()` calling it every day from day 11 on costs nothing once it is
-## set. That building always has at least four wall rows (`HOME_BUILDING_WALL_ROWS`), fixed rather
-## than rolled, so there is no shorter front here for a topmost row to stand in for it.
-func board_neighbor_window() -> void:
-	var building := _home_door_building()
-	if not building or building.neighbor_window_col >= 0:
-		return
-	var door_centre_x := (_door_world_x_range().x + _door_world_x_range().y) * 0.5
-	var best_col := 0
-	var best_distance := INF
-	for col in building.columns():
-		var distance := absf(building.column_centre_x(col) - door_centre_x)
-		if distance < best_distance:
-			best_distance = distance
-			best_col = col
-	building.neighbor_window_col = best_col
-	trace.note("contact",
-			"the neighbor's window is boarded at column %d, row %d (the third floor)"
-			% [best_col, building.neighbor_window_row()])
-
-## The one home-block `Building` the door's own world-space span actually stands in front of —
-## every lot on the home block carries `is_home_building`, but the door notch's columns are cut
-## out of every other one (`_spawn_buildings()`'s own doc), so only this lot's world footprint
-## overlaps `_door_world_x_range()`.
-func _home_door_building() -> Building:
-	var x_range := _door_world_x_range()
-	for building in _buildings:
-		if not building.is_home_building:
-			continue
-		var world := map.tile_rect_to_world(building.lot)
-		if world.position.x < x_range.y and world.end.x > x_range.x:
-			return building
-	return null
 
 ## `StreetTrees.planted()`'s own positions, drawn as `Prop`s once for the whole run — never
 ## rebuilt in `_dress_blocks()`, unlike a park's trees, because a street tree belongs to the
@@ -800,7 +753,7 @@ func _spawn_buildings() -> void:
 		building.position = Vector2(world.get_center().x, world.end.y)
 		building.footprint = world.size
 		building.variant = _variant_for(rect)
-		building.district = map.starting_purpose(_block_of(rect))
+		building.district = map.starting_purpose(block_of(rect))
 		building.height = _height_for(rect, rect.size.y)
 		building.lot = rect
 		# A stretch's authored values are the inputs to its geometry, not a repaint after it: the
@@ -810,7 +763,7 @@ func _spawn_buildings() -> void:
 		_draw_as_the_recipe_says(building)
 		# Every lot on the home block is hers — the door's own notch carves no `Building` of its
 		# own, so this is every wall standing around it.
-		building.is_home_building = _block_of(rect) == map.home_block
+		building.is_home_building = block_of(rect) == map.home_block
 		if building.is_home_building:
 			# Only the one lot the door notch's own footprint overlaps ever reads this as true —
 			# every other home-block lot's world x sits entirely outside the door's span, since
@@ -1022,8 +975,8 @@ func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
 	building.station_yard_cols = Vector2i(rect.size.x - Tuning.BLOCK_SIZE if door_is_west else 0,
 			Tuning.BLOCK_SIZE)
 
-## The block a lot belongs to.
-func _block_of(rect: Rect2i) -> Vector2i:
+## The block a lot belongs to — the city's own lots and the fronts' (`CityFronts`).
+static func block_of(rect: Rect2i) -> Vector2i:
 	return (rect.position - Vector2i.ONE * Tuning.STREET_WIDTH) / CityMap.period()
 
 ## A home-block building's own fixed choice, keyed on nothing but the lot's own tile position —
@@ -1032,14 +985,14 @@ func _block_of(rect: Rect2i) -> Vector2i:
 ## since `CityMap.home_block` and every constant the lattice is built from are the same on every
 ## seed) no longer depend on the seed either. A non-home building keeps the per-seed roll.
 func _variant_for(rect: Rect2i) -> int:
-	if _block_of(rect) == map.home_block:
+	if block_of(rect) == map.home_block:
 		return absi(hash("home:%d:%d" % [rect.position.x, rect.position.y]))
 	return absi(hash("%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y]))
 
 func _height_for(rect: Rect2i, lot_depth_tiles: int) -> float:
-	if _block_of(rect) == map.home_block:
+	if block_of(rect) == map.home_block:
 		return _home_building_height(rect, lot_depth_tiles)
-	var range_tiles: Vector2i = _HEIGHT_TILES[map.starting_purpose(_block_of(rect))]
+	var range_tiles: Vector2i = _HEIGHT_TILES[map.starting_purpose(block_of(rect))]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("h:%d:%d:%d" % [map.seed_used, rect.position.x, rect.position.y])
 	var tiles := rng.randi_range(range_tiles.x, range_tiles.y)
@@ -1248,6 +1201,12 @@ func props() -> Array[Node2D]:
 func streets() -> DayStreets:
 	return _streets
 
+## The fronts the run's story changes (`CityFronts`): the burnt frontage, the way in behind a
+## sidewalk, a block shown during the day, the neighbor's window and her sealed door. Built once in
+## `build()`, over the buildings and her door, which are fixed for the run.
+func fronts() -> CityFronts:
+	return _fronts
+
 # ------------------------------------------------------- the day's shape in words ---
 # For whoever reports it: the run log's `plan` lines and the console's day line read the same
 # three. Here, on the city they describe, because both the run flow and the run log call them
@@ -1416,9 +1375,9 @@ func _dress_blocks(state: CityState) -> void:
 	for building in _buildings:
 		var listed: Dictionary = map.stretch_buildings.get(building.lot, {})
 		building.condition = int(listed.condition) as Building.Condition if not listed.is_empty() \
-				else _condition_for(state.purpose_of(map.block_plans, _block_of(building.lot)))
+				else condition_for(state.purpose_of(map.block_plans, block_of(building.lot)))
 		building.day = _day
-	mark_the_burnt_frontage()
+	_fronts.mark_the_burnt_frontage()
 
 ## A stretch's props are its recipe's (`CityMap.stretch_props`): every tree, swing frame, bollard
 ## and sack where the recipe puts it, in place of the rolls a day's blocks and streets would make.
@@ -1431,67 +1390,6 @@ func _dress_the_stretch() -> void:
 		prop.variant = int(listed.variant)
 		prop.scale_factor = float(listed.scale)
 		_add_prop(prop)
-
-## Forces the one `Building` behind day 3's fire to `Building.Condition.BURNT`, overriding
-## whatever its own block's purpose just set above — *"the building is what needs to be burnt, not
-## an object next to the building"*. The block's purpose is unmoved (this building's block may still
-## be ordinary `RESIDENTIAL`, `COMMERCIAL` ground the arc never touches); only the one frontage the
-## fire actually reached shows it, in the look `Building.Condition.BURNT` draws (windows black and
-## broken under soot, the door boarded, the parapet charred) for the scheduled `BURNT_OUT` block
-## purpose above too — the same look for a different, per-building reason.
-##
-## **The lookup is the shape of `board_neighbor_window()`/`_home_door_building()`**: a fixed fact
-## about the run (`run.attempt_spend.scars`) answers which `Building` it is, once, rather than a field
-## carried on the building itself. `burning_building` only ever catches on a wall this file actually
-## draws (`EventDef.Pavement.AT_THE_FRONT`, `EventCatalogue._burning_building()`'s own doc), so the
-## tile one step north of the scar (`Vector2i.UP`, the same direction `EventScheduler.
-## _wants_this_side()`'s `AT_THE_FRONT` case checks, on the map and `BUILDING`) is always a real
-## lot. `tests/test_acts.gd` checks that over every site the fire can be given.
-##
-## Idempotent, like every other per-day override here: `Building.condition`'s own setter is a no-op
-## once it already says `BURNT`, so calling this from every `_dress_blocks()` pass — the ordinary
-## day and the finale's own dressing alike — costs nothing once the frontage is found, and finds
-## nothing before day 4, when the scar does not exist yet. A run records one `burnt_shell` scar,
-## and every one the list holds burns its own building all the same.
-##
-## **Also called live, once, by day 8's task on a run with no recorded scar**
-## (`ResistanceDirector._burn_a_front_for_the_task()`): it records a scar at a front the fire could
-## have caught on and asks for the building behind it to be burnt there and then, so *"Take what's
-## in the stroller to the burnt building"* leads to a burnt building rather than bare sidewalk.
-func mark_the_burnt_frontage() -> void:
-	for scar in run.attempt_spend.scars:
-		if String(scar["id"]) != BURNT_FRONTAGE_SCAR:
-			continue
-		var wall_tile := map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
-		for building in _buildings:
-			if building.lot.has_point(wall_tile):
-				building.condition = Building.Condition.BURNT
-				break
-
-## The way in of the building directly north of the sidewalk point `sidewalk` — the same lot
-## `mark_the_burnt_frontage()` burns behind a scar — as a world point half a tile up its ground
-## floor, on the door (`Building.way_in_local_x()`, the one nearest `sidewalk` on a front with
-## several storefronts). `Vector2.INF` with no building there. Day 8's red arrow and its task's
-## contact end here: *"or better to the door"* (sandy-egret).
-func way_in_behind(sidewalk: Vector2) -> Vector2:
-	var wall_tile := map.world_to_tile(sidewalk) + Vector2i.UP
-	for building in _buildings:
-		if building.lot.has_point(wall_tile):
-			var x := building.way_in_local_x(sidewalk.x - building.position.x)
-			return building.position + Vector2(x, -Tuning.TILE_SIZE * 0.5)
-	return Vector2.INF
-
-## **One block's buildings, shown as what the block is now**, during the day rather than at dawn —
-## day 11's market, boarded up ahead of her while she cannot see it (`ResistanceHappenings`). The
-## same `_condition_for()` the dawn dressing reads, for the buildings of `block` alone, and the
-## same `mark_the_burnt_frontage()` after it, so a block boarded up around the building day 3's
-## fire burned never boards up the burnt building itself.
-func present_block(block: Vector2i, state: CityState) -> void:
-	var condition := _condition_for(state.purpose_of(map.block_plans, block))
-	for building in _buildings:
-		if _block_of(building.lot) == block:
-			building.condition = condition
-	mark_the_burnt_frontage()
 
 ## Today's garbage sacks — `GarbageSacks.placed()` re-rolled from the day, unlike the trees above:
 ## the city degrades over the run, so unlike a park's planting this is not the same every morning.
@@ -1506,8 +1404,9 @@ func _place_garbage_sacks() -> void:
 		_add_prop(sack)
 
 ## What a block's buildings look like now. A boarded-up street and a burnt-out one are the
-## same footprints and very different places.
-func _condition_for(purpose: GameEnums.BlockPurpose) -> Building.Condition:
+## same footprints and very different places. The dawn dressing's and the fronts' own
+## (`CityFronts.present_block()`), so a block shown during the day looks as a dawn would show it.
+static func condition_for(purpose: GameEnums.BlockPurpose) -> Building.Condition:
 	match purpose:
 		GameEnums.BlockPurpose.BOARDED_UP:
 			return Building.Condition.BOARDED

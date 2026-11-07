@@ -52,7 +52,8 @@ func run(t) -> void:
 			var director := ResistanceDirector.new()
 			t.add_child(director)
 			director.set_process(false)
-			director.setup(city, city.map)
+			director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+					city.spawn_siting)
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)
 			var region_plan := city.streets().region_plan()

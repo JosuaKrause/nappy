@@ -390,12 +390,9 @@ func start_burst(context: String) -> bool:
 ## It takes the day rather than reading the run, for the reason everything in this file takes
 ## what it needs: the telemetry asks the world no questions, so it can never be the thing that
 ## changed one.
-## It also draws the day's **corridor**, unless `corridor` says the walk has none (the escape's
-## city). The tree is grown here when the caller has none to hand, and that is safe rather than
-## convenient: `RouteTree.for_day` is a pure function of the
-## city's seed, the day and what is shut, so the tree drawn is the same tree anything else that
-## asks for today's would get. Growing one touches no gameplay stream and cannot move a placement,
-## which is the invariant this whole file is built on.
+## It also draws the day's **corridor**: `tree`, the one the city grew at dawn
+## (`DayStreets.route_tree()`), which the caller hands in rather than this growing one of its own.
+## No tree draws no corridor, which is the escape's city, whose walk is two chains and not a tree.
 ## It also draws what the day **placed**, and that is why it is written twice.
 ##
 ## `at_dusk` is only the filename, and the difference between the two pictures is entirely in
@@ -417,18 +414,12 @@ func start_burst(context: String) -> bool:
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
-		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {},
-		corridor := true) -> void:
+		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.path == "":
 		return
 	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]
-	# The escape's city has no corridor — its walk is two chains, not a tree — so its map draws none
-	# (`corridor` false) rather than one grown for a day that is not being walked.
-	var drawn: RouteTree = null
-	if corridor:
-		drawn = tree if tree else RouteTree.for_day(map, day)
-	if TelemetryMap.render(map, closures, drawn, plans, trail, met).save_png(path) != OK:
+	if TelemetryMap.render(map, closures, tree, plans, trail, met).save_png(path) != OK:
 		push_warning("telemetry: could not write %s" % path)
 
 ## The capture itself, split out because it is the only thing here that has to wait for a frame.

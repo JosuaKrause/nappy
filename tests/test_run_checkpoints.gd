@@ -320,7 +320,7 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 			"a save continued after a go-back keeps the play time (%d)" % run.header.play_ticks)
 
 ## **Going back is a boot, not a repaint.** Day 11 boards the neighbor's window on her own building
-## for the rest of the run (`City.board_neighbor_window()`), which nothing in a dawn takes down; a
+## for the rest of the run (`CityFronts.board_neighbor_window()`), which nothing in a dawn takes down; a
 ## run that loses its last nerve on day 11 and goes back to day 8 must not see it boarded, since
 ## nothing after the checkpoint happened. Played through the real `main.tscn` on a run of the
 ## test's own: booted on day 8 (`--day 8`, its checkpoint), its title answered through the viewport,

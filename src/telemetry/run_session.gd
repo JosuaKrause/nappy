@@ -20,7 +20,7 @@ extends Node
 var _log: Telemetry
 var _config: RunConfig
 ## The run this boot plays, handed in by `setup()`: whose seed each day's header names, and what the
-## day's observer is handed for the day it plans.
+## observer is handed for the blocks a calm arrival names.
 var _run: RunState
 ## The trace handed to game logic: every line it is given goes into the run log, or nowhere while
 ## no log is open.
@@ -93,7 +93,10 @@ func burst(context: String) -> void:
 # -------------------------------------------------------------------- watching ---
 
 ## A day's world: the city, her, the baby, the day's clock, the resistance and the screen-edge
-## badges. Builds the observer only when a log is open.
+## badges. Builds the observer only when a log is open, and hands it the parts of the city it reads
+## (the map, the events, today's streets and the crowd's sources) with the run; the session keeps
+## the city itself for its own lines, which are the city's account of its day (`closure_summary()`,
+## `calm_summary()`, `event_summary()`) and its maps.
 func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, edge: DangerEdge) -> void:
 	_clock = day
@@ -101,7 +104,8 @@ func watch_day(city: City, player: Stroller, baby: Baby, day: DayController,
 	if not _log.is_active():
 		return
 	_observer = _new_observer()
-	_observer.setup(city, player, baby, day, resistance, _config.spikes_requested, edge)
+	_observer.setup(_run, city.map, city.events, city.streets(), city.crowd.sources, player, baby,
+			day, resistance, _config.spikes_requested, edge)
 
 ## The day's clock, whose `spec` says what each day is, before the first one starts — the escape's
 ## boot hands it in ahead of `watch_escape()`, whose world is built only as its first section
@@ -162,7 +166,7 @@ func _on_day_planned(day: int) -> void:
 		var no_closures: Array[RoadClosure] = []
 		var no_trail: Array[Vector3] = []
 		_log.write_map(_escape_city.map, day, no_closures, null, _escape_city.events.plans(), false,
-				no_trail, {}, false)
+				no_trail, {})
 		return
 	if not _city:
 		return
@@ -200,7 +204,7 @@ func _on_day_ended(day: int, result: GameEnums.DayResult, cause: String, _elapse
 	elif _escape_city:
 		var no_closures: Array[RoadClosure] = []
 		_log.write_map(_escape_city.map, day, no_closures, null, _escape_city.events.plans(), true,
-				trail, met, false)
+				trail, met)
 	_log.end_day()
 
 # ------------------------------------------------------------------ the escape ---
@@ -216,10 +220,11 @@ func _on_escape_section_started(section: int, restarted: bool, world: Node, even
 		return
 	if not _observer:
 		_observer = _new_observer()
-		_observer.setup_escape(_escape_world["player"], _escape_world["baby"],
+		_observer.setup_escape(_run, _escape_world["player"], _escape_world["baby"],
 				_escape_world["clock"], _config.spikes_requested, _escape_world["edge"])
 	if section == DaySpec.Section.BUILDING:
 		_observer.watch_building((world as InteriorScene).map, events)
 	else:
-		_observer.watch_city(world as City)
+		var city := world as City
+		_observer.watch_city(city.map, city.events, city.streets(), city.crowd.sources)
 	_observer.start_section(restarted)

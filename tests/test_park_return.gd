@@ -113,8 +113,10 @@ func _touch_the_swing(t, main: Node2D, through_the_director := false) -> Vector2
 	if through_the_director:
 		_touch_the_contact(director)
 		return swing
+	var city := Boot.city(main)
 	_happenings = ResistanceHappenings.new()
-	_happenings.setup(Boot.city(main), Boot.city(main).map)
+	_happenings.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city,
+			city.atlas, null, city.spawn_siting)
 	_happenings.start_day(_run.header.day, false)
 	t.check(_happenings.take_the_park(ResistanceReads.day_reachability(Boot.city(main))[1]),
 			"reaching the swing takes the park")

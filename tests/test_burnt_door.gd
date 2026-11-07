@@ -32,7 +32,7 @@ func run(t) -> void:
 		var shell_at := city.map.tile_to_world(fronts[i])
 		city.run.attempt_spend.scars = [{"id": "burnt_shell", "position": shell_at, "since_day": 3}]
 		var director := _task_on_offer(t, city)
-		var door := city.way_in_behind(shell_at)
+		var door := city.fronts().way_in_behind(shell_at)
 		if door == Vector2.INF or director.current_step() == null:
 			director.free()
 			continue
@@ -83,7 +83,7 @@ func run(t) -> void:
 	var director := _task_on_offer(t, city)
 	t.check(director.current_step() != null, "the fallback task is on offer")
 	if director.current_step() != null and director.rider() != null:
-		var door := city.way_in_behind(director.rider().global_position)
+		var door := city.fronts().way_in_behind(director.rider().global_position)
 		t.check(door != Vector2.INF and director.red_arrow_target().is_equal_approx(door),
 				"with no recorded scar the arrow %s ends on the burnt building's door %s"
 				% [director.red_arrow_target(), door])
@@ -109,7 +109,8 @@ func _task_on_offer(t, city: City) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city, city.map)
+	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
+			city.spawn_siting)
 	director.start_day(DAY, _rng("resistance"), 300.0)
 	director.contact().complete_now()
 	return director
