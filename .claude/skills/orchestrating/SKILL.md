@@ -350,7 +350,12 @@ worktrees — merging is what collides — so parallelism is planned at the file
 - **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
   when no task is left to start or advance. While agents run, it briefs and spawns every queue item
   it can start whose files the running agents do not own; holding startable work back, to limit
-  the reviews to come or for any other reason, is stopping early. **Once everything startable is
+  the reviews to come or for any other reason, is stopping early. **While the player has put one
+  entry first, startable means that entry's items only** (inbox #1210), until that entry closes:
+  its `README.md` says so, and work on another entry before it is done is work done twice, on code
+  about to change. The up-next marker (`docs/TODO.md`) orders the queue and fences nothing, and the
+  end-of-session pass drops it from an entry open pull requests are building, so the fence is the
+  README's sentence. **Once everything startable is
   running, it ends its turn to wait for the agents** (inbox #1196): their reports wake it, and
   waiting that way is not ending the session. A report to the player goes out along the way, never
   as a stopping point. A running agent or a
