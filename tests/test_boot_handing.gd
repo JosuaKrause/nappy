@@ -44,7 +44,7 @@ class Played:
 func _boot(t, run_for_it: Callable, words: Array) -> Played:
 	var played := Played.new()
 	played.seat = Seat.new(t, run_for_it)
-	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words)
+	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words, null, true)
 	return played
 
 func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:

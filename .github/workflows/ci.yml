@@ -240,6 +240,24 @@ jobs:
           fi
           uv run python tools/check_test_only_members.py "${args[@]}"
 
+      # No class reads or writes another class's var under src/ (designing-classes' "Fields are not API"),
+      # except the reader file and field pairs tools/field_reads.txt lists, a list that only shrinks: --base is
+      # the commit the list is compared with, so a line added to it fails, and a line whose read is gone
+      # fails as a REMOVE line. The base is chosen as for the test-only member check above. Read as text,
+      # so it needs no engine and runs on every run, docs-only included.
+      - name: No class reads another class's field
+        if: ${{ !cancelled() }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          args=()
+          if [ -n "$BASE" ] && git rev-parse --verify --quiet "$BASE^{commit}" > /dev/null; then
+            args=(--base "$BASE")
+          else
+            echo "::warning::The shrink comparison of the field-read list was skipped: the base '$BASE' is empty or not a commit in this checkout."
+          fi
+          uv run python tools/check_field_reads.py "${args[@]}"
+
       # The code's telemetry kinds against docs/TELEMETRY.md's table, read as text on both sides,
       # so it needs no engine and runs on a docs-only pull request too.
       # Needs only uv, installed above under the same condition, so it runs after a red step too.

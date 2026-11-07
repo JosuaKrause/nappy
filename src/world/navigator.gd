@@ -1,6 +1,6 @@
 class_name Navigator
 extends RefCounted
-## **The one way anything that walks or drives across a world moves**: each map builds one
+## **The one way anything that walks or drives across a world moves, bar the crowd's lane step**: each map builds one
 ## (`WorldMap.navigator()`), and it is handed to every mover by whoever builds it — the city to its
 ## event manager, its crowd and the resistance, the event manager to every figure it makes — rather
 ## than fetched. A step, a walk down a list of points, a way round, a way out and whether a chase
@@ -13,6 +13,10 @@ extends RefCounted
 ## on, so a long frame cannot carry a chaser through a wall a tile thick. And it keeps the mover's
 ## body clear: the ground its radius reaches past where it would land, in the way it is going, has
 ## to be open too.
+##
+## **The one exception is the crowd's lane step** (`LaneMover`, with `LaneStrategy`): a
+## lane-following held step is a different motion model from the navigator's swept step, and it
+## stays off the navigator (inbox #1155 in gray-dolphin).
 ##
 ## A navigator over open ground (`open_ground()`, `WorldMap.open_ground()`) takes every step whole,
 ## sees every line clear and walks every way straight: what a data rig with no world walks on.
