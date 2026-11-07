@@ -80,6 +80,7 @@ run uv run python tools/test_check_overrides.py
 run uv run python tools/test_check_test_only_members.py
 run uv run python tools/test_merge_test_only_members.py
 run uv run python tools/test_check_field_reads.py
+run uv run python tools/test_music_theory.py
 
 if [[ $status -ne 0 ]]; then
     echo
