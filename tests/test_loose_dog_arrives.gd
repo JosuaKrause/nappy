@@ -7,8 +7,12 @@ extends RefCounted
 ## runs away at `Tuning.RUN_SPEED` (it cannot). The first two must reach her and be gone; the third,
 ## sent from the furthest the director sites it, must be retired once it is out of sight and not
 ## closing, rather than run its whole route there — which is what a check on `main` fails.
+##
+## **The subject is the event manager and what it sends**, so it is built over a copy of the generated
+## city's map and no city (`tests/fixtures/street_events.gd`): the dog's line, and the solid across it on
+## seed 4242, are the streets' and the siting's own, and nothing else of a city is read.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const MapCache := preload("res://tests/city_map_cache.gd")
 ## The run's seed: on run seed 4242 a solid stands across the far dog's line, so it leaves its route
 ## there and is finished by leaving; on seed 2 the line is clear.
 const RUN_SEED := 2
@@ -25,15 +29,17 @@ const AFTER_THE_TURN := 25.0
 ## Game seconds the far dog is watched for: the check is that it is retired within 7.
 const RUN_AWAY_FOR := 10.0
 
-var _city: City
+var _events: EventManager
+var _map: CityMap
+var _run: RunState
 var _rig: Stroller
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
-	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(4242))
-	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	_run = RunState.new()
+	_run.start_run(RUN_SEED)
+	_map = MapCache.of(4242)
+	_events = StreetEvents.over(t, _map, _run)
 	_rig = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -42,7 +48,7 @@ func run(t) -> void:
 	_rig.add_child(camera)
 	t.add_child(_rig)
 	_rig.set_physics_process(false)
-	_city.events.use_player(_rig)
+	_events.use_player(_rig)
 	for speed: float in [0.0, Tuning.WALK_SPEED]:
 		_start_the_day(true)
 		var seen := await _meet_and_turn(t, speed)
@@ -65,17 +71,17 @@ func run(t) -> void:
 	t.check(far_run["distance_to_route_end"] > Tuning.TILE_SIZE,
 			"before it ran its route out")
 	_rig.free()
-	_city.free()
+	_events.free()
 
 ## Starts the day over on day `RUN_TAUGHT_DAY + 2` with the director forced to owe the loose dog
 ## every `FORCED_INTERVAL` seconds, or with nothing forced.
 func _start_the_day(forced: bool) -> void:
-	_city.events.force("loose_dog" if forced else "", FORCED_INTERVAL if forced else 0.0)
+	_events.force("loose_dog" if forced else "", FORCED_INTERVAL if forced else 0.0)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	var consumed: Array[String] = []
-	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2), rng, consumed)
-	_rig.global_position = CrowdLanes.arterial_pavement(_city.map)
+	_events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2), rng, consumed)
+	_rig.global_position = CrowdLanes.arterial_pavement(_map)
 	_rig.velocity = Vector2.ZERO
 
 ## A dog placed as far out behind her (`Vector2.DOWN`, she heads up) as the director ever sites one,
@@ -85,7 +91,7 @@ func _send_from_behind_far() -> EventInstance:
 	var her := _rig.global_position
 	var place := her + Vector2.DOWN * 700.0
 	var path := PendingWarning.route_down_her_line(null, place, her, Vector2.DOWN)
-	var made := _city.events.spawner.spawn(def, path[0], path)
+	var made := _events.spawner.spawn(def, path[0], path)
 	made.resume(EventSpawner.age_when_warned(def), 0.0)
 	return made
 
@@ -96,12 +102,12 @@ func _send_from_behind_far() -> EventInstance:
 func _meet_and_turn(t, speed: float) -> Dictionary:
 	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var seen := {"dog": null, "sent": false, "closest": INF, "finished": false}
-	var before := _city.events.instances().duplicate()
+	var before := _events.instances().duplicate()
 	var each := func(_n: int) -> void:
 		if not seen["sent"]:
 			_rig.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 			_rig.global_position += _rig.velocity * step
-			for instance in _city.events.instances():
+			for instance in _events.instances():
 				if instance.def.id == "loose_dog" and not before.has(instance):
 					seen["dog"] = instance
 					seen["sent"] = true
