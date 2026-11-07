@@ -16,27 +16,27 @@ fetching it from an autoload, a group or a static, so a test hands it fakes. A m
 included, is a configuration of the shared code, never a parallel copy of it (minty-lemur #785).
 
 **Code that nothing reaches is deleted, not kept, and so is code that only serves a feature the game
-no longer has** (inbox #1180). It costs maintenance, and it misleads whoever reads it, an agent
+no longer has** (inbox #1180 in gray-dolphin). It costs maintenance, and it misleads whoever reads it, an agent
 included: a doc comment on unreached code reads as live behavior. A feature wanted back is built
 fresh, which also makes it keep to the current principles. *Read as, the filer's reading and not the
 player's words:* a member only tests read is **writing-tests**' to rule on (the kept groups of
 `tools/test_only_members.txt`), so "nothing reaches" does not delete one a test holds on purpose, and
 the one exception below, for a minimal fix ordered before the refactor, does not reach this rule.
 
-**An event is asked through one consistent interface** (inbox #1173). A caller uses it without
+**An event is asked through one consistent interface** (inbox #1173 in gray-dolphin). A caller uses it without
 knowing its details: it never reads an event's settings or fields to work out an answer the event can
 give itself, and callers never filter the raw list of the day's event plans themselves, since the
 interface is there to carry that question. This holds for every aspect of events, not only the one a
 change is about. An ability an event has is a part it is composed of, never a subclass: composition
-over inheritance (inbox #1173). *Read as, the filer's reading and not the player's words:* the same
+over inheritance (inbox #1173 in gray-dolphin). *Read as, the filer's reading and not the player's words:* the same
 holds for anything many classes use.
 
-**Fields are not API** (inbox #1173). One object never reads or writes another object's fields: every
+**Fields are not API** (inbox #1173 in gray-dolphin). One object never reads or writes another object's fields: every
 interaction between objects goes through the other's methods, so a stored field can become a
 computation without any of its readers changing. The calls are methods rather than GDScript
 properties because a property and a plain field look the same where they are read, and GDScript has
 no private fields, only the underscore convention; only a method call shows a reader that a member is
-API, and it is the form a script could tell apart. A property is used only inside its own class (inbox #1173). *Read as,
+API, and it is the form a script could tell apart. A property is used only inside its own class (inbox #1173 in gray-dolphin). *Read as,
 the filer's reading and not the player's words:* the rule covers the vars that classes under `src/`
 declare; it does not cover an engine object's properties (`position`, `visible`, the tree's
 `paused`, as **godot** uses them) or constants and enums (`Tuning.X`). Much of `src/` still reads
@@ -72,21 +72,21 @@ record the map holds is placed on the map's layer as it appears.
 ## Derived state lives in one object, derived once
 
 **A fact worked out from stored data lives in an object that derives it once, and that object is
-passed around; nothing derives it again** (inbox #1156). One object holding the answer removes the
+passed around; nothing derives it again** (inbox #1156 in gray-dolphin). One object holding the answer removes the
 private methods that each re-derive it and the risk that two of them resolve it differently.
 
 - **How the game is stored is free, as long as one unified reader has the job of deriving the
-  current state from it** (inbox #1156). A save file and a save state are not necessarily the same
+  current state from it** (inbox #1156 in gray-dolphin). A save file and a save state are not necessarily the same
   thing: the reader is what derives the current state from whatever is stored.
-- **That is encapsulation and isolation** (inbox #1156): the stored form is the reader's own
+- **That is encapsulation and isolation** (inbox #1156 in gray-dolphin): the stored form is the reader's own
   business, and everything else asks the reader.
-- **A state object's interface is chosen from what its readers want out of it** (inbox #1156):
+- **A state object's interface is chosen from what its readers want out of it** (inbox #1156 in gray-dolphin):
   explore what the tests that build the real objects today want to get out of them, and use that to
   inform the design of the state object; then mock that out. It is judged and named as any
   interface is (below).
-- **The resulting objects are injectable, so a test mocks them** (inbox #1156), and a suite that is
+- **The resulting objects are injectable, so a test mocks them** (inbox #1156 in gray-dolphin), and a suite that is
   not about them hands in a fake holding the answers it needs (**writing-tests**).
-- **A fact derived in more than one place is a code smell to look for** (inbox #1156): the same
+- **A fact derived in more than one place is a code smell to look for** (inbox #1156 in gray-dolphin): the same
   reading of raw data written twice, or a private method working out what another place already
   has. Its fix is the one object above.
 - *Proposed by the filer, open to overturn:* a design where a fake has nothing to be handed to is
@@ -95,21 +95,21 @@ private methods that each re-derive it and the risk that two of them resolve it 
 
 ## An interface is judged by its callers
 
-An API's quality is checked by these tests (inbox #1156):
+An API's quality is checked by these tests (inbox #1156 in gray-dolphin):
 
 - would any caller miss a method, an argument or a field if it were removed? *Proposed by the
   filer, open to overturn:* what nobody would miss goes;
 - can the implementation underneath be swapped without breaking the interface?
 
 Three distinct implementations are a good sign that an API is robust, as a rule of thumb and not a
-requirement: nothing adds implementations to reach three (inbox #1156). A fake or a mock is not an
+requirement: nothing adds implementations to reach three (inbox #1156 in gray-dolphin). A fake or a mock is not an
 implementation for either the swap test or that count: it only looks up what the API should return
-in the situations its test sets, and gives no meaningful answer outside them (inbox #1156).
+in the situations its test sets, and gives no meaningful answer outside them (inbox #1156 in gray-dolphin).
 
 **An interface, base class or abstract class is named for what a caller gets out of it, not for how
-it is built, and a concrete implementation is named for what the implementation is** (inbox #1156).
+it is built, and a concrete implementation is named for what the implementation is** (inbox #1156 in gray-dolphin).
 
 ## Overrides say so
 
 An override of a project class's method carries the doc comment line **godot**'s "Code style"
-names, `## Overrides Class.method.` (inbox #1154).
+names, `## Overrides Class.method.` (inbox #1154 in gray-dolphin).

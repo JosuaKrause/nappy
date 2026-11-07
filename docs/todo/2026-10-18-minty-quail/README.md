@@ -72,7 +72,13 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md` for
    what its count cannot see; `tests-isolated.md` beside it. `tests-own-class-members.md` holds the
    members whose names collide with another class's.
-4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
+4. The redesign of derived state and hand-ins (inbox #1156, #1159 in gray-dolphin). The player's
+   order (test-isolation-plan) is the hand-ins, then the conversion, then the cache; the rest of this
+   order is the filer's proposal: `walk-placed-blockers.md` (in flight on draft #1169) and
+   `city-hand-ins.md` (in flight on #1166) side by side, then `tests-one-module.md`, `city-cache.md`,
+   `re-derived-cases.md` and `field-reads.md`; `dead-code-sweep.md` module by module beside them;
+   `system-map.md` once the redesign is complete.
+5. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
    step's record lists what its change needs remeasured. That includes the crowd tick, measured

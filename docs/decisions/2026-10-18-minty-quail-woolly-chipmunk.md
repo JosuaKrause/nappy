@@ -31,7 +31,7 @@ The bullet asked that the log be handed to the classes that write into it, which
 of this PR replaced the method with a log made over no folder (`Telemetry.new("")`) that kept its
 runs in memory, a mode only suites used; review found that to be the same test-only path behind a
 constructor value, and the orchestrator ruled, under the player's rules that no test builds a real
-object it does not test (inbox #1159) and that a member only tests use goes (inbox #1095 in
+object it does not test (inbox #1159 in gray-dolphin) and that a member only tests use goes (inbox #1095 in
 curly-rabbit), that the mode goes. A suite that reads what was logged hands a recording fake: a
 `RunTrace.recording()` where only a trace's or a library's lines are read (the atlas page watch,
 the route rig, the dev rig), or `tests/recording_log.gd`, a `Telemetry` subclass with the same note

@@ -4,7 +4,7 @@ extends RefCounted
 ## order they were placed, and the facts derived from them — which calm areas each spoils, which
 ## block the way, whether one is a pursuit — kept in step with every row added or taken away.
 ##
-## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
+## *(inbox #1156 in gray-dolphin: "have an object that contains the derived information -- don't rederive over
 ## and over again -- then pass that object around".)* `EventScheduler.build_day()` makes one per
 ## walk with `over()` and is its only writer; its passes, `DayRepairs`' two repairs and
 ## `DayPlanner` are handed it, and nothing reads the rows any other way. So a fact is worked out

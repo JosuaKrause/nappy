@@ -1,6 +1,6 @@
 # minty-quail — The full-run and balance suites start each day the way the game does · 2026-11-06
 
-No queue item: a coverage hole found by the test survey for inbox #1159. `tests/full_run_rig.gd`
+No queue item: a coverage hole found by the test survey for inbox #1159 in gray-dolphin. `tests/full_run_rig.gd`
 (behind `test_full_run_a.gd`, `_b.gd` and `_c.gd`) started each day by hand, copying `main._start_day()`
 without `DayDirector.start_day()`, so the three fourteen-day runs never handed the repaint the calm
 areas she had used (`CityMap.set_spent_calm()`) or the fenced park (`set_fenced_park_state()`), never

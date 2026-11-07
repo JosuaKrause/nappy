@@ -82,9 +82,9 @@ nested exactly like this, the layout the player set on the board:
 ```
 
 - **Lists, never paragraphs** (inbox #830 in minty-dolphin): a loose paragraph under a heading is a format error.
-- **A Context never stands as one long run of text** (inbox #1163): it is a nested list of short
+- **A Context never stands as one long run of text** (inbox #1163 in gray-dolphin): it is a nested list of short
   items, each one fact or one option, and a picture or a diagram may carry what words carry badly.
-  Options or steps never sit as "(1) … (2) …" inside a sentence (inbox #1163): each goes in its own
+  Options or steps never sit as "(1) … (2) …" inside a sentence (inbox #1163 in gray-dolphin): each goes in its own
   list item, in an ordered list where the order matters.
   *Proposed, not asked for, open to the player's correction:* a bold lead word on an item where that
   helps the reader scan, and a map, an order of steps, or a before and after as the pictures meant.
@@ -93,7 +93,7 @@ nested exactly like this, the layout the player set on the board:
 - **Context carries everything an answer needs**, as `CLAUDE.md`'s question rule says: what was
   asked and when, what it collides with, what each answer costs. A game thing is named the way the
   player knows it, with a clause saying what it is.
-- **A question asks one thing** (inbox #1163): a choice with several parts goes on the board as one
+- **A question asks one thing** (inbox #1163 in gray-dolphin): a choice with several parts goes on the board as one
   question per part, each with its own heading, Context, My pick, You and Me, so the player answers
   each on its own line and a question never bundles a design with its open choices, or which items
   to build with their order.
@@ -114,7 +114,7 @@ answer differs.
 - **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830 in minty-dolphin).
   The player's words are never written over, reworded or moved out of their line; a formatting fix
   the player asked for (unbolding their text) keeps every word.
-- **A reply on a Me line is followed by a fresh You stub and a Me stub** (inbox #1163): when the
+- **A reply on a Me line is followed by a fresh You stub and a Me stub** (inbox #1163 in gray-dolphin): when the
   orchestrator writes its reply on a Me line, it adds a fresh You stub right after it, and a Me stub
   after that, so the player can answer again in line; a "settled:" reply, which moves the question
   under Settled, gets no fresh stubs. Each stub is written as the layout says: a
@@ -140,7 +140,7 @@ next batch, and no Recently done row or "filed" note stands in for them. The que
 hold it from then on, and the board holds open things only.
 
 **A question the player and the orchestrator have fully discussed in the chat leaves the board**
-(inbox #1163), whether or not it is settled, and that overrides keeping a settled question until it
+(inbox #1163 in gray-dolphin), whether or not it is settled, and that overrides keeping a settled question until it
 is filed. A blocking question removed this way no longer blocks: its outcome stands. *Proposed, not
 asked for, open to the player's correction:* before it goes, the outcome is recorded on its inbox
 note, as the standing pick or the settled answer; where the question has no inbox note, the outcome
