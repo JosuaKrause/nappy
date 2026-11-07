@@ -445,7 +445,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
 			func(unbooted: Node) -> void:
 				unbooted.use_sitting_home(home)
-				unbooted.use_frame_records_dir(_SCRATCH_RECORDS))
+				unbooted.use_frame_records_dir(_SCRATCH_RECORDS), true)
 	var main := booted.main
 	await Boot.press_title(t, main)
 	var city := Boot.city(main)

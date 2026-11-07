@@ -30,13 +30,15 @@ func _init(t, prepare := Callable()) -> void:
 ## (no boot reaches the player's own save), and `run_log` when given (`main.use_run_log()`), which
 ## the caller frees; without one the boot writes the sitting's own. The caller frees the boot
 ## (`Booted.free_all()`) before `end()`.
-func boot(t, scratch_path: String, words: Array, run_log: Telemetry = null) -> Boot.Booted:
+func boot(t, scratch_path: String, words: Array, run_log: Telemetry = null,
+		still := false) -> Boot.Booted:
 	var seat := self
 	return await Boot.boot(t, scratch_path, Boot.config(words),
 			func(unbooted: Node) -> void:
 				unbooted.use_sitting_home(seat.home)
 				if run_log:
-					unbooted.use_run_log(run_log))
+					unbooted.use_run_log(run_log),
+			still)
 
 func end() -> void:
 	home.free()
