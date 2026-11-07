@@ -34,9 +34,9 @@ extends RefCounted
 ## The other half of *"wall or event"*, and it is the **impassable** half: an event in a gap makes
 ## switching strands expensive and a closure makes it impossible, which is why having both is
 ## variety rather than two names for the same thing. A day closes a handful of streets at most
-## (`ClosurePlanner.closures_wanted()`: `Tuning.CLOSURES_PER_ACT`, and from `Tuning.REGION_WALL_FIRST_DAY` on
-## `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the quota
-## is the limit.
+## (`ClosurePlanner.closures_wanted()`: `Tuning.CLOSURES_PER_ACT`, and on a day the region wall
+## stands `GATEHOUSE_DAY_CLOSURE_SHARE` of it), so this can be strong without closing many gaps — the
+## quota is the limit.
 const CLOSURE_GAP_BIAS := 4.0
 ## How much likelier a closure is to land on a turning off the day's corridor than on a street
 ## somewhere else entirely. **A closure never lands on the corridor at all** — that is a rule in
@@ -90,8 +90,9 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 	if trace:
 		trace.note(kind, text)
 
-## Plans a day's closures. `map` must already be repainted for the day, because which blocks
-## are calm is the thing the invariant is stated over and a requisitioned park is not one.
+## Plans the closures of the day `spec` describes. `map` must already be repainted for the day,
+## because which blocks are calm is the thing the invariant is stated over and a requisitioned park
+## is not one.
 ##
 ## `tree` is the day's corridor, and every closure is placed **off** it. The caller passes the one
 ## it is going to plan the rest of the day against; when there is none to hand this grows the same
@@ -108,24 +109,25 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## shut_calm` gets no fence at all — it is off the route tree but not off the ground, so nothing
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
-static func plan_day(map: CityMap, day: int, rng: RandomNumberGenerator,
+static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
 		trace: RunTrace = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, day, rng, tree, region_plan, trace)
+	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace)
 	if map.fenced_park.x >= 0:
 		for fence in ParkClosure.fence(map, map.fenced_park):
 			chosen.append(fence)
 	return chosen
 
-static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
+static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 		tree: RouteTree, region_plan: RegionPlanner.RegionPlan,
 		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
+	var day := spec.day_number()
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
 	# day that closes nothing says so, rather than leaving yesterday's fallen tree missing from the
 	# row. See `CityMap.set_closure_tree_pits`.
 	map.set_closure_tree_pits([] as Array[Vector2i])
-	var wanted := closures_wanted(day)
+	var wanted := closures_wanted(spec)
 	if wanted <= 0:
 		return chosen
 
@@ -176,20 +178,20 @@ static func _close_streets(map: CityMap, day: int, rng: RandomNumberGenerator,
 	map.set_closure_tree_pits(emptied)
 	return chosen
 
-## How many streets the day closes: `Tuning.closures_for_day()`, and from
-## `Tuning.REGION_WALL_FIRST_DAY` on only `GATEHOUSE_DAY_CLOSURE_SHARE` of that, rounded to
-## the nearest street. *(azure-puffin, point 4: "when the guard houses are set up the city gets much
-## harder to navigate let's loosen the density of the hard blocking events in that case"; "fewer of
-## all three".)* A closure is one of the three hard blockers off the tree, with the seals and the
-## wall-role catalogue rows, and the region wall dividing the city from that day is what made the
+## How many streets the day `spec` describes closes: `Tuning.closures_for_day()`, and on a day the
+## region wall stands (`DaySpec.region_wall_stands()`) only `GATEHOUSE_DAY_CLOSURE_SHARE` of that,
+## rounded to the nearest street. *(azure-puffin, point 4: "when the guard houses are set up the
+## city gets much harder to navigate let's loosen the density of the hard blocking events in that
+## case"; "fewer of all three".)* A closure is one of the three hard blockers off the tree, with the
+## seals and the wall-role catalogue rows, and the region wall dividing the city is what made the
 ## three together too much.
 ##
 ## **Fewer closures can only add ground she can reach** — every closure is off the tree and is only
 ## ever a barrier — so the invariant below is no harder to keep with a smaller quota, and the day's
 ## candidate order is unchanged: the same streets are tried first, and the quota stops sooner.
-static func closures_wanted(day: int) -> int:
-	var wanted := Tuning.closures_for_day(day)
-	if day >= Tuning.REGION_WALL_FIRST_DAY:
+static func closures_wanted(spec: DaySpec) -> int:
+	var wanted := Tuning.closures_for_day(spec.day_number())
+	if spec.region_wall_stands():
 		wanted = roundi(wanted * GATEHOUSE_DAY_CLOSURE_SHARE)
 	return wanted
 

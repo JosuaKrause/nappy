@@ -143,7 +143,7 @@ func _test_malformed_file(t) -> void:
 func _test_closures(t, map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
-	var planned := ClosurePlanner.plan_day(map, 1, rng)
+	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
 	t.check(not planned.is_empty(), "closure comparison has a production-selected candidate")
 	if planned.is_empty():
 		return

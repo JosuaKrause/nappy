@@ -41,7 +41,7 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-	return ClosurePlanner.plan_day(map, day, rng)
+	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng)
 
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
 ## spot should be empty (the fallen tree's spot)".)* Two claims, and the gate is the weaker of
@@ -116,9 +116,10 @@ func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
 			if any_lined:
 				continue
 			bare_days += 1
-			t.check(closures.size() == ClosurePlanner.closures_wanted(day),
+			var wanted := ClosurePlanner.closures_wanted(DaySpec.for_day(day))
+			t.check(closures.size() == wanted,
 					"seed %d day %d closed %d of its %d streets with no tree-lined one among them"
-					% [map.seed_used, day, closures.size(), ClosurePlanner.closures_wanted(day)])
+					% [map.seed_used, day, closures.size(), wanted])
 	t.check(bare_closures > 0,
 			"the sweep closed bare streets for the kind roll to be asked of (%d)" % bare_closures)
 	t.check(bare_days > 0,

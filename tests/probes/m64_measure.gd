@@ -203,7 +203,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			# The real, filtered plan — ClosurePlanner.plan_day, exactly as the game runs it.
 			var rng_a := RandomNumberGenerator.new()
 			rng_a.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var real := ClosurePlanner.plan_day(map, day, rng_a, tree)
+			var real := ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng_a, tree)
 			sum_closures_with_filter += real.size()
 			for closure in real:
 				if rim.has(closure.segment.key()):
