@@ -70,17 +70,17 @@ the real build nor the step that read it off survives into the pull request.
   a street.
 - **A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
   survives rebalancing; `intensity == 3.2` does not.
-- **A test that only doubles the work of a change is deleted, not maintained** (PLAYTEST-67). The
-  shape is a test that **reads a design decision back to itself** — asserting `act_for_day(4) == 2`
-  when `ACT_START_DAYS` is `[1, 4, 8, 12]` is the table restated, so moving an act boundary means
-  editing the constant *and* editing the test, and no arrangement of those two numbers was ever
-  going to disagree.
+- **A test never asserts what a setting is** (inbox #1159). *Asked for as a judgment call, a test
+  that only doubles the work of a change deleted (PLAYTEST-67) · overturned to absolute on
+  2026-11-06, because a test must never test configuration settings (inbox #1159).* A test that
+  reads a setting only to restate it goes: asserting `act_for_day(4) == 2` when `ACT_START_DAYS` is
+  `[1, 4, 8, 12]` is the table restated, so moving an act boundary means editing the constant *and*
+  editing the test, and no arrangement of those two numbers was ever going to disagree.
 
-  **The distinction from a value that is worth pinning is the reason, not the literal.**
-  `CAR_HORN_TIME >= required_horn_time()` also fails when somebody lowers the horn time — and that
-  is the entire point, because it encodes *why* the number has a floor rather than what the number
-  is. Ask which of the two a test would tell you if it went red: **"you changed a number"** is a
-  test to delete, **"you broke the thing the number was for"** is a test to keep.
+  **The kept relationship tests stay, since they encode a fairness guarantee between settings**
+  (inbox #1159). `CAR_HORN_TIME >= required_horn_time()` fails when somebody lowers the horn time
+  below what is fair, because it encodes *why* the number has a floor rather than what the number
+  is: it says **"you broke the thing the number was for"**, never **"you changed a number"**.
 
   Three that look prunable and are not: a **guard that a sweep was not vacuous** (`"there were cells
   to ask (%d)"`) is what stops a passing test from having checked nothing; an **ordering between two
