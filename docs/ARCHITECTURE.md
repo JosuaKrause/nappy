@@ -1123,8 +1123,8 @@ field with its value before and after (`tests/shared_state.gd`).
   spine left to the box rule and still carrying its traffic, and the escape's city dark from its
   first frame.
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
-  played through all 14 days with the real City, EventManager and ResistanceDirector, with time
-  actually advancing. This is the check
+  played through all 14 days with the real City, EventManager and ResistanceDirector, each day started
+  by the real DayDirector, with time actually advancing. This is the check
   that catches "day 12 throws", which no amount of unit coverage does.
 
 These are the places a bug is invisible until it ruins a run, so they are the places with
