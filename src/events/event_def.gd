@@ -1640,11 +1640,11 @@ func silent_beyond() -> float:
 ## exempt because closing the way is the point** (PLAYTEST-119 24). Day 3's fire is put on the
 ## branch she is walking so that the street she is on stops being a way through, and the engine
 ## parks across from it for the rest of the day, so asking whether a line survives along that
-## sidewalk would refuse every site the design exists to make. What replaces the guarantee is
-## stronger and stated over the day: `EventScheduler.WalkSiting.leaves_her_a_way()` refuses any
-## site that leaves her unable to reach the home, or a calm area she has not used, **outside both
-## fields**. A one-shot carrying this flag is never placed at dawn (`EventScheduler._place_one_shots()`
-## plans it with no position), so nothing else in the day is judged differently because of it.
+## sidewalk would refuse every site the design exists to make. Nothing physical closes it: the fire
+## has no body (PLAYTEST-144 12), and the engine it calls parks on the carriageway, so the street's
+## way through is the engine's field, a cost and not a closure. A one-shot carrying this flag is
+## never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing
+## else in the day is judged differently because of it.
 ## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is placed at
 ## dawn and judged as any other before its position is handed to her walk
 ## (`EventScheduler._hand_to_her_walk()`).

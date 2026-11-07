@@ -1595,10 +1595,14 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
 ## nothing at dawn knows which way that is. See `EventDef.on_her_way`.
 ##
-## **What a late placement may not do is repair.** It cannot drop something the day already
-## placed to make room, and `DayRepairs.ensure_the_city_is_still_walkable` has already run and
-## cannot run again — so the walkability question that pass answers for the whole day is asked
-## of this one candidate *before* it is accepted, in `_still_leaves_a_park_reachable()` below.
+## **Nothing placed while she walks is asked whether she can still get away.** The day's safe routes
+## are fixed before the day starts, and nothing placed during the walk may close one, so there is
+## nothing to check live (inbox #1173: "there should be no live reachability check. that's a hard
+## no"). What is sited here is what the day's own placement rules (`EventScheduler._best_of()`)
+## accept and no more: the fire, which has no body (PLAYTEST-144 12), the poster crews, the places
+## her route's bag hands her walk, and day 11's mast. Day 13's two blocking beats, the task's
+## roadblock (`near_her()`) and the barricade the column leaves (`leaves_her_a_way()`), still ask
+## `_still_leaves_a_park_reachable()` until they take a blocking body the day placed instead.
 class WalkSiting extends RefCounted:
 	var _day: int
 	var _map: CityMap
@@ -1718,8 +1722,6 @@ class WalkSiting extends RefCounted:
 				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
-		if not _still_leaves_a_park_reachable(already, candidate, at):
-			return _waited("the site would close her way out")
 		# A crew faces the wall it pastes, its back to the street. `_build_placement` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
 		if def.on_her_way != null and def.on_her_way.at_a_front:
@@ -1867,12 +1869,12 @@ class WalkSiting extends RefCounted:
 			offered.append_array(by_distance[band])
 			if offered.size() < _NEAREST_FIRST:
 				continue
-			var candidate := _accepted(def, rng, already, offered, role, at)
+			var candidate := _accepted(def, rng, already, offered, role)
 			if candidate:
 				return candidate
 			offered.clear()
 		if not offered.is_empty():
-			var candidate := _accepted(def, rng, already, offered, role, at)
+			var candidate := _accepted(def, rng, already, offered, role)
 			if candidate:
 				return candidate
 		return _waited("every site ahead of her on her street broke a placement rule")
@@ -1905,15 +1907,12 @@ class WalkSiting extends RefCounted:
 	## How many tiles of ground `ahead_on_her_street()` offers `_best_of()` at a time, nearest first.
 	const _NEAREST_FIRST := 8
 
-	## `_best_of()` over `offered` with the day's own ground, corridor, protected calm and doors, then
-	## `_still_leaves_a_park_reachable()` from `at`: the acceptance `ahead_of()` gives a site.
+	## `_best_of()` over `offered` with the day's own ground, corridor, protected calm and doors: the
+	## acceptance `ahead_of()` gives a site.
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[Planned],
-			offered: Array[Vector2i], role: GameEnums.BlockerRole, at: Vector2) -> Planned:
-		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
+			offered: Array[Vector2i], role: GameEnums.BlockerRole) -> Planned:
+		return EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
 				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
-		if candidate and _still_leaves_a_park_reachable(already, candidate, at):
-			return candidate
-		return null
 
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against the walk's plans
 	## with the day's own ground, corridor, protected calm and doors — the acceptance every row the day plans
@@ -1970,9 +1969,8 @@ class WalkSiting extends RefCounted:
 	## remembering day 3 is made of. So the day lights it at dusk instead.
 	##
 	## **The same acceptance rules, chosen once, nothing repaired.** It is `_best_of` over the day's
-	## own ground with the day's own corridor, doors and protected calm, and then the same
-	## reachability check every other site is asked — from the doorstep rather than from her, which
-	## is the dawn question, because the walk is over.
+	## own ground with the day's own corridor, doors and protected calm. It is lit and taken out of
+	## the world again at once, so nothing it leaves stands in anybody's way.
 	##
 	## **Off her path** means both halves of what that can mean: not within `DUSK_CLEAR_OF_HER` of
 	## where she finished, so nothing is lit where she could have seen it, and not on ground the
@@ -1992,14 +1990,13 @@ class WalkSiting extends RefCounted:
 			merely_away.append(tile)
 			if not _corridor.carries_a_route(tile):
 				clear_of_the_routes.append(tile)
-		var doorstep := _map.doorstep_world_position()
 		var already := _walk.everything_but(besides)
 		for offered in [clear_of_the_routes, merely_away]:
 			if offered.is_empty():
 				continue
 			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
 					_ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
-			if candidate and _still_leaves_a_park_reachable(already, candidate, doorstep):
+			if candidate:
 				return candidate
 		return null
 
@@ -2210,12 +2207,11 @@ class WalkSiting extends RefCounted:
 		return map.tile_to_world(cell * ReachabilityGrid.CELL) \
 				+ Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
-	## **Whether the day still works around this site.** The fire and the engine that parks across
-	## from it close the street she is on, on purpose — *"you're not supposed to go past it"* — so
-	## the guarantee cannot be the one every other placement owes (a line past it along the
-	## sidewalk). It is the other direction instead, and it is stated over the whole day: from where
-	## she is standing, with **both fields taken as closed ground**, she can still reach the home and
-	## a calm area she has not used.
+	## **Whether the day still works around this site**, asked by day 13's two blocking beats alone
+	## (`near_her()`, the task's roadblock, and `leaves_her_a_way()`, the barricade the column
+	## leaves), until they take a blocking body the day placed instead and this goes: from where she
+	## is standing, with **the candidate's field taken as closed ground**, she can still reach the home
+	## and a calm area she has not used.
 	##
 	## **Both ends, one flood.** Reachability is symmetric, so a flood from her that finds the home
 	## and an unused area has also shown that the home reaches that area: she can retreat, she can
@@ -2236,10 +2232,9 @@ class WalkSiting extends RefCounted:
 	## **Asked as a difference rather than as an absolute**, because the list it is asked over is the
 	## whole of what the manager is holding — the catalogue's rows, the day's seals, the region wall
 	## and its door structure — which is a stricter set than the dawn pass ever saw. If she is
-	## already cut off from the home or from every unused area without the fire, nothing here did it,
-	## and refusing for ever would turn a day the fire cannot be blamed for into a day 3 with no fire
-	## in it at all. The baseline flood runs only when the candidate fails, so an accepted site costs
-	## one flood rather than two.
+	## already cut off from the home or from every unused area without the candidate, nothing here
+	## did it, and refusing for ever would leave the beat with nowhere at all. The baseline flood runs
+	## only when the candidate fails, so an accepted site costs one flood rather than two.
 	func _still_leaves_a_park_reachable(already: Array[Planned], candidate: Planned,
 			at: Vector2) -> bool:
 		var blockers := _what_already_blocks(already)

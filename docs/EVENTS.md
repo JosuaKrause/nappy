@@ -1508,9 +1508,10 @@ while she stands on its street **it is created with its field already on her**: 
 the warning before it exists, from the badge to the earliest it can reach her, at least the row's
 own minimum (see "Telegraph contract"), from anywhere the sighting allows her to be, which is up to
 the view's half diagonal up the street rather than directly under the fire. The same holds for day
-13's column, whose 395px of forward reach is created about 180px up its lane plus its own picture. And **the home and a
-calm area she has not used are still reachable from where she is standing**, outside both fields —
-the same question `EventScheduler.WalkSiting` asks before it accepts a candidate at all.
+13's column, whose 395px of forward reach is created about 180px up its lane plus its own picture.
+**Nothing about the site is checked live**: the fire has no body and the engine parks on the
+carriageway, so what it costs her street is the engine's field, and the site is whatever the day's
+own placement rules accept on her way.
 
 **A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
 every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that

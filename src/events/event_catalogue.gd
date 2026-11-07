@@ -1000,8 +1000,7 @@ static func _fire_truck() -> EventDef:
 ## casts a shadow at the ground point. `inner_radius`/`outer_radius` (60/260) and the 2.2s telegraph
 ## keep the row's geometry inside the fairness contract (`Tuning.validate_event()`), which checks
 ## every row the same way whether or not the field emits (`(outer_radius - inner_radius) /
-## WALK_SPEED` = 2.17s), and `EventScheduler.WalkSiting._still_leaves_a_park_reachable()` treats the
-## same disc as ground a site has to leave her a way round. The `burnt_shell` scar it leaves is the
+## WALK_SPEED` = 2.17s). The `burnt_shell` scar it leaves is the
 ## building it burned, drawn burnt from the next morning on. **The finale's own fire, inside the
 ## building on the last night, is a duplicate of this row with a field and a body**
 ## (`building_fire()`), because in there the fire is the hazard and there is no truck to call.
