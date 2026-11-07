@@ -176,6 +176,10 @@ var _sitting_home: Node
 const FRAME_RECORDS_DIR := "user://frame-records"
 var _frame_records_dir := FRAME_RECORDS_DIR
 
+## Where the maps this boot's cities are built on come from (`use_city_maps()`): asked with the
+## run's seed, it returns a map of its own. The generator, unless a suite hands another.
+var _city_maps: Callable = CityGenerator.generate
+
 ## What `_reload_the_scene()` calls in place of reloading the scene, set only by `use_reload()`. An
 ## empty `Callable`, the default, reloads normally.
 var _reload_override := Callable()
@@ -282,6 +286,16 @@ func use_sitting_home(home: Node) -> void:
 ## nothing real. Set before the boot runs.
 func use_frame_records_dir(dir: String) -> void:
 	_frame_records_dir = dir
+
+## Hands this boot where the maps its cities are built on come from, in place of the generator
+## (`CityGenerator.generate`): `source.call(run_seed)` returns a `CityMap` this boot owns from then
+## on, asked once for each city it builds (the day's and the escape's), since each is repainted and
+## closed on its own. A suite hands a cache of generated cities (`tests/city_map_cache.gd`), so a
+## boot does not generate the city its seed already generated in the same process. An authored
+## scene's own map still wins (`_city_map()`). Set before the boot runs; a boot never handed one
+## generates.
+func use_city_maps(source: Callable) -> void:
+	_city_maps = source
 
 func _ready() -> void:
 	# Before anything reads what the sitting kept: the run carried over, the title's answer, the
@@ -809,11 +823,15 @@ func _new_city() -> City:
 	_pauses_with_the_game(city)
 	return city
 
-## The map the city is built on: an authored scene's own (`RunFlow.authored_map()`), or the one the
-## run's seed generates.
+## The map the city is built on: an authored scene's own (`RunFlow.authored_map()`), or the run's
+## seed's from this boot's map source (`use_city_maps()`), which generates it unless a suite handed
+## another.
 func _city_map() -> CityMap:
 	var authored := _flow.authored_map()
-	return authored if authored else CityGenerator.generate(_run.header.run_seed)
+	if authored:
+		return authored
+	var generated: CityMap = _city_maps.call(_run.header.run_seed)
+	return generated
 
 ## The world a section of the escape is walked in, built the first time that section begins: the
 ## building for the first, and the city for the second — out of the building's service exit, or
