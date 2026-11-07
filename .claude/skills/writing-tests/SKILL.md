@@ -11,10 +11,12 @@ how a test is written is this file's.
 
 ## A suite tests the one module it is named for
 
-**A test module `test_<x>` tests only `<x>`, and every real object it does not test is mocked**
+**A test builds no real object it does not test, it mocks it, and a test module `test_<x>` tests
+only `<x>`: a hard rule, with an exception only for a good reason stated in the suite's header**
 (inbox #1159). *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a
-rule on 2026-11-06, no test building a real object it does not test (inbox #1159).* Break the
-problem into components that can be tested apart, and test each in its own suite. Confirm a
+hard rule with exceptions only for good reasons on 2026-11-06, because as guidance it did not work
+(inbox #1159).*
+Break the problem into components that can be tested apart, and test each in its own suite. Confirm a
 component's correctness by injecting its dependencies through the paths the game itself uses, a
 fake or a mock that records what it is asked handed in where the game hands the real one. A test
 that reads a private member or opens an escape hatch is a sign to look again: it is a sign of
@@ -27,8 +29,8 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   moves to that object's own suite, rather than keeping that object real here.
 - **The real logic is checked once, in the real object's own suite** (inbox #1156). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
-  everything that draws through it. The city is never built for a test that does not test the city
-  (inbox #1156).
+  everything that draws through it. The city is built only by a direct test of the city, or by a
+  suite whose header gives its reason (inbox #1156; inbox #1159).
 - **Mocking makes the suites faster** (inbox #1159): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
 - *Proposed by the filer, open to the player's correction:* plain values and data (a position, a
@@ -38,15 +40,14 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   converted only as far as the change reaches.
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
-that spans modules or the game's composition. *Proposed by the filer, open to overturn:* the reason
-is stated in the suite's `##` header comment, in words a reader can check, so a combined suite
-without one reads as a suite to split. *Proposed by the filer, open to overturn:* the standing
-ones, kept for the reason each header states:
+that spans modules or the game's composition. The reason is stated in the suite's `##` header
+comment, in words a reader can check, so a combined suite without one reads as a suite to split.
+**Any suite that builds a real city and is not a direct test of the city gives its reason there**
+(inbox #1159). The ones that do, each for the reason its header states:
 
 - **`tests/test_event_manager.gd` runs the event manager against a real generated `City`**,
   because the bugs it holds are wiring between the two (an instance freed but left in the list, a
-  successor spawned but never tracked), invisible to a data-level test; its header says so. Wiring
-  of that kind (retirement, successors, scars) is the reason a suite may build the city it sits in.
+  successor spawned but never tracked), invisible to a data-level test; its header says so.
 - **`tests/test_full_run_a.gd`, `_b.gd` and `_c.gd`** (one seed each, the run in
   `tests/full_run_rig.gd`) play three seeds through all 14 days with time actually advancing: the
   game's composition is what they test. Keep it that way: a version that only *plans* each day
