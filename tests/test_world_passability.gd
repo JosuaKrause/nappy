@@ -394,7 +394,7 @@ func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
 	var lines := 0
 	var stood := 0
 	var outside := 0
-	for closure in city.streets.closures():
+	for closure in city.streets().closures():
 		for mouth in closure.mouth_centres(map):
 			lines += 1
 			var body := _barrier_body_at(city, mouth)

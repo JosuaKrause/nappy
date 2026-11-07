@@ -101,7 +101,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	events.stream_around(start)
 	var crowd := city.crowd
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
-	crowd.set_gates(city.streets.region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
 	events.use_player(rig)
 	rig.global_position = start

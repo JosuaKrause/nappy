@@ -55,7 +55,7 @@ func run(t) -> void:
 			director.setup(city, city.map)
 			var step: ResistanceSteps.Step = _step_for(day)
 			var candidates := _candidates(city, day)
-			var region_plan := city.streets.region_plan()
+			var region_plan := city.streets().region_plan()
 			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
 			var door_bodies: Array[EventScheduler.Planned] = \
 					region_plan.door_bodies if region_plan else []
@@ -128,4 +128,4 @@ func _name(step: ResistanceSteps.Step) -> String:
 ## The director's own candidate pool, asked of the one function planning and the director share.
 func _candidates(city: City, day: int) -> Array[Vector2i]:
 	return ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), city.map,
-			city.streets.region_plan())
+			city.streets().region_plan())

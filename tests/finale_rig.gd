@@ -1590,7 +1590,7 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 	director.spec = spec
 	director.start_the_crowd(Vector2.INF)
 	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
-	t.check(city.streets.route_tree() == null and city.streets.closures().is_empty(),
+	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),
 			"the escape grows no corridor and closes no street")
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
 	# frame that passes after this suite.

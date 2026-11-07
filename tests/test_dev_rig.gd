@@ -87,7 +87,7 @@ func _test_event_target_lands_near_a_placed_event(t) -> void:
 ## `closure:0` reads the day's own closures rather than the tile grid, so what it pins is that a
 ## generated day actually has one and that the lookup does not fall back to the doorstep.
 func _test_closure_target_lands_near_the_first_closure(t) -> void:
-	t.check(not _city.streets.closures().is_empty(), "day %d has a closure to look at" % DAY)
+	t.check(not _city.streets().closures().is_empty(), "day %d has a closure to look at" % DAY)
 	var at := DevRig.for_spawn_target("closure:0", _city, _resistance, _city.run.header)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn closure:0 lands on a walkable tile (%s)" % at)
@@ -212,7 +212,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	city.events.start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
 
 	var huts: Array[EventScheduler.Planned] = []
-	for body in city.streets.region_plan().door_bodies:
+	for body in city.streets().region_plan().door_bodies:
 		if body.def.id == "checkpoint_hut":
 			huts.append(body)
 	t.check(not huts.is_empty(), "seed %d day %d has at least one checkpoint hut" % [_CHECKPOINT_SEED, day])

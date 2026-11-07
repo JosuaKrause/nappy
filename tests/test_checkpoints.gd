@@ -381,7 +381,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	city.events.stream_radius = INF
 	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs — this test is
 	# specifically about `EventManager.start_day()` reading a real `DayStreets.region_plan()` rather
-	# than growing its own fallback one (`_city.streets.route_tree()` reads null before `City.start_day()`
+	# than growing its own fallback one (`_city.streets().route_tree()` reads null before `City.start_day()`
 	# has ever run, which silently empties `RegionPlanner.plan_day()` — a gap real play never
 	# hits, since `main._start_day()` always calls `_city.start_day()` first).
 	var state := CityState.new()
@@ -394,7 +394,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
 
-	var region_plan := city.streets.region_plan()
+	var region_plan := city.streets().region_plan()
 	t.check(region_plan.door_bodies.size() > 0,
 			"day %d generated a door structure to place (%d bodies)"
 			% [day, region_plan.door_bodies.size()])

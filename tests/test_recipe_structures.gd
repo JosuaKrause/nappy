@@ -30,7 +30,7 @@ func run(t) -> void:
 	var selected := Vector3i(-1, -1, -1)
 	var day_spec := DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS)
 	for key: Vector3i in StreetTrees.segment_keys_with_trees(city.map):
-		if SealPlanner.may_seal(city.map, day_spec, city.streets.route_tree(), city.map.network.by_key(key)):
+		if SealPlanner.may_seal(city.map, day_spec, city.streets().route_tree(), city.map.network.by_key(key)):
 			selected = key
 			break
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
@@ -76,17 +76,17 @@ func run(t) -> void:
 ## through (`RegionPlanner.stand_door()`).
 func _test_an_authored_door_stands_as_the_days(t, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
-	var days := RegionPlanner.plan_day(city.map, own_run.header.day, city.streets.route_tree())
+	var days := RegionPlanner.plan_day(city.map, own_run.header.day, city.streets().route_tree())
 	t.check(not days.doors.is_empty(), "the day has a street door to author")
 	if days.doors.is_empty():
 		return
 	var door: StreetNetwork.Segment = days.doors[0]
 	var bodies := days.door_bodies.slice(0, 3)
-	city.streets.replace_region_plan(days)
+	city.streets().replace_region_plan(days)
 	var key := door.key()
 	data.setup.gates = [{"segment": [key.x, key.y, key.z]}]
 	var errors := runtime.install(city, player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
-	var authored := city.streets.region_plan()
+	var authored := city.streets().region_plan()
 	t.check(errors.is_empty() and authored.doors.size() == 1 and authored.doors[0].key() == key
 			and authored.gates.size() == 1 and authored.door_bodies.size() == bodies.size(),
 			"the authored door is the day's street, with its gate and its bodies: %s" % [errors])
@@ -111,7 +111,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRunti
 			cafe = candidate
 	var street: StreetNetwork.Segment = null
 	for segment in city.map.network.segments():
-		if SealPlanner.may_seal(city.map, spec, city.streets.route_tree(), segment) \
+		if SealPlanner.may_seal(city.map, spec, city.streets().route_tree(), segment) \
 				and city.map.has_street(segment.key()) \
 				and not RegionPlanner.boundary_segments(city.map).has(segment):
 			street = segment
@@ -119,7 +119,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRunti
 	t.check(cafe != null and street != null, "the day has a street a café pair may seal")
 	if cafe == null or street == null:
 		return
-	var expected := SealPlanner.seal_street(city.map, street, cafe, city.streets.route_tree(),
+	var expected := SealPlanner.seal_street(city.map, street, cafe, city.streets().route_tree(),
 			StreetTrees.footprint_tiles(city.map), [] as Array[Vector2i])
 	var key := street.key()
 	data.setup.seals = [{"segment": [key.x, key.y, key.z], "candidate": "cafe_pair"}]

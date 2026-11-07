@@ -613,8 +613,8 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		if city.crowd.agent_count() != expected:
 			errors.append("setup.background: too few eligible sidewalk positions for the requested uniform population")
 			return errors
-	if city.streets.region_plan():
-		city.crowd.set_gates(city.streets.region_plan().gates)
+	if city.streets().region_plan():
+		city.crowd.set_gates(city.streets().region_plan().gates)
 	for entry: Dictionary in setup.get("actors", []):
 		var actor_at := position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -812,7 +812,7 @@ func _start_the_route(setup: Dictionary) -> void:
 ## Keep only named production structures. The context plan supplies eligibility and geometry,
 ## never permission to install unrelated walls or checkpoint actors throughout the scene.
 func _select_structures(errors: Array[String]) -> void:
-	var region := _city.streets.region_plan()
+	var region := _city.streets().region_plan()
 	if not region:
 		return
 	var setup: Dictionary = data.get("setup", {})
@@ -837,7 +837,7 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _segment_inside_extent(segment):
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
-		if not _city.map.has_street(key) or _city.streets.route_tree().is_on_the_tree(key) \
+		if not _city.map.has_street(key) or _city.streets().route_tree().is_on_the_tree(key) \
 				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
@@ -846,7 +846,7 @@ func _select_structures(errors: Array[String]) -> void:
 				"roadblock", entry.end == "a"))
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
-	_city.streets.replace_region_plan(selected)
+	_city.streets().replace_region_plan(selected)
 
 func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 	if _city.map.has_stretch():
@@ -863,7 +863,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
 	var emptied: Array[Vector2i] = []
-	var route := _city.streets.route_tree()
+	var route := _city.streets().route_tree()
 	for entry: Dictionary in data.get("setup", {}).get("seals", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := _city.map.network.by_key(key)
@@ -894,7 +894,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventScheduler.Planned] = []
 	var map := _city.map
-	var tree := _city.streets.route_tree()
+	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
 	var finale: FinalePlanner.Plan
@@ -909,11 +909,11 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 				errors.append("escape route construction could not complete its ordinary chains")
 		# The finale plan validates the real escape routes. Its randomly chosen scenery is
 		# not an authored scene's event list.
-	elif _city.streets.region_plan():
-		for body in _city.streets.region_plan().wall_bodies:
+	elif _city.streets().region_plan():
+		for body in _city.streets().region_plan().wall_bodies:
 			if _inside_extent(body.position):
 				plans.append(body)
-		for body in _city.streets.region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_bodies:
 			doors.append(body.position)
 			if _inside_extent(body.position):
 				plans.append(body)

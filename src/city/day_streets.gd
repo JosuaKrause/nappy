@@ -2,13 +2,13 @@ class_name DayStreets
 extends RefCounted
 ## **Today's streets as dawn left them**: the day's route tree, its region wall and doors, the
 ## streets it closed, and the region a siting reads off the wall. Grown once at dawn and handed to
-## whoever asks, so nothing grows them a second time.
+## whoever asks, so a reader asks for today's rather than growing its own.
 ##
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over and
-## over again -- then pass that object around".)* `City` makes one with itself and is its only
-## writer: `begin_day()` from `City._close_streets()` and `City.start_recipe_day()`, and
-## `replace_region_plan()` for a rig or a scene recipe that authors the day's wall and doors. Every
-## reader asks `city.streets`, and the city's own dawn reads it too.
+## over again -- then pass that object around".)* `City` makes one with itself and writes it at
+## dawn, `begin_day()` from `City._close_streets()` and `City.start_recipe_day()`; the one other
+## write is `replace_region_plan()`, for a rig or a scene recipe that authors the day's wall and
+## doors. Every reader asks `city.streets()`, and the city's own dawn reads it too.
 ##
 ## **A day whose spec closes no streets does not begin a day here**, so every answer stays what the
 ## last day that did left. The escape's city is a city of its own that never begins one, so there
@@ -54,8 +54,8 @@ func replace_region_plan(plan: RegionPlanner.RegionPlan) -> void:
 func route_tree() -> RouteTree:
 	return _tree
 
-## Today's region wall and doors. Grown at dawn from `route_tree()`, so it is null until then — the
-## same contract as `route_tree()`.
+## Today's region wall and doors. Grown at dawn from `route_tree()`, so it is null until then —
+## the same contract as `route_tree()`.
 func region_plan() -> RegionPlanner.RegionPlan:
 	return _region_plan
 

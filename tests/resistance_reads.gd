@@ -67,7 +67,7 @@ static func mast_at(director: ResistanceDirector, events: EventManager) -> Strin
 ## tile and a half of a point in `except_near` are left out: a task's own body, placed after the day's
 ## first placement asked, does not shut its own tile.
 static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Array:
-	var region_plan: RegionPlanner.RegionPlan = city.streets.region_plan()
+	var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
 	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan in city.events.plans():

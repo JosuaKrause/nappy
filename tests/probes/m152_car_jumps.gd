@@ -185,7 +185,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 	var crowd_rng := RandomNumberGenerator.new()
 	crowd_rng.seed = hash("m152-crowd:%d:%d" % [city_seed, day])
 	city.crowd.start_day(day, crowd_rng, at)
-	city.crowd.set_gates(city.streets.region_plan().gates)
+	city.crowd.set_gates(city.streets().region_plan().gates)
 
 	var stops := _places_cars_turn(city, map, at)
 	var extent := map.world_size()
@@ -293,7 +293,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 
 	print("")
 	print("seed %d day %d: %d frames, %d cars, %d closures, %d watch points"
-			% [city_seed, day, frames, seen_ids.size(), city.streets.closures().size(), stops.size()])
+			% [city_seed, day, frames, seen_ids.size(), city.streets().closures().size(), stops.size()])
 	for key: String in _class_order():
 		if classes.has(key):
 			print("    %-14s %5d   %s" % [key, int(classes[key]),
@@ -321,7 +321,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vector2]:
 	var stops: Array[Vector2] = []
 	var seen := {}
-	for closure: RoadClosure in city.streets.closures():
+	for closure: RoadClosure in city.streets().closures():
 		for mouth: Vector2 in closure.mouth_centres(map):
 			stops.append(mouth)
 			seen[mouth.snapped(Vector2.ONE)] = true

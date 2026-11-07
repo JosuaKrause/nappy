@@ -210,9 +210,10 @@ var _gates: Array[RegionPlanner.GateState] = []
 ## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
 ## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
 ## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from
-## `_city.streets.region_plan()`, which is already valid by the time this runs the same way it already is by the time `main.gd`
-## calls `set_gates()` — `City.start_day()` builds it before `Crowd.start_day()` is ever called.
-## Empty before the wall stands, or for a rig with no city, which then holds nothing a door either.
+## `_city.streets().region_plan()`, which is already valid by the time this runs the same way it
+## already is by the time `main.gd` calls `set_gates()` — `City.start_day()` builds it before
+## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no city,
+## which then holds nothing a door either.
 var _door_segments := {}
 
 ## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
@@ -323,7 +324,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	_door_segments = {}
 	_door_holds = []
 	if _city:
-		var plan := _city.streets.region_plan()
+		var plan := _city.streets().region_plan()
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true

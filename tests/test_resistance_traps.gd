@@ -349,7 +349,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirecto
 		var director: ResistanceDirector = first if side > 0.0 \
 				else _start_a_guarded_target_day(t, 9)[0]
 		var hut: EventScheduler.Planned = null
-		for body in _city.streets.region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_bodies:
 			if body.def.redetains and body.position.distance_to(director.red_arrow_target()) < 0.5:
 				hut = body
 		if side > 0.0:
@@ -493,7 +493,7 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 	t.check(SpawnSiting.is_out_of_sight(view, EventFootprints.footprint_of(chaser.def), her, start),
 			"%s: wholly out of sight the frame he exists" % label)
 	var through_a_door := false
-	var plan := _city.streets.region_plan()
+	var plan := _city.streets().region_plan()
 	for body: EventScheduler.Planned in plan.door_bodies if plan else []:
 		if DoorLine.crossed_by(body.position, body.facing, body.def.obstructs_radius,
 				start, her):

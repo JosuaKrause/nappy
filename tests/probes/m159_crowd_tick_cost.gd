@@ -88,7 +88,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	rng.seed = hash("crowd-tick-cost:%d:%d" % [city_seed, day])
 	var start := city.map.doorstep_world_position()
 	crowd.start_day(day, rng, start)
-	crowd.set_gates(city.streets.region_plan().gates)
+	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.
 	var chain := PackedByteArray()

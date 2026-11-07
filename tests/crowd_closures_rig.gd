@@ -680,7 +680,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 		events_rng.seed = hash("crowd-wall-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
 		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
-		var plan := city.streets.region_plan()
+		var plan := city.streets().region_plan()
 		if not plan.walls.is_empty() and not plan.doors.is_empty():
 			wall_segment = plan.walls[0]
 			door_segment = plan.doors[0]
@@ -705,7 +705,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	var mouth := wall_segment.mouth_rect(at_a)
 	var at := map.tile_rect_to_world(mouth).get_center()
 	city.crowd.start_day(used_day, _rng(used_day), at)
-	city.crowd.set_gates(city.streets.region_plan().gates)
+	city.crowd.set_gates(city.streets().region_plan().gates)
 
 	var frames_inside := 0
 	var walkers_on_the_segment := 0
@@ -783,8 +783,8 @@ func _open_a_door_day(t) -> Dictionary:
 		events_rng.seed = hash("crowd-door-events:%d:%d" % [SEED, day])
 		var consumed: Array[String] = []
 		city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
-		if not city.streets.region_plan().doors.is_empty():
-			door = city.streets.region_plan().doors[0]
+		if not city.streets().region_plan().doors.is_empty():
+			door = city.streets().region_plan().doors[0]
 			used_day = day
 			break
 	t.check(door != null, "a sampled day carries a region door for the crowd to cross")
@@ -796,7 +796,7 @@ func _open_a_door_day(t) -> Dictionary:
 	var at_a: bool = map.boundary_wall_at_a.get(door.key(), default_at_a)
 	var mouth := map.tile_rect_to_world(door.mouth_rect(at_a))
 	city.crowd.start_day(used_day, _rng(used_day), mouth.get_center())
-	city.crowd.set_gates(city.streets.region_plan().gates)
+	city.crowd.set_gates(city.streets().region_plan().gates)
 	city.crowd.clear()
 
 	var vertical := not door.horizontal
@@ -806,7 +806,7 @@ func _open_a_door_day(t) -> Dictionary:
 	# each one's hold is what a walker walking at it is handed (`door_ahead`): a probe walker is set
 	# walking at each and the hold read off it after one frame.
 	var huts: Array[WalkerDoorHold] = []
-	for body in city.streets.region_plan().door_bodies:
+	for body in city.streets().region_plan().door_bodies:
 		if body.def.detain_seconds <= 0.0 or not mouth.has_point(body.position):
 			continue
 		var across: float = body.position.x if vertical else body.position.y
@@ -1074,7 +1074,7 @@ func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 	city.crowd.clear()
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
-	var gate: RegionPlanner.GateState = city.streets.region_plan().gates[0]
+	var gate: RegionPlanner.GateState = city.streets().region_plan().gates[0]
 	var gate_across: float = gate.position.x if vertical else gate.position.y
 	var gate_along: float = gate.position.y if vertical else gate.position.x
 	var corridor := CrowdLanes.corridor_at(gate_across)

@@ -158,8 +158,8 @@ var navigator: Navigator
 var spawn_siting: SpawnSiting
 ## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
 ## closures and the region a siting reads. Made with the city, written only by the city's dawn
-## (`_close_streets()`, `start_recipe_day()`), and read by everyone who asks about today's streets.
-var streets := DayStreets.new()
+## (`_close_streets()`, `start_recipe_day()`), and handed to whoever asks (`streets()`).
+var _streets := DayStreets.new()
 ## Where the city, its posters, its events and the day's closures write their own account for the
 ## run log — set before `build()`, which hands it on; silent until then.
 var trace := RunTrace.new()
@@ -224,7 +224,7 @@ var scenery: SceneryResidency
 var _tinted_route: RouteSource = null
 ## Rebuilt every day from the block purposes; freed and replaced wholesale.
 var _props: Array[Node2D] = []
-## The barriers and wreckage that say which streets today closed (`streets.closures()`). Rebuilt
+## The barriers and wreckage that say which streets today closed (`_streets.closures()`). Rebuilt
 ## daily.
 var _closure_nodes: Array[Node] = []
 ## Fixed for the run — only their condition changes.
@@ -382,7 +382,7 @@ func build(city_map: CityMap) -> void:
 	if all_cyclists_pelicans:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
-	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, streets.siting_region)
+	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, _streets.siting_region)
 	events.setup(self, map, navigator, spawn_siting)
 	events.force(forced_row, forced_interval)
 	crowd = Crowd.new()
@@ -1079,21 +1079,21 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## the block interiors is cheap (the buildings and the lattice are untouched) and it is the
 ## only way a requisitioned park can stop having swings in it.
 ##
-## **The escape's city is the same call with its section's spec** (`DaySpec`), since what differs is
-## settings rather than steps: `spec.closes_streets` says whether the day grows its route tree and
-## closes streets off it (`_close_streets()`) or has its walk handed in once it is planned
-## (`tint_the_route()` — the escape's chains, planned after the city is dressed, are not a tree for
-## `ClosurePlanner` or `RegionPlanner` to be stated against, so `streets.route_tree()` and
-## `streets.region_plan()` answer `null` and `streets.closures()` is empty, which is what their own
-## contract says about a city whose day has grown none); `spec.pastes_posters` says whether the
-## crews paste at dawn (`PosterWalls.start_day()`) or the walls only show what the run left
-## (`PosterWalls.show_only()`).
-## The repaint, the door, the ground, the litter, the block dressing and the street trees happen
-## either way, because the parks she walks through have to be the parks the run's seed built. The run
-## flow hands `spec` in on every day and every section (`main`, the same object the day's event
-## manager is handed); left out, as a rig that builds a city with no run flow leaves it, it is a
-## day's (`DaySpec.for_day()`). `day` is the calendar's — the escape is walked on the last day's —
-## and `rng` the closures' stream.
+## **The escape's city is the same call with its section's spec** (`DaySpec`), since what
+## differs is settings rather than steps: `spec.closes_streets` says whether the day grows its
+## route tree and closes streets off it (`_close_streets()`) or has its walk handed in once it
+## is planned (`tint_the_route()` — the escape's chains, planned after the city is dressed, are
+## not a tree for `ClosurePlanner` or `RegionPlanner` to be stated against, so
+## `streets().route_tree()` and `streets().region_plan()` answer `null` and
+## `streets().closures()` is empty, which is what their own contract says about a city whose day
+## has grown none); `spec.pastes_posters` says whether the crews paste at dawn
+## (`PosterWalls.start_day()`) or the walls only show what the run left
+## (`PosterWalls.show_only()`). The repaint, the door, the ground, the litter, the block
+## dressing and the street trees happen either way, because the parks she walks through have to
+## be the parks the run's seed built. The run flow hands `spec` in on every day and every
+## section (`main`, the same object the day's event manager is handed); left out, as a rig that
+## builds a city with no run flow leaves it, it is a day's (`DaySpec.for_day()`). `day` is the
+## calendar's — the escape is walked on the last day's — and `rng` the closures' stream.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		spec: DaySpec = null) -> void:
 	if spec == null:
@@ -1109,7 +1109,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 	if spec.pastes_posters:
 		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
 		# off, and after `_dress_blocks()`, which is what says a front has burnt.
-		_posters.start_day(day, streets.route_tree())
+		_posters.start_day(day, _streets.route_tree())
 	else:
 		_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
@@ -1145,7 +1145,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 	var plan := RegionPlanner.plan_day(map, day, tree)
 	map.restore_edges(edges)
 	var closures: Array[RoadClosure] = map.recipe_closures.duplicate()
-	streets.begin_day(tree, plan, closures)
+	_streets.begin_day(tree, plan, closures)
 	map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
@@ -1171,7 +1171,7 @@ func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
 			plan.doors.size(), RegionPlanner.regions_with_calm(map)])
 	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace)
-	streets.begin_day(tree, plan, closures)
+	_streets.begin_day(tree, plan, closures)
 	map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
@@ -1240,6 +1240,12 @@ func props() -> Array[Node2D]:
 	all.append_array(_street_trees)
 	return all
 
+## Today's streets as dawn left them (`DayStreets`): the route tree, the region wall and doors, the
+## closures and the region a siting reads. The same object for the city's whole life; its answers
+## change only at a dawn that closes streets, or when a rig or a scene recipe replaces the plan.
+func streets() -> DayStreets:
+	return _streets
+
 # ------------------------------------------------------- the day's shape in words ---
 # For whoever reports it: the run log's `plan` lines and the console's day line read the same
 # three. Here, on the city they describe, because both the run flow and the run log call them
@@ -1264,7 +1270,7 @@ func calm_summary() -> String:
 ## identical from a count.
 func closure_summary() -> String:
 	var parts: Array[String] = []
-	for closure in streets.closures():
+	for closure in _streets.closures():
 		parts.append("%s %s%s" % [
 			RoadClosure.display_name(closure.kind).to_lower(),
 			"h" if closure.segment.horizontal else "v",

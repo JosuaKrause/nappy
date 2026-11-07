@@ -1045,7 +1045,7 @@ func _watch_the_warning(here: Vector2) -> void:
 func _watch_closures(here: Vector2) -> void:
 	if not _city:
 		return
-	for closure in _city.streets.closures():
+	for closure in _city.streets().closures():
 		var key := closure.segment.key()
 		if _seen_closures.has(key):
 			continue

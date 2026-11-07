@@ -166,7 +166,7 @@ class Walk extends RefCounted:
 						Tuning.VIEW_HALF_EXTENT * 2.0)
 				drawn_in_view_at_siting = view.intersects(Rect2(van.position + box.position,
 						box.size), true)
-				on_a_route = Corridor.of(city.streets.route_tree()).carries_a_route(
+				on_a_route = Corridor.of(city.streets().route_tree()).carries_a_route(
 						city.map.world_to_tile(van.position))
 			var off := (van.position - player.global_position).abs()
 			nearest_after = minf(nearest_after, van.position.distance_to(player.global_position))

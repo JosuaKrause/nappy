@@ -297,7 +297,7 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 ## sight, or `(-1, -1)`.
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.streets.route_tree(),
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.streets().route_tree(),
 				_run.calendar.settled_this_act(), PackedVector2Array(), EventScheduler.Verdicts.new())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
@@ -494,7 +494,7 @@ func _where_the_column_stops(her: Vector2, lane_x: float, wanted_y: float, going
 	if not barricade:
 		return Vector2.INF
 	if not _siting:
-		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.streets.route_tree(),
+		_siting = EventScheduler.WalkSiting.new(_day, _map, _city.streets().route_tree(),
 				_run.calendar.settled_this_act(), PackedVector2Array(), EventScheduler.Verdicts.new())
 	var tile := _map.world_to_tile(Vector2(lane_x, wanted_y))
 	var step := Vector2i(0, 1 if going > 0.0 else -1)

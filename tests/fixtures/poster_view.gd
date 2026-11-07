@@ -18,7 +18,7 @@ static func walk(city: City, map: CityMap) -> Dictionary:
 			fronts.append(tile)
 			sheets.append(map.tile_to_world(tile) + Vector2(0, -Tuning.TILE_SIZE * 0.5))
 	var found := {"cells": 0, "with_sheet": 0, "view_sum": 0, "routes": [], "underfoot": []}
-	var tree := city.streets.route_tree()
+	var tree := city.streets().route_tree()
 	if tree == null:
 		return found
 	for branch in tree.branches:

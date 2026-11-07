@@ -169,7 +169,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 			director.use_player(player)
 			director.tick(STEP)
 
-			var region_plan: RegionPlanner.RegionPlan = city.streets.region_plan()
+			var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
 			var walled_alleys: Array[Rect2i] = region_plan.alley_walls if region_plan else []
 			var reachability := _day_reachability(city)
 			var grid: ReachabilityGrid = reachability[0]
