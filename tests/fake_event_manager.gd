@@ -16,6 +16,13 @@ extends EventManager
 ## Every instance `spawn_extra()` made, freed with the manager: none is in a world either.
 var _made: Array[EventInstance] = []
 
+## How many masts `silence_all_masts()` answers it stopped, what the real manager counts off the day's
+## plans (`tests/test_masts.gd` holds that count): the blackout's suite sets it to the masts a day
+## carries and reads `silenced_all` for what it was asked.
+var masts_to_silence := 0
+## How many times `silence_all_masts()` was asked.
+var silenced_all := 0
+
 ## An instance of `def` at `at`, on `path`, in no world.
 ##
 ## Overrides EventManager.spawn_extra.
@@ -24,6 +31,13 @@ func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> Ev
 	instance.setup(def, at, path)
 	_made.append(instance)
 	return instance
+
+## Answers `masts_to_silence` and counts the ask.
+##
+## Overrides EventManager.silence_all_masts.
+func silence_all_masts() -> int:
+	silenced_all += 1
+	return masts_to_silence
 
 ## Frees what `spawn_extra()` made, beside the manager's own letting go of its parts (the engine
 ## sends the notification to each script of the chain).
