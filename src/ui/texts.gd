@@ -288,8 +288,11 @@ const ENDING_BODY := {
 }
 ## The bad ending's extra line; `%d` is the last day played.
 const ENDING_DAY_REACHED := "\nYou made it to day %d."
-## `%s` the body, `%s` the run's length as a clock, `%s` the line above or "".
-const ENDING_PLAYED := "%s\n\nTime played: %s%s"
+## `%s` the body, `%s` the run's length as a clock, `%s` `ENDING_RELOADED` or "", `%s` the line
+## above or "".
+const ENDING_PLAYED := "%s\n\nTime played: %s%s%s"
+## Under a run total that a reload in the middle of a day made short.
+const ENDING_RELOADED := "\nInaccurate: the game was reloaded mid-day"
 
 # ---------------------------------------------------------------------- escape ---
 # The escape's own last screen, and the line each section of it opens on.

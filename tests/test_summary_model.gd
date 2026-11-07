@@ -10,6 +10,7 @@ func run(t) -> void:
 	_test_a_lost_sections_summary_carries_its_words(t)
 	_test_a_brief_is_the_day_the_nerves_and_the_morning(t)
 	_test_an_ending_has_no_continue_and_names_its_day_when_bad(t)
+	_test_a_run_total_a_reload_made_short_is_marked(t)
 	_test_the_epilogue_names_the_way_out_and_its_clock(t)
 	_test_the_tally_counts_errands_and_contacts_lost(t)
 
@@ -89,10 +90,31 @@ func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t) -> void:
 			"an ending has its heading and no continue")
 	t.check(bad.body_prose == Texts.ENDING_BODY[GameEnums.Ending.BAD], "its prose is its paragraph")
 	t.check(bad.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
-			RunState.format_clock(run.header.play_seconds()), Texts.ENDING_DAY_REACHED % 9],
+			RunState.format_clock(run.header.play_seconds()), "", Texts.ENDING_DAY_REACHED % 9],
 			"and its body the paragraph, the time played and the day")
 	var good := SummaryModel.ending(run, GameEnums.Ending.GOOD)
 	t.check(not good.body("").contains("made it to day"), "the good ending names no day")
+
+## A run reloaded in the middle of a day has a short total, so the one screen that shows the run's
+## total says so under it; a run never reloaded mid-day, and a day's own clock, carry no such line.
+func _test_a_run_total_a_reload_made_short_is_marked(t) -> void:
+	var run := _run_on(9, 0)
+	run.header.play_ticks = 22620
+	var plain := SummaryModel.ending(run, GameEnums.Ending.GOOD).body("P")
+	t.check(not plain.contains("Inaccurate"), "a run never reloaded mid-day marks no total")
+	run.facts.reloaded_mid_day = true
+	var marked := SummaryModel.ending(run, GameEnums.Ending.GOOD).body("P")
+	var clock := RunState.format_clock(run.header.play_seconds())
+	t.check(marked.contains("Time played: %s\nInaccurate: the game was reloaded mid-day" % clock),
+			"a reloaded run's total carries the line directly under it ('%s')" % marked)
+	var bad := SummaryModel.ending(run, GameEnums.Ending.BAD).body("P")
+	t.check(bad.find("Inaccurate") < bad.find("made it to day"),
+			"and on the bad ending it stands between the time and the day")
+	var day := SummaryModel.day_over(run, _ended(GameEnums.DayResult.WON, "", 30.0))
+	t.check(not (day.title + day.body("")).contains("Inaccurate"),
+			"a day's own time is whole, since the day restarts, and is not marked")
+	var epilogue := SummaryModel.epilogue(_ended(GameEnums.DayResult.WON, "", 42.5))
+	t.check(not epilogue.body("").contains("Inaccurate"), "nor is the escape's own clock")
 
 func _test_the_epilogue_names_the_way_out_and_its_clock(t) -> void:
 	var end := _ended(GameEnums.DayResult.WON, "", 42.5)

@@ -127,7 +127,9 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	var day_reached := Texts.ENDING_DAY_REACHED % run.header.day \
 			if which == GameEnums.Ending.BAD else ""
 	model._body_shape = Texts.ENDING_PLAYED
-	model._body_fill = [RunState.format_clock(run.header.play_seconds()), day_reached]
+	# The run's total, which a reload mid-day made short; the day's own clock is whole and is not marked.
+	var inaccurate := Texts.ENDING_RELOADED if run.facts.reloaded_mid_day else ""
+	model._body_fill = [RunState.format_clock(run.header.play_seconds()), inaccurate, day_reached]
 	model.shows_continue = false
 	return model
 

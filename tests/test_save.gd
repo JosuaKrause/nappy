@@ -65,6 +65,7 @@ func run(t) -> void:
 	_test_a_day_under_way_gives_back_the_fire_it_lit(t)
 	_test_day_under_way_load_on_the_last_nerve_ends_the_run(t)
 	_test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t)
+	_test_a_reload_mid_day_flags_the_run_and_a_brief_does_not(t)
 	_test_a_save_from_before_checkpoints_still_loads(t)
 	_test_the_mode_and_the_checkpoint_survive_a_round_trip(t)
 	_test_summary_load_costs_nothing(t)
@@ -772,6 +773,48 @@ func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
 		t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
 				"back at day 8 with every nerve")
 		t.check(FileAccess.file_exists(_SCRATCH_PATH), "and the save is not deleted")
+	)
+
+## A save written while a day was being walked flags the run it resumes, one written at a day brief
+## does not, a save from before the flag loads unflagged, and a later save and a return to a
+## checkpoint keep the flag (the stretch walked is still missing from the run's total play time).
+func _test_a_reload_mid_day_flags_the_run_and_a_brief_does_not(t) -> void:
+	var run := _a_run(61)
+	run.header.day = 8
+	run.header.nerves = 3
+	run.calendar.begin_day()
+	run.calendar.finish_day(GameEnums.DayResult.WON)
+	run.calendar.begin_day()
+	_with_a_scratch_save(func() -> void:
+		t.check(_saved(run, false), "a save at a day brief")
+		run.start_run(62)
+		var resume := _save.try_resume(run)
+		t.check(resume.get("day_under_way") == false and not run.facts.reloaded_mid_day,
+				"a save written at a brief resumes unflagged")
+		t.check(_saved(run, true), "a save while a day is walked")
+		run.start_run(63)
+		resume = _save.try_resume(run)
+		t.check(resume.get("day_under_way") == true and run.facts.reloaded_mid_day,
+				"a save written mid-walk flags the run it resumes")
+		t.check(_saved(run, false), "the dawn write that follows the resume")
+		run.start_run(64)
+		_save.try_resume(run)
+		t.check(run.facts.reloaded_mid_day, "a later save keeps the flag")
+		run.header.nerves = 1
+		run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
+		t.check(run.facts.reloaded_mid_day, "a loss that goes back to a checkpoint keeps it")
+		run.start_run(65)
+		t.check(not run.facts.reloaded_mid_day, "a new run starts unflagged")
+		t.check(_saved(run, false), "a save of that new run")
+		var file := FileAccess.open(_SCRATCH_PATH, FileAccess.READ)
+		var data: Dictionary = JSON.parse_string(file.get_as_text())
+		file.close()
+		data.erase("reloaded_mid_day")
+		data["day_under_way"] = false
+		_write_raw(JSON.stringify(data))
+		run.facts.reloaded_mid_day = true
+		_save.try_resume(run)
+		t.check(not run.facts.reloaded_mid_day, "a save without the field loads as not flagged")
 	)
 
 ## A save written before there were two modes or checkpoints — no `hard_mode` key, no `checkpoint`

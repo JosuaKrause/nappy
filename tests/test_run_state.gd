@@ -75,10 +75,17 @@ func _written_for(run: RunState, day_under_way: bool) -> Dictionary:
 		written[0] = JSON.parse_string(FileAccess.get_file_as_string(_SCRATCH_PATH)))
 	return written[0]
 
-## Everything the file holds but the build that wrote it.
+## Everything the file holds but the build that wrote it and the `reloaded_mid_day` flag, which the
+## fixture, written before the flag, does not hold: a resume of its mid-walk save sets the flag
+## (`GameSave._apply()`), so the comparison is narrowed to the keys the fixture holds. The flag has
+## its own checks in `tests/test_save.gd`.
 func _without_build(file: Dictionary) -> Dictionary:
 	var kept := file.duplicate(true)
 	kept.erase("build")
+	kept.erase("reloaded_mid_day")
+	var checkpoint: Variant = kept.get("checkpoint", null)
+	if checkpoint is Dictionary:
+		checkpoint.erase("reloaded_mid_day")
 	return kept
 
 func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:

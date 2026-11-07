@@ -586,6 +586,8 @@ func _read_now(run: RunState) -> Dictionary:
 
 ## Everything a readable save puts back on `run`, from `_read_now()`'s file and from
 ## `load_in_memory()`'s copy alike, and what it says about the day: `{"day_under_way": bool}`.
+## A save written mid-walk flags the run (`RunFacts.reloaded_mid_day`); one written at a day brief,
+## or by a build before the flag, leaves it as the save holds it, which is unflagged.
 static func _apply(run: RunState, data: Dictionary) -> Dictionary:
 	run.run_parts.restore_run_data(data)
 	# The mode and the checkpoint, the same way again: a save from before there were two modes is a
@@ -593,7 +595,12 @@ static func _apply(run: RunState, data: Dictionary) -> Dictionary:
 	run.calendar.hard_mode = bool(data.get("hard_mode", false))
 	var kept: Variant = data.get("checkpoint", {})
 	run.calendar.checkpoint = _usable_checkpoint(run, kept)
-	return {"day_under_way": bool(data.get("day_under_way", false))}
+	var under_way := bool(data.get("day_under_way", false))
+	# A save written while a day was being walked lost that stretch of the run's play time: the run
+	# carries the flag from here on, and the dawn write that follows keeps it in the file.
+	if under_way:
+		run.facts.reloaded_mid_day = true
+	return {"day_under_way": under_way}
 
 ## `run` written out the way a save is and read straight back into it the way a save is —
 ## through JSON and `_apply()` — without touching the disk. **A normal run sent back to its

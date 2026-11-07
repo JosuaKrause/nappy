@@ -129,6 +129,9 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	run.start_run(_SEED + 1)
 	t.check(not _read_from_the_scratch_file(run).is_empty(), "and read back")
 	t.check(run.calendar.checkpoint_day() == 4, "with its checkpoint on day 4")
+	# The read-back of a mid-walk write flags the run; unflagged again, so `_change_everything()`
+	# can show that going back keeps a flag set after the checkpoint.
+	run.facts.reloaded_mid_day = false
 
 	var keys := _run_keys(run)
 	t.check(keys.size() > 10, "there are fields to check (%d)" % keys.size())
@@ -148,6 +151,8 @@ func _test_going_back_restores_every_field_the_save_carries(t) -> void:
 	wanted["state.nerves"] = Tuning.STARTING_NERVES
 	# The one field going back does not give back: the time played only grows (inbox #920 in plaid-penguin).
 	wanted["state.play_seconds"] = changed["state.play_seconds"]
+	# And its flag, which says that total is short after a reload: a dawn cannot know a later reload.
+	wanted["reloaded_mid_day"] = changed["reloaded_mid_day"]
 	for key in keys:
 		t.check(after[key] == wanted[key],
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
@@ -194,6 +199,7 @@ func _change_everything(run: RunState) -> void:
 	run.resistance.progress += 3
 	run.header.ending = GameEnums.Ending.NEUTRAL
 	run.header.play_ticks += 15000
+	run.facts.reloaded_mid_day = true
 	run.attempt_spend.consumed_one_shots.append("spent_after_the_checkpoint")
 	run.resistance.completed_steps.append(99)
 	run.resistance.failed_steps.append(98)
