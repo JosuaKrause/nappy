@@ -174,9 +174,10 @@ func _touch(resistance: ResistanceDirector) -> void:
 	if contact:
 		contact.complete_now()
 
-## Settles her on today's calm ground the way a won day does: she stands on a calm tile of the
-## nearest calm area to home that she has not used this act and that today's tree has not taken off,
-## and the baby falls asleep there (`Baby.force_sleep()`, which announces it as falling asleep does).
+## Settles her on today's calm ground the way a won day does: she stands on the calm ground
+## (`CalmSpot.of()`) of the nearest calm area to home that she has not used this act and that today's
+## tree has not taken off, and the baby falls asleep there (`Baby.force_sleep()`, which announces it
+## as falling asleep does).
 func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	var map := city.map
 	var used := run.calendar.settled_this_act()
@@ -186,23 +187,9 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 		var anchor := map.anchor_of(block)
 		if used.has(anchor) or map.shut_calm.has(anchor) or anchor == map.fenced_park:
 			continue
-		var spot := _calm_spot(map, anchor)
+		var spot := CalmSpot.of(map, block)
 		if spot != Vector2.INF and spot.distance_to(home) < best.distance_to(home):
 			best = spot
 	if best != Vector2.INF:
 		player.global_position = best
 	baby.force_sleep()
-
-## The calm tile of `anchor`'s lot nearest its centre, as a world position, or `Vector2.INF` if the
-## lot has none today.
-func _calm_spot(map: CityMap, anchor: Vector2i) -> Vector2:
-	var rect := map.lot_rect(anchor)
-	var centre := map.tile_rect_to_world(rect).get_center()
-	var best := Vector2.INF
-	for x in range(rect.position.x, rect.end.x):
-		for y in range(rect.position.y, rect.end.y):
-			var at := map.tile_to_world(Vector2i(x, y))
-			if Tile.is_calm(map.tile_at(Vector2i(x, y))) and map.block_at(at) == anchor \
-					and at.distance_to(centre) < best.distance_to(centre):
-				best = at
-	return best

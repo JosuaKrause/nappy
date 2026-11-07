@@ -217,9 +217,13 @@ func _test_the_playground_itself_settles_her(t) -> void:
 	var settled := await _walk_until_asleep(t, at, Tuning.day_length(1))
 	t.check(settled > 0.0, "she settles standing on the playground's own ambient source")
 
-## The calmest park centre this day, by the excitement a player standing there would be under.
+## The calmest calm ground this day, by the excitement a player standing there would be under.
 ## This is the park the scheduler's "one usable calm zone" rule is protecting, found by
 ## measurement rather than by asking the scheduler which one it picked.
+##
+## Each area is measured where she would stand to settle in it, on its own calm ground
+## (`CalmSpot.of()`): a courtyard block's centre is a building, and a day whose first calm block in
+## the list is a courtyard would otherwise send her to stand on a roof.
 ##
 ## Each candidate is streamed in before it is measured, or the answer would be "whichever park
 ## the last measurement happened to leave the world around". The crowd is left out of it on
@@ -229,10 +233,12 @@ func _quietest_park() -> Vector2:
 	var best := _city.map.home_world_position()
 	var quietest := INF
 	for block in _city.map.calm_blocks:
-		var centre := _city.map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
-		_city.events.stream_around(centre)
-		var here := _city.events.sources.total_at(centre)
+		var spot := CalmSpot.of(_city.map, block)
+		if spot == Vector2.INF:
+			continue
+		_city.events.stream_around(spot)
+		var here := _city.events.sources.total_at(spot)
 		if here < quietest:
 			quietest = here
-			best = centre
+			best = spot
 	return best
