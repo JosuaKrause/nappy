@@ -1632,7 +1632,8 @@ different regions; one whose two mouths agree is left untouched, exactly as it a
 
 **The wall stands at a crossing's mouth, one tile deep, never a segment's midpoint.** A boundary
 segment's wall stands at one of its two ends (`CityMap.boundary_wall_at_a`, decided at generation);
-a crossing alley's wall stands at both of its mouths. One tile deep is deliberate: the roadblock
+a crossing alley's wall stands at both of its mouths, on the alley's end row or, beside a main-road
+gatehouse, a tile deeper (below). One tile deep is deliberate: the roadblock
 row's own width reaches roughly two tiles along a street each way, wide enough to cover a nearby
 alley's mouth outright from a segment's midpoint, and the mouth is where a barrier already stands for
 every other closure in the game. **A crossing alley's own two wall bodies carry a narrower
@@ -1675,8 +1676,16 @@ end to end. Her side of the door is every door's: a gatehouse takes her in from 
 and walking under the boom, which on the main road is always up, sets the door's guard on her
 (docs/EVENTS.md, "Checkpoints"). **A main-road door stands `RegionPlanner.MAIN_ROAD_DOOR_INSET` (2)
 tiles in from the junction**, so a gatehouse's 80px take-in covers the main road's sidewalk past it
-and none of the junction box's sidewalk: crossing the main road at a corner is never a toll. The
-tree runs along the spine only when its trunk search falls back to it (above), so a main-road door
+and none of the junction box's sidewalk: she is taken in walking along the main road past the door,
+and never when she only crosses the main road at the corner. **An alley that opens beside a
+gatehouse has its mouth body a tile deeper.** Two tiles in is where a through-alley opens (tiles 2-3
+or 4-5 of a street, `CityGenerator._alley_rect()`), and a body on the alley's end row would stand
+51px from the gatehouse, inside their 64px. So a body at that mouth, the region wall's, an alley
+door's post or a seal's, stands one tile deeper into the alley (`SealPlanner.alley_mouth_body_rect()`,
+80px from the gatehouse), and the end row is an open nook of the sidewalk. The rule is the bodies'
+distance, so a door off the main road, on its mouth row where no alley opens, never moves one. No
+event stands there either: every event keeps `Tuning.CHECKPOINT_EVENT_GAP` from a door's bodies
+(below). The tree runs along the spine only when its trunk search falls back to it (above), so a main-road door
 usually decides no route; the main road's sidewalks reach every region the spine crosses, at the
 toll. The escape plans no region wall, since it closes no streets (`DaySpec.closes_streets`), so the
 rule needs no spec.
@@ -1698,7 +1707,7 @@ them, at the three points `RegionPlanner.door_positions()` gives (`SealPlanner.p
 at `Tuning.TILE_SIZE`, which comes out at three across `STREET_WIDTH`): the wall's own three
 positions at the mouth, or on the main road `MAIN_ROAD_DOOR_INSET` tiles further in (above); an
 alley door gets a single `checkpoint_post` at
-each of its two mouths. `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
+each of its two mouths, a tile deeper at a mouth beside a main-road gatehouse (above). `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies` build them
 alongside the wall's own bodies, in `RegionPlan.door_bodies`. The toll is paid at a gatehouse or a post —
 see docs/EVENTS.md, "Checkpoints" — and the gate never inspects her: lowered it is a wall across the
 carriageway, and raised for a car it is ground she may walk under.

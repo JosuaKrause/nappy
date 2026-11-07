@@ -66,7 +66,11 @@ extends RefCounted
 ## in from its own sidewalk, and walking under the boom sets the door's guard on her. **The door
 ## stands `MAIN_ROAD_DOOR_INSET` tiles in from the junction**, so a gatehouse takes her in walking
 ## along the main road's sidewalk past it and never in the junction, where her route crosses the
-## main road at a corner without meeting the door. The tree runs along the spine only when its
+## main road at a corner without meeting the door *(inbox #1186, the player's answer on where it
+## stands: "move it in so she doesn't accidentally trigger it")*. Two tiles in is where a
+## through-alley opens, so a body at an alley's mouth beside a gatehouse stands a tile deeper
+## (`SealPlanner.alley_mouth_body_rect()`, asked by this plan's alley walls and alley doors and by
+## the seal planner's alley seals). The tree runs along the spine only when its
 ## trunk search falls back to it (`RouteTree`), so a main-road door usually decides no route; its
 ## sidewalks reach every region the spine crosses, at a toll. The escape, the one walk that seals
 ## the main road (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no streets and never
@@ -753,7 +757,9 @@ static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: Regio
 ## walking past the door and none of the junction's own sidewalk, where her route crosses the main
 ## road without meeting the door. At the segment's mouth tile the take-in covers 8 to 12 of the
 ## junction box's 16 sidewalk tiles. Two tiles in puts the nearest box tile 96px from a hut's
-## centre. Doors off the main road stand on the mouth tile.
+## centre. Doors off the main road stand on the mouth tile. The inset row is where a through-alley
+## opens on the street beside it, so an alley's mouth body there stands a tile deeper
+## (`SealPlanner.alley_mouth_body_rect()`).
 const MAIN_ROAD_DOOR_INSET := 2
 
 ## The three points a street door on `segment` stands its bodies at, a hut on each sidewalk and the
