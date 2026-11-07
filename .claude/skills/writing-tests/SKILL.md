@@ -33,11 +33,10 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   suite whose header gives its reason (inbox #1156; inbox #1159).
 - **Mocking makes the suites faster** (inbox #1159): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
-- *Proposed by the filer, open to the player's correction:* plain values and data (a position, a
-  day's spec, a `Tuning` constant) are not real objects to mock; only collaborators that do
-  something are mocked.
-- *Proposed by the filer, open to the player's correction:* a suite touched for another reason is
-  converted only as far as the change reaches.
+- **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`
+  constant); only collaborators that do something are mocked (inbox #1159).
+- **A suite a pull request touches for another reason is converted only as far as the pull
+  request's change reaches** (inbox #1159).
 
 **Responsibilities are combined only for a stated good reason** (inbox #1159), such as a guarantee
 that spans modules or the game's composition. The reason is stated in the suite's `##` header
