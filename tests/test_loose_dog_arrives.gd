@@ -1,8 +1,8 @@
 extends RefCounted
 ## **A loose dog sent from behind her arrives and runs past, or is retired out of sight.**
 ## *(sunny-hedgehog, 2026-09-27: "a loose dog that spawns behind me never arrives it stays offscreen
-## indefinitely".)* The director sends the dog ahead of her; she may then turn round, or run. Run on
-## a real city through `EventsAhead._send_down_her_line()`, the dog sent from behind her while she
+## indefinitely".)* The director sends the dog ahead of her; she may then turn round, or run. Run over
+## a generated map through `EventsAhead._send_down_her_line()`, the dog sent from behind her while she
 ## stands, while she walks away at `Tuning.WALK_SPEED` (it closes on her at 40px/s) and while she
 ## runs away at `Tuning.RUN_SPEED` (it cannot). The first two must reach her and be gone; the third,
 ## sent from the furthest the director sites it, must be retired once it is out of sight and not
