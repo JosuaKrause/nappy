@@ -204,7 +204,8 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
 		var siting := SpawnSiting.new(_city.map, _city.navigator,
 				func() -> VisibleView: return view)
-		var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park, siting,
+		var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, _city.atlas,
+				fixture.park, siting,
 				ResistanceReads.day_reachability(_city)[1])
 		cordon.tick(STEP, swing)
 		var ground := siting.ask_of_ground(Rect2(), Mover.on_foot())
@@ -590,8 +591,9 @@ func _test_no_tape_goes_up_through_the_pram(t) -> void:
 			# Outside she faces in; inside she faces out: the pram toward the line either way.
 			var her: Vector2 = middle + outward * distance * side
 			var facing := -outward * side
-			var cordon := ParkCordon.new(_city.map, _city.navigator, _city, fixture.park,
-					_city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
+			var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city,
+					_city.atlas, fixture.park, _city.spawn_siting,
+					ResistanceReads.day_reachability(_city)[1])
 			var waited := 0.0
 			while not cordon.is_closed() and waited < PATIENCE:
 				_look(_city, null)
