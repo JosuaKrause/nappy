@@ -18,6 +18,11 @@ dependency injection to allow for more modular and testable code" (minty-lemur #
 building places and *where* is its own, and even that is expressed through the day's machinery. The
 review below applies the five principles to the whole codebase, not only the escape.
 
+**Nothing else is worked on until this entry is done** (inbox #1210): the player, asked whether a
+bug fix merging meant the refactor was complete, put the refactor first and everything else after
+it, since work built on the code before the refactor is done twice. Pull requests opened for other
+entries while it runs stay open as drafts and resume after it.
+
 ## The review this entry files
 
 A read-only review of `main` at v0.29.0 in four slices (the escape against the day; the events
