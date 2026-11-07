@@ -16,8 +16,8 @@ extends RefCounted
 ## **Why her real body is here**: a post is a `Prop` with a `StaticBody2D`, and what the design
 ## promises (the row stops her, the pavement beside it does not) is a promise between that body and
 ## hers, which only the physics engine can answer, so the two are combined and a fake of either would
-## answer nothing. The `Prop`'s own members a check reads (`shape`, its `BollardBody` child) have no
-## method to read them through, and `src/city/prop.gd` is not this change's to add one to.
+## answer nothing. A check reads the `Prop` only through `body_shape()`, and the radius it
+## is drawn from is `Prop.bollard_shape()`'s.
 
 const STEP := 8.0
 const RUN_UP := 120.0
@@ -45,18 +45,17 @@ func _prop(t, kind: Prop.Kind, at := Vector2.ZERO) -> Prop:
 func _test_only_the_bollard_has_a_body(t) -> void:
 	for kind in [Prop.Kind.TREE, Prop.Kind.STREET_TREE, Prop.Kind.SACK, Prop.Kind.SACK_PILE]:
 		var prop := _prop(t, kind)
-		t.check(prop.get_node_or_null("BollardBody") == null,
+		t.check(prop.body_shape() == null,
 				"Prop.Kind %d stays bodiless (no prop but the post has one)" % kind)
 		prop.free()
 	var post := _prop(t, Prop.Kind.BOLLARD)
-	t.check(post.get_node_or_null("BollardBody") is StaticBody2D, "a bollard has a StaticBody2D")
+	t.check(post.body_shape() != null, "a bollard has a body")
 	post.free()
 
 func _test_the_post_body_is_its_drawn_ground_contact(t) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
-	var collision := post.get_node("BollardBody").get_child(0) as CollisionShape2D
-	var circle := collision.shape as CircleShape2D
-	t.check(circle != null and is_equal_approx(circle.radius, post.shape.radius),
+	var circle := post.body_shape() as CircleShape2D
+	t.check(circle != null and is_equal_approx(circle.radius, Prop.bollard_shape().radius),
 			"the post's body is the circle its shadow is drawn from")
 	post.free()
 
@@ -72,7 +71,7 @@ func _row() -> Dictionary:
 ## its spacing and her body that makes a row a wall: nothing is asked of a map.
 func _test_every_gap_is_narrower_than_her_body(t) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
-	var post_radius: float = post.shape.radius
+	var post_radius: float = Prop.bollard_shape().radius
 	post.free()
 	# Her body alone, whatever way she faces, is 2 x 14 across; a gap that holds it lets her by.
 	var body := 2.0 * Tuning.PLAYER_BODY_RADIUS
