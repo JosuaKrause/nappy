@@ -18,10 +18,18 @@ since both change the same files:
 - the smaller cases: scenery residency and ground, the blackout, the still watch, the debug
   readout, the developer's rigs (`dev_rig.gd`, `route_rig_planner.gd`), `day_director.gd`,
   `main.gd` and `day_planner.gd`, as 3c's row in #1166's "Files it touches" lists them;
-- *proposed by the hand-ins' builder, open to the player's correction:* the city's three summary
+- `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
+  path reaches it. The rigs that drive the event manager without `City.start_day()`
+  (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead;
+- three doc comments under `src/events/` still name the places #1187 moved code from:
+  `event_catalogue.gd`'s two on `City.mark_the_burnt_frontage()` (now `CityFronts`), and
+  `event_scheduler.gd`'s on `CityGenerator._street_tile` (now `StreetLayout`). The after-dawn pull
+  request is asked to fix them once #1187 merges; whichever lands, the third pull request checks
+  they are gone;
+- *proposed by the hand-ins' builder (where `calm_summary()` goes, by the orchestrator), open to the player's correction:* the city's three summary
   lines move off `City`, so `RunSession.watch_day()` takes the parts too. `closure_summary()` moves
-  onto `DayStreets` and `event_summary()` onto the event manager; `calm_summary()` reads the map
-  with the run's city state.
+  onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map
+  with the run's city state, so it moves onto `CityMap`, asked with the city state handed in.
 
 `main`'s map is handed in with the city cache (`city-cache.md`), not here (inbox #1173 in gray-dolphin).
 
