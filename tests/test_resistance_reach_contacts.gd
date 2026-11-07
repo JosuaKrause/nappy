@@ -2,7 +2,6 @@ extends "res://tests/resistance_rig.gd"
 ## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t)
 	await _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)

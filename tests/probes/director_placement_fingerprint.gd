@@ -42,9 +42,7 @@ const RUN_SEED := 2
 var _lines: Array[String] = []
 
 func run(t) -> void:
-	# The director tells the observers of the tasks it offers and ends (`EventBus`), as in a run, so
-	# the runner gives them back what they held (`VisitCounter`'s open tasks among them).
-	t.gives_back_observers()
+	# The director tells the observers of the tasks it offers and ends (`EventBus`), as in a run.
 	var printed := 0
 	for seed_value in SEEDS:
 		var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)

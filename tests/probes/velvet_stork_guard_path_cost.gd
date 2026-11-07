@@ -32,7 +32,6 @@ const CHASE_SECONDS := 31.8
 
 ## Overrides test_day13_guard.run.
 func run(t) -> void:
-	t.gives_back_observers()
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()

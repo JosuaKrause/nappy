@@ -50,8 +50,8 @@ func _rig(t, atlas: AtlasLibrary) -> Stroller:
 ## holds; with no boot behind this rig they are the references that load and drop the pages,
 ## which is what makes the pairing visible at all.
 func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]
 	var rig := _rig(t, atlas)
@@ -92,8 +92,8 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ## A second reference the second day's `start_day()` took on top of the first would leave the page
 ## held once the city is freed, so the one release line at the end is what says it took none.
 func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var city := _city(t, atlas)
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
 			"nothing has asked for the crowd's page before the first day")
@@ -117,8 +117,8 @@ func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) ->
 ## independently of whether a day ever ran; pinned anyway as the shape the finale actually
 ## exercises.
 func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var city := _city(t, atlas)
 	city.crowd.clear()
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
@@ -132,8 +132,8 @@ func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
 ## the freed node (in a booted game the library is the sitting's), so `Crowd._exit_tree()` is the
 ## only thing standing between this and a reference held for the rest of the process.
 func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("freed-without-clear"))
 	t.check(pages.held(Crowd.ATLAS_GROUP),

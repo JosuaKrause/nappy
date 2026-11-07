@@ -60,7 +60,6 @@ var _bumps := 0
 
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
-	t.gives_back_observers()
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
 	EventBus.crowd_bumped.connect(bumped)
 	for seed_value in SEEDS:
@@ -126,7 +125,6 @@ func _walk_the_day(t, seed_value: int) -> void:
 			% [seed_value, counts["came"]])
 	t.check(counts["officers"] > 0, "seed %d: cordon officers walked (%d officer ticks)"
 			% [seed_value, counts["officers"]])
-	Telemetry.end_run()
 	booted.free_all()
 	seat.end()
 

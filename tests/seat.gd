@@ -8,17 +8,15 @@ extends RefCounted
 ## The suites that boot `main` over a run of their own share it (`test_main.gd`,
 ## `test_boot_handing.gd`, `test_atlas_loading.gd`), so none holds a copy.
 ##
-## **Freeing a seat gives back what the observers held before it.** A booted `main` hands the run to
-## the observers (`VisitCounter.configure()`), which keep it after `main` is gone; `end()` frees the
-## home and puts the observers back (`tests/booted_main.gd`), so none holds a run that is over.
+## **Freeing a seat frees the observers its boots handed the run to.** A booted `main` keeps the
+## run log and the page counter under the sitting (`tests/booted_main.gd`), so `end()`, which frees
+## the home, frees them with it.
 
 const Boot := preload("res://tests/booted_main.gd")
 
 var run: RunState
 var home: Node
 var sitting: Sitting
-## What the observers held before this seat, put back by `end()`.
-var observers := Boot.hold_observers()
 
 ## `prepare`, when given, is called with the unplayed run (a run to be played from a later day).
 func _init(t, prepare := Callable()) -> void:
@@ -29,13 +27,16 @@ func _init(t, prepare := Callable()) -> void:
 	sitting = home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting
 
 ## The real `main.tscn` booted over this seat under `words`, a save at `scratch_path` handed to it
-## (no boot reaches the player's own save). The caller frees the boot (`Booted.free_all()`) before
-## `end()`.
-func boot(t, scratch_path: String, words: Array) -> Boot.Booted:
+## (no boot reaches the player's own save), and `run_log` when given (`main.use_run_log()`), which
+## the caller frees; without one the boot writes the sitting's own. The caller frees the boot
+## (`Booted.free_all()`) before `end()`.
+func boot(t, scratch_path: String, words: Array, run_log: Telemetry = null) -> Boot.Booted:
 	var seat := self
 	return await Boot.boot(t, scratch_path, Boot.config(words),
-			func(unbooted: Node) -> void: unbooted.use_sitting_home(seat.home))
+			func(unbooted: Node) -> void:
+				unbooted.use_sitting_home(seat.home)
+				if run_log:
+					unbooted.use_run_log(run_log))
 
 func end() -> void:
 	home.free()
-	Boot.give_back_observers(observers)

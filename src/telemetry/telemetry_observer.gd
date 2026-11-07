@@ -109,6 +109,9 @@ const BLOCKED_DRIFT := 6.0
 ## repeated, not a finding every frame.
 const BLOCKED_REPORT_INTERVAL := 3.0
 
+## The run log every line here goes into and whose clock stamps them (`Telemetry`), handed in at
+## its making by `RunSession`, which owns both: the boot's own log, or a suite's.
+var _log: Telemetry
 ## The run whose calendar day a day's route tree is read for (`start_day()`), handed in by
 ## `setup()`; null in the escape, which plans no route tree.
 var _run: RunState
@@ -228,8 +231,8 @@ var _last_closure_at := -1000.0
 var _contact_seen := false
 
 ## What the frames are costing: the `frame` line once a second and, under `--spikes`, the `spike`
-## line, written into the run log (`FrameWatch`).
-var _frames := FrameWatch.new(Telemetry.note)
+## line, written into the run log (`FrameWatch`), built over the log this observer is handed.
+var _frames: FrameWatch
 
 ## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
 ## cannot leave it out — the frame watch must cost nothing but this one check while the flag is
@@ -243,6 +246,11 @@ var _mark_since := 0.0
 var _mark_on_road := 0.0
 var _mark_why := ""
 var _badges := {}
+
+## An observer writing into `run_log`, which stamps every line with its clock.
+func _init(run_log: Telemetry) -> void:
+	_log = run_log
+	_frames = FrameWatch.new(run_log.note)
 
 func setup(run: RunState, city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
@@ -313,8 +321,8 @@ func watch_city(city: City) -> void:
 ## `FinalePlanner`, not a `RouteTree`, and there is no corridor to be on or off.
 func start_section(restarted: bool) -> void:
 	_forget_the_walk()
-	Telemetry.restart_section_clock()
-	Telemetry.note("start", "%s %s at %s, facing %s" % [
+	_log.restart_section_clock()
+	_log.note("start", "%s %s at %s, facing %s" % [
 		"restarted" if restarted else "entered", _escape_section,
 		RunTrace.tile(_tile_of(_player.global_position)),
 		RunTrace.compass(_player.facing)])
@@ -325,7 +333,7 @@ func start_day() -> void:
 	_forget_the_walk()
 	_tree = RouteTree.for_day(_map, _run.header.day)
 	_corridor = Corridor.of(_tree)
-	Telemetry.note("start", "doorstep %s, facing %s" % [
+	_log.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
 		RunTrace.compass(_player.facing)])
 
@@ -405,17 +413,17 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	_flush_corridor()
 	var name: String = GameEnums.DayResult.keys()[result]
 	if result == GameEnums.DayResult.WON:
-		Telemetry.note("home", _won_line())
+		_log.note("home", _won_line())
 		return
 	# A section of the escape is named on its line: the building or the city.
 	var where := " in %s" % _escape_section if _escape_section != "" else ""
-	Telemetry.note("lost", "%s%s after %.1fs%s — %s | %s | near: %s" % [
+	_log.note("lost", "%s%s after %.1fs%s — %s | %s | near: %s" % [
 		name.to_lower(), where, _day.time_total - _day.time_remaining,
 		" to %s" % cause if cause != "" else "",
 		_day.failure_reason, _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
 	# the street looked like at the moment the day ended.
-	Telemetry.snapshot("lost-%s" % name.to_lower())
+	_log.snapshot("lost-%s" % name.to_lower())
 
 ## A won day's `home` line: the margin, and in the escape where she got out — through the
 ## building's service exit, or by the tunnel or the bridge out of the city
@@ -434,7 +442,7 @@ func _won_line() -> String:
 func _process(delta: float) -> void:
 	if not _day or not _day.is_running():
 		return
-	Telemetry.set_clock(_day.time_total - _day.time_remaining)
+	_log.set_clock(_day.time_total - _day.time_remaining)
 	var here := _player.global_position
 	_watch_the_corridor(here)
 	_watch_the_ground(here, delta)
@@ -482,14 +490,14 @@ func _watch_the_corridor(here: Vector2) -> void:
 	# No corridor to be on or off: the escape's chains are not a route tree.
 	if not _corridor:
 		return
-	var now := Telemetry.clock()
+	var now := _log.clock()
 	var state := _corridor_state(here)
 	if state == "":
 		_path_since = now
 		return
 	_watch_the_branch(here, state)
 	if _path_state != "" and state != _path_state:
-		Telemetry.note("path", "%s the corridor at %s, after %.1fs %s it" % [
+		_log.note("path", "%s the corridor at %s, after %.1fs %s it" % [
 			"onto" if state == "on" else ("off" if state == "off" else "away from"),
 			RunTrace.tile(_map.world_to_tile(here)), now - _path_since, _path_state])
 		_path_since = now
@@ -521,7 +529,7 @@ func _watch_the_branch(here: Vector2, state: String) -> void:
 	if branches.is_empty() or branches == _path_branches:
 		return
 	if not _path_branches.is_empty() and not _shares_a_branch(branches, _path_branches):
-		Telemetry.note("path", "switched routes at %s, branch %s -> %s" % [
+		_log.note("path", "switched routes at %s, branch %s -> %s" % [
 			RunTrace.tile(_map.world_to_tile(here)), str(_path_branches), str(branches)])
 	_path_branches = branches
 
@@ -562,7 +570,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	var road := Tile.is_road(type)
 	if road:
 		if not _was_road:
-			_road_since = Telemetry.clock()
+			_road_since = _log.clock()
 			_road_from = _map.world_to_tile(here)
 			_carriageway = 0.0
 			# **A crossing on the spine is not a zebra and the trace has to say which**, because the
@@ -575,7 +583,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 				where = "at a signalled crossing" if _map.street_kind_at(
 						CityMap.is_road_offset(CityMap.corridor_offset(_road_from.x)),
 						_road_from) == GameEnums.StreetKind.MAIN else "at a zebra"
-			Telemetry.note("cross", "stepped into the road at %s, %s"
+			_log.note("cross", "stepped into the road at %s, %s"
 					% [RunTrace.tile(_road_from), where])
 		if type == GameEnums.TileType.ROAD:
 			_carriageway += delta
@@ -593,7 +601,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
 				_city.run.attempt_spend.city_state.purpose_of(_map.block_plans, block))
-		Telemetry.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
+		_log.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
 			_baby.sleepiness])
 	_was_calm = calm
@@ -607,10 +615,10 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 func _flush_road(here: Vector2) -> void:
 	if not _was_road or not _map:
 		return
-	var stayed := Telemetry.clock() - _road_since
+	var stayed := _log.clock() - _road_since
 	if stayed < ROAD_LINGER:
 		return
-	Telemetry.note("road", "%.1fs on the road (%.1fs of it carriageway), %s -> %s" % [
+	_log.note("road", "%.1fs on the road (%.1fs of it carriageway), %s -> %s" % [
 		stayed, _carriageway, RunTrace.tile(_road_from),
 		RunTrace.tile(_map.world_to_tile(here))])
 	_was_road = false
@@ -626,13 +634,13 @@ func _flush_corridor() -> void:
 	if not _corridor:
 		return
 	if _path_state != "":
-		_path_time[_path_state] += Telemetry.clock() - _path_last
-		_path_last = Telemetry.clock()
+		_path_time[_path_state] += _log.clock() - _path_last
+		_path_last = _log.clock()
 	var on: float = _path_time.get("on", 0.0)
 	var off: float = _path_time.get("off", 0.0)
 	var away: float = _path_time.get("away", 0.0)
 	var streets := on + off
-	Telemetry.note("path", "%.0f%% of her street time on the corridor (%.1fs on, %.1fs off, "
+	_log.note("path", "%.0f%% of her street time on the corridor (%.1fs on, %.1fs off, "
 			% [100.0 * on / maxf(streets, 0.001), on, off]
 			+ "%.1fs off the streets)" % away)
 
@@ -657,12 +665,12 @@ func _watch_the_cues(delta: float) -> void:
 			# How much of it she spent somewhere the danger could actually reach her. A mark that
 			# is up on the pavement after a car has gone past is a cue outliving what it warns
 			# about, with a number on it.
-			Telemetry.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
+			_log.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
 					% [Stroller.Alert.keys()[_mark].to_lower(),
-					Telemetry.clock() - _mark_since, _mark_on_road]
+					_log.clock() - _mark_since, _mark_on_road]
 					+ "road)%s" % _mark_why)
 		if level != Stroller.Alert.NONE:
-			_mark_since = Telemetry.clock()
+			_mark_since = _log.clock()
 			_mark_on_road = 0.0
 			_mark_why = " | %s" % _what_raised_the_mark()
 			# Only the doubled one, and only as it goes up. `NOW` is the one cue in the game that
@@ -670,7 +678,7 @@ func _watch_the_cues(delta: float) -> void:
 			# way it can affect me"* — is about **when** it appears, which is a question a line of
 			# text cannot settle and a picture can.
 			if level == Stroller.Alert.NOW:
-				Telemetry.snapshot("mark-now")
+				_log.snapshot("mark-now")
 		_mark = level
 
 	if not _edge:
@@ -681,8 +689,8 @@ func _watch_the_cues(delta: float) -> void:
 		up[id] = true
 		if _badges.has(id):
 			continue
-		_badges[id] = Telemetry.clock()
-		Telemetry.note("cue", "edge badge: %s at %.0fpx, closing %.0fpx/s"
+		_badges[id] = _log.clock()
+		_log.note("cue", "edge badge: %s at %.0fpx, closing %.0fpx/s"
 				% [id, badge["distance"], badge["approach"]])
 	for id: String in _badges.keys():
 		if up.has(id):
@@ -691,8 +699,8 @@ func _watch_the_cues(delta: float) -> void:
 		# disappear"*: a badge that ends with the thing closer than it was either came into view
 		# — which is the badge's job being done — or was dropped while it was still coming, and
 		# only the distance tells the two apart.
-		Telemetry.note("cue", "edge badge gone: %s after %.1fs, %s"
-				% [id, Telemetry.clock() - _badges[id], _where_is(id)])
+		_log.note("cue", "edge badge gone: %s after %.1fs, %s"
+				% [id, _log.clock() - _badges[id], _where_is(id)])
 		_badges.erase(id)
 
 ## How far the nearest live instance of `id` is now, or that there is none left.
@@ -740,10 +748,10 @@ func _watch_the_meters() -> void:
 		return
 	_was_frozen = frozen
 	if frozen:
-		Telemetry.note("freeze", "sleep stopped filling | %s | near: %s"
+		_log.note("freeze", "sleep stopped filling | %s | near: %s"
 				% [_meters(), _nearest()])
 	else:
-		Telemetry.note("thaw", "settling again | %s" % _meters())
+		_log.note("thaw", "settling again | %s" % _meters())
 
 ## Standing still, and what it bought.
 ##
@@ -762,14 +770,14 @@ func _watch_idling(_delta: float) -> void:
 		return
 	_idling = idle
 	if idle:
-		_idle_since = Telemetry.clock()
+		_idle_since = _log.clock()
 		_idle_excitement = _baby.excitement
 		_idle_sleepiness = _baby.sleepiness
 		return
-	var duration := Telemetry.clock() - _idle_since
+	var duration := _log.clock() - _idle_since
 	if duration < IDLE_MIN_TIME:
 		return
-	Telemetry.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
+	_log.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
 		duration, _ground_at(_player.global_position),
 		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
 
@@ -817,7 +825,7 @@ func _watch_blocked(here: Vector2) -> void:
 	if input_dir == Vector2.ZERO:
 		_blocked_since = -1.0
 		return
-	var now := Telemetry.clock()
+	var now := _log.clock()
 	if _blocked_since < 0.0 or here.distance_to(_blocked_from) > BLOCKED_DRIFT:
 		_blocked_since = now
 		_blocked_from = here
@@ -828,7 +836,7 @@ func _watch_blocked(here: Vector2) -> void:
 	if held < BLOCKED_HOLD_TIME or now - _blocked_last_report < BLOCKED_REPORT_INTERVAL:
 		return
 	_blocked_last_report = now
-	Telemetry.note("blocked", "pressed %s for %.1fs at %s without moving" % [
+	_log.note("blocked", "pressed %s for %.1fs at %s without moving" % [
 		RunTrace.compass(_blocked_dir), held, RunTrace.tile(_tile_of(here))])
 
 ## Today the answer should always be "it made things worse". The day a threat follows her rather
@@ -840,14 +848,14 @@ func _watch_running() -> void:
 		return
 	_running = running
 	if running:
-		_run_started = Telemetry.clock()
+		_run_started = _log.clock()
 		_run_excitement = _baby.excitement
 		_run_nearest = _nearest()
 		return
-	var duration := Telemetry.clock() - _run_started
+	var duration := _log.clock() - _run_started
 	if duration < RUN_MIN_TIME:
 		return
-	Telemetry.note("run", "ran %.1fs, exc %.0f -> %.0f, nearest when it started: %s" % [
+	_log.note("run", "ran %.1fs, exc %.0f -> %.0f, nearest when it started: %s" % [
 		duration, _run_excitement, _baby.excitement, _run_nearest])
 
 ## Doubling back. Not every turn — a lap of a block is four corners and no decision, whereas
@@ -871,7 +879,7 @@ func _watch_direction(delta: float) -> void:
 	_against += delta
 	if _against < TURN_HOLD_TIME or _committed_for < TURN_COMMIT_TIME:
 		return
-	Telemetry.note("turn", "doubled back %s%s" % [
+	_log.note("turn", "doubled back %s%s" % [
 		RunTrace.compass(heading), _because_of_a_closure()])
 	_committed = heading
 	_committed_for = 0.0
@@ -881,10 +889,10 @@ func _watch_direction(delta: float) -> void:
 ## measurement behind "are closures a decision or scenery", and it cannot be recovered by
 ## reading two independent lines because the reader would have to guess the window.
 func _because_of_a_closure() -> String:
-	if _last_closure == "" or Telemetry.clock() - _last_closure_at > CLOSURE_TURN_WINDOW:
+	if _last_closure == "" or _log.clock() - _last_closure_at > CLOSURE_TURN_WINDOW:
 		return ""
 	return ", %.1fs after seeing the %s" % [
-		Telemetry.clock() - _last_closure_at, _last_closure]
+		_log.clock() - _last_closure_at, _last_closure]
 
 ## What came within reach, and whether it kept coming. The threshold is the event's own outer
 ## radius — the distance at which it starts to reach the meter — so nothing here invents a
@@ -908,7 +916,7 @@ func _watch_what_is_near(here: Vector2) -> void:
 		# The position is what tells two instances of the same event apart. Three dog walkers
 		# are out on a normal day, and "the same one kept following the route" and "three
 		# different ones" are the same two lines without it.
-		Telemetry.note("near", "%s%s at %s, %.0fpx, %s" % [
+		_log.note("near", "%s%s at %s, %.0fpx, %s" % [
 			instance.logged_name(), " (telegraph)" if instance.is_telegraphing() else "",
 			RunTrace.tile(_tile_of(instance.global_position)),
 			distance, _meters()])
@@ -946,14 +954,14 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		var id := instance.get_instance_id()
 		seen[id] = true
 		if not _chases.has(id):
-			_chases[id] = {"since": Telemetry.clock(), "closest": INF, "ran": 0.0,
+			_chases[id] = {"since": _log.clock(), "closest": INF, "ran": 0.0,
 					"id": instance.def.id, "gave_up": false, "stopped_her": false, "over": false}
-			Telemetry.note("chase", "%s came for her at %s | %s" % [instance.def.id,
+			_log.note("chase", "%s came for her at %s | %s" % [instance.def.id,
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 			# The one encounter in the game with a right answer, and the open question about it is
 			# whether a dog that stops short and barks *reads* as "go now". A picture of the frame
 			# it starts on is the only thing that can say.
-			Telemetry.snapshot("chase-%s" % instance.def.id)
+			_log.snapshot("chase-%s" % instance.def.id)
 		var chase: Dictionary = _chases[id]
 		if chase["over"]:
 			continue
@@ -979,10 +987,10 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 			_write_the_chase(chase)
 
 func _write_the_chase(chase: Dictionary) -> void:
-	Telemetry.note("chase", "%s %s after %.1fs — closest %.0fpx, she ran %.1fs of it | %s" % [
+	_log.note("chase", "%s %s after %.1fs — closest %.0fpx, she ran %.1fs of it | %s" % [
 		chase["id"], "gave up" if chase["gave_up"]
 				else ("reached her and stopped her" if chase["stopped_her"] else "stopped chasing"),
-		Telemetry.clock() - float(chase["since"]), chase["closest"], chase["ran"], _meters()])
+		_log.clock() - float(chase["since"]), chase["closest"], chase["ran"], _meters()])
 
 ## Live pursuits: instance id -> what has happened during it. Ids rather than references, for the
 ## same reason `_near` uses them — nothing here may keep a freed event alive.
@@ -1014,8 +1022,8 @@ func _watch_the_warning(here: Vector2) -> void:
 			continue
 		seen[id] = true
 		if not _warnings.has(id):
-			_warnings[id] = {"since": Telemetry.clock(), "closest": INF, "id": instance.def.id}
-			Telemetry.note("chase", "%s warned her at %s | %s" % [instance.def.id,
+			_warnings[id] = {"since": _log.clock(), "closest": INF, "id": instance.def.id}
+			_log.note("chase", "%s warned her at %s | %s" % [instance.def.id,
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 		var warning: Dictionary = _warnings[id]
 		warning["closest"] = minf(float(warning["closest"]),
@@ -1025,11 +1033,11 @@ func _watch_the_warning(here: Vector2) -> void:
 			continue
 		var warning: Dictionary = _warnings[id]
 		_warnings.erase(id)
-		Telemetry.note("chase", "%s's warning %s after %.1fs — closest %.0fpx | %s" % [
+		_log.note("chase", "%s's warning %s after %.1fs — closest %.0fpx | %s" % [
 			warning["id"], "ended in its charge" if charged.has(id)
 					else ("ended, she was out of its radius" if waits_again.has(id)
 							else "ended without a charge"),
-			Telemetry.clock() - float(warning["since"]), warning["closest"], _meters()])
+			_log.clock() - float(warning["since"]), warning["closest"], _meters()])
 
 ## A barrier coming into view. Recorded from where it was seen, because "the player found out
 ## two junctions later" and "the player could see it from the corner" are different days, and
@@ -1046,8 +1054,8 @@ func _watch_closures(here: Vector2) -> void:
 				continue
 			_seen_closures[key] = true
 			_last_closure = RoadClosure.display_name(closure.kind).to_lower()
-			_last_closure_at = Telemetry.clock()
-			Telemetry.note("closure", "saw the %s on %s%s from %s" % [
+			_last_closure_at = _log.clock()
+			_log.note("closure", "saw the %s on %s%s from %s" % [
 				_last_closure, "h" if closure.segment.horizontal else "v",
 				RunTrace.tile(closure.segment.a),
 				RunTrace.tile(_map.world_to_tile(here))])
@@ -1063,7 +1071,7 @@ func _watch_the_contact(here: Vector2) -> void:
 	if at == Vector2.INF or at.distance_to(here) > CONTACT_SIGHT:
 		return
 	_contact_seen = true
-	Telemetry.note("contact", "walked within %.0fpx of the chalk mark at %s"
+	_log.note("contact", "walked within %.0fpx of the chalk mark at %s"
 			% [at.distance_to(here), RunTrace.tile(_map.world_to_tile(at))])
 
 ## Where she went, one point at a time — the answer to *"what did she actually do"* that neither
@@ -1123,18 +1131,18 @@ func _on_asleep() -> void:
 	# did; a day never falls asleep before it has started, so the guard is the escape's alone.
 	if _escape_section != "" and not _day.is_running():
 		return
-	Telemetry.note("asleep", "asleep after %.1fs, %s" % [Telemetry.clock(), _meters()])
+	_log.note("asleep", "asleep after %.1fs, %s" % [_log.clock(), _meters()])
 
 func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if not _day.is_running():
 		return
 	if state == GameEnums.BabyState.AWAKE:
-		Telemetry.note("woke", "woken %s, sleep back to %.0f | near: %s" % [
+		_log.note("woke", "woken %s, sleep back to %.0f | near: %s" % [
 			"on the way home" if _escape_section == "" else "in %s" % _escape_section,
 			_baby.sleepiness, _nearest()])
 
 func _on_city_went_quiet() -> void:
-	Telemetry.note("quiet", "the blackout came; every city-wide source is off")
+	_log.note("quiet", "the blackout came; every city-wide source is off")
 
 ## The pelican's first frame on screen (`EventBus.pelican_sighted`), as a `near` line of its own:
 ## the moment she could first see the one rider in about four hundred that is a pelican, which the
@@ -1145,7 +1153,7 @@ func _on_pelican_sighted(instance: Variant) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
-	Telemetry.note("near", "%s on screen at %s, %.0fpx, %s" % [pelican.logged_name(),
+	_log.note("near", "%s on screen at %s, %.0fpx, %s" % [pelican.logged_name(),
 			RunTrace.tile(_tile_of(pelican.global_position)),
 			pelican.global_position.distance_to(_player.global_position), _meters()])
 
@@ -1156,7 +1164,7 @@ func _on_pelican_struck_her(instance: Variant) -> void:
 	var pelican := instance as EventInstance
 	if not pelican or not _player:
 		return
-	Telemetry.note("near", "%s struck her at %s, %.0fpx, %s" % [pelican.logged_name(),
+	_log.note("near", "%s struck her at %s, %.0fpx, %s" % [pelican.logged_name(),
 			RunTrace.tile(_tile_of(pelican.global_position)),
 			pelican.global_position.distance_to(_player.global_position), _meters()])
 
@@ -1170,14 +1178,14 @@ func _on_pelican_struck_her(instance: Variant) -> void:
 func _on_bumped(at: Vector2) -> void:
 	if not _day.is_running():
 		return
-	if Telemetry.clock() - _last_bump < BUMP_QUIET_TIME:
+	if _log.clock() - _last_bump < BUMP_QUIET_TIME:
 		_bumps_dropped += 1
 		return
 	var also := "" if _bumps_dropped == 0 else " (+%d in the last %.1fs)" % [
-		_bumps_dropped, Telemetry.clock() - _last_bump]
-	_last_bump = Telemetry.clock()
+		_bumps_dropped, _log.clock() - _last_bump]
+	_last_bump = _log.clock()
 	_bumps_dropped = 0
-	Telemetry.note("crowd", "walked into somebody at %s%s | %s" % [
+	_log.note("crowd", "walked into somebody at %s%s | %s" % [
 		RunTrace.tile(_tile_of(at)), also, _meters()])
 
 ## A car sounding its horn at her standing in its lane. Never rate-limited: this is the entry
@@ -1186,7 +1194,7 @@ func _on_bumped(at: Vector2) -> void:
 func _on_near_miss(at: Vector2) -> void:
 	if not _day.is_running():
 		return
-	Telemetry.note("crowd", "a car sounded its horn at her in the road at %s | %s" % [
+	_log.note("crowd", "a car sounded its horn at her in the road at %s | %s" % [
 		RunTrace.tile(_tile_of(at)), _meters()])
 
 # ------------------------------------------------------------------ readouts ---

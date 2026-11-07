@@ -32,7 +32,7 @@ extends SceneTree
 ## log.
 ##
 ## This script may not use an autoload: `--script` starts no scene tree of the project's own, so
-## `Telemetry`, `Tuning` and `Palette` do not exist here. It shares `AtlasLibrary`'s naming,
+## `Tuning` and `Palette` do not exist here. It shares `AtlasLibrary`'s naming,
 ## illustrated-path and packing rules instead, which is the whole of what the loader and the
 ## bake have to agree on.
 

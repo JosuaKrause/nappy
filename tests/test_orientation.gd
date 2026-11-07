@@ -267,7 +267,6 @@ func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(
 ## `main.gd` is never instantiated as a scene in this suite — see `tests/test_main.gd`'s own doc
 ## for why — so this is the same script-only instance, its handful of dependencies wired by hand.
 func _test_every_screen_furniture_layer_is_named_by_main(t: Node) -> void:
-	t.gives_back_observers()
 	var window: Window = t.get_window()
 	var original_size: Vector2i = window.size
 	var original_scale: Vector2i = window.content_scale_size

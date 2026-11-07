@@ -479,12 +479,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "Telemetry",
-        "the ground's picture builder writes its timing to the run log inline",
-        ("src/visuals/ground_layers.gd",),
-    ),
-    Exception_(
-        "names",
         "WorldContext",
         "the map interface answers with its world's context, the world's half of it",
         ("src/world/world_map.gd",),
