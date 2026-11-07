@@ -25,6 +25,10 @@ that replace them, then one pull request per area.
 - **tests-read-fields, "yes":** a test counts as another object, so it too reads its subject through
   methods (`tests-one-module.md`).
 - **field-read-check, "yes":** a script fails a change that adds a read of another class's plain
-  field under `src/`, with today's reads listed once in a list that only shrinks, as the
-  test-only-members list does. *Proposed, not asked for:* it is built first, so the conversion
-  shrinks a list rather than chasing a moving count.
+  field under `src/`, with today's reads listed once in a list that only shrinks. It is
+  `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
+
+**What is left: the conversion**, one pull request per area, each deleting the lines it converts
+from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
+from where; `--summary` prints the counts). The reads are heaviest on the event definition and
+the event instance, then the city map and the city, so the events go first, as the ask says.
