@@ -149,6 +149,41 @@ func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` binds the run's presentation choice to the rig before anything has drawn it**, on a
+## day's way in and on the escape's (`--start-escape`): real boots of `main` for each family
+## (`--parent`) whose stroller is caught the moment it enters the tree (`SceneTree.node_added`), and
+## the rig that stands after the boot is the family the run chose. What a rig draws of the family it is
+## handed is `tests/test_player_presentation.gd`'s.
+func _test_main_binds_the_family_before_the_first_draw(t) -> void:
+	for male in [false, true]:
+		var parent := "father" if male else "mother"
+		var in_the_escape: Array[bool] = []
+		var escape_seat := Seat.new(t)
+		var escape: Boot.Booted = await _boot_catching_the_rig(t, escape_seat,
+				["--parent", parent, "--start-escape"], in_the_escape)
+		escape.free_all()
+		escape_seat.end()
+		var on_a_day: Array[bool] = []
+		var seat := Seat.new(t)
+		var booted: Boot.Booted = await _boot_catching_the_rig(t, seat, ["--parent", parent], on_a_day)
+		var rig := Boot.player(booted.main)
+		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
+				and rig.is_male == male and seat.run.header.player_is_male == male,
+				"ordinary and escape construction share a choice bound before the first draw")
+		booted.free_all()
+		seat.end()
+
+## A boot of `main` over `seat`'s run on `words`, with the family of every stroller that entered the
+## tree during it, at the moment it entered, appended to `entered`.
+func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
+	var catch := func(node: Node) -> void:
+		if node is Stroller:
+			entered.append((node as Stroller).is_male)
+	t.get_tree().node_added.connect(catch)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
+	t.get_tree().node_added.disconnect(catch)
+	return booted
+
 ## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
 ## the session's): a line written through the watch's trace reaches the recording run log the boot
 ## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
@@ -219,6 +254,7 @@ func run(t) -> void:
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
+	await _test_main_binds_the_family_before_the_first_draw(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
