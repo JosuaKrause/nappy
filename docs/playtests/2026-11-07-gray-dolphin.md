@@ -668,3 +668,15 @@
 3. **Read as:** (the assistant's interpretation, not the player's words)
 
    "day 3 file" is read as day 3's fire. Neither day 3's fire nor day 13's column barricade blocks her way, so neither takes the swap: the column's barricade is placed whenever and wherever the column stops, like any non-blocking event. The swap applies only to a beat that really closes a street: day 13's task roadblock. Checked against the code: the barricade row is a band laid along the middle of the roadway (`GroundShape.band(62)`), streets are 6 tiles with 2-tile sidewalks each side, so she passes it on the sidewalk; only the act IV hard seals repeat it across the whole width.
+
+4. **Context** (the assistant's):
+
+   Said in the chat on 2026-11-07, answering the orchestrator's proposal: "One proposal for it, open to your correction: any roadblock counts for that day's task, and the red arrow already picks among the day's roadblocks. So the task should prefer a route-adjacent roadblock the day already placed, and swap one in only when none is near."
+
+5. **The player's words.**
+
+   > yes only swap if you can't find one. but we could also place roadblocks route adjacent during dawn. swap only is needed if there is nothing close by
+
+6. **Read as:** (the assistant's interpretation, not the player's words)
+
+   Day 13's task uses a roadblock the day already placed when one is close by; dawn may place roadblocks route-adjacent so one usually is; the swap (replacing a route-adjacent, off-route blocking event the day placed, out of sight) is used only when nothing is close by.

@@ -39,10 +39,12 @@ agree on the rest" (inbox #1173 in gray-dolphin).
   street passable. *The orchestrator's earlier proposal, agreed in inbox #1173, swapped the column's
   barricade too · narrowed on 2026-11-07 to the roadblock alone, because the barricade does not block
   (inbox #1177 in gray-dolphin).*
-- *Proposed, not asked for:* the task prefers a roadblock the day already placed, and swaps one in
-  only when none is near her. "Any roadblock answers the task" (docs/NARRATIVE.md, day 13's task),
-  and the red arrow already chooses among the day's roadblocks, so a swap is needed only where none
-  of them is in reach.
+- **The task uses a roadblock the day already placed, and swaps one in only when none is close
+  by.** Asked whether it should prefer a route-adjacent roadblock the day placed, since "Any roadblock
+  answers the task" (docs/NARRATIVE.md, day 13's task) and the red arrow already chooses among the
+  day's roadblocks: "yes only swap if you can't find one. but we could also place roadblocks route
+  adjacent during dawn. swap only is needed if there is nothing close by" (inbox #1177 in gray-dolphin). *Read as:*
+  dawn may place roadblocks route-adjacent, so one is usually close by; the swap is the fallback.
 - **The resistance's reachability moves to dawn** (agreed): it offers only chalk marks, contacts and
   masts the day's plan leaves reachable, worked out once and handed in. **The park cordon's gap
   check stays** (agreed): it asks whether anything stands in day 12's last gap, not whether she can
@@ -57,8 +59,9 @@ The door-body fix and the spent-plans question it once held are moot once the re
 goes; its probe found that on day 13 the check accepts 54 of the 85 candidate sites that really cut
 her off.
 
-**Left open by the design, for the revised design to answer:** what the task does when neither a
-roadblock nor a candidate to swap is near her, and how a swapped-in roadblock looks to her.
+**Left open by the design, for the revised design to answer:** whether dawn places day 13's
+roadblocks route-adjacent, what the task does when neither a roadblock nor a candidate to swap is
+near her, and how a swapped-in roadblock looks to her.
 
 **Measured** with the placement fingerprint and day 13 on the six probe seeds (4242, 90210, 1234567,
 7, 31337, 2024), before and after.
