@@ -108,6 +108,10 @@ answer differs.
 - **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830 in minty-dolphin).
   The player's words are never written over, reworded or moved out of their line; a formatting fix
   the player asked for (unbolding their text) keeps every word.
+- **A reply on a Me line is followed by a fresh You stub and a Me stub** (inbox #1163): when the
+  orchestrator writes its reply on a Me line, it adds a fresh You stub right after it, and a Me stub
+  after that, so the player can answer again in line. Each stub is written as the layout says: a
+  bold label, then a plain space outside the bold, as "The editor's traps" says.
 - **A question about specific words is a comment on them** (inbox #830 in minty-dolphin), answered in the same
   thread with a Claude Docs `create` utterance whose parent is the thread's root; never the Artifact
   tool's comment actions, whose replies do not show on the doc. A thread the player wrote in is
