@@ -21,7 +21,14 @@ found by that search -- covers from the root of history.
 verbatim -- this repository's own convention (see .claude/skills/committing/SKILL.md, "The squash
 commit is the pull request's title and description") already ends every one in `(#N)`, which GitHub
 turns into a pull request link wherever the notes are posted. Commits are grouped into two
-sections, newest first: **Game** for a commit that touched `src/`, `art/`, `assets/`, `scenes/`,
+sections, newest first.
+
+**The category is the title's prefix.** A subject that starts `[game] ` or `[tooling] ` (any case)
+is filed under **Game** or **Tooling and docs** accordingly, and the bracket is dropped from the
+bullet. The prefix survives the squash because the PR title is the commit subject. A subject with
+no such prefix -- every commit before the convention, and any title that forgot it -- falls back to
+the path rule below, and an unknown bracket such as `[wip]` is not a category and stays in the
+text. The path rule: **Game** for a commit that touched `src/`, `art/`, `assets/`, `scenes/`,
 `project.godot` or `icon.png`, **Tooling and docs** for everything else. An empty section is
 omitted entirely, and so is the compare link when there is no previous tag to compare against.
 
@@ -61,6 +68,8 @@ Version = tuple[int, int, int]
 # See the module docstring's "Why these paths are 'Game'" for the reasoning behind each entry.
 GAME_PREFIXES = ("src/", "art/", "assets/", "scenes/")
 GAME_FILES = ("project.godot", "icon.png")
+
+CATEGORY_RE = re.compile(r"^\[(game|tooling)\]\s*", re.IGNORECASE)
 
 
 class ReleaseNotesError(RuntimeError):
@@ -151,6 +160,15 @@ def is_game_change(paths: list[str]) -> bool:
     return any(path in GAME_FILES or any(path.startswith(prefix) for prefix in GAME_PREFIXES) for path in paths)
 
 
+def split_category(subject: str) -> tuple[str | None, str]:
+    """`(category, subject without its prefix)` for a `[game] ...` or `[tooling] ...` subject, or
+    `(None, subject)` unchanged when it names no known category."""
+    match = CATEGORY_RE.match(subject)
+    if not match:
+        return None, subject
+    return match.group(1).lower(), subject[match.end() :]
+
+
 def default_repo_slug(*, cwd: Path) -> str | None:
     try:
         url = run_git(["remote", "get-url", "origin"], cwd=cwd).strip()
@@ -171,8 +189,10 @@ def render_notes(
     game_lines: list[str] = []
     tooling_lines: list[str] = []
     for commit_hash, subject in commits:
-        paths = changed_paths(commit_hash, cwd=cwd)
-        (game_lines if is_game_change(paths) else tooling_lines).append(f"- {subject}")
+        category, text = split_category(subject)
+        if category is None:
+            category = "game" if is_game_change(changed_paths(commit_hash, cwd=cwd)) else "tooling"
+        (game_lines if category == "game" else tooling_lines).append(f"- {text}")
 
     sections = []
     if game_lines:
@@ -205,7 +225,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         description=(
             "Prints TAG's release notes as Markdown: one bullet per commit's subject line since the"
             " previous tag (folding in every patch since the previous .0 tag for a minor or major"
-            " tag), grouped into a Game and a Tooling and docs section, with a compare link. Computed"
+            " tag), grouped into a Game and a Tooling and docs section by the title's [game] or [tooling] prefix"
+            " (the path rule when there is none), with a compare link. Computed"
             " from the local git history alone -- no model, no network call."
         ),
         epilog="  tools/release-notes.py v0.20.0\n  tools/release-notes.py v0.20.1 --commit HEAD\n",

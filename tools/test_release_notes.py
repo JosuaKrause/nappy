@@ -246,6 +246,34 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertNotIn("## Game", out)
         self.assertIn("## Tooling and docs", out)
 
+    # ------------------------------------------------------------------------ title category ---
+
+    def test_prefix_decides_the_section_and_is_dropped_from_the_bullet(self) -> None:
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.0.0")
+        self.commit("src/b.gd", "[tooling] a tool that lives under src (#2)")
+        self.commit("docs/a.md", "[game] a doc-only change filed as game (#3)")
+        self.commit("src/c.gd", "[Game] mixed-case prefix (#4)")
+        self.tag("v0.1.0")
+        out = self.notes("v0.1.0")
+        game, tooling = out.split("## Tooling and docs")
+        self.assertIn("- a doc-only change filed as game (#3)", game)
+        self.assertIn("- mixed-case prefix (#4)", game)
+        self.assertIn("- a tool that lives under src (#2)", tooling)
+        self.assertNotIn("[game]", out.lower())
+        self.assertNotIn("[tooling]", out)
+
+    def test_no_prefix_falls_back_to_the_path_rule_and_unknown_bracket_stays(self) -> None:
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.0.0")
+        self.commit("src/b.gd", "[wip] unknown bracket on game paths (#2)")
+        self.commit("docs/a.md", "plain docs title (#3)")
+        self.tag("v0.1.0")
+        out = self.notes("v0.1.0")
+        game, tooling = out.split("## Tooling and docs")
+        self.assertIn("- [wip] unknown bracket on game paths (#2)", game)
+        self.assertIn("- plain docs title (#3)", tooling)
+
     # ------------------------------------------------------------------------------- repo slug ---
 
     def test_repo_slug_is_read_from_the_origin_remote(self) -> None:

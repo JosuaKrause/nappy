@@ -246,7 +246,9 @@ check, on the very files it publishes, is the second look rather than the first.
 Markdown as the tag's GitHub Release (`gh release create --notes-file`, or `gh release edit` when a
 release for that tag already exists, so a re-run of the deploy is idempotent). One bullet per
 commit's own subject line on `main`'s first-parent history, grouped into a Game and a Tooling and
-docs section by what each commit changed. A patch tag (`vX.Y.Z`, `Z>0`) covers everything since the
+docs section by the category prefix its title carries, `[game] …` or `[tooling] …` (dropped from the
+bullet; a title without one is sorted by the paths the commit changed). **A PR's title starts with
+its category prefix**, since the title is the squash commit's subject the notes read. A patch tag (`vX.Y.Z`, `Z>0`) covers everything since the
 previous tag; a minor tag (`vX.Y.0`) covers everything since the previous `.0` tag, folding in every
 patch between them, and a major tag is treated the same way. `tools/release.sh`'s dry run previews
 the same notes before anything is tagged.
