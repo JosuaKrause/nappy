@@ -898,6 +898,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
+	var calm := CalmAreas.of(map)
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
 		finale = FinalePlanner.route(map)
@@ -953,7 +954,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
+					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
 			continue

@@ -334,6 +334,26 @@ class Planned extends RefCounted:
 	func stands_still() -> bool:
 		return path.size() < 2
 
+	## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
+	## across: its body and her whole shape, the field it carries where it carries one (a car
+	## crash's, there to stop her walking past it), and a hard fail's lethal reach and her shape;
+	## 0 for an event that neither stands in the way nor ends the day. What the park cordon's last
+	## gap is kept clear of (`ParkCordon._clear_of_the_day()`).
+	func clearance(her_reach: float) -> float:
+		if def.obstructs_radius <= 0.0 and not def.hard_fail:
+			return 0.0
+		var reach := def.obstructs_radius + her_reach
+		if def.intensity > 0.0:
+			reach = maxf(reach, def.field_reach())
+		if def.hard_fail:
+			reach = maxf(reach, def.lethal_reach() + her_reach)
+		return reach
+
+	## Where this event stands now: its instance's position while it is in the world, the plan's
+	## own otherwise.
+	func where_it_stands_now() -> Vector2:
+		return live.global_position if live and is_instance_valid(live) else position
+
 	## Whether this event's field touches `rect` at all: grown by `field_reach()` rather than
 	## `outer_radius` alone, so a segment's own `half_length` is not dropped from the streaming
 	## question the way it would be from a disc's.
@@ -2452,10 +2472,12 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 			doors, standing, null, rules)
 
 ## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
-## its route roll, so unrelated background actors cannot move a required path.
+## its route roll, so unrelated background actors cannot move a required path. `calm` is the calm
+## areas the caller worked out once for its whole recipe (`CalmAreas.of()`), whose unused ground
+## nothing is placed near.
 static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		route_seed: int, already: Array[Planned], corridor: Corridor,
-		doors: PackedVector2Array, standing: Array[Planned] = []) -> Planned:
+		doors: PackedVector2Array, calm: CalmAreas, standing: Array[Planned] = []) -> Planned:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return null
 	def = def.for_day(day)
@@ -2469,8 +2491,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
 	var candidates: Array[Vector2i] = [tile]
-	return _best_of(def, rng, map, candidates, role, already, ground,
-			CalmAreas.of(map).unused_ground(), corridor, doors, standing)
+	return _best_of(def, rng, map, candidates, role, already, ground, calm.unused_ground(),
+			corridor, doors, standing)
 
 ## The acceptance half of a placement: roll `EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first

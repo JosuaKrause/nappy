@@ -138,10 +138,11 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
 ## `-1` when no tile of that ground takes the row, or the day does not place it.
 func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
 	var no_doors := PackedVector2Array()
+	var calm := CalmAreas.of(map)
 	var nothing_down: Array[EventScheduler.Planned] = []
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
 		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors)
+				nothing_down, corridor, no_doors, calm)
 		if plan:
 			return plan.role
 	return -1

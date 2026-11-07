@@ -8,6 +8,8 @@ extends RefCounted
 func run(t) -> void:
 	_test_a_door_body_is_never_against_the_line(t)
 	_test_a_door_body_never_blocks_the_way(t)
+	_test_the_wall_s_body_says_so(t)
+	_test_what_stands_clear_of_it(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -39,3 +41,36 @@ func _test_a_door_body_never_blocks_the_way(t) -> void:
 	t.check(_sealed("roadblock").obstructs(), "while the region wall's own body blocks the way")
 	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2.INF).obstructs(),
 			"and a row not yet placed blocks nothing")
+
+func _test_the_wall_s_body_says_so(t) -> void:
+	var wall := _sealed("roadblock")
+	t.check(not wall.is_in_the_wall(), "a body is not the wall's until it is stood in it")
+	wall.stand_in_the_wall()
+	t.check(wall.is_in_the_wall() and not wall.is_door(), "and then it is, and still not a door")
+	var still := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2(320, 320))
+	t.check(still.stands_still() and not still.is_in_the_world() and not still.is_permanent(),
+			"a roadblock placed at a point stands still, is not in the world yet and is not a scar")
+	var moving := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2(320, 320),
+			PackedVector2Array([Vector2(320, 320), Vector2(640, 320)]))
+	t.check(not moving.stands_still(), "while a plan with a route moves")
+
+func _test_what_stands_clear_of_it(t) -> void:
+	var her := 14.0
+	var nothing := EventScheduler.Planned.new(EventDef.new(), Vector2(320, 320))
+	t.check(nothing.clearance(her) == 0.0, "an event with no body and no hard fail asks no clearance")
+	var body_def := EventDef.new()
+	body_def.obstructs_radius = 40.0
+	body_def.intensity = 0.0
+	var body := EventScheduler.Planned.new(body_def, Vector2(320, 320))
+	t.check(is_equal_approx(body.clearance(her), 54.0),
+			"a silent body asks its own radius and her whole shape (%.0fpx)" % body.clearance(her))
+	var field_def := EventDef.new()
+	field_def.obstructs_radius = 40.0
+	field_def.intensity = 10.0
+	field_def.outer_radius = 200.0
+	var field := EventScheduler.Planned.new(field_def, Vector2(320, 320))
+	t.check(field.clearance(her) >= field_def.field_reach() and field.clearance(her) > 54.0,
+			"a body with a field asks its field (%.0fpx)" % field.clearance(her))
+	t.check(body.where_it_stands_now() == Vector2(320, 320),
+			"and it stands where it was placed while it is not in the world")
+

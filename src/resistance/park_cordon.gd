@@ -530,19 +530,10 @@ func _clear_of_the_day(point: Vector2) -> bool:
 	if not _events:
 		return true
 	for plan in _events.plans():
-		if plan.spent or not plan.is_placed() or _area.has_point(plan.position):
+		if plan.is_spent() or not plan.is_placed() or _area.has_point(plan.position):
 			continue
-		var def := plan.def
-		if def.obstructs_radius <= 0.0 and not def.hard_fail:
-			continue
-		var reach := def.obstructs_radius + HER_REACH
-		if def.intensity > 0.0:
-			reach = maxf(reach, def.field_reach())
-		if def.hard_fail:
-			reach = maxf(reach, def.lethal_reach() + HER_REACH)
-		var at := plan.live.global_position if plan.live and is_instance_valid(plan.live) \
-				else plan.position
-		if point.distance_to(at) < reach:
+		var reach := plan.clearance(HER_REACH)
+		if reach > 0.0 and point.distance_to(plan.where_it_stands_now()) < reach:
 			return false
 	return true
 
