@@ -790,8 +790,8 @@ checkpoint carry, so the calendar needs no `GameSave`, and `GameSave` clears the
 fires. The run is handed per call rather than held; what the save holds (the web flush's page-side
 objects, the flushes waiting, the operation ids, its file path) outlives the scene reloads that
 free the `main` holding a run, so the `Sitting` is its home and no static holds any of it. A test
-builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
-`ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
+builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it by
+`ResistanceDirector.setup()`, with the parts of the city it reads. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
 puts no run back between suites; the visit counter, under the sitting, holds only the run that
 `main` hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
