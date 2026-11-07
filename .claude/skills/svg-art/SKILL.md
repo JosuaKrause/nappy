@@ -79,7 +79,14 @@ Validate XML separately from rendering. `./tools/lint.sh` checks tracked SVGs; f
 untracked file use `xmllint --noout path/to/file.svg` or pass its path explicitly to the lint tool.
 XML comments cannot contain double hyphens. A forgiving Godot import is not XML validation.
 
-Use Godot's `Image.load_svg_from_string()` for a source preview. A small scratch `SceneTree`
+Render with `tools/svg-preview.sh --out <scratch> [--scale N]... [--grid] <svgs>`: it does the
+render below in a scratch project (no import pass first) and writes per scale the raw
+`<name>@<scale>x.png` and `<name>@<scale>x-rulers.png`, the same render over a neutral background with
+rulers in asset units along the top and left. **Open the rulers picture where this skill asks you to look**,
+and read a position, a width or a gap off its ticks (`--grid` adds a faint line at each labelled step)
+instead of guessing it; the raw picture is the one the defect check reads.
+
+The script uses Godot's `Image.load_svg_from_string()`; a small scratch `SceneTree`
 script can load each requested SVG at scales 1 and 3 and save PNGs. The essential operations are:
 
 ```gdscript
@@ -104,7 +111,13 @@ if an error prevents its normal exit; inspect the output and stop that process.
 run it with `--help` for its exact usage.
 
 **Open and inspect the saved images.** A successful command only proves that a file was written.
-Review native size for recognition, enlargement for malformed joins and clipping, and a neutral
+Run `uv run python tools/art-defect-check.py --scale <render scale> --overlay-dir <scratch> <raw PNGs>`
+on each raw render first (`--family` the neighbouring family's PNGs, or `--palette`, for the palette check;
+`--tile` for a tile): it names stray pixels, specks, pinholes, off-palette and near-duplicate flat colours,
+art cut off by the canvas edge and a baked checkerboard at their coordinates, in asset units too, and boxes
+them on an overlay to open. A clean report is not a review: it cannot see a wrong silhouette.
+Review native size for recognition, enlargement for malformed joins and clipping (read the rulers
+picture for where), and a neutral
 or representative ground background for transparency. Contact sheets help compare families;
 label fitted cells as fitted, since they do not establish shared world scale. Render every
 changed directional/state variant from its current SVG, not an earlier cached PNG.

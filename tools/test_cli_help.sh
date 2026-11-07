@@ -296,6 +296,8 @@ assert_exit "goatcounter.sh -h"     zero ./tools/goatcounter.sh -h
 assert_exit "bake-atlases.sh --help" zero ./tools/bake-atlases.sh --help
 assert_exit "bake-atlases.sh -h"     zero ./tools/bake-atlases.sh -h
 assert_exit "audit-pck.sh --help"    zero ./tools/audit-pck.sh --help
+assert_exit "svg-preview.sh --help"  zero ./tools/svg-preview.sh --help
+assert_exit "svg-preview.sh -h"      zero ./tools/svg-preview.sh -h
 assert_exit "audit-pck.sh -h"        zero ./tools/audit-pck.sh -h
 assert_exit "cost-table.sh --help"   zero ./tools/cost-table.sh --help
 assert_exit "cost-table.sh -h"       zero ./tools/cost-table.sh -h
@@ -406,6 +408,10 @@ assert_exit "bake-atlases.sh --bogus" nonzero ./tools/bake-atlases.sh --bogus
 # both is a typo rather than a preference, and it is rejected before either happens.
 assert_exit "bake-atlases.sh --check --force" nonzero ./tools/bake-atlases.sh --check --force
 assert_exit "audit-pck.sh --bogus"    nonzero ./tools/audit-pck.sh --bogus
+assert_exit "svg-preview.sh --bogus"  nonzero ./tools/svg-preview.sh --bogus
+assert_exit "svg-preview.sh (no files)" nonzero ./tools/svg-preview.sh --out "$work_dir/prev"
+assert_exit "svg-preview.sh (missing file)" nonzero ./tools/svg-preview.sh --out "$work_dir/prev" "$work_dir/none.svg"
+assert_exit "svg-preview.sh (zero scale)" nonzero ./tools/svg-preview.sh --out "$work_dir/prev" --scale 0 art/icon_stroller.svg
 assert_exit "audit-pck.sh (two packs)" nonzero ./tools/audit-pck.sh one.pck two.pck
 assert_exit "cost-table.sh --bogus"   nonzero ./tools/cost-table.sh --bogus
 assert_exit "prune-merged.sh --bogus" nonzero ./tools/prune-merged.sh --bogus feature/x
