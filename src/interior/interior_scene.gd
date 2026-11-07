@@ -366,6 +366,8 @@ func _windows_are_flashing() -> bool:
 
 ## **A bang outside** (`WorldContext.bang_outside()`): the explosion outside, as the day's events
 ## bring it, lights every window at once.
+##
+## Overrides WorldContext.bang_outside.
 func bang_outside() -> void:
 	_flash_windows()
 
@@ -585,6 +587,8 @@ func _layer_node(layer: int, name: String, y_sorted := false) -> Node2D:
 ## **The basement gives nothing back**: the meter does not fall while she is in it, awake or asleep
 ## (`EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`), so what a vent charges her with stays until she
 ## is out. Every other part of the building is an ordinary 1.0.
+##
+## Overrides WorldContext.decay_multiplier.
 func decay_multiplier(world_position: Vector2) -> float:
 	if InteriorMap.part_at(map.world_to_tile(world_position)) == "basement":
 		return EXCITEMENT_DECAY_BASEMENT_MULTIPLIER
@@ -597,6 +601,8 @@ func decay_multiplier(world_position: Vector2) -> float:
 ## exit under her (`InteriorMapPlan.transition_at()`). Reads `player`'s own tile rather than being
 ## told about it — the question is "what is on this ground", not "what did somebody just do".
 ## Nothing here is a rate the fade `Tween` does not already own, so `_delta` is not read.
+##
+## Overrides WorldContext.process_player.
 func process_player(player: Node2D, _delta: float) -> void:
 	modulate = _lighting_at(map.world_to_tile(player.global_position))
 	_door_release_latch.update(player.global_position)

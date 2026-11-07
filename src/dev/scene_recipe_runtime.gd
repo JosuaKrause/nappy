@@ -522,13 +522,18 @@ func start_position() -> Vector2:
 	return position_of(data.get("setup", {}).get("player", {}).get("at", "doorstep"), errors)
 
 ## The map the recipe's city section is built to (`built.map`).
+##
+## Overrides AuthoredScene.city_map.
 func city_map() -> CityMap:
 	return built.map
 
 ## `setup.tutorial_complete`: a mid-game scene starts after the ordinary control lessons.
+##
+## Overrides AuthoredScene.lessons_learned.
 func lessons_learned() -> bool:
 	return bool(data.get("setup", {}).get("tutorial_complete", false))
 
+## Overrides AuthoredScene.plays_by_script.
 func plays_by_script() -> bool:
 	return _scripted
 
@@ -537,6 +542,8 @@ func plays_by_script() -> bool:
 ## the run flow started for the scene — the same object its clock and HUD run on — and the scene's
 ## events run under its settings (`EventManager.start_recipe()`). A setup that does not stand is
 ## recorded as failed in the manifest (`setup_failed`) as well as returned.
+##
+## Overrides AuthoredScene.install.
 func install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		resistance: ResistanceDirector = null) -> Array[String]:
 	var errors := _install(city, player, baby, spec, resistance)
@@ -1034,6 +1041,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 	rng.seed = route_seed
 	return EventScheduler.place_at(def, map, tile, rng, prior)
 
+## Overrides AuthoredScene.begin.
 func begin() -> void:
 	if not _start_the_task():
 		return
@@ -1254,10 +1262,13 @@ func _physics_process(_delta: float) -> void:
 func _apply_input() -> void:
 	WalkPlan.press(_plan.input_at(tick))
 
+## Overrides AuthoredScene.elapsed.
 func elapsed() -> float:
 	return float(tick) / Engine.physics_ticks_per_second
 
 ## Hold the exact simulated moment while the screenshot draws, even with a covered window.
+##
+## Overrides AuthoredScene.prepare_capture.
 func prepare_capture() -> void:
 	if manifest.has("capture_tick"):
 		return
@@ -1605,6 +1616,8 @@ func _write_the_draft() -> int:
 ## An escape section of this recipe was lost and is about to start again. A scripted recipe has
 ## failed — the manifest says so and the run quits non-zero — and answers `true`; a free one
 ## answers `false`, for `main` to reload the authored scene rather than retry the section.
+##
+## Overrides AuthoredScene.lose_the_attempt.
 func lose_the_attempt() -> bool:
 	if not _scripted:
 		return false

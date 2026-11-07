@@ -2,6 +2,7 @@ class_name FlockLook
 extends EventLook
 ## The pigeons: every bird of the flock drawn where it is, on its own wingbeat.
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.BIRDS:

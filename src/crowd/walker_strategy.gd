@@ -168,12 +168,15 @@ func _init(mover: LaneMover) -> void:
 
 # -------------------------------------------------- the mover's questions ---
 
+## Overrides LaneStrategy.ground_shape.
 func ground_shape() -> GroundShape:
 	return GroundShape.point(7.0)
 
+## Overrides LaneStrategy.lane_offsets_at.
 func lane_offsets_at(along_tile: int) -> Array[int]:
 	return CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor, along_tile)
 
+## Overrides LaneStrategy.speed_range.
 func speed_range() -> Vector2:
 	return Tuning.PEDESTRIAN_SPEED
 
@@ -181,6 +184,8 @@ func speed_range() -> Vector2:
 ## width of the corridor, and a lane is chosen before the along position that decides whether this
 ## stretch is a precinct at all — so the re-roll is what keeps the two in step rather than an
 ## ordering assumption that would be wrong once in ten.
+##
+## Overrides LaneStrategy.may_be_placed_on.
 func may_be_placed_on(tile: Vector2i) -> bool:
 	return _mover._map.tile_at(tile) != GameEnums.TileType.ROAD
 
@@ -191,6 +196,8 @@ func may_be_placed_on(tile: Vector2i) -> bool:
 ## is a decision about the door rather than about the ground. And a walker that has decided against
 ## one particular door's queue (`_refuse_the_door`) is the same sentence for one segment rather than
 ## for all of them.
+##
+## Overrides LaneStrategy.door_is_shut.
 func door_is_shut(key: Vector3i) -> bool:
 	return _door_answer == DoorAnswer.TURNS_BACK or key == _refused_door_key
 
@@ -202,6 +209,8 @@ func door_is_shut(key: Vector3i) -> bool:
 ## to look down — but the crowd's field still moves with the player, so a walker held at a door
 ## she has walked away from still has to be recycled like anybody else. That is the whole of what
 ## happens to it this frame. See `DoorState`.
+##
+## Overrides LaneStrategy.begin_frame.
 func begin_frame(delta: float) -> bool:
 	if _detour_left > 0.0:
 		_detour_left = maxf(0.0, _detour_left - delta)
@@ -217,6 +226,8 @@ func begin_frame(delta: float) -> bool:
 ## The two factors are asked only when they can be anything but one, since every walker's frame and
 ## every reading of its velocity pays for this: a walker not yielding and not at a door walks at
 ## its own pace.
+##
+## Overrides LaneStrategy.paced.
 func paced(speed: float) -> float:
 	return speed * (1.0 if _yield_left <= 0.0 else _yield_factor()) \
 			* (1.0 if _door_state == DoorState.WALKING else _hold_factor())
@@ -225,10 +236,13 @@ func paced(speed: float) -> float:
 ## come out right for free: the stride and the facing both read `velocity()`, so a walker standing
 ## in a door's line holds its last facing and frame a the way every stopped walker in the crowd
 ## already does, and its own field stops being stretched forward by `Field.scale()`.
+##
+## Overrides LaneStrategy.paced_velocity.
 func paced_velocity(moving: Vector2) -> Vector2:
 	return moving * (1.0 if _yield_left <= 0.0 else _yield_factor()) \
 			* (1.0 if _door_state == DoorState.WALKING else _hold_factor())
 
+## Overrides LaneStrategy.after_the_step.
 func after_the_step(delta: float) -> void:
 	_consider_turning()
 	_mover.advance_the_picture(delta)
@@ -236,10 +250,13 @@ func after_the_step(delta: float) -> void:
 ## Going round a body is the same kind of question as the look-ahead and is answered off the same
 ## cache: which tile, which axis, which way. Asked before the look-ahead's own walk, because that one
 ## returns the moment it finds something.
+##
+## Overrides LaneStrategy.on_new_scan.
 func on_new_scan(here: Vector2i) -> void:
 	_way_shut_known = false
 	_step_around_a_body(here)
 
+## Overrides LaneStrategy.stride_length.
 func stride_length() -> float:
 	return PI / WalkerLook.GAIT_RATE
 
@@ -247,6 +264,8 @@ func stride_length() -> float:
 ## (a precinct is a *place*, not an axis), and the alternating roll from `Crowd._populate` is what
 ## stops a morning's crowd landing lopsided by chance. A car picks its axis by weight
 ## (`CarStrategy.choose_lane()`).
+##
+## Overrides LaneStrategy.choose_lane.
 func choose_lane(roll: float) -> void:
 	_mover._vertical = roll < 0.5
 	_mover._corridor = CrowdLanes.pick_corridor_in_range(_mover._rng, _mover._map,
@@ -262,11 +281,14 @@ func choose_lane(roll: float) -> void:
 
 ## A walker is pushed toward the outer edge of its own footway, which is what leaves a gap between
 ## the two lanes of a pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
+##
+## Overrides LaneStrategy.lane_centre_here.
 func lane_centre_here() -> float:
 	return CrowdLanes.walker_lane_centre(_mover._corridor, _mover._lane,
 			CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
 			floori(_mover._along() / float(Tuning.TILE_SIZE))))
 
+## Overrides LaneStrategy.forget_the_detour.
 func forget_the_detour() -> void:
 	_detour_left = 0.0
 	_yield_left = 0.0
@@ -279,6 +301,8 @@ func forget_the_detour() -> void:
 ## refusal goes with it, since the door it decided against is nowhere near the street it is about to
 ## be standing on. And it draws a fresh answer, here, before the placement's rolls, for the reason
 ## `draw_the_door_answer()` gives: the entry point is checked against ground this walker may walk.
+##
+## Overrides LaneStrategy.on_recycled.
 func on_recycled() -> void:
 	_mover.restart_the_picture()
 	_let_go_of_the_hut()
@@ -287,6 +311,8 @@ func on_recycled() -> void:
 
 ## A walker on any lane its footway has at that end, at its ordinary speed; none at an end with no
 ## footway.
+##
+## Overrides LaneStrategy.enter_at_an_end.
 func enter_at_an_end(along_tile: int) -> bool:
 	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
 			along_tile)
@@ -317,6 +343,8 @@ func enter_at_an_end(along_tile: int) -> bool:
 ## the day. That is the exact trap the refusal exists to prevent; a car does not draw at all, since
 ## the boom is `Crowd._stop_for_gates()`'s business and a car spending a number here would turn
 ## differently at every junction it has ever turned at correctly.
+##
+## Overrides LaneStrategy.draw_the_door_answer.
 func draw_the_door_answer() -> void:
 	_door_answer = door_answer_for(_mover._rng.randf())
 
@@ -334,6 +362,8 @@ static func door_answer_for(roll: float) -> DoorAnswer:
 ## One frame of this walker's own crossing. Called by `Crowd._hold_walkers_at_doors()` the moment
 ## after it has written `door_ahead`/`door_ahead_along`, so a state is always decided on this
 ## frame's geometry rather than on the previous one's.
+##
+## Overrides LaneStrategy.advance_the_door_hold.
 func advance_the_door_hold(delta: float) -> void:
 	match _door_state:
 		DoorState.INSPECTION:
@@ -500,6 +530,8 @@ func _is_inside_a_hut() -> bool:
 ## `away` is in world space; only the component across this agent's own corridor means anything to
 ## it, and the result is clamped inside the pavement band, because a walker that yields into the
 ## carriageway is a walker under a car.
+##
+## Overrides LaneStrategy.step_aside.
 func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 	var across := away.x if _mover._vertical else away.y
 	var along := away.y if _mover._vertical else away.x
@@ -540,6 +572,8 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 ## - **Only if she gives them time.** The notice distance is fixed and their steering is not, so a
 ##   run arrives before they have cleared — which is one more thing running is bad at, and it did
 ##   not need a new rule to say so.
+##
+## Overrides LaneStrategy.make_way_for.
 func make_way_for(here: Vector2, velocity: Vector2) -> void:
 	if velocity == Vector2.ZERO:
 		return
@@ -600,6 +634,8 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 ##
 ## Not startled, unlike her bump: a walker's jolt is noise the baby hears, and an event figure
 ## walking through the crowd is not a reason for the street to cost her more than it did.
+##
+## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
 	var separation := _mover._map.separation
 	if not separation.walker_is_near(_mover._move.from, Tuning.CROWD_YIELD_DISTANCE):
@@ -1073,6 +1109,8 @@ func _can_turn_here() -> bool:
 ## cannot turn again for a stride, and the one thing that must not buy is a person standing in a
 ## doorway it refused. What keeps a walker out of a hard seal or a region wall is the first half:
 ## their bodies are in `CityMap.obstructed_tiles` like any other body.
+##
+## Overrides LaneStrategy.may_stand_on.
 func may_stand_on(tile: Vector2i) -> bool:
 	return _walker_lane_is_open(tile) and not _mover._segment_is_shut(tile)
 
@@ -1084,6 +1122,8 @@ func may_stand_on(tile: Vector2i) -> bool:
 ## after it is what *today* has placed on ground this walker could otherwise travel. The two are
 ## asked together here and separately where a walker picks an arm at a junction, which is the one
 ## place the difference matters. See `_no_street_ahead()`.
+##
+## Overrides LaneStrategy.cannot_go_on.
 func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _never_a_street_here(vertical, tile):
 		return true
@@ -1120,6 +1160,8 @@ func _never_a_street_here(_vertical: bool, tile: Vector2i) -> bool:
 ## the thing it cannot pass. Turning here rather than only in `_consider_turning` is also what
 ## empties the street that is shut, which reads from a block away — further than the barrier
 ## itself does.
+##
+## Overrides LaneStrategy.divert.
 func divert(_delta: float) -> void:
 	var crossing := CrowdLanes.corridor_at(_mover._along())
 	if crossing < 0:

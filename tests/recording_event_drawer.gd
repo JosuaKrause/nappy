@@ -31,22 +31,27 @@ var scenery_drawer: SceneryDrawer = null
 func _init(atlas: AtlasLibrary = null) -> void:
 	super(atlas)
 
+## Overrides EventDrawer.stand.
 func stand(canvas: CanvasItem, picture: String, foot: Vector2, size := Vector2.ZERO,
 		mirrored := false, colour := Color.WHITE) -> void:
 	var extent := size if size != Vector2.ZERO else EventPictures.native_size(picture)
 	_record(canvas, &"stand", picture, Rect2(foot - Vector2(extent.x * 0.5, extent.y), extent),
 			foot, extent, mirrored, colour)
 
+## Overrides EventDrawer.paint.
 func paint(canvas: CanvasItem, picture: String, rect: Rect2, colour := Color.WHITE) -> void:
 	_record(canvas, &"paint", picture, rect, rect.position, rect.size, false, colour)
 
+## Overrides EventDrawer.paint_band.
 func paint_band(canvas: CanvasItem, picture: String, whole: Rect2, band: Rect2) -> void:
 	_record(canvas, &"band", picture, whole, whole.position, whole.size, false, Color.WHITE, band)
 
+## Overrides EventDrawer.caret.
 func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void:
 	_record(canvas, &"caret", "", Rect2(at - Vector2(width, width * 0.8), Vector2(width * 2.0, width * 1.3)),
 			at, Vector2(width, width), false, colour)
 
+## Overrides EventDrawer.scenery.
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:
 	var built := super(picture, extent, anchor, shadow, band)

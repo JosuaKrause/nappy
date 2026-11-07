@@ -35,6 +35,7 @@ const RUN_SEED := 2
 
 ## A director whose placement under the day's rules always comes back empty: the edge spawn.
 class FallbackDirector extends ResistanceDirector:
+	## Overrides ResistanceDirector._place_the_roadblock_near.
 	func _place_the_roadblock_near(_mark: Vector2) -> EventInstance:
 		return null
 

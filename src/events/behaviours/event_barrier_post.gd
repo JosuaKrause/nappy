@@ -27,6 +27,7 @@ var far: RoadblockFarGuard
 func _init() -> void:
 	steps_each_tick = false
 
+## Overrides EventBehaviour.attach.
 func attach(owner: EventInstance) -> void:
 	super.attach(owner)
 	far = RoadblockFarGuard.new(owner)
@@ -156,11 +157,14 @@ func come_back_as_the_barrier(side: int) -> void:
 
 ## Its guard spent, or on his way out from the barrier, and the side he left: only then is there
 ## anything to carry.
+##
+## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	if not is_spent():
 		return {}
 	return {"spent": true, "side": _chaser_side}
 
+## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	if bool(state.get("spent", false)):
 		come_back_as_the_barrier(int(state.get("side", 0)))

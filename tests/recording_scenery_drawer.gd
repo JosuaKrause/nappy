@@ -17,6 +17,7 @@ var draws: Array[Dictionary] = []
 ## emitted before every `_draw()` but the one it was first seen in, counts them.
 var _passes := {}
 
+## Overrides SceneryDrawer.draw.
 func draw(canvas: CanvasItem, texture: Texture2D, rect: Rect2, source: Rect2) -> void:
 	draws.append({"canvas": canvas, "texture": weakref(texture), "rect": rect, "source": source,
 		"pass": _pass_of(canvas)})

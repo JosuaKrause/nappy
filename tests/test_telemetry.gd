@@ -115,12 +115,15 @@ func run(t) -> void:
 class DrawingScreen extends TelemetryScreen:
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 
+	## Overrides TelemetryScreen.can_draw.
 	func can_draw() -> bool:
 		return true
 
+	## Overrides TelemetryScreen.drawn.
 	func drawn() -> void:
 		pass
 
+	## Overrides TelemetryScreen.picture.
 	func picture() -> Image:
 		return image
 

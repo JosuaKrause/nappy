@@ -5,6 +5,7 @@ extends EventLook
 ## cyclist, the charging dog, the chatting mother, the busker, the poster crews), and the single
 ## pictures that stand on a spot (a skip, a vent's steam, a crater, a loudspeaker mast).
 
+## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
 	match event.def.look:
 		EventDef.Look.CAT:
