@@ -54,19 +54,23 @@ extends RefCounted
 ## decree says a region edge may never affect — in which case the crossing is a door and the decree
 ## is why.
 ##
-## **The main road is never walled, and its traffic is never held** *(inbox #1186: "there
+## **The main road is never walled, and no gate holds its cars** *(inbox #1186: "there
 ## shouldn't be any barricades on the main road ever. if a quadrant line goes through there it must
 ## become a guardhouse" · "traffic on the main road always needs to be able to go from the tunnel
-## to the bridge unhindered")*. A boundary
-## may cut the main road like any other street, and every such crossing is a door on every day,
-## whether or not the tree uses it: two gatehouses on its sidewalks and a boom over its carriageway
-## that stays up for the cars (`GateState.holds_cars()`), so the spine's traffic drives from the
-## tunnel to the bridge without a stop. Her side of it is every door's: a gatehouse takes her in
-## from its own sidewalk, and walking under the boom sets the door's guard on her. The tree never
-## runs along the spine, so this decides no route; what it changes for her is that the main road's
-## sidewalks reach every region it crosses, at a toll, where a wall used to end them at the
-## boundary. A spec that seals the main road (`DaySpec.seals_the_main_road`, the escape's) leaves
-## it ordinary ground to the partition, door or wall by the tree.
+## to the bridge unhindered")*. A boundary may cut the main road like any other street, and every
+## such crossing is a door on every day, whether or not the tree uses it: two gatehouses on its
+## sidewalks and a boom over its carriageway that stays up for the cars (`GateState.holds_cars()`),
+## so a region line never holds the spine's traffic. Other things can still stand on its
+## carriageway: event bodies the catalogue places there (`roadblock`, `protest`, `firefight`, the
+## abduction van) are not kept off it. Her side of the door is every door's: a gatehouse takes her
+## in from its own sidewalk, and walking under the boom sets the door's guard on her. **The door
+## stands `MAIN_ROAD_DOOR_INSET` tiles in from the junction**, so a gatehouse takes her in walking
+## along the main road's sidewalk past it and never in the junction, where her route crosses the
+## main road at a corner without meeting the door. The tree runs along the spine only when its
+## trunk search falls back to it (`RouteTree`), so a main-road door usually decides no route; its
+## sidewalks reach every region the spine crosses, at a toll. The escape, the one walk that seals
+## the main road (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no streets and never
+## runs this planner.
 
 ## The catalogue row the wall's bodies are hard seals of: `roadblock`, the barrier that closes a
 ## street outright — renamed from `checkpoint` once the milestone's own door structure took that
@@ -616,8 +620,8 @@ static func home_region(map: CityMap) -> int:
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
 ## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
-## uses it and wall otherwise, and a crossing of the main road is a door whatever the tree says
-## unless `spec` seals the main road** (the class doc, "The main road is never walled"). **The tree
+## uses it and wall otherwise, and a crossing of the main road is a door whatever the tree says**
+## (the class doc, "The main road is never walled"). **The tree
 ## wins over anything the partition alone would say.** Forcing a wall onto a calm-less region's own
 ## boundary regardless of the tree, on the reasoning that there is no reason to ever enter a region
 ## with nothing in it, breaks the milestone's own decree that a region edge may never affect a path
@@ -628,23 +632,18 @@ static func home_region(map: CityMap) -> int:
 ## rule and this is what obeying it looks like. A region the main road crosses into has a door on
 ## the spine every day, calm or not.
 ##
-## `spec` is the day's (`DaySpec.for_day(day)` when none is handed in, which is what every day's is
-## in this respect).
-##
 ## No exemption for the home region is needed here either, for the same reason: home's own boundary
 ## was never a case the tree-wins rule could get wrong, since the tree door/wall answer only depends
 ## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
 ## region has a door, or every calm area the tree reaches is in the home region" as the
 ## unconditional sentence it always was rather than working around a rule that no longer exists.
-static func plan_day(map: CityMap, day: int, tree: RouteTree, spec: DaySpec = null) -> RegionPlan:
+static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
 	var plan := RegionPlan.new()
 	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
 		return plan
-	if spec == null:
-		spec = DaySpec.for_day(day)
 	for segment in boundary_segments(map):
-		if tree.is_on_the_tree(segment.key()) or _keeps_the_main_road_open(map, spec, segment):
-			stand_door(map, segment, plan, spec)
+		if tree.is_on_the_tree(segment.key()) or map.is_main_road_segment(segment):
+			stand_door(map, segment, plan)
 		else:
 			plan.walls.append(segment)
 	for rect in map.alley_rects:
@@ -731,22 +730,40 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
 
-## **A street door on `segment`, stood in `plan`** for a walk `spec` describes: the street joins
-## the plan's doors and its three bodies and its gate join the plan (`_add_door_bodies()`), a gate
-## that stays up for the cars where the door keeps the main road open. The one entry `plan_day()`
-## stands each of the day's street doors through, and a scene recipe's authored checkpoint
-## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
-static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan,
-		spec: DaySpec) -> void:
+## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its three
+## bodies and its gate join the plan (`_add_door_bodies()`). On the main road the door stands
+## `MAIN_ROAD_DOOR_INSET` tiles in from the junction and its gate never lowers for the cars. The one
+## entry `plan_day()` stands each of the day's street doors through, and a scene recipe's authored
+## checkpoint (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
+##
+## No spec decides this: the escape, the one walk that seals the main road
+## (`DaySpec.seals_the_main_road`, for `SealPlanner`), closes no streets (`DaySpec.closes_streets`
+## false) and so never runs this planner.
+static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
 	plan.doors.append(segment)
-	_add_door_bodies(map, segment, plan, not _keeps_the_main_road_open(map, spec, segment))
+	_add_door_bodies(map, segment, plan, not map.is_main_road_segment(segment))
 
-## Whether `segment` is a crossing of the main road on a walk that keeps the main road open, which
-## is every day's (`DaySpec.seals_the_main_road` false): such a crossing is a door on every day and
-## its boom never lowers for the cars. See the class doc, "The main road is never walled".
-static func _keeps_the_main_road_open(map: CityMap, spec: DaySpec,
-		segment: StreetNetwork.Segment) -> bool:
-	return not spec.seals_the_main_road and map.is_main_road_segment(segment)
+## Tiles in from the junction a main-road door stands, so that its gatehouses' take-in
+## (`EventDef.detain_distance()`, 80px from a hut's centre) reaches the main road's sidewalk
+## walking past the door and none of the junction's own sidewalk, where her route crosses the main
+## road without meeting the door. At the segment's mouth tile the take-in covers 8 to 12 of the
+## junction box's 16 sidewalk tiles. Two tiles in puts the nearest box tile 96px from a hut's
+## centre. Doors off the main road stand on the mouth tile.
+const MAIN_ROAD_DOOR_INSET := 2
+
+## The three points a street door on `segment` stands its bodies at, a hut on each sidewalk and the
+## gate between them, at the end its wall stands (`CityMap.boundary_wall_at_a`) and, on the main
+## road, `MAIN_ROAD_DOOR_INSET` tiles in from the junction. Day-independent, so `MastSites` keeps
+## its fields clear of the same points.
+static func door_positions(map: CityMap, segment: StreetNetwork.Segment) -> Array[Vector2]:
+	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
+	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
+	var mouth := segment.mouth_rect(at_a)
+	if map.is_main_road_segment(segment):
+		var inward := Vector2i.RIGHT if segment.horizontal else Vector2i.DOWN
+		mouth.position += inward * (MAIN_ROAD_DOOR_INSET if at_a else -MAIN_ROAD_DOOR_INSET)
+	return SealPlanner.positions_across(map.tile_rect_to_world(mouth), segment.horizontal,
+			Tuning.TILE_SIZE)
 
 ## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
 ## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
@@ -757,13 +774,10 @@ static func _keeps_the_main_road_open(map: CityMap, spec: DaySpec,
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
 ##
-## `holds_cars` is the gate's (`GateState.holds_cars()`).
+## `holds_cars` is the gate's (`GateState.holds_cars()`), false exactly for a main-road door.
 static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan,
 		holds_cars: bool) -> void:
-	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
-	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-	var positions := SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)
+	var positions := door_positions(map, segment)
 	if positions.is_empty():
 		return
 	var axis := _along_axis(segment.horizontal)

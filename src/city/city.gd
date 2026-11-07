@@ -1055,7 +1055,7 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 	if spec.closes_streets:
 		# Last, and after the repaint: which blocks are calm is what the closure invariant is
 		# stated over, and a requisitioned park is not one of them.
-		_close_streets(day, rng, spec)
+		_close_streets(day, rng)
 	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
 	# once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
@@ -1108,9 +1108,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -
 
 ## Today's closed streets. The whole street comes out of the network; the barriers stand at
 ## its two mouths, where they can be seen from the junction rather than found half way down.
-## `spec` is the day's, which the region plan and the closures read (`RegionPlanner.plan_day()`,
-## `ClosurePlanner.plan_day()`).
-func _close_streets(day: int, rng: RandomNumberGenerator, spec: DaySpec) -> void:
+func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
 	for node in _closure_nodes:
 		node.queue_free()
 	_closure_nodes.clear()
@@ -1121,11 +1119,11 @@ func _close_streets(day: int, rng: RandomNumberGenerator, spec: DaySpec) -> void
 	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
-	var plan := RegionPlanner.plan_day(map, day, tree, spec)
+	var plan := RegionPlanner.plan_day(map, day, tree)
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
 			plan.doors.size(), RegionPlanner.regions_with_calm(map)])
-	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace, spec)
+	var closures := ClosurePlanner.plan_day(map, day, rng, tree, plan, trace)
 	_streets.begin_day(tree, plan, closures)
 	map.close_streets(closures)
 	for closure in closures:

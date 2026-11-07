@@ -1417,13 +1417,12 @@ decision, it is scenery. A closure at the mouth of a turning is read from the ju
 where the wrong way is still a choice — the same reason `RoadClosure` seals both mouths rather than
 putting one sign half way down a street.
 
-**Never on the main road, on any day that does not seal it** (the player's inbox note #1186, not yet
-filed: the main road's traffic always runs from the tunnel to the bridge, unhindered). A closure
-takes its whole street out of the network, so one on the spine would stop its cars the way a
-roadblock does. The candidate pool leaves out every `CityMap.is_main_road_segment()` unless the
-day's spec seals the main road (`DaySpec.seals_the_main_road`, the escape's), the flag the region
-plan reads for its doors. A day closes as many streets as before: the quota is filled from the
-rest of the pool, so the closure moves elsewhere rather than vanishing.
+**Never on the main road** (the player's inbox note #1186, not yet filed: the main road's traffic
+always runs from the tunnel to the bridge, unhindered). A closure takes its whole street out of the
+network, so one on the spine would stop its cars the way a roadblock does. The candidate pool leaves
+out every `CityMap.is_main_road_segment()`, so the day's closure count does not depend on the spine:
+the quota is filled from the rest of the pool. The escape closes no streets
+(`DaySpec.closes_streets` false), so it never runs the closure planner and the rule needs no spec.
 
 **Never on a calm area's own access street, and that is a third exclusion beside the tree and the
 doorstep.** A park is walked *through*, so a barrier on any of its access streets — every street
@@ -1604,7 +1603,7 @@ as the chains themselves.
 once at generation from the city's own seed and stored on `CityMap`. A segment whose two ends share
 a region is that region's interior; one whose ends differ is a **boundary segment**. A boundary may
 cut the main road like any other street, and where it does the crossing is always a door (below,
-"The main road is never closed"). Regions are decided before any day's routes are, and a day's
+"The main road is never walled"). Regions are decided before any day's routes are, and a day's
 `RouteTree` grows with no knowledge of them, so a boundary can never make a route worse; it only
 decides, afterwards, which of the crossings already on a grown route are doors and which are wall.
 
@@ -1664,19 +1663,22 @@ every other crossing off the main road is **wall**, placed as hard seals of the 
 Before that day nothing is drawn at all — the partition exists from generation, but the milestone's
 own words are "checkpoints in the later acts."
 
-**The main road is never closed** (the player's inbox note #1186, not yet filed). Every crossing of a region
-boundary on the main road is a door on every day, whether or not the tree uses it, and its boom
-stays up for the cars: the gate does not hold cars (`RegionPlanner.GateState.holds_cars()`), so the
-crowd never stops one at it (`Crowd.set_gates()` keeps only the gates that do) and the spine's
-traffic drives from the tunnel to the bridge without a stop. Her side of the door is every door's:
-a gatehouse takes her in from its own sidewalk, and walking under the boom, which on the main road
-is always up, sets the door's guard on her (docs/EVENTS.md, "Checkpoints"). The tree never runs
-along the spine, so no route changes; what changes for her is that the main road's sidewalks reach
-every region the spine crosses, at the toll, rather than ending at a wall on the boundary. The rule
-is the day's configuration, not the planner's: a spec that seals the main road
-(`DaySpec.seals_the_main_road`, the escape's) leaves its crossings to the tree like any other, and
-the escape plans no region wall in any case, since it closes no streets of its own
-(`DaySpec.closes_streets`).
+**The main road is never walled, and no gate holds its cars** (the player's inbox note #1186, not
+yet filed). Every crossing of a region boundary on the main road is a door on every day, whether or
+not the tree uses it, and its boom stays up for the cars: the gate does not hold cars
+(`RegionPlanner.GateState.holds_cars()`), so the crowd never stops one at it (`Crowd.set_gates()`
+keeps only the gates that do). The region plan and the closures never stand anything on the spine's
+carriageway. **Event bodies still can**: the catalogue's `roadblock`, `protest`, `firefight` and the
+abduction van are placed without keeping off it, so the main road's traffic is not yet unhindered
+end to end. Her side of the door is every door's: a gatehouse takes her in from its own sidewalk,
+and walking under the boom, which on the main road is always up, sets the door's guard on her
+(docs/EVENTS.md, "Checkpoints"). **A main-road door stands `RegionPlanner.MAIN_ROAD_DOOR_INSET` (2)
+tiles in from the junction**, so a gatehouse's 80px take-in covers the main road's sidewalk past it
+and none of the junction box's sidewalk: crossing the main road at a corner is never a toll. The
+tree runs along the spine only when its trunk search falls back to it (above), so a main-road door
+usually decides no route; the main road's sidewalks reach every region the spine crosses, at the
+toll. The escape plans no region wall, since it closes no streets (`DaySpec.closes_streets`), so the
+rule needs no spec.
 
 **Off the main road, the tree wins, unconditionally, over the partition.** A region holding no calm
 area gets no doors off the main road on every day its own boundary happens to be off the tree —

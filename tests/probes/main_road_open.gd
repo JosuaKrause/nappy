@@ -37,7 +37,8 @@ static func _seeds() -> Array[int]:
 
 func run(t) -> void:
 	var totals := {"boundary": 0, "walls": 0, "doors": 0, "holding": 0, "wall_tiles": 0,
-			"held": 0, "closed": 0, "bodies": 0, "closures": 0}
+			"held": 0, "closed": 0, "bodies": 0, "closures": 0, "box_tiles": 0, "box_doors": 0,
+			"box_doors_hit": 0, "box_max": 0, "box_crossed": 0, "box_crossed_hit": 0}
 	var rows := {}
 	for seed_value in _seeds():
 		var crowd_day := -1
@@ -54,6 +55,9 @@ func run(t) -> void:
 	print("TOTAL day: main-road segments held (not a door) %d | closed %d | bodies on the carriageway %d"
 			% [totals.held, totals.closed, totals.bodies])
 	print("TOTAL street closures %d" % totals.closures)
+	print("TOTAL take-in: junction-box sidewalk tiles in a main-road door's take-in %d over %d doors (most %d on one door); doors with any %d; of the %d doors whose junction her tree crosses the main road at, %d"
+			% [totals.box_tiles, totals.box_doors, totals.box_max, totals.box_doors_hit,
+			totals.box_crossed, totals.box_crossed_hit])
 	for id: String in rows:
 		print("TOTAL row on the main-road carriageway: %s x%d" % [id, rows[id]])
 	t.check(true, "probe finished")
@@ -106,6 +110,19 @@ func _plan(seed_value: int, day: int, totals: Dictionary) -> int:
 					% [seed_value, day, i, plan.doors.size(), i * 2, i * 2 + 1])
 			if _holds_cars(plan.gates[i]):
 				holding += 1
+			var covered := _box_tiles_taken_in(map, plan.doors[i], plan.door_bodies.slice(i * 3, i * 3 + 3))
+			totals.box_tiles += covered
+			totals.box_doors += 1
+			totals.box_doors_hit += 1 if covered > 0 else 0
+			totals.box_max = maxi(totals.box_max, covered)
+			var crossed := false
+			for other in map.network.segments():
+				if not _on_the_main_road(map, other) and tree.is_on_the_tree(other.key()) \
+						and (other.a in [plan.doors[i].a, plan.doors[i].b] \
+						or other.b in [plan.doors[i].a, plan.doors[i].b]):
+					crossed = true
+			totals.box_crossed += 1 if crossed else 0
+			totals.box_crossed_hit += 1 if crossed and covered > 0 else 0
 	var wall_tiles := 0
 	for body in plan.wall_bodies:
 		wall_tiles += _footprint_on_the_road(map, body)
@@ -117,6 +134,23 @@ func _plan(seed_value: int, day: int, totals: Dictionary) -> int:
 	print("PLAN seed %d day %d | main-road boundary %d | wall %d | door %d | holding %d | wall tiles %d"
 			% [seed_value, day, boundary, walls, doors, holding, wall_tiles])
 	return boundary
+
+## How many of the 16 sidewalk tiles of the junction boxes at the ends of `segment` any of the
+## door's bodies' take-in (`EventDef.detain_distance()` from its centre) covers, counted per box.
+func _box_tiles_taken_in(map: CityMap, segment: StreetNetwork.Segment, bodies: Array) -> int:
+	var count := 0
+	for junction in [segment.a, segment.b]:
+		var origin: Vector2i = junction * CityMap.period()
+		for y in Tuning.STREET_WIDTH:
+			for x in Tuning.STREET_WIDTH:
+				if not ((x < 2 or x >= 4) and (y < 2 or y >= 4)):
+					continue
+				var centre := map.tile_to_world(origin + Vector2i(x, y))
+				for body in bodies:
+					if centre.distance_to(body.position) <= body.def.detain_distance():
+						count += 1
+						break
+	return count
 
 ## Whether a gate stops the cars. Every gate does where the gate cannot say otherwise.
 static func _holds_cars(gate: RegionPlanner.GateState) -> bool:

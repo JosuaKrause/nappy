@@ -1812,34 +1812,41 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 	city.free()
 
 ## **A gate that does not hold cars never stops one** *(inbox #1186: "traffic on the main road
-## always needs to be able to go from the tunnel to the bridge unhindered")*. The main road's gate
-## (`GateState.holds_cars()` false) sited ahead of a real car on its own lane, the rig above's
-## shape: the car is never held for it, never slows to a stop short of it, passes it, and the boom
-## is up the whole time and still up once the car is past.
+## always needs to be able to go from the tunnel to the bridge unhindered")*. The crowd keeps only
+## the gates that hold cars (`Crowd.set_gates()`), so a gate that does not (`GateState.holds_cars()`
+## false) is never one `_stop_for_gates()` sees. Asked of a crowd on a map of nothing but streets
+## (`StreetMap`, the world and the crowd's own setup, no city): the first car it stands, with the
+## gate sited 150px ahead of it on its heading, is never held for it, never slows to a stop short
+## of it, passes it, and the boom is up the whole time and still up once the car is past.
 func _test_a_car_drives_under_a_gate_that_never_lowers(t) -> void:
-	var map := CityGenerator.generate(BASE_SEED)
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(city)
-	city.build(map)
+	var world := WorldContext.new()
+	t.add_child(world)
+	var map := StreetMap.full()
+	var crowd := Crowd.new()
+	crowd.name = "Crowd"
+	world.add_child(crowd)
+	crowd.setup(world, map, TrafficSignals.new(map), DayStreets.new())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("checkpoint-gate-rig:%d" % BASE_SEED)
-	city.crowd.start_day(1, rng, CrowdLanes.arterial_pavement(map))
+	var focus := map.tile_to_world(Vector2i(map.main_road * CityMap.period() + 2,
+			5 * CityMap.period() + 3))
+	crowd.start_day(1, rng, focus)
 
 	var car: CrowdAgent = null
-	for agent in city.crowd.agents():
+	for agent in crowd.agents():
 		if agent.kind == CrowdAgent.Kind.CAR:
 			car = agent
 			break
-	t.check(car != null, "there is a car on the spine to drive under the gate")
+	t.check(car != null, "the crowd stands a car to drive under the gate")
 	if not car:
-		city.free()
+		world.free()
 		return
-	city.crowd.set_focus(car.global_position)
+	crowd.set_focus(car.global_position)
 
 	var gate := RegionPlanner.GateState.new(false)
 	gate.position = car.global_position + car.heading() * 150.0
 	var gates: Array[RegionPlanner.GateState] = [gate]
-	city.crowd.set_gates(gates)
+	crowd.set_gates(gates)
 
 	var held_frames := 0
 	var stopped_short := false
@@ -1847,7 +1854,7 @@ func _test_a_car_drives_under_a_gate_that_never_lowers(t) -> void:
 	var passed_at := INF
 	var elapsed := 0.0
 	while elapsed < 20.0 and passed_at == INF:
-		city.crowd.step(STEP)
+		crowd.step(STEP)
 		elapsed += STEP
 		var ahead := (gate.position - car.global_position).dot(car.heading())
 		if car.gate_hold < INF:
@@ -1859,14 +1866,14 @@ func _test_a_car_drives_under_a_gate_that_never_lowers(t) -> void:
 		if ahead <= 0.0:
 			passed_at = elapsed
 	for frame in int(round(2.0 / STEP)):
-		city.crowd.step(STEP)
+		crowd.step(STEP)
 		lowered = lowered or not gate.raised
 
 	t.check(held_frames == 0, "the car is never held for the gate (%d frames)" % held_frames)
 	t.check(not stopped_short, "and never comes to a stop at its stop line")
 	t.check(passed_at < INF, "it drives under the gate (at %.1fs)" % passed_at)
 	t.check(not lowered, "and the boom is up all the while, and once the road is clear")
-	city.free()
+	world.free()
 
 ## **The boom never inspects her, raised or lowered; it blocks her while it is down.**
 ## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it

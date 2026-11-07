@@ -941,11 +941,12 @@ wall across the carriageway; raised, it is ground she may walk under, and the pr
 raised it — she is on its carriageway, and the horn and the strike apply as on any street, under the
 traffic fairness contract `tests/test_tuning_fairness.gd`'s traffic check states for every carriageway.
 
-**On the main road the boom never lowers for the cars**, since nothing may hold the spine's traffic
-(docs/CITY.md, "The main road is never closed"): its gate does not hold cars
-(`RegionPlanner.GateState.holds_cars()`), stands raised from the morning, and the crowd never works
-it. So she may always walk under it there, and walking under it sets the door's guard on her as at
-any door.
+**On the main road the boom never lowers for the cars** (docs/CITY.md, "The main road is never
+walled"): its gate does not hold cars (`RegionPlanner.GateState.holds_cars()`), stands raised from
+the morning, and the crowd never works it, so a gate never holds the spine's traffic. (Event bodies
+placed on its carriageway can still.) She may always walk under it there, and walking under it sets
+the door's guard on her as at any door. Its door stands two tiles in from the junction, so its
+gatehouses take her in along the main road's sidewalk and not at the junction's corners.
 
 **And a gatehouse never takes her in from the carriageway its own door's boom spans.** A gatehouse's trigger
 reaches a reach past its wall, which is further than the kerb, so without this the gatehouse beside the
