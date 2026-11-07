@@ -13,6 +13,7 @@ func run(t) -> void:
 	_test_a_door_body_shuts_nothing(t)
 	_test_a_plan_not_placed_shuts_nothing(t)
 	_test_a_soft_seal_band_and_a_closure_are_shut(t)
+	_test_her_paths_stop_at_the_circle_and_at_what_is_shut(t)
 
 func _street() -> CityMap:
 	var map := CityMap.new(Vector2i(40, 12))
@@ -63,3 +64,28 @@ func _test_a_soft_seal_band_and_a_closure_are_shut(t) -> void:
 	map.closed_tiles = band.duplicate()
 	t.check(not DayReach.of(map, [] as Array[EventScheduler.Planned]).reaches(BEYOND),
 			"and so does today's closure")
+
+## **Close by is a walk inside a circle** (`DayReach.paths_over()`, the measure day 13's dawn and its
+## task both take): from a seed, tile by tile along the sidewalk, every tile reached is nearer the
+## centre than the radius, the walk stops at shut ground even where the circle goes on, and a seed
+## standing on shut ground still walks out of it, as she may stand inside a body's disc.
+func _test_her_paths_stop_at_the_circle_and_at_what_is_shut(t) -> void:
+	var map := _street()
+	var from := Vector2i(5, 5)
+	var centre := map.tile_to_world(from)
+	var radius := Tuning.TILE_SIZE * 9.5
+	var open := DayReach.paths_over(map, {}, [from] as Array[Vector2i], centre, radius)
+	t.check(open.has(Vector2i(14, 5)) and not open.has(Vector2i(15, 5)),
+			"along an open sidewalk the walk reaches nine tiles east and stops at the circle")
+	t.check(is_equal_approx(float(open[Vector2i(14, 6)]),
+			map.tile_to_world(Vector2i(14, 6)).distance_to(centre)),
+			"and each tile it reaches carries its distance from the centre")
+	var shut := {Vector2i(8, 5): true, Vector2i(8, 6): true}
+	var cut := DayReach.paths_over(map, shut, [from] as Array[Vector2i], centre, radius)
+	t.check(cut.has(Vector2i(7, 5)) and not cut.has(Vector2i(8, 5)) and not cut.has(Vector2i(9, 5)),
+			"ground shut across the sidewalk ends the walk there, though the circle goes on")
+	var inside := DayReach.paths_over(map, shut, [Vector2i(8, 5)] as Array[Vector2i],
+			map.tile_to_world(Vector2i(8, 5)), radius)
+	t.check(inside.has(Vector2i(7, 5)) and inside.has(Vector2i(9, 5))
+			and not inside.has(Vector2i(8, 6)),
+			"a seed on shut ground walks out of it onto the open ground either side, never onto more of it")

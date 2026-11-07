@@ -711,6 +711,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 		DayRepairs.ensure_one_usable_park(events, calm)
 	DayRepairs.ensure_the_city_is_still_walkable(map, events, calm, target, trace)
 	_hand_to_her_walk(events)
+	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
 ## `build_day` up to and including the fill, added to `events`: the ambient rows, the scars, the
@@ -764,16 +765,23 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## way, and off it, so a roadblock there closes none of her routes. A roadblock is a `WALL`
 ## (`_role_for()`), so its own ground (`_ground_for()`) is already off every tile a route runs along.
 ##
-## **As few as leave every stretch of her routes one close by, under the task's own measure**: the
-## walk her paths take from a tile without leaving the circle of `TASK_ROW_CLOSE_BY` round it
-## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.
+## **As few as it takes to aim one close by every stretch of her routes, under the task's own
+## measure**: the walk her paths take from a tile without leaving the circle of `TASK_ROW_CLOSE_BY`
+## round it (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.
 ## ROADBLOCK_WIDER_REACH`). The route tiles are taken in the map's order, and the first one with no
 ## roadblock close by yet is given one: drawn by `_best_of()` from the ground beside the routes its
 ## paths reach, under every rule a roadblock the fill places is under, the spacing between two of a
-## row (`EVENT_SPACING_SAME`) among them, so the roadblocks spread rather than bunch. A route tile
-## whose paths reach no such ground, or whose draw is refused, is passed over. Each placed roadblock
-## is read, from the ground she can touch it from, as close by every route tile its own paths reach
-## in the same circle, and its body shuts its ground for the next.
+## row (`EVENT_SPACING_SAME`) among them, so the roadblocks spread rather than bunch. Each placed
+## roadblock is read, from the ground she can touch it from, as close by every route tile its own
+## paths reach in the same circle, and its body shuts its ground for the next.
+##
+## **What it does not promise.** A route tile whose paths reach no such ground, or whose draw every
+## rule refuses, is passed over, and the run log counts how many were. Close by is measured over the
+## ground as it stands when this runs: the scripted rows, the one-shots, the spoilers and the fill
+## after it shut more, and a repair may take a roadblock away, so the walk's own measure from a route
+## tile can come out longer. `_count_what_is_left_uncovered()` writes to the run log how many route
+## tiles have none as the day finally stands. And it measures from the route tiles, where she reads
+## the task's mark one tile into an alley off them.
 ##
 ## **Outside the budget and on streams of its own** (`BESIDE_THE_ROUTES_SALT` and up): the fill after
 ## it rolls the rows it always rolled, spaced against these as against anything already down.
@@ -797,7 +805,8 @@ static func _place_beside_the_routes(def: EventDef, day: int, base: int, map: Ci
 	down.append_array(standing)
 	var shut := DayReach.shut_by(map, down)
 	var covered := {}
-	var placed := 0
+	var placed: Array[String] = []
+	var passed_over := 0
 	var attempt := 0
 	for y in map.size.y:
 		for x in map.size.x:
@@ -815,29 +824,69 @@ static func _place_beside_the_routes(def: EventDef, day: int, base: int, map: Ci
 					pool.append(candidate)
 					if float(near[candidate]) >= TASK_ROW_CLOSE_BY * BESIDE_THE_ROUTES_FAR_SHARE:
 						far.append(candidate)
-			if pool.is_empty():
-				continue
 			# The far half first: a roadblock at the edge of the tile's reach is close by more of the
 			# route beyond it, so fewer stand.
 			if not far.is_empty():
 				pool = far
-			var plan := _best_of(def, _stream(base, BESIDE_THE_ROUTES_SALT + attempt), map, pool,
-					role, events.placements(), ground, leave_alone, corridor, doors, standing, null,
-					rules)
-			attempt += 1
+			var plan: Planned = null
+			if not pool.is_empty():
+				plan = _best_of(def, _stream(base, BESIDE_THE_ROUTES_SALT + attempt), map, pool,
+						role, events.placements(), ground, leave_alone, corridor, doors, standing,
+						null, rules)
+				attempt += 1
 			if not plan:
+				passed_over += 1
 				continue
 			events.add(plan)
-			placed += 1
-			block_a_disc(map, shut, plan.position, plan.blocking_radius())
+			placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
+			block_a_disc(map, shut, plan.placed_at(), plan.blocking_radius())
 			for reached: Vector2i in DayReach.paths_over(map, shut, _touched_from(map, shut, plan),
-					plan.position, TASK_ROW_CLOSE_BY):
+					plan.placed_at(), TASK_ROW_CLOSE_BY):
 				covered[reached] = true
-	_note(trace, "plan", "%d %s placed beside the day's routes" % [placed, def.id])
+	_note(trace, "plan", ("%d %s placed beside the day's routes, at %s; %d route tiles passed over, " +
+			"with no ground beside the routes within reach or every draw there refused")
+			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
+			passed_over])
 
-## The widest a task's row is searched for round where she read its mark: half a block and a block
-## past the mark's own block and the next (`ResistanceDirector.ROADBLOCK_WIDER_REACH`'s last ring),
-## 1,024px. What dawn stands day 13's roadblocks within of every stretch of her routes
+## **How many of the day's route tiles have none of `def`'s rows close by as the day stands**,
+## written to the run log: once every pass and repair is done, each placed `def` the day stands
+## (not a region door's body or the wall's own) is read as close by every route tile its paths
+## reach within `TASK_ROW_CLOSE_BY` over the day's whole obstruction (`DayReach.shut_by()`), and the
+## route tiles it leaves are counted. `_place_beside_the_routes()` aims at none, but a route tile it
+## passed over, ground the later passes shut and a roadblock a repair took away all leave some. A
+## count and nothing more: nothing is placed or moved here. Nothing on a day with no `def`.
+static func _count_what_is_left_uncovered(def: EventDef, map: CityMap, events: DayEvents,
+		route: RouteSource, trace: RunTrace) -> void:
+	if def == null or trace == null or route == null:
+		return
+	var corridor := route.corridor()
+	var down := events.placements().duplicate()
+	down.append_array(events.standing())
+	var shut := DayReach.shut_by(map, down)
+	var covered := {}
+	for plan in down:
+		if plan.row_id() != def.id or not plan.is_placed() or plan.is_door() \
+				or plan.is_in_the_wall():
+			continue
+		for reached: Vector2i in DayReach.paths_over(map, shut, _touched_from(map, shut, plan),
+				plan.placed_at(), TASK_ROW_CLOSE_BY):
+			covered[reached] = true
+	var tiles := 0
+	var left := 0
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if not corridor.carries_a_route(tile) or not map.is_walkable(tile) or shut.has(tile):
+				continue
+			tiles += 1
+			if not covered.has(tile):
+				left += 1
+	_note(trace, "plan", "%d of %d route tiles have no %s within %.0fpx along her paths as the day stands"
+			% [left, tiles, def.id, TASK_ROW_CLOSE_BY])
+
+## The widest a task's row is searched for round where she read its mark: a block and a street past
+## the 576px circle round it (`ResistanceDirector.ROADBLOCK_WIDER_REACH`'s last ring), 1,024px. What
+## dawn aims to stand day 13's roadblocks within of every stretch of her routes
 ## (`_place_beside_the_routes()`).
 const TASK_ROW_CLOSE_BY := (Tuning.BLOCK_SIZE * 2.5 + Tuning.STREET_WIDTH * 2.0) * Tuning.TILE_SIZE
 
@@ -853,14 +902,14 @@ const BESIDE_THE_ROUTES_SALT := 5
 ## from.
 static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Array[Vector2i]:
 	var reach := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
-	var centre := map.world_to_tile(plan.position)
+	var centre := map.world_to_tile(plan.placed_at())
 	var span := ceili(reach / Tuning.TILE_SIZE)
 	var found: Array[Vector2i] = []
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre + Vector2i(dx, dy)
 			if map.in_bounds(tile) and map.is_walkable(tile) and not shut.has(tile) \
-					and map.tile_to_world(tile).distance_to(plan.position) <= reach:
+					and map.tile_to_world(tile).distance_to(plan.placed_at()) <= reach:
 				found.append(tile)
 	return found
 
