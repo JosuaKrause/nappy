@@ -109,8 +109,9 @@ or representative ground background for transparency. Contact sheets help compar
 label fitted cells as fitted, since they do not establish shared world scale. Render every
 changed directional/state variant from its current SVG, not an earlier cached PNG.
 
-For an existing runtime binding, take the smallest useful gameplay capture through `verify`:
-choose a reproducible seed, day, location and normal camera scale that actually exposes the object.
+For an existing runtime binding, the smallest useful gameplay capture goes through `verify` and is
+taken by the orchestrating session; an agent takes none (inbox #1203) and lists it in its report.
+The source-preview script above runs `--headless`, so an agent runs it. Choose a reproducible seed, day, location and normal camera scale that actually exposes the object.
 Check both axes when direction matters. Prepared unbound assets need source previews, not invented
 runtime behavior just to photograph them. Iterate on visible defects, rerender the changed parts,
 and preserve the final evidence through `session-captures` where it is a gameplay run.
