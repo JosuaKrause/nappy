@@ -111,8 +111,8 @@ standing on.
 | Main road | 0.35 | 2.1/s |
 
 A rate rather than a state is what makes a precinct worth walking to although it is loud.
-`is_calm_zone` stays a threshold beside it, because the *sleepiness* half genuinely is one: only
-calm ground puts a baby to sleep.
+`CityMap.is_calm_zone()` stays a threshold beside it, because the *sleepiness* half genuinely is
+one: only calm ground puts a baby to sleep.
 
 **The multipliers are ratios; the absolute rates on the right are the design.** A change to the
 walking decay moves all five to keep each ground's own rate where it was put — which is why the

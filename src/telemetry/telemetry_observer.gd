@@ -334,7 +334,7 @@ func start_day() -> void:
 ## Everything one walk leaves behind, cleared for the next — a day's, or a section's. The ground
 ## state is only read where there is a map to read it from.
 func _forget_the_walk() -> void:
-	_was_calm = _city.is_calm_zone(_player.global_position) if _city else false
+	_was_calm = _map.is_calm_zone(_player.global_position) if _map else false
 	_was_road = _map != null and Tile.is_road(_map.tile_type_at_world(_player.global_position))
 	_was_frozen = false
 	_road_since = 0.0
@@ -590,7 +590,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	# `ROAD_LINGER`, so from in there a walk from a pavement into a park writes nothing at all and
 	# `_was_calm` goes stale with it. `docs/TELEMETRY.md` has `calm` / `left` down as the entry that
 	# answers *"same park every day?"*, which it can only do if every arrival counts.
-	var calm := _city.is_calm_zone(here)
+	var calm := _map.is_calm_zone(here)
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(

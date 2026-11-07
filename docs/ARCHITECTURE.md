@@ -62,9 +62,9 @@ src/
 	stroller.gd           movement, input, speed state
 	baby.gd               the two meters + baby state machine
   city/
-	city_map.gd           tile data, queries (walkable); holds the city's street lattice
+	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
 	city_generator.gd     seeded generation
-	city.gd               the scene: ground, buildings, props, boundary, queries (is_calm_zone, is_alley)
+	city.gd               the scene: ground, buildings, props, boundary, queries (is_alley)
 	day_streets.gd        today's streets as dawn left them: the route tree, the region wall and
 	                      doors, the closures, the region a siting reads; the city writes it
 	city_fronts.gd        the building fronts the story changes (the burnt frontage, a block
@@ -918,9 +918,11 @@ choice (`main`), which hands that world's map down.
 
 ## WorldContext
 
-`Baby` never learns what a tile or an event is. It asks a `WorldContext` three questions —
-`is_calm_zone()`, `is_alley()`, `excitement_sources_at()` — and that is the entire surface
-between the meters and the world. The debug world answers with hand-placed test data; the generated
+`Baby` never learns what a tile or an event is. It asks a `WorldContext` four questions —
+`sleepiness_multiplier()`, `decay_multiplier()`, `is_alley()`, `excitement_sources_at()` — and that
+is the entire surface between the meters and the world. Whether a point is calm ground at all is
+the map's question (`CityMap.is_calm_zone()`), asked by the run log and the debug readout.
+The debug world answers with hand-placed test data; the generated
 city and the event manager answer for real. **No world sums its events itself**: it is handed the
 sets of things that charge her (`WorldContext.excitement_sources`, each an `ExcitementSources` in the
 world layer) — the manager's events (`EventSources`) and the crowd's walkers and cars

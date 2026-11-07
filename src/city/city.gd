@@ -439,12 +439,6 @@ func set_daylight(fraction: float) -> void:
 
 # ------------------------------------------------------------ WorldContext ---
 
-## Whether this is calm ground at all, for the debug overlay and the telemetry. **Not** a
-## `WorldContext` question: `Baby` asks `sleepiness_multiplier` instead, because calm ground is a
-## rate rather than a kind of place.
-func is_calm_zone(world_position: Vector2) -> bool:
-	return Tile.is_calm(map.tile_type_at_world(world_position)) if map else false
-
 ## How much faster the sleepiness meter fills on this ground.
 ##
 ## 1.0 off calm ground, and `Tuning.sleepiness_calm_multiplier` on it — which is a function of **how
