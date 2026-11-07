@@ -317,7 +317,8 @@ class Planned extends RefCounted:
 		return _in_the_wall
 
 	## Makes this body the region wall's. Called by `DayPlanner._plan_a_day()` for each of the day's
-	## region plan's wall bodies, and by nothing else.
+	## region plan's wall bodies, by `SceneRecipeRuntime` for each of a recipe's barriers, which stand
+	## in the wall a recipe selects, and by nothing else.
 	func stand_in_the_wall() -> void:
 		_in_the_wall = true
 

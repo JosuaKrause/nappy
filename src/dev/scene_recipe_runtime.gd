@@ -577,8 +577,11 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		errors.append("setup.player.at must be open ground inside the authored extent")
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
-	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, spec, _run.header.day, at)
+	# One set of calm areas for the recipe's walk: what its rows are placed against and what the walk
+	# sites against after.
+	var calm := city.events.calm_as_the_map_stands()
+	var plans := _event_plans(at, errors, calm)
+	city.events.start_recipe(plans, spec, _run.header.day, at, calm)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -843,8 +846,11 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
-		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
-				"roadblock", entry.end == "a"))
+		# The wall's bodies say so, as the day's do (`Planned.stand_in_the_wall()`).
+		var bodies := SealPlanner.place_hard_on(_city.map, segment, "roadblock", entry.end == "a")
+		for body in bodies:
+			body.stand_in_the_wall()
+		selected.wall_bodies.append_array(bodies)
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
 	_city.streets().replace_region_plan(selected)
@@ -890,7 +896,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	map.set_seal_tree_pits(emptied)
 	return plans
 
-func _event_plans(player_at: Vector2, errors: Array[String],
+func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventScheduler.Planned] = []
@@ -898,7 +904,6 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
-	var calm := CalmAreas.of(map)
 	var finale: FinalePlanner.Plan
 	if data.get("kind", "city") == "escape":
 		finale = FinalePlanner.route(map)

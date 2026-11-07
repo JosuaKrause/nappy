@@ -316,17 +316,22 @@ func walk() -> RouteSource:
 ## successors and warnings keep their production behavior; random siting is suppressed. `spec` is
 ## the walk the recipe stands for, handed in by the recipe's runtime — a day's, or the escape city's
 ## — and its settings are the walk's; `day` keys the walk's streams and counts its encounters.
+## `calm` is the calm areas the recipe's rows were placed against (`calm_as_the_map_stands()`), so
+## the walk sites against the same ones; a rig that places none hands none.
 ##
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with
 ## their bodies recorded as a day's are.
 func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
-		focus: Vector2) -> void:
+		focus: Vector2, calm: CalmAreas = null) -> void:
 	var plan := DayPlanner.Plan.new()
 	plan.placements = plans
 	plan.is_a_day = false
-	# The recipe's walk is sited against the calm areas a day's would be, as the map stands.
-	if world.city_map:
+	# The recipe's walk is sited against the calm areas its rows were placed against, or, handed
+	# none, those a day's would be as the map stands.
+	if calm:
+		plan.use_calm(calm)
+	elif world.city_map:
 		plan.use_calm(planner.calm_as_the_map_stands())
 	_begin(spec)
 	_take(spec, plan, focus)
@@ -337,6 +342,12 @@ func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
 	world.day = day
 	_encounters.day = day
 	_recipe_plan = true
+
+## **The day's calm areas as the map stands now** (`DayPlanner.calm_as_the_map_stands()`): what a
+## scene recipe's rows are placed against, handed back to `start_recipe()` so its walk sites against
+## the same ones.
+func calm_as_the_map_stands() -> CalmAreas:
+	return planner.calm_as_the_map_stands()
 
 ## Everything in this world stops, because she is not in it any more: the escape's building once
 ## she has walked out of its service exit into the city. Every instance goes, its charge counted cut
