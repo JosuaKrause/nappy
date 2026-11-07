@@ -1179,10 +1179,10 @@ than read back from a log afterwards. `DebugLayers` (`src/dev/debug_layers.gd`) 
 outlines from what they answer; nothing about how any of them draws itself changes. `RouteLines`
 (`src/dev/route_lines.gd`), the fifth layer below, answers a different question — not what the
 game currently thinks is true this frame, but what it planned at the start of the day — and reads
-today's tree (`DayStreets.route_tree()`, `City.streets()`) once rather than querying anything
-live. `FrameGraph` (`src/ui/frame_graph.gd`), the sixth layer below, answers a third question again — not the ground truth and not the day's
-plan, but what the last 240 frames actually cost — and reads `DebugReadout._process()`'s own
-`delta` each frame it is on rather than querying the world at all.
+today's tree (`DayStreets.route_tree()`, `City.streets()`) once rather than querying anything live.
+`FrameGraph` (`src/ui/frame_graph.gd`), the sixth layer below, answers a third question again — not
+the ground truth and not the day's plan, but what the last 240 frames actually cost — and reads
+`DebugReadout._process()`'s own `delta` each frame it is on rather than querying the world at all.
 
 Six layers, each a number key, read as a raw keycode rather than an input-map action so a release
 build has nothing in `project.godot` to reach:

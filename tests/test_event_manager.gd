@@ -375,13 +375,13 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 			"a run has a set piece to check at all (%d sited, %d owed to her walk, over fourteen days)"
 			% [offered, owed_to_her_walk])
 
-## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." `EventManager.
-## start_day` used to read the day's tree as `_city.streets().route_tree()` whenever `_city` existed at
-## all — even before `_city.start_day()` had ever grown one, which is exactly what every rig in
-## this suite does, this one included — so `SealPlanner.plan_day` and `RegionPlanner.plan_day`
-## were handed a null tree and came back with nothing, while `EventScheduler.build_day` grew a
-## tree of its own for the catalogue's own placements: two trees for one day, and no seals or
-## walls at all.
+## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." Every rig in this
+## suite, this one included, drives `EventManager.start_day` before `_city.start_day()` has grown a
+## tree, so `_city.streets().route_tree()` and `region_plan()` answer null; `DayPlanner._plan_a_day()`
+## then grows its own tree and plan from the same `RouteTree.for_day(map, day)` the city grows at
+## dawn, so `SealPlanner.plan_day` and `RegionPlanner.plan_day` are handed a real tree and the
+## catalogue's placements are stated against the same one: one tree for the day, and its seals and
+## walls planned.
 ##
 ## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
 ## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and

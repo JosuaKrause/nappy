@@ -245,8 +245,8 @@ var _crossable_segments := {}
 var _door_holds: Array[WalkerDoorHold] = []
 
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
-## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to `City`'s
-## own `region_plan()` other than the one it already has through `setup()`.
+## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
+## city's `streets().region_plan()` other than the one it already has through `setup()`.
 func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
 	_gates = gates
 
