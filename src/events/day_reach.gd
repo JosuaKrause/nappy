@@ -30,7 +30,7 @@ static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
 	var reach := DayReach.new()
 	reach._grid = ReachabilityGrid.build(map)
 	reach._shut = shut_by(map, plans)
-	reach._reached = reach._grid.flood([map.home_rect.position], reach._shut)
+	reach._reached = reach._grid.flood([map.home_tile()], reach._shut)
 	return reach
 
 ## **The ground `plans` shut on `map`** (`tile -> true`), as `map` stands now: the disc of every plan
@@ -43,7 +43,7 @@ static func shut_by(map: CityMap, plans: Array[EventScheduler.Planned]) -> Dicti
 		if plan.obstructs():
 			blockers.append(plan)
 	var shut := EventScheduler.blocked_by(map, blockers)
-	shut.merge(map.blocked.tiles_of(Mover.SOFT_SEALS))
+	shut.merge(map.tiles_shut_to(Mover.SOFT_SEALS))
 	return shut
 
 ## Whether `tile` is reached from home over the ground left open.

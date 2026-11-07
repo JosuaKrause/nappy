@@ -327,7 +327,7 @@ func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
 	plan.is_a_day = false
 	# The recipe's walk is sited against the calm areas a day's would be, as the map stands.
 	if world.city_map:
-		plan.use_calm(CalmAreas.of(world.city_map, world.run.calendar.settled_this_act()))
+		plan.use_calm(planner.calm_as_the_map_stands())
 	_begin(spec)
 	_take(spec, plan, focus)
 	for placed in plans:

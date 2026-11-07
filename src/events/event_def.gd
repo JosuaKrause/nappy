@@ -1616,6 +1616,11 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 ## distance is never shorter than the straight distance less the body's own `shape.reach()`, shrunk
 ## by at most `1 − Tuning.FIELD_ECCENTRICITY_MAX` for a moving source's forward stretch
 ## (`GroundShape.eccentric_distance()`). The extra pixel swallows the last bit a rotation can round.
+## Whether the row carries a field at all (`intensity` above zero): a silent body bills nothing
+## round it, so standing clear of it is standing clear of its body.
+func has_a_field() -> bool:
+	return intensity > 0.0
+
 ## A flock and a guard walking away from his barrier centre their fields elsewhere, so the instance
 ## does not ask this for them.
 ##

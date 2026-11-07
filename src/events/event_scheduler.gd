@@ -343,7 +343,7 @@ class Planned extends RefCounted:
 		if def.obstructs_radius <= 0.0 and not def.hard_fail:
 			return 0.0
 		var reach := def.obstructs_radius + her_reach
-		if def.intensity > 0.0:
+		if def.has_a_field():
 			reach = maxf(reach, def.field_reach())
 		if def.hard_fail:
 			reach = maxf(reach, def.lethal_reach() + her_reach)

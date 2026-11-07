@@ -203,6 +203,12 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.use_calm(calm)
 	return result
 
+## **The day's calm areas as the map stands now**, with the areas she settled in this act
+## (`CalmAreas.of()`): what a scene recipe's walk, planned by hand rather than here, is sited
+## against (`EventManager.start_recipe()`).
+func calm_as_the_map_stands() -> CalmAreas:
+	return CalmAreas.of(world.city_map, world.run.calendar.settled_this_act())
+
 # ------------------------------------------------------------ the escape's city ---
 
 ## The escape city's plan: its walk (`FinalePlanner.route()`) and what stands on and off it
