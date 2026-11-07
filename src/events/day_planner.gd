@@ -35,6 +35,18 @@ class Plan extends RefCounted:
 	## after dawn what the day left for her walk. False for a walk planned whole before she sets
 	## off (the escape's two sections), whose plans that come again come on their own clocks.
 	var is_a_day := true
+	## The calm areas the walk was planned against (`calm()`).
+	var _calm: CalmAreas = null
+
+	## **The calm areas the walk was planned against**: a day's own (`CalmAreas.of()` made once in
+	## `_plan_a_day()`), which what is sited while she walks is stated against too; null for the
+	## escape's walks and the building, where nothing is.
+	func calm() -> CalmAreas:
+		return _calm
+
+	## Hands the plan the calm areas it was planned against. See `calm()`.
+	func use_calm(calm: CalmAreas) -> void:
+		_calm = calm
 
 ## The world the walk is planned over.
 var world: EventWorld
@@ -156,13 +168,22 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
+	# The wall's own bodies say so, as a door's do (`Planned.stand_as_a_door()`): day 13's task never
+	# takes one for a roadblock the day placed, nor swaps one out.
+	for body in region_plan.wall_bodies:
+		body.stand_in_the_wall()
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
 	var calm := CalmAreas.of(city_map, world.run.calendar.settled_this_act(), day, target)
+	# The day's guarded-band task row, day 13's roadblock, stood beside her routes at dawn so that one
+	# is close by wherever she reads its mark; none on any other day.
+	var guarded := ResistanceSteps.guarded_row_on(day)
+	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
+			world.run.resistance.progress) if guarded != "" else null
 	var placements := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
-			standing, world.trace).placements()
+			standing, world.trace, null, beside).placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -179,7 +200,14 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.placements = placements
 	result.walk = tree
 	result.doors = doors
+	result.use_calm(calm)
 	return result
+
+## **The day's calm areas as the map stands now**, with the areas she settled in this act
+## (`CalmAreas.of()`): what a scene recipe's walk, planned by hand rather than here, is sited
+## against (`EventManager.start_recipe()`).
+func calm_as_the_map_stands() -> CalmAreas:
+	return CalmAreas.of(world.city_map, world.run.calendar.settled_this_act())
 
 # ------------------------------------------------------------ the escape's city ---
 

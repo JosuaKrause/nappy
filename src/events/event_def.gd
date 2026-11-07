@@ -1607,6 +1607,11 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 		core *= at_intensity / intensity
 	return maxf(field, Field.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
 
+## Whether the row carries a field at all (`intensity` above zero): a silent body bills nothing
+## round it, so standing clear of it is standing clear of its body.
+func has_a_field() -> bool:
+	return intensity > 0.0
+
 ## A straight-line distance from a live instance's node beyond which its field is exactly zero,
 ## whatever its intensity, speed, heading or the way its shape lies, so an event's source
 ## (`EventExcitement._field()`) can answer zero for a far source without working the field out.
@@ -1629,29 +1634,27 @@ func silent_beyond() -> float:
 	var body := shape.reach() if shape != null else 0.0
 	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 
-## `checkpoint_hut` and `checkpoint_gate`, the two rows that **are** a region's door. Matched on the
-## id, since what makes a door a door is `RegionPlanner` choosing it rather than any field on the
-## def.
-const _DOOR_ID_PREFIX := "checkpoint"
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
 ## about: `EventScheduler._role_for()` decides a role before any tile is chosen. Everything a
-## placement adds (*is it actually standing anywhere*) is the caller's own question:
-## `EventScheduler.Planned.counts_against_the_line()` asks it of a placement.
+## placement adds is the caller's own question, asked by
+## `EventScheduler.Planned.counts_against_the_line()`: *is it actually standing anywhere*, and *is
+## it a region door* (`Planned.is_door()`), since what makes a door a door is `RegionPlanner`
+## standing it at one rather than any field on the def. No row the catalogue places is a door.
 ##
 ## **A row the day sites from her own walk is a sixth kind outside the line, and the only one
 ## exempt because closing the way is the point** (PLAYTEST-119 24). Day 3's fire is put on the
 ## branch she is walking so that the street she is on stops being a way through, and the engine
 ## parks across from it for the rest of the day, so asking whether a line survives along that
-## sidewalk would refuse every site the design exists to make. What replaces the guarantee is
-## stronger and stated over the day: `EventScheduler.WalkSiting.leaves_her_a_way()` refuses any
-## site that leaves her unable to reach the home, or a calm area she has not used, **outside both
-## fields**. A one-shot carrying this flag is never placed at dawn (`EventScheduler._place_one_shots()`
-## plans it with no position), so nothing else in the day is judged differently because of it.
+## sidewalk would refuse every site the design exists to make. Nothing physical closes it: the fire
+## has no body (PLAYTEST-144 12), and the engine it calls parks on the carriageway, so the street's
+## way through is the engine's field, a cost and not a closure. A one-shot carrying this flag is
+## never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing
+## else in the day is judged differently because of it.
 ## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is placed at
 ## dawn and judged as any other before its position is handed to her walk
 ## (`EventScheduler._hand_to_her_walk()`).
 func has_a_line_to_avoid() -> bool:
-	if role == EventDef.Role.SCENERY or pursuit != null or id.begins_with(_DOOR_ID_PREFIX):
+	if role == EventDef.Role.SCENERY or pursuit != null:
 		return false
 	if on_her_way != null and kind == GameEnums.EventKind.ONE_SHOT:
 		return false

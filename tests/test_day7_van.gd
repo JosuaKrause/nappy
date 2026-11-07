@@ -213,7 +213,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
 			if from.distance_to(to) < 1.0:
 				continue
 			var heading := (to - from).normalized()
-			var plan := siting.ahead_on_her_street(def, rng, city.events.plans(), from, heading)
+			var plan := siting.ahead_on_her_street(def, rng, null, from, heading)
 			if plan == null:
 				continue
 			sited += 1
@@ -334,7 +334,7 @@ func _a_place_from_her_route(events: EventManager,
 ## constructor the game calls.
 func _siting_of(city: City) -> EventScheduler.WalkSiting:
 	var siting := EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
-			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
+			city.events.walk_events(), EventScheduler.Verdicts.new())
 	siting.holds_the_home_streets = DaySpec.for_day(DAY).holds_the_home_streets
 	return siting
 

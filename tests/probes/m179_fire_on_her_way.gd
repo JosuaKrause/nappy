@@ -195,7 +195,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
 		# the fire finishes its telegraph.
 		city.events._physics_process(STEP)
-	var engine_at := EventSpawner.where_the_summoned_row_stops(city.map, plan.position)
+	var engine_at := EventSpawner._where_the_summoned_row_stops(city.map, plan.position)
 	var engine := EventCatalogue.by_id(plan.def.aftermath.on_sight)
 	var along := Vector2.RIGHT
 	var inward := city.map.pavement_inward(city.map.world_to_tile(plan.position))

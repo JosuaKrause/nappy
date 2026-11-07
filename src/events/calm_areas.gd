@@ -7,12 +7,12 @@ extends RefCounted
 ##
 ## **Worked out once and handed to whoever asks** (inbox #1156 in gray-dolphin): `DayPlanner` makes the day's
 ## with `of()` and hands it to `EventScheduler.build_day()`, which hands it to its passes, to
-## `DayEvents` and to `DayRepairs`, so no two of them can disagree about an area. Three places
-## still make their own until the live form after dawn is handed one:
-## `EventScheduler.WalkSiting` (for its leave-alone ground), `EventScheduler.recipe_placement()`
-## (the same, for a recipe's row) and `DayPlanner.plan_the_escape_city()` (nothing used, nothing
-## set aside). And `WalkSiting._calm_she_has_not_used()` still works out the unused areas' calm
-## tiles from the map.
+## `DayEvents` and to `DayRepairs`, and the day's plan (`DayPlanner.Plan.calm()`) carries it past
+## dawn to the walk's events (`WalkEvents.calm()`), whose sitings read their leave-alone ground off
+## it, so no two of them can disagree about an area. A scene recipe makes one for its whole recipe
+## and hands it to each of its rows' placements (`EventScheduler.recipe_placement()`), and the
+## escape's city makes its own (`DayPlanner.plan_the_escape_city()`: nothing used, nothing set
+## aside).
 ##
 ## **Never saved.** What it is derived from is: the city (its seed and `CityState`), and where she
 ## settled (`SettledState`, read through `RunCalendar.settled_this_act()`). A load plans the day
@@ -31,6 +31,8 @@ var _rects := {}
 var _grounds := {}
 ## Calm block -> its calm tiles (`Array[Vector2i]`), in the order `CityMap.rect_tiles()` walks them.
 var _calm_tiles := {}
+## Every calm tile of the map, as `CityMap.calm_tiles()` answered when this was made.
+var _all_calm_tiles: Array[Vector2i] = []
 ## The areas she settled in this act, most recent first, as handed in.
 var _used: Array[Vector2i] = []
 var _besides := NONE
@@ -56,6 +58,7 @@ static func of(map: CityMap, used: Array[Vector2i] = [], day := 0,
 		areas._rects[block] = rect
 		areas._grounds[block] = map.tile_rect_to_world(rect)
 		areas._calm_tiles[block] = tiles
+	areas._all_calm_tiles = map.calm_tiles()
 	areas._used = used.duplicate()
 	areas._besides = _set_aside(map, day, target)
 	return areas
@@ -91,6 +94,12 @@ func calm_tiles_of(block: Vector2i) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	tiles.assign(_calm_tiles.get(block, []))
 	return tiles
+
+## Every calm tile of the map as dawn sees it (`CityMap.calm_tiles()`, read in `of()`), calm areas'
+## and any other calm ground alike: what the walkable repair keeps a route to on a day with no area
+## set aside (`DayRepairs.ensure_the_city_is_still_walkable()`).
+func calm_tiles() -> Array[Vector2i]:
+	return _all_calm_tiles.duplicate()
 
 ## Every area she settled in this act, most recent first, calm today or not.
 func used() -> Array[Vector2i]:

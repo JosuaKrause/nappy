@@ -367,7 +367,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 
 ## The wiring bug a data-level test cannot see: `RegionPlanner.plan_day()` building the right
 ## bodies is not the same as `EventManager` ever placing them. `region_plan.door_bodies` has to be
-## appended to `EventStreaming._plans` in `start_day()`, the same way `wall_bodies` already is, or
+## appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way `wall_bodies` already is, or
 ## the whole structure is correct data nobody ever meets — see `tests/test_event_manager.gd`'s own
 ## class doc on why this suite exists at all: "the bugs that live here are wiring bugs."
 func _test_the_manager_actually_places_the_door_structure(t) -> void:

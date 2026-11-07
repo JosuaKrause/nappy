@@ -328,9 +328,10 @@ func _repainted_city(day: int) -> CityMap:
 func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
 	var no_doors := PackedVector2Array()
 	var nothing_down: Array[EventScheduler.Planned] = []
+	var calm := CalmAreas.of(map)
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
 		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors)
+				nothing_down, corridor, no_doors, calm)
 		if plan:
 			return plan.role
 	return -1
@@ -444,13 +445,14 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 					% [day, off_the_squares, offered.size()])
 			var already: Array[EventScheduler.Planned] = []
 			var no_doors := PackedVector2Array()
+			var calm := CalmAreas.of(map)
 			var rng := _rng(day)
 			for copy in 3:
 				if offered.is_empty():
 					break
 				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day + copy * 31, already, corridor, no_doors)
+						day + copy * 31, already, corridor, no_doors, calm)
 				if not plan:
 					continue
 				already.append(plan)
@@ -463,7 +465,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			for k in 24:
 				var tile: Vector2i = sidewalk[(k * 7919) % sidewalk.size()]
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day, already, corridor, no_doors)
+						day, already, corridor, no_doors, calm)
 				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
 						% [day, RunTrace.tile(tile)])
 				refused += 1

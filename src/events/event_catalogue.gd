@@ -194,8 +194,7 @@ static func escape_roadblock() -> EventDef:
 
 ## **A row with the marks it leaves on a run taken off it**: the scar it records, the row it spawns
 ## when it finishes and the row it calls in when it is first seen. What the escape's rows are made
-## of where those marks mean nothing: the convoy whose barricade would close a street for thirteen
-## more days, the building's fire whose fire engine has no street to come down, the explosion whose
+## of where those marks mean nothing: the building's fire whose fire engine has no street to come down, the explosion whose
 ## crater has no road to stand in indoors.
 ##
 ## A **derived copy, never a mutation**, for the reason `EventDef.at_heat()` gives. `shape` is
@@ -1000,14 +999,13 @@ static func _fire_truck() -> EventDef:
 ## casts a shadow at the ground point. `inner_radius`/`outer_radius` (60/260) and the 2.2s telegraph
 ## keep the row's geometry inside the fairness contract (`Tuning.validate_event()`), which checks
 ## every row the same way whether or not the field emits (`(outer_radius - inner_radius) /
-## WALK_SPEED` = 2.17s), and `EventScheduler.WalkSiting._still_leaves_a_park_reachable()` treats the
-## same disc as ground a site has to leave her a way round. The `burnt_shell` scar it leaves is the
+## WALK_SPEED` = 2.17s). The `burnt_shell` scar it leaves is the
 ## building it burned, drawn burnt from the next morning on. **The finale's own fire, inside the
 ## building on the last night, is a duplicate of this row with a field and a body**
 ## (`building_fire()`), because in there the fire is the hazard and there is no truck to call.
 ##
 ## **It always catches on a wall the city actually draws**, since the building itself is shown burnt
-## afterwards (`City.mark_the_burnt_frontage()`, `Building.Condition.BURNT`).
+## afterwards (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`).
 ## `AGAINST_THE_BUILDING` only sites against an east-or-west wall
 ## (`EventScheduler._wants_this_side()`'s default branch), never a wall `building.gd` draws a facade
 ## on: every building is extruded south from its lot's south edge. `AT_THE_FRONT`, "the one face of
@@ -1044,7 +1042,7 @@ static func _burning_building() -> EventDef:
 
 ## What is left the next morning, and every morning after, never repaired: the building the fire
 ## caught on, drawn burnt. The building carries it, not an object on the sidewalk in front of it:
-## `City.mark_the_burnt_frontage()` turns the one `Building` behind the scar
+## `CityFronts.mark_the_burnt_frontage()` turns the one `Building` behind the scar
 ## `Building.Condition.BURNT`, and `EventInstance` draws nothing for this row. Almost silent: a
 ## reminder rather than a hazard, on the same corner on day 12 as on day 4.
 ##
@@ -2413,8 +2411,8 @@ static func _night_raid() -> EventDef:
 
 # ------------------------------------------------------------ Act IV: open (12+) ---
 
-## Like the fire engine, but it does not leave a fire. It leaves a barricade, and the barricade is
-## still there tomorrow.
+## An army truck down its street and off again, leaving nothing behind: nothing a convoy does
+## during the walk closes a street (inbox #1183).
 ##
 ## **From day 13, the morning the army arrives** (PLAYTEST-122), with the column on the main road
 ## that day (`ResistanceHappenings`); day 12 is the parks.
@@ -2442,12 +2440,12 @@ static func _military_convoy() -> EventDef:
 	def.speed = 120.0
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
-	def.aftermath.on_finish = "barricade"
 	def.weight = 2.0
 	def.cost = 4
 	return def
 
-## Left where a convoy stopped, and left there for the rest of the run.
+## The widest hard seal: placed every morning from act IV on across a street off the day's route
+## tree (`SealPlanner`'s `barricade_seal`, and the escape's `finale_barricade`).
 ##
 ## **Silent**: this is the widest hard seal in the game (`obstructs_radius` 62, the whole street),
 ## so its route cost is already the largest in the catalogue; an ambient field on top would bill

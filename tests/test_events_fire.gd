@@ -18,7 +18,6 @@ func run(t) -> void:
 	_test_the_fire_follows_her_walk_until_it_is_real(t)
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_engine_parks_at_the_fire(t)
-	_test_a_site_that_shuts_her_out_is_refused(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_the_crews_on_her_way_move_no_other_row(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
@@ -45,7 +44,7 @@ func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Pla
 			var velocity := _last_heading * Tuning.WALK_SPEED
 			at += velocity * STEP
 			left -= STEP
-			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			director.site_what_is_on_her_way(STEP, at, velocity)
 			if until.is_valid() and until.call():
 				return at
 			toward = route[i] - at
@@ -114,19 +113,23 @@ func _fire_day_plans() -> Array[EventScheduler.Planned]:
 ## builds one. Kept as its own function so a check can ask it the same questions the director does —
 ## `still_ahead_of()`, which is what "on the branch she is walking" means.
 var _shared_fire_siting: EventScheduler.WalkSiting = null
+## The walk the shared siting is stated against: a stand-in holding the plans the director at hand
+## was started on (`_fire_director()`), and the map's calm areas, none of them used.
+var _fire_walk := FakeWalkEvents.new()
 
 ## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
 ## `EventManager.start_day` builds one, and a director started on both.
 func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
 	var director := EventDirector.new(_map())
+	_fire_walk.set_plans(plans)
 	director.start_day(day, plans, _rng(day), _fire_siting(day))
 	return director
 
 func _fire_siting(day: int) -> EventScheduler.WalkSiting:
 	if not _shared_fire_siting:
+		_fire_walk.set_calm(CalmAreas.of(_map()))
 		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
-				RouteTree.for_day(_map(), day), [] as Array[Vector2i], PackedVector2Array(),
-				EventScheduler.Verdicts.new())
+				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new())
 	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
@@ -361,38 +364,6 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 	t.check(instance.is_parked and not instance.is_finished,
 			"and it is still standing there, for the rest of the day")
 	instance.free()
-
-## **A site is accepted only where the day still works around it.** The fire and the engine parked
-## across from it are meant to close the street she is on, so the thing that has to be checked is the
-## other direction: from where she is, with both fields taken as closed ground, the home and a calm
-## area she has not used are still reachable. Checked before accepting; a refusal is a second of
-## walking and another attempt.
-##
-## Both directions are asked, because a check that refused everything would pass the interesting half
-## of this on its own. The refusal case is a fire sited on the doorstep itself, whose field swallows
-## the one way out of the home — the shape the check exists for, and the one no amount of walking
-## could answer.
-func _test_a_site_that_shuts_her_out_is_refused(t) -> void:
-	var map := _map()
-	var day := Tuning.RUN_TAUGHT_DAY
-	var def := EventCatalogue.by_id("burning_building")
-	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
-	var nothing_else: Array[EventScheduler.Planned] = []
-	var route := _fire_route(day)
-	t.check(route.size() > 8, "the day has a route out of the doorstep to stand on")
-	if route.size() <= 8:
-		return
-	var at: Vector2 = route[route.size() / 2]
-
-	var far_off := EventScheduler.Planned.new(def, route[route.size() - 2])
-	t.check(siting.leaves_her_a_way(nothing_else, far_off, at),
-			"a fire at the far end of the branch she is walking leaves the day working around it")
-
-	var on_the_doorstep := EventScheduler.Planned.new(def, map.doorstep_world_position())
-	t.check(not siting.leaves_her_a_way(nothing_else, on_the_doorstep, at),
-			"and a fire whose field swallows the doorstep is refused, because the way home is what "
-			+ "she would have no way round")
 
 ## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.

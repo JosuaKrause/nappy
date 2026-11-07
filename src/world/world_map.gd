@@ -35,6 +35,11 @@ var size := Vector2i.ZERO
 ## stationary solid body — as the one record every mover asks through `passable()`
 ## (`BlockedLayer`). The ground's own type is the map's (`_ground_lets()`).
 var blocked := BlockedLayer.new()
+## Every tile `blocked` holds in `layers` (`Mover`'s layer bits), as one set: the ground a flood
+## over another grid is handed as shut (`BlockedLayer.tiles_of()`).
+func tiles_shut_to(layers: int) -> Dictionary:
+	return blocked.tiles_of(layers)
+
 ## Every mover's move while it stands in this world (`ProposedMoves`), each proposed, checked, then
 ## committed (`MoveProposal`): the one list a pass over every mover's proposal goes over.
 var moves := ProposedMoves.new()

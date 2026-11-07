@@ -197,6 +197,12 @@ src/
 	                      which she used this act, the one that does not count today
 	day_repairs.gd        the two repairs that keep a planned day winnable: one calm area clean,
 	                      and a route to it from home
+	walk_events.gd        the walk's plans read through one object once it has started: the plans
+	                      in the order they stream, everything but one, the doors, the calm areas
+	                      and the reach
+	day_reach.gd          where she can get to from home as the walk was planned: the ground its
+	                      plan shuts and the flood over it, made once as the walk starts; and the
+	                      walk her paths take within a circle, the measure of close by
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
@@ -221,7 +227,8 @@ src/
 	                       mark over her head
 	events_ahead.gd       what the director puts in front of her while she walks: sited on her
 	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
-	                       a task's mast or row placed after dawn, the fire lit at dusk
+	                       a task's mast placed after dawn and day 13's roadblock swapped in for
+	                       one of the day's events, the fire lit at dusk
 	event_director.gd     sites what the day budgeted and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a

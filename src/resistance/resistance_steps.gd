@@ -137,6 +137,15 @@ static func all() -> Array[Step]:
 		_all = _build()
 	return _all
 
+## **The row of `day`'s guarded-band task** (`Step.is_a_guarded_band`: day 13's roadblock), whose
+## copies dawn stands beside her routes (`EventScheduler._place_beside_the_routes()`), or `""` on a
+## day with none.
+static func guarded_row_on(day: int) -> String:
+	for step in all():
+		if step.day == day and step.is_a_guarded_band:
+			return step.task_event_id
+	return ""
+
 ## Only ever returns a pickup or the finale — a perform step is never offered at dawn, it is
 ## activated the instant its own mark is touched (`ResistanceDirector._on_contact_completed()`),
 ## so `for_day()` has nothing to say about one. Asked of `steps`, or of the run's own calendar

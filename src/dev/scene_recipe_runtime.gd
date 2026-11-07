@@ -577,8 +577,11 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 		errors.append("setup.player.at must be open ground inside the authored extent")
 	var background: Dictionary = setup.get("background", {})
 	_select_structures(errors)
-	var plans := _event_plans(at, errors)
-	city.events.start_recipe(plans, spec, _run.header.day, at)
+	# One set of calm areas for the recipe's walk: what its rows are placed against and what the walk
+	# sites against after.
+	var calm := city.events.calm_as_the_map_stands()
+	var plans := _event_plans(at, errors, calm)
+	city.events.start_recipe(plans, spec, _run.header.day, at, calm)
 	city.refresh_street_trees()
 	map.restore_edges(edges)
 	if not errors.is_empty():
@@ -643,7 +646,7 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	if data.get("kind", "city") == "escape" or baby.sleepiness >= Tuning.METER_MAX:
 		baby.force_sleep()
 	if setup.has("column"):
-		_install_column(setup.column, at, errors)
+		_install_column(setup.column, errors)
 	_install_posters(setup.get("posters", []), errors)
 	manifest["initial_actors"] = _snapshot()
 	manifest["installed_events"] = []
@@ -748,7 +751,7 @@ func _bind_task_names() -> void:
 
 ## The army column is a production happening, whose close-spaced trucks deliberately do not use
 ## unrelated catalogue-event spacing. Start its real formation at the authored main-road point.
-func _install_column(column: Dictionary, player_at: Vector2, errors: Array[String]) -> void:
+func _install_column(column: Dictionary, errors: Array[String]) -> void:
 	var map := _city.map
 	var at := position_of(column.at, errors)
 	if not errors.is_empty():
@@ -766,8 +769,8 @@ func _install_column(column: Dictionary, player_at: Vector2, errors: Array[Strin
 	happening.setup(map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
 			_city.atlas, null, _city.spawn_siting)
 	happening.start_day(_run.header.day)
-	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, player_at,
-			lane, going, top, bottom)
+	happening._bring_the_column(EventCatalogue.by_id("military_convoy"), at, lane, going, top,
+			bottom)
 	for i in happening.column.size():
 		named["truck_%d" % (i + 1)] = happening.column[i]
 
@@ -843,8 +846,11 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
-		selected.wall_bodies.append_array(SealPlanner.place_hard_on(_city.map, segment,
-				"roadblock", entry.end == "a"))
+		# The wall's bodies say so, as the day's do (`Planned.stand_in_the_wall()`).
+		var bodies := SealPlanner.place_hard_on(_city.map, segment, "roadblock", entry.end == "a")
+		for body in bodies:
+			body.stand_in_the_wall()
+		selected.wall_bodies.append_array(bodies)
 	# The day's plan is replaced, not edited: a recipe that selects no gate or barrier stands no region
 	# wall, and the siting's region is built from the plan it is handed.
 	_city.streets().replace_region_plan(selected)
@@ -890,7 +896,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	map.set_seal_tree_pits(emptied)
 	return plans
 
-func _event_plans(player_at: Vector2, errors: Array[String],
+func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventScheduler.Planned] = []
@@ -953,7 +959,7 @@ func _event_plans(player_at: Vector2, errors: Array[String],
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors, standing)
+					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing)
 		if not plan:
 			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
 			continue

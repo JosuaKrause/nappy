@@ -10,7 +10,7 @@ extends Resource
 ## burnt-out shell; the shell is still there on day 12.
 @export var scar := ""
 
-## Event id to spawn where this one ends. How a military convoy leaves a barricade behind it.
+## Event id to spawn where this one ends. How the escape's explosion leaves its crater in the road.
 @export var on_finish := ""
 
 ## Event id to spawn the moment this one is first seen: what arrives once she has found it, where

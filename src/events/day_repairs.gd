@@ -11,11 +11,9 @@ extends RefCounted
 ##
 ## `EventScheduler.build_day()` asks both once the day is planned, in this order, and hands each
 ## the day's `DayEvents` (the rows and what they spoil and block) and its `CalmAreas`, so a test
-## hands them stand-ins with the answers set. They read the day through those two with one
-## exception: on a day with no area set aside, the walkable repair asks the map itself for its
-## calm tiles (`CityMap.calm_tiles()`, every calm tile in the city), as it always has, rather
-## than the calm areas' own; moving that to `CalmAreas` is left to the live form after dawn,
-## with `EventScheduler.WalkSiting`'s own copies.
+## hands them stand-ins with the answers set. They read the day through those two: on a day with no
+## area set aside, the walkable repair keeps a route to every calm tile of the map as dawn sees it
+## (`CalmAreas.calm_tiles()`).
 
 ## **At least one calm area stays clean every day**, or the day has no safe ground and the player has
 ## no move (docs/CITY.md). The least disturbed one keeps its quiet.
@@ -133,8 +131,8 @@ static func ensure_the_city_is_still_walkable(map: CityMap, events: DayEvents, c
 static func _calm_to_keep_reachable(map: CityMap, events: DayEvents, calm: CalmAreas,
 		grid: ReachabilityGrid) -> Array[Vector2i]:
 	if calm.besides() == CalmAreas.NONE:
-		return map.calm_tiles()
-	var reached := grid.flood([map.home_rect.position], map.closed_tiles)
+		return calm.calm_tiles()
+	var reached := grid.flood([map.home_tile()], map.closed_tiles)
 	var clean: Array[Vector2i] = []
 	var other: Array[Vector2i] = []
 	for block in calm.blocks():
@@ -161,7 +159,7 @@ static func _target_is_reachable(map: CityMap, grid: ReachabilityGrid, target: A
 	var blocked := EventScheduler.blocked_by(map, blockers)
 	for plan in more_blockers:
 		EventScheduler.block_a_disc(map, blocked, plan.position, plan.blocking_radius())
-	var reached := grid.flood([map.home_rect.position], blocked)
+	var reached := grid.flood([map.home_tile()], blocked)
 	for tile in target:
 		if grid.reaches(tile, blocked, reached):
 			return true
@@ -180,7 +178,7 @@ static func _target_is_reachable(map: CityMap, grid: ReachabilityGrid, target: A
 static func _park_is_reachable(map: CityMap, grid: ReachabilityGrid,
 		blockers: Array[EventScheduler.Planned], kept_calm: Array[Vector2i] = []) -> bool:
 	var blocked := EventScheduler.blocked_by(map, blockers)
-	var reached := grid.flood([map.home_rect.position], blocked)
+	var reached := grid.flood([map.home_tile()], blocked)
 	for tile in kept_calm if not kept_calm.is_empty() else map.calm_tiles():
 		if grid.reaches(tile, blocked, reached):
 			return true

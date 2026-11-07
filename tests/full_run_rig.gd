@@ -117,8 +117,8 @@ func _play_a_run(t, seed_value: int) -> void:
 				% [seed_value, day, here])
 
 		# Let the day actually run for a while. Without this the mobile one-shots never
-		# finish their routes, so the fire engine never leaves a fire and the convoy never
-		# leaves a barricade — and the whole successor-and-scar chain goes untested.
+		# finish their routes, so the fire engine never reaches its fire — and the whole
+		# successor-and-scar chain goes untested.
 		var placed := {}
 		for instance in city.events.instances():
 			placed[instance] = instance.global_position

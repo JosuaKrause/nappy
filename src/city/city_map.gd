@@ -923,6 +923,10 @@ func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(tile_type_at_world(world_position))
 
+## The home's first tile (`home_rect`'s corner): where a flood from home starts.
+func home_tile() -> Vector2i:
+	return home_rect.position
+
 func home_world_position() -> Vector2:
 	return tile_rect_to_world(home_rect).get_center()
 

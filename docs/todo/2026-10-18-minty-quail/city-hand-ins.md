@@ -11,8 +11,7 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request**, after the after-dawn work (`walk-placed-blockers.md`),
-since both change the same files:
+**What is left, the third pull request:**
 
 - the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
 - the smaller cases: scenery residency and ground, the blackout, the still watch, the debug
@@ -21,11 +20,6 @@ since both change the same files:
 - `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
   path reaches it. The rigs that drive the event manager without `City.start_day()`
   (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead;
-- three doc comments under `src/events/` still name the places #1187 moved code from:
-  `event_catalogue.gd`'s two on `City.mark_the_burnt_frontage()` (now `CityFronts`), and
-  `event_scheduler.gd`'s on `CityGenerator._street_tile` (now `StreetLayout`). The after-dawn pull
-  request is asked to fix them once #1187 merges; whichever lands, the third pull request checks
-  they are gone;
 - *proposed by the hand-ins' builder (where `calm_summary()` goes, by the orchestrator), open to the player's correction:* the city's three summary
   lines move off `City`, so `RunSession.watch_day()` takes the parts too. `closure_summary()` moves
   onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map

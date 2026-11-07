@@ -284,10 +284,10 @@ the task allows from where she reads the mark, which also tests that it is put o
 *(the player, inbox #502: "in the scene we can use the minimum distance which in turn also serves
 as test whether it will be properly off screen")*. Days 6, 7, 8, 11 and 13 leave the placement to
 the director, which puts the target where a path from her first reaches the 576px circle round her
-(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view; day 13's roadblock is put
-there under every rule a roadblock the day plans is placed under, or, where those rules refuse all of
-that ground, on ground her paths reach up to a block further out, and where they refuse that too, on
-the circle's edge as the other targets are, outside those rules. Day 8's burnt building stands
+(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view; day 13's roadblock is the
+nearest the day placed that her paths reach within that circle or up to a block and a street further
+out (1,024px), or one of the day's events beside her routes swapped for one, and where neither is, on the
+circle's edge as the other targets are. Day 8's burnt building stands
 there for a run with no day-3 fire, its door a tile or two behind the shell. The targets whose
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such
 rule, so their scenes put the mark or her start just past that same circle. Day 10's neighbor

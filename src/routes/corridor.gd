@@ -230,5 +230,23 @@ func is_in_a_gap(tile: Vector2i) -> bool:
 	var segment := _network.segment_containing(tile)
 	return segment != null and _gaps.has(segment.key())
 
+## **Whether `tile` is on a street beside the routes**: a street no route runs along (its whole
+## street is off the tree, `depth()` above zero) one of whose two junction boxes a route crosses
+## (`route_junctions()`). Where dawn stands day 13's roadblocks, close to her way and off it
+## (inbox #1185). A tile on no street (a junction's box, a block's interior) is beside nothing.
+func is_beside_the_routes(tile: Vector2i) -> bool:
+	if not _grid:
+		return false
+	var segment := _network.segment_containing(tile)
+	if not segment or int(_segment_depth.get(segment.key(), DEEP)) == 0:
+		return false
+	if _junction_set.is_empty():
+		for junction in _junctions:
+			_junction_set[junction] = true
+	return _junction_set.has(segment.a) or _junction_set.has(segment.b)
+
+## `_junctions` as a set, made the first time `is_beside_the_routes()` asks.
+var _junction_set := {}
+
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.
 const DEEP := 3

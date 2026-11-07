@@ -83,9 +83,11 @@ func _at_the_swing(t, before_the_touch := Callable(), through_the_director := fa
 	_run.attempt_spend.city_state = state
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng(day, "closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
+	# What the day closes is closed before its walk starts, which is when where she can get to from
+	# home is worked out (`DayReach`).
 	if before_the_day.is_valid():
 		before_the_day.call()
+	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), [], _city.map.doorstep_world_position())
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
@@ -355,9 +357,9 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 
 ## **The last gap opens onto ground that still reaches home under the day's obstruction**, which the
 ## director hands the cordon when she reaches the swing. The longest side of the swing's park that
-## needs tape is walled off from home by closures the day made before the director read its
-## obstruction: the ground just outside that side is walkable and level with her, but it is a pocket
-## nothing leads home from. She stands there and the cordon is played through the director; the last
+## needs tape is walled off from home by closures the day made before its walk started and its
+## reach was worked out (`DayReach`): the ground just outside that side is walkable and level with
+## her, but it is a pocket nothing leads home from. She stands there and the cordon is played through the director; the last
 ## stretch taped is far from her, on ground that leads home. A cordon handed no obstruction tapes the
 ## pocket's side last, the stretch nearest her.
 func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t) -> void:

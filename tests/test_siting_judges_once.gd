@@ -99,13 +99,11 @@ func _test_one_judgement_per_candidate(t) -> void:
 	var day := 9
 	var already := _planned(day)
 	var tree := RouteTree.for_day(map, day)
-	var no_calm: Array[Vector2i] = []
+	var walk := _walk(map, already)
 	var counting := CountingVerdicts.new()
-	var kept := EventScheduler.WalkSiting.new(day, map, tree, no_calm, PackedVector2Array(),
-			counting)
+	var kept := EventScheduler.WalkSiting.new(day, map, tree, walk, counting)
 	var forgetful := ForgetfulVerdicts.new()
-	var afresh := EventScheduler.WalkSiting.new(day, map, tree, no_calm, PackedVector2Array(),
-			forgetful)
+	var afresh := EventScheduler.WalkSiting.new(day, map, tree, walk, forgetful)
 	var asked := 0
 	var agreed := 0
 	var judged_once := 0
@@ -127,9 +125,9 @@ func _test_one_judgement_per_candidate(t) -> void:
 			var fresh_rng := RandomNumberGenerator.new()
 			fresh_rng.seed = stream
 			var before := counting.judged
-			var placed := kept.among(def, kept_rng, already, pool)
+			var placed := kept.among(def, kept_rng, pool)
 			var judged := counting.judged - before
-			var reference := afresh.among(def, fresh_rng, already, pool)
+			var reference := afresh.among(def, fresh_rng, pool)
 			asked += 1
 			if _same(placed, reference) and kept_rng.state == fresh_rng.state:
 				agreed += 1
@@ -165,9 +163,7 @@ func _test_one_offer_per_look(t) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			owed += 1
 	var verdicts := CountingVerdicts.new()
-	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), [] as Array[Vector2i],
-			PackedVector2Array(), verdicts)
-	siting.plans = plans
+	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts)
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var route := _longest_route(day)
@@ -186,7 +182,7 @@ func _test_one_offer_per_look(t) -> void:
 			var again := verdicts.again
 			var offers := siting.offers_worked_out
 			var from := siting.calls.size()
-			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			director.site_what_is_on_her_way(STEP, at, velocity)
 			var calls := siting.calls.slice(from)
 			var begins := 0
 			var ends := 0
@@ -236,8 +232,8 @@ func _test_one_offer_per_look(t) -> void:
 ## look or each on its own: `[the placements, the streams' states after, how many candidates were
 ## judged, how many distinct candidates were asked about]`.
 func _ask_copies(siting: EventScheduler.WalkSiting, verdicts: CountingVerdicts, def: EventDef,
-		already: Array[EventScheduler.Planned], at: Vector2, heading: Vector2, near: float,
-		far: float, copies: int, in_a_look: bool) -> Array:
+		at: Vector2, heading: Vector2, near: float, far: float, copies: int,
+		in_a_look: bool) -> Array:
 	var placed: Array[EventScheduler.Planned] = []
 	var states: Array[int] = []
 	var judged := verdicts.judged
@@ -247,7 +243,7 @@ func _ask_copies(siting: EventScheduler.WalkSiting, verdicts: CountingVerdicts, 
 	for copy in copies:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 1000 + copy
-		placed.append(siting.ahead_of(def, rng, already, at, heading, near, far))
+		placed.append(siting.ahead_of(def, rng, null, at, heading, near, far))
 		states.append(rng.state)
 	if in_a_look:
 		siting.end_look()
@@ -266,7 +262,7 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	var already := _planned(day)
 	var verdicts := CountingVerdicts.new()
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array(), verdicts)
+			_walk(map, already), verdicts)
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
@@ -284,10 +280,10 @@ func _test_a_look_shares_its_verdicts(t) -> void:
 	var shared := []
 	for i in range(1, route.size()):
 		var toward := (route[i] - route[i - 1]).normalized()
-		separate = _ask_copies(siting, verdicts, crew, already, route[i - 1], toward, near, far,
+		separate = _ask_copies(siting, verdicts, crew, route[i - 1], toward, near, far,
 				copies, false)
 		if int(separate[3]) == 1:
-			shared = _ask_copies(siting, verdicts, crew, already, route[i - 1], toward, near,
+			shared = _ask_copies(siting, verdicts, crew, route[i - 1], toward, near,
 					far, copies, true)
 			break
 	t.check(not shared.is_empty(), "somewhere on the route offers the copies one candidate")
@@ -313,8 +309,8 @@ func _longest_route(day: int) -> PackedVector2Array:
 			if route.size() > best.size():
 				best = route
 	var points := PackedVector2Array()
-	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, [] as Array[Vector2i],
-			PackedVector2Array(), EventScheduler.Verdicts.new())
+	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, FakeWalkEvents.new(),
+			EventScheduler.Verdicts.new())
 	for i in best.size():
 		points.append(siting.cell_centre(best[best.size() - 1 - i]))
 	return points
@@ -328,8 +324,9 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var map := _map()
 	var day := 9
 	var already := _planned(day)
-	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
+	var walk := _walk(map, already)
+	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day), walk,
+			EventScheduler.Verdicts.new())
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
@@ -343,7 +340,7 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var heading := Vector2.ZERO
 	for i in range(1, route.size()):
 		var toward := (route[i] - route[i - 1]).normalized()
-		if siting.ahead_of(crew, _stream(), already, route[i - 1], toward, near,
+		if siting.ahead_of(crew, _stream(), null, route[i - 1], toward, near,
 				far):
 			spot = route[i - 1]
 			heading = toward
@@ -355,14 +352,16 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 	var stands := {}
 	for dropped in [true, false]:
 		siting.begin_look()
-		var first := siting.ahead_of(crew, _stream(), already, spot, heading,
+		walk.set_plans(already)
+		var first := siting.ahead_of(crew, _stream(), null, spot, heading,
 				near, far)
 		var standing := already.duplicate()
 		standing.append(EventScheduler.Planned.new(crew, first.position))
+		walk.set_plans(standing)
 		stands[dropped] = first.position
 		if dropped:
 			siting.forget_the_verdicts()
-		answers[dropped] = siting.ahead_of(crew, _stream(), standing, spot,
+		answers[dropped] = siting.ahead_of(crew, _stream(), null, spot,
 				heading, near, far)
 		siting.end_look()
 	var after_the_drop: EventScheduler.Planned = answers[true]
@@ -371,6 +370,10 @@ func _test_a_dropped_verdict_is_judged_again(t) -> void:
 			"with the verdicts dropped, a copy is not put where a crew now stands")
 	t.check(kept != null and kept.position == stands[false],
 			"kept, the verdicts would have put it there (the check above is not vacuous)")
+
+## A stand-in for the walk holding `plans`, planned against `map`'s calm areas, none of them used.
+func _walk(map: CityMap, plans: Array[EventScheduler.Planned]) -> FakeWalkEvents:
+	return FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map))
 
 ## A fresh copy of one stream, the same every time: a copy asked from it rolls what the last did.
 func _stream() -> RandomNumberGenerator:
@@ -386,23 +389,12 @@ class SpySiting extends EventScheduler.WalkSiting:
 	var calls: Array = []
 	## The `Vector2(near, far)` band of every ask the director made.
 	var bands: Array[Vector2] = []
-	## The plans the director is handed, to tell which one an ask is about: the one `already`
-	## leaves out.
-	var plans: Array[EventScheduler.Planned] = []
-
 	## Overrides EventScheduler.WalkSiting.ahead_of.
-	func ahead_of(def: EventDef, rng: RandomNumberGenerator,
-			already: Array[EventScheduler.Planned], at: Vector2, heading: Vector2, near: float,
-			far: float) -> EventScheduler.Planned:
-		var others := {}
-		for plan in already:
-			others[plan] = true
-		var placed := false
-		for plan in plans:
-			if not others.has(plan):
-				placed = plan.is_placed()
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: EventScheduler.Planned,
+			at: Vector2, heading: Vector2, near: float, far: float) -> EventScheduler.Planned:
+		var placed := besides != null and besides.is_placed()
 		bands.append(Vector2(near, far))
-		var sited := super.ahead_of(def, rng, already, at, heading, near, far)
+		var sited := super.ahead_of(def, rng, besides, at, heading, near, far)
 		calls.append(["ask", placed, sited != null])
 		return sited
 
@@ -437,9 +429,8 @@ func _test_the_director_drops_the_verdicts(t) -> void:
 			fire = plan.def
 	for _i in 3:
 		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
-	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), [] as Array[Vector2i],
-			PackedVector2Array(), EventScheduler.Verdicts.new())
-	siting.plans = plans
+	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans),
+			EventScheduler.Verdicts.new())
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var out := _longest_route(day)
@@ -452,7 +443,7 @@ func _test_the_director_drops_the_verdicts(t) -> void:
 		while toward.length() > Tuning.WALK_SPEED * STEP:
 			var velocity := toward.normalized() * Tuning.WALK_SPEED
 			at += velocity * STEP
-			director.site_what_is_on_her_way(STEP, at, velocity, plans)
+			director.site_what_is_on_her_way(STEP, at, velocity)
 			toward = there_and_back[i] - at
 	var calls := siting.calls
 	var placed_asks := 0
