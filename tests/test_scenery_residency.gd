@@ -531,8 +531,9 @@ func _test_pending(t, seed_value: int) -> void:
 	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
 			"cancelling an unfinished region frees its state rather than publishing stale cells")
 	ground.prepare_step(key)
+	var owner: TileMapLayer = ground.pending[key].layer
 	ground.prepare(key)
-	t.check(ground.chunks.has(key) and not ground.pending.has(key),
+	t.check(ground.chunks.has(key) and not ground.pending.has(key) and ground.chunks[key] == owner,
 			"synchronous guard completion promotes the existing pending owner")
 	_check_chunk(t, city, key)
 	ground.release(key)
@@ -576,10 +577,24 @@ func _test_pending(t, seed_value: int) -> void:
 		city.scenery.update(view)
 		t.check(not ground.pending.has(key) and not ground.chunks.has(key),
 				"canceling a job cannot bypass its region's process-frame step fence")
-	city.scenery.update(Rect2(SceneryGround.bounds(key).get_center() - view.size / 2,
-			view.size), true)
-	t.check(not ground.pending.has(key) and ground.chunks.has(key),
+	# The destination is pending when the camera arrives, which is the state a half-built region
+	# must not be drawn in: the relocation finishes that same layer rather than skipping it.
+	var destination := Rect2(SceneryGround.bounds(key).get_center() - view.size / 2, view.size)
+	ground.prepare_step(key)
+	layer = ground.pending[key].layer
+	city.scenery.update(destination, true)
+	t.check(not ground.pending.has(key) and ground.chunks.has(key) and ground.chunks[key] == layer,
 			"camera relocation completes pending destination ground before returning")
+	_check_chunk(t, city, key)
+	# The same without a relocation: the view is already there, so the update is an ordinary one,
+	# and the region inside its guard margin is completed all the same.
+	ground.release(key)
+	ground.prepare_step(key)
+	layer = ground.pending[key].layer
+	city.scenery.view = destination
+	city.scenery.update(destination)
+	t.check(not ground.pending.has(key) and ground.chunks.has(key) and ground.chunks[key] == layer,
+			"the safety guard completes a pending region inside its margin without a relocation")
 	_check_chunk(t, city, key)
 	ground.release(key)
 	ground.prepare_step(key)
