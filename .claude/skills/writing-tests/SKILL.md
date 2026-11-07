@@ -42,7 +42,8 @@ nothing to hand a fake to, **designing-classes** says what its design owes.
   network the crowd's lanes run on, a home, calm ground; on a hand map smaller than the full
   11×11 blocks the crowd walks off the edge), and a measurement must come from a city the
   generator can produce. The bullet only chooses the map: a suite that builds a `City` on either
-  kind gives its reason in its header, as the rule below requires.
+  kind and is not a direct test of the city gives its reason in its header, as the rule below
+  requires.
 - **A suite a pull request touches for another reason is converted only as far as the pull
   request's change reaches** (inbox #1159).
 
