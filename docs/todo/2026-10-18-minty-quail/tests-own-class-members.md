@@ -22,19 +22,27 @@ least as long as the fairness floor needs") is what **verify**'s testing policy 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** The CI check of test-only members lists the owners one by one; its own-file group holds
-no line, every member it lists being internal or kept with its reason. What is left is the members
-the check cannot see.
+**Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
+only]` group holds nine members, each of which gets the underscore, or a `[kept]` line with its reason, as this item's work: `BuildingShadows.compute`,
+`PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
+`DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
+`[no reader]` group holds `Stroller.family_sources`, `Navigator.open_ground`,
+`StreetTrees.STREET_TREE_MAX_LINED_FRACTION`, `CrowdField.contains` and `MarbleBag.take`, which this item owns, beside the older lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
+check cannot see, below.
 
-*Proposed by the orchestrator, from a review, not asked for:* the CI check counts a member as read by
-the game when any other class has a member of the same name, so a member whose name collides
-(`ParkCordon.gap`, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) can
-take no `[kept]` line. The check qualifies a member by its class where the reader's type is known, or
-takes a `[kept]` line for a colliding name; the pull request that makes it do so (#1152) finds about
-fifty more members.
+**What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
+judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local
+`gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
+`RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
+file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
+taken for the whole file, not per function. Three members have no test reader: `CrowdField.contains` and
+`MarbleBag.take` (the tests' reads are `String.contains` and `EventStreaming.take`, which the check cannot type) are
+listed as `[no reader]` and are dead code to delete, and `Main.use_sitting` is a hand-in no test calls (the tests'
+`use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
-**Build.** Each of those members becomes internal, its tests moving to what the class does outward,
-or takes a `[kept]` line with its reason, owner by owner (or several small owners together) in a
-pull request each, each also removing a check that holds nothing once its member is gone
-(curly-rabbit #1097). A builder deletes the member's line from the CI check's list as it turns
-internal.
+**Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
+also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member
+becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,
+takes a `[kept]` line with its reason (curly-rabbit #1098). A `[no reader]` member gets a reader in the game, is tested
+through what the game shows, or is deleted, or takes a `[kept]` line where the information cannot be had another way
+and the test needs it to confirm the behavior (curly-rabbit #1095); `CrowdField.contains` and `MarbleBag.take` have no test reader, so they are deleted. A builder deletes the member's line from the CI check's list as it goes.
