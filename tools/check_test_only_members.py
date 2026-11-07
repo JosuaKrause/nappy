@@ -69,8 +69,8 @@ another carries the first type.
 
 **What it can miss and where it can accuse falsely.** A name defined once is judged by its word, never by its
 class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose method this
-reproduces, spot-checked names by hand for the same reason. It can *miss* a test-only member when an
-unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
+reproduces for a name defined once, spot-checked names by hand for the same reason. It can *miss* a test-only
+member when an unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
 of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it
 does not see members of an inner class. A base class's plain call of the name reads a subclass's override, so an
 override whose subclass also overrides the base method that makes the call, without calling `super`, is read by

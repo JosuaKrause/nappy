@@ -87,12 +87,13 @@ touches (the path table in `CLAUDE.md`). Look for:
   first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
   inbox #1098 in curly-rabbit. It fails CI on a new one and on a line added to the list's no reader
   or own file only group (against the PR's base) unless the same diff changes the checker itself, and on a
-  kept line with no reason. For each line such a diff adds, check that the base's checker, run on the head
-  tree, reports the member as read elsewhere and not as test-only (copy the base's
-  `tools/check_test_only_members.py` into a scratch folder beside `tools/check_layers.py` and
-  `tools/layer_map.py`, which it imports, and run `uv run python <scratch>/check_test_only_members.py --root
-  <head checkout>`; the lines it prints as `REMOVE` are the ones it saw as read elsewhere): a checker change
-  may surface members, never list ones the old checker already saw as test-only. Whether a kept
+  kept line with no reason. For each line such a diff adds, run the base's checker on the head tree: copy the base's
+  `tools/check_test_only_members.py`, `tools/check_layers.py` and `tools/layer_map.py` into a scratch folder and run
+  `uv run python <scratch>/check_test_only_members.py --root <head checkout>`. An added line it prints nothing for is a
+  member it still sees as test-only, which a checker change may not list; a `REMOVE` line, whatever its reason, is
+  fine, since the base's checker does not see the member as test-only. The run exits 1 and prints a `FAILED` line for
+  a member it cannot place, such as `Main.use_sitting`: that is the base's checker on a tree
+  it does not fit, not the PR failing. Whether a kept
   line's reason holds is the reviewer's to read, and so is the rest, including any change to the
   check's own exemptions in the tool: `ENGINE_MEMBERS` (a name never counted as a read, which exempts
   it everywhere) and `SKIPPED_TESTS` (a test file not scanned), since each switches the check off

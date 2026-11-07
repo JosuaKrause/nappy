@@ -62,9 +62,9 @@ fields no game writer reaches alone:
 
 Method: a script lists every public `func`/`var` defined under `src/` whose name a test reads as
 `.name` and that has no other word occurrence anywhere under `src/` outside comments and its own
-definition (the "zero-reader list"). A name collision across classes is possible in principle, so a
-member is judged by its word and the list is spot-checked by hand; `tools/check_test_only_members.py`
-reproduces the method. Verdict key: SEAM = a game caller exists or the game hands it in, so
+definition (the "zero-reader list"). The script judged a member by its word and the list was
+spot-checked by hand; `tools/check_test_only_members.py` reproduces the method, except that a name two classes
+define is judged by its class where the reader's type is known. Verdict key: SEAM = a game caller exists or the game hands it in, so
 converting is mechanical; GAP = the game has no reader, so the test goes through what the game
 exposes (drawing, a signal, input and frames) or the member is removed or needs a design decision.
 
