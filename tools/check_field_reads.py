@@ -1,0 +1,655 @@
+#!/usr/bin/env python3
+"""Fails when code under `src/` reads or writes a `var` that another class under `src/` declares.
+
+designing-classes' "Fields are not API" (inbox #1173 in gray-dolphin): one object never reads or writes another
+object's fields, every interaction goes through the other's methods. This finds the places that still do, and
+`tools/field_reads.txt` lists today's, grouped by the class whose field is read, one `<reader file> <field>`
+line per reader file and field. The list only shrinks (minty-quail's `field-reads.md`, the board's
+field-read-check, inbox #1182 in gray-dolphin).
+
+**A read** is `receiver.name` (a plain read, an assignment, a compound assignment) where
+
+- the receiver's class is known from the code (below) and is a class under `src/` other than the reader's own
+  class, its ancestors and its descendants,
+- `name` is a `var` (also `static var`, `@export var`, `@onready var`) declared at the top level of that class's
+  file or of a class it extends, an underscore name included (an underscore is a convention, not a fence),
+- and no call parenthesis follows (`.name(` is a method call, or a Callable called, and is the API).
+
+What is no breach: a method, a signal, a constant or an enum (`Tuning.X`); an engine object's property
+(`position`, `visible`: the receiver is not a class under `src/`); a class reading its own fields, `self.field`
+included; an inner class reading its outer class's fields (the outer class is its own file's class); a class
+reading a related class's field (an ancestor or a descendant: GDScript has no protected, and the subclass and
+its base are one design).
+
+**How the receiver's class is told.** By static reading, as far as it goes: a chain of names and calls `a.b().c`
+resolved from its first name, which is `self` (the file's class; in an inner class, nothing), a `class_name` (a
+static use or `Foo.new()`), an autoload from `project.godot`, a name the file types where it declares it (`var x:
+Foo`, a parameter, `for x: Foo in`, `x := Foo.new()`, `x := a.b()` and `x := y as Foo`; one type for the name in
+the whole file, a name typed two ways being unknown), or a field of the file's own class or an ancestor. Each
+further name is a field's declared type, or a method's `-> Type`; `(expr as Foo).name` is Foo.
+
+**Blind spots, stated.** A receiver whose class cannot be told is skipped, never listed as unknown and never
+failed, so that the check accuses nothing it cannot show: a call result with no declared return type, an element
+of an array or dictionary, a `var x = ...` with no type, a parameter with no type, a name typed two ways, a class
+reached through a `preload` constant, or a file with no `class_name` and no autoload entry. `--summary` prints how
+many `.name` uses were skipped for the receiver, where the name is a declared var of some class: the reads the check
+cannot see. A type is a whole-file fact, not a per-function one. A second read of a field a file already reads is
+not a new line, so a change that adds one to a listed reader file and field passes `--base`: review reads the
+diff for it. Tests are not read (that is `tests-one-module.md`'s item).
+
+**The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
+A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that
+converts a read deletes its line. The list is generated: `--write` rewrites it from the tree, sorted, so a merge
+of `main` that conflicts in it is resolved by taking either side and running `--write` (no merge tool of its own is
+needed, since the lines carry no reasons to replay), and `--base` still fails every line added. With `--base REV`,
+a line `REV`'s list did not hold fails: the list only shrinks, unless the same diff changes this checker (a better
+checker sees reads the old one could not). A line that moves with its reader file passes: an added line passes
+when a line of the same class and field is removed in the same diff and git reports the file as renamed from the
+removed line's file to the added line's. A `REV` without the list yet compares nothing. `--rev` and `--root` read
+the tree of that commit or checkout, and the list of that same tree.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from collections import Counter
+from dataclasses import dataclass, field
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import check_layers
+from check_test_only_members import read_renames
+
+ROOT = Path(__file__).resolve().parent.parent
+LIST_NAME = "field_reads.txt"
+LIST_PATH = f"tools/{LIST_NAME}"
+SRC = "src"
+SELF_NAME = Path(__file__).name
+
+LIST_HEADER = """\
+# The reads of another class's field under src/, which tools/check_field_reads.py lets stand: designing-classes'
+# "Fields are not API" says one object never reads or writes another's fields. Generated by
+# `uv run python tools/check_field_reads.py --write`, grouped by the class whose field is read, one
+# "<reader file> <field>" per reader file and field. The list only shrinks: the check fails a line added against the
+# pull request's base, and a line whose read is gone fails as a REMOVE line, so the pull request that moves a read
+# behind a method deletes its line. A merge of main that conflicts here takes either side and runs --write.
+"""
+
+# A top-level var: at the margin, after annotations, `static`.
+VAR = re.compile(r"^(?:@\w+(?:\([^)]*\))?[ \t]+)*(?:static[ \t]+)?var[ \t]+([A-Za-z_]\w*)(.*)$", re.MULTILINE)
+FUNC = re.compile(
+    r"^(?:static[ \t]+)?func[ \t]+([A-Za-z]\w*)[ \t]*\((?:[^()]|\([^()]*\))*\)[ \t]*->[ \t]*([A-Z]\w*)\b(?!\s*\.)",
+    re.MULTILINE,
+)
+EXTENDS = re.compile(r"^extends[ \t]+([A-Z]\w*)[ \t]*$", re.MULTILINE)
+NAME_TYPED = re.compile(r"\b(\w+)\s*:\s*([A-Z]\w*)\b(?!\s*\.)")
+NAME_BUILT = re.compile(r"\b(\w+)\s*:=\s*([A-Z]\w*)\s*\.\s*new\s*\(")
+NAME_CAST = re.compile(r"\b(\w+)\s*:=[^\n]*?\bas[ \t]+([A-Z]\w*)[ \t]*$", re.MULTILINE)
+CHAIN = r"\w+(?:\((?:[^()]|\([^()]*\))*\))?(?:\s*\.\s*\w+(?:\((?:[^()]|\([^()]*\))*\))?)*"
+NAME_CHAIN = re.compile(rf"\b(\w+)\s*:=[ \t]*({CHAIN})[ \t]*$", re.MULTILINE)
+USE = re.compile(r"\.[ \t]*([A-Za-z_]\w*)([ \t]*\()?")
+ANNOTATION_ONLY = re.compile(r"^@\w+")
+GROUP_TAG = re.compile(r"^#\s*\[(\w+)\]")
+INNER_CLASS = re.compile(r"^class[ \t]+\w+")
+ROUNDS = 3
+
+
+class FieldReadsError(Exception):
+    """An input could not be read."""
+
+
+@dataclass(frozen=True)
+class Klass:
+    """A class under `src/`: its file, its name (`class_name`, else the autoload's), what it extends, and the type
+    of each var it declares at the top level (None where the declaration does not say a class under `src/`) and of
+    each method with a declared `-> Type`."""
+
+    path: str
+    name: str
+    parent: str | None = None
+    fields: dict[str, str | None] = field(default_factory=dict)
+    returns: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Read:
+    reader: str
+    line: int
+    klass: str
+    name: str
+    count: int = 1
+
+
+@dataclass(frozen=True)
+class Found:
+    reads: list[Read]
+    skipped: int
+
+
+@dataclass(frozen=True)
+class Entry:
+    """One `<reader file> <field>` line of the list under the class group it is in."""
+
+    klass: str
+    path: str
+    name: str
+    number: int
+
+    @property
+    def key(self) -> tuple[str, str, str]:
+        return (self.klass, self.path, self.name)
+
+
+class Tree:
+    """The classes under `src/` and how a receiver's class is told."""
+
+    def __init__(self, src: dict[str, str], autoloads: dict[str, str]) -> None:
+        self.src = src
+        self.bare = {path: check_layers.blank(text).bare for path, text in src.items()}
+        self.autoloads = autoloads
+        self.by_name: dict[str, str] = {}
+        for path, bare in self.bare.items():
+            named = check_layers.CLASS_NAME.search(bare)
+            if named:
+                self.by_name[named.group(1)] = path
+        for name, path in autoloads.items():
+            if path in src:
+                self.by_name.setdefault(name, path)
+        self.name_of = {path: name for name, path in self.by_name.items()}
+        self.classes: dict[str, Klass] = {}
+        for path, bare in self.bare.items():
+            if path not in self.name_of:
+                continue
+            parent = EXTENDS.search(bare)
+            self.classes[path] = Klass(path, self.name_of[path], self.by_name.get(parent.group(1)) if parent else None)
+        self.blocks: dict[str, list[str]] = {path: blocks_of(bare) for path, bare in self.bare.items()}
+        self.declared: dict[str, list[dict[str, str]]] = {path: [{} for _ in self.blocks[path]] for path in self.bare}
+        for path in self.classes:
+            self.collect_members(path)
+        for _ in range(ROUNDS):
+            for path in self.bare:
+                self.collect_declared(path)
+            for path in self.classes:
+                self.collect_field_types(path)
+
+    def ancestors(self, path: str) -> list[str]:
+        """The file of `path`'s class and of every class it extends, nearest first."""
+        chain: list[str] = []
+        current: str | None = path
+        while current and current not in chain and current in self.classes:
+            chain.append(current)
+            current = self.classes[current].parent
+        return chain
+
+    def related(self, a: str, b: str) -> bool:
+        return a == b or a in self.ancestors(b) or b in self.ancestors(a)
+
+    def collect_members(self, path: str) -> None:
+        bare = self.bare[path]
+        klass = self.classes[path]
+        for match in VAR.finditer(bare):
+            klass.fields.setdefault(match.group(1), None)
+        for match in FUNC.finditer(bare):
+            target = self.by_name.get(match.group(2))
+            if target:
+                klass.returns[match.group(1)] = target
+
+    def collect_declared(self, path: str) -> None:
+        """For each top-level block (a func, a var, an inner class), the names it types, each with the one class its
+        declarations agree on; a name typed two ways inside one block is unknown."""
+        for index, block in enumerate(self.blocks[path]):
+            found: dict[str, set[str]] = {}
+            for pattern in (NAME_TYPED, NAME_BUILT, NAME_CAST):
+                for name, typed in pattern.findall(block):
+                    found.setdefault(name, set()).add(self.by_name.get(typed, ""))
+            for name, chain in NAME_CHAIN.findall(block):
+                target = self.chain_class(chain, path, self.declared[path][index], inner=False)
+                found.setdefault(name, set()).add(target or "")
+            self.declared[path][index] = {
+                name: next(iter(kinds)) for name, kinds in found.items() if len(kinds) == 1 and "" not in kinds
+            }
+
+    def collect_field_types(self, path: str) -> None:
+        """The class each top-level var of a class is typed as, where its declaration says."""
+        klass = self.classes[path]
+        bare = self.bare[path]
+        for match in VAR.finditer(bare):
+            name, rest = match.group(1), match.group(2)
+            typed = re.match(r"\s*:\s*([A-Z]\w*)\b(?!\s*\.)", rest)
+            built = re.match(r"\s*:?=\s*([A-Z]\w*)\s*\.\s*new\s*\(", rest)
+            target: str | None = None
+            if typed or built:
+                target = self.by_name.get((typed or built).group(1))  # type: ignore[union-attr]
+            else:
+                chained = re.match(rf"\s*:=[ \t]*({CHAIN})[ \t]*$", rest)
+                cast = re.match(r"\s*:=[^\n]*?\bas[ \t]+([A-Z]\w*)[ \t]*$", rest)
+                if cast:
+                    target = self.by_name.get(cast.group(1))
+                elif chained:
+                    target = self.chain_class(chained.group(1), path, {}, inner=False)
+            klass.fields[name] = target
+
+    def member_field_type(self, path: str, name: str) -> tuple[bool, str | None]:
+        """Whether `path`'s class or an ancestor declares var `name`, and the class it is typed as."""
+        for ancestor in self.ancestors(path):
+            fields = self.classes[ancestor].fields
+            if name in fields:
+                return True, fields[name]
+        return False, None
+
+    def declaring(self, path: str, name: str) -> str | None:
+        """The file of the class in `path`'s ancestry that declares var `name`."""
+        return next((a for a in self.ancestors(path) if name in self.classes[a].fields), None)
+
+    def first_class(self, word: str, own: str, declared: dict[str, str], inner: bool) -> str | None:
+        if word == "self":
+            return None if inner else own
+        if word in self.by_name:
+            return self.by_name[word]
+        if word in declared:
+            return declared[word]
+        has, typed = self.member_field_type(own, word)
+        return typed if has else None
+
+    def chain_class(self, chain: str, own: str, declared: dict[str, str], inner: bool) -> str | None:
+        """The class a chain such as `a.b().c` evaluates to, where every step is known."""
+        tokens = [(w, bool(c)) for w, c in re.findall(r"(\w+)(\((?:[^()]|\([^()]*\))*\))?", chain.replace(" ", ""))]
+        if not tokens:
+            return None
+        if tokens[0][1] and tokens[0][0] not in self.by_name:
+            return None
+        current = self.first_class(tokens[0][0], own, declared, inner)
+        for word, call in tokens[1:]:
+            current = self.step(current, word, call)
+        return current
+
+    def step(self, current: str | None, word: str, call: bool) -> str | None:
+        if current is None:
+            return None
+        if call:
+            if word == "new":
+                return current
+            for ancestor in self.ancestors(current):
+                if word in self.classes[ancestor].returns:
+                    return self.classes[ancestor].returns[word]
+            return None
+        has, typed = self.member_field_type(current, word)
+        return typed if has else None
+
+
+def receiver_tokens(line: str, end: int) -> list[tuple[str, bool]] | tuple[str, str] | None:
+    """The chain ending just before `end`, as (name, called) pairs from the first; `("as", path-less type)` marks a
+    parenthesised cast; None where the receiver is not a plain chain (an index, a literal, a longer expression)."""
+    tokens: list[tuple[str, bool]] = []
+    pos = end
+    while True:
+        if pos > 0 and line[pos - 1] in ")":
+            depth, at = 0, pos - 1
+            while at >= 0:
+                if line[at] == ")":
+                    depth += 1
+                elif line[at] == "(":
+                    depth -= 1
+                    if depth == 0:
+                        break
+                at -= 1
+            if at < 0:
+                return None
+            inside = line[at + 1 : pos - 1]
+            before = at
+            word_end = before
+            while before > 0 and (line[before - 1].isalnum() or line[before - 1] == "_"):
+                before -= 1
+            if before == word_end:
+                cast = re.search(r"\bas[ \t]+([A-Z]\w*)\s*$", inside)
+                if cast and not tokens:
+                    return ("as", cast.group(1))
+                return None
+            tokens.insert(0, (line[before:word_end], True))
+            pos = before
+        else:
+            word_end = pos
+            while pos > 0 and (line[pos - 1].isalnum() or line[pos - 1] == "_"):
+                pos -= 1
+            if pos == word_end or line[pos].isdigit():
+                return None
+            tokens.insert(0, (line[pos:word_end], False))
+        if pos > 0 and line[pos - 1] == ".":
+            pos -= 1
+            if pos > 0 and line[pos - 1] in " \t":
+                pos = len(line[:pos].rstrip())
+            continue
+        if pos > 0 and (line[pos - 1].isalnum() or line[pos - 1] == "_" or line[pos - 1] in "])"):
+            return None
+        return tokens
+
+
+def receiver_class(
+    tree: Tree, tokens: list[tuple[str, bool]] | tuple[str, str] | None, own: str, declared: dict[str, str], inner: bool
+) -> str | None:
+    if tokens is None:
+        return None
+    if isinstance(tokens, tuple):
+        return tree.by_name.get(tokens[1])
+    first, called = tokens[0]
+    if called and first not in tree.by_name:
+        # A bare call `make().field`: a method of the file's own class with a declared return.
+        current = None
+        for ancestor in tree.ancestors(own):
+            if first in tree.classes[ancestor].returns:
+                current = tree.classes[ancestor].returns[first]
+                break
+    else:
+        current = tree.first_class(first, own, declared, inner)
+    for word, call in tokens[1:]:
+        current = tree.step(current, word, call)
+    return current
+
+
+def blocks_of(bare: str) -> list[str]:
+    """The file split at its margin lines: each block is a margin line and the lines under it, up to the next margin
+    line (a func with its parameters and body, a var, an inner class). Line breaks are kept, so `block_lines` can
+    map a line to its block."""
+    blocks: list[str] = []
+    current: list[str] = []
+    for line in bare.split("\n"):
+        if line.strip() and not line[0].isspace() and current:
+            blocks.append("\n".join(current))
+            current = []
+        current.append(line)
+    blocks.append("\n".join(current))
+    return blocks
+
+
+def block_index(bare: str) -> list[int]:
+    """For each line, the index of its block in `blocks_of`."""
+    index = 0
+    count = 0
+    out: list[int] = []
+    for line in bare.split("\n"):
+        if line.strip() and not line[0].isspace() and count:
+            index += 1
+            count = 0
+        count += 1
+        out.append(index)
+    return out
+
+
+def inner_lines(bare: str) -> list[bool]:
+    """For each line, whether it is inside an inner class (a `class X:` at the margin and the indented lines after)."""
+    inside = False
+    flags: list[bool] = []
+    for line in bare.split("\n"):
+        if line.strip() and not line[0].isspace():
+            inside = bool(INNER_CLASS.match(line))
+        flags.append(inside)
+    return flags
+
+
+def reads_of(tree: Tree) -> Found:
+    reads: dict[tuple[str, str, str, str], Read] = {}
+    skipped = 0
+    declared_names = {name for klass in tree.classes.values() for name in klass.fields}
+    for path in sorted(tree.bare):
+        own = path
+        lines = tree.bare[path].split("\n")
+        owner_block = block_index(tree.bare[path])
+        inner = inner_lines(tree.bare[path])
+        for index, line in enumerate(lines):
+            if "." not in line:
+                continue
+            for match in USE.finditer(line):
+                name, call = match.group(1), match.group(2)
+                if name not in declared_names:
+                    continue
+                if call:
+                    continue
+                declared = tree.declared[path][owner_block[index]]
+                klass = receiver_class(tree, receiver_tokens(line, match.start()), own, declared, inner[index])
+                if klass is None:
+                    skipped += 1
+                    continue
+                owner = tree.declaring(klass, name)
+                if owner is None or tree.related(klass, own) or owner == own or owner in tree.ancestors(own):
+                    continue
+                key = (path, tree.classes[owner].name, name, owner)
+                found = reads.get(key)
+                reads[key] = Read(
+                    path,
+                    found.line if found else index + 1,
+                    tree.classes[owner].name,
+                    name,
+                    (found.count if found else 0) + 1,
+                )
+    return Found(sorted(reads.values(), key=lambda r: (r.klass, r.reader, r.name)), skipped)
+
+
+def render(tree: Tree, found: Found) -> str:
+    """The list as `--write` writes it: a header, then each class's group, its reader lines sorted."""
+    out = [LIST_HEADER]
+    klasses: dict[str, list[Read]] = {}
+    for read in found.reads:
+        klasses.setdefault(read.klass, []).append(read)
+    for klass in sorted(klasses):
+        out.append(f"# [{klass}] {tree.by_name.get(klass, '')}")
+        seen: set[tuple[str, str]] = set()
+        for read in sorted(klasses[klass], key=lambda r: (r.reader, r.name)):
+            if (read.reader, read.name) not in seen:
+                seen.add((read.reader, read.name))
+                out.append(f"{read.reader} {read.name}")
+        out.append("")
+    return "\n".join(out).rstrip("\n") + "\n"
+
+
+def entries_of(text: str) -> list[Entry]:
+    entries: list[Entry] = []
+    seen: set[tuple[str, str, str]] = set()
+    klass = ""
+    for number, raw in enumerate(text.splitlines(), start=1):
+        tag = GROUP_TAG.match(raw.strip())
+        if tag:
+            klass = tag.group(1)
+            continue
+        body = raw.partition("#")[0]
+        if not body.strip():
+            continue
+        parts = body.split()
+        if len(parts) != 2:
+            raise FieldReadsError(f"{LIST_NAME}:{number}: expected '<reader file> <field>', got {raw!r}")
+        if not klass:
+            raise FieldReadsError(f"{LIST_NAME}:{number}: {raw.strip()} is above the first '# [Class]' header")
+        entry = Entry(klass, parts[0], parts[1], number)
+        if entry.key in seen:
+            raise FieldReadsError(f"{LIST_NAME}:{number}: {parts[0]} {parts[1]} is listed twice under {klass}")
+        seen.add(entry.key)
+        entries.append(entry)
+    return entries
+
+
+def failures_of(found: Found, entries: list[Entry]) -> list[str]:
+    """A read not listed fails; a listed line with no read is a REMOVE line."""
+    listed = {e.key for e in entries}
+    present = {(r.klass, r.reader, r.name) for r in found.reads}
+    failures = [
+        f"{r.reader}:{r.line}: reads {r.klass}.{r.name}, a field of another class ({r.count} line(s) in this file); "
+        f"ask {r.klass} through a method instead"
+        for r in found.reads
+        if (r.klass, r.reader, r.name) not in listed
+    ]
+    failures.extend(
+        f"REMOVE from {LIST_PATH}: {e.path} {e.name} (no longer reads {e.klass}.{e.name})"
+        for e in entries
+        if e.key not in present
+    )
+    return failures
+
+
+def base_failures(
+    entries: list[Entry], base: list[Entry] | None, renames: dict[str, str], checker_changed: bool
+) -> list[str]:
+    """Against the base's list, a line added fails (the list only shrinks) unless it moves with its reader file."""
+    if base is None or checker_changed:
+        return []
+    before = {e.key for e in base}
+    now = {e.key for e in entries}
+    gone = [e for e in base if e.key not in now]
+    paired: set[tuple[str, str, str]] = set()
+
+    def moved(e: Entry) -> bool:
+        for g in gone:
+            if g.key not in paired and g.klass == e.klass and g.name == e.name and renames.get(g.path) == e.path:
+                paired.add(g.key)
+                return True
+        return False
+
+    return [
+        f"{LIST_NAME}:{e.number}: {e.path} {e.name} is added under [{e.klass}], and the list only shrinks; "
+        f"read {e.klass}.{e.name} through a method of {e.klass} instead"
+        for e in entries
+        if e.key not in before and not moved(e)
+    ]
+
+
+def summary(found: Found) -> list[str]:
+    """Lines per reader layer and per class read, over the list's lines (one per reader file and field)."""
+    lines_of = {(r.klass, r.reader, r.name) for r in found.reads}
+    per_layer = Counter(check_layers.layer_of(reader) or "no layer" for _, reader, _ in lines_of)
+    per_class = Counter(klass for klass, _, _ in lines_of)
+    out = [f"{len(lines_of)} line(s) in {len(per_class)} class(es)"]
+    out.append("by the layer of the reader:")
+    out.extend(f"  {layer:10} {count}" for layer, count in per_layer.most_common())
+    out.append("the ten classes whose fields are read most:")
+    out.extend(f"  {klass:28} {count}" for klass, count in per_class.most_common(10))
+    out.append(f"{found.skipped} use(s) skipped for an unknown receiver of a name some class declares as a var")
+    return out
+
+
+def autoloads_of(project: str) -> dict[str, str]:
+    return dict(check_layers.autoloads_of(project))
+
+
+def read_checkout(root: Path) -> tuple[dict[str, str], dict[str, str], str]:
+    src = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8") for p in sorted((root / SRC).rglob("*.gd"))}
+    project = root / "project.godot"
+    listing = root / LIST_PATH
+    return (
+        src,
+        autoloads_of(project.read_text(encoding="utf-8")) if project.exists() else {},
+        listing.read_text(encoding="utf-8") if listing.exists() else "",
+    )
+
+
+def read_rev(rev: str, root: Path) -> tuple[dict[str, str], dict[str, str], str]:
+    tree = check_layers.read_rev(rev, root)
+    listing = ""
+    if check_layers.git("ls-tree", "--name-only", rev, "--", LIST_PATH, cwd=root).strip():
+        listing = check_layers.git("show", f"{rev}:{LIST_PATH}", cwd=root).decode("utf-8")
+    return dict(tree.files), dict(tree.autoloads), listing
+
+
+def read_base(rev: str, cwd: Path) -> list[Entry] | None:
+    """The list as `rev` held it, or None when `rev` has no list yet."""
+    check_layers.git("rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}", cwd=cwd)
+    if not check_layers.git("ls-tree", "--name-only", rev, "--", LIST_PATH, cwd=cwd).strip():
+        return None
+    return entries_of(check_layers.git("show", f"{rev}:{LIST_PATH}", cwd=cwd).decode("utf-8"))
+
+
+def read_checker_changed(base: str, cwd: Path, rev: str | None = None) -> bool:
+    args = ["diff", "--name-only", base] + ([rev] if rev else []) + ["--", f"tools/{SELF_NAME}"]
+    return bool(check_layers.git(*args, cwd=cwd).strip())
+
+
+def parse(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="tools/check_field_reads.py",
+        description=(
+            "Fails when code under src/ reads or writes a var that another class under src/ declares, unless"
+            " tools/field_reads.txt lists the reader file and field, and fails on a listed line whose read is gone."
+            " A receiver whose class cannot be told by static reading is skipped. The list only shrinks."
+        ),
+        epilog=(
+            "Examples:\n  uv run python tools/check_field_reads.py\n"
+            "  uv run python tools/check_field_reads.py --base origin/main\n"
+            "  uv run python tools/check_field_reads.py --write\n  uv run python tools/check_field_reads.py --summary"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument(
+        "--rev", default=None, help="read the tree of this commit, and its list, instead of the checkout"
+    )
+    source.add_argument(
+        "--root", type=Path, default=None, help="read the checkout at this path, and its list, instead of this one"
+    )
+    parser.add_argument(
+        "--base",
+        default=None,
+        metavar="REV",
+        help=(
+            "also fail a line added since REV's list (CI passes the pull request's base commit, and on main the"
+            " previous one), unless the diff also changes this checker; a REV with no list yet compares nothing"
+        ),
+    )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--list", action="store_true", help="print every read found, listed or not, without failing")
+    mode.add_argument("--summary", action="store_true", help="print the lines per reader layer and per class read")
+    mode.add_argument(
+        "--write",
+        action="store_true",
+        help="rewrite tools/field_reads.txt from the tree, sorted; resolves a merge conflict in it",
+    )
+    args = parser.parse_args(argv)
+    if args.write and (args.rev or args.base):
+        parser.error("--write rewrites the checkout's list: it takes no --rev and no --base")
+    return args
+
+
+def main(argv: list[str]) -> int:
+    args = parse(argv)
+    root = args.root or ROOT
+    try:
+        src, autoloads, text = read_rev(args.rev, root) if args.rev else read_checkout(root)
+        tree = Tree(src, autoloads)
+        found = reads_of(tree)
+        if args.write:
+            (root / LIST_PATH).write_text(render(tree, found), encoding="utf-8")
+            print(f"wrote {LIST_PATH}: {len({(r.klass, r.reader, r.name) for r in found.reads})} line(s)")
+            return 0
+        entries = entries_of(text)
+        failures = failures_of(found, entries)
+        if args.base:
+            base = read_base(args.base, root)
+            if base is not None:
+                renames = read_renames(args.base, root, args.rev)
+                failures.extend(base_failures(entries, base, renames, read_checker_changed(args.base, root, args.rev)))
+    except (check_layers.LayerError, FieldReadsError, OSError) as error:
+        print(f"tools/check_field_reads.py: {error}", file=sys.stderr)
+        return 1
+    if args.summary:
+        print("\n".join(summary(found)))
+        return 0
+    if args.list:
+        listed = {e.key for e in entries}
+        for r in found.reads:
+            mark = "listed" if (r.klass, r.reader, r.name) in listed else "NEW"
+            print(f"{mark:6} {r.reader}:{r.line}: {r.klass}.{r.name} ({r.count})")
+        for line in failures:
+            if line.startswith(("REMOVE", LIST_NAME)):
+                print(line)
+        print(f"{len(found.reads)} reader file/field pair(s), {len(failures)} failure(s)")
+        return 0
+    for failure in failures:
+        print(failure if failure.startswith("REMOVE") else f"FAILED: {failure}")
+    if failures:
+        print(f"tools/check_field_reads.py: {len(failures)} failure(s)")
+        return 1
+    print(f"OK: no new read of another class's field; {len(entries)} listed line(s) still stand")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
