@@ -84,6 +84,8 @@ nested exactly like this, the layout the player set on the board:
 - **Lists, never paragraphs** (inbox #830 in minty-dolphin): a loose paragraph under a heading is a format error.
 - **A Context never stands as one long run of text** (inbox #1163): it is a nested list of short
   items, each one fact or one option, and a picture or a diagram may carry what words carry badly.
+  Options or steps never sit as "(1) … (2) …" inside a sentence (inbox #1163): each goes in its own
+  list item, in an ordered list where the order matters.
   *Proposed, not asked for, open to the player's correction:* a bold lead word on an item where that
   helps the reader scan, and a map, an order of steps, or a before and after as the pictures meant.
 - **A bold label ends in a plain space** (inbox #830 in minty-dolphin): `**You:** ` with the space outside the bold,
