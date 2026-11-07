@@ -47,7 +47,7 @@ Top to bottom, every part present even when empty:
    it, and it stays until they answer it; a choice an agent made where the design was silent stays
    in its report and the pull request's description rather than coming here.
 3. `## Settled`: answered questions, kept until they are filed into the queue and gone the moment
-   they are (see "Settling"), each as below.
+   they are, or until the chat has fully discussed them (see "Settling"), each as below.
 4. `## Running`: a table `Item | What it is | State | Next`, one row per piece of work in flight —
    a refactor step, a fix, inbox notes waiting to be filed. A PR is a link in the State cell. Under
    it, one line on what comes after the running work.
@@ -110,7 +110,8 @@ answer differs.
   the player asked for (unbolding their text) keeps every word.
 - **A reply on a Me line is followed by a fresh You stub and a Me stub** (inbox #1163): when the
   orchestrator writes its reply on a Me line, it adds a fresh You stub right after it, and a Me stub
-  after that, so the player can answer again in line. Each stub is written as the layout says: a
+  after that, so the player can answer again in line; a "settled:" reply, which moves the question
+  under Settled, gets no fresh stubs. Each stub is written as the layout says: a
   bold label, then a plain space outside the bold, as "The editor's traps" says.
 - **A question about specific words is a comment on them** (inbox #830 in minty-dolphin), answered in the same
   thread with a Claude Docs `create` utterance whose parent is the thread's root; never the Artifact
@@ -133,8 +134,11 @@ next batch, and no Recently done row or "filed" note stands in for them. The que
 hold it from then on, and the board holds open things only.
 
 **A question the player and the orchestrator have fully discussed in the chat leaves the board**
-(inbox #1163). Before it goes, the outcome is recorded on its inbox note, as the standing pick or
-the settled answer, so nothing the chat decided is lost when the question is removed.
+(inbox #1163), whether or not it is settled, and that overrides keeping a settled question until it
+is filed. A blocking question removed this way no longer blocks: its outcome stands. *Proposed, not
+asked for, open to the player's correction:* before it goes, the outcome is recorded on its inbox
+note, as the standing pick or the settled answer; where the question has no inbox note, the outcome
+goes into the restart prompt and the work it decides.
 
 ## Keeping it cheap
 
