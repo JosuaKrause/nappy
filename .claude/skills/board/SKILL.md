@@ -177,3 +177,7 @@ The editor's traps that have each cost a failed call:
 - A paragraph with a comment on it is moved, never retyped, since retyping detaches the thread. In a
   list item, move it first in the item before deleting what else the item holds, or the delete is
   refused as leaving the thread nothing to hold.
+- Deleting a question's heading does not delete the list under it. Name the heading and its list in
+  the same delete. Deleting a list the player typed in leaves their typed runs behind as loose
+  paragraphs; check for them with an outline read afterwards, and delete them once their words are
+  captured.
