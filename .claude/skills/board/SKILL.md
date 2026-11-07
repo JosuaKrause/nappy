@@ -128,6 +128,10 @@ its mention in the Running row of notes waiting to be filed, and any line about 
 next batch, and no Recently done row or "filed" note stands in for them. The queue and the records
 hold it from then on, and the board holds open things only.
 
+**A question the player and the orchestrator have fully discussed in the chat leaves the board**
+(inbox #1163). Before it goes, the outcome is recorded on its inbox note, as the standing pick or
+the settled answer, so nothing the chat decided is lost when the question is removed.
+
 ## Keeping it cheap
 
 A local script cannot run the board: it lives behind claude.ai's connector, which only the session's
