@@ -45,10 +45,16 @@ body placed mid-street are not such a gap.
   barricade is also non blocking so none of the blocking rules apply anyway. it can be placed
   whenever" (inbox #1177 in gray-dolphin) · superseded on 2026-11-07 by "if you place it in the middle of the street
   it is blocking" (inbox #1182 in gray-dolphin), given on the barricade's own question.*
-- **Open on the board, for both beats, each with the orchestrator's pick:** roadblocks-at-dawn (how
-  dawn places blocking bodies next to her routes), roadblock-close-by (what counts as close by),
-  roadblock-none-near (what a beat does when nothing is close by and no swap candidate is either),
-  and swap-replaces-seals (whether the act IV hard seals may be the events a swap replaces).
+- **Open on the board, for both beats.** Each pick is the orchestrator's, not the player's words,
+  and stands only until the player answers:
+  - **roadblocks-at-dawn**, how dawn places blocking bodies next to her routes. Pick: an extra pass
+    after the day's fill, outside its budget, on a random stream of its own, placing at most 6.
+  - **roadblock-close-by**, what counts as close by. Pick: today's walking-distance measure, with
+    its 576px, 896px and 1,024px bands.
+  - **roadblock-none-near**, what a beat does when nothing is close by and no swap candidate is
+    either. Pick: the nearest reachable roadblock, however far.
+  - **swap-replaces-seals**, whether the act IV hard seals may be the events a swap replaces. Pick:
+    never.
 - **Day 3's fire and day 11's added mast** are sited on her way like the bag's events: "day 3 file
   is non-blocking so it doesn't need the swap, no?" (inbox #1177 in gray-dolphin; *read as* day 3's fire).
 - **The resistance's reachability moves to dawn** (the orchestrator's proposal, agreed: "I agree on
