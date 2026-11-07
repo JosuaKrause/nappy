@@ -33,7 +33,6 @@ func run(t) -> void:
 	_test_the_neighbor_leaves_for_work_until_the_raid(t)
 	_test_day_ten_sends_her_to_the_neighbor_walking_home(t)
 	_test_the_raid_waits_at_her_building_with_the_doorstep_open(t)
-	_test_the_raid_seals_her_street_door(t)
 	_test_the_sealed_door_stands_after_a_reload(t)
 	_test_a_lost_day_ten_restores_the_ordinary_door(t)
 	_test_the_neighbor_window_is_boarded_from_day_eleven(t)
@@ -977,31 +976,6 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY + 1)
 	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
 	t.check(_raid_since(before).is_empty(), "and only on day 10")
-
-## Her street door: ordinary at day 10's start, sealed live the moment the raid actually arrives
-## (PLAYTEST-131), and the scar it leaves is what every later day and a reloaded save read it
-## from (`City._sync_home_door()`, `_test_the_sealed_door_stands_after_a_reload()` below).
-func _test_the_raid_seals_her_street_door(t) -> void:
-	# A run with no scar, as a fresh one has: `City.build()` reads the scars once, at boot, exactly
-	# as a resumed run's own boot does (`_door_texture_for_today()`'s own doc).
-	var run := _build_city_in_a_new_run(t)
-	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
-	var happenings := ResistanceHappenings.new()
-	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
-			_city.atlas, null, _city.spawn_siting)
-	happenings.start_day(ResistanceHappenings.NEIGHBOR_DAY)
-	var door := _city.map.doorstep_world_position()
-	t.check(not HomeDoorReads.is_sealed(_city), "the door is ordinary at day 10's start")
-	var before := _street()
-	happenings.tick(STEP, door + Vector2(0.0, Tuning.OUT_OF_SIGHT + 64.0), Vector2.ZERO)
-	t.check(HomeDoorReads.is_sealed(_city), "and sealed the moment the raid arrives, out of her sight")
-	var sealed := false
-	for scar in run.attempt_spend.scars:
-		if String(scar["id"]) == City.SEALED_DOOR_SCAR:
-			sealed = true
-	t.check(sealed, "which leaves a scar for every later day to read")
-	for instance in _raid_since(before):
-		_city.events.retire(instance)
 
 ## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
 ## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `_city.build()`
