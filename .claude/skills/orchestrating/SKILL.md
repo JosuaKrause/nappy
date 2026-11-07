@@ -195,8 +195,9 @@ role named has nothing to check `status` against:
   to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
-  (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
-  `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
+  (`tools/run.sh`, `tools/shot.sh`, the editor) open on the player's own screen, so an agent never
+  takes one (inbox #1203, `references/agent-contract.md`): the brief names the capture, and the
+  agent lists it in its report for the orchestrator to arrange. A windowed run is also the least reliable thing an agent
   can lean on — the **verify** skill carries the rig traps that make one look like it worked when
   it did not. **Say in the brief whether the evidence is a still or a burst**: anything about
   motion — a turn, a gait, a wing beat, a shadow rotating — is a burst

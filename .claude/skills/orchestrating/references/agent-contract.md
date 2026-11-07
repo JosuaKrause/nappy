@@ -95,8 +95,14 @@ the player's screen, so a wait that wakes every minute floods both with nothing 
 what you can into one command, so one wait gives one notification.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
-player's save. At most one or two `tools/shot.sh` captures at the end for evidence; the brief says
-whether a still or a burst, and whether `--invincible` may be used. The player's CLI cannot show
+player's save. **No agent opens a Godot window** (inbox #1203): Godot runs headless only, so no
+editor, no windowed game, no `tools/run.sh` or windowed `tools/shot.sh`, and no Godot MCP tool that
+launches the editor or runs the project, since every window opens on the player's own screen and
+agents running side by side multiply them. A still, a burst or a measurement the brief asks for
+that needs a window is listed in the report (the command, the flags, the seed, the moment), with
+whether it is a still or a burst and whether `--invincible` may be used, and the orchestrator
+arranges it. *Proposed, not asked for, open to the player's correction:* the orchestrator runs
+those captures one at a time in a batch, at a moment the player has agreed to. The player's CLI cannot show
 images: commit evidence pictures on the branch under `docs/evidence/<topic>-<date>/` (see
 **session-captures**), push, and embed them in the PR description as images with commit-pinned
 `https://github.com/JosuaKrause/nappy/raw/<sha>/…` URLs. A visible change with no pictures fails
