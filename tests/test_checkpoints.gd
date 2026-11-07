@@ -65,6 +65,7 @@ func run(t) -> void:
 	await _test_walking_back_redetains_her(t)
 	await _test_the_chatting_mother_still_detains_once(t)
 	_test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t)
+	_test_a_car_drives_under_a_gate_that_never_lowers(t)
 	await _test_the_boom_never_inspects_her(t)
 	_test_the_arm_never_comes_down_on_her(t)
 	await _test_walking_under_the_boom_sets_a_guard_on_her(t)
@@ -109,6 +110,19 @@ func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
 		var tree := RouteTree.for_day(map, day)
 		_plan_cache[key] = RegionPlanner.plan_day(map, day, tree)
 	return _plan_cache[key]
+
+## The street door bodies `plan` stands for `segment`: the ones at the three points
+## `RegionPlanner.door_positions()` gives it, which is where the planner stands them, so a test that
+## finds a door's bodies here finds every door's, wherever on its street the door stands.
+func _street_door_bodies(map: CityMap, plan: RegionPlanner.RegionPlan,
+		segment: StreetNetwork.Segment) -> Array[EventScheduler.Planned]:
+	var found: Array[EventScheduler.Planned] = []
+	for point in RegionPlanner.door_positions(map, segment):
+		for body in plan.door_bodies:
+			if body.position.is_equal_approx(point) \
+					and (body.def.id == "checkpoint_hut" or body.def.id == "checkpoint_gate"):
+				found.append(body)
+	return found
 
 # ------------------------------------------------------------------- the shape ---
 
@@ -171,15 +185,11 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 
 		# Every door body's own tile belongs to the segment or the alley it was built for.
 		for segment in plan.doors:
-			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
-			for body in plan.door_bodies:
-				if body.def.id != "checkpoint_hut" and body.def.id != "checkpoint_gate":
-					continue
-				if not mouth.has_point(body.position):
-					continue
+			var bodies := _street_door_bodies(map, plan, segment)
+			t.check(bodies.size() == 3,
+					"seed %d day %d: door %s stands three bodies at its own points (%d)"
+					% [map.seed_used, day, segment.key(), bodies.size()])
+			for body in bodies:
 				checked += 1
 				var tile := map.world_to_tile(body.position)
 				var containing := map.network.segment_containing(tile)
@@ -192,11 +202,9 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 		# `test_regions.gd`'s own alley-mouth check runs.
 		for wall_body in plan.wall_bodies:
 			for segment in plan.doors:
-				var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-						< RegionPlanner.region_of_junction(map, segment.b)
-				var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-				var mouth_centre := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
-				var distance := wall_body.position.distance_to(mouth_centre)
+				var points := RegionPlanner.door_positions(map, segment)
+				var door_centre := points[points.size() / 2]
+				var distance := wall_body.position.distance_to(door_centre)
 				t.check(distance > wall_body.def.obstructs_radius,
 						("seed %d day %d: a wall body at %s (radius %.0f) does not reach the door " +
 						"at %s (%.0fpx away)") % [map.seed_used, day, wall_body.position,
@@ -223,26 +231,24 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
 		for segment in plan.doors:
-			var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-					< RegionPlanner.region_of_junction(map, segment.b)
-			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
+			var street := map.tile_rect_to_world(segment.tile_rect())
 			var gate: EventScheduler.Planned = null
 			var huts: Array[EventScheduler.Planned] = []
-			for body in plan.door_bodies:
-				if not mouth.has_point(body.position):
-					continue
+			for body in _street_door_bodies(map, plan, segment):
 				if body.def.id == "checkpoint_gate":
 					gate = body
 				elif body.def.id == "checkpoint_hut":
 					huts.append(body)
+			t.check(gate != null and huts.size() == 2,
+					"seed %d day %d: door %s stands a gate and two huts (%d huts)"
+					% [map.seed_used, day, segment.key(), huts.size()])
 			if not gate or huts.size() != 2:
 				continue
 			checked += 1
 
 			# The cross-street axis, and the carriageway band on it: the middle of the street's own
 			# cross-section, with `Tuning.SIDEWALK_WIDTH` tiles of pavement on either side of it.
-			var across_low: float = (mouth.position.y if segment.horizontal else mouth.position.x) \
+			var across_low: float = (street.position.y if segment.horizontal else street.position.x) \
 					+ Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 			var road_width: float = (Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH) \
 					* Tuning.TILE_SIZE
@@ -1809,6 +1815,70 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 			% [stopped_seconds, passed_at, elapsed])
 
 	city.free()
+
+## **A gate that does not hold cars never stops one** *(inbox #1186: "traffic on the main road
+## always needs to be able to go from the tunnel to the bridge unhindered")*. The crowd keeps only
+## the gates that hold cars (`Crowd.set_gates()`), so a gate that does not (`GateState.holds_cars()`
+## false) is never one `_stop_for_gates()` sees. Asked of a crowd on a map of nothing but streets
+## (`StreetMap`, the world and the crowd's own setup, no city): the first car it stands, with the
+## gate sited 150px ahead of it on its heading, is never held for it, never slows to a stop short
+## of it, passes it, and the boom is up the whole time and still up once the car is past.
+func _test_a_car_drives_under_a_gate_that_never_lowers(t) -> void:
+	var world := WorldContext.new()
+	t.add_child(world)
+	var map := StreetMap.full()
+	var crowd := Crowd.new()
+	crowd.name = "Crowd"
+	world.add_child(crowd)
+	crowd.setup(world, map, TrafficSignals.new(map), DayStreets.new())
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("checkpoint-gate-rig:%d" % BASE_SEED)
+	var focus := map.tile_to_world(Vector2i(map.main_road * CityMap.period() + 2,
+			5 * CityMap.period() + 3))
+	crowd.start_day(1, rng, focus)
+
+	var car: CrowdAgent = null
+	for agent in crowd.agents():
+		if agent.kind == CrowdAgent.Kind.CAR:
+			car = agent
+			break
+	t.check(car != null, "the crowd stands a car to drive under the gate")
+	if not car:
+		world.free()
+		return
+	crowd.set_focus(car.global_position)
+
+	var gate := RegionPlanner.GateState.new(false)
+	gate.position = car.global_position + car.heading() * 150.0
+	var gates: Array[RegionPlanner.GateState] = [gate]
+	crowd.set_gates(gates)
+
+	var held_frames := 0
+	var stopped_short := false
+	var lowered := false
+	var passed_at := INF
+	var elapsed := 0.0
+	while elapsed < 20.0 and passed_at == INF:
+		crowd.step(STEP)
+		elapsed += STEP
+		var ahead := (gate.position - car.global_position).dot(car.heading())
+		if car.gate_hold < INF:
+			held_frames += 1
+		if ahead > 0.0 and ahead < Tuning.CAR_STOP_LINE_SETBACK + 20.0 \
+				and car.speed() < Tuning.CAR_STOPPED_SPEED:
+			stopped_short = true
+		lowered = lowered or not gate.raised
+		if ahead <= 0.0:
+			passed_at = elapsed
+	for frame in int(round(2.0 / STEP)):
+		crowd.step(STEP)
+		lowered = lowered or not gate.raised
+
+	t.check(held_frames == 0, "the car is never held for the gate (%d frames)" % held_frames)
+	t.check(not stopped_short, "and never comes to a stop at its stop line")
+	t.check(passed_at < INF, "it drives under the gate (at %.1fs)" % passed_at)
+	t.check(not lowered, "and the boom is up all the while, and once the road is clear")
+	world.free()
 
 ## **The boom never inspects her, raised or lowered; it blocks her while it is down.**
 ## *(2026-09-24, the player: "Boom shouldn't inspect her. It should block her." · "I didn't say it

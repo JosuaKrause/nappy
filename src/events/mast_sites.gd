@@ -230,8 +230,8 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## (`CityGenerator.generate()` calls it directly) — so a boundary segment's own door position is
 ## exactly as day-independent as `MastSites` itself, and refusing near it here keeps "the same
 ## places every day" rather than trading it for a per-day check. The three points a street door
-## would stand at (two huts and a gate) are `RegionPlanner._add_door_bodies()`'s own math, read
-## from the same public calls it makes; an alley door is not checked here, since a through-alley's
+## would stand at (two huts and a gate) are `RegionPlanner.door_positions()`, the same call the door's
+## bodies are stood from; an alley door is not checked here, since a through-alley's
 ## own crossing needs `RegionPlanner`'s private detection of which alleys actually cross a
 ## boundary — `EventScheduler._place_masts()`'s own `_clear_of_the_doors()` check is the safety net
 ## for that and for anything this misses, exactly as it is for held ground.
@@ -253,12 +253,7 @@ static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Arra
 static func possible_door_points(map: CityMap) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for segment in RegionPlanner.boundary_segments(map):
-		var default_at_a := RegionPlanner.region_of_junction(map, segment.a) \
-				< RegionPlanner.region_of_junction(map, segment.b)
-		var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
-		var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
-		points.append_array(PackedVector2Array(
-				SealPlanner.positions_across(world, segment.horizontal, Tuning.TILE_SIZE)))
+		points.append_array(PackedVector2Array(RegionPlanner.door_positions(map, segment)))
 	return points
 
 static func _circle_touches_rect(at: Vector2, radius: float, rect: Rect2) -> bool:

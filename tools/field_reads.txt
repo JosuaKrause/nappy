@@ -379,7 +379,6 @@ src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
 src/events/event_scheduler.gd tiles
 src/events/event_spawner.gd block_plans
-src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects

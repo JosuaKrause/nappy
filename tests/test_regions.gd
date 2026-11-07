@@ -45,6 +45,7 @@ func run(t) -> void:
 	_test_wall_crossing_posts_four_guards(t)
 	_test_alley_wall_bodies_post_one_guard_each(t)
 	_test_alley_wall_bodies_fit_their_own_mouth(t)
+	_test_the_main_road_is_never_walled(t)
 	_test_winnability_holds_with_the_wall_standing(t)
 	_test_closures_and_seals_never_land_on_a_boundary(t)
 
@@ -340,11 +341,11 @@ func _test_no_wall_before_the_first_day(t) -> void:
 					plan.doors.size()])
 
 ## The day's whole shape, from `Tuning.REGION_WALL_FIRST_DAY` to the end of the run: every door is
-## on the tree, unconditionally; every wall is off the tree, unconditionally — the tree wins over
-## the partition, full stop, so there is no third rule left to check them against. The home region
-## has a door, or every calm area the tree reaches is in the home region — the unconditional form
+## on the tree or on the main road; every wall is off the tree and off the main road — the tree wins
+## over the partition, full stop, and the main road is never a wall. The home region has a door
+## the tree uses, or every calm area the tree reaches is in the home region — the unconditional form
 ## the design's own argument always supported, restated as itself now that nothing narrows it.
-## Also measures how often a calm-less region gets a door at all (the tree crossing it, which the
+## Also measures how often a calm-less region gets a tree door (the tree crossing it, which the
 ## milestone's decree says must win when it happens) and every region the day's tree actually
 ## reaches a calm area in is reached from the doorstep once only the doors are open.
 func _test_the_day_plan_shape(t) -> void:
@@ -366,19 +367,22 @@ func _test_the_day_plan_shape(t) -> void:
 
 			var this_day_had_a_calmless_door := false
 			for segment in plan.doors:
-				t.check(tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: door %s is on the day's tree" % [map.seed_used, day, segment.key()])
+				var on_the_tree := tree.is_on_the_tree(segment.key())
+				t.check(tree.is_on_the_tree(segment.key()) or map.is_main_road_segment(segment),
+						"seed %d day %d: door %s is on the day's tree or the main road"
+						% [map.seed_used, day, segment.key()])
 				var ra := RegionPlanner.region_of_junction(map, segment.a)
 				var rb := RegionPlanner.region_of_junction(map, segment.b)
-				if (ra >= 0 and ra < calm.size() and calm[ra] == 0) \
-						or (rb >= 0 and rb < calm.size() and calm[rb] == 0):
+				if on_the_tree and ((ra >= 0 and ra < calm.size() and calm[ra] == 0) \
+						or (rb >= 0 and rb < calm.size() and calm[rb] == 0)):
 					this_day_had_a_calmless_door = true
 			if this_day_had_a_calmless_door:
 				calmless_region_had_a_door += 1
 
 			for segment in plan.walls:
-				t.check(not tree.is_on_the_tree(segment.key()),
-						"seed %d day %d: wall %s is off the day's tree" % [map.seed_used, day, segment.key()])
+				t.check(not tree.is_on_the_tree(segment.key()) and not map.is_main_road_segment(segment),
+						"seed %d day %d: wall %s is off the day's tree and the main road"
+						% [map.seed_used, day, segment.key()])
 
 			# "The home region has a door, or every calm area the tree reaches is in the home
 			# region" — unconditional: the tree-wins rule needs no premise about which regions
@@ -395,12 +399,14 @@ func _test_the_day_plan_shape(t) -> void:
 			if boundary_count > 0 and not home_reaches_only_home:
 				var home_has_door := false
 				for segment in plan.doors:
+					if not tree.is_on_the_tree(segment.key()):
+						continue
 					if RegionPlanner.region_of_junction(map, segment.a) == home \
 							or RegionPlanner.region_of_junction(map, segment.b) == home:
 						home_has_door = true
 						break
 				t.check(home_has_door,
-						("seed %d day %d: the home region has a door, or every calm area the tree " +
+						("seed %d day %d: the home region has a door the tree uses, or every calm area the tree " +
 						"reaches is in it (%d boundary segments)") % [map.seed_used, day, boundary_count])
 
 			var blocked := {}
@@ -703,6 +709,131 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 	# measured rather than asserted.
 	print("[test_regions] reachable without the main road too, with the wall standing: %d of %d"
 			% [without_main_road_held, without_main_road_days])
+
+## **The main road is never walled, and a car can drive it from the tunnel to the bridge**
+## *(inbox #1186: "traffic on the main road always needs to be able to go from the tunnel to the
+## bridge unhindered")*. Over every wall day: every segment of the spine is a real street; every
+## crossing of a region boundary on it is a door, whatever the tree says, never a wall; its gate
+## lets the cars through (`GateState.holds_cars()` false, the boom up from the morning); and no
+## wall body's circle reaches a tile of the spine's carriageway. Those are every body the region
+## plan stands, so with them a car meets nothing of the plan's anywhere along the main road.
+##
+## **And a main-road door takes her in only on the main road's sidewalk.** Each of its three bodies
+## stands `RegionPlanner.MAIN_ROAD_DOOR_INSET` tiles in from the junction, off the mouth row, and
+## no sidewalk tile of the junction box at either end of the street is within
+## `EventDef.detain_distance()` of any of them, so her route crossing the main road at a corner is
+## never taken in. A door off the main road still stands on the mouth row.
+##
+## **`RULE_SEEDS` maps**, for the reason the full-run sweeps beside it give: what is asked of every
+## (seed, day) pair is an unconditional rule about that day's own plan.
+func _test_the_main_road_is_never_walled(t) -> void:
+	var crossings := 0
+	var tree_crossings_at_a_box := 0
+	for map: CityMap in _maps.slice(0, RULE_SEEDS):
+		var spine: Array[StreetNetwork.Segment] = []
+		for segment in map.network.segments():
+			if map.is_main_road_segment(segment):
+				spine.append(segment)
+				t.check(map.has_street(segment.key()),
+						"seed %d: the main road's segment %s is a real street"
+						% [map.seed_used, segment.key()])
+		t.check(not spine.is_empty(), "seed %d has a main road (%d segments)"
+				% [map.seed_used, spine.size()])
+		var carriageway := {}
+		for tile in _main_road_tiles(map):
+			if map.is_carriageway(tile) or map.is_crossing(tile):
+				carriageway[tile] = true
+		for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
+			_repaint_for(map, day)
+			var tree := RouteTree.for_day(map, day)
+			var plan := RegionPlanner.plan_day(map, day, tree)
+			var gates := {}
+			for i in plan.doors.size():
+				gates[plan.doors[i].key()] = plan.gates[i]
+			for segment in RegionPlanner.boundary_segments(map):
+				if not map.is_main_road_segment(segment):
+					continue
+				crossings += 1
+				var gate: RegionPlanner.GateState = gates.get(segment.key())
+				t.check(gate != null,
+						"seed %d day %d: the main road's crossing %s is a door"
+						% [map.seed_used, day, segment.key()])
+				if gate:
+					t.check(not gate.holds_cars() and gate.raised,
+							"seed %d day %d: and its boom is up for the cars and does not hold them"
+							% [map.seed_used, day])
+			tree_crossings_at_a_box += _check_the_take_in(t, map, day, plan, tree)
+			for segment in plan.walls:
+				t.check(not map.is_main_road_segment(segment),
+						"seed %d day %d: wall %s is not on the main road"
+						% [map.seed_used, day, segment.key()])
+			var covered := {}
+			for body in plan.wall_bodies:
+				_add_circle(map, covered, body.position, body.def.obstructs_radius)
+			var on_the_road := 0
+			for tile in covered:
+				if carriageway.has(tile):
+					on_the_road += 1
+			t.check(on_the_road == 0,
+					"seed %d day %d: no wall body reaches the main road's carriageway (%d tiles)"
+					% [map.seed_used, day, on_the_road])
+			var spine_rng := RandomNumberGenerator.new()
+			spine_rng.seed = hash("spine:%d:%d" % [map.seed_used, day])
+			for closure in ClosurePlanner.plan_day(map, day, spine_rng, tree, plan):
+				t.check(not map.is_main_road_segment(closure.segment),
+						"seed %d day %d: closure at %s is not on the main road"
+						% [map.seed_used, day, closure.segment.key()])
+	t.check(crossings > 0, "the sampled boundaries cross the main road (%d crossings)" % crossings)
+	t.check(tree_crossings_at_a_box > 0,
+			"the sample has main-road doors whose junction her tree crosses the main road at (%d)"
+			% tree_crossings_at_a_box)
+
+## Checks every street door of `plan`'s take-in against the junction boxes at the ends of its street,
+## and returns how many main-road doors have a junction her tree crosses the main road at.
+func _check_the_take_in(t, map: CityMap, day: int, plan: RegionPlanner.RegionPlan,
+		tree: RouteTree) -> int:
+	var at_a_box := 0
+	for i in plan.doors.size():
+		var segment := plan.doors[i]
+		var bodies := plan.door_bodies.slice(i * 3, i * 3 + 3)
+		var main := map.is_main_road_segment(segment)
+		for body in bodies:
+			var tile := map.world_to_tile(body.position)
+			var on_a_mouth_row := segment.mouth_rect(true).has_point(tile) \
+					or segment.mouth_rect(false).has_point(tile)
+			t.check(on_a_mouth_row != main,
+					"seed %d day %d: door %s stands %s the mouth row"
+					% [map.seed_used, day, segment.key(), "off" if main else "on"])
+		if not main:
+			continue
+		var in_reach := 0
+		for junction in [segment.a, segment.b]:
+			for tile in _junction_box_sidewalk(junction):
+				for body in bodies:
+					if map.tile_to_world(tile).distance_to(body.position) \
+							<= body.def.detain_distance():
+						in_reach += 1
+		t.check(in_reach == 0,
+				"seed %d day %d: no junction-box sidewalk tile is in reach of main-road door %s's take-in (%d)"
+				% [map.seed_used, day, segment.key(), in_reach])
+		for junction in [segment.a, segment.b]:
+			for crossing in map.network.segments():
+				if not map.is_main_road_segment(crossing) and tree.is_on_the_tree(crossing.key()) \
+						and (crossing.a == junction or crossing.b == junction):
+					at_a_box += 1
+					break
+	return at_a_box
+
+## The 16 sidewalk tiles of the junction box at `junction`: the four 2x2 corners of its 6x6 tiles,
+## outside the two crossing carriageways.
+func _junction_box_sidewalk(junction: Vector2i) -> Array[Vector2i]:
+	var origin := junction * CityMap.period()
+	var found: Array[Vector2i] = []
+	for y in Tuning.STREET_WIDTH:
+		for x in Tuning.STREET_WIDTH:
+			if (x < 2 or x >= Tuning.STREET_WIDTH - 2) and (y < 2 or y >= Tuning.STREET_WIDTH - 2):
+				found.append(origin + Vector2i(x, y))
+	return found
 
 ## Closures and seals are checked before acceptance against the same tree; this checks the region
 ## boundary is one more thing neither may land on, over the same sweep of days.

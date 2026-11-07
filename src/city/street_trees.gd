@@ -21,10 +21,12 @@ extends RefCounted
 ## are chosen under.
 ##
 ## **The mouth margin is what keeps a pit off a crossing and off a checkpoint.** A boundary
-## segment's wall or door structure always stands at one of its two one-tile-deep mouths
+## segment's wall or door structure stands at one of its two one-tile-deep mouths
 ## (`RegionPlanner.boundary_segments`'s own doc: "the wall stands at a boundary crossing's mouth,
 ## one tile deep, never its midpoint" — fixed at generation, independent of which day makes it a
-## wall or a door), and a zebra crossing is painted at the same junction-adjacent tiles. A generic
+## wall or a door), and a zebra crossing is painted at the same junction-adjacent tiles. The one
+## door off its mouth, the main road's (`RegionPlanner.door_positions()`), stands on a street no
+## tree lines, since only ordinary streets carry them. A generic
 ## one-tile buffer from both ends of *every* segment therefore already clears both without a
 ## special case for which segments are boundaries, and it holds inside a run exactly as it held
 ## when every qualifying street was planted.
