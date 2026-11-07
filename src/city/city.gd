@@ -400,7 +400,7 @@ func build(city_map: CityMap) -> void:
 	crowd.timing = crowd_timing
 	crowd.atlas = atlas
 	add_child(crowd)
-	crowd.setup(self, map, navigator)
+	crowd.setup(self, map, signals, _streets, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
 	excitement_sources = [events.sources, crowd.sources]
 	_blackout = Blackout.new()

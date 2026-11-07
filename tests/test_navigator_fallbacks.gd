@@ -25,8 +25,8 @@ func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t) -> void:
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, DAY)
 	city.start_day(state, DAY, own_run.calendar.day_rng(DAY, "closures"))
-	# The rig's shape: the crowd is handed its city and map and no navigator.
-	city.crowd.setup(city, city.map)
+	# The rig's shape: the crowd is handed its world, map, lights and streets and no navigator.
+	city.crowd.setup(city, city.map, city.signals, city.streets())
 	var her_tile := _open_sidewalk(city.map)
 	t.check(her_tile != Vector2i(-1, -1), "the city has open sidewalk to stand her on")
 	if her_tile == Vector2i(-1, -1):
