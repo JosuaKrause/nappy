@@ -110,6 +110,14 @@ const _DIRECTIONS := {
 const _LETTERS := {
 	"n": Vector2.UP, "s": Vector2.DOWN, "e": Vector2.RIGHT, "w": Vector2.LEFT,
 }
+## The keys a held `--press key:<name>` stands for: each is the key `project.godot` binds to the
+## action, so a `key:d` that is held presses `move_right`. A rig's `RigLock` erases every action's
+## bindings, so a key event alone moves nobody there; the action is pressed beside it.
+const _KEY_ACTIONS := {
+	KEY_W: &"move_up", KEY_UP: &"move_up", KEY_S: &"move_down", KEY_DOWN: &"move_down",
+	KEY_A: &"move_left", KEY_LEFT: &"move_left", KEY_D: &"move_right", KEY_RIGHT: &"move_right",
+	KEY_SHIFT: &"run",
+}
 const _OPPOSITE := {
 	"move_up": "move_down", "move_down": "move_up",
 	"move_left": "move_right", "move_right": "move_left",
@@ -154,6 +162,9 @@ var _fled := false
 var _presses: Array[Dictionary] = []
 ## Where `--tap X Y` asks for a synthetic tap, or `Vector2.INF` for none given. See `_tap_screen()`.
 var _tap_at := Vector2.INF
+## What `--press` is holding rather than tapping, `[{ "action": StringName, "key": InputEventKey or
+## null }]`, until the capture has been taken. See `_hold_press()`.
+var _held_presses: Array[Dictionary] = []
 
 ## Returns a configured instance for a screenshot, or for a timed, capture-free run — a frame trace,
 ## a frame record or a recording bounded by `--after` (`RunConfig.screenshot_rig()`). Returns null
@@ -426,14 +437,28 @@ func _process(delta: float) -> void:
 		return
 	set_process(false)
 	set_physics_process(false)
+	# Nothing is let go here: a direction held by `--walk` or `--press` is still held on the frame
+	# the capture draws, and `_release_inputs()` runs once that frame has been read.
+	if _path.is_empty():
+		_release_inputs()
+		get_tree().quit()
+	else:
+		_capture()
+
+## Lets go of everything the rig holds: `--walk`'s direction, a script's axes, `run`, and any
+## `--press` hold. Called when the run is over, after the captured frame has been read.
+func _release_inputs() -> void:
 	if _holding != "":
 		Input.action_release(_holding)
 	_release_direction()
 	Input.action_release("run")
-	if _path.is_empty():
-		get_tree().quit()
-	else:
-		_capture()
+	for held in _held_presses:
+		Input.action_release(held["action"])
+		var key: InputEventKey = held["key"]
+		if key != null:
+			key.pressed = false
+			Input.parse_input_event(key)
+	_held_presses.clear()
 
 ## Taps an action, or a bare key, so that it **propagates** — which `--walk` does not need and this
 ## does.
@@ -454,11 +479,17 @@ func _process(delta: float) -> void:
 ## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
 ## device id — see `RigLock._input()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
+	if _held_action(what) != &"":
+		_hold_press(what)
+		return
 	for pressed in [true, false]:
 		var event: InputEvent
 		if what.begins_with(KEY_PREFIX):
 			var key := InputEventKey.new()
 			key.keycode = OS.find_keycode_from_string(what.trim_prefix(KEY_PREFIX))
+			# The move bindings are `physical_keycode`-only, so a key with a `keycode` alone
+			# matches no action.
+			key.physical_keycode = key.keycode
 			key.pressed = pressed
 			event = key
 		else:
@@ -468,6 +499,33 @@ func _tap(what: String) -> void:
 			event = action
 		event.device = InputEvent.DEVICE_ID_EMULATION
 		Input.parse_input_event(event)
+
+## The held action a `--press` word stands for, or `&""` when it is a tap: a movement action or
+## `run` by name, or a bare key `project.godot` binds to one (`key:d`). A direction or `run` is a
+## state a person holds rather than a moment, and a tap of one — a press and its release in the
+## same frame — moves nobody and is gone before the frame is drawn.
+func _held_action(what: String) -> StringName:
+	if what.begins_with(KEY_PREFIX):
+		return _KEY_ACTIONS.get(OS.find_keycode_from_string(what.trim_prefix(KEY_PREFIX)), &"")
+	if _OPPOSITE.has(what) or what == "run":
+		return StringName(what)
+	return &""
+
+## Presses a held `--press` and keeps it down through the capture: the action itself, and for a
+## bare key the key event too, tagged like a tap's so a locked-out rig still hears it.
+## `_release_inputs()` lets go after the captured frame has been read.
+func _hold_press(what: String) -> void:
+	var action := _held_action(what)
+	var key: InputEventKey = null
+	if what.begins_with(KEY_PREFIX):
+		key = InputEventKey.new()
+		key.keycode = OS.find_keycode_from_string(what.trim_prefix(KEY_PREFIX))
+		key.physical_keycode = key.keycode
+		key.pressed = true
+		key.device = InputEvent.DEVICE_ID_EMULATION
+		Input.parse_input_event(key)
+	Input.action_press(action)
+	_held_presses.append({"action": action, "key": key})
 
 ## `TouchControls` maps a tap through `get_viewport().get_canvas_transform()`, which is the
 ## follow camera's own — and a `Camera2D` has not positioned itself even once on the very first
@@ -520,10 +578,12 @@ func _capture() -> void:
 	if not _can_photograph(DisplayServer.get_name()):
 		printerr("[AutoScreenshot] nothing to photograph: this run is headless, so no frame is " +
 				"ever drawn and %s cannot be written. tools/shot.sh needs a display." % _path)
+		_release_inputs()
 		get_tree().quit(1)
 		return
 	var forced: bool = await DrawnFrame.wait(get_tree())
 	var image := get_viewport().get_texture().get_image()
+	_release_inputs()
 	var error := image.save_png(_path)
 	if error != OK:
 		printerr("[AutoScreenshot] could not write %s (error %d)" % [_path, error])
