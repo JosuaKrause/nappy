@@ -73,6 +73,8 @@ class ReferenceCrowd extends CrowdAgent:
 func run(t) -> void:
 	_test_catalogue_and_mutations(t)
 	_test_crowd_mutations(t)
+	_test_event_key_fields(t)
+	_test_crowd_key_fields(t)
 	_test_live_net_and_skipped_work(t)
 	_test_consumer_order(t)
 	await _test_halo_and_removal(t)
@@ -247,6 +249,92 @@ func _test_crowd_mutations(t) -> void:
 		source.kind = CrowdAgent.Kind.CAR if kind == CrowdAgent.Kind.WALKER else CrowdAgent.Kind.WALKER
 		_crowd_parity(t, source, at, "crowd kind")
 		source.free()
+
+## Asks `source` for its projection at `at`, runs `mutate`, asks again at `then_at`, and checks the
+## second ask sampled afresh: a key field the mutation changes is what makes it, so a key without
+## that field answers from the first ask's cache and the check fails. The first ask must itself
+## sample, or the check would hold for a source that never projects.
+func _resamples(t, source, at: Vector2, then_at: Vector2, label: String, mutate: Callable) -> void:
+	source.excitement.expected_gross_at(at)
+	var runs: int = source.sampling_runs
+	t.check(runs > 0, label + " is asked of a source that projects")
+	mutate.call()
+	source.excitement.expected_gross_at(then_at)
+	t.check(source.sampling_runs > runs, label + " samples afresh")
+
+## One field of an event's cache key at a time, each changed on a source whose cache is warm: the
+## key's every term is a reason to sample again, and the sweep above only compares values, which
+## stay equal where a field changes nothing at the point it asks (a core 64px wide, a point 170px
+## out; a kind and its extents changed together).
+func _test_event_key_fields(t) -> void:
+	var at := Vector2(-40.0, 10.0)
+	var player := Vector2(92.0, 0.0)
+	var mutations := {
+		"player position": func(_s: CountedEvent) -> void: pass,
+		"player velocity": func(s: CountedEvent) -> void: s.excitement.player_velocity = Vector2(43.0, 71.0),
+		"source position": func(s: CountedEvent) -> void: s.position += Vector2(9.0, 4.0),
+		"live intensity": func(s: CountedEvent) -> void: s.age += 1.5,
+		"intensity": func(s: CountedEvent) -> void: s.def.intensity += 3.0,
+		"inner radius": func(s: CountedEvent) -> void: s.def.inner_radius += 3.0,
+		"outer radius": func(s: CountedEvent) -> void: s.def.outer_radius += 3.0,
+		"falloff power": func(s: CountedEvent) -> void: s.def.falloff_power += 0.5,
+		"core intensity": func(s: CountedEvent) -> void: s.def.core_intensity += 3.0,
+		"core radius": func(s: CountedEvent) -> void: s.def.core_radius += 3.0,
+		"body axis": func(s: CountedEvent) -> void: s._spread_vertical = not s._spread_vertical,
+		"shape kind": func(s: CountedEvent) -> void: s.def.shape.kind = GroundShape.Kind.RECT,
+		"shape half length": func(s: CountedEvent) -> void: s.def.shape.half_length += 7.0,
+		"shape half extents": func(s: CountedEvent) -> void: s.def.shape.half_extents += Vector2(5.0, 2.0),
+	}
+	for label: String in mutations:
+		var source := CountedEvent.new()
+		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+		source.def.shape = GroundShape.segment(17.0, 12.0)
+		source.def.core_intensity = 6.0
+		source.def.core_radius = 64.0
+		source.excitement.set_player_at(at, player)
+		var then_at := at + Vector2(10.0, 0.0) if label == "player position" else at
+		var mutate: Callable = mutations[label]
+		_resamples(t, source, at, then_at, "event " + label, mutate.bind(source))
+		source.free()
+	# The source's own velocity is a moving row's, which a cafe has none of.
+	var cyclist := CountedEvent.new()
+	cyclist.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]))
+	cyclist.age = 3.0
+	cyclist.excitement.set_player_at(at, player)
+	_resamples(t, cyclist, at, at, "event source velocity", func() -> void: cyclist.def.speed += 3.0)
+	cyclist.free()
+
+## One field of a crowd body's cache key at a time, on a body that is startled first: a jolt reaches
+## the query point only while it runs, so a field of it changed on a body that was never startled
+## changes nothing the projection reads. `_jolt` runs down every drawn frame while the body's place
+## changes on ticks, so a key without it would replay a stale value.
+func _test_crowd_key_fields(t) -> void:
+	var at := Vector2(-100.0, 12.0)
+	var mutations := {
+		"player position": func(_s: CountedCrowd) -> void: pass,
+		"player velocity": func(s: CountedCrowd) -> void: s.excitement.player_velocity = Vector2(0.0, 92.0),
+		"body position": func(s: CountedCrowd) -> void: s.position += Vector2(33.0, 8.0),
+		"body velocity": func(s: CountedCrowd) -> void: s._speed += 9.0,
+		"kind": func(s: CountedCrowd) -> void: s.kind = CrowdAgent.Kind.WALKER \
+				if s.kind == CrowdAgent.Kind.CAR else CrowdAgent.Kind.CAR,
+		"jolt left": func(s: CountedCrowd) -> void: s.excitement._jolt += 0.25,
+		"jolt duration": func(s: CountedCrowd) -> void: s.excitement._jolt_for += 0.5,
+		"jolt intensity": func(s: CountedCrowd) -> void: s.excitement._jolt_intensity += 5.0,
+		"jolt inner radius": func(s: CountedCrowd) -> void: s.excitement._jolt_inner += 5.0,
+		"jolt outer radius": func(s: CountedCrowd) -> void: s.excitement._jolt_outer += 5.0,
+	}
+	for kind: int in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+		for label: String in mutations:
+			var source := CountedCrowd.new()
+			source.kind = kind
+			source._speed = 60.0
+			source.excitement.startle(80.0, 2.0, 30.0, 170.0)
+			source.excitement.set_player_at(at, Vector2(92.0, 0.0))
+			var then_at := at + Vector2(10.0, 0.0) if label == "player position" else at
+			var mutate: Callable = mutations[label]
+			_resamples(t, source, at, then_at, "crowd %s %s" % [kind, label], mutate.bind(source))
+			source.free()
 
 func _test_live_net_and_skipped_work(t) -> void:
 	var event := CountedEvent.new()
