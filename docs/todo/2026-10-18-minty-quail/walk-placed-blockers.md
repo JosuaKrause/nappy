@@ -38,15 +38,17 @@ body placed mid-street are not such a gap.
   day 13's task). *Read as* (#1177, #1179, #1182): a roadblock the day already placed close by answers
   the task first; dawn places roadblocks next to her routes, so one usually is; the swap, below, is
   the fallback when nothing is close by.
-- **Day 13's column barricade is open** on the board as barricade-placement: either it stands to one
-  side of the street, so it leaves a contiguous full-sidewalk gap and does not block (the
-  orchestrator's pick), or it stays mid-street and takes the swap. Before #1182 it read as
-  non-blocking: "the column barricade is also non blocking so none of the blocking rules apply
-  anyway. it can be placed whenever" (inbox #1177 in gray-dolphin).
-- **Open on the board, each with the orchestrator's pick:** roadblocks-at-dawn (how dawn places
-  roadblocks next to her routes), roadblock-close-by (what counts as close by), roadblock-none-near
-  (what the task does when no roadblock is close by and no swap candidate is either), and
-  swap-replaces-seals (whether the act IV hard seals may be the events a swap replaces).
+- **Day 13's column barricade is blocking too**, since #1182 answered that very question, and it
+  follows the task roadblock's rules: it stands only route-adjacent and off her routes, out of her
+  sight, and the column's rear truck stops there; a blocking body the day placed close by comes
+  first, and a swap only when nothing is close by. *Asked for as non-blocking: "the column
+  barricade is also non blocking so none of the blocking rules apply anyway. it can be placed
+  whenever" (inbox #1177 in gray-dolphin) · superseded on 2026-11-07 by "if you place it in the middle of the street
+  it is blocking" (inbox #1182 in gray-dolphin), given on the barricade's own question.*
+- **Open on the board, for both beats, each with the orchestrator's pick:** roadblocks-at-dawn (how
+  dawn places blocking bodies next to her routes), roadblock-close-by (what counts as close by),
+  roadblock-none-near (what a beat does when nothing is close by and no swap candidate is either),
+  and swap-replaces-seals (whether the act IV hard seals may be the events a swap replaces).
 - **Day 3's fire and day 11's added mast** are sited on her way like the bag's events: "day 3 file
   is non-blocking so it doesn't need the swap, no?" (inbox #1177 in gray-dolphin; *read as* day 3's fire).
 - **The resistance's reachability moves to dawn** (the orchestrator's proposal, agreed: "I agree on
