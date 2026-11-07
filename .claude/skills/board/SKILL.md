@@ -57,8 +57,8 @@ Top to bottom, every part present even when empty:
 That is the Main tab. **The review items have a tab of their own, Review, in the same overall style,
 and it is kept in step with `docs/review/`** (inbox #948 in bouncy-marten). A review item under
 `docs/review/` is a sign-off check that needs a set-up run or a device and is answered one at a
-time, while the Main tab's questions are design decisions that block work and are answered in a
-batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
+time, while the Main tab's questions are design decisions about work in flight and are answered in
+a batch, so the two kinds stay apart; a review item stays a file in the repository, and the tab only
 shows it. The answer goes to a playtest file as before, which closes the item's file
 (**playtest-feedback**). *Proposed, not asked for, open to the player's correction:* the tab holds
 a title and one line saying what it is for, `## Waiting on you` with the items ready to answer (or
@@ -97,7 +97,9 @@ nested exactly like this, the layout the player set on the board:
   question per part, each with its own heading, Context, My pick, You and Me, so the player answers
   each on its own line and a question never bundles a design with its open choices, or which items
   to build with their order.
-- **A question that blocks says so on its Question line**, ending it with `(blocks <the work>)`.
+- **A question that blocks says so on its Question line**, ending it with `(blocks <the work>)`,
+  and its Context says what pivoting later would cost; a question that does not block ends it with
+  `(built on my pick)` (see "Blocking, and no dialogs").
 - A name stays with its question until it leaves the board, so the player can refer to it.
 
 ## Blocking, and no dialogs
@@ -105,9 +107,22 @@ nested exactly like this, the layout the player set on the board:
 **No question is put to the player as a modal dialog in the chat** (inbox #830 in minty-dolphin): a dialog stops
 the session and the player cannot scroll back while it is open, so they lose the context they need
 to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830 in minty-dolphin):
-the work it names stops until it is answered, and other work goes on. A question that does not
-block runs on My pick; work built on a pick changes to the player's answer before it merges, if the
-answer differs.
+the work it names stops until it is answered, and other work goes on.
+
+**A question blocks only when changing course after the answer would be very costly** (inbox
+#1194): a pick whose undoing means rebuilding a system, migrating a save or rewriting work several
+pull requests stand on. Everything else is built on My pick at once, and the work changes to the
+player's answer when it comes, before the pull request merges or in a later one, if the answer
+differs. A pick on a placement, a number, a merge order, or a choice between two cheap
+implementations never blocks. The exception is a pick that would drop, narrow or reinterpret
+something the player asked for: **playtest-feedback**'s "Never silently overturn a decision the
+player took" holds, and that part is not built until they answer, however cheap it would be to undo.
+
+**A question the player's recorded words already answer is not asked** (inbox #1185, inbox
+#1194): putting one up costs them a round trip to repeat themselves. Before a question goes on the
+board, the note it comes from, its appended words and the settled questions on the same work are
+read for an answer; where they give one, it is built, and the reading is stated in the brief and in
+the pull request's description, open to the player's correction there.
 
 ## Answering
 
