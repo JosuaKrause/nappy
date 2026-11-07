@@ -2,7 +2,8 @@ extends RefCounted
 ## `--invincible`, M100 "An invincible mode for playtesting": `DevFlags`' own parsing of the flag,
 ## and what the run hands on from it — `DayController.invincible`, whose `_ignores_loss()` is the
 ## single predicate all three losing paths consult, so a lost day under the flag stays running and
-## a won day still ends; `Baby.excitement_frozen`; the HUD's and the run log's own notes. Each is
+## a won day still ends; `Baby.excitement_frozen`; the HUD's own note (the run log's is
+## `tests/test_telemetry.gd`'s). Each is
 ## handed its value directly, the way `main` hands it from the run's configuration.
 
 const SEED := 4242
@@ -47,7 +48,6 @@ func run(t) -> void:
 	await _test_the_clock_and_the_meter_both_move_with_the_flag_off(t)
 	_test_the_three_losses_still_end_the_day_with_the_flag_off(t)
 	_test_the_hud_names_the_mode_when_invincible(t)
-	_test_the_run_log_notes_the_flag_once_per_day(t)
 
 # ------------------------------------------------------------ DevFlags parsing ---
 
@@ -267,27 +267,3 @@ func _hud_drawing(t, run: RunState, invincible: bool) -> Label:
 	hud.set_process(false)
 	return hud.find_child("Header", true, false) as Label
 
-# --------------------------------------------------------------- telemetry ---
-
-func _test_the_run_log_notes_the_flag_once_per_day(t) -> void:
-	var run_log := Telemetry.new("")
-	run_log.begin_run(SEED, false)
-
-	run_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
-	run_log.begin_day(1, 1, SEED, SEED, 144.0)
-	var on_lines := run_log.current_log().lines.duplicate()
-
-	run_log.configure(RunConfig.parse(PackedStringArray(), "", true))
-	run_log.begin_day(2, 1, SEED, SEED, 144.0)
-	var off_lines := run_log.current_log().lines.duplicate()
-
-	run_log.free()
-
-	# The header line is the last one `begin_day` wrote before the next call — noted the same
-	# way the seed is, once when the day opens, never as a per-frame entry.
-	t.check(on_lines[on_lines.size() - 1].contains("invincible"),
-		"the day header notes the flag the way it notes the seed (got '%s')"
-		% on_lines[on_lines.size() - 1])
-	t.check(not off_lines[off_lines.size() - 1].contains("invincible"),
-		"and says nothing on a day played with the flag off (got '%s')"
-		% off_lines[off_lines.size() - 1])

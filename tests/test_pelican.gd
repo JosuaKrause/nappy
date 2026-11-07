@@ -16,6 +16,7 @@ extends RefCounted
 ## `tests/test_event_strides.gd`; every picture being on the `events` page is
 ## `tests/test_atlas_events.gd`, through `EventPictures.family_sources()`.
 
+const RecordingLog := preload("res://tests/recording_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -366,7 +367,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	EventBus.pelican_sighted.connect(on_sighted)
 	EventBus.pelican_excited_her.connect(on_excited)
 	EventBus.pelican_struck_her.connect(on_struck)
-	var run_log := Telemetry.new("")
+	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED, false)
 	run_log.begin_day(Tuning.RUN_TAUGHT_DAY, 1, SEED, SEED, 180.0)
 	# The manager's own lines reach the run log through the trace a booted city hands it.
@@ -471,7 +472,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 			LossCause.of(GameEnums.DayResult.LOST_HARD_FAIL, def.id,
 				events.what_struck_her()))
 
-	var lines: Array[String] = run_log.current_log().lines
+	var lines: Array[String] = run_log.lines
 	var ahead := false
 	var on_screen := false
 	var struck := false

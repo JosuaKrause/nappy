@@ -18,8 +18,8 @@ extends Node
 ## never as the `-- suite  T ms` line that `tools/test.sh --record-costs` and CI's cost merge read,
 ## so a repeat can never be taken for a measurement of one run.
 ##
-## Runs as a scene rather than via `--script` so that the autoloads (Tuning, EventBus and the
-## others) actually exist — `--script` replaces the main loop and skips them.
+## Runs as a scene rather than via `--script` so that the autoloads (`Tuning` and `EventBus`)
+## actually exist — `--script` replaces the main loop and skips them.
 ##
 ## **No suite reads a global run.** The game's run lives on the `Sitting` (`Sitting.run`), which
 ## `main` takes it from; each suite makes a `RunState` of its own and hands it to what it tests (a

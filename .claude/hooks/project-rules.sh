@@ -97,7 +97,7 @@ esac
 case "$path" in
 	*/src/telemetry/*)         wanted+=(telemetry) ;;
 esac
-# The run-log autoload lives outside src/telemetry/.
+# The run log itself (`Telemetry`) lives outside src/telemetry/.
 case "$path" in
 	*/src/autoload/telemetry.gd) wanted+=(telemetry) ;;
 esac

@@ -19,37 +19,47 @@ extends RefCounted
 ## watches one library at a time: a library of its own, or the sitting's on a boot, which every node
 ## the boot builds draws from (`tests/test_atlas_loading.gd`).
 ##
-## Making one opens a run log of its own in memory (`Telemetry.new("")`) and points the library it
-## watches at it (`AtlasLibrary.trace_note`); a boot over the library's sitting points the library
-## at the boot's own log, so a suite that watches a boot hands it this one (`main.use_run_log()`).
-## `stop()` closes and frees the log, which a test owes before it ends.
+## Making one points the library it watches at a recording trace of its own
+## (`AtlasLibrary.trace_note`, a `RunTrace.recording()`'s `note`), so only the lines written from then
+## on are read. A boot over the library's sitting points the library at the boot's own run log, so a
+## suite that watches a boot hands it `boot_log()`, a recording fake (`tests/recording_log.gd`) that
+## keeps its lines in the same list. `stop()` lets the library go and frees that log, which a test
+## owes before it ends.
 
-## The run log the lines go into, open from the watch's start to `stop()`.
-var run_log := Telemetry.new("")
-var _log: TelemetryLog
+const RecordingLog := preload("res://tests/recording_log.gd")
+
+var _lines: Array[String] = []
+## Held here, since the library's `trace_note` is only a `Callable` over it.
+var _trace := RunTrace.recording(_lines)
 var _atlas: AtlasLibrary
+var _boot_log: Telemetry
 
-## Starts watching `atlas`: a fresh run log in memory, so only the lines written from here on are
-## read.
+## Starts watching `atlas`.
 func _init(atlas: AtlasLibrary) -> void:
-	run_log.begin_run(0, false)
-	_log = run_log.current_log()
 	_atlas = atlas
-	atlas.trace_note = run_log.note
+	atlas.trace_note = _trace.note
 
-## Stops the library writing here, and closes and frees the run log this watch opened.
+## The run log to hand a boot over the watched library's sitting (`main.use_run_log()`): open, and
+## keeping what the boot's trace writes beside the library's own lines.
+func boot_log() -> Telemetry:
+	if _boot_log == null:
+		_boot_log = RecordingLog.new(_lines)
+		_boot_log.begin_run(0)
+	return _boot_log
+
+## Stops the library writing here, and frees the boot's log if one was handed out.
 func stop() -> void:
 	_atlas.trace_note = Callable()
-	run_log.end_run()
-	run_log.free()
+	if _boot_log:
+		_boot_log.free()
 
 ## How many times `group`'s page has been read from disk since the watch began.
 func loads(group: StringName) -> int:
-	return _lines(group, " loaded in the ").size()
+	return _lines_about(group, " loaded in the ").size()
 
 ## How many times the last reference on `group` has dropped its page since the watch began.
 func releases(group: StringName) -> int:
-	return _lines(group, " released after ").size()
+	return _lines_about(group, " released after ").size()
 
 ## Whether `group`'s page is held now, for a library that held nothing of it when the watch began:
 ## it was read more often than it was dropped.
@@ -59,7 +69,7 @@ func held(group: StringName) -> bool:
 ## The moment `group`'s page was last read from disk in (`AtlasLibrary.MOMENT_STARTUP` and its
 ## siblings), or `&""` if it has not been read since the watch began.
 func last_moment(group: StringName) -> StringName:
-	var found := _lines(group, " loaded in the ")
+	var found := _lines_about(group, " loaded in the ")
 	if found.is_empty():
 		return &""
 	var line: String = found[found.size() - 1]
@@ -67,12 +77,10 @@ func last_moment(group: StringName) -> StringName:
 	return StringName(after.get_slice(": ", 0))
 
 ## Every line about `group` carrying `marker`, in order.
-func _lines(group: StringName, marker: String) -> Array[String]:
+func _lines_about(group: StringName, marker: String) -> Array[String]:
 	var lead := "atlas page '%s'%s" % [group, marker]
 	var found: Array[String] = []
-	if _log == null:
-		return found
-	for line in _log.lines:
+	for line in _lines:
 		if lead in line:
 			found.append(line)
 	return found

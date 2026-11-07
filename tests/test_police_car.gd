@@ -9,6 +9,7 @@ extends RefCounted
 ## displacement per step, not `move_and_slide()`'s own), and the car is stepped by hand, a frame
 ## at a time, told where she and her pram are the way `EventManager` tells it.
 
+const RecordingLog := preload("res://tests/recording_log.gd")
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
@@ -771,7 +772,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 	_tell(car, player)
 	var baby := Baby.new()
 	var clock := DayController.new()
-	var run_log := Telemetry.new("")
+	var run_log := RecordingLog.new()
 	var observer := TelemetryObserver.new(run_log)
 	observer.setup(city.run, city, player, baby, clock, null, false)
 	t.add_child(observer)
@@ -798,13 +799,13 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 ## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
 ## and lets another pass for it to write the cue in `run_log`; returns the cue line the log gained,
 ## or "".
-func _the_mark_cue(t, player: Stroller, run_log: Telemetry) -> String:
-	var before := run_log.current_log().lines.size()
+func _the_mark_cue(t, player: Stroller, run_log: RecordingLog) -> String:
+	var before := run_log.lines.size()
 	player.warn(Stroller.Alert.SOON, 5.0)
 	await t.get_tree().process_frame
 	player.stand_down(&"")
 	await t.get_tree().process_frame
-	var lines: Array = run_log.current_log().lines
+	var lines: Array = run_log.lines
 	for i in range(before, lines.size()):
 		if String(lines[i]).contains("the mark over her head"):
 			return String(lines[i])

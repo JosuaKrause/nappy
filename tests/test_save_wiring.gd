@@ -36,6 +36,7 @@ extends RefCounted
 ## ordinary `write()`, `try_resume()` and `clear()` reach it.
 
 const Boot := preload("res://tests/booted_main.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 const _SCRATCH_PATH := "user://test_save_wiring_scratch.json"
@@ -272,8 +273,8 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 ## signal on a booted game that has a save under way, then a second boot, the reloaded one.
 ##
 ## **The restart deletes the save before the run log closes**, so the "deleted the save" line is
-## written into the run being abandoned: a log held in memory stands in for the run's, and is the
-## `Telemetry` log the restart closes. **And it stamps the sitting** the reloaded boot's title
+## written into the run being abandoned: a recording log (`tests/recording_log.gd`) stands in for
+## the run's, and is the log the restart closes. **And it stamps the sitting** the reloaded boot's title
 ## measures its restart guard against (`Sitting.restarted_at_msec`), since that title is a fresh one.
 func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	_begin()
@@ -281,19 +282,18 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	var home := Node.new()
 	t.add_child(home)
 	var calls := Calls.new()
-	var run_log := Telemetry.new("")
+	var run_log := RecordingLog.new()
 	var main := await _boot(t, _windowed(), calls, home, true, run_log)
 	await Boot.press_title(t, main, "Tap")
 	t.check(FileAccess.file_exists(_SCRATCH_PATH), "a save exists before the restart")
 	run_log.begin_run(0, false)
-	var log: TelemetryLog = run_log.current_log()
 
 	Boot.pause(main).restart_requested.emit()
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "the held restart clears it")
 	t.check(calls.reloads.size() == 1, "and reloads the scene")
-	t.check(log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
+	t.check(run_log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
 			"the restart's deletion is logged")
-	t.check(run_log.current_log() == null, "and the log is closed after it, not before")
+	t.check(not run_log.is_active(), "and the log is closed after it, not before")
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	t.check(sitting != null, "the restart parks the sitting in its home before the reload")
 	t.check(sitting != null and sitting.restarted_at_msec > -INF,

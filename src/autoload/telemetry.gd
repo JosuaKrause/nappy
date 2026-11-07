@@ -6,8 +6,8 @@ extends Node
 ## first boot (`Sitting`), so it outlives the scene reloads a run makes as the save does, and finds
 ## it there after; it hands it to `RunSession`, which opens and closes it and hands it to the
 ## `TelemetryObserver`, and whatever else writes a line is handed the session's `RunTrace` over its
-## `note()`. A suite makes one of its own and hands it the same way (`main.use_run_log()`), so no
-## suite reads or leaves behind a log another can see.
+## `note()`. A suite that reads what was logged hands a recording fake the same way
+## (`main.use_run_log()`), and only the run log's own suite makes a real one, over a scratch folder.
 ##
 ## **Inert until `begin_run()`.** Nothing writes a file, opens a directory or costs a string
 ## concatenation until the game itself asks for a run to be traced. `note()` on a dormant log is a
@@ -44,9 +44,8 @@ const DIRECTORY := "user://telemetry"
 ## The name `main` gives the sitting's log, and what the next boot looks for under the sitting.
 const NODE_NAME := "RunLog"
 
-## Where this log's day folders go: `DIRECTORY` for the game's, a scratch folder for a suite that
-## opens a real run, or `""` for a log that keeps each run in memory only, writing no folder, no
-## file and no picture, which is what a suite hands the game for a run it reads back.
+## Where this log's day folders go: `DIRECTORY` for the game's, a scratch folder for the run log's
+## own suite.
 var _directory := DIRECTORY
 
 var _log: TelemetryLog
@@ -55,7 +54,7 @@ var _log: TelemetryLog
 var _clock := 0.0
 var _day_open := false
 ## The current run's own folder, absolute — every artefact of this run is written under it.
-## `""` when the log is in memory only, which is what the test suite runs on.
+## `""` while no run is open.
 var _run_dir := ""
 ## How many times `begin_day()` has opened each day number this run. A nerve buys another attempt
 ## at the same day without the calendar advancing — see `RunCalendar.finish_day()` — so
@@ -144,28 +143,21 @@ func _web_override_requested() -> bool:
 ## way to override that. See `_web_override_requested()` for what turns it back on.
 ##
 ## **The day folders go under the directory the log was made with** (`_init()`): the game's makes
-## its runs under `DIRECTORY`; a suite that opens a real run makes its log over a scratch one, so it
-## writes nothing under the player's own, and a log made over `""` keeps the run in memory, with no
-## folder and no file, the same in-memory log `TelemetryLog` falls back to.
+## its runs under `DIRECTORY`; the run log's own suite makes its log over a scratch one, so it
+## writes nothing under the player's own.
 func begin_run(run_seed: int, played := true) -> void:
 	end_run()
 	if OS.has_feature("web") and not _web_override_requested():
 		return
-	_run_dir = ""
-	if _directory != "" and not _open_the_run_folder(run_seed, played):
+	if not _open_the_run_folder(run_seed, played):
 		return
-	_log = TelemetryLog.new("%s/run.log" % _run_dir if _run_dir != "" else "")
+	_log = TelemetryLog.new("%s/run.log" % _run_dir)
 	_clock = 0.0
 	_day_open = false
 	_shots.restart_schedule()
 	_shots.restart_names()
 	_day_attempts = {}
 	_attempt = 1
-	# A log in memory has no folder for a person to find, so its header names no time or version,
-	# which would cost two `git` calls a suite makes for every log it opens.
-	if _run_dir == "":
-		_log.header("nappy %s log  (memory)" % ("run" if played else "rig"))
-		return
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			BuildInfo.source_version()])
@@ -366,9 +358,9 @@ func snapshot(kind: String) -> void:
 ## context, because this file must not start asking the world questions.
 ## **The note is written whenever there is a log at all, and only the picture needs a file to sit
 ## beside.** The two halves are guarded separately on purpose: a log with no path is a real state —
-## it is what a log made over no directory opens, and what the whole suite runs on — and folding the
-## two guards together made the entry disappear along with the PNG, which is the valuable half going
-## missing in exactly the configuration that can still keep it.
+## it is what a run keeps when its file cannot be opened (`TelemetryLog`'s own fallback) — and
+## folding the two guards together made the entry disappear along with the PNG, which is the
+## valuable half going missing in exactly the configuration that can still keep it.
 func snapshot_now(context: String) -> void:
 	if not _log:
 		return

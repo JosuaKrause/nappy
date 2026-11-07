@@ -40,6 +40,7 @@ const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
@@ -136,7 +137,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	for male in [false, true]:
 		# Handed the watch's log: a boot points the sitting's library at the log it writes.
 		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
-				"father" if male else "mother"], pages.run_log)
+				"father" if male else "mother"], pages.boot_log())
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
 		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
@@ -228,7 +229,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 	var atlas := seat.sitting.atlas
 	var pages := PageLog.new(atlas)
 	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"],
-			pages.run_log)).free_all()
+			pages.boot_log())).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
@@ -322,10 +323,9 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	var reloads: Array[int] = []
 	var lines: Array[String] = []
 
-	# A run log in memory, handed to every boot, open before the first.
-	var run_log := Telemetry.new("")
+	# A recording run log keeping its lines in `lines`, handed to every boot, open before the first.
+	var run_log := RecordingLog.new(lines)
 	run_log.begin_run(SEED, false)
-	var log: TelemetryLog = run_log.current_log()
 	var first := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, first)
 	for _i in 60:
@@ -335,14 +335,12 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME))
 	t.check(parked != null and _sittings_in(home) == [parked],
 			"the held restart parks the one sitting in the home")
-	lines.append_array(log.lines)
 	_shut(t, first)
 	# The restart handed the sitting a fresh run, which the reloaded boot plays.
 	run = seat.sitting.run
 
-	# The restart closed the run log; the reloaded boot's lines go in a fresh one.
+	# The restart closed the run log; the reloaded boot's lines go in once it is open again.
 	run_log.begin_run(SEED, false)
-	log = run_log.current_log()
 	var second := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, second)
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
@@ -361,7 +359,6 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	_shut(t, second)
 	var escape := await _boot_in(t, home, save, reloads, run_log)
 	t.check(_one(escape, "InteriorScene") != null, "and that boot builds the building")
-	lines.append_array(log.lines)
 	_shut(t, escape)
 
 	var loads := 0

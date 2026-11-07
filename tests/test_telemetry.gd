@@ -16,6 +16,8 @@ extends RefCounted
 ## fourteen thousand checks below it is running a file write it did not ask for.
 
 const BuildingEvents := preload("res://tests/building_events.gd")
+## The burst suite, whose bench (`Bench`) the burst test here hands the run log.
+const BurstSuite := preload("res://tests/test_burst_capture.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
 ## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
@@ -66,7 +68,8 @@ class Rig extends RefCounted:
 			node.free()
 
 func run(t) -> void:
-	_log = Telemetry.new("")
+	var suite_scratch := "user://telemetry-test-suite-%d" % Time.get_ticks_usec()
+	_log = Telemetry.new(suite_scratch)
 	_test_it_is_off_until_a_run_asks_for_it(t)
 	_test_a_line_is_a_time_a_kind_and_a_sentence(t)
 	_test_order_is_the_record(t)
@@ -108,7 +111,11 @@ func run(t) -> void:
 	_test_no_spike_line_with_the_flag_off(t)
 	await _test_the_observer_watches_its_frames_on_real_frames(t)
 	_test_a_baked_page_says_which_moment_loaded_it(t)
+	_test_the_day_header_notes_the_invincible_flag_once_per_day(t)
+	_test_a_headless_burst_is_refused_without_a_capture_wait(t)
+	_test_a_day_or_a_run_ending_cuts_the_active_burst_short(t)
 	_log.free()
+	_delete_recursive(suite_scratch)
 
 ## A screen that can draw, which a headless process has none of: every frame is ready the moment it
 ## is asked for, and the picture is a small image. Handed to `Telemetry.use_screen()` it makes
@@ -127,7 +134,7 @@ class DrawingScreen extends TelemetryScreen:
 
 ## Opens a real run in a scratch folder of its own, on a log over that folder photographing a
 ## screen that can draw, and returns that folder (the run's own is below it).
-## `_close_the_scratch_run()` frees that log and puts the suite's memory log back.
+## `_close_the_scratch_run()` frees that log and puts the suite's own back.
 func _open_a_scratch_run(name: String) -> String:
 	var scratch := "user://telemetry-test-%s-%d" % [name, Time.get_ticks_usec()]
 	_use_a_log_over(scratch)
@@ -136,26 +143,28 @@ func _open_a_scratch_run(name: String) -> String:
 	return scratch
 
 func _close_the_scratch_run(scratch: String) -> void:
-	_put_back_the_memory_log()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
-## The run log every test here drives (`Telemetry`): the suite's own, in memory, made as the suite
-## starts and freed as it ends, or for the length of a real run a log over a scratch folder
-## (`_use_a_log_over()`).
+## The run log every test here drives (`Telemetry`): the suite's own, over a scratch folder made as
+## the suite starts and removed as it ends, or for the length of one test a log over a scratch
+## folder of that test's own (`_use_a_log_over()`). This suite is the one place a test builds the
+## real run log: every other suite that reads what was logged hands a recording fake
+## (`tests/recording_log.gd`, or a `RunTrace.recording()`).
 var _log: Telemetry
-## The suite's memory log while `_log` is a scratch folder's.
-var _memory_log: Telemetry
+## The suite's own log while `_log` is a test's.
+var _suite_log: Telemetry
 
 ## Swaps the suite's log for a fresh one over `scratch`, a real folder, until
-## `_put_back_the_memory_log()`.
+## `_put_back_the_suite_log()`.
 func _use_a_log_over(scratch: String) -> void:
-	_memory_log = _log
+	_suite_log = _log
 	_log = Telemetry.new(scratch)
 
-## Frees the scratch folder's log and puts the suite's memory log back.
-func _put_back_the_memory_log() -> void:
+## Frees the test's log and puts the suite's own back.
+func _put_back_the_suite_log() -> void:
 	_log.free()
-	_log = _memory_log
+	_log = _suite_log
 
 ## The file names in one of the open run's picture folders (`auto`, `asked`), sorted.
 func _pictures(kind: String) -> PackedStringArray:
@@ -1286,7 +1295,7 @@ func _delete_recursive(path: String) -> void:
 			DirAccess.remove_absolute(ancestor)
 
 ## The only way to check a folder actually landed where `begin_run()` says it does is to open a
-## real run — a log in memory has no path to inspect. `false` (a rig) because this is a
+## real run of a log over a folder of the test's own. `false` (a rig) because this is a
 ## scripted check rather than a person at the controls, the same reason `check.sh` and `shot.sh`
 ## write `rig-`.
 func _test_a_runs_files_share_one_folder(t) -> void:
@@ -1322,7 +1331,7 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	t.check(found.has("day01-attempt1.png"),
 			"a first attempt is named like every other attempt (got %s)" % found)
 
-	_put_back_the_memory_log()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 ## Every filename that can repeat within a run asks for its attempt's suffix, the first attempt
@@ -1357,7 +1366,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 	found = DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found.has("day06-attempt3.png"),
 			"day 6 keeps its own count across whatever happened to other days in between")
-	_put_back_the_memory_log()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 ## The run's calendar (`RunCalendar.finish_day()`) retries a lost day by starting it again with the
@@ -1392,7 +1401,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 	t.check(found.has("day06-attempt2-dusk.png"),
 			"and a second dusk picture (got %s)" % found)
 
-	_put_back_the_memory_log()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 # -------------------------------------------------------------- the web override ---
@@ -1642,3 +1651,73 @@ func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 		parts.append("%s=%d:%d" % [RunTrace.tile(block),
 				state.purpose_of(map.block_plans, block), CityStateReads.changed_on(state, block)])
 	return "|".join(parts)
+
+# --------------------------------------------------------- moved in: the log's own ---
+
+## `--invincible` is noted on the day header the way the seed is, once when the day opens, never as
+## a per-frame entry, so a log of a day that could not be lost says so.
+func _test_the_day_header_notes_the_invincible_flag_once_per_day(t) -> void:
+	_log.begin_run(4242, false)
+
+	_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
+	_log.begin_day(1, 1, 4242, 4242, 144.0)
+	var on_lines := _log.current_log().lines.duplicate()
+
+	_log.configure(RunConfig.parse(PackedStringArray(), "", true))
+	_log.begin_day(2, 1, 4242, 4242, 144.0)
+	var off_lines := _log.current_log().lines.duplicate()
+
+	_log.configure(null)
+	_log.end_run()
+
+	# The header line is the last one `begin_day` wrote before the next call — noted the same
+	# way the seed is, once when the day opens, never as a per-frame entry.
+	t.check(on_lines[on_lines.size() - 1].contains("invincible"),
+		"the day header notes the flag the way it notes the seed (got '%s')"
+		% on_lines[on_lines.size() - 1])
+	t.check(not off_lines[off_lines.size() - 1].contains("invincible"),
+		"and says nothing on a day played with the flag off (got '%s')"
+		% off_lines[off_lines.size() - 1])
+
+## The run log's own burst refuses in a headless run, where its screen draws nothing; the refusal
+## starts nothing, so a second request is refused the same way and not as an overlap.
+func _test_a_headless_burst_is_refused_without_a_capture_wait(t) -> void:
+	_log.begin_run(0, false)
+	t.check(not _log.start_burst("headless test"),
+			"headless capture refuses without beginning a renderer wait")
+	var lines := _log.current_log().lines
+	t.check(not _log.start_burst("headless again")
+				and lines.filter(func(line: String) -> bool:
+					return line.contains("burst refused: no drawable viewport")).size() == 2
+				and lines.filter(func(line: String) -> bool:
+					return line.contains("another burst is active")).is_empty(),
+			"headless refusal leaves no active recorder")
+	_log.end_run()
+
+## `end_day()` and `end_run()` each cut the active sequence short, with their own reason. A log over
+## a folder of the test's own is handed a recorder on the burst suite's bench (its screen, clock and
+## scratch folder, `tests/test_burst_capture.gd`) through `use_bursts()`, the way `main` hands the
+## log it makes the game's own, which is on the viewport and draws nothing here.
+func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
+	var bench = BurstSuite.Bench.new("day-and-run")
+	var scratch := "user://telemetry-test-bursts-%d" % Time.get_ticks_usec()
+	_use_a_log_over(scratch)
+	_log.use_bursts(bench.recorder)
+	_log.begin_run(0, false)
+	var day: String = bench.start("cut by the day")
+	bench.draw()
+	_log.end_day()
+	var by_day: Dictionary = bench.manifest(day)
+	t.check(by_day.get("status") == "cancelled" and by_day.get("reason") == "day ended"
+				and (by_day.get("frames", []) as Array).size() == 1 and not bench.busy(),
+			"ending a day cuts its active burst short, keeping the frames drawn")
+	var run: String = bench.start("cut by the run")
+	bench.draw()
+	_log.end_run()
+	var by_run: Dictionary = bench.manifest(run)
+	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
+				and not bench.busy(),
+			"ending the run cuts its active burst short")
+	_put_back_the_suite_log()
+	_delete_recursive(scratch)
+	bench.close()

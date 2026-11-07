@@ -265,9 +265,8 @@ func use_save(save: GameSave) -> void:
 	_save = save
 
 ## Hands this boot a run log of the caller's own (`Telemetry`) in place of the one under its
-## sitting: a suite's, made over a scratch folder or none (`Telemetry.new("")`, a log in memory), so
-## the boot writes nothing under the player's own and the suite reads back the lines it wrote. Set
-## before the boot runs; the caller frees it.
+## sitting: a suite's recording fake, so the boot writes nothing under the player's own and the
+## suite reads back the lines it was handed. Set before the boot runs; the caller frees it.
 func use_run_log(run_log: Telemetry) -> void:
 	_run_log = run_log
 
@@ -512,6 +511,7 @@ func _ready() -> void:
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
+		still_watch.trace = _the_trace()
 		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds,
 				StillWatch.telemetry_picture_dir(_run_log), config.recording)
 

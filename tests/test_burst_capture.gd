@@ -12,23 +12,23 @@ extends RefCounted
 func run(t) -> void:
 	_test_b_and_the_rig_action_choose_the_burst(t)
 	_test_a_release_build_ignores_the_capture_keys(t)
-	_test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t)
+	_test_overlapping_requests_refuse_before_a_capture_wait(t)
 	_test_unique_paths_and_manifest_timing(t)
 	_test_cancellation_and_stale_callbacks_cannot_cross_sequences(t)
-	_test_a_day_or_a_run_ending_cuts_the_active_burst_short(t)
 	_test_metadata_write_failure_stops_without_claiming_success(t)
 
 const UI := preload("res://tests/ui_screens.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 
-## The readout the way `main` sets it up on a debug build, handed a `RunSession` over the run log
-## (a log held in memory), in a tree where the viewport delivers it keys.
+## The readout the way `main` sets it up on a debug build, handed a `RunSession` over a recording
+## run log (`tests/recording_log.gd`), in a tree where the viewport delivers it keys.
 class Rig:
 	var readout := DebugReadout.new()
 	var label := Label.new()
 	var layer := CanvasLayer.new()
 	var session := RunSession.new()
 	var run := RunState.new()
-	var run_log := Telemetry.new("")
+	var run_log := RecordingLog.new()
 
 	func _init(t, debug_build := true) -> void:
 		run_log.begin_run(0, false)
@@ -42,7 +42,7 @@ class Rig:
 	## The run log's lines that begin a picture or a burst the key asked for.
 	func asked() -> Array[String]:
 		var found: Array[String] = []
-		for line: String in run_log.current_log().lines:
+		for line: String in run_log.lines:
 			if line.contains("asked for a picture") or line.contains("burst"):
 				found.append(line)
 		return found
@@ -218,20 +218,9 @@ class Bench:
 				DirAccess.remove_absolute("%s/%s" % [path, file])
 		DirAccess.remove_absolute(path)
 
-## The run log's own burst refuses in a headless run, where its screen draws nothing, and on a log
-## with no run folder; the refusal starts nothing, so a second request is refused the same way and
-## not as an overlap. A recorder with a sequence running refuses a second before it can replace it.
-func _test_headless_and_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
-	var run_log := Telemetry.new("")
-	run_log.begin_run(0, false)
-	t.check(not run_log.start_burst("headless test"),
-			"headless capture refuses without beginning a renderer wait")
-	t.check(not run_log.start_burst("headless again")
-				and _count(run_log.current_log().lines, "burst refused: no drawable viewport") == 2
-				and _count(run_log.current_log().lines, "another burst is active") == 0,
-			"headless refusal leaves no active recorder")
-	run_log.free()
-
+## A recorder with a sequence running refuses a second before it can replace it. (The run log's own
+## burst refusing headless is `tests/test_telemetry.gd`'s.)
+func _test_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
 	var bench := Bench.new("overlap")
 	var first := bench.start("first")
 	t.check(first != "" and not bench.recorder.start(bench.root, "overlap test")
@@ -361,32 +350,6 @@ func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 				and bench.manifest(old).get("reason") == "day ended"
 				and (bench.manifest(old).get("frames", [1]) as Array).is_empty(),
 			"an old timer or post-draw coroutine cannot finalize a newer sequence")
-	bench.close()
-
-## `Telemetry.end_day()` and `end_run()` each cut the active sequence short, with their own reason.
-## A run log of the test's own is handed a recorder on this bench's screen, clock and scratch
-## folder (`use_bursts()`, the way `main` hands the log it makes the game's own, which is on the
-## viewport and draws nothing here).
-func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
-	var bench := Bench.new("day-and-run")
-	var run_log := Telemetry.new("")
-	run_log.use_bursts(bench.recorder)
-	run_log.begin_run(0, false)
-	var day := bench.start("cut by the day")
-	bench.draw()
-	run_log.end_day()
-	var by_day := bench.manifest(day)
-	t.check(by_day.get("status") == "cancelled" and by_day.get("reason") == "day ended"
-				and (by_day.get("frames", []) as Array).size() == 1 and not bench.busy(),
-			"ending a day cuts its active burst short, keeping the frames drawn")
-	var run := bench.start("cut by the run")
-	bench.draw()
-	run_log.end_run()
-	var by_run := bench.manifest(run)
-	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
-				and not bench.busy(),
-			"ending the run cuts its active burst short")
-	run_log.free()
 	bench.close()
 
 ## A manifest that can no longer be written ends the sequence, and the log never calls it a

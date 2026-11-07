@@ -1041,9 +1041,9 @@ window is exactly the run worth reading and a buffered log of it would be empty.
 **The run log is an observer: nothing that decides anything calls it, and nothing fetches it.** The
 log itself (`Telemetry`, `src/autoload/telemetry.gd`) is a node `main` keeps under the sitting, made
 on the sitting's first boot and found there after, so a run's log outlives the scene reloads it
-makes; `main` hands it to `RunSession`, and a suite hands a boot one of its own (`main.use_run_log()`,
-a log made over no folder keeps its lines in memory). Three hands write into it, each through
-something it was handed:
+makes; `main` hands it to `RunSession`, and a suite that reads what a boot logged hands it a
+recording fake (`main.use_run_log()`, `tests/recording_log.gd`). Three hands write into it, each
+through something it was handed:
 
 - **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
   calls only its `open()` (once per boot, keeping a log a reload carried over) and `close()` (the

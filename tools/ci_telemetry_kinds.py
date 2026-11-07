@@ -8,11 +8,11 @@ compare with instead (`TelemetryLog.note()` takes any `String`), so this reads b
 person auditing the drift by hand would, and requires them to be exactly equal: a kind written and
 undocumented, or documented and never written, both fail.
 
-- **Written**: every `.note(<kind>, ...)` call on a receiver under `src/` — the handed run log's
-  `_log.note(` and the injected run trace's `trace.note(`, `_trace.note(`, `_the_trace().note(`
-  alike — the bare `note(<kind>, ...)` inside a file that defines `note()`
-  (`src/autoload/telemetry.gd`, `src/visuals/atlas_library.gd`), and a file's own `_note(...)`
-  helper, whose kind is its first argument, or its second where the first
+- **Written**: every `.note(<kind>, ...)` call on any receiver under `src/` (the handed run log's
+  `_log.note(`, a run trace's `trace.note(`, `_trace.note(` or `_the_trace().note(`, the atlas
+  library's `atlas.note(`, and any other), every bare `note(<kind>, ...)` call in any file under
+  `src/` (the run log's and the atlas library's calls to their own `note()`), and every call of a
+  `_note(...)` helper, whose kind is its first argument, or its second where the first
   is a bare name (`_note(trace, "plan", ...)`, the trace it hands on). The kind is everything up to
   the next comma, and every double-quoted `[a-z_]+` literal in it counts, so a call that picks its
   kind at runtime from two literals (`"calm" if calm else "left"`) names both. Scanned one line at a
@@ -107,8 +107,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/ci_telemetry_kinds.py",
         description=(
-            'Fails unless the telemetry kinds written under src/ (_log.note("kind", ...), trace.note("kind",'
-            ' ...) and a _note(trace, "kind", ...) helper) and the rows'
+            'Fails unless the telemetry kinds written under src/ (a .note("kind", ...) call on any receiver,'
+            ' a bare note("kind", ...) call and a _note(trace, "kind", ...) helper) and the rows'
             " of docs/TELEMETRY.md's entry-kinds table are the same set. Takes no arguments."
         ),
         epilog=EPILOG,

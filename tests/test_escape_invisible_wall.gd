@@ -39,7 +39,7 @@ func run(t) -> void:
 			fresh.facts.escape_section = DaySpec.Section.BUILDING)
 	# Handed the watch's log: a boot points the sitting's library at the log it writes.
 	var pages := PageLog.new(seat.sitting.atlas)
-	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.run_log)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, [], pages.boot_log())
 	var main := booted.main
 	var interior := Boot.interior(main)
 	t.check(interior != null, "the boot stands in the building")

@@ -479,8 +479,8 @@ injected instead of a static patched); it is never retried and the runner does n
 Exceptions are fields, never owners: `EXEMPT` in that file names each with its reason (memoised
 statics); no owner is skipped, and no autoload is the run or an observer of it: each test is
 handed a fresh run, and the run log and the visit counter are nodes `main` keeps under the boot's
-sitting, freed with it, so a suite that reads what a boot logs hands it a log of its own
-(`main.use_run_log()`). A new exemption needs a reason of that kind, not a convenience.
+sitting, freed with it, so a suite that reads what a boot logs hands it a recording fake
+(`tests/recording_log.gd`, through `main.use_run_log()`). A new exemption needs a reason of that kind, not a convenience.
 
 ## When a suite errors
 

@@ -19,6 +19,7 @@ const UI := preload("res://tests/ui_screens.gd")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCREEN_SCENE := preload("res://scenes/ui/pause_screen.tscn")
@@ -47,6 +48,31 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 
 ## A readout handed the world by hand: its label and layer, her, the baby and the day's clock, and
 ## the nodes to free. Built through the readout's own `setup()` and `watch()`, the way `main` does.
+## `--quit-when-still` writes its `still` line into the boot's run log: `main` hands the watch the
+## trace it hands every other writer (`StillWatch.trace`, the session's), so a line the watch writes
+## reaches the recording run log the boot is handed (`tests/recording_log.gd`). The hold is long
+## enough that the watch never fires and quits here.
+func _test_the_still_watch_writes_into_the_boots_run_log(t) -> void:
+	var run_log := RecordingLog.new()
+	run_log.begin_run(SEED)
+	var run := RunState.new()
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
+			Boot.config(["--quit-when-still", "600"]),
+			func(main: Node) -> void:
+				main.use_sitting_home(home)
+				main.use_run_log(run_log))
+	var watch := booted.main.get_node_or_null("StillWatch") as StillWatch
+	t.check(watch != null, "a --quit-when-still boot builds the watch")
+	if watch:
+		watch.trace.note("still", "the watch's own line")
+	t.check(run_log.lines.any(func(line: String) -> bool:
+				return line.ends_with("still the watch's own line")),
+			"and what the watch writes reaches the boot's run log (%s)" % [run_log.lines.slice(-3)])
+	booted.free_all()
+	run_log.free()
+	home.free()
+
 class ReadoutRig:
 	var readout := DebugReadout.new()
 	var label := Label.new()
@@ -87,6 +113,7 @@ class ReadoutRig:
 
 func run(t) -> void:
 	await _test_a_boot_gives_the_day_its_configured_length(t)
+	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)
 	await _test_the_readout_flag_shows_it_on_a_release_build(t)
