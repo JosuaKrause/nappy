@@ -2,7 +2,12 @@ extends RefCounted
 ## Residency is presentation only: coverage, hysteresis, reconstruction, stable identity and RNG.
 ## The three ground modes schedule the same lazy, nearby preparation; the rest of the suite runs
 ## in the default.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY := preload("res://scenes/world/city.tscn")
 const GroundCells := preload("res://tests/ground_cells.gd")
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
@@ -31,7 +36,7 @@ func _view(at: Vector2) -> Rect2:
 func _city_for(t, seed_value: int) -> City:
 	var city: City = RunCity.with_own_run(CITY, seed_value)
 	t.add_child(city)
-	city.build(CityGenerator.generate(seed_value))
+	city.build(MapCache.of(seed_value))
 	_record_the_roofs(city)
 	return city
 

@@ -13,7 +13,12 @@ extends RefCounted
 ## them is not running the traffic the game runs. The scenarios build their own cars rather than
 ## taking whichever ones a day happens to produce — a turn is a rare event in a random minute, and
 ## a test that waits for one is a test that usually asserts nothing.
+##
+## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
+## seed's city is generated once in the test process and every case is handed a copy of its own,
+## the same city `CityGenerator.generate()` builds for the seed.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 const SEED := 4242
@@ -72,7 +77,7 @@ func run(t) -> void:
 	for scenario in scenarios:
 		_city = RunCity.with_own_run(CITY_SCENE, SEED)
 		t.add_child(_city)
-		_city.build(CityGenerator.generate(SEED))
+		_city.build(MapCache.of(SEED))
 		_junction = _plain_junction()
 		t.check(_junction.x >= 0, "this city has an ordinary four-way junction to turn at")
 		if _junction.x >= 0:

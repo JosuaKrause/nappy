@@ -28,5 +28,15 @@ var alley := Rect2i()
 ## seconds of somewhere you would rather not be.
 var passage := Rect2i()
 
+## The same carves as a layout of its own (`CityMap.copy()`).
+func copy() -> BlockLayout:
+	var twin := BlockLayout.new()
+	twin.open_rect = open_rect
+	twin.playground = playground
+	twin.square = square
+	twin.alley = alley
+	twin.passage = passage
+	return twin
+
 static func has(rect: Rect2i) -> bool:
 	return rect.size.x > 0 and rect.size.y > 0
