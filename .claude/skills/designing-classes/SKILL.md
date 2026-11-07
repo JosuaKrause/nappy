@@ -20,17 +20,21 @@ knowing its details: it never reads an event's settings or fields to work out an
 give itself, and callers never filter the raw list of the day's event plans themselves, since the
 interface is there to carry that question. This holds for every aspect of events, not only the one a
 change is about. An ability an event has is a part it is composed of, never a subclass: composition
-over inheritance (inbox #1173), as `EventBehaviours.compose()` builds an event's behaviours from its row's
-data. *Read as, the filer's reading and not the player's words:* the same holds for anything many
-classes use.
+over inheritance (inbox #1173). *Read as, the filer's reading and not the player's words:* the same
+holds for anything many classes use.
 
 **Fields are not API** (inbox #1173). One object never reads or writes another object's fields: every
 interaction between objects goes through the other's methods, so a stored field can become a
 computation without any of its readers changing. The calls are methods rather than GDScript
 properties because a property and a plain field look the same where they are read, and GDScript has
-no private fields, only the underscore convention; only a method call shows a reader, and a check,
-that a member is API. A property is used only inside its own class (inbox #1173). State another class
-needs is kept in an underscore field behind a method.
+no private fields, only the underscore convention; only a method call shows a reader that a member is
+API, and it is the form a script could tell apart. A property is used only inside its own class (inbox #1173). *Read as,
+the filer's reading and not the player's words:* the rule covers the vars that classes under `src/`
+declare; it does not cover an engine object's properties (`position`, `visible`, the tree's
+`paused`, as **godot** uses them) or constants and enums (`Tuning.X`). Much of `src/` still reads
+fields across objects; new code does not, and a change that touches such a read moves it behind a
+method. *Proposed by the filer, open to the player's correction:* state another class needs is kept
+in an underscore field behind a method.
 
 *Proposed by the filer, open to overturn (plush-kestrel):* the target layers are minty-quail's (data
 and configuration; the domain model; the world; simulation; run flow; observers); a fix lands in the
