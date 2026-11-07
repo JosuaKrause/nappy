@@ -91,7 +91,7 @@ exposes (drawing, a signal, input and frames) or the member is removed or needs 
 
 **The two weaker tiers that no pass schedules.** The DEV-only readers (the only `src/` caller is
 under `src/dev`, the scene-recipe and rig tools): about 55 names, among them `Crowd.add_recipe_actor`
-and `recipe_coverage`, `City.set_region_plan`, `ResistanceDirector.read_mark`,
+and `recipe_coverage`, `DayStreets.replace_region_plan`, `ResistanceDirector.read_mark`,
 `start_recipe_task` and `scene_task_errors`, `EventManager.start_recipe`,
 `EventScheduler.place_at` and `recipe_placement`, `EventInstance.walk_on_by_hand`,
 `solid_part_centres`, `solid_part_shapes` and `is_solid`, `WorldMap.is_obstructed` and

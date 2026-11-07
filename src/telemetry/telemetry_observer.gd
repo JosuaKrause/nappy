@@ -112,9 +112,6 @@ const BLOCKED_REPORT_INTERVAL := 3.0
 ## The run log every line here goes into and whose clock stamps them (`Telemetry`), handed in at
 ## its making by `RunSession`, which owns both: the boot's own log, or a suite's.
 var _log: Telemetry
-## The run whose calendar day a day's route tree is read for (`start_day()`), handed in by
-## `setup()`; null in the escape, which plans no route tree.
-var _run: RunState
 ## The day's city, or the escape's once she is out of the building; null inside it.
 var _city: City
 ## `_city`'s map, or null in the escape's building — which is what every street, calm-ground and
@@ -151,12 +148,10 @@ var _road_since := 0.0
 var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
-## The day's corridor, grown here so that a trace can say whether she was on a path or off it.
-##
-## Growing one touches no gameplay: `RouteTree.for_day` is a pure function of the city's seed, the
-## day and what is shut, so this is the same tree anything else asking for today's would get, and
-## `Telemetry.write_map` grows one the same way. The determinism invariant is safe because nothing
-## here draws from a `day_rng()` stream.
+## The day's corridor, the very tree the day was planned on (`DayStreets.route_tree()`, read off
+## the city at `start_day()`), so that a trace says whether she was on a path or off it on the
+## streets she actually played, and the dawn and dusk maps `RunSession` writes are drawn on the
+## same tree. Null in the escape, whose chains are not a route tree, which keeps `path` silent.
 var _tree: RouteTree
 ## The tile-level translation of `_tree` — since M69 the tree grows on `ReachabilityGrid` cells, so
 ## a park cut or an alley the tree actually took answers `on` here exactly like a street would.
@@ -252,10 +247,9 @@ func _init(run_log: Telemetry) -> void:
 	_log = run_log
 	_frames = FrameWatch.new(run_log.note)
 
-func setup(run: RunState, city: City, player: Stroller, baby: Baby, day: DayController,
+func setup(city: City, player: Stroller, baby: Baby, day: DayController,
 		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
 	_spikes_on = spikes
-	_run = run
 	_city = city
 	_map = city.map
 	_world_map = city.map
@@ -331,7 +325,7 @@ func start_section(restarted: bool) -> void:
 ## first thing under the header that the player is responsible for.
 func start_day() -> void:
 	_forget_the_walk()
-	_tree = RouteTree.for_day(_map, _run.header.day)
+	_tree = _city.streets().route_tree()
 	_corridor = Corridor.of(_tree)
 	_log.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
@@ -1045,7 +1039,7 @@ func _watch_the_warning(here: Vector2) -> void:
 func _watch_closures(here: Vector2) -> void:
 	if not _city:
 		return
-	for closure in _city.closures():
+	for closure in _city.streets().closures():
 		var key := closure.segment.key()
 		if _seen_closures.has(key):
 			continue

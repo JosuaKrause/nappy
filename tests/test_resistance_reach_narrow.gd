@@ -113,7 +113,7 @@ func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
 			var read := _read_the_mark_on(t, day, seed_value)
 			var director: ResistanceDirector = read[0]
 			var player: Stroller = read[2]
-			var region_plan: RegionPlanner.RegionPlan = city.region_plan()
+			var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
 			var pool := ResistanceSteps.target_candidates(step, city.map, region_plan)
 			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
 			var allow_held := ResistanceSteps.stands_on_held_ground(step)

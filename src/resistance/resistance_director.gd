@@ -265,7 +265,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null, run: RunState 
 	else:
 		_spawn_siting = SpawnSiting.new(map, moves_by,
 				city.events.visible_view if city and city.events else Callable(),
-				city.siting_region if city else Callable())
+				city.streets().siting_region if city else Callable())
 	if city and city.events and not city.events.door_crossed.is_connected(_on_door_crossed):
 		city.events.door_crossed.connect(_on_door_crossed)
 	# A protest's placards point where this director's red arrow does (`_pointable_objective()`):
@@ -1886,7 +1886,7 @@ func _paths_reach_between(her: Vector2, near: float, far: float) -> Dictionary:
 	return found
 
 ## Where day 9's task points: one of today's region-wall doors — a `StreetNetwork.Segment` from
-## `City.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
+## `DayStreets.region_plan().doors` — at its own crossing tile, chosen the same reachable-among-
 ## candidates way `_pick_reachable()` already chooses a mark's alley. `Vector2.INF` if the city
 ## opened none, which does not happen on this task's own day: `Tuning.REGION_WALL_FIRST_DAY`
 ## equals the day this task is offered on. The pool is `ResistanceSteps.target_candidates()`,
@@ -2321,7 +2321,7 @@ func _step_of_kind(kind: ResistanceSteps.TargetKind) -> ResistanceSteps.Step:
 ## Today's region plan, or null for the bare-map rigs several tests in `tests/test_resistance_*.gd`
 ## build with no `_city`.
 func _region_plan() -> RegionPlanner.RegionPlan:
-	return _city.region_plan() if _city else null
+	return _city.streets().region_plan() if _city else null
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
 ## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
@@ -2526,7 +2526,7 @@ func _ensure_reachability() -> void:
 		# building code itself keeps apart from `wall_bodies` for this reason; excluded by identity
 		# rather than by matching `def.id`, so a new door-body row never needs a second list here.
 		var door_bodies: Array[EventScheduler.Planned] = []
-		var region_plan: RegionPlanner.RegionPlan = _city.region_plan()
+		var region_plan: RegionPlanner.RegionPlan = _city.streets().region_plan()
 		if region_plan:
 			door_bodies = region_plan.door_bodies
 		for plan in _city.events.plans():

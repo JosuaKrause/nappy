@@ -62,7 +62,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 				"the arrow ends on the same gatehouse every time the day is played (%s)" % house)
 		gatehouse = house
 		var at_a_house := false
-		for body in _city.region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_bodies:
 			if body.def.redetains and body.position.distance_to(house) < 0.5:
 				at_a_house = true
 		t.check(at_a_house and director.red_arrow_target() == house,
@@ -70,7 +70,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 		# Another door's line first: nothing — and that crossing is seen happening, so the check
 		# is not vacuous.
 		var walked_before := _walks_under(walks_told)
-		for body in _city.region_plan().door_bodies:
+		for body in _city.streets().region_plan().door_bodies:
 			if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED \
 					and body.position.distance_to(_door_position(director)) > 200.0:
 				_walk_through(body.position, body.facing, direction, player)
@@ -192,7 +192,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 			var a_axis := Vector2.ZERO
 			# Another door's boom with the named door well to one side of its line, so that she
 			# can be across A's line while she stands at B.
-			for body in _city.region_plan().door_bodies:
+			for body in _city.streets().region_plan().door_bodies:
 				if body.def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and body.position.distance_to(b_at) > 200.0 \
 						and absf((b_at - body.position).dot(body.facing)) > 100.0:
 					a_at = body.position
@@ -357,7 +357,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 			t.check(trap != null and trap.def.id == "robber_giving_chase",
 					"the inspected crossing sends the robber after her")
 			if trap:
-				for body in _city.region_plan().door_bodies:
+				for body in _city.streets().region_plan().door_bodies:
 					t.check(not DoorLine.crossed_by(body.position, body.facing,
 							body.def.obstructs_radius, trap.global_position,
 							player.global_position),
@@ -415,7 +415,7 @@ func _on_the_named_door(director: ResistanceDirector, instance: EventInstance) -
 ## the other, since a drift turns the named-door walk red.
 func _named_door(director: ResistanceDirector) -> Array:
 	var house := director.contact_position()
-	var region_plan := _city.region_plan()
+	var region_plan := _city.streets().region_plan()
 	if region_plan == null or house == Vector2.INF:
 		return [Vector2.INF, Vector2.ZERO]
 	for segment in region_plan.doors:

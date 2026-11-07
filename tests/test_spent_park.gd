@@ -616,7 +616,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 			t.check(_solid_at(city, crossing),
 					"a body stands across the way in at %s of fenced %s" % [tile, block])
 	t.check(entrances > 0, "fenced %s has ways in to stand bodies across" % block)
-	var fenced: Array[RoadClosure] = city.closures().duplicate()
+	var fenced: Array[RoadClosure] = city.streets().closures().duplicate()
 	city.free()
 	_test_the_fence_pieces_stand_in_draw_order(t, fenced)
 
@@ -643,7 +643,7 @@ func _test_the_fence_pieces_stand_in_draw_order(t, fenced: Array[RoadClosure]) -
 	var short_end := short_run.posts(city.map).back() as Vector2
 	var short_end_checked := false
 	var sign_centers := {}
-	for closure in city.closures():
+	for closure in city.streets().closures():
 		if closure is ParkClosure:
 			for center in closure.mouth_centres(city.map):
 				sign_centers[center] = true

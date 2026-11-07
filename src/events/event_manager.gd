@@ -181,7 +181,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null,
 	var director := EventDirector.new(map, world.navigator())
 	ahead.use_director(director, spawn_siting if spawn_siting
 			else SpawnSiting.new(map, world.navigator(), visible_view,
-					city.siting_region if city else Callable()))
+					city.streets().siting_region if city else Callable()))
 	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
 	# that wants its own map calls it again on the same manager, which Godot answers with an
 	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed

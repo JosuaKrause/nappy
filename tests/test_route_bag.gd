@@ -501,7 +501,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		t.check(city.events.ahead.director().is_from_her_route(plan),
 				"day %d: and it is a place her route's marble handed to her walk" % day)
 		var tile := map.world_to_tile(plan.position)
-		t.check(not city.route_tree().branches_on(tile).is_empty(),
+		t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
 				"day %d: it stands on ground the day's routes run along" % day)
 		t.check(plan.position.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
 				"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
@@ -568,10 +568,10 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
-	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.route_tree(),
+	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.streets().route_tree(),
 			[], PackedVector2Array(), EventScheduler.Verdicts.new())
 	var longest: Array = []
-	for branch in city.route_tree().branches:
+	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route

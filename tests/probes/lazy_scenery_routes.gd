@@ -26,7 +26,7 @@ func run(t) -> void:
 	for key in _ground.keys_in(Rect2(Vector2.ONE * -depth,
 			Vector2(_city.map.size) * 32.0 + Vector2.ONE * depth * 2.0)):
 		_ground.prepare(key)
-	var tree := _city.route_tree()
+	var tree := _city.streets().route_tree()
 	t.check(tree != null and not tree.branches.is_empty(), "real daily boot supplies route options")
 	var home_tiles := _tiles_for_nodes(tree, tree._home)
 	home_tiles[_city.map.world_to_tile(_city.map.doorstep_world_position())] = true
@@ -38,7 +38,7 @@ func run(t) -> void:
 		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
 		"closed_generated_tiles": network_closed, "home_candidate_tiles": home_tiles.size(),
-		"closures": _city.closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
+		"closures": _city.streets().closures().size(), "closed_map_tiles": _city.map.closed_tiles.size(),
 		"events_planned": _city.events.planned_count(),
 		"ground_prepared": GroundCells.used_cells(_ground).size(),
 		"buildings_prepared": _city.buildings().size(),

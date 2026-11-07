@@ -203,16 +203,17 @@ var skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
 var skip_agent_drawing := false
 ## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
-## `City.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no city
-## behind it. See `_stop_for_gates()`.
+## `DayStreets.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no
+## city behind it. See `_stop_for_gates()`.
 var _gates: Array[RegionPlanner.GateState] = []
 
 ## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
 ## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
-## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from `_city.region_plan()`,
-## which is already valid by the time this runs the same way it already is by the time `main.gd`
-## calls `set_gates()` — `City.start_day()` builds it before `Crowd.start_day()` is ever called.
-## Empty before the wall stands, or for a rig with no city, which then holds nothing a door either.
+## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from
+## `_city.streets().region_plan()`, which is already valid by the time this runs the same way it
+## already is by the time `main.gd` calls `set_gates()` — `City.start_day()` builds it before
+## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no city,
+## which then holds nothing a door either.
 var _door_segments := {}
 
 ## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
@@ -238,14 +239,14 @@ var _pockets := CrowdPockets.new()
 var _crossable_segments := {}
 
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
-## detains, rebuilt every `start_day` from `City.region_plan().door_bodies`. Empty before the wall
-## stands or for a rig with no city, which then holds nobody at anything. See
+## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_bodies`. Empty before
+## the wall stands or for a rig with no city, which then holds nobody at anything. See
 ## `_hold_walkers_at_doors()`, and `WalkerDoorHold` for what a hut's own state actually is.
 var _door_holds: Array[WalkerDoorHold] = []
 
 ## Told which gates today's cars have to stop for. See `_gates`'s own doc for where the day's list
-## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to `City`'s
-## own `region_plan()` other than the one it already has through `setup()`.
+## comes from — `main.gd` is the wiring, not this class, since a `Crowd` has no route to the
+## city's `streets().region_plan()` other than the one it already has through `setup()`.
 func set_gates(gates: Array[RegionPlanner.GateState]) -> void:
 	_gates = gates
 
@@ -323,7 +324,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	_door_segments = {}
 	_door_holds = []
 	if _city:
-		var plan := _city.region_plan()
+		var plan := _city.streets().region_plan()
 		if plan:
 			for segment in plan.doors:
 				_door_segments[segment.key()] = true

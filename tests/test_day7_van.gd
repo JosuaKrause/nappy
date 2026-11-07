@@ -156,7 +156,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 		t.check(not view.intersects(drawn, true),
 				"seed %d: no part of it is in the camera's view when it is put there, so it is never seen to appear (%s, view %s)"
 				% [seed_value, drawn, view])
-		var corridor := Corridor.of(city.route_tree())
+		var corridor := Corridor.of(city.streets().route_tree())
 		t.check(not corridor.carries_a_route(tile),
 				"seed %d: it stands on no tile a route of the day runs along" % seed_value)
 		var routes := _routes_it_cuts(city, its_tiles)
@@ -254,7 +254,7 @@ static func _routes_it_cuts(city: City, body: Array[Vector2i]) -> Vector2i:
 		its[tile] = true
 	var walkable := 0
 	var cut := 0
-	for branch in city.route_tree().branches:
+	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() < 2:
 				continue
@@ -332,7 +332,7 @@ func _a_place_from_her_route(events: EventManager,
 ## The placement context the game builds for her walk (`EventsAhead.start_day()`), built with the
 ## constructor the game calls.
 func _siting_of(city: City) -> EventScheduler.WalkSiting:
-	var siting := EventScheduler.WalkSiting.new(DAY, city.map, city.route_tree(),
+	var siting := EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
 			[] as Array[Vector2i], PackedVector2Array(), EventScheduler.Verdicts.new())
 	siting.holds_the_home_streets = DaySpec.for_day(DAY).holds_the_home_streets
 	return siting
@@ -340,7 +340,7 @@ func _siting_of(city: City) -> EventScheduler.WalkSiting:
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City, siting: EventScheduler.WalkSiting) -> Array[Vector2]:
 	var longest: Array = []
-	for branch in city.route_tree().branches:
+	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:
 			if route.size() > longest.size():
 				longest = route
