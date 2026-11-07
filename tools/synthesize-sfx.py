@@ -8,12 +8,15 @@ filters. They write files for listening; they never play audio or install it int
 from __future__ import annotations
 
 import argparse
+import cmath
 import hashlib
 import io
 import json
 import math
 import random
+import struct
 import wave
+import zlib
 from array import array
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -208,6 +211,83 @@ def _noise(count: int, rng: random.Random) -> Signal:
     return [rng.uniform(-1.0, 1.0) for _ in range(count)]
 
 
+def _normalize_rms(values: Signal, target_rms: float = 0.577) -> Signal:
+    """Scale a noise block to the RMS of the uniform white noise above (about 0.577)."""
+    rms = math.sqrt(sum(value * value for value in values) / len(values))
+    if rms == 0.0:
+        raise ValueError("noise block is silent")
+    scale = target_rms / rms
+    return [value * scale for value in values]
+
+
+def _pink_noise(count: int, rng: random.Random) -> Signal:
+    """Pink noise (-3 dB per octave) from white, by Paul Kellet's refined filter bank."""
+    b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0
+    result: Signal = []
+    for _ in range(count):
+        white = rng.uniform(-1.0, 1.0)
+        b0 = 0.99886 * b0 + white * 0.0555179
+        b1 = 0.99332 * b1 + white * 0.0750759
+        b2 = 0.96900 * b2 + white * 0.1538520
+        b3 = 0.86650 * b3 + white * 0.3104856
+        b4 = 0.55000 * b4 + white * 0.5329522
+        b5 = -0.7616 * b5 - white * 0.0168980
+        result.append(b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362)
+        b6 = white * 0.115926
+    return _normalize_rms(result)
+
+
+def _brown_noise(count: int, rng: random.Random) -> Signal:
+    """Brown noise (-6 dB per octave): leaky-integrated white, so it never drifts off."""
+    state = 0.0
+    result: Signal = []
+    for _ in range(count):
+        state = 0.998 * state + rng.uniform(-1.0, 1.0)
+        result.append(state)
+    return _normalize_rms(result)
+
+
+def _biquad_coefficients(kind: str, cutoff_hz: float, q: float) -> tuple[float, float, float, float, float]:
+    """RBJ audio-EQ-cookbook low-, high- or band-pass (constant 0 dB peak gain), normalized by a0."""
+    omega = 2.0 * math.pi * min(cutoff_hz, 0.49 * SAMPLE_RATE) / SAMPLE_RATE
+    alpha = math.sin(omega) / (2.0 * q)
+    cosine = math.cos(omega)
+    if kind == "lowpass":
+        b0, b1, b2 = (1.0 - cosine) / 2.0, 1.0 - cosine, (1.0 - cosine) / 2.0
+    elif kind == "highpass":
+        b0, b1, b2 = (1.0 + cosine) / 2.0, -(1.0 + cosine), (1.0 + cosine) / 2.0
+    elif kind == "bandpass":
+        b0, b1, b2 = alpha, 0.0, -alpha
+    else:
+        raise ValueError(f"unknown filter kind: {kind}")
+    a0 = 1.0 + alpha
+    return b0 / a0, b1 / a0, b2 / a0, -2.0 * cosine / a0, (1.0 - alpha) / a0
+
+
+def _biquad(values: Sequence[float], kind: str, cutoff_hz: float | Sequence[float], q: float = 0.7071) -> Signal:
+    """A resonant filter; `cutoff_hz` is one number or one number per sample for a sweep."""
+    sweep = None if isinstance(cutoff_hz, (int, float)) else cutoff_hz
+    first = sweep[0] if sweep else cutoff_hz
+    assert isinstance(first, (int, float))
+    b0, b1, b2, a1, a2 = _biquad_coefficients(kind, first, q)
+    x1 = x2 = y1 = y2 = 0.0
+    result: Signal = []
+    for index, value in enumerate(values):
+        if sweep:
+            b0, b1, b2, a1, a2 = _biquad_coefficients(kind, sweep[index], q)
+        y0 = b0 * value + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
+        x2, x1 = x1, value
+        y2, y1 = y1, y0
+        result.append(y0)
+    return result
+
+
+def _sweep(start_hz: float, end_hz: float, count: int) -> Signal:
+    """A cutoff sweep, exponential in frequency (even in pitch) from start to end."""
+    ratio = end_hz / start_hz
+    return [start_hz * ratio ** (index / max(1, count - 1)) for index in range(count)]
+
+
 def _smooth_gate(t: float, start: float, end: float, ramp: float) -> float:
     if t < start or t >= end:
         return 0.0
@@ -267,6 +347,174 @@ def _compress_peaks(values: Signal, threshold_fraction: float, ratio: float) -> 
             magnitude = threshold + (magnitude - threshold) / ratio
         compressed.append(math.copysign(magnitude, value))
     return compressed
+
+
+# ----------------------------------------------------------------------------------- sound pictures
+PICTURE_WIDTH: Final = 960
+WAVE_HEIGHT: Final = 120
+SPECTRUM_HEIGHT: Final = 256
+FFT_SIZE: Final = 1_024
+FFT_HOP: Final = 512
+MIN_HZ: Final = 40.0
+MAX_HZ: Final = 16_000.0
+SILENT_FRAME_DB: Final = -70.0
+PITCH_PROMINENCE: Final = 6.0
+PITCH_STEP_FRAMES: Final = 5
+
+Rgb = tuple[int, int, int]
+
+
+def _fft(values: list[complex]) -> list[complex]:
+    """Iterative radix-2 Cooley-Tukey; the length is a power of two."""
+    size = len(values)
+    j = 0
+    for i in range(1, size):
+        bit = size >> 1
+        while j & bit:
+            j ^= bit
+            bit >>= 1
+        j |= bit
+        if i < j:
+            values[i], values[j] = values[j], values[i]
+    length = 2
+    while length <= size:
+        step = cmath.exp(-2j * math.pi / length)
+        for start in range(0, size, length):
+            twiddle = 1.0 + 0.0j
+            half = length // 2
+            for offset in range(half):
+                even = values[start + offset]
+                odd = values[start + offset + half] * twiddle
+                values[start + offset] = even + odd
+                values[start + offset + half] = even - odd
+                twiddle *= step
+        length *= 2
+    return values
+
+
+def _spectrogram(values: Sequence[float]) -> list[list[float]]:
+    """Magnitude spectra of Hann-windowed frames: FFT_SIZE // 2 + 1 bins each."""
+    window = [0.5 - 0.5 * math.cos(2.0 * math.pi * i / FFT_SIZE) for i in range(FFT_SIZE)]
+    padded = list(values) + [0.0] * FFT_SIZE
+    frames: list[list[float]] = []
+    for start in range(0, max(1, len(values) - FFT_SIZE // 2), FFT_HOP):
+        block = [complex(padded[start + i] * window[i], 0.0) for i in range(FFT_SIZE)]
+        spectrum = _fft(block)
+        frames.append([abs(spectrum[bin_index]) / (FFT_SIZE / 4.0) for bin_index in range(FFT_SIZE // 2 + 1)])
+    return frames
+
+
+def _bin_of(hz: float) -> float:
+    return hz * FFT_SIZE / SAMPLE_RATE
+
+
+def _analysis(values: Sequence[float], pcm: bytes, frames: list[list[float]]) -> dict[str, object]:
+    """Peak, RMS, clipped samples, spectral centroid (brightness) and a pitch track, from the spectra."""
+    peak = max(abs(value) for value in values)
+    rms = math.sqrt(sum(value * value for value in values) / len(values))
+    samples = array("h")
+    samples.frombytes(pcm)
+    clipped = sum(1 for sample in samples if abs(sample) >= PCM_MAX)
+    weighted = 0.0
+    energy = 0.0
+    pitch: list[list[float]] = []
+    hz_per_bin = SAMPLE_RATE / FFT_SIZE
+    for frame_index, frame in enumerate(frames):
+        power = [magnitude * magnitude for magnitude in frame]
+        total = sum(power)
+        weighted += sum(index * hz_per_bin * value for index, value in enumerate(power))
+        energy += total
+        if frame_index % PITCH_STEP_FRAMES:
+            continue
+        time = round((frame_index * FFT_HOP + FFT_SIZE / 2) / SAMPLE_RATE, 3)
+        loudest = max(range(1, len(frame) - 1), key=frame.__getitem__)
+        mean = sum(frame) / len(frame)
+        frame_db = 10.0 * math.log10(total + 1e-12)
+        if frame_db < SILENT_FRAME_DB or frame[loudest] < PITCH_PROMINENCE * mean or loudest * hz_per_bin < MIN_HZ:
+            pitch.append([time, 0.0])
+            continue
+        left, middle, right = (math.log(frame[loudest + k] + 1e-12) for k in (-1, 0, 1))
+        shift = 0.5 * (left - right) / (left - 2.0 * middle + right) if left - 2.0 * middle + right else 0.0
+        pitch.append([time, round((loudest + shift) * hz_per_bin, 1)])
+    voiced = [hz for _, hz in pitch if hz > 0.0]
+    return {
+        "centroid_hz": round(weighted / energy, 1) if energy else 0.0,
+        "clipped_samples": clipped,
+        "peak_dbfs": round(20.0 * math.log10(peak), 3),
+        "pitch_median_hz": round(sorted(voiced)[len(voiced) // 2], 1) if voiced else None,
+        "pitch_track_hz": pitch,
+        "pitch_voiced_fraction": round(len(voiced) / len(pitch), 3) if pitch else 0.0,
+        "rms_dbfs": round(20.0 * math.log10(rms), 3),
+    }
+
+
+def _heat(level: float) -> Rgb:
+    """Dark blue through magenta and orange to pale yellow, for 0..1."""
+    level = max(0.0, min(1.0, level))
+    stops = (
+        (0.0, (8, 8, 24)),
+        (0.35, (70, 20, 120)),
+        (0.6, (200, 60, 90)),
+        (0.82, (250, 160, 40)),
+        (1.0, (255, 245, 190)),
+    )
+    for (low, first), (high, second) in zip(stops, stops[1:], strict=False):
+        if level <= high:
+            mix = (level - low) / (high - low)
+            return (
+                round(first[0] + (second[0] - first[0]) * mix),
+                round(first[1] + (second[1] - first[1]) * mix),
+                round(first[2] + (second[2] - first[2]) * mix),
+            )
+    return stops[-1][1]
+
+
+def _png_bytes(width: int, height: int, rows: Sequence[bytes]) -> bytes:
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        body = kind + payload
+        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    raw = b"".join(b"\x00" + row for row in rows)
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+
+
+def _picture(values: Sequence[float], frames: list[list[float]]) -> bytes:
+    """Waveform (top) over a log-frequency spectrogram (bottom), 40 Hz to 16 kHz, 0 to -80 dB.
+
+    Faint lines mark 100 Hz, 1 kHz and 10 kHz; the waveform's own faint line marks zero.
+    """
+    width = PICTURE_WIDTH
+    pixels = [[(16, 16, 20)] * width for _ in range(WAVE_HEIGHT + SPECTRUM_HEIGHT + 4)]
+    middle = WAVE_HEIGHT // 2
+    per_column = len(values) / width
+    for column in range(width):
+        chunk = values[int(column * per_column) : max(int(column * per_column) + 1, int((column + 1) * per_column))]
+        high, low = max(chunk), min(chunk)
+        top = max(0, min(WAVE_HEIGHT - 1, middle - round(high * middle)))
+        bottom = max(0, min(WAVE_HEIGHT - 1, middle - round(low * middle)))
+        for row in range(top, bottom + 1):
+            pixels[row][column] = (120, 200, 150)
+    for column in range(width):
+        if pixels[middle][column] == (16, 16, 20):
+            pixels[middle][column] = (50, 52, 60)
+    ratio = MAX_HZ / MIN_HZ
+    for row in range(SPECTRUM_HEIGHT):
+        hz = MIN_HZ * ratio ** (1.0 - row / (SPECTRUM_HEIGHT - 1))
+        low_bin = max(1, int(_bin_of(hz / ratio ** (0.5 / SPECTRUM_HEIGHT))))
+        high_bin = max(low_bin + 1, int(math.ceil(_bin_of(hz * ratio ** (0.5 / SPECTRUM_HEIGHT)))))
+        high_bin = min(high_bin, FFT_SIZE // 2)
+        for column in range(width):
+            frame = frames[min(len(frames) - 1, int(column * len(frames) / width))]
+            magnitude = max(frame[low_bin : high_bin + 1])
+            decibels = 20.0 * math.log10(magnitude + 1e-9)
+            pixels[WAVE_HEIGHT + 4 + row][column] = _heat((decibels + 80.0) / 80.0)
+    for mark in (100.0, 1_000.0, 10_000.0):
+        row = round((1.0 - math.log(mark / MIN_HZ) / math.log(ratio)) * (SPECTRUM_HEIGHT - 1))
+        for column in range(0, width, 4):
+            pixels[WAVE_HEIGHT + 4 + row][column] = (90, 90, 100)
+    rows = [b"".join(bytes(pixel) for pixel in line) for line in pixels]
+    return _png_bytes(width, len(pixels), rows)
 
 
 def _footsteps_grounded_raw(seed: int) -> Signal:
@@ -730,10 +978,12 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
       <div class="takes">
         <article><span>A</span><h3>{first_label}</h3>
           <audio controls preload="metadata" src="{first}"></audio>
+          <img alt="waveform and spectrogram of {first}" src="{first[:-4]}.png">
           <a download href="{first}">Download WAV</a>
         </article>
         <article><span>B</span><h3>{second_label}</h3>
           <audio controls preload="metadata" src="{second}"></audio>
+          <img alt="waveform and spectrogram of {second}" src="{second[:-4]}.png">
           <a download href="{second}">Download WAV</a>
         </article>
       </div>
@@ -784,6 +1034,7 @@ def _review_page(selection: str, pairs: Sequence[Pair]) -> str:
     }}
     h3 {{ margin: 0 0 18px; }}
     audio {{ display: block; width: 100%; margin-bottom: 12px; }}
+    img {{ display: block; width: 100%; margin-bottom: 12px; image-rendering: auto; }}
     footer {{ margin-top: 38px; color: #c0bdaf; font-size: .9rem; }}
   </style>
 </head>
@@ -825,6 +1076,10 @@ def generate(output: Path, seed: int, selection: str) -> None:
         data = _wav_bytes(values)
         (output / filename).write_bytes(data)
         audio_metadata[filename] = _audio_metadata(filename, values, data)
+        frames = _spectrogram(values)
+        (output / Path(filename).with_suffix(".png")).write_bytes(_picture(values, frames))
+        audio_metadata[filename]["picture"] = Path(filename).with_suffix(".png").name
+        audio_metadata[filename]["analysis"] = _analysis(values, _pcm_bytes(values), frames)
 
     generator_data = Path(__file__).read_bytes()
     manifest = {
@@ -879,7 +1134,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     _, recipes = _configuration(args.selection)
     generate(args.output, args.seed, args.selection)
-    print(f"Generated {len(recipes) + 1} WAV files in {args.output}")
+    print(f"Generated {len(recipes) + 1} WAV files, each with its PNG picture, in {args.output}")
     return 0
 
 
