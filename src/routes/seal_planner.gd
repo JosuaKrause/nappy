@@ -357,7 +357,7 @@ static func pictures_for(spec: DaySpec) -> Array[Candidate]:
 ## street the design deliberately leaves open to cross. A spec that seals the main road
 ## (`DaySpec.seals_the_main_road`) does not ask.
 static func _is_the_main_road(map: CityMap, segment: StreetNetwork.Segment) -> bool:
-	return map.is_main_road(not segment.horizontal, segment.a.x)
+	return map.is_main_road_segment(segment)
 
 ## **Whether `segment` is a street the walk `spec` describes may seal at all**: a real street on
 ## `map`, off the walk `route` hands in, not the street the walk starts in, and not the main road

@@ -502,7 +502,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t) -> void:
 		var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
 		var stood := RegionPlanner.RegionPlan.new()
 		for door in plan.doors:
-			RegionPlanner.stand_door(map, door, stood)
+			RegionPlanner.stand_door(map, door, stood, DaySpec.for_day(day))
 		for body in stood.door_bodies:
 			bodies += 1
 			var nearest := INF

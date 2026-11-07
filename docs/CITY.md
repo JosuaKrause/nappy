@@ -1594,11 +1594,11 @@ as the chains themselves.
 
 **Every junction in the lattice belongs to exactly one of `Tuning.REGION_COUNT` regions**, decided
 once at generation from the city's own seed and stored on `CityMap`. A segment whose two ends share
-a region is that region's interior; one whose ends differ is a **boundary segment**. The main road is
-ordinary ground to the partition — a boundary may cut it, which is the one place the gate over the
-roadway means anything. Regions are decided before any day's routes are, and a day's `RouteTree`
-grows with no knowledge of them, so a boundary can never make a route worse; it only decides,
-afterwards, which of the crossings already on a grown route are doors and which are wall.
+a region is that region's interior; one whose ends differ is a **boundary segment**. A boundary may
+cut the main road like any other street, and where it does the crossing is always a door (below,
+"The main road is never closed"). Regions are decided before any day's routes are, and a day's
+`RouteTree` grows with no knowledge of them, so a boundary can never make a route worse; it only
+decides, afterwards, which of the crossings already on a grown route are doors and which are wall.
 
 **Atoms keep the boundary off ground a route has to reach or use whole.** Before growth, every
 junction at either end of a calm area's own access segments is unioned into one atom, and so is a
@@ -1652,17 +1652,34 @@ is never `EventCatalogue.heated()` — so this is drawing only.
 
 **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
 a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
-every other crossing is **wall**, placed as hard seals of the roadblock row. Before that day nothing
-is drawn at all — the partition exists from generation, but the milestone's own words are
-"checkpoints in the later acts."
+every other crossing off the main road is **wall**, placed as hard seals of the roadblock row.
+Before that day nothing is drawn at all — the partition exists from generation, but the milestone's
+own words are "checkpoints in the later acts."
 
-**The tree wins, unconditionally, over the partition.** A region holding no calm area gets no doors
-on every day its own boundary happens to be off the tree — which is every day unless the tree
-genuinely has to cross it to reach calm ground elsewhere, and on that day the crossing is a door
-regardless of what the region holds. A region edge may never affect a path is the stronger rule, so
-nothing here may override what the tree already decided; there is no separate exemption for the
-home region either; a door is exactly a boundary crossing the tree uses and nothing else changes
-that.
+**The main road is never closed** (the player's inbox note #1186, not yet filed). Every crossing of a region
+boundary on the main road is a door on every day, whether or not the tree uses it, and its boom
+stays up for the cars: the gate does not hold cars (`RegionPlanner.GateState.holds_cars()`), so the
+crowd never stops one at it (`Crowd.set_gates()` keeps only the gates that do) and the spine's
+traffic drives from the tunnel to the bridge without a stop. Her side of the door is every door's:
+a gatehouse takes her in from its own sidewalk, and walking under the boom, which on the main road
+is always up, sets the door's guard on her (docs/EVENTS.md, "Checkpoints"). The tree never runs
+along the spine, so no route changes; what changes for her is that the main road's sidewalks reach
+every region the spine crosses, at the toll, rather than ending at a wall on the boundary. The rule
+is the day's configuration, not the planner's: a spec that seals the main road
+(`DaySpec.seals_the_main_road`, the escape's) leaves its crossings to the tree like any other, and
+the escape plans no region wall in any case, since it closes no streets of its own
+(`DaySpec.closes_streets`).
+
+**Off the main road, the tree wins, unconditionally, over the partition.** A region holding no calm
+area gets no doors off the main road on every day its own boundary happens to be off the tree —
+which is every day unless the tree genuinely has to cross it to reach calm ground elsewhere, and on
+that day the crossing is a door regardless of what the region holds. A region the main road crosses
+into has its door on the spine every day, calm or not, so a calm-less region is never sealed off
+from her: it costs a toll and a walk along the worst ground in the game to enter, which is what
+keeps it a place she has no reason to go rather than a place she cannot. A region edge may never
+affect a path is the stronger rule, so nothing here may override what the tree already decided;
+there is no separate exemption for the home region either; a door is a boundary crossing the tree
+uses or a crossing of the main road, and nothing else changes that.
 
 **A door stands the same three-body geometry a wall would, passable instead of held.** A street
 door gets a `checkpoint_hut` on each pavement lane and a `checkpoint_gate` over the road between

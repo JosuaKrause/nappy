@@ -830,7 +830,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.doors.map(func(door): return door.key())])
 			continue
-		RegionPlanner.stand_door(_city.map, segment, selected)
+		RegionPlanner.stand_door(_city.map, segment, selected, _walk_spec)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := _city.map.network.by_key(key)

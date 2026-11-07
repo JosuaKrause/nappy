@@ -48,14 +48,25 @@ extends RefCounted
 ##
 ## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY`, every
 ## boundary crossing — a segment or a crossing alley — the day's tree uses is a **door**; every
-## other one is **wall**. That is the whole rule: the tree wins. A region with no calm area
-## therefore gets no doors on every day its own boundary is off the tree, which is every day unless
-## the tree genuinely has to cross it to reach calm ground the milestone's own decree says a region
-## edge may never affect — in which case the crossing is a door and the decree is why.
+## other one is **wall**, except on the main road (below). The tree wins: a region with no calm
+## area gets no doors off the main road on every day its own boundary is off the tree, which is
+## every day unless the tree genuinely has to cross it to reach calm ground the milestone's own
+## decree says a region edge may never affect — in which case the crossing is a door and the decree
+## is why.
 ##
-## **The main road is ordinary ground to the partition.** Nothing here excludes it: a boundary may
-## cut it, and the checkpoint that results is the one place the milestone's gate over the roadway
-## means anything.
+## **The main road is never walled, and its traffic is never held** *(inbox #1186: "there
+## shouldn't be any barricades on the main road ever. if a quadrant line goes through there it must
+## become a guardhouse" · "traffic on the main road always needs to be able to go from the tunnel
+## to the bridge unhindered")*. A boundary
+## may cut the main road like any other street, and every such crossing is a door on every day,
+## whether or not the tree uses it: two gatehouses on its sidewalks and a boom over its carriageway
+## that stays up for the cars (`GateState.holds_cars()`), so the spine's traffic drives from the
+## tunnel to the bridge without a stop. Her side of it is every door's: a gatehouse takes her in
+## from its own sidewalk, and walking under the boom sets the door's guard on her. The tree never
+## runs along the spine, so this decides no route; what it changes for her is that the main road's
+## sidewalks reach every region it crosses, at a toll, where a wall used to end them at the
+## boundary. A spec that seals the main road (`DaySpec.seals_the_main_road`, the escape's) leaves
+## it ordinary ground to the partition, door or wall by the tree.
 
 ## The catalogue row the wall's bodies are hard seals of: `roadblock`, the barrier that closes a
 ## street outright — renamed from `checkpoint` once the milestone's own door structure took that
@@ -63,22 +74,38 @@ extends RefCounted
 ## commit**, or the wall silently starts sealing nothing.
 const _WALL_DEF_ID := "roadblock"
 
-## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
-## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventScheduler.Planned.gate_state` (which is what it draws raised or lowered from) and
-## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
-## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
-## can never disagree about whether a boom is up.
+## The shared state of one checkpoint gate: its own ground point, whether the boom is up right
+## now, and whether it ever lowers for the cars. Built once per street door in `_add_door_bodies`,
+## held by the `checkpoint_gate` instance through `EventScheduler.Planned.gate_state` (which is
+## what it draws raised or lowered from) and by `Crowd` through `RegionPlan.gates` (which is what
+## actually raises and lowers it — see `Crowd._stop_for_gates()`). A `RefCounted` rather than two
+## separate copies, so the two systems can never disagree about whether a boom is up.
 class GateState extends RefCounted:
 	## The gate's own ground point, in world space — the same position its `checkpoint_gate`
 	## instance stands at, and what `Crowd` measures a car's distance from.
 	var position := Vector2.ZERO
 	## Whether the boom is up. `Crowd._stop_for_gates()` is the only writer; the instance only
-	## reads it, once a frame, to choose which of the four boom textures to draw.
+	## reads it, once a frame, to choose which of the four boom textures to draw. A gate that does
+	## not hold cars is up from the moment it is built and nobody writes it.
 	var raised := false
 	## Seconds the car at the front of this gate's queue has been held at the stop line —
 	## `Crowd`'s own clock for `Crowd.GATE_STOP_SECONDS`, reset the moment nobody is held here.
 	var stopped_for := 0.0
+	## See `holds_cars()`.
+	var _holds_cars := true
+
+	## `holds_cars` is false for a gate whose boom stays up for the traffic, which starts it raised.
+	func _init(holds_cars := true) -> void:
+		_holds_cars = holds_cars
+		raised = not holds_cars
+
+	## Whether the boom lowers for the cars, so the crowd holds one at its stop line until it rises:
+	## every door's but the main road's on a day, whose traffic is never held (`RegionPlanner`'s
+	## class doc, "The main road is never walled").
+	## Decided once, by the planner that stands the door, so `Crowd` asks the gate rather than
+	## working out again which street it stands on.
+	func holds_cars() -> bool:
+		return _holds_cars
 
 ## One region growth's result: which crossings are wall today and which are doors, plus the
 ## bodies the wall and the doors stand as.
@@ -589,28 +616,35 @@ static func home_region(map: CityMap) -> int:
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
 ## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
-## uses it and wall otherwise. The tree wins, unconditionally, over anything the partition alone
-## would say.** Forcing a wall onto a calm-less region's own boundary regardless of the tree, on the
-## reasoning that there is no reason to ever enter a region with nothing in it, breaks the
-## milestone's own decree that a region edge may never affect a path — a segment the tree is
-## actually using would turn into a wall it did not expect. **A region with no calm area still gets
-## no doors on every day its own boundary happens to be off the tree** — which is every day unless
-## the tree has a genuine reason to cross it, and on that day the reason wins, because the decree
-## that a region edge never affects a path is the stronger rule and this is what obeying it looks
-## like.
+## uses it and wall otherwise, and a crossing of the main road is a door whatever the tree says
+## unless `spec` seals the main road** (the class doc, "The main road is never walled"). **The tree
+## wins over anything the partition alone would say.** Forcing a wall onto a calm-less region's own
+## boundary regardless of the tree, on the reasoning that there is no reason to ever enter a region
+## with nothing in it, breaks the milestone's own decree that a region edge may never affect a path
+## — a segment the tree is actually using would turn into a wall it did not expect. **A region with
+## no calm area still gets no doors off the main road on every day its own boundary happens to be
+## off the tree** — which is every day unless the tree has a genuine reason to cross it, and on that
+## day the reason wins, because the decree that a region edge never affects a path is the stronger
+## rule and this is what obeying it looks like. A region the main road crosses into has a door on
+## the spine every day, calm or not.
+##
+## `spec` is the day's (`DaySpec.for_day(day)` when none is handed in, which is what every day's is
+## in this respect).
 ##
 ## No exemption for the home region is needed here either, for the same reason: home's own boundary
 ## was never a case the tree-wins rule could get wrong, since the tree door/wall answer only depends
 ## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
 ## region has a door, or every calm area the tree reaches is in the home region" as the
 ## unconditional sentence it always was rather than working around a rule that no longer exists.
-static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
+static func plan_day(map: CityMap, day: int, tree: RouteTree, spec: DaySpec = null) -> RegionPlan:
 	var plan := RegionPlan.new()
 	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
 		return plan
+	if spec == null:
+		spec = DaySpec.for_day(day)
 	for segment in boundary_segments(map):
-		if tree.is_on_the_tree(segment.key()):
-			stand_door(map, segment, plan)
+		if tree.is_on_the_tree(segment.key()) or _keeps_the_main_road_open(map, spec, segment):
+			stand_door(map, segment, plan, spec)
 		else:
 			plan.walls.append(segment)
 	for rect in map.alley_rects:
@@ -697,13 +731,22 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
 
-## **A street door on `segment`, stood in `plan`**: the street joins the plan's doors and its
-## three bodies and its gate join the plan (`_add_door_bodies()`). The one entry `plan_day()` stands
-## each of the day's street doors through, and a scene recipe's authored checkpoint
+## **A street door on `segment`, stood in `plan`** for a walk `spec` describes: the street joins
+## the plan's doors and its three bodies and its gate join the plan (`_add_door_bodies()`), a gate
+## that stays up for the cars where the door keeps the main road open. The one entry `plan_day()`
+## stands each of the day's street doors through, and a scene recipe's authored checkpoint
 ## (`SceneRecipeRuntime`), so an authored door stands where and as the day's would.
-static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan,
+		spec: DaySpec) -> void:
 	plan.doors.append(segment)
-	_add_door_bodies(map, segment, plan)
+	_add_door_bodies(map, segment, plan, not _keeps_the_main_road_open(map, spec, segment))
+
+## Whether `segment` is a crossing of the main road on a walk that keeps the main road open, which
+## is every day's (`DaySpec.seals_the_main_road` false): such a crossing is a door on every day and
+## its boom never lowers for the cars. See the class doc, "The main road is never walled".
+static func _keeps_the_main_road_open(map: CityMap, spec: DaySpec,
+		segment: StreetNetwork.Segment) -> bool:
+	return not spec.seals_the_main_road and map.is_main_road_segment(segment)
 
 ## The three bodies a street door stands at its mouth: a `checkpoint_hut` on each pavement lane and
 ## a `checkpoint_gate` on the road between them — the same three positions `place_hard_on` would
@@ -713,7 +756,10 @@ static func stand_door(map: CityMap, segment: StreetNetwork.Segment, plan: Regio
 ## `sealed_variant(..., true)` is what keeps `EventInstance.setup()`'s pavement auto-centring from
 ## re-deriving a position these three already sit exactly on — see that function's own doc on why a
 ## continuous, non-tile-aligned position disagrees with what the recentring assumes.
-static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan) -> void:
+##
+## `holds_cars` is the gate's (`GateState.holds_cars()`).
+static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan: RegionPlan,
+		holds_cars: bool) -> void:
 	var default_at_a := region_of_junction(map, segment.a) < region_of_junction(map, segment.b)
 	var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 	var world := map.tile_rect_to_world(segment.mouth_rect(at_a))
@@ -722,7 +768,7 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		return
 	var axis := _along_axis(segment.horizontal)
 	var road_index := positions.size() / 2
-	var gate := GateState.new()
+	var gate := GateState.new(holds_cars)
 	gate.position = positions[road_index]
 	plan.gates.append(gate)
 	for i in positions.size():

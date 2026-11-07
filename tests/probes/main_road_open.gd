@@ -14,12 +14,12 @@ extends RefCounted
 ##   boundary segments are main road, how many of those are wall and how many door, how many of the
 ##   door gates hold a car, and how many main-road carriageway tiles a wall body covers.
 ## - **`DAY`**, the whole morning as `DayDirector.start_day()` plans it (the city's streets, then the
-##   events): every main-road segment held to the traffic that is not a door, every one closed, and
+##   events): every main-road segment held to the traffic that is not a door, every closure on it, and
 ##   every planned body whose footprint (`EventSpawner.obstructed_footprint()`) covers main-road
 ##   carriageway, by row, with when it comes. That is the survey of what else can close the road.
 ## - **`CROWD`**, one day a seed with a main-road boundary crossing: the day's traffic run for
 ##   `SECONDS` round the crossing, counting the cars that drive through it and the car-frames a gate
-##   on the main road holds a car for.
+##   holds a car driving along the main road for.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
@@ -101,6 +101,8 @@ func _plan(seed_value: int, day: int, totals: Dictionary) -> int:
 	for i in plan.doors.size():
 		if _on_the_main_road(map, plan.doors[i]):
 			doors += 1
+			print("PLAN seed %d day %d | main-road door %d of %d (huts %d and %d for --spawn door:N)"
+					% [seed_value, day, i, plan.doors.size(), i * 2, i * 2 + 1])
 			if _holds_cars(plan.gates[i]):
 				holding += 1
 	var wall_tiles := 0
@@ -137,15 +139,16 @@ func _day(t, seed_value: int, day: int, totals: Dictionary, rows: Dictionary) ->
 	for segment in city.streets().region_plan().doors:
 		doors[segment.key()] = true
 	var held := 0
-	var closed := 0
-	var blocked := map.blocked_segments()
 	for segment in map.network.segments():
-		if not _on_the_main_road(map, segment):
-			continue
-		if map.is_held(segment) and not doors.has(segment.key()):
+		if _on_the_main_road(map, segment) and map.is_held(segment) \
+				and not doors.has(segment.key()):
 			held += 1
-		if blocked.has(segment.key()):
+	var closed := 0
+	for closure in city.streets().closures():
+		if closure.segment and _on_the_main_road(map, closure.segment):
 			closed += 1
+			print("DAY seed %d day %d | closure %s on %s"
+					% [seed_value, day, RoadClosure.Kind.keys()[closure.kind], closure.segment.key()])
 	var bodies := 0
 	for body in city.events.plans():
 		if not body.is_placed():
@@ -205,7 +208,7 @@ func _crowd(t, seed_value: int, day: int) -> void:
 			if tile.x < left or tile.x >= left + Tuning.STREET_WIDTH:
 				side.erase(agent.get_instance_id())
 				continue
-			if agent.gate_hold < INF:
+			if agent.gate_hold < INF and agent.travelling_vertically():
 				held_frames += 1
 			var now := signf(agent.global_position.y - at.y)
 			var id := agent.get_instance_id()
