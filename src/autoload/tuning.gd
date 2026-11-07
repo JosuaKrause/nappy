@@ -1163,16 +1163,17 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## to reach it — the ceiling is a safety bound for a future row, not a number any current one sits
 ## against.
 ##
-## **`Field.FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's forward
-## reach growing past what its telegraph already priced is a fairness question; growing far enough
-## to touch an unvisited calm area it used to clear is a different one — `EventScheduler` refuses
-## that placement outright (`_calm_to_leave_alone`, `_reaches_any`), so a row whose whole path is
-## long enough to brush one can lose its only site and simply not happen that day, however fair its
-## telegraph is. The value was set by measuring exactly that on the longest-routed scheduled row
-## of the day (`docs/DECISIONS.md`, M114); no scheduled row currently drives a route that long —
-## the fire engine is summoned to a route ending at the fire rather than planned — so
-## `tests/test_events.gd`'s `_test_a_retried_day_is_the_same_day` is the guard for whichever row
-## next does, and a value that makes a one-shot lose its only site fails there first.
+## **`Field.FIELD_ECCENTRICITY_SPEED` is set against placement, not against taste.** A row's
+## forward reach growing past what its telegraph already priced is a fairness question; growing
+## far enough to touch an unvisited calm area it used to clear is a different one —
+## `EventScheduler` refuses that placement outright (`CalmAreas.unused_ground()`,
+## `_reaches_any`), so a row whose whole path is long enough to brush one can lose its only site
+## and simply not happen that day, however fair its telegraph is. The value was set by measuring
+## exactly that on the longest-routed scheduled row of the day (`docs/DECISIONS.md`, M114); no
+## scheduled row currently drives a route that long — the fire engine is summoned to a route
+## ending at the fire rather than planned — so `tests/test_events.gd`'s
+## `_test_a_retried_day_is_the_same_day` is the guard for whichever row next does, and a value
+## that makes a one-shot lose its only site fails there first.
 ##
 ## A car at `CAR_SPEED.x` (130px/s) sits at e = 0.26 (forward reach 1.35R, rear 0.79R); a walker
 ## (`PEDESTRIAN_SPEED`, 46-74px/s) at 0.09-0.15; the cyclist (165px/s) at 0.33; the cat (240px/s) at

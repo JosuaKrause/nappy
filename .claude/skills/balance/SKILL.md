@@ -17,15 +17,15 @@ never makes it shared; a number only tests read stays in `Tuning`. Use
 under the walking decay; a fast mover must telegraph across its whole radius. If a test fails,
 decide whether the relationship or the number is wrong. **Do not just update the test.**
 
-**A test asserting a relationship beats one asserting a value.** `intensity < walking decay`
-survives rebalancing; `intensity == 3.2` does not.
+A test never asserts what a setting is, and the relationship tests that encode a fairness guarantee stay
+(**writing-tests**).
 
 ## Never derive a density — measure it
 
 **Change the event density:** `max_per_day` in the catalogue **first**, then
 `EventScheduler.budget_for()`, because **a budget the catalogue cannot spend is not density**. Then
-**measure what a day places**, over several seeds, since `_ensure_the_city_is_still_walkable` drops
-obstructions that would seal the city.
+**measure what a day places**, over several seeds, since
+`DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
 
 A temporary probe suite that prints per-day counts takes two minutes and is the only honest way to
 set it. **Measure four things and not one:**

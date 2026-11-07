@@ -185,8 +185,8 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ## reference a day's events took and never gave back would leave the page held after the city is
 ## freed, so the one release line at the end is what says the counts balanced.
 func _test_the_manager_holds_its_page_for_its_own_life(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var group := EventPictures.ATLAS_GROUP
 	var city := _city(t, atlas)
 	t.check(pages.held(group) and pages.loads(group) == 1,
@@ -212,8 +212,8 @@ func _test_the_manager_holds_its_page_for_its_own_life(t) -> void:
 ## booted game the library is the sitting's), so `EventManager._exit_tree()` is the only thing
 ## between this and a reference held for the rest of the process.
 func _test_a_manager_freed_mid_day_still_gives_its_page_back(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	var city := _city(t, atlas)
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(1), _rng(3), consumed)

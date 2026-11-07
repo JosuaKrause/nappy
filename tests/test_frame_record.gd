@@ -18,7 +18,6 @@ const _SCRATCH_RECORDS := "user://test_frame_record_scratch_records"
 const _SCRATCH_RECORDERS := "user://test_frame_record_scratch_recorders"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_frame_adds_up(t)
 	_test_slow_frames_are_marked(t)
 	_test_frames_outside_play_are_timed_but_not_kept(t)

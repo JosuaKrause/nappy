@@ -25,7 +25,6 @@ const DAY := 1
 const _SCRATCH_SAVE := "user://test_baby_world_scratch.json"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_baby_with_no_world_is_neutral(t)
 	await _test_the_escape_hands_her_the_building_then_the_city(t)
 	await _test_a_boot_straight_onto_the_street_hands_her_the_city(t)
@@ -39,7 +38,7 @@ func _test_a_baby_with_no_world_is_neutral(t) -> void:
 func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 	var run := _run_on(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var main := booted.main
 	var interior := Boot.interior(main)
@@ -59,7 +58,6 @@ func _test_the_escape_hands_her_the_building_then_the_city(t) -> void:
 				% baby.world())
 		await _test_a_city_event_reaches_her_meter(t, main)
 		_test_the_city_ground_gains_sleepiness(t, main)
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -134,12 +132,11 @@ func _test_an_ordinary_boot_hands_her_the_city(t) -> void:
 func _boot_and_check(t, section: int, what: String) -> void:
 	var run := _run_on(section)
 	var home := Boot.home_playing(t, run)
-	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, null,
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
 			func(main: Node) -> void: main.use_sitting_home(home))
 	var city := Boot.city(booted.main)
 	var baby := Boot.baby(booted.main)
 	t.check(city != null and baby != null and baby.world() == city,
 			"%s hands the baby the city" % what)
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()

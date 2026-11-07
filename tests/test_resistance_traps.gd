@@ -5,7 +5,6 @@ extends "res://tests/resistance_rig.gd"
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
 ## into, with what the day it asks about needs set on it.
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_perform_contact_is_never_relocated(t)
 	await _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	await _test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
@@ -819,7 +818,8 @@ func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []
 	var plans := EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
-			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, consumed)
+			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, CalmAreas.of(map),
+			consumed).placements()
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:
 		t.check(plan.def.id != id,

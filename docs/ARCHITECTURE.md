@@ -32,13 +32,14 @@ src/
   autoload/
 	tuning.gd             the shared balance constants    (autoload: Tuning)
 	event_bus.gd          global signals                  (autoload: EventBus)
-	telemetry.gd          the run log; inert until asked   (autoload: Telemetry)
+	telemetry.gd          the run log (`Telemetry`); inert until asked; not an autoload, a node
+	                      `main` parks under the `Sitting` and hands to `RunSession`
 	game_save.gd          persists a run to disk and reads one back; not an autoload, a node
 	                      `main` parks under the `Sitting`
 	sitting.gd            what a sitting keeps across the scene reloads a run makes; not an
 	                      autoload, a node `main` parks at the tree's root (see "`Sitting`")
-	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens
-	                                                       (autoload: VisitCounter)
+	visit_counter.gd      anonymous GoatCounter events for how far a run gets; only listens; not an
+	                      autoload, a node `main` parks under the `Sitting`
   run/                  the run's state, a domain model — one registered list of sub-states —
                         and the run flow: its screens (`run_flow.gd`) and its days (`day_director.gd`)
 	run_state.gd          the run (`RunState`), as a registry of its parts; held by the `Sitting`
@@ -183,6 +184,12 @@ src/
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
 	                      day, or the escape city's streets from its marble bag
+	day_events.gd         the day's planned rows read through one object: what each spoils, what
+	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
+	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
+	                      which she used this act, the one that does not count today
+	day_repairs.gd        the two repairs that keep a planned day winnable: one calm area clean,
+	                      and a route to it from home
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
@@ -492,7 +499,7 @@ tools/
 ### Layers
 
 Every file under `src/` sits in one layer, and a layer names only its own and the ones below it
-(**orchestrating**, "Code is designed by layer"). Lowest first: **data and configuration** (the
+(**designing-classes**, "Code is designed by layer"). Lowest first: **data and configuration** (the
 catalogue, `Tuning`, `RunConfig`, the specs, `Texts`, the art's pages, the value types rows are
 written in), **the domain model** (the map and its interface, generation, routes, closures, the
 run's sub-states, the building's plan), **the world** (the navigator, the world's context, the draw
@@ -779,8 +786,8 @@ free the `main` holding a run, so the `Sitting` is its home and no static holds 
 builds a `GameSave` at a scratch path and hands it to its boots (`main.use_save()`). The resistance is handed it with its city (`City.run`), or by
 `ResistanceDirector.setup()`. **No autoload is the run.** Each test makes a `RunState` of its own and hands it to the part it
 tests, to a city (`RunCity`) or to the `Sitting` a booted `main` is handed, so the test runner
-puts no run back between suites; the visit counter autoload holds only the sitting's run that `main`
-hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
+puts no run back between suites; the visit counter, under the sitting, holds only the run that
+`main` hands it, and holds none otherwise, and then sends nothing. `RunState` is a plain `RefCounted`: the
 `Sitting` holds it by reference, it goes when its last holder lets it go, and it reaches nothing in
 the scene tree.
 **The calendar is `RunCalendar`** (`src/run/run_calendar.gd`, a plain `RefCounted` that `RunState`
@@ -1067,7 +1074,8 @@ field with its value before and after (`tests/shared_state.gd`).
   envelope, duration, paths, hard-fail gating), and scheduler determinism, placement,
   one-shot consumption and the usable-park rule.
 - `test_event_manager.gd` — the manager against a real generated city: retirement,
-  successors, summed excitement. Wiring bugs live here and are invisible to data tests.
+  successors, summed excitement. Its header gives the reason it builds one: an instance freed but
+  left in the list and a successor spawned but never tracked are invisible to a data-level test.
 - `test_blocks.gd` — block purposes and arcs: arcs only move forward, enough calm survives
   the whole run, a cause only fires where its arc expects it, and — the one that matters —
   pushing every block to the end of its arc moves no walkable tile.
@@ -1115,8 +1123,8 @@ field with its value before and after (`tests/shared_state.gd`).
   spine left to the box rule and still carrying its traffic, and the escape's city dark from its
   first frame.
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
-  played through all 14 days with the real City, EventManager and ResistanceDirector, with time
-  actually advancing. This is the check
+  played through all 14 days with the real City, EventManager and ResistanceDirector, each day started
+  by the real DayDirector, with time actually advancing. This is the check
   that catches "day 12 throws", which no amount of unit coverage does.
 
 These are the places a bug is invisible until it ruins a run, so they are the places with

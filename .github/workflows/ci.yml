@@ -211,7 +211,7 @@ jobs:
       - name: Check the Python tools
         run: ./tools/pycheck.sh
 
-      # orchestrating's layers held mechanically: nothing under src/ names a higher layer, and the
+      # designing-classes's layers held mechanically: nothing under src/ names a higher layer, and the
       # world and simulation fetch nothing through a group, an autoload or a stateful static,
       # except the breaks tools/layer_map.py lists by name, a list that only shrinks. It reads the
       # code as text, so it needs no engine and runs on every run, docs-only included.

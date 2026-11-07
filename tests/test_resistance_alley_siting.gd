@@ -13,7 +13,6 @@ extends "res://tests/resistance_rig.gd"
 ## stand are worked out from the map alone (`AlleyMarks`).
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)
@@ -596,7 +595,8 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), events_rng, map, consumed, [], [], tree):
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
+					CalmAreas.of(map), consumed, [], tree).placements():
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1

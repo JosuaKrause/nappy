@@ -12,8 +12,8 @@ leaves the DEV-only tier below unscheduled; the second and third are the player'
 from the rule alone:
 
 - **A caller under `src/dev` counts as a game caller.** The rigs and the scene-recipe runtime are
-  the composition root in `tools/layer_map.py`'s layering (**orchestrating**, "Code is designed by
-  layer"), and `tests-public-seams.md` already accepts `Crowd.add_recipe_actor()` (only the recipe
+  the composition root in `tools/layer_map.py`'s layering (**designing-classes**, "Code is
+  designed by layer"), and `tests-public-seams.md` already accepts `Crowd.add_recipe_actor()` (only the recipe
   runtime calls it) as a seam. About 55 names stand on this reading.
 - **A caller in the member's own class is no caller.** Told that about 250 public members are
   called only by their own class and the tests, the player asked "so basically they're not part of
@@ -77,12 +77,6 @@ exposes (drawing, a signal, input and frames) or the member is removed or needs 
   under test. **Open**, a change to `src/` and so a question first: hand the crowd a focus source, so
   that where the simulated patch stands is a game input apart from who she is, which would let
   `set_focus` go.
-- `Telemetry.begin_memory_log` (`telemetry.gd`), read by `test_telemetry.gd` and about 30 other
-  sites: it is the one way a test gets a live run log with no file on disk. Its reason is the design
-  the player's answer points at (inbox #1095 in curly-rabbit): the autoload owns the log and where it
-  lives, and only `RunSession` is handed its log, while the observer and the gameplay classes call
-  the autoload by name, so a test cannot hand them a fake log. **Open:** handing the log to those
-  classes, which would let it go.
 - `EventsAhead.walk_siting` (record minty-quail-olive-sparrow): `test_route_bag.gd` reads the mast
   checks it sites, and `EventsAhead` builds that siting itself, so no test can hand it one.
   `EventLook.drawn_rect_now` (the same record): the caret is drawn straight onto the event and no

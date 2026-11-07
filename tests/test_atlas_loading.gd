@@ -40,12 +40,12 @@ const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_loading_scratch.json"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await PhysicsTicks.settle(t)
 	_test_each_parent_has_a_page_of_their_own(t)
 	_test_the_indicators_share_the_ui_page(t)
@@ -133,10 +133,11 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
-	var pages := PageLog.new()
+	var pages := PageLog.new(atlas)
 	for male in [false, true]:
+		# Handed the watch's log: a boot points the sitting's library at the log it writes.
 		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
-				"father" if male else "mother"])
+				"father" if male else "mother"], pages.boot_log())
 		var mine := Stroller.parent_atlas(male)
 		var theirs := Stroller.parent_atlas(not male)
 		t.check(seat.run.header.player_is_male == male, "the boot plays the parent it was told to")
@@ -177,8 +178,8 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 ## `Stroller`, a `City` or a `Crowd` by hand, and where there is no played frame for a load to
 ## stutter. The moment `main` boots, the rule is on for the sitting's library until it leaves.
 func _test_a_page_may_only_be_read_in_a_window(t) -> void:
-	var pages := PageLog.new()
 	var atlas := AtlasLibrary.new()
+	var pages := PageLog.new(atlas)
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,
 			"with no boot, nothing owns the loading moments")
 	atlas.open_loading_window(AtlasLibrary.MOMENT_DAY_BRIEF)
@@ -226,8 +227,9 @@ func _test_a_page_may_only_be_read_in_a_window(t) -> void:
 func _test_two_days_never_reload_a_page(t) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
-	var pages := PageLog.new()
-	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"])).free_all()
+	var pages := PageLog.new(atlas)
+	(await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent", "mother"],
+			pages.boot_log())).free_all()
 
 	var city := _city(t, atlas)
 	city.crowd.start_day(1, _rng("day-1"))
@@ -321,9 +323,10 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	var reloads: Array[int] = []
 	var lines: Array[String] = []
 
-	Telemetry.begin_memory_log()
-	var log: TelemetryLog = Telemetry.current_log()
-	var first := await _boot_in(t, home, save, reloads)
+	# A recording run log keeping its lines in `lines`, handed to every boot, open before the first.
+	var run_log := RecordingLog.new(lines)
+	run_log.begin_run(SEED, false)
+	var first := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, first)
 	for _i in 60:
 		await t.get_tree().physics_frame
@@ -332,15 +335,13 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	var parked := home.get_node_or_null(NodePath(Sitting.NODE_NAME))
 	t.check(parked != null and _sittings_in(home) == [parked],
 			"the held restart parks the one sitting in the home")
-	lines.append_array(log.lines)
 	_shut(t, first)
 	# The restart handed the sitting a fresh run, which the reloaded boot plays.
 	run = seat.sitting.run
 
-	# The restart closed the run log; the reloaded boot's lines go in a fresh one.
-	Telemetry.begin_memory_log()
-	log = Telemetry.current_log()
-	var second := await _boot_in(t, home, save, reloads)
+	# The restart closed the run log; the reloaded boot's lines go in once it is open again.
+	run_log.begin_run(SEED, false)
+	var second := await _boot_in(t, home, save, reloads, run_log)
 	await _press_tap(t, second)
 	# Day 14 after the hand-over (`DayEnd.hands_over_to_the_escape`): every task done, a win.
 	run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -356,9 +357,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	t.check(parked != null and _sittings_in(home) == [parked],
 			"and the second boot took the parked sitting and parks the same one again, and no other")
 	_shut(t, second)
-	var escape := await _boot_in(t, home, save, reloads)
+	var escape := await _boot_in(t, home, save, reloads, run_log)
 	t.check(_one(escape, "InteriorScene") != null, "and that boot builds the building")
-	lines.append_array(log.lines)
 	_shut(t, escape)
 
 	var loads := 0
@@ -376,21 +376,22 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 	t.check(unmanaged.is_empty(), "no page was loaded on a library of a node's own (%s)"
 			% " | ".join(unmanaged.slice(0, 3)))
 
-	Telemetry.end_run()
+	run_log.free()
 	seat.end()
 	save.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 	t.get_tree().paused = false
 
-## The real `main.tscn` handed the suite's scratch save, a reload that only counts, and the `home`
-## its sitting is parked in and taken from, put in the tree with the two frames its `_ready()`
-## awaits let pass.
-func _boot_in(t, home: Node, save: GameSave, reloads: Array[int]) -> Node2D:
+## The real `main.tscn` handed the suite's scratch save, a reload that only counts, the `home`
+## its sitting is parked in and taken from, and the suite's `run_log`, put in the tree with the two
+## frames its `_ready()` awaits let pass.
+func _boot_in(t, home: Node, save: GameSave, reloads: Array[int], run_log: Telemetry) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--seed",
 			str(SEED)]), "", true))
 	main.use_save(save)
 	main.use_sitting_home(home)
+	main.use_run_log(run_log)
 	main.use_reload(func() -> void: reloads.append(1))
 	t.add_child(main)
 	await t.get_tree().process_frame

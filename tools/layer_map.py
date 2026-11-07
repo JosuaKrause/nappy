@@ -1,6 +1,6 @@
 """The layer map `tools/check_layers.py` holds the game's code to, as data.
 
-The layers are orchestrating's "Code is designed by layer" (minty-quail's: data and configuration,
+The layers are designing-classes's "Code is designed by layer" (minty-quail's: data and configuration,
 the domain model, the world, simulation, run flow, observers), with the screen's own view beside the
 observers and the composition root at the top. A layer may name only what is on its own layer or
 below, and the observers and the view, which stand at one level, name neither the other (the
@@ -134,7 +134,10 @@ FILES: dict[str, str] = {
     "src/events/on_her_way.gd": "data",
     "src/events/pursuit_spec.gd": "data",
     "src/events/vehicle_spec.gd": "data",
+    "src/events/calm_areas.gd": "model",
+    "src/events/day_events.gd": "model",
     "src/events/event_scheduler.gd": "model",
+    "src/events/day_repairs.gd": "model",
     "src/events/mast_sites.gd": "model",
     "src/events/walk_ground.gd": "model",
     # interior: the plan and its tiles are the model; the tileset and the scene are the world.
@@ -476,12 +479,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             ("src/events/event_scheduler.gd", 3),
             ("src/interior/interior_scene.gd", 2),
         ),
-    ),
-    Exception_(
-        "names",
-        "Telemetry",
-        "the ground's picture builder writes its timing to the run log inline",
-        ("src/visuals/ground_layers.gd",),
     ),
     Exception_(
         "names",

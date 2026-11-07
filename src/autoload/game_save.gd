@@ -190,8 +190,8 @@ var _last_tick_usec := 0
 
 ## Where this save lives: the player's own (`_DEFAULT_PATH`) unless the one that makes it hands in
 ## another. A suite makes its own with a scratch file and hands it to the boot it drives
-## (`main.use_save()`), so an agent's run never lands in a saved game — see the **verify** skill's
-## testing policy.
+## (`main.use_save()`), so an agent's run never lands in a saved game — see the **writing-tests**
+## skill.
 var _file_path: String
 
 ## A save at `file_path`; the game builds one with none, which is the player's own.
@@ -208,6 +208,14 @@ var _config: RunConfig
 
 func configure(config: RunConfig) -> void:
 	_config = config
+
+## Where its `save` lines go: the boot's run trace, which `main` hands it each boot, since the save
+## outlives the boot under the sitting while the trace is the boot's; one nobody handed writes
+## nowhere. Handed on to the flushes, which write the browser's answers.
+var trace := RunTrace.new():
+	set(value):
+		trace = value
+		_flushes.trace = value
 
 ## The one function every read and write of the player's save goes through. Every checkout and
 ## worktree of this repository shares one `user://`, so a dev flag, a headless run, the test
@@ -273,7 +281,7 @@ func clear(settled := Callable()) -> Result:
 	var removed := _clear_now()
 	var result := moment_result(removed, on_web, persistent)
 	if result == Result.FAILED:
-		Telemetry.note("save", "the deletion was not kept (%s)"
+		trace.note("save", "the deletion was not kept (%s)"
 				% ("the file could not be removed" if not removed else "the browser refused storage"))
 	# Before the flush starts, so a symbol has begun by the time any answer reaches it.
 	EventBus.save_deleted.emit(operation, int(result))
@@ -290,7 +298,7 @@ func _clear_now() -> bool:
 	if not removed:
 		push_warning("GameSave: could not remove %s" % _path())
 		return false
-	Telemetry.note("save", "deleted the save")
+	trace.note("save", "deleted the save")
 	return true
 
 ## Writes `run` to disk and answers what the save moment came to, which is also
@@ -313,7 +321,7 @@ func write(run: RunState, day_under_way: bool, settled := Callable()) -> Result:
 	var wrote := _write_now(run, day_under_way)
 	var result := moment_result(wrote, on_web, persistent)
 	if result == Result.FAILED:
-		Telemetry.note("save", "the save was not kept (%s)"
+		trace.note("save", "the save was not kept (%s)"
 				% ("the file could not be written" if not wrote else "the browser refused storage"))
 	# Before the flush starts, so a symbol has begun by the time any answer reaches it.
 	EventBus.save_written.emit(operation, int(result))
@@ -415,6 +423,8 @@ class Flushes extends RefCounted:
 	## clamped frames it has waited so far. The first of the answer and the timeout to arrive
 	## removes the entry; the second finds nothing and does nothing.
 	var _waiting: Dictionary = {}
+	## Where the browser's answers are written down, the save's own trace (`GameSave.trace`).
+	var trace := RunTrace.new()
 
 	## Puts `operation`'s flush in the table, and answers its token, which is the operation id itself.
 	func register(operation: int, settled: Callable, deleting := false) -> int:
@@ -466,15 +476,15 @@ class Flushes extends RefCounted:
 		var kept := result == Result.CONFIRMED
 		if deleting:
 			if kept:
-				Telemetry.note("save", "the browser dropped the deleted save")
+				trace.note("save", "the browser dropped the deleted save")
 			else:
-				Telemetry.note("save", "the browser did not drop the deleted save (%s)" % reason)
+				trace.note("save", "the browser did not drop the deleted save (%s)" % reason)
 			EventBus.save_deletion_settled.emit(token, kept)
 		else:
 			if kept:
-				Telemetry.note("save", "the browser kept the save")
+				trace.note("save", "the browser kept the save")
 			else:
-				Telemetry.note("save", "the browser did not keep the save (%s)" % reason)
+				trace.note("save", "the browser did not keep the save (%s)" % reason)
 			EventBus.save_write_settled.emit(token, kept)
 		if settled.is_valid():
 			settled.call(result)
@@ -497,7 +507,7 @@ func _write_now(run: RunState, day_under_way: bool) -> bool:
 		push_warning("GameSave: could not write %s" % _path())
 		return false
 	var state_word := "day under way" if day_under_way else "between days"
-	Telemetry.note("save", "wrote the save (%s)" % state_word)
+	trace.note("save", "wrote the save (%s)" % state_word)
 	return true
 
 ## Everything the save file holds of `run`, as the plain JSON-safe dictionary `_write_now()`

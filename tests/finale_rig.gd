@@ -84,7 +84,6 @@ const CASES: Array[String] = [
 
 ## The cases at `indices` of `CASES`, in the order given. A case may be a coroutine.
 func run_cases(t, indices: Array[int]) -> void:
-	t.gives_back_observers()
 	for index in indices:
 		await call(CASES[index], t)
 
@@ -1140,7 +1139,6 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t) -> void:
 		t.check(crossings > 0, "seed %d: there were roadblock crossings to walk (%d)"
 				% [PLAYERS_SEED, crossings])
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	booted.free_all()
 	home.free()
 
@@ -1397,8 +1395,8 @@ static func _escape_rows_from(map: CityMap, bare: Dictionary, counts: Dictionary
 	var spec := _city_spec()
 	spec.bag = counts
 	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals)
+	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), [], seals).placements()
 
 ## Whether two plans stand the same rows in the same places.
 static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
@@ -1428,8 +1426,8 @@ static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictiona
 	var spec := _city_spec()
 	spec.bag = counts
 	spec.slots_per_street = slots
-	return EventScheduler.build_day(spec, rng, map, [], [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals, trace)
+	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), [], seals, trace).placements()
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
@@ -1930,7 +1928,6 @@ func _boot_the_escape(t, section: int, flags: PackedStringArray = PackedStringAr
 
 func _free_the_escape(t, escape: Escape) -> void:
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	(escape.booted as Boot.Booted).free_all()
 	# A `--route` boot is a rig, whose `RigLock` erases every action's `InputMap` bindings; freeing
 	# the scene must give them back, or every later suite in this process hears no key as an action.
@@ -2086,7 +2083,8 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in EventScheduler.build_day(_city_spec(), rng, map, [], [], [], plan):
+		for placement in EventScheduler.build_day(_city_spec(), rng, map, CalmAreas.of(map), [],
+				[], plan).placements():
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"
@@ -2300,7 +2298,6 @@ func _test_a_resumed_escape_opens_on_the_title_before_its_first_brief(t) -> void
 
 	(home.get_node(NodePath(Sitting.NODE_NAME)) as Sitting).atlas.close_loading_window()
 	t.get_tree().paused = false
-	Telemetry.end_run()
 	booted.free_all()
 	t.check(not InputMap.action_get_events(&"move_right").is_empty(),
 			"freeing the escape leaves the keys bound to their actions")

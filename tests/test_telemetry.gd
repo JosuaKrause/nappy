@@ -14,55 +14,20 @@ extends RefCounted
 ## **Telemetry is off unless a run asks for it.** The suite must never write a file, and
 ## `Telemetry.note()` on a dormant log must cost nothing. If this fails, every one of the
 ## fourteen thousand checks below it is running a file write it did not ask for.
+##
+## What the `TelemetryObserver` writes into the log, and when, is `tests/test_telemetry_observer.gd`'s,
+## on a recording log; this suite is the real log's own, the file and the pictures it writes.
 
-const BuildingEvents := preload("res://tests/building_events.gd")
+## What a planned day is, as a string to compare.
+const PlanSignature := preload("res://tests/plan_signature.gd")
+## The burst suite, whose bench (`Bench`) the burst test here hands the run log.
+const BurstSuite := preload("res://tests/test_burst_capture.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
-## The seed of the run each city here stands in, a run of the test's own (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-
-## One observer in the tree watching a running day clock, with the player, the baby and the clock
-## it is handed — what `main` hands a day's observer (`city` given: `setup()`) or the escape's
-## (`setup_escape()`, then the building's map or none). A test places the player, lets time pass
-## through `frame()`, which moves the day's clock on and waits for a real frame — the observer
-## mirrors that clock into the run log's as every real frame does — and reads the run log or the
-## observer's own queries. The test opens the run log and its day itself.
-class Rig extends RefCounted:
-	const LENGTH := 180.0
-	## How much of the day each real frame stands for: a tenth of a second, so a two-second hold is
-	## twenty frames and not a hundred and twenty.
-	const STEP := 0.1
-	var observer := TelemetryObserver.new()
-	var player := Stroller.new()
-	var baby := Baby.new()
-	var clock := DayController.new()
-	var city: City
-	var tree: SceneTree
-	var elapsed := 0.0
-
-	func _init(parent: Node, map: WorldMap = null, a_city: City = null, spikes := false) -> void:
-		tree = parent.get_tree()
-		city = a_city
-		if city != null:
-			observer.setup(city.run, city, player, baby, clock, null, spikes)
-		else:
-			observer.setup_escape(player, baby, clock, spikes)
-			if map != null:
-				observer.watch_building(map, null)
-		parent.add_child(observer)
-		clock.start(LENGTH)
-
-	## Lets `seconds` of the day pass in one real frame.
-	func frame(seconds := STEP) -> void:
-		elapsed += seconds
-		clock.tick(seconds)
-		await tree.process_frame
-
-	func free_all() -> void:
-		for node: Node in [observer, player, baby, clock]:
-			node.free()
 
 func run(t) -> void:
+	var suite_scratch := "user://telemetry-test-suite-%d" % Time.get_ticks_usec()
+	_log = Telemetry.new(suite_scratch)
 	_test_it_is_off_until_a_run_asks_for_it(t)
 	_test_a_line_is_a_time_a_kind_and_a_sentence(t)
 	_test_order_is_the_record(t)
@@ -72,12 +37,7 @@ func run(t) -> void:
 	_test_tracing_the_arcs_does_not_change_them(t)
 	_test_a_day_header_opens_a_day(t)
 	_test_the_escape_opens_a_section_so_its_lines_carry_a_time(t)
-	await _test_the_escape_is_in_the_run_log_as_a_day_is(t)
 	_test_a_retried_section_restarts_its_snapshot_schedule(t)
-	await _test_a_stuck_player_is_logged_once(t)
-	await _test_a_free_walk_is_never_logged_as_blocked(t)
-	await _test_idling_with_no_input_is_never_logged_as_blocked(t)
-	await _test_a_capture_is_never_logged_as_blocked(t)
 	_test_the_map_picture_covers_the_city_and_marks_it(t)
 	_test_the_map_picture_draws_the_corridor(t)
 	_test_the_map_picture_marks_what_the_day_placed(t)
@@ -87,11 +47,6 @@ func run(t) -> void:
 	_test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t)
 	_test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t)
 	_test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t)
-	await _test_the_trail_is_sampled_by_distance_not_by_frame(t)
-	await _test_the_trail_carries_whether_she_was_running(t)
-	await _test_a_lost_day_restarts_the_trail(t)
-	await _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t)
-	await _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t)
 	_test_the_map_picture_draws_the_trail_and_distinguishes_running(t)
 	_test_a_runs_files_share_one_folder(t)
 	_test_the_attempt_suffix_names_every_attempt_including_the_first(t)
@@ -102,12 +57,12 @@ func run(t) -> void:
 	_test_steady_frames_write_no_spike_line(t)
 	_test_two_spikes_in_one_second_write_only_the_worse_one(t)
 	_test_no_spike_line_with_the_flag_off(t)
-	await _test_the_observer_watches_its_frames_on_real_frames(t)
 	_test_a_baked_page_says_which_moment_loaded_it(t)
-	# Whichever test ran last leaves its clock and attempt count behind; a log opened and closed
-	# puts both back, so the suite hands the shared state on as it found it in any order.
-	Telemetry.begin_memory_log()
-	Telemetry.end_run()
+	_test_the_day_header_notes_the_invincible_flag_once_per_day(t)
+	_test_a_headless_burst_is_refused_without_a_capture_wait(t)
+	_test_a_day_or_a_run_ending_cuts_the_active_burst_short(t)
+	_log.free()
+	_delete_recursive(suite_scratch)
 
 ## A screen that can draw, which a headless process has none of: every frame is ready the moment it
 ## is asked for, and the picture is a small image. Handed to `Telemetry.use_screen()` it makes
@@ -127,25 +82,43 @@ class DrawingScreen extends TelemetryScreen:
 	func picture() -> Image:
 		return image
 
-var _game_screen: TelemetryScreen
-
-## Opens a real run in a scratch folder of its own, photographing a screen that can draw, and
-## returns that folder (the run's own is below it). `_close_the_scratch_run()` hands the game's
-## screen, which `use_screen()` returned, back.
+## Opens a real run in a scratch folder of its own, on a log over that folder photographing a
+## screen that can draw, and returns that folder (the run's own is below it).
+## `_close_the_scratch_run()` frees that log and puts the suite's own back.
 func _open_a_scratch_run(name: String) -> String:
 	var scratch := "user://telemetry-test-%s-%d" % [name, Time.get_ticks_usec()]
-	_game_screen = Telemetry.use_screen(DrawingScreen.new())
-	Telemetry.begin_run(778812400, false, scratch)
+	_use_a_log_over(scratch)
+	_log.use_screen(DrawingScreen.new())
+	_log.begin_run(778812400, false)
 	return scratch
 
 func _close_the_scratch_run(scratch: String) -> void:
-	Telemetry.end_run()
-	Telemetry.use_screen(_game_screen)
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
+
+## The run log every test here drives (`Telemetry`): the suite's own, over a scratch folder made as
+## the suite starts and removed as it ends, or for the length of one test a log over a scratch
+## folder of that test's own (`_use_a_log_over()`). This suite is the one place a test builds the
+## real run log: every other suite that reads what was logged hands a recording fake
+## (`tests/recording_log.gd`, or a `RunTrace.recording()`).
+var _log: Telemetry
+## The suite's own log while `_log` is a test's.
+var _suite_log: Telemetry
+
+## Swaps the suite's log for a fresh one over `scratch`, a real folder, until
+## `_put_back_the_suite_log()`.
+func _use_a_log_over(scratch: String) -> void:
+	_suite_log = _log
+	_log = Telemetry.new(scratch)
+
+## Frees the test's log and puts the suite's own back.
+func _put_back_the_suite_log() -> void:
+	_log.free()
+	_log = _suite_log
 
 ## The file names in one of the open run's picture folders (`auto`, `asked`), sorted.
 func _pictures(kind: String) -> PackedStringArray:
-	var dir := DirAccess.open("%s/%s" % [Telemetry.current_log().path.get_base_dir(), kind])
+	var dir := DirAccess.open("%s/%s" % [_log.current_log().path.get_base_dir(), kind])
 	if dir == null:
 		return PackedStringArray()
 	var names := dir.get_files()
@@ -157,11 +130,11 @@ func _pictures(kind: String) -> PackedStringArray:
 ## The state the whole suite runs in. A dormant `note()` has to be a boolean check and a
 ## return — not a formatted string thrown away, and above all not a file.
 func _test_it_is_off_until_a_run_asks_for_it(t) -> void:
-	t.check(not Telemetry.is_active(),
+	t.check(not _log.is_active(),
 			"telemetry is dormant in the test suite unless a test turns it on")
-	t.check(Telemetry.current_log() == null, "and there is no log to write into")
-	Telemetry.note("start", "this line has nowhere to go")
-	t.check(Telemetry.current_log() == null, "so noting something is a no-op")
+	t.check(_log.current_log() == null, "and there is no log to write into")
+	_log.note("start", "this line has nowhere to go")
+	t.check(_log.current_log() == null, "so noting something is a no-op")
 
 # -------------------------------------------------------------------- format ---
 
@@ -271,12 +244,12 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 
 	var quiet: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		quiet.append(_plan_signature(map, day))
+		quiet.append(PlanSignature.of(map, day))
 
 	var lines: Array[String] = []
 	var traced: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		traced.append(_plan_signature(map, day, RunTrace.recording(lines)))
+		traced.append(PlanSignature.of(map, day, RunTrace.recording(lines)))
 
 	# Day 3 is the one that matters: `burning_building` is the catalogue's only one-shot, and the
 	# `roll` line saying what became of it is written while the day is being planned. If the trace
@@ -299,17 +272,17 @@ func _test_tracing_the_arcs_does_not_change_them(t) -> void:
 ## A day's entries have to land under that day's header, or a fourteen-day log is one
 ## undifferentiated column and the reader cannot tell day 1 from day 12.
 func _test_a_day_header_opens_a_day(t) -> void:
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(3, 1, 8812, 8813, 180.0)
-	Telemetry.set_clock(11.3)
-	Telemetry.note("turn", "doubled back east")
-	Telemetry.end_day()
+	_log.begin_run(0)
+	_log.begin_day(3, 1, 8812, 8813, 180.0)
+	_log.set_clock(11.3)
+	_log.note("turn", "doubled back east")
+	_log.end_day()
 	# The clock stops with the day: the between-days screen must not advance tomorrow's times.
-	Telemetry.set_clock(999.0)
-	Telemetry.note("nerve", "spent a nerve")
+	_log.set_clock(999.0)
+	_log.note("nerve", "spent a nerve")
 
-	var lines := Telemetry.current_log().lines
-	Telemetry.end_run()
+	var lines := _log.current_log().lines
+	_log.end_run()
 
 	t.check(lines.size() == 5, "a preamble, a blank line, a header and two entries")
 	t.check(lines[1] == "", "a day is separated from the one above it by a blank line")
@@ -327,19 +300,19 @@ func _test_a_day_header_opens_a_day(t) -> void:
 ## **before** any section is open still does not, which is the guarantee relied on and is what
 ## would hide a section that never opened.
 func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
-	Telemetry.begin_memory_log()
+	_log.begin_run(0)
 	# No section open yet: a run that never opens one writes zeroes, which is the behaviour the
 	# escape was getting for the whole of its walk.
-	Telemetry.set_clock(12.0)
-	Telemetry.note("plan", "before any section")
-	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	Telemetry.set_clock(42.5)
-	Telemetry.note("plan", "finale: two chains")
-	Telemetry.set_clock(96.25)
-	Telemetry.note("lost", "lost_hard_fail in the building after 96.2s")
+	_log.set_clock(12.0)
+	_log.note("plan", "before any section")
+	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
+	_log.set_clock(42.5)
+	_log.note("plan", "finale: two chains")
+	_log.set_clock(96.25)
+	_log.note("lost", "lost_hard_fail in the building after 96.2s")
 
-	var lines := Telemetry.current_log().lines
-	Telemetry.end_run()
+	var lines := _log.current_log().lines
+	_log.end_run()
 	t.check(lines.size() == 6, "a preamble, an entry, a blank line, a header and two entries (%d)"
 			% lines.size())
 	t.check(lines[1].begins_with("   0.0  plan"),
@@ -354,487 +327,46 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 	t.check(lines[5].begins_with("  96.2  lost"),
 			"as does the line a lost section writes (got '%s')" % lines[5])
 
-## *"The escape shouldn't behave any different than the rest of the game."* Both sections are
-## watched by the day's own observer, handed the day's clock and told which world she is in — so
-## this drives the calls the run session makes, in its order, against the real building and a real
-## city: a section entered, a frame of every watcher, the masked man met, the section lost through
-## the day's own `day_finished()`, the same section again, then the city entered and left by the
-## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
-## mark — must stay silent rather than crash.
-func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
-	const STEP := 1.0 / 60.0
-	var scene := InteriorScene.new()
-	t.add_child(scene)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	var run := RunState.new()
-	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
-			man = instance
-	t.check(man != null, "the building has a masked man to meet")
-	if not man:
-		events.free()
-		scene.free()
-		return
-	var player := Stroller.new()
-	player.global_position = scene.start_world_position()
-	player.facing = Vector2.UP
-	var baby := Baby.new()
-	var clock := DayController.new()
-	var observer := TelemetryObserver.new()
-	observer.setup_escape(player, baby, clock, false)
-	t.add_child(observer)
-
-	Telemetry.begin_memory_log()
-	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	observer.watch_building(scene.map, events)
-	observer.start_section(false)
-	clock.start(180.0)
-	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and
-	# no resistance: the ones with nothing to ask have to say nothing rather than fail.
-	await t.get_tree().process_frame
-	player.global_position = man.global_position + Vector2(man.def.outer_radius * 0.5, 0.0)
-	clock.tick(12.5)
-	await t.get_tree().process_frame
-	clock.failure_reason = "They were on the stairs."
-	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
-	player.global_position = scene.start_world_position()
-	observer.start_section(true)
-
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(4242))
-	player.global_position = city.map.home_world_position()
-	observer.watch_city(city)
-	observer.start_section(false)
-	clock.start(180.0)
-	await t.get_tree().process_frame
-	Telemetry.set_clock(40.0)
-	clock.tick(40.0)
-	clock.exit_reached = CityEdge.Kind.TUNNEL
-	observer.day_finished(GameEnums.DayResult.WON)
-
-	var lines: Array = Telemetry.current_log().lines
-	Telemetry.end_run()
-	var text := "\n".join(lines)
-	var starts: Array[String] = []
-	var lost := ""
-	var near := ""
-	var home := ""
-	for line: String in lines:
-		if line.contains("  start  "):
-			starts.append(line)
-		elif line.contains("  lost  "):
-			lost = line
-		elif line.contains("  near  ") and near == "":
-			near = line
-		elif line.contains("  home  "):
-			home = line
-	t.check(starts.size() == 3, "each section start writes a start line (%d)" % starts.size())
-	if starts.size() == 3:
-		t.check(starts[0].contains("entered the building at ("),
-				"the building is entered at one of its own tiles (got '%s')" % starts[0])
-		t.check(starts[1].begins_with("   0.0") and starts[1].contains("restarted the building"),
-				"a retry says so, timed from its own start (got '%s')" % starts[1])
-		t.check(starts[2].contains("entered the city at ("),
-				"and the city is entered the same way (got '%s')" % starts[2])
-	t.check(near.contains("masked_pursuer"),
-			"meeting the masked man is a near line, as meeting a dog is (got '%s')" % near)
-	t.check(lost.begins_with("  12.5")
-			and lost.contains("lost_hard_fail in the building after 12.5s to masked-pursuer")
-			and lost.contains("They were on the stairs.") and lost.contains("near: masked_pursuer"),
-			"losing the section names the result, the section, the cause, the reason and what was "
-			+ "near (got '%s')" % lost)
-	t.check(lost.contains("exc ") and lost.contains("events "),
-			"with the meter breakdown a day's losing line carries (got '%s')" % lost)
-	t.check(home.contains("escaped by the tunnel, 140.0s to spare"),
-			"and getting out is a home line with the way out and the margin (got '%s')" % home)
-	t.check(not text.contains("  path  ") and not text.contains("  contact  "),
-			"no corridor and no chalk mark are written for a walk that has neither")
-
-	observer.free()
-	clock.free()
-	baby.free()
-	player.free()
-	city.free()
-	events.free()
-	scene.free()
-
 ## *"A retried escape section holds its automatic snapshots back until the new clock passes the
 ## time of the last shot, because a section's clock restarts at zero."* A clock pushed back with
 ## `Telemetry.set_clock(0.0)` alone leaves the last shot's time sitting at the previous attempt's
 ## own reading — here, 45s in, well past the retried walk's fresh `0.0`, which is exactly the state
 ## `snapshot()`'s spacing gate (the clock less the last shot's time under `SHOT_SPACING`) reads as
-## "a shot just happened". `start_section()` goes through `Telemetry.restart_section_clock()`, which clears the
-## schedule the way `begin_section()` and `begin_day()` do. Asked through the pictures that land in
-## the run's `auto/` folder, on a screen that can draw.
+## "a shot just happened". `restart_section_clock()` clears the schedule the way `begin_section()`
+## and `begin_day()` do. Asked through the pictures that land in the run's `auto/` folder, on a
+## screen that can draw. That the observer's `start_section()` goes through it, and not through
+## `set_clock(0.0)`, is `tests/test_telemetry_observer.gd`'s, asked of a log that counts the calls.
 func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 	var scratch := _open_a_scratch_run("retry")
-	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	Telemetry.set_clock(45.0)
+	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
+	_log.set_clock(45.0)
 	# The state a real run is in right before a loss: a shot already taken this attempt, with the
 	# day's whole allowance not yet spent.
-	Telemetry.snapshot("first")
+	_log.snapshot("first")
 	t.check(_pictures("auto").size() == 1, "a shot is taken on a screen that can draw")
-	Telemetry.snapshot("again")
+	_log.snapshot("again")
 	t.check(_pictures("auto").size() == 1,
 			"a shot taken now leaves the spacing running, so a second at once is held back")
 
-	var player := Stroller.new()
-	var baby := Baby.new()
-	var clock := DayController.new()
-	var observer := TelemetryObserver.new()
-	observer.setup_escape(player, baby, clock, false)
-	observer.start_section(true)
+	_log.restart_section_clock()
 
-	t.check(Telemetry.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
-	Telemetry.snapshot("retry")
+	t.check(_log.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
+	_log.snapshot("retry")
 	t.check(_pictures("auto").size() == 2,
 			"and the snapshot schedule starts over with it, not stuck at the lost attempt's clock")
 	# The retried walk's whole allowance: the section opened with one picture already taken in the
 	# retry (above), so `PER_DAY - 1` more fit, one `SPACING` apart, and the next is refused.
 	for i in range(1, TelemetryShots.PER_DAY):
-		Telemetry.set_clock(TelemetryShots.SPACING * i)
-		Telemetry.snapshot("walk")
+		_log.set_clock(TelemetryShots.SPACING * i)
+		_log.snapshot("walk")
 	t.check(_pictures("auto").size() == 1 + TelemetryShots.PER_DAY,
 			"so the retried walk has its whole allowance again, not what the lost attempt spent")
-	Telemetry.set_clock(TelemetryShots.SPACING * TelemetryShots.PER_DAY)
-	Telemetry.snapshot("over")
+	_log.set_clock(TelemetryShots.SPACING * TelemetryShots.PER_DAY)
+	_log.snapshot("over")
 	t.check(_pictures("auto").size() == 1 + TelemetryShots.PER_DAY,
 			"and no more than that allowance")
 
-	observer.free()
-	clock.free()
-	baby.free()
-	player.free()
 	_close_the_scratch_run(scratch)
-
-# --------------------------------------------------------------- being stuck ---
-# *(`docs/TODO.md`, "The log says when she is stuck": a `--walk` rig that never left the
-# doorstep currently reads as a run, because standing still emits nothing else — no crossing,
-# no turn, no contact. `TelemetryObserver.watch_blocked` is the fix, and it is exercised
-# directly, the way `test_danger.gd` drives `WarningBoard.warn_about_the_ground_she_is_on()`
-# by hand: it is a per-frame poll with no signal of its own to trigger from outside.)*
-
-## A bare observer in the tree on a running day clock, with a map of no streets for the tile in the
-## sentence: `Rig.new(t, CityMap.new())` hands the observer what `main` hands the escape's — the
-## player, the baby, the day's clock and the world — and every test lets real frames pass.
-## `CityMap.new()` is a real map with nothing generated onto it — `world_to_tile` is arithmetic on
-## `Tuning.TILE_SIZE` and asks the generator for nothing.
-func _blocked_rig(t) -> Rig:
-	return Rig.new(t, CityMap.new())
-
-## Holds `action` for `hold` seconds of real frames — `Input.action_press`, the same call
-## `src/dev/auto_screenshot.gd` uses for `--walk`, so this is the polled state `Stroller` itself
-## reads and not a shortcut invented for the test. `here` is where she stands throughout, which is
-## the rig's stand-in for a wall: displacement is exactly zero rather than merely small.
-func _hold_against_a_wall(rig: Rig, action: String, here: Vector2, hold: float) -> void:
-	rig.player.global_position = here
-	Input.action_press(action)
-	for i in int(round(hold / Rig.STEP)):
-		await rig.frame()
-	Input.action_release(action)
-
-func _blocked_lines(t) -> Array:
-	var lines: Array = Telemetry.current_log().lines
-	Telemetry.end_run()
-	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
-	var blocked: Array = []
-	for line in lines:
-		if line.contains("blocked"):
-			blocked.append(line)
-	return blocked
-
-## Held for a couple of seconds against a wall that never gives: one line, not one a frame, and
-## it is not written until the hold has actually run past `BLOCKED_HOLD_TIME`.
-func _test_a_stuck_player_is_logged_once(t) -> void:
-	var rig := _blocked_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 2.0)
-
-	var blocked := _blocked_lines(t)
-	t.check(blocked.size() == 1,
-			"pressing into a wall for 2s writes exactly one blocked entry (got %d)"
-			% blocked.size())
-	if not blocked.is_empty():
-		t.check(blocked[0].contains("90°"),
-				"and it names the bearing pressed (got '%s')" % blocked[0])
-	rig.free_all()
-
-## The same held key, but she is actually covering ground — her position advances every frame by
-## more than `TelemetryObserver.BLOCKED_DRIFT` before the hold ever reaches
-## `TelemetryObserver.BLOCKED_HOLD_TIME`. A run this ordinary must never read as stuck.
-func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
-	var rig := _blocked_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	Input.action_press("move_right")
-	var here := Vector2(100.0, 100.0)
-	for i in int(round(3.0 / Rig.STEP)):
-		here.x += Tuning.WALK_SPEED * Rig.STEP
-		rig.player.global_position = here
-		await rig.frame()
-	Input.action_release("move_right")
-
-	t.check(_blocked_lines(t).is_empty(), "walking freely for 3s is never logged as blocked")
-	rig.free_all()
-
-## `is_idle()` elsewhere in this file is the legitimate stand-still, and it is a different
-## condition from this one on purpose: idling asks nothing about input at all, so a player who
-## simply lets go of every key must never be told she is blocked.
-func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
-	var rig := _blocked_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	rig.player.global_position = Vector2(100.0, 100.0)
-	for i in int(round(3.0 / Rig.STEP)):
-		await rig.frame()
-
-	t.check(_blocked_lines(t).is_empty(),
-			"standing idle with no direction held is never logged as blocked")
-	rig.free_all()
-
-## M59's own interaction: `chatting_mother` locks input with `Stroller.detain()`, and a captured
-## player may well be holding a key the whole way through it — which is exactly what
-## the blocked watcher reads. Without the gate on `_player.is_detained()` a capture would write
-## itself down twice: once as `chat`, by `EventManager`, and once as `blocked`, by this file, for
-## the same held key. And the gate has to let go the instant the capture ends, or a real stall
-## picked up right after one hides behind a stale anchor.
-func _test_a_capture_is_never_logged_as_blocked(t) -> void:
-	var rig := _blocked_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	# A conversation running: holding a direction the whole way through it must never surface as
-	# a stall, whatever `BLOCKED_HOLD_TIME` says.
-	rig.player.detain(2.0)
-	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 2.5)
-
-	# The capture is over — a Stroller out of the tree has no physics frames to count it down, so
-	# she is put back where she stands the way `main` puts her back (`reset_at()` ends a detention)
-	# — and the same held key against the same wall is a genuine stall again.
-	var during := 0
-	for line: String in Telemetry.current_log().lines:
-		if line.contains("blocked"):
-			during += 1
-	t.check(during == 0, "a held key through the capture itself writes no blocked entry (got %d)" % during)
-	rig.player.reset_at(Vector2(100.0, 100.0))
-	await _hold_against_a_wall(rig, "move_right", Vector2(100.0, 100.0), 1.5)
-
-	var blocked := _blocked_lines(t)
-	t.check(blocked.size() == 1,
-			"the capture writes nothing, and a real stall right after it is still caught (got %d)"
-			% blocked.size())
-	rig.free_all()
-
-# ------------------------------------------------------------ the trail and the meets ---
-# *(`docs/TODO.md`, M66, "the dusk map shows what the player did": a trail belongs in
-# `TelemetryObserver`, sampled by distance rather than by frame so it stays bounded and
-# framerate-independent, and "met" means she came within an event's own outer radius — the field
-# she can actually feel — rather than merely close enough for the plan to have been streamed into
-# the world.)*
-
-## An observer on a running day clock with the player standing where a test places her. The trail
-## is the observer's own record of the frames that passed, so the frames are real ones.
-func _trail_rig(t) -> Rig:
-	return Rig.new(t)
-
-## Distance sampling, not frame sampling: many small steps inside one tile must leave the trail
-## alone, and the first step to cross a tile of distance — however many frames it took — must add
-## exactly one point.
-func _test_the_trail_is_sampled_by_distance_not_by_frame(t) -> void:
-	var rig := _trail_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	var here := Vector2(100.0, 100.0)
-
-	rig.player.global_position = here
-	await rig.frame()
-	t.check(rig.observer.trail().size() == 1, "the very first sample always leaves a point")
-
-	for i in 20:
-		here.x += 1.0
-		rig.player.global_position = here
-		await rig.frame()
-	t.check(rig.observer.trail().size() == 1,
-			"twenty one-pixel steps inside a tile leave the trail at one point (got %d)"
-			% rig.observer.trail().size())
-
-	here.x += TelemetryObserver.TRAIL_SAMPLE_DISTANCE
-	rig.player.global_position = here
-	await rig.frame()
-	t.check(rig.observer.trail().size() == 2,
-			"crossing a tile of distance writes exactly one more point, however many frames it took")
-
-	Telemetry.end_run()
-	rig.free_all()
-
-## The third component of a sample is `Stroller.run_excess_ratio()` at the moment it was taken —
-## 0.0 at a walk, above 0.0 the instant she is running faster than a walk — so the dusk map can
-## colour a run stretch differently from a walked one without a second trail to keep in step.
-func _test_the_trail_carries_whether_she_was_running(t) -> void:
-	var rig := _trail_rig(t)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	rig.player.velocity = Vector2.ZERO
-	rig.player.global_position = Vector2.ZERO
-	await rig.frame()
-	t.check(rig.observer.trail()[0].z == 0.0, "a sample taken at a walk carries no run ratio")
-
-	rig.player.velocity = Vector2(Tuning.RUN_SPEED, 0.0)
-	rig.player.global_position = Vector2(TelemetryObserver.TRAIL_SAMPLE_DISTANCE, 0.0)
-	await rig.frame()
-	t.check(rig.observer.trail()[1].z > 0.0,
-			"and a sample taken at a sprint carries its run_excess_ratio (got %.2f)"
-			% rig.observer.trail()[1].z)
-
-	Telemetry.end_run()
-	rig.free_all()
-
-## `start_day()` resets everything else about yesterday, and the trail is no exception: a rewound
-## day was not walked, so the picture of it must start from nothing rather than carrying the
-## abandoned attempt's trail into the retry.
-func _test_a_lost_day_restarts_the_trail(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	city.run.header.day = 1
-	t.add_child(city)
-	city.build(map)
-	var rig := Rig.new(t, null, city)
-	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
-	# it is normally instanced from provides, and `start_day()` reads nothing that needs one.
-	rig.player.global_position = city.map.home_world_position()
-	rig.player.facing = Vector2.DOWN
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-
-	rig.observer.start_day()
-	rig.player.global_position += Vector2(200.0, 0.0)
-	await rig.frame()
-	t.check(not rig.observer.trail().is_empty(), "the trail records a point during the day")
-
-	rig.observer.start_day()
-	t.check(rig.observer.trail().is_empty(),
-			"a new day's start — including a rewound day's — starts the trail over from nothing")
-
-	Telemetry.end_run()
-	rig.free_all()
-	city.free()
-
-## The dusk map's whole reason to exist: `was_live` marks a plan the moment
-## `EventManager.stream_around` loads it at `Tuning.EVENT_STREAM_RADIUS` (900px), which is more
-## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
-## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
-## her something ever reach her — or a day that met eight of forty events would read as forty.
-func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(map)
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
-
-	var plan: EventScheduler.Planned = null
-	for candidate in city.events.plans():
-		if candidate.is_placed():
-			plan = candidate
-			break
-	t.check(plan != null, "day 3 places something sited to test against")
-	if plan == null:
-		city.free()
-		return
-
-	city.events.stream_around(plan.position)
-	t.check(plan.live != null, "streaming in from right on top of it brings it live")
-
-	var rig := Rig.new(t, null, city)
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(3, 1, 1, 1, 180.0)
-
-	# Asserted about `plan` specifically rather than "the dict is empty": `stream_around` from right
-	# on top of it may well have streamed in a neighbour too, and a neighbour being met at `far` is
-	# not what this test is about.
-	rig.player.global_position = plan.live.global_position + Vector2(plan.def.outer_radius + 200.0, 0.0)
-	await rig.frame()
-	t.check(not rig.observer.met_events().has(plan),
-			"being streamed in is not being met — she has not come within the outer radius yet")
-	t.check(plan.was_live, "the plan is 'was_live' regardless, which answers the looser question")
-
-	rig.player.global_position = plan.live.global_position + Vector2(plan.def.outer_radius - 10.0, 0.0)
-	await rig.frame()
-	t.check(rig.observer.met_events().has(plan),
-			"entering the outer radius — the field she can actually feel — is what counts as met")
-
-	Telemetry.end_run()
-	rig.free_all()
-	city.free()
-
-## `_test_tracing_a_day_does_not_change_it` is the invariant's own test, and it does not reach
-## either of these two: it calls `EventScheduler.build_day` directly and never instantiates an
-## observer at all, so it says nothing about the trail or the met-events watcher — the two
-## per-frame watchers M66 added, both of which run every frame the observer is alive and both of
-## which read live gameplay objects (the player's position; every event instance's
-## `global_position`). Neither takes a `RandomNumberGenerator` — there is no `rng` parameter to
-## consume from, unlike the hoisted-roll systems the invariant's comment warns about — and neither
-## writes anywhere but the observer's own trail and met events. That is a claim about the
-## code, and this is the test that would catch it being wrong: it drives both across four hundred
-## real frames of a real day, with the log on, and requires the day after to plan exactly as it
-## would have if the drive had never happened — the only way that can hold is if nothing either
-## watcher did reached `map`, `city.events` or a `day_rng()` stream.
-func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
-	var map := CityGenerator.generate(4242)
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(map)
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(3), _rng(3), consumed)
-
-	var plan: EventScheduler.Planned = null
-	for candidate in city.events.plans():
-		if candidate.is_placed():
-			plan = candidate
-			break
-	t.check(plan != null, "day 3 places something sited to walk near")
-	if plan == null:
-		city.free()
-		return
-	city.events.stream_around(plan.position)
-
-	# What day 4 plans, computed before the trail is ever walked.
-	var quiet := _plan_signature(map, 4)
-
-	var rig := Rig.new(t, null, city)
-	rig.player.global_position = plan.live.global_position \
-			+ Vector2(plan.def.outer_radius + 200.0, 0.0)
-
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(3, 1, 1, 1, 180.0)
-	var here: Vector2 = rig.player.global_position
-	var towards := (plan.live.global_position - here).normalized()
-	for i in 400:
-		here += towards * TelemetryObserver.TRAIL_SAMPLE_DISTANCE
-		rig.player.global_position = here
-		await rig.frame()
-	Telemetry.end_run()
-
-	t.check(rig.observer.trail().size() > 300,
-			"the drive actually sampled the trail, not a vacuous pass (got %d points)"
-			% rig.observer.trail().size())
-	t.check(not rig.observer.met_events().is_empty(),
-			"and walked close enough to mark the plan met, so the scan actually ran")
-
-	var traced := _plan_signature(map, 4)
-	t.check(quiet == traced, "four hundred frames of trail sampling and met-events scanning, "
-			+ "with the log on, leave what day 4 plans untouched")
-
-	rig.free_all()
-	city.free()
 
 # ------------------------------------------------------------- the city grid ---
 # *(Playtest 13, finding 4.)* What a test can hold about a picture is its geometry and its
@@ -985,7 +517,8 @@ func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
 	var roles := {}
 	for day in [3, 9]:
 		var tree := RouteTree.for_day(map, day)
-		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed, [], [], tree)
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed, [], tree).placements()
 		# Day 3's set piece is budgeted with no position and sited from the walk she takes
 		# (`EventDef.on_her_way`), so a day's plan on its own carries no set-piece mark to
 		# draw. The picture has to be able to draw one, and what it draws is a sited plan — so this
@@ -1112,7 +645,8 @@ func _test_every_routed_event_is_a_straight_line(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var consumed: Array[String] = []
 	for day in [1, 3, 7, 14]:
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, consumed):
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), consumed).placements():
 			if plan.path.size() < 2:
 				continue
 			t.check(plan.path.size() == 2, "%s's route is two points, not %d"
@@ -1157,18 +691,18 @@ func _test_the_map_picture_reads_the_map_and_nothing_else(t) -> void:
 ## part of it that exists headless — there is no viewport to photograph in the suite, and that is
 ## itself the thing being relied on.
 func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	var log := Telemetry.current_log()
+	_log.begin_run(0)
+	_log.begin_day(1, 1, 1, 1, 180.0)
+	var log := _log.current_log()
 	var before := log.lines.size()
 	for i in TelemetryShots.PER_DAY * 2 + 1:
-		Telemetry.snapshot_now("press %d" % i)
+		_log.snapshot_now("press %d" % i)
 	t.check(log.lines.size() - before == TelemetryShots.PER_DAY * 2 + 1,
 			"every press writes its line, well past the heuristic's own daily cap")
 	t.check(log.lines[log.lines.size() - 1].contains("shot"),
 			"and the line is a shot entry")
-	Telemetry.end_run()
-	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
+	_log.end_run()
+	t.check(not _log.is_active(), "and the suite is left dormant again")
 
 ## *(2026-09-11, playtest 56: "phot capture must use real time not game time otherwise at the
 ## end of the day all pictures get overwritten", then, once a real-time name was in place,
@@ -1209,20 +743,20 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 	# names: a new log is a new run, a new day and a retried day are not. The names are the files
 	# that land in the run's `asked/` folder.
 	var scratch := _open_a_scratch_run("counter")
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	Telemetry.snapshot_now("one")
+	_log.begin_day(1, 1, 1, 1, 180.0)
+	_log.snapshot_now("one")
 	t.check(_pictures("asked") == PackedStringArray(["001-attempt1-asked.png"]),
 			"a new log's first picture is 001 (got %s)" % _pictures("asked"))
-	Telemetry.begin_day(2, 1, 1, 1, 180.0)
-	Telemetry.snapshot_now("two")
+	_log.begin_day(2, 1, 1, 1, 180.0)
+	_log.snapshot_now("two")
 	t.check(_pictures("asked").has("002-attempt1-asked.png"),
 			"Telemetry's own new day does not reset the run's counter (got %s)" % _pictures("asked"))
-	Telemetry.begin_day(2, 1, 1, 1, 180.0)
-	Telemetry.snapshot_now("three")
+	_log.begin_day(2, 1, 1, 1, 180.0)
+	_log.snapshot_now("three")
 	t.check(_pictures("asked").has("003-attempt2-asked.png"),
 			"nor does Telemetry's own retry of the same day (got %s)" % _pictures("asked"))
-	Telemetry.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 1, 180.0)
-	Telemetry.snapshot_now("four")
+	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 1, 180.0)
+	_log.snapshot_now("four")
 	t.check(_pictures("asked").has("004-attempt1-asked.png"),
 			"nor an escape section opening (got %s)" % _pictures("asked"))
 	_close_the_scratch_run(scratch)
@@ -1235,11 +769,11 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 ## across two names and confirming the day clock genuinely never moved between them.
 func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t) -> void:
 	var scratch := _open_a_scratch_run("held-clock")
-	Telemetry.begin_day(1, 1, 1, 1, 180.0)
-	Telemetry.set_clock(0.0)
-	Telemetry.snapshot_now("first")
-	Telemetry.snapshot_now("second")
-	t.check(Telemetry.clock() == 0.0,
+	_log.begin_day(1, 1, 1, 1, 180.0)
+	_log.set_clock(0.0)
+	_log.snapshot_now("first")
+	_log.snapshot_now("second")
+	t.check(_log.clock() == 0.0,
 			"the day clock genuinely never moved between the two — the same way --invincible " +
 			"holds it at the day's length once the countdown clamps at zero")
 	var found := _pictures("asked")
@@ -1272,18 +806,19 @@ func _delete_recursive(path: String) -> void:
 			DirAccess.remove_absolute(ancestor)
 
 ## The only way to check a folder actually landed where `begin_run()` says it does is to open a
-## real run — `begin_memory_log()` has no path to inspect. `false` (a rig) because this is a
+## real run of a log over a folder of the test's own. `false` (a rig) because this is a
 ## scripted check rather than a person at the controls, the same reason `check.sh` and `shot.sh`
 ## write `rig-`.
 func _test_a_runs_files_share_one_folder(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
-	Telemetry.begin_run(778812345, false, scratch)
-	var log_path := Telemetry.current_log().path
+	_use_a_log_over(scratch)
+	_log.begin_run(778812345, false)
+	var log_path := _log.current_log().path
 	t.check(log_path != "", "a real run opens a file")
-	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+	t.check(_log.current_log().path.begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% Telemetry.current_log().path)
+			% _log.current_log().path)
 	t.check(log_path.get_file() == "run.log",
 			"the log is named plainly — the folder is what says which run it belongs to (got '%s')"
 			% log_path.get_file())
@@ -1297,8 +832,8 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	t.check(day_dir.count("-") == 2 and day_dir.length() == 10,
 			"its parent is the calendar day folder (got '%s')" % day_dir)
 
-	Telemetry.begin_day(1, 1, 778812345, 778812345, 10.0)
-	Telemetry.write_map(map, 1)
+	_log.begin_day(1, 1, 778812345, 778812345, 10.0)
+	_log.write_map(map, 1)
 
 	var maps_dir := "%s/maps" % run_dir
 	t.check(DirAccess.dir_exists_absolute(maps_dir),
@@ -1307,7 +842,7 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 	t.check(found.has("day01-attempt1.png"),
 			"a first attempt is named like every other attempt (got %s)" % found)
 
-	Telemetry.end_run()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 ## Every filename that can repeat within a run asks for its attempt's suffix, the first attempt
@@ -1316,32 +851,33 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
-	Telemetry.begin_run(778812347, false, scratch)
-	var run_dir := Telemetry.current_log().path.get_base_dir()
-	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+	_use_a_log_over(scratch)
+	_log.begin_run(778812347, false)
+	var run_dir := _log.current_log().path.get_base_dir()
+	t.check(_log.current_log().path.begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% Telemetry.current_log().path)
-	Telemetry.begin_day(6, 2, 1, 1, 10.0)
-	Telemetry.write_map(map, 6)
+			% _log.current_log().path)
+	_log.begin_day(6, 2, 1, 1, 10.0)
+	_log.write_map(map, 6)
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found == PackedStringArray(["day06-attempt1.png"]),
 			"a first attempt is named too, so every name has the same shape (got %s)" % found)
-	Telemetry.begin_day(6, 2, 1, 1, 10.0)
-	Telemetry.write_map(map, 6)
+	_log.begin_day(6, 2, 1, 1, 10.0)
+	_log.write_map(map, 6)
 	found = DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found.has("day06-attempt2.png"),
 			"a second attempt at the same day is named (a nerve retries without the day advancing)")
-	Telemetry.begin_day(7, 2, 1, 1, 10.0)
-	Telemetry.write_map(map, 7)
+	_log.begin_day(7, 2, 1, 1, 10.0)
+	_log.write_map(map, 7)
 	found = DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found.has("day07-attempt1.png"),
 			"a different day's first attempt is unaffected by day 6's retry")
-	Telemetry.begin_day(6, 2, 1, 1, 10.0)
-	Telemetry.write_map(map, 6)
+	_log.begin_day(6, 2, 1, 1, 10.0)
+	_log.write_map(map, 6)
 	found = DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found.has("day06-attempt3.png"),
 			"day 6 keeps its own count across whatever happened to other days in between")
-	Telemetry.end_run()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 ## The run's calendar (`RunCalendar.finish_day()`) retries a lost day by starting it again with the
@@ -1351,18 +887,19 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
-	Telemetry.begin_run(778812346, false, scratch)
-	var run_dir := Telemetry.current_log().path.get_base_dir()
-	t.check(Telemetry.current_log().path.begins_with(scratch + "/"),
+	_use_a_log_over(scratch)
+	_log.begin_run(778812346, false)
+	var run_dir := _log.current_log().path.get_base_dir()
+	t.check(_log.current_log().path.begins_with(scratch + "/"),
 			"the run lands under the folder it was handed, not the player's own (got '%s')"
-			% Telemetry.current_log().path)
+			% _log.current_log().path)
 
-	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)
-	Telemetry.write_map(map, 6)
-	Telemetry.write_map(map, 6, [], null, [], true)  # dusk, same attempt
-	Telemetry.begin_day(6, 2, 778812346, 778812346, 10.0)  # the retry a nerve buys
-	Telemetry.write_map(map, 6)
-	Telemetry.write_map(map, 6, [], null, [], true)
+	_log.begin_day(6, 2, 778812346, 778812346, 10.0)
+	_log.write_map(map, 6)
+	_log.write_map(map, 6, [], null, [], true)  # dusk, same attempt
+	_log.begin_day(6, 2, 778812346, 778812346, 10.0)  # the retry a nerve buys
+	_log.write_map(map, 6)
+	_log.write_map(map, 6, [], null, [], true)
 
 	var found := DirAccess.open("%s/maps" % run_dir).get_files()
 	t.check(found.has("day06-attempt1.png"),
@@ -1375,7 +912,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 	t.check(found.has("day06-attempt2-dusk.png"),
 			"and a second dusk picture (got %s)" % found)
 
-	Telemetry.end_run()
+	_put_back_the_suite_log()
 	_delete_recursive(scratch)
 
 # -------------------------------------------------------------- the web override ---
@@ -1502,33 +1039,6 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 	t.check(frames.spikes().is_empty() and frames.lines.size() == 1,
 			"with --spikes off, no spike line even across a frame far past twice the mean")
 
-## The observer on real frames, `--spikes` given, in a real city with her standing at home: it hands
-## its frame watch each frame's length and, for the spike line, her tile and the live events, so a
-## `frame` line reaches the run log once a second of frames has passed. The engine's time scale
-## makes that second a handful of frames, and is put back after.
-func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), RUN_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(9001))
-	var rig := Rig.new(t, null, city, true)
-	rig.player.global_position = city.map.home_world_position()
-	Telemetry.begin_memory_log()
-	Telemetry.begin_day(1, 1, 1, 1, Rig.LENGTH)
-	var scale := Engine.time_scale
-	Engine.time_scale = 50.0
-	var framed := false
-	for i in 400:
-		await rig.frame()
-		framed = Telemetry.current_log().lines.any(
-				func(line: String) -> bool: return line.substr(8, 9) == "frame    ")
-		if framed:
-			break
-	Engine.time_scale = scale
-	t.check(framed, "the observer's frames write the frame line once a second of them has passed")
-	Telemetry.end_run()
-	t.check(not Telemetry.is_active(), "and the suite is left dormant again")
-	rig.free_all()
-	city.free()
 
 ## A baked page says which of the two sanctioned moments it was read from disk in, how long the
 ## read took and how big the page is — the line a reader scans to answer "did anything load in a
@@ -1540,14 +1050,16 @@ func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
 ## not produced here: `AtlasLibrary.acquire()` raises a real engine error on it, and an engine
 ## error in a suite makes the gate red whether or not a test expected it. What that value means
 ## is `tests/test_atlas_loading.gd`'s, asked through `moment_for_a_load()` with nothing loaded.
-## Asked of a library of the test's own (`AtlasLibrary.new()`), so the count this test watches
+## Asked of a library of the test's own (`AtlasLibrary.new()`), handed the suite's log to write into
+## (`trace_note`, as `main` hands the sitting's the boot's trace), so the count this test watches
 ## starts at nought whatever any other library in the process holds — a `City` left standing by an
 ## earlier suite holds `events` on its own library, not on this one — and the library is dropped
 ## with the test, leaving nothing behind for the suite that runs next.
 func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 	var atlas := AtlasLibrary.new()
+	atlas.trace_note = _log.note
 	var group := EventPictures.ATLAS_GROUP
-	Telemetry.begin_memory_log()
+	_log.begin_run(0)
 	atlas.claim_the_loading_moments(AtlasLibrary.MOMENT_STARTUP)
 	atlas.hold_for_the_process(group)
 	atlas.close_loading_window()
@@ -1559,14 +1071,14 @@ func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
 	atlas.stop_holding(group)
 	var loaded: Array[String] = []
 	var released: Array[String] = []
-	for line: String in Telemetry.current_log().lines:
+	for line: String in _log.current_log().lines:
 		if not line.contains("atlas page '%s'" % group):
 			continue
 		if line.contains("released"):
 			released.append(line)
 		else:
 			loaded.append(line)
-	Telemetry.end_run()
+	_log.end_run()
 
 	t.check(loaded.size() == 1, "one line per page actually read from disk (got %d)" % loaded.size())
 	for line in loaded:
@@ -1593,22 +1105,6 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d" % [4242, day])
 	return rng
 
-## Everything a planned day is, as one comparable string: what was placed, where, and in what
-## order. Positions to the pixel, because a shifted RNG moves an event without changing the
-## set of events.
-func _plan_signature(map: CityMap, day: int, trace: RunTrace = null) -> String:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
-	var consumed: Array[String] = []
-	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, consumed, [], [], null, 0,
-			PackedVector2Array(), [], [], trace):
-		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
-	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
-	# is exactly the divergence this is looking for.
-	parts.append("consumed:" + ",".join(consumed))
-	return "|".join(parts)
-
 ## Where every block ends up after a whole run of scheduled advances.
 func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 	var state := CityState.new()
@@ -1623,3 +1119,73 @@ func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 		parts.append("%s=%d:%d" % [RunTrace.tile(block),
 				state.purpose_of(map.block_plans, block), CityStateReads.changed_on(state, block)])
 	return "|".join(parts)
+
+# --------------------------------------------------------- moved in: the log's own ---
+
+## `--invincible` is noted on the day header the way the seed is, once when the day opens, never as
+## a per-frame entry, so a log of a day that could not be lost says so.
+func _test_the_day_header_notes_the_invincible_flag_once_per_day(t) -> void:
+	_log.begin_run(4242, false)
+
+	_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
+	_log.begin_day(1, 1, 4242, 4242, 144.0)
+	var on_lines := _log.current_log().lines.duplicate()
+
+	_log.configure(RunConfig.parse(PackedStringArray(), "", true))
+	_log.begin_day(2, 1, 4242, 4242, 144.0)
+	var off_lines := _log.current_log().lines.duplicate()
+
+	_log.configure(null)
+	_log.end_run()
+
+	# The header line is the last one `begin_day` wrote before the next call — noted the same
+	# way the seed is, once when the day opens, never as a per-frame entry.
+	t.check(on_lines[on_lines.size() - 1].contains("invincible"),
+		"the day header notes the flag the way it notes the seed (got '%s')"
+		% on_lines[on_lines.size() - 1])
+	t.check(not off_lines[off_lines.size() - 1].contains("invincible"),
+		"and says nothing on a day played with the flag off (got '%s')"
+		% off_lines[off_lines.size() - 1])
+
+## The run log's own burst refuses in a headless run, where its screen draws nothing; the refusal
+## starts nothing, so a second request is refused the same way and not as an overlap.
+func _test_a_headless_burst_is_refused_without_a_capture_wait(t) -> void:
+	_log.begin_run(0, false)
+	t.check(not _log.start_burst("headless test"),
+			"headless capture refuses without beginning a renderer wait")
+	var lines := _log.current_log().lines
+	t.check(not _log.start_burst("headless again")
+				and lines.filter(func(line: String) -> bool:
+					return line.contains("burst refused: no drawable viewport")).size() == 2
+				and lines.filter(func(line: String) -> bool:
+					return line.contains("another burst is active")).is_empty(),
+			"headless refusal leaves no active recorder")
+	_log.end_run()
+
+## `end_day()` and `end_run()` each cut the active sequence short, with their own reason. A log over
+## a folder of the test's own is handed a recorder on the burst suite's bench (its screen, clock and
+## scratch folder, `tests/test_burst_capture.gd`) through `use_bursts()`, the way `main` hands the
+## log it makes the game's own, which is on the viewport and draws nothing here.
+func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
+	var bench = BurstSuite.Bench.new("day-and-run")
+	var scratch := "user://telemetry-test-bursts-%d" % Time.get_ticks_usec()
+	_use_a_log_over(scratch)
+	_log.use_bursts(bench.recorder)
+	_log.begin_run(0, false)
+	var day: String = bench.start("cut by the day")
+	bench.draw()
+	_log.end_day()
+	var by_day: Dictionary = bench.manifest(day)
+	t.check(by_day.get("status") == "cancelled" and by_day.get("reason") == "day ended"
+				and (by_day.get("frames", []) as Array).size() == 1 and not bench.busy(),
+			"ending a day cuts its active burst short, keeping the frames drawn")
+	var run: String = bench.start("cut by the run")
+	bench.draw()
+	_log.end_run()
+	var by_run: Dictionary = bench.manifest(run)
+	t.check(by_run.get("status") == "cancelled" and by_run.get("reason") == "run ended"
+				and not bench.busy(),
+			"ending the run cuts its active burst short")
+	_put_back_the_suite_log()
+	_delete_recursive(scratch)
+	bench.close()

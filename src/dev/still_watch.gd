@@ -101,6 +101,9 @@ var _elapsed := 0.0
 ## Set the moment the picture is asked for, so a still-running instance (the capture itself takes
 ## a frame or two to land) never asks twice.
 var _done := false
+## Where its `still` line goes: the boot's run trace, which `main` hands it before `setup()`; one
+## nobody handed writes nowhere.
+var trace := RunTrace.new()
 
 func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
 		picture_dir: String, recording := false) -> void:
@@ -260,19 +263,20 @@ static func _nearest_visible_signalled_junction(map: CityMap, signals: TrafficSi
 func _trigger() -> void:
 	_done = true
 	set_physics_process(false)
-	Telemetry.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
+	trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
 		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
 ## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
 ## (`auto/`, `asked/`, `maps/` — see docs/TELEMETRY.md) under the run's own directory, read off
-## `Telemetry.current_log().path` — the one public handle onto where a run writes anything, rather
-## than a second copy of `Telemetry`'s own folder-naming. Falls back to `Telemetry.DIRECTORY`
-## itself when telemetry is off (`--no-telemetry` alongside this flag) — an edge case the flag was
-## not asked to solve, but one a picture dropped into the working directory would answer worse than
-## a shared, findable folder. Only names the folder; `_picture_path()` makes it.
-static func telemetry_picture_dir() -> String:
-	var log := Telemetry.current_log()
+## the boot's run log `run_log` (`current_log().path`) — the one public handle onto where a run
+## writes anything, rather than a second copy of `Telemetry`'s own folder-naming. Falls back to
+## `Telemetry.DIRECTORY` itself when telemetry is off (`--no-telemetry` alongside this flag) — an
+## edge case the flag was not asked to solve, but one a picture dropped into the working directory
+## would answer worse than a shared, findable folder. Only names the folder; `_picture_path()`
+## makes it.
+static func telemetry_picture_dir(run_log: Telemetry) -> String:
+	var log := run_log.current_log()
 	return (log.path.get_base_dir() + "/still") if log and log.path != "" \
 			else (Telemetry.DIRECTORY + "/still")
 

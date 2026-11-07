@@ -247,7 +247,7 @@ touch".)*
   it, and she lures him out. *(2026-09-27: "robber at inner end of the courtyard is fine. I
   encountered it in game and it worked well for me. you just have to lure the robber out
   first.")* That robber is the one thing standing on calm ground she has not used this act, which
-  the day's events otherwise leave alone (`EventScheduler._calm_to_leave_alone`): the courtyard
+  the day's events otherwise leave alone (`CalmAreas.unused_ground()`): the courtyard
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
   out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). The roadblock,
   the one task guarded where it waits, keeps a robber somewhere between 62px and 216px of it

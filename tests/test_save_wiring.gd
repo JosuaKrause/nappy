@@ -36,6 +36,7 @@ extends RefCounted
 ## ordinary `write()`, `try_resume()` and `clear()` reach it.
 
 const Boot := preload("res://tests/booted_main.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
 const _SCRATCH_PATH := "user://test_save_wiring_scratch.json"
@@ -45,7 +46,6 @@ const _SEED := 4242
 var _save := GameSave.new(_SCRATCH_PATH)
 
 func run(t) -> void:
-	t.gives_back_observers()
 	_save.clear_when_a_run_ends()
 	_begin()
 
@@ -160,10 +160,11 @@ func _one(root: Node, type_name: String) -> Node:
 	return found[0] if found.size() == 1 else null
 
 ## The real `main.tscn` handed `config`, `calls` and, when given, the `home` its sitting is parked
-## in and taken from, put in the tree, with real frames let pass until its boot has finished
-## (`Boot.until_booted()`): the run, the day, her and the title are built.
-func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true) -> Node2D:
-	_observers.append(Boot.hold_observers())
+## in and taken from and the `run_log` it writes (`main.use_run_log()`), put in the tree, with real
+## frames let pass until its boot has finished (`Boot.until_booted()`): the run, the day, her and
+## the title are built.
+func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true,
+		run_log: Telemetry = null) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	if hand_the_save:
 		main.use_save(_save)
@@ -172,18 +173,15 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	main.use_quit(calls.quit)
 	if home:
 		main.use_sitting_home(home)
+	if run_log:
+		main.use_run_log(run_log)
 	t.add_child(main)
 	await Boot.until_booted(t, main)
 	return main
 
-## What the observers held before each boot still standing, given back as it is shut, so none
-## keeps the run of a boot that is gone (`tests/booted_main.gd`).
-var _observers: Array[Dictionary] = []
-
 func _shut(t, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
-	Boot.give_back_observers(_observers.pop_back())
 
 ## Whether the summary's note line is up, and what it says.
 func _note_of(main: Node2D) -> Label:
@@ -275,8 +273,8 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 ## signal on a booted game that has a save under way, then a second boot, the reloaded one.
 ##
 ## **The restart deletes the save before the run log closes**, so the "deleted the save" line is
-## written into the run being abandoned: a log held in memory stands in for the run's, and is the
-## `Telemetry` log the restart closes. **And it stamps the sitting** the reloaded boot's title
+## written into the run being abandoned: a recording log (`tests/recording_log.gd`) stands in for
+## the run's, and is the log the restart closes. **And it stamps the sitting** the reloaded boot's title
 ## measures its restart guard against (`Sitting.restarted_at_msec`), since that title is a fresh one.
 func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	_begin()
@@ -284,18 +282,18 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	var home := Node.new()
 	t.add_child(home)
 	var calls := Calls.new()
-	var main := await _boot(t, _windowed(), calls, home)
+	var run_log := RecordingLog.new()
+	var main := await _boot(t, _windowed(), calls, home, true, run_log)
 	await Boot.press_title(t, main, "Tap")
 	t.check(FileAccess.file_exists(_SCRATCH_PATH), "a save exists before the restart")
-	Telemetry.begin_memory_log()
-	var log: TelemetryLog = Telemetry.current_log()
+	run_log.begin_run(0, false)
 
 	Boot.pause(main).restart_requested.emit()
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "the held restart clears it")
 	t.check(calls.reloads.size() == 1, "and reloads the scene")
-	t.check(log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
+	t.check(run_log.lines.any(func(line: String) -> bool: return "deleted the save" in line),
 			"the restart's deletion is logged")
-	t.check(Telemetry.current_log() == null, "and the log is closed after it, not before")
+	t.check(not run_log.is_active(), "and the log is closed after it, not before")
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	t.check(sitting != null, "the restart parks the sitting in its home before the reload")
 	t.check(sitting != null and sitting.restarted_at_msec > -INF,
@@ -305,14 +303,14 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 	_shut(t, main)
 
 	t.check(_on_disk().is_empty(), "the reloaded boot's own try_resume() finds nothing to resume")
-	var reloaded := await _boot(t, _windowed(), calls, home)
+	var reloaded := await _boot(t, _windowed(), calls, home, true, run_log)
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "and its own dawn write does nothing either")
 	t.check(Boot.title(reloaded).is_open(), "it opens on the title")
 	t.check(_one(reloaded, "SaveIndicator") == null and home.get_child_count() == 1
 			and SaveIndicator.carried(sitting) == carried,
 			"and takes the parked sitting, adopting the symbol under it rather than building its own")
 	_shut(t, reloaded)
-	Telemetry.end_run()
+	run_log.free()
 	home.free()
 
 ## **The game's own path to its save**, which every other test here skips by handing `main` a save
@@ -355,7 +353,6 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	if not took_it:
 		_shut(t, first)
 		EventBus.save_written.disconnect(hear)
-		Telemetry.end_run()
 		home.free()
 		return
 	await Boot.press_title(t, first, "Tap")
@@ -381,7 +378,6 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 	_shut(t, second)
 	EventBus.save_written.disconnect(hear)
 	parked.clear()
-	Telemetry.end_run()
 	home.free()
 
 ## *"either it saves with one less nerve and a cleared "during active game" flag. or you defer

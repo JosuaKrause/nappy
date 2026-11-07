@@ -1,3 +1,4 @@
+class_name VisitCounter
 extends Node
 ## Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page
 ## counts visits", and PLAYTEST-132 ("let's get info about how far people get ... anything with
@@ -80,11 +81,14 @@ extends Node
 ##   button began the run on the title screen, or that a key did, cheap to answer and part of "how
 ##   far people get" in its own way.
 
-func _ready() -> void:
-	listen(EventBus)
-	send_through(GoatCounterOutbox.new(func(script: String) -> void: JavaScriptBridge.eval(script)))
+## **One per sitting, made by `main` and handed what it listens to and sends through.** `main`
+## makes it under the sitting on the sitting's first boot (`Sitting`), hands it the game's
+## `EventBus` (`listen()`) and the page's outbox (`send_through()`), and finds it there after, so
+## its count of the run (the day, the open tasks, whether the run's beginning was reported) outlives
+## the scene reloads a run makes, the held restart included, exactly as long as the page's
+## process does. A suite that boots `main` gets the counter of the sitting it hands, freed with it.
 
-## Connects every handler below to `bus`'s signals. `_ready()` hands it the game's `EventBus`; a
+## Connects every handler below to `bus`'s signals. `main` hands it the game's `EventBus`; a
 ## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
 ## counter to let go of it.
 func listen(bus: Node) -> void:
@@ -165,7 +169,10 @@ static func _goatcounter_present() -> bool:
 ## call that counts one. `null` until `send_through()` hands one in, and nothing is sent before.
 var _outbox: GoatCounterOutbox
 
-## Hands the counter the outbox its events go to. `_ready()` hands it one that evaluates its script
+## The name `main` gives it under the sitting, and what the next boot looks for there.
+const NODE_NAME := "VisitCounter"
+
+## Hands the counter the outbox its events go to. `main` hands it one that evaluates its script
 ## through the page's own `JavaScriptBridge`; a test hands one with a recorder, so what reaches the
 ## outbox, queued or counted, is what the recorder sees once the outbox flushes.
 func send_through(outbox: GoatCounterOutbox) -> void:
@@ -254,15 +261,16 @@ static func _is_pickup_step(step: int) -> bool:
 
 # ------------------------------------------------------------------- signals ---
 
-## Whether this autoload — which, like every autoload, survives `get_tree().reload_current_scene()`
-## and so lives for as long as this browser tab keeps its WASM instance, across a held restart or
-## a day-14 handover into the escape alike — has already answered `run_begun` once. `main.gd`'s own
-## `resumed` argument only asks "did a save exist when `GameSave.try_resume()` ran"; it cannot also
-## know whether *this page* already ran once before asking, because that is not something
-## the run or a save file could ever record — a save a `reload_current_scene()` wrote a moment
-## ago and a save a real previous visit left both answer `GameSave.try_resume()` the same way.
-## "A resume means a save that existed when the page loaded, never one this page session wrote" is
-## answered here instead, the one place a flag can live for exactly a page's own lifetime.
+## Whether this counter — which lives under the sitting, survives
+## `get_tree().reload_current_scene()` with it and so lives for as long as this browser tab keeps
+## its WASM instance, across a held restart or a day-14 handover into the escape alike — has already
+## answered `run_begun` once. `main.gd`'s own `resumed` argument only asks "did a save exist when
+## `GameSave.try_resume()` ran"; it cannot also know whether *this page* already ran once before
+## asking, because that is not something the run or a save file could ever record — a save a
+## `reload_current_scene()` wrote a moment ago and a save a real previous visit left both answer
+## `GameSave.try_resume()` the same way. "A resume means a save that existed when the page loaded,
+## never one this page session wrote" is answered here instead, the one place a flag can live for
+## exactly a page's own lifetime.
 var _reported_run_begun := false
 
 ## The decision behind `_on_run_begun()`'s own gate, pulled out to a pure function of its two

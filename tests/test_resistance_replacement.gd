@@ -9,7 +9,6 @@ extends "res://tests/resistance_rig.gd"
 ## a relocation of many tiles, each is her stroller set down and one tick (`_relocate_round()`), the
 ## mark and its guard read off the street.
 func run(t) -> void:
-	t.gives_back_observers()
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
 	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)

@@ -20,7 +20,6 @@ const Boot := preload("res://tests/booted_main.gd")
 const _SCRATCH_SAVE := "user://test_camera_start_scratch.json"
 
 func run(t) -> void:
-	t.gives_back_observers()
 	await _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 	await _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 
@@ -38,21 +37,18 @@ func _start_a_boot(t, config: RunConfig) -> Array:
 	t.add_child(main)
 	return [main, save, home]
 
-func _end_the_boot(boot: Array, observers: Dictionary) -> void:
+func _end_the_boot(boot: Array) -> void:
 	var main: Node2D = boot[0]
 	main.get_tree().paused = false
-	Telemetry.end_run()
 	main.free()
 	(boot[1] as GameSave).free()
 	(boot[2] as Node).free()
-	Boot.give_back_observers(observers)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_SAVE))
 
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
 ## first after the title's disc is pressed.
 func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
-	var observers := Boot.hold_observers()
 	var boot := _start_a_boot(t, Boot.config([]))
 	var main: Node2D = boot[0]
 
@@ -101,7 +97,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 	EventBus.day_planned.disconnect(at_dawn)
 	t.check(dawns.size() == 1, "the lost day's continue placed the next attempt (%d)" % dawns.size())
 
-	_end_the_boot(boot, observers)
+	_end_the_boot(boot)
 
 ## PLAYTEST-140, statement 5: "when you lose with game over the title screen is sideways", and
 ## PLAYTEST-144's still after a held restart, "This is the screen when resetting" — both on a
@@ -116,7 +112,6 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 ## already be the rotated one, which leaves only the camera wrong; the camera's assertion is that
 ## case.
 func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t) -> void:
-	var observers := Boot.hold_observers()
 	var window: Window = t.get_tree().root
 	var saved_size := window.size
 	var saved_box := window.content_scale_size
@@ -142,6 +137,6 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 	t.check(Boot.carries_the_rotation(Boot.title(main)),
 			"including the title it opens on")
 
-	_end_the_boot(boot, observers)
+	_end_the_boot(boot)
 	window.size = saved_size
 	window.content_scale_size = saved_box

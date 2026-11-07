@@ -47,8 +47,14 @@ func _rng(day: int) -> RandomNumberGenerator:
 var _plans := {}
 
 func _planned(day: int) -> Array[EventScheduler.Planned]:
+	return _day_events(day).placements()
+
+## The shared map's plan for `day` as the scheduler answers it (`DayEvents`), memoized the same
+## way: what a check asks when it wants a fact of the day — which calm areas are spoiled —
+## rather than the rows themselves.
+func _day_events(day: int) -> DayEvents:
 	if not _plans.has(day):
 		var consumed: Array[String] = []
-		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(), consumed)
-	var found: Array[EventScheduler.Planned] = _plans[day]
-	return found
+		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
+				CalmAreas.of(_map()), consumed)
+	return _plans[day]
