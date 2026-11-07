@@ -16,8 +16,9 @@ func run(t) -> void:
 ## her: the task lands where one of her paths first reaches the edge of a
 ## `ResistanceDirector.NEAR_THE_MARK` (576px) circle round her — worked out here by its own walk
 ## over the day's obstruction (`_edge_of_her_circle()`) — or the director says nothing on the edge
-## qualified; day 11's mast is one her paths reach inside or on that circle; and a task put in the
-## world is put outside her view. *("create a circle around the current player position with the
+## qualified; day 11's mast is one her paths reach inside or on that circle; day 13's roadblock is
+## one the day placed, or swapped in, that her paths reach within its widest ring; and a task put in
+## the world is put outside her view, day 13's found roadblock excepted, which stood there all along. *("create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
 ## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
 func _test_a_task_is_placed_near_its_mark(t) -> void:
@@ -41,17 +42,22 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 				var target := director.contact_position() if mast or director.rider() == null \
 						else director.rider().global_position
 				var circle := _edge_of_her_circle(director, mark)
-				# Day 13's roadblock is offered the ground her paths reach out to each of
-				# `ROADBLOCK_WIDER_REACH` in turn where the day's rules refuse the whole edge
-				# (`_place_the_roadblock_near()`), and that is not a fallback.
-				var wider := _paths_reach_between(director, mark, ResistanceDirector.NEAR_THE_MARK,
+				# Day 13's roadblock is the nearest the day placed, or one swapped in, that her paths
+				# reach within the widest of `ROADBLOCK_WIDER_REACH` (`_place_the_roadblock_near()`),
+				# touched from ground within a tile and a half of its body; that is not a fallback.
+				var wider := _paths_reach_between(director, mark, 0.0,
 						ResistanceDirector.ROADBLOCK_WIDER_REACH.back()) if day == 13 else {}
 				var on_it := false
 				var centre := _city.map.world_to_tile(target)
 				for step_to: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.RIGHT,
 						Vector2i.UP, Vector2i.DOWN]:
 					var tile := centre + step_to
-					if circle[0].has(tile) or (mast and circle[1].has(tile)) or wider.has(tile):
+					if circle[0].has(tile) or (mast and circle[1].has(tile)):
+						on_it = true
+				var touch := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"),
+						Vector2.ZERO).blocking_radius() + Tuning.TILE_SIZE * 1.5
+				for tile: Vector2i in wider:
+					if _city.map.tile_to_world(tile).distance_to(target) <= touch:
 						on_it = true
 				# The nearest place stands in when nothing qualified: the director's run log says so
 				# (`_pick_near()` for a mark's task, `_place_at_a_mast()` for day 11's).
@@ -65,7 +71,8 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 						"nothing there qualified") % [seed_value, day])
 				if fell_back_here:
 					fell_back[0] += 1
-				if not mast:
+				# A roadblock the day placed stood there all along, so day 13's may be in her view.
+				if not mast and day != 13:
 					t.check(not _would_show(ResistanceDirector.TASK_BOX, target),
 							"seed %d day %d: and was put in the world outside her view"
 							% [seed_value, day])

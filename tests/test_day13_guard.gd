@@ -19,11 +19,12 @@ extends RefCounted
 ## between them; set on her with a building across his straight line, where a chase straight at her
 ## stalls, he walks round it to her while she stands; and a guard who already noticed her is left on her exactly as he was.
 ##
-## And day 13's own roadblock is placed under the day's rules, close by *(inbox #650 in mossy-beaver:
-## "let's place one properly and guide to that -- just make sure it's closeby")*: on several cities,
-## reading the mark appends it to the day's plan, between the edge of the circle round her and the
-## widest ring it may be offered (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), wholly out of her view,
-## and with it standing she can still walk home and to a calm area from where she read the mark.
+## And day 13's own roadblock is one the day placed, close by *(inbox #650 in mossy-beaver: "let's
+## place one properly and guide to that -- just make sure it's closeby"; inbox #1185)*: on several
+## cities, reading the mark takes a roadblock the day placed, or swaps one in for one of the day's
+## events wholly out of her view, within the widest ring it is looked for in
+## (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), and with it standing she can still walk home and to
+## a calm area from where she read the mark.
 ##
 ## **Each test builds its city in a run of its own** (`_build_city()`) and plays day 13 on it through
 ## the real day order, so none leans on the steps, alleys or scars another left. What the director
@@ -783,8 +784,9 @@ static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
 			best_distance = distance
 	return best
 
-## **Day 13's own roadblock is placed under the day's rules, close by.** She reads the mark where it
-## stands, with the 640x360 view round her answering what is on screen.
+## **Day 13's own roadblock is one the day placed, close by** (inbox #1185), or one of the day's
+## events swapped for one out of her sight. She reads the mark where it stands, with the 640x360
+## view round her answering what is on screen.
 func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
@@ -794,6 +796,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	var map := city.map
 	var mark := director.current_step()
 	var plans_before := city.events.plans().size()
+	var spent_before := _spent(city)
 	if mark:
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
@@ -803,17 +806,26 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 		_tear_down(player, director, city)
 		return
 	var plans := city.events.plans()
-	t.check(plans.size() == plans_before + 1 and plans.back().live == roadblock,
-			"seed %d: it is placed the way the day places one, joining the day's plan" % seed_value)
+	var found := plans.size() == plans_before
+	var swapped: bool = plans.size() == plans_before + 1 and plans.back().live == roadblock \
+			and _spent(city) == spent_before + 1
+	t.check(found or swapped,
+			"seed %d: it is a roadblock the day placed, or one swapped in for a day's event"
+			% seed_value)
 	var away := roadblock.global_position.distance_to(her)
+	# She touches it from ground her paths reach within the widest ring, a tile and a half from its
+	# body at most.
 	var widest: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back()
-	t.check(away >= ResistanceDirector.NEAR_THE_MARK - Tuning.TILE_SIZE
-			and away <= widest + Tuning.TILE_SIZE,
-			"seed %d: close by, %.0fpx from where she read the mark (%.0f-%.0fpx)"
-			% [seed_value, away, ResistanceDirector.NEAR_THE_MARK, widest])
-	var box := EventFootprints.footprint_of(roadblock.def)
-	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
-			"seed %d: no part of it is in her view when it is put there" % seed_value)
+	var touch := EventScheduler.Planned.new(roadblock.def, Vector2.ZERO).blocking_radius() \
+			+ Tuning.TILE_SIZE * 2.0
+	t.check(away <= widest + touch,
+			"seed %d: close by, %.0fpx from where she read the mark (within %.0fpx)"
+			% [seed_value, away, widest + touch])
+	if swapped:
+		var box := EventFootprints.footprint_of(roadblock.def)
+		t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
+				"seed %d: no part of a swapped one is in her view when it is put there"
+				% seed_value)
 	var guard := _task_guard()
 	t.check(guard != null and not _guard_in_view(guard.global_position),
 			"seed %d: nor any part of the guard set with it" % seed_value)
@@ -830,6 +842,14 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 			break
 	t.check(calm_reached, "seed %d: and to a calm area" % seed_value)
 	_tear_down(player, director, city)
+
+## How many of the day's plans are spent.
+static func _spent(city: City) -> int:
+	var count := 0
+	for plan in city.events.plans():
+		if plan.is_spent():
+			count += 1
+	return count
 
 ## Every tile she can walk to from `from` today, around every closure, sealed way and standing body.
 static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
