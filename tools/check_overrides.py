@@ -4,7 +4,7 @@
 GDScript has no `@override` annotation, and a misspelled override is a new method that nothing
 reports. So every method that overrides a method of a project ancestor class carries a line of its
 doc comment, `## Overrides <Class>.<method>.`, and this check holds that true against the tree
-(inbox #1154):
+(inbox #1154 in gray-dolphin):
 
 - an override of a method a project ancestor declares, with no such line, **fails**;
 - a line on a method that overrides nothing (a misspelled name that carries the line), one naming

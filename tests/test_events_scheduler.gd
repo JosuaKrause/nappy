@@ -13,7 +13,7 @@ extends "res://tests/events_shared_city.gd"
 ##
 ## **Why these checks build a city.** The suite's other checks still build the shared city and
 ## are not converted to stand-ins yet: only as far as a pull request's change reaches is a suite
-## converted (inbox #1159). One check builds a city for a reason of its own: the closed-streets day
+## converted (inbox #1159 in gray-dolphin). One check builds a city for a reason of its own: the closed-streets day
 ## (`_test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled`) is the
 ## integration check of the day's planning choosing the clean area on a real day. It makes the
 ## day's calm areas through the call `DayPlanner` makes, `CalmAreas.of()` from the day and its
