@@ -5,7 +5,8 @@ cost of maintaining the code base and confuses you. if we want a feature back we
 it fresh which also guarantees that it adheres to the new design principles" (inbox #1180 in gray-dolphin).
 
 **Read as:** code nothing reaches, and code that only serves a feature the game no longer has, is
-deleted rather than kept; a feature wanted back is built fresh under the current design. The first
+deleted rather than kept; a feature wanted back is built fresh under the current design. The rule
+is designing-classes'. The first
 case, the covering-set path (`EventScheduler._place_a_set_piece()`), goes in #1169. This item is the
 sweep for the rest, across `src/` and `tools/`, one module per pull request.
 
