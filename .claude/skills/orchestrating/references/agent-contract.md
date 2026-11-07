@@ -14,9 +14,9 @@ injects the skills that govern each file you edit; read **verify**, **committing
 
 ## Design
 
-Code follows **orchestrating**'s "Code is designed by layer": the five principles, the layering,
-dependency injection, and a mode as configuration. Report any place the work had to depend the wrong
-way, as a fork; and, as that section proposes (plush-kestrel), which layer the work belongs to.
+Code follows **designing-classes**: the five principles, the layering, dependency injection, a mode
+as configuration, and derived state held by one object. Report any place the work had to depend the
+wrong way, as a fork; and, as that skill proposes (plush-kestrel), which layer the work belongs to.
 
 **A pull request that changes code answers the architecture questions**
 (`../../pr-review/references/architecture-questions.md`): in the report and in the PR description

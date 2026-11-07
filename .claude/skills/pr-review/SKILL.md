@@ -96,9 +96,10 @@ touches (the path table in `CLAUDE.md`). Look for:
   pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
   docs, names are content);
-- a design that breaks **orchestrating**'s "Code is designed by layer": a dependency pointing up a
-  layer, a mode copied instead of configured, or a component fetching what it should be handed (the
-  player's); and, from that section's proposal (plush-kestrel), a fix keyed on one row's id or
+- a design that breaks **designing-classes**: a dependency pointing up a layer, a mode copied
+  instead of configured, or a component fetching what it should be handed (the
+  player's), or one fact derived in more than one place (inbox #1156); and, from that skill's
+  proposal (plush-kestrel), a fix keyed on one row's id or
   picture instead of landing in the shared mechanism, raised as a proposal-backed finding, not as
   the player's rule;
 - an answer to the architecture questions (`references/architecture-questions.md`, under the

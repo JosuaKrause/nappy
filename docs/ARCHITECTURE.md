@@ -492,7 +492,7 @@ tools/
 ### Layers
 
 Every file under `src/` sits in one layer, and a layer names only its own and the ones below it
-(**orchestrating**, "Code is designed by layer"). Lowest first: **data and configuration** (the
+(**designing-classes**, "Code is designed by layer"). Lowest first: **data and configuration** (the
 catalogue, `Tuning`, `RunConfig`, the specs, `Texts`, the art's pages, the value types rows are
 written in), **the domain model** (the map and its interface, generation, routes, closures, the
 run's sub-states, the building's plan), **the world** (the navigator, the world's context, the draw
