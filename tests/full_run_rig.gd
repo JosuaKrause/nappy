@@ -4,9 +4,10 @@ extends RefCounted
 ##
 ## Everything else tests a piece. This tests that the pieces survive each other across a
 ## whole run: scars accumulating, one-shots staying consumed, the arterial handover, the
-## resistance advancing, the calm areas she used shut, the crowd and the gates standing, and every
-## day remaining winnable. It is the check that catches
-## "day 12 throws" — which no amount of unit coverage does.
+## resistance advancing, the calm areas she used shut and every day's crowd, with the day's gates,
+## street trees and fenced park run through (a throw there fails the run; nothing reads them back),
+## and every day remaining winnable. It is the check that catches "day 12 throws" — which no amount
+## of unit coverage does.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## Long enough for the slowest mobile one-shot to finish its route (the convoy takes ~17s).
@@ -83,7 +84,10 @@ func _play_a_run(t, seed_value: int) -> void:
 		t.check(run.header.day == day,
 				"seed %d: the calendar is on day %d (%d)" % [seed_value, day, run.header.day])
 		days.start_day(DaySpec.for_day(day, config.day_length_for(day)))
-		if not city.map.shut_calm.is_empty():
+		# Counted only when every area off today's tree is one she used this act (or the fenced park,
+		# which is one too), so a wiring that shut the wrong area fails here as well as one that shut
+		# none.
+		if _shuts_only_what_she_used(city.map, run.calendar.settled_this_act()):
 			days_with_a_used_area_shut += 1
 		if city.crowd.agent_count() > 0:
 			days_with_a_crowd += 1
@@ -157,8 +161,8 @@ func _play_a_run(t, seed_value: int) -> void:
 	t.check(run.attempt_spend.scars.size() > 0,
 			"seed %d: the run left marks on the city" % seed_value)
 	t.check(days_with_a_used_area_shut > 0,
-			"seed %d: a calm area she used earlier in an act comes off a later day's route tree (%d days)"
-			% [seed_value, days_with_a_used_area_shut])
+			("seed %d: only calm areas she used earlier in an act come off a later day's route tree,"
+			+ " on some day (%d days)") % [seed_value, days_with_a_used_area_shut])
 	t.check(days_with_a_crowd == Tuning.RUN_LENGTH_DAYS,
 			"seed %d: every day has its crowd (%d days)" % [seed_value, days_with_a_crowd])
 
@@ -193,3 +197,13 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	if best != Vector2.INF:
 		player.global_position = best
 	baby.force_sleep()
+
+## Whether today's tree leaves out at least one calm area, and only areas she has used this act
+## (`used`) or the fenced park.
+func _shuts_only_what_she_used(map: CityMap, used: Array[Vector2i]) -> bool:
+	if map.shut_calm.is_empty():
+		return false
+	for block: Vector2i in map.shut_calm:
+		if not used.has(block) and block != map.fenced_park:
+			return false
+	return true
