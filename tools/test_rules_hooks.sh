@@ -15,6 +15,8 @@
 #     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd, sound recipes and
 #     generated audio) injects its skill
 #   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
+#   - tests/** brings writing-tests beside verify, every src/**/*.gd brings designing-classes, and a
+#     file under src/ that is not GDScript does not
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
 #   - docs/todo/**, docs/review/**, docs/TODO.md and every playtest bring playtest-feedback
 #   - lint-docs.sh lints an edited file of the queue, the review items, the records and the
@@ -491,8 +493,8 @@ compact_session="compact-session"
 # markers via a real edit, before compacting.
 session_rules_skills "$compact_session" "" startup >/dev/null
 sub_before="$(project_rules_skills "$compact_session" sub-agent-c "src/city/traffic_signals.gd")"
-assert_eq "sub-agent under $compact_session picks up city + crowd-traffic + godot + orchestrating before compact" \
-    "city,crowd-traffic,godot,orchestrating," "$sub_before"
+assert_eq "sub-agent under $compact_session picks up city + crowd-traffic + designing-classes + godot + orchestrating before compact" \
+    "city,crowd-traffic,designing-classes,godot,orchestrating," "$sub_before"
 
 after_compact="$(session_rules_skills "$compact_session" "" compact)"
 assert_eq "main session gets orchestrating again after source:compact" \
@@ -501,7 +503,7 @@ assert_eq "main session gets orchestrating again after source:compact" \
 sub_state_dir="$state_root/$compact_session-sub-agent-c"
 checks=$((checks + 1))
 sub_markers="$(ls "$sub_state_dir" 2>/dev/null | sort | tr '\n' ',')"
-if [ "$sub_markers" = "city,crowd-traffic,godot,orchestrating," ]; then
+if [ "$sub_markers" = "city,crowd-traffic,designing-classes,godot,orchestrating," ]; then
     echo "ok   sub-agent's own markers survive the main session's compact untouched"
 else
     fail "sub-agent's own markers changed across the main session's compact: got [$sub_markers]"
@@ -514,15 +516,15 @@ assert_eq "a sub-agent's own source:compact re-injects orchestrating for that su
 
 # ------------------------------------------------------------------------- new path mappings ---
 assert_eq "src/routes/street_network.gd -> city (M... routes gap)" \
-    "city,godot,orchestrating," "$(project_rules_skills routes-session "" "src/routes/street_network.gd")"
+    "city,designing-classes,godot,orchestrating," "$(project_rules_skills routes-session "" "src/routes/street_network.gd")"
 assert_eq "src/city/traffic_signals.gd -> city + crowd-traffic" \
-    "city,crowd-traffic,godot,orchestrating," "$(project_rules_skills traffic-signals-session "" "src/city/traffic_signals.gd")"
+    "city,crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills traffic-signals-session "" "src/city/traffic_signals.gd")"
 assert_eq "src/city/traffic_light.gd -> city + crowd-traffic" \
-    "city,crowd-traffic,godot,orchestrating," "$(project_rules_skills traffic-light-session "" "src/city/traffic_light.gd")"
+    "city,crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills traffic-light-session "" "src/city/traffic_light.gd")"
 assert_eq "src/ground_shape.gd -> crowd-traffic (not city -- it is not under src/city/)" \
-    "crowd-traffic,godot,orchestrating," "$(project_rules_skills ground-shape-session "" "src/ground_shape.gd")"
+    "crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills ground-shape-session "" "src/ground_shape.gd")"
 assert_eq "src/autoload/telemetry.gd -> telemetry" \
-    "godot,orchestrating,telemetry," "$(project_rules_skills telemetry-session "" "src/autoload/telemetry.gd")"
+    "designing-classes,godot,orchestrating,telemetry," "$(project_rules_skills telemetry-session "" "src/autoload/telemetry.gd")"
 assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
     "cli-tools,python-tooling,sound-effects," \
     "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
@@ -538,8 +540,8 @@ assert_eq "primary captures keep their specific rule alongside verify" \
 
 # src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
 # PNG-drawing ones, which govern art/illustrated/ alone.
-assert_eq "src/visuals/atlas_library.gd -> godot + orchestrating, not illustrated-png" \
-    "godot,orchestrating," "$(project_rules_skills visuals-session "" "src/visuals/atlas_library.gd")"
+assert_eq "src/visuals/atlas_library.gd -> designing-classes + godot + orchestrating, not illustrated-png" \
+    "designing-classes,godot,orchestrating," "$(project_rules_skills visuals-session "" "src/visuals/atlas_library.gd")"
 assert_eq "art/illustrated/**.png -> illustrated-png" \
     "illustrated-png," "$(project_rules_skills illustrated-session "" "art/illustrated/svg-transfer/x/y.png")"
 
@@ -561,10 +563,20 @@ assert_eq "docs/TODO.md -> playtest-feedback" \
 assert_eq "docs/decisions/<name>.md -> nothing (a record is written under committing, not a playtest)" \
     "" "$(project_rules_skills decisions-session "" "docs/decisions/2026-09-27-busy-otter.md")"
 
+# A suite brings how a test is written beside how a change is verified, and a class under src/
+# brings how a class is shaped; a file under src/ that is not GDScript does not, and neither does a
+# .gd file outside src/ (the probe file above already shows godot alone there).
+assert_eq "tests/<suite>.gd -> verify + writing-tests (+ godot + orchestrating)" \
+    "godot,orchestrating,verify,writing-tests," "$(project_rules_skills suite-session "" "tests/test_meter.gd")"
+assert_eq "src/events/<file>.gd -> events + designing-classes (+ godot + orchestrating)" \
+    "designing-classes,events,godot,orchestrating," "$(project_rules_skills events-gd-session "" "src/events/event_catalogue.gd")"
+assert_eq "src/<scene>.tscn -> orchestrating only, not designing-classes" \
+    "orchestrating," "$(project_rules_skills scene-session "" "src/main.tscn")"
+
 # Control: an unrelated src/city/*.gd file gets city but not crowd-traffic, proving the new
 # crowd-traffic mapping is scoped to the three named files and not all of src/city/.
 assert_eq "src/city/some_other_file.gd -> city only, not crowd-traffic" \
-    "city,godot,orchestrating," "$(project_rules_skills control-session "" "src/city/some_other_file.gd")"
+    "city,designing-classes,godot,orchestrating," "$(project_rules_skills control-session "" "src/city/some_other_file.gd")"
 
 # ---------------------------------------------------------- lint-docs.sh's governed set ---------
 # lint-docs.sh reads the file through tools/lint.sh, so this needs paths that actually exist.

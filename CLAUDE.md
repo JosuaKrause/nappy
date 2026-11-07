@@ -79,7 +79,7 @@ is the moment somebody is about to touch the file.
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
 | `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
-| `tests/**` | **verify** |
+| `tests/**` | **verify**, **writing-tests** |
 | `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |
 | `art/illustrated/**` | **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
@@ -87,6 +87,7 @@ is the moment somebody is about to touch the file.
 | `docs/evidence/**` | **verify** |
 | `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
 | any `*.gd` | **godot** |
+| `src/**/*.gd` | **designing-classes** |
 | any `*.svg` | **svg-art** |
 | `src/**`, `tests/**` | **orchestrating** |
 | spawning a sub-agent (the `Agent`/`Task` tool, not a path) | **orchestrating** |
@@ -109,6 +110,8 @@ rather than a place:
 |---|---|
 | run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
+| write a brief or a design that shapes classes | **designing-classes** |
+| brief an agent to write or change tests, or write them | **writing-tests** |
 | commit, branch, merge, cut a release, or write a commit message | **committing** |
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |

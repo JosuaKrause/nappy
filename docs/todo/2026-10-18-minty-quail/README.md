@@ -81,7 +81,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
    worth an entry of its own.
 
-The PR that closes this entry rewrites **orchestrating**'s "Code is designed by layer", whose
+The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
 escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
 the exception still stands" (minty-lemur #799). The escape city's placement runs on the day's
