@@ -1,5 +1,8 @@
 extends RefCounted
 ## Real Main installs only authored subjects while keeping production crowd simulation.
+##
+## **Boots the actual `main` in a child process: its subject is what `main` installs from a recipe**
+## (authored subjects only, production crowd), which is the game's composition and so cannot be split.
 
 const PROBE := """extends Node
 const BootedMain := preload("res://tests/booted_main.gd")

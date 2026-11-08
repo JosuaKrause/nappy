@@ -1,7 +1,6 @@
 extends RefCounted
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
+## What `RecipeCityBuilder` and `SceneRecipe` accept and refuse, read off the map they answer with. The
+## real `City` drawing a built map is `tests/test_recipe_city_drawing.gd`.
 
 func _recipe() -> Dictionary:
 	return {"version": 1, "name": "construction check", "seed": 7,
@@ -78,22 +77,6 @@ func run(t) -> void:
 		var local: CityMap = bounded.map
 		t.check(local.is_walkable(Vector2i(-100, -100)), "bounded exterior permits walking beyond the original world")
 		t.check(not local.is_street(Vector2i(-100, -100)), "fallback ground never claims to be a generated street")
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		t.add_child(city)
-		city.build(local)
-		t.check(city.scenery_ground_source(Vector2i(-100, -100)) == GroundTiles.ALLEY,
-				"exterior uses the plain documented ground texture")
-		var station: Building = null
-		for building in city.buildings():
-			if building.power_station:
-				station = building
-		t.check(station != null, "bounded rendering includes the real power station")
-		if station:
-			var extended := 0
-			for rows: int in station.roof_extension_rows:
-				extended += rows
-			t.check(extended > 0, "actual City construction extends the hall roof over its adjoining wall")
-		city.free()
 	_test_examples(t)
 
 func _test_station_pins(t) -> void:
@@ -168,22 +151,3 @@ func _test_examples(t) -> void:
 			continue
 		var map: CityMap = built.map
 		t.check(map.is_walkable(map.world_to_tile(built.anchors.start)), "%s start is exactly walkable" % side)
-		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-		city.scenery_frame_locked = true
-		t.add_child(city)
-		city.build(map)
-		var wall_tile := Vector2i(118 if side == "hall" else 132, 14)
-		var found := false
-		for building in city.buildings():
-			if building.lot.position != wall_tile:
-				continue
-			found = true
-			t.check(not building.covered_ground_cols.is_empty(), "%s renders adjoining facade columns" % side)
-			for covered: bool in building.covered_ground_cols:
-				t.check(covered == (side == "hall"), "%s adjoining column has a roof or keeps its facade" % side)
-		t.check(found, "%s uses the generator's real adjoining dead-end building" % side)
-		var exterior := Rect2(-20000, -20000, 640, 480)
-		city.scenery.update(exterior)
-		t.check(not city.scenery_ground.chunks.is_empty(), "fallback ground streams beyond the original map")
-		t.check(city.scenery_ground.pending.is_empty(), "scripted scenery drains preparation independent of wall-clock budget")
-		city.free()
