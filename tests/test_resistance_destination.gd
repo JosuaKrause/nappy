@@ -22,8 +22,8 @@ func run(t) -> void:
 		_city = null
 
 ## Through the real day order on every task day, each in a run of its own (the city holds it): the
-## mark on offer draws, the task its touch activates draws nothing at its destination while the red
-## arrow ends there, and the read mark keeps its touched picture where she read it.
+## pickup is on offer and read, the task its touch activates is on offer, and the red arrow ends on
+## that task's destination. What each contact point draws is `test_destination_drawing`'s.
 func _test_every_task_days_destination_holds_the_arrow(t) -> void:
 	var finale_day := Tuning.RUN_LENGTH_DAYS
 	var days: Array[int] = []
