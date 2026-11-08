@@ -15,6 +15,7 @@ extends RefCounted
 ## hands it to the save, as `main` hands the save the run its sitting holds; nothing here
 ## reads or sets a global run, so nothing is put back for the suite that runs after it.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const Boot := preload("res://tests/booted_main.gd")
 ## What a city's state has recorded, read off the snapshot the save writes.
 const CityStateReads := preload("res://tests/city_state_reads.gd")
@@ -531,7 +532,7 @@ func _test_an_expired_fence_survives_a_round_trip(t) -> void:
 	t.check(not _save.try_resume(run).is_empty(), "the act-boundary save resumes")
 	t.check(run.facts.fenced_park == Vector2i(6, 8) and run.facts.fenced_park_act == 3,
 			"reloading after expiry remembers the original fence")
-	var map := CityGenerator.generate(run.header.run_seed)
+	var map := MapCache.of(run.header.run_seed)
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 13)
 	map.repaint(state)
