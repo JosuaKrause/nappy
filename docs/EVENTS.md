@@ -1195,10 +1195,15 @@ spot and then checks what kind it is (inbox #1185).
 - **Each view has its own bag.** A location is filled by drawing from its view's bag.
 - **The event drawn is the event that appears there**, with no rejection (inbox #1185).
 
-**A route stays open by construction.** Where a drawn event takes one side of a street (a
-restaurant on one side), the location across from it is drawn from a subset bag of the events that
-are valid beside that one. That bag holds mostly "empty", and possibly a yeller with a low chance
-on later days (inbox #1185).
+**A location is part of a street** (inbox #1185):
+- A street is split along its length into **three sections**.
+- An event that spans the street, such as a roadblock across its middle, takes a **whole section**.
+- Otherwise a section holds **two locations, one per sidewalk**, so a street has up to **six
+  locations**.
+
+**A route stays open by construction.** Once one location's event is drawn, the other locations
+of the same street draw from their bag with the events that drawn event makes invalid left out. The
+bag itself is unchanged; the invalid events are only not considered in the draw (inbox #1185).
 
 **The roadblock phase at dawn** comes after the routes are established. It goes through the
 route-adjacent locations and places roadblocks there, evenly spaced out. Those locations are then
@@ -1216,8 +1221,8 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 **The order:**
 1. The routes are established.
 2. The roadblock phase assigns roadblocks to route-adjacent locations, evenly spaced.
-3. During the walk, every other location is drawn from its view's bag, the side across a drawn
-   event from that event's subset bag.
+3. During the walk, every other location is drawn from its view's bag, leaving out the events
+   that the street's events already drawn make invalid.
 4. Day 13's task searches close by, and swaps only if it finds nothing.
 
 ### Where the code differs from the design
@@ -1254,7 +1259,7 @@ Each item quotes the code on this branch.
      `_leaves_a_pacing_beats_opening()`.
    - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
      a route exists again.
-   - There is no subset bag for the location across a drawn event.
+   - Nothing narrows a street's other draws once one of its events is drawn.
 5. **The roadblock phase is not an even spacing over route-adjacent locations.**
    - `_place_beside_the_routes()` takes the route tiles in the map's order. The first one with no
      roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one, rolled by `_best_of()`
@@ -1296,15 +1301,12 @@ Each item quotes the code on this branch.
 
 The player's words do not yet settle these.
 
-1. How locations are laid out in each view: what a location is, how many a street has, and where
-   they stand (the escape's slots per street are one form).
-2. What each view's bag holds, and in what proportions, day by day.
-3. Which events take one side of a street, and what each one's subset bag for the side across
-   holds.
-4. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
-5. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
+1. What each view's bag holds, and in what proportions, day by day.
+2. Which events make which invalid on the same street.
+3. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
+4. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
    order.
-6. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
+5. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
    roadblock's own ground is the carriageway (`def.placement = [GameEnums.TileType.ROAD,
    GameEnums.TileType.CROSSING]`). On a sidewalk tile, `EventInstance.setup()` centres a still body
    on the pavement band (`start = _centred_on_the_pavement_band(_map, start)`), and its band lies
