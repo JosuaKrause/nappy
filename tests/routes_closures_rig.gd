@@ -93,22 +93,26 @@ func case_closures_are_deterministic(t) -> void:
 ## The count is the act's, unless the invariant would not let the planner have that many —
 ## which is a floor it may fall short of, never a ceiling it may exceed.
 ##
-## **And from the gatehouse day on it is fewer than the act's** — azure-puffin, point 4: "fewer of
-## all three". Asked against `Tuning.closures_for_day()`, the act's own quota, rather than against
-## `ClosurePlanner.closures_wanted()`, which would read the rule back to itself: on a day whose act
-## quota is more than one street, the day shuts fewer than that quota.
+## **And while the region wall stands it is fewer than the act's** — azure-puffin, point 4: "fewer
+## of all three". Which days those are is the day's spec's answer (`DaySpec.region_wall_stands()`),
+## the one the planner is handed. Asked against `Tuning.closures_for_day()`, the act's own quota,
+## rather than against `ClosurePlanner.closures_wanted()`, which would read the rule back to itself:
+## on a day with the wall whose act quota is more than one street, the day shuts fewer than that
+## quota.
 func case_closure_counts_follow_the_act(t) -> void:
 	var thinned_days := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			var spec := DaySpec.for_day(day)
 			var closures := _plan(map, day)
-			t.check(closures.size() <= ClosurePlanner.closures_wanted(day),
+			var wanted := ClosurePlanner.closures_wanted(spec)
+			t.check(closures.size() <= wanted,
 					"seed %d day %d shuts at most the act's %d streets"
-					% [map.seed_used, day, ClosurePlanner.closures_wanted(day)])
-			if day >= Tuning.REGION_WALL_FIRST_DAY and Tuning.closures_for_day(day) > 1:
+					% [map.seed_used, day, wanted])
+			if spec.region_wall_stands() and Tuning.closures_for_day(day) > 1:
 				thinned_days += 1
 				t.check(closures.size() < Tuning.closures_for_day(day),
-						("seed %d day %d, from the gatehouse day, shuts fewer than the act's %d " +
+						("seed %d day %d, with the region wall, shuts fewer than the act's %d " +
 						"streets (%d)")
 						% [map.seed_used, day, Tuning.closures_for_day(day), closures.size()])
 			for closure in closures:
@@ -116,7 +120,8 @@ func case_closure_counts_follow_the_act(t) -> void:
 						"seed %d day %d: %s cannot happen yet"
 						% [map.seed_used, day, RoadClosure.display_name(closure.kind)])
 	t.check(thinned_days > 0,
-			"the sweep had days from the gatehouse day with an act quota above one (%d)" % thinned_days)
+			"the sweep had days with the region wall and an act quota above one (%d)"
+			% thinned_days)
 
 ## Both mouths always come out, and nothing a closure marks closed ever stops being walkable —
 ## `close_streets` narrows *how much* of a street is unreachable, never whether the ground itself
@@ -415,7 +420,7 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 	_repaint_for(map, day)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-	return ClosurePlanner.plan_day(map, day, rng)
+	return ClosurePlanner.plan_day(map, DaySpec.for_day(day), rng)
 
 ## Today's city, and then today's corridor grown on it — the order `City.start_day` uses.
 ## Memoized for the same reason `_plan` is: several functions below ask for the same seed's same

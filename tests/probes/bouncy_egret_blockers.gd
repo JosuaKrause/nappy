@@ -61,8 +61,8 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
 	var region_plan := RegionPlanner.plan_day(map, day, tree)
-	var closures := ClosurePlanner.plan_day(map, day, _rng(map, day, "closures"), tree,
-			region_plan)
+	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 	var street_closures := 0
 	for closure in closures:
