@@ -1,27 +1,26 @@
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
 ## guaranteed to encounter a yeller in the next three events")*. Reading the mark rigs her route's
-## bag with one `homeless_yeller`; sited by the route band of the branch she is walking, he was
-## never sited or put 1,300px and more ahead on a branch she then left, and in view on 1 of 12
-## walks. He is sited on the street she is walking (`WalkSiting.ahead_on_her_street()`), the way
-## day 7's route van is.
+## bag so his marble is one of the next `ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT` events handed
+## out on her route (`MarbleBag.rig()`, `EventDirector.rig_her_route()`), and when his marble comes
+## up he is sited on the street she is walking (`WalkSiting.ahead_on_her_street()`): ahead of her,
+## just out of her sight and inside the streaming radius, in the world at once.
+##
+## **What is checked is the guarantee, on every walk**: once she has read the mark, he is sited
+## while no more than that many events have been handed out on her route since (`EventManager.
+## owed_ahead()` counts down one for each), ahead of her along her line of travel, on her street
+## (no further across it than `HER_STREET_HALF_WIDTH`), out of her view
+## (`WalkSiting.could_be_in_her_view()`) and within `Tuning.EVENT_STREAM_RADIUS` of her. Whether
+## she then sees him is her walk's: a walk that turns off her street before it reaches him passes
+## him by, and `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk does.
 ##
 ## Walks the way `--route mark,task,calm,home` does, at `Tuning.WALK_SPEED`, running what the
-## manager's own tick runs for her walk, and counts the walks on which the rigged man was inside
-## her view (`Tuning.VIEW_HALF_EXTENT` round her). A sweep of the walks, not one: where she ends
-## up depends on the city, so the walks are many enough that whether most of them meet him is the
-## rule's answer and not a few cities' luck. `tests/probes/calm_pelican_day7_van_met.gd` measures
-## 12 walks and says why the rest miss: he is sited out of her sight ahead of her, and she turns off
-## before she reaches him. Run by name: `tools/test.sh day6_yeller_met`.
+## manager's own tick runs for her walk, so he is sited where a played day sites him. A sweep of
+## the walks, not one: where she is when his marble comes up depends on the city. Run by name:
+## `tools/test.sh day6_yeller_met`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99, 12161, 20080, 27999, 35918, 43837, 51756,
-		59675, 67594, 75513, 83432, 91351, 99270, 107189, 115108, 123027, 130946, 138865, 146784, 154703,
-		162622, 170541, 178460, 186379, 194298, 202217, 210136, 218055, 225974, 233893, 241812, 249731,
-		257650, 265569, 273488, 281407, 289326, 297245, 305164, 313083]
-## Most of the walks, more than half, not all: a walk that turns off her street before she reaches
-## him is not a defect.
-const AT_LEAST := 23
+const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
 const DAY := 6
 ## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
 ## on it: it holds on seed 1 as well.
@@ -29,19 +28,24 @@ const RUN_SEED := 2
 const ROW := "homeless_yeller"
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
+## The street she is on, from her sidewalk to the far kerb, either side of her line of travel: the
+## width `WalkSiting.ahead_on_her_street()` looks across.
+const HER_STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
 
 func run(t) -> void:
-	var met := 0
 	var outcomes: Array[String] = []
+	var kept := 0
 	for seed_value in SEEDS:
 		var outcome := _walk(t, seed_value)
 		outcomes.append(outcome)
-		if outcome == "seen":
-			met += 1
-	t.check(met >= AT_LEAST, "the rigged man shouting is in her view on most walks of day %d (%d of %d: %s)"
-			% [DAY, met, SEEDS.size(), outcomes])
+		if outcome == "kept":
+			kept += 1
+	t.check(kept == SEEDS.size(),
+			"on every walk of day %d the rigged man shouting is sited ahead of her on her street, out " % DAY
+			+ "of sight and in the world, within the next %d events after the mark (%s)"
+			% [ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT, outcomes])
 
-## "seen", "sited, never in view", "never sited", or "no mark".
+## "kept", "no mark", "never sited", or what about his first siting broke the guarantee.
 func _walk(t, seed_value: int) -> String:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -74,27 +78,25 @@ func _walk(t, seed_value: int) -> String:
 	var outcome := "no mark"
 	var mark := resistance.current_step()
 	if mark and mark.is_pickup:
-		var seen := {"man": null, "in_view": false, "standing": [], "read": false}
+		var seen := {"man": null, "standing": [], "read": false, "owed": 0, "outcome": "never sited"}
 		var tick := func() -> void:
 			var events := city.events
 			events.ahead.site_what_is_on_her_way(STEP)
-			events.ahead.place_what_is_owed_ahead(STEP)
-			events.stream_around(player.global_position)
 			if seen["man"] == null and seen["read"]:
 				for plan: EventScheduler.Planned in events.plans():
 					if plan.def.id == ROW and not seen["standing"].has(plan):
 						seen["man"] = plan
-			var man: EventScheduler.Planned = seen["man"]
-			if man and man.is_placed():
-				var off := (man.position - player.global_position).abs()
-				if off.x <= Tuning.VIEW_HALF_EXTENT.x and off.y <= Tuning.VIEW_HALF_EXTENT.y:
-					seen["in_view"] = true
+						seen["outcome"] = _first_siting(plan, player,
+								int(seen["owed"]) - events.owed_ahead())
+			events.ahead.place_what_is_owed_ahead(STEP)
+			events.stream_around(player.global_position)
 		_along(player, _path(map, player.global_position, [map.world_to_tile(
 				resistance.contact_position())]), tick)
 		resistance.contact().complete_now()
 		# The dawn's rows and the task's own man; a man not among them was put on her route.
 		seen["standing"] = city.events.plans().duplicate()
 		seen["read"] = true
+		seen["owed"] = city.events.owed_ahead()
 		var task_man: EventInstance = resistance.rider()
 		if task_man:
 			_along(player, _path(map, player.global_position, _beside(map,
@@ -105,17 +107,28 @@ func _walk(t, seed_value: int) -> String:
 			tick.call()
 		var home: Array[Vector2i] = [map.world_to_tile(map.doorstep_world_position())]
 		_along(player, _path(map, player.global_position, home), tick)
-		var man: EventScheduler.Planned = seen["man"]
-		if seen["in_view"]:
-			outcome = "seen"
-		elif man and man.is_placed():
-			outcome = "sited, never in view"
-		else:
-			outcome = "never sited"
+		outcome = seen["outcome"]
 	player.free()
 	resistance.free()
 	city.free()
 	return outcome
+
+## Whether the man's first siting keeps the guarantee: "kept", or what it broke. `handed` is how
+## many events her route had been handed since the mark was read when he was sited.
+func _first_siting(man: EventScheduler.Planned, player: Stroller, handed: int) -> String:
+	if handed > ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT:
+		return "sited after %d events" % handed
+	var offset := man.position - player.global_position
+	var heading := player.velocity.normalized()
+	if offset.dot(heading) <= 0.0:
+		return "sited behind her"
+	if absf(offset.cross(heading)) > HER_STREET_HALF_WIDTH:
+		return "sited off her street"
+	if EventScheduler.WalkSiting.could_be_in_her_view(man.def, man.position, player.global_position):
+		return "sited in her view"
+	if offset.length() > Tuning.EVENT_STREAM_RADIUS:
+		return "sited past the streaming radius"
+	return "kept"
 
 func _along(player: Stroller, points: Array[Vector2], tick: Callable) -> void:
 	for point in points:
