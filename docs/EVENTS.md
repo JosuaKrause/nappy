@@ -1240,6 +1240,9 @@ words do not decide; it is named, not invented.
    - The design leaves the route to placeholders that the bag fills during the walk.
    - The code has no dawn placeholders. The walk's bag (`EventDirector._route`, a `MarbleBag`)
      sites what it draws ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
+   - **Read as** (the orchestrator's, open to correction): the walk's bag siting ahead of her is how the placeholders along the route are filled.
+     A friction row placed on the route at dawn is non-blocking, so it keeps the route's promise.
+     Items 1 and 2 differ from the design in form, not in the promise.
 3. **A blocking event may stand on a route street's far sidewalk.**
    - A wall is refused only on a tile whose own cell the route runs along:
      `if corridor.carries_a_route(tile): return 0`.
@@ -1249,6 +1252,9 @@ words do not decide; it is named, not invented.
      refuses it: `if not segment or int(_segment_depth.get(segment.key(), DEEP)) == 0: return false`.
    - **Unsettled:** whether "the ground the routes run along" is the route's sidewalk or its whole
      street.
+   - **Read as** (the orchestrator's, open to correction): "on the route" is the route's whole street. Route-adjacent is a street that touches
+     one, so the route's own street is on the route, and no blocking event stands on its far
+     sidewalk.
 4. **"Route-adjacent" is asked two ways.**
    - The roadblock pass and the swap ask `Corridor.is_beside_the_routes()`: the street is off the
      tree, and one of its junctions is in `route_junctions()`. `stands_beside_the_routes()` adds
@@ -1263,6 +1269,8 @@ words do not decide; it is named, not invented.
    - The marble bag in the code is the walk's route bag, plus the escape's bag per street
      (`_fill_the_walk_from_the_bag()`).
    - **Unsettled:** whether the regular pass at dawn is meant to draw from a bag.
+   - **Open, with the player:** whether the dawn regular pass draws from a marble bag rather than a
+     weighted roll. Nothing is done about it here.
 6. **The regular pass places events deep, blocking ones too.**
    - Lethal walls are weighted toward `depth() >= 2` (item 1). The code's reason is a player
      sentence from 2026-08-31 quoted in `Corridor`'s doc: "areas that outside the paths should have
@@ -1270,12 +1278,18 @@ words do not decide; it is named, not invented.
    - **Unsettled:** whether the design's regular pass places into deep ground at all. The player
      has said "the regular off route placement pass with the marble bag" and "regular events that
      can be placed in route adjacent candidates".
+   - **Read as** (the orchestrator's, open to correction): the regular pass places into route-adjacent and deep ground, by each row's own rules.
+     Deep blocking events stay.
 7. **Ambient rows, scars and masts are placed before the roadblocks.**
    - `_plan_through_the_fill()` runs `_place_ambient()`, `_place_scars()` and `_place_masts()`,
      then `_place_beside_the_routes()`.
    - Before any of the events, `DayPlanner._plan_a_day()` lays the region's wall and doors, holds
      the closures and the home's streets, and plans the seals (`SealPlanner.plan_day()`).
    - **Unsettled:** where these stand in the player's order.
+   - **Read as** (the orchestrator's, open to correction): roadblocks in route-adjacent candidates come right after the routes, before every
+     other event pass, so ambient rows, scars and masts go after them. The region wall, its doors,
+     the closures, the home's streets and the seals lay out the city and its routes, so they stay
+     before.
 8. **The roadblock pass spreads from the route tiles, not across the city.**
    - `_place_beside_the_routes()` takes the route tiles in the map's order. The first one with no
      roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one (`_best_of()`, the farther
@@ -1288,6 +1302,8 @@ words do not decide; it is named, not invented.
      route-adjacent candidates.
    - The task's close-by search takes any roadblock the day placed: `plan.row_id() != id or not
      plan.is_placed() or plan.is_spent() or plan.is_door() or plan.is_in_the_wall()`.
+   - **Read as** (the orchestrator's, open to correction): (items 8 and 9) the roadblock pass keeps spreading from the route tiles. A roadblock the
+     fill places follows the blocking rules of the view it lands in, so it is never on the route.
 10. **The swap's candidates are narrowed past "route-adjacent, off screen, placed by the day".**
     - `Planned.may_be_replaced()` adds standing still and not having noticed her:
       `return is_placed() and not is_spent() and stands_still() and not is_door() and not
@@ -1306,6 +1322,10 @@ words do not decide; it is named, not invented.
     - The design puts the roadblock in the event's place.
     - On the 480 real chalk marks that `tests/probes/minty_quail_day13_real_marks.gd` reads, items 10
       and 11 leave 33 with nothing to swap.
+    - **Read as** (the orchestrator's, open to correction): (items 10 and 11) the swap takes any route-adjacent event the day placed that is off
+      screen, never the wall's or a door's bodies, the nearest along her paths first, and puts the
+      roadblock in its place. Standing still, having noticed her, judging the placement rules again,
+      and the 1,024px cap on candidates are dropped.
 12. **A route-adjacent event may stand where a roadblock cannot.**
     - The roadblock's ground is the carriageway: `def.placement = [GameEnums.TileType.ROAD,
       GameEnums.TileType.CROSSING]`. Most of the fill's rows stand on a sidewalk.
@@ -1317,6 +1337,9 @@ words do not decide; it is named, not invented.
     - Its body is `GroundShape.band(60.0)`, so it covers that sidewalk and reaches into the
       carriageway beside it.
     - **Unsettled:** what the roadblock does in a sidewalk event's place.
+    - **Read as** (the orchestrator's, open to correction): in a sidewalk event's place, the roadblock stands across that street at the event's
+      spot, laid as every roadblock is: on the nearest carriageway tile of that street segment
+      beside it.
 
 ## Scheduling
 
