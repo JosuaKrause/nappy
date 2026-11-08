@@ -37,6 +37,14 @@ var atlas: AtlasLibrary
 ## only — see `GarbageSacks`' own class doc for why a pile is not yet an obstruction.
 var shape: GroundShape
 
+## The post's body, once `_ready()` has made it; null for every other prop.
+var _body: StaticBody2D
+
+## The collision shape of the post's body, or null for a prop with none (every prop but a post): the circle its shadow is
+## drawn from.
+func body_shape() -> Shape2D:
+	return null if _body == null else (_body.get_child(0) as CollisionShape2D).shape
+
 func _ready() -> void:
 	shape = _compute_shape()
 	if kind == Kind.BOLLARD:
@@ -53,6 +61,7 @@ func _ready() -> void:
 func _add_bollard_body() -> void:
 	var body := StaticBody2D.new()
 	body.name = "BollardBody"
+	_body = body
 	var collision := CollisionShape2D.new()
 	collision.shape = shape.collision_shape()
 	body.add_child(collision)

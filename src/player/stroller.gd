@@ -190,45 +190,6 @@ const INDICATOR_ATLAS := &"ui"
 static func parent_atlas(male: bool) -> StringName:
 	return FATHER_ATLAS if male else MOTHER_ATLAS
 
-## Every path the rig can draw, by the group it is baked on: each parent's pushing and carrying
-## views over three gait frames, and the pram's five views on the group they share. Not read by
-## the live draw path — `Pose.mother_texture()` and `Pose.pram_texture()` turn the picture already in
-## hand into a region name directly — but kept as the one place "everything the rig can draw" is
-## enumerable, which is what a completeness check against the membership file wants.
-static func _sources_by_group() -> Dictionary:
-	return {
-		MOTHER_ATLAS: _paths_in([
-			MOTHER_FRONT, MOTHER_BACK, MOTHER_SIDE, MOTHER_FRONT_DIAGONAL, MOTHER_BACK_DIAGONAL,
-			MOTHER_CARRYING_FRONT, MOTHER_CARRYING_BACK, MOTHER_CARRYING_SIDE,
-			MOTHER_CARRYING_FRONT_DIAGONAL, MOTHER_CARRYING_BACK_DIAGONAL,
-		]),
-		FATHER_ATLAS: _paths_in([
-			FATHER_FRONT, FATHER_BACK, FATHER_SIDE, FATHER_FRONT_DIAGONAL, FATHER_BACK_DIAGONAL,
-			FATHER_CARRYING_FRONT, FATHER_CARRYING_BACK, FATHER_CARRYING_SIDE,
-			FATHER_CARRYING_FRONT_DIAGONAL, FATHER_CARRYING_BACK_DIAGONAL,
-		]),
-		STROLLER_ATLAS: stroller_sources(),
-	}
-
-static func _paths_in(view_sets: Array) -> Array[String]:
-	var sources: Array[String] = []
-	for views: Array in view_sets:
-		for path: String in views:
-			sources.append(path)
-	return sources
-
-## Everything the rig can draw, flattened — both parents and the pram they share.
-static func family_sources() -> Array[String]:
-	var sources: Array[String] = []
-	var by_group := _sources_by_group()
-	for group: StringName in by_group.keys():
-		sources.append_array(by_group[group] as Array[String])
-	return sources
-
-## The pram's own five views, which both parents push and neither owns.
-static func stroller_sources() -> Array[String]:
-	return [PRAM_SIDE, PRAM_FRONT, PRAM_BACK, PRAM_FRONT_DIAGONAL, PRAM_BACK_DIAGONAL]
-
 ## How far above her head the warning mark floats, and how fast it flashes. She is 46px tall,
 ## so this clears her head by a few pixels and no more: at 68 the mark drifted far enough up
 ## the screen to read as belonging to whatever was standing behind her, which for a cue that

@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_no_two_parts_are_reachable_by_walking_alone(t)
 	_test_the_tileset_carries_every_walkable_ground_kind(t)
 	_test_the_scene_paints_the_whole_map(t)
+	_test_the_escape_building_is_dark_by_part(t)
 	_test_collision_blocks_exactly_the_non_walkable_ground(t)
 	_test_the_grammar_tiles_are_the_whole_staircase(t)
 	await _test_a_sideways_press_on_a_flight_walks_its_slope(t)
@@ -2227,3 +2228,50 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 	player.free()
 	events.free()
 	scene.free()
+
+## The building she escapes through is the same night: the hallways and the lobby in the gloom, the
+## basement darker, the stairwells on the red emergency lighting, and a hallway lit by a blast while
+## its windows flash. Every door is asked which part it is in, since a door's id names its part and
+## the light is chosen by the part.
+func _test_the_escape_building_is_dark_by_part(t) -> void:
+	var scene := InteriorScene.new()
+	t.add_child(scene)
+	scene.build()
+	var plan := InteriorMap.build()
+	var misplaced := 0
+	for id: String in plan.doors:
+		var door: InteriorMapPlan.Door = plan.doors[id]
+		if InteriorMap.part_at(door.tile) != id.split(":")[0]:
+			misplaced += 1
+	t.check(plan.doors.size() > 0 and misplaced == 0,
+			"every door is in the part its id names (%d of %d misplaced)"
+			% [misplaced, plan.doors.size()])
+	var player := Node2D.new()
+	t.add_child(player)
+	var hallway := _lighting_at(scene, player, plan.waypoints["hallway_second"])
+	var lobby := _lighting_at(scene, player, plan.waypoints["lobby"])
+	var basement := _lighting_at(scene, player, plan.waypoints["basement"])
+	var stairs := _lighting_at(scene, player, plan.waypoints["stairwell_left"])
+	t.check(hallway == Palette.ESCAPE_GLOOM and lobby == Palette.ESCAPE_GLOOM,
+			"the hallways and the lobby are in the gloom")
+	t.check(basement.get_luminance() < hallway.get_luminance(),
+			"and the basement is darker than they are")
+	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED,
+			"the stairwells are on the red emergency lighting")
+	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_right"]) == stairs,
+			"both of them")
+	# An explosion outside, the call the day's events make (`WorldContext.bang_outside()`).
+	scene.bang_outside()
+	t.check(_lighting_at(scene, player, plan.waypoints["hallway_second"]).get_luminance()
+			> hallway.get_luminance(), "a hallway is lit up while its windows flash")
+	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_left"]) == stairs,
+			"a stairwell, with no windows, is not")
+	player.free()
+	scene.free()
+
+## The light she stands in at `tile`: the scene's own modulate after the building has been asked what
+## its ground does to somebody standing there (`process_player()`, which the run flow asks every frame).
+func _lighting_at(scene: InteriorScene, player: Node2D, tile: Vector2i) -> Color:
+	player.global_position = scene.map.tile_to_world(tile)
+	scene.map.process_player(player, 0.0)
+	return scene.modulate
