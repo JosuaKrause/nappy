@@ -897,13 +897,18 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 ## adjacent event with a roadblock", "it replaces the content of the section with the roadblock"):
 ## every roadblock the day placed is spent before she reads the mark, so the task can only swap. The
 ## roadblock stands across a route-adjacent section of the day's locations, out of her view, the
-## section is taken, and nothing the section held stands unspent but the roadblock.
+## section is taken, and nothing the section held stands unspent but the roadblock. The view is
+## `SWAP_VIEW_HALF_EXTENT` each way, so the nearest sections along her paths are in it.
+const SWAP_VIEW_HALF_EXTENT := Vector2(900.0, 900.0)
+
 func _test_with_none_close_by_a_section_is_taken(t) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
 	var her := player.global_position
-	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	# A view wider than the screen, so the sections nearest her are in it and the one taken has to
+	# be found past them.
+	_view = Rect2(her - SWAP_VIEW_HALF_EXTENT, SWAP_VIEW_HALF_EXTENT * 2.0)
 	var map := city.map
 	for plan in city.events.plans():
 		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
