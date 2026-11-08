@@ -750,7 +750,7 @@ func _tear_one_sheet_each(t, tiles: Array, count: int) -> Array[bool]:
 ## Waits for the pursuer a tear sent to be in the world, takes him out of it, and lets a tick pass.
 ## `expected` says one was sent, so that he must come into the world within the wait.
 func _let_the_pursuer_go(t, expected := false) -> void:
-	var def := EventCatalogue.on_foot_on(_city.events.world.day)
+	var def := EventCatalogue.on_foot_on(DaySpec.for_day(_city.events.world.day))
 	var found: Array[EventInstance] = []
 	await _wait_until(t, func() -> bool:
 		found.assign(_city.events.instances().filter(func(e: EventInstance) -> bool:

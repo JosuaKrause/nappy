@@ -827,7 +827,7 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+		if not _walk_spec.region_wall_stands():
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
 		if not region.doors.any(func(door): return door.key() == key):
@@ -842,7 +842,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
 		if not _city.map.has_street(key) or _city.streets().route_tree().is_on_the_tree(key) \
-				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+				or not _walk_spec.region_wall_stands():
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)

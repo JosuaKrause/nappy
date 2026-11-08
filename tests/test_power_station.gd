@@ -181,7 +181,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 		var door_street := map.power_station_door_street()
 		t.check(door_street != null and tree.is_on_the_tree(door_street.key()),
 				"seed %d day %d: the corridor reaches the door's street" % [map.seed_used, day])
-		var region_plan := RegionPlanner.plan_day(map, day, tree)
+		var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 		t.check(not (region_plan.doors.is_empty() and region_plan.alley_doors.is_empty()),
 				"seed %d day %d: the wall has a door in it" % [map.seed_used, day])
 		var closure_rng := RandomNumberGenerator.new()

@@ -365,6 +365,7 @@ func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_a_return
 	ahead.sends_poster_pursuits = spec.poster_pursuits
 	ahead.holds_the_home_streets = spec.holds_the_home_streets
+	ahead.use_the_walk_of(spec)
 
 ## **Every charge still running ends for its counter as cut short** (`EventInstance.
 ## report_the_charge_cut_short()`): asked by `DayDirector.finish_day()` as a day ends, before the

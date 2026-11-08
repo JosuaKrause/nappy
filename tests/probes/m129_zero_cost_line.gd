@@ -371,7 +371,7 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 ## the region's wall and doors, the closures, the held ground, the seals, the catalogue's own fill,
 ## and the wall's and doors' bodies.
 func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventScheduler.Planned]:
-	var region_plan := RegionPlanner.plan_day(map, day, tree)
+	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)

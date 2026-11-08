@@ -32,7 +32,7 @@ var run: RunState
 ## The player, handed in by `EventManager.use_player()`, or null for none in the world.
 var player: Node2D
 ## Today's own day number, kept for the streams drawn while the day runs (a summoned row's entry, a
-## pursuer's start, the dusk fire) and for the rows a day sends (`EventCatalogue.on_foot_on()`).
+## pursuer's start, the dusk fire) and for the rows a day sends.
 var day := 0
 ## `--skip events`: every instance made here skips its own drawing.
 var skip_drawing := false
