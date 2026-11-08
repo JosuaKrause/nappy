@@ -723,10 +723,11 @@ func _test_nothing_beside_the_routes_stands_on_the_main_road(t) -> void:
 	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
 			middle.call(Vector3i(2, 2, 0))), "and a street the route runs along does not")
 
-## **Day 13's dawn stands its roadblocks beside her routes, spaced, and says how many route tiles it
-## leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
-## (`build_day()`'s `beside_the_routes`) on the suite's own city, where the run log names each one
-## it stood. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`), off every
+## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
+## it leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
+## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
+## names each one it stood. The phase's own draw, its bias and its stop are checked with stand-ins
+## in `tests/test_roadblock_phase.gd`; this holds the phase and the day's real ground together. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`), off every
 ## tile a route runs along and off the main road, nothing else stands within `EVENT_SPACING_ANY` of
 ## it, and the count of route tiles left with none close by is written once the day is planned.
 func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:

@@ -1972,6 +1972,7 @@ static func _roadblock() -> EventDef:
 	chase.warns_over_the_street = true
 	def.hunts = HuntSpec.pursuing(chase)
 	def.barrier_structure = true
+	def.span_the_street()
 	def.weight = 2.0
 	def.max_per_day = 6
 	def.cost = 2

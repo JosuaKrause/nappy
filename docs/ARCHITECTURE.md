@@ -103,7 +103,8 @@ src/
 	route_source.gd       the walk placement is stated against, as the questions it asks of it —
 	                      a day's route tree and the escape's two chains both answer them
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
-	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep
+	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep;
+	                      and the view a whole street is in: on the route, route-adjacent, off it
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the
 	                      gatehouse day), and every street off the escape's two chains
 	region_planner.gd     partitions the lattice into regions; turns the day's tree into a wall with doors, and stands the checkpoint structure and gate state at every door
@@ -205,6 +206,17 @@ src/
 	                      walk her paths take within a circle, the measure of close by
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
+	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
+	day_locations.gd      every street's locations for one day, laid out at dawn and handed round:
+	                      each street's sections, its view, what a fixed part holds, what is taken
+	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
+	                      in each, a section taken whole by an event that spans the street
+	location.gd           one location: its street, section, tiles, view, and what stands on it
+	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
+	                      toward the farthest from those placed, until every route tile has one close by
+	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
+	                      if valid, the route tiles one is close by, standing one; the day's own is
+	                      the scheduler's judged ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the

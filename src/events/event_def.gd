@@ -871,6 +871,21 @@ func detain_distance() -> float:
 ## all read that same answer (see `ExcitementSource.outranked`).
 @export var barrier_structure := false
 
+## Whether a placement of this row takes a whole section of its street rather than one sidewalk
+## location (inbox #1185: "events that span the street get placed in a section (eg roadblock in the
+## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
+@export var _spans_the_street := false
+
+## **Whether this row takes a whole section of a street** when it is placed, its two sidewalk
+## locations with it (`DayLocations.assign()`), rather than one sidewalk location.
+func spans_the_street() -> bool:
+	return _spans_the_street
+
+## Marks the row as one that takes a whole section of its street (`spans_the_street()`). Called by
+## the catalogue as it builds the row.
+func span_the_street() -> void:
+	_spans_the_street = true
+
 ## Entering the lethal radius ends the day immediately.
 @export var hard_fail := false
 

@@ -249,7 +249,7 @@ reached from it.
 day's routes are fixed at dawn, and everything sited while she walks — day 3's fire, the poster
 crews, her route's bag, day 11's added mast — is what the day's own placement rules accept, none of
 it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
-street no route runs along (`EventScheduler._place_beside_the_routes()`), or one of the day's own
+street no route runs along (`EventScheduler._place_the_roadblocks()`), or one of the day's own
 events there swapped for one out of her sight; either stands off the routes and closes none of
 them. Where the resistance may send her is worked out once, as the walk starts, from the day's plan
 (`DayReach`).

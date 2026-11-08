@@ -679,7 +679,9 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
 		var at := guard.global_position + dir * 150.0
 		var far := guard.global_position + dir * 1200.0
-		if map.is_walkable(map.world_to_tile(at)) and map.clear_line(guard.global_position, at):
+		# Clear as he sees it (`EventInstance.clear_line_to()`, what his notice asks), the band and
+		# the bodies round it in the way included, which the map's own line does not know of.
+		if map.is_walkable(map.world_to_tile(at)) and guard.clear_line_to(at):
 			her = at
 			away = dir
 			break
