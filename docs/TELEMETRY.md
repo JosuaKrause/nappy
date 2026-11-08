@@ -515,7 +515,7 @@ grid, which is not the city's.
 how far into its clock, `to <cause>`, the reason, the meter breakdown and what was nearest. The
 retry then opens its own section under the same day's header, and its `start` line says
 `restarted`, stamped `0.0` because the retry has a fresh clock. The automatic-snapshot schedule
-(`TelemetryShots.PER_DAY`, `SHOT_SPACING` — see "Snapshots" below) restarts with that section, the
+(`TelemetryShots.PER_DAY`, `TelemetryShots.SPACING` — see "Snapshots" below) restarts with that section, the
 same clean slate a day's own retry gets, so a retried section is not left with its whole allowance
 already spent by the attempt that was lost. Walking out of the building is a `home` line, `out of
 the building, 42.1s to spare`, and getting out of the city one with the way out, `escaped by the
@@ -1121,7 +1121,7 @@ Three rules:
   `lost` (what the street looked like as the day ended), `chase` starting (the one encounter with a
   right answer, and the open question is whether a dog that stops short *reads* as "go now"), and
   the doubled `NOW` mark going up (every complaint about that cue has been about **when**).
-- **It stays small.** `TelemetryShots.PER_DAY` and `SHOT_SPACING` — six a day, three seconds
+- **It stays small.** `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING` — six a day, three seconds
   apart, so a condition that is true for two seconds is one picture rather than a hundred and
   twenty. A directory of near-identical frames is a directory nobody opens.
 - **It does not touch gameplay**, which is the constraint the whole file is built on. A capture is
@@ -1136,7 +1136,7 @@ same reason — into the run's own `asked/` folder, kept apart from the heuristi
 directory listing already says which of the two asked for a picture — and
 a `shot` entry beside it in `run.log`. `Telemetry.snapshot_now()` is the heuristic one with the two
 limits taken off, and that is the
-whole difference: `TelemetryShots.PER_DAY` and `SHOT_SPACING` exist because a condition that stays true for
+whole difference: `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING` exist because a condition that stays true for
 two seconds would otherwise write a hundred and twenty frames, and **somebody pressing a key has
 already decided this frame is worth keeping**. A cap that silently swallows the seventh press is a
 tool that lies about having worked.
