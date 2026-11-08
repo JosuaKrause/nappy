@@ -2628,7 +2628,9 @@ const MOMENTS_PER_DAY: Array[int] = [23, 27, 30, 22, 25, 28, 31, 28, 28, 30, 33,
 ## - **The weight** (the player's "yes" to a weight per location, issue #1185): four times over on a
 ##   precinct street (`EVENT_PRECINCT_WEIGHT`), six times over for a costly wall on the street between
 ##   two strands of the routes (`EVENT_WALL_GAP_WEIGHT`), and five times over for the mouse in an
-##   alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and one).
+##   alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and one). And the mouse a location draws
+##   is offered the location's tiles beside a pile first (`_beside_a_pile_first()`), so it stands by
+##   the sacks where the location reaches them.
 class JudgedLocationGround extends LocationGround:
 	var _day := 0
 	var _base := 0
@@ -2676,6 +2678,8 @@ class JudgedLocationGround extends LocationGround:
 			var kept := fits[i]
 			fits[i] = fits[j]
 			fits[j] = kept
+		if def.id == EventScheduler._MOUSE_ID:
+			fits = _beside_a_pile_first(fits)
 		var role := EventScheduler._role_for(def, _day)
 		var already := _events.placements()
 		var reach_context := already.duplicate()
@@ -2725,6 +2729,19 @@ class JudgedLocationGround extends LocationGround:
 				found[tile] = true
 			_own[def.id] = found
 		return _own[def.id]
+
+	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
+	## it was handed.
+	func _beside_a_pile_first(tiles: Array[Vector2i]) -> Array[Vector2i]:
+		var beside: Array[Vector2i] = []
+		var rest: Array[Vector2i] = []
+		for tile in tiles:
+			if _beside_a_pile(Rect2i(tile, Vector2i.ONE)):
+				beside.append(tile)
+			else:
+				rest.append(tile)
+		beside.append_array(rest)
+		return beside
 
 	func _beside_a_pile(tiles: Rect2i) -> bool:
 		for y in range(tiles.position.y - EventScheduler._MOUSE_PILE_ADJACENCY,
@@ -3054,7 +3071,8 @@ static func _refuses_required_alleys(def: EventDef) -> bool:
 
 ## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
 ## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
-## `_MOUSE_PILE_EXTRA_COPIES` and one times over (`JudgedLocationGround.scale()`).
+## `_MOUSE_PILE_EXTRA_COPIES` and one times over (`JudgedLocationGround.scale()`), and the mouse it
+## draws is offered its tiles beside the pile first.
 const _MOUSE_ID := "alley_mouse"
 const _MOUSE_PILE_ADJACENCY := 1
 const _MOUSE_PILE_EXTRA_COPIES := 4

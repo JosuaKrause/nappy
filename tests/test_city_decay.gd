@@ -156,11 +156,11 @@ func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t) -> void:
 ## alley ground it may stand on (`EventScheduler.open_ground_for()`), so each lands near a pile with
 ## the probability of that ground's share of such tiles, and the count near is a sum of those
 ## chances: its mean is the sum of the shares and its variance the sum of share * (1 - share). With
-## the preference each such tile is offered five times (itself and `_MOUSE_PILE_EXTRA_COPIES` more),
-## which lifts a share of s to 5s / (4s + 1) -- about double at the shares these maps have (a
-## quarter to a half). The bar is the mean plus five standard deviations of the no-preference
-## count, far enough above chance that no pinned roll passes by luck and far enough below the lift
-## that every roll clears it; dropping the preference puts the count at the mean and fails it.
+## the preference an alley location beside a pile draws the mouse five times as often (itself and
+## `_MOUSE_PILE_EXTRA_COPIES` more, `JudgedLocationGround.scale()`) and the mouse it draws is offered
+## the tiles beside the pile first. The bar is the mean plus five standard deviations of the
+## no-preference count, far enough above chance that no pinned roll passes by luck; dropping the
+## preference puts the count near the mean and fails it.
 func _test_the_mouse_prefers_a_pile(t) -> void:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var mouse := EventCatalogue.by_id("alley_mouse")
@@ -181,7 +181,7 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 					beside[tile] = true
 					break
 		var share := float(beside.size()) / float(candidates.size())
-		for roll in 5:
+		for roll in 8:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,

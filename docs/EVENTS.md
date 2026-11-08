@@ -1363,7 +1363,7 @@ are denser as well as nastier. A row's weight in a view is its own `weight` time
 to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
 (`JudgedLocationGround.scale()`): a precinct's four times over, the street between two strands of
 the routes six times over for a costly wall, an alley beside a sack pile five times over for the
-mouse. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
+mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
 #1185.)*
 
 The share is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the

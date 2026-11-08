@@ -9,13 +9,19 @@ extends RefCounted
 ## Walks the way `--route mark,task,calm,home` does, at `Tuning.WALK_SPEED`, running what the
 ## manager's own tick runs for her walk, and counts the walks on which the rigged man was inside
 ## her view (`Tuning.VIEW_HALF_EXTENT` round her). A sweep of the walks, not one: where she ends
-## up depends on the city. `tests/probes/calm_pelican_day7_van_met.gd` measures all 12 and says why
-## the rest miss. Run by name: `tools/test.sh day6_yeller_met`.
+## up depends on the city, so the walks are many enough that whether most of them meet him is the
+## rule's answer and not a few cities' luck. `tests/probes/calm_pelican_day7_van_met.gd` measures
+## 12 walks and says why the rest miss: he is sited out of her sight ahead of her, and she turns off
+## before she reaches him. Run by name: `tools/test.sh day6_yeller_met`.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99]
-## Most of the walks, not all: a walk that never passes a sidewalk of its own is not a defect.
-const AT_LEAST := 4
+const SEEDS: Array[int] = [4242, 90210, 31337, 555, 99, 12161, 20080, 27999, 35918, 43837, 51756,
+		59675, 67594, 75513, 83432, 91351, 99270, 107189, 115108, 123027, 130946, 138865, 146784, 154703,
+		162622, 170541, 178460, 186379, 194298, 202217, 210136, 218055, 225974, 233893, 241812, 249731,
+		257650, 265569, 273488, 281407, 289326, 297245, 305164, 313083]
+## Most of the walks, more than half, not all: a walk that turns off her street before she reaches
+## him is not a defect.
+const AT_LEAST := 23
 const DAY := 6
 ## The seed of the run each walk's city stands in, fixed so a walk repeats. The check does not depend
 ## on it: it holds on seed 1 as well.
