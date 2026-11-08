@@ -142,6 +142,12 @@ func _ready() -> void:
 ## One suite, one pass: load it, run it, and say what it left behind and how long it took.
 func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 	var started := Time.get_ticks_msec()
+	# **The snapshot comes before the suite is loaded.** A snapshot `load()`s every script that holds
+	# a `static var`, and a suite parsed before that first snapshot (the first suite of a process,
+	# which `--shuffle` makes any suite) reaches the script graph from the other side; the process
+	# then ended with "10 ObjectDB instances were leaked at exit" and exit code 1 though every check
+	# passed (`test_run_state.gd` first did it, deterministically).
+	var shared_before := SharedState.snapshot(self)
 	# `load()` on a suite with a parse error returns a non-null GDScript that this guard
 	# catches before `.new()` ever runs — `.new()` on it is a runtime error with nothing to
 	# catch it, which is what used to abort `_ready()` before `quit()` and leave the headless
@@ -154,7 +160,6 @@ func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 		return
 	var suite: Object = script.new()
 	_running = path.get_file()
-	var shared_before := SharedState.snapshot(self)
 	# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
 	# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 	# coroutine waits for it.
