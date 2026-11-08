@@ -51,6 +51,8 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);
 8. the routes, city and regions suites that test something other than the city itself;
-9. run flow, save and pause (`run_flow`, `run_config`, `run_checkpoints`, `save`, `save_wiring`,
-   `boot_handing`, `pause`, `observers`, `main`, `day_loop`, `dev_rig`, `park_return`), which
-   boot the real run and are combined by composition, each with its reason stated.
+9. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
+   same seed) is the resistance director's placement answer, to move to the resistance suites
+   after placement by construction; `test_dev_rig`'s `--spawn` event, closure and door cases read
+   event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
+   fence round trip ends in the city map's repaint, to move to a map suite.
