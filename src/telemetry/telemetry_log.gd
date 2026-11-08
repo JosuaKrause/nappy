@@ -21,6 +21,14 @@ var lines: Array[String] = []
 ## Where it is being written, or "" for an in-memory log.
 var path := ""
 
+## Every line written this run, in order, as a copy.
+func recorded_lines() -> Array[String]:
+	return lines.duplicate()
+
+## Where the log is being written, or "" for an in-memory log.
+func file_path() -> String:
+	return path
+
 var _file: FileAccess
 
 ## `to_path` of "" keeps the log in memory only. That is what the tests use, and it is also

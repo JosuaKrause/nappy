@@ -1081,7 +1081,10 @@ field with its value before and after (`tests/shared_state.gd`).
   exact building coverage, and route redundancy under street closures.
 - `test_power_station.gd` — the power station across a spread of seeds: exactly one, outside the
   home's region, its door a reasonable walk away on a real street, and reachable on its day only
-  through a region door with that day's walls, seals and closures in place.
+  through a region door with that day's walls, seals and closures in place; and the station's
+  hall lit only on the last night.
+- `test_precinct_posts.gd` — a generated map's precinct posts: every gap in a row narrower than her
+  body, and a post's tile closed to a pursuer's step, the walk field and the reachability grid.
 - `test_ground_floor.gd` — the ground floor of a multi-story building is shops or blank wall,
   never windows, except hers: fixtures per district plus a spread of generated cities, the
   `_build_windows()`/`_build_front()` RNG streams pinned unchanged, and `Building.
@@ -1138,11 +1141,13 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
-- `test_blackout.gd` — the last night's blackout: nothing off without the sabotage or beside the
-  station, every window, light and mast off in one call past the distance, dark for as long as the
-  sabotage stands and lit again on a retry, the station's hall lit only on the last night, the dark
-  spine left to the box rule and still carrying its traffic, and the escape's city dark from its
-  first frame.
+- `test_blackout.gd` — the last night's blackout over stand-ins for the city and what it switches,
+  no city built: nothing off without the sabotage or beside the station, every window, light and
+  mast told off in one call past the distance, dark for as long as the sabotage stands and lit again
+  on a retry, and the escape's blackout dark from its first frame. What the switched parts do dark
+  is theirs: `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark
+  junction left to the box rule) and `test_dark_spine.gd` (the dark spine still carrying its
+  traffic, on a real city and crowd).
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
   played through all 14 days with the real City, EventManager and ResistanceDirector, each day started
   by the real DayDirector, with time actually advancing. This is the check

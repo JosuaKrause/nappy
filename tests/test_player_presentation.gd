@@ -96,7 +96,21 @@ func _boot_catching(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.B
 ## is `tests/test_visuals.gd`'s. The marks over her head are on the UI's page, which
 ## `tests/test_atlas_loading.gd` checks.
 func _test_every_family_source_is_a_baked_region(t) -> void:
-	var sources := Stroller.family_sources()
+	var sources: Array[String] = []
+	for views: Array[String] in [
+			Stroller.MOTHER_FRONT, Stroller.MOTHER_BACK, Stroller.MOTHER_SIDE,
+			Stroller.MOTHER_FRONT_DIAGONAL, Stroller.MOTHER_BACK_DIAGONAL,
+			Stroller.MOTHER_CARRYING_FRONT, Stroller.MOTHER_CARRYING_BACK,
+			Stroller.MOTHER_CARRYING_SIDE, Stroller.MOTHER_CARRYING_FRONT_DIAGONAL,
+			Stroller.MOTHER_CARRYING_BACK_DIAGONAL,
+			Stroller.FATHER_FRONT, Stroller.FATHER_BACK, Stroller.FATHER_SIDE,
+			Stroller.FATHER_FRONT_DIAGONAL, Stroller.FATHER_BACK_DIAGONAL,
+			Stroller.FATHER_CARRYING_FRONT, Stroller.FATHER_CARRYING_BACK,
+			Stroller.FATHER_CARRYING_SIDE, Stroller.FATHER_CARRYING_FRONT_DIAGONAL,
+			Stroller.FATHER_CARRYING_BACK_DIAGONAL]:
+		sources.append_array(views)
+	sources.append_array([Stroller.PRAM_SIDE, Stroller.PRAM_FRONT, Stroller.PRAM_BACK,
+			Stroller.PRAM_FRONT_DIAGONAL, Stroller.PRAM_BACK_DIAGONAL])
 	t.check(not sources.is_empty(), "the family exports at least one source")
 	var families: Dictionary = {}
 	for path: String in sources:

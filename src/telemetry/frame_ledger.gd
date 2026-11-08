@@ -97,6 +97,14 @@ var _slow_frames := 0
 ## Whether the open frame is to be kept when it closes. `FrameRecorder` sets it each frame, so a
 ## paused game, the title and the summary are timed (the phases stay in step) but not kept.
 var keep := false
+
+## Whether the open frame is to be kept when it closes.
+func is_keeping() -> bool:
+	return keep
+
+## Marks the open frame to be kept when it closes, or not (`on` false).
+func keep_this_frame(on := true) -> void:
+	keep = on
 ## The last kept slow frame's row, meaningful once `_slow_frames` is above zero. Copied into
 ## place rather than sliced, so a slow frame allocates nothing either.
 var _last_slow := PackedInt64Array()
