@@ -336,10 +336,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	# once it is there (`transition()`).
 	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
-	var start := route[0] if route.size() > 0 else at
-	if not definition.mobile and definition.obstructs_radius > 0.0 \
-			and definition.pavement_side == EventDef.Pavement.ANY:
-		start = _centred_on_the_pavement_band(_map, start)
+	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
 	look = EventLooks.for_row(self)
@@ -365,37 +362,6 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 		# Placed on the map with no route at all, so its own dash is built here, from the alley it
 		# actually landed in rather than a flat offset, and cut to the ground it fits on.
 		path = _navigator.trim(_alley_crossing_path(_map, position), _mover)
-
-## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
-## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
-## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and
-## 48px from the far one — so a body sized against the *pavement* rather than the *lane* overhangs
-## by exactly the asymmetry between those two numbers (PLAYTEST-19).
-##
-## The remedy is the position, not a smaller radius: this shifts a stationary, unpinned body from
-## the lane tile the scheduler chose to the middle of the two-lane band it belongs to, so a body may
-## be up to the full `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide and exactly fill the pavement.
-##
-## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
-## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
-## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
-## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
-## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
-## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
-## *also* "no line to walk," on purpose.
-static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2:
-	var tile := map.world_to_tile(at)
-	if map.pavement_inward(tile) == Vector2i.ZERO:
-		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
-		# here has one band to be centred on.
-		return at
-	var offsets := map.corridor_offsets(tile)
-	var x_offset := offsets.x
-	var offset := x_offset if x_offset >= 0 else offsets.y
-	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
-			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
-	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
-	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
 
 ## **A spread's rotation is a property of the street it stands on**, not a field on the row: a
 ## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
@@ -1185,10 +1151,11 @@ func resume(from_age: float, from_travelled: float, from_noticed_at := INF) -> v
 ## (the axis of a spread, which side a parked vehicle shows, its idle phase), and its field is asked
 ## afresh. `EventManager.move_extra()` is the caller, which records its body again.
 func move_to(at: Vector2) -> void:
-	global_position = at
+	var stands := EventFootprints.stands_at(_map, def, at)
+	global_position = stands
 	_move.place(position)
-	_spread_vertical = _spread_is_vertical(_map, at)
-	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, at, _heading)
+	_spread_vertical = _spread_is_vertical(_map, stands)
+	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, stands, _heading)
 	_idle_phase_offset = _position_roll(101)
 	excitement.invalidate_contribution()
 	reset_physics_interpolation()
