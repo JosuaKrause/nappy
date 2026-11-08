@@ -585,7 +585,7 @@ static func home_region(map: CityMap) -> int:
 
 ## The day's wall and doors, built from the permanent partition and today's `RouteTree`.
 ##
-## **Before `Tuning.REGION_WALL_FIRST_DAY`, nothing is drawn.** The regions exist from generation,
+## **On a day the wall does not stand (`DaySpec.region_wall_stands()`), nothing is drawn.** The regions exist from generation,
 ## but the milestone's own words are "checkpoints in the later acts" — returns an empty plan.
 ##
 ## **From it on, a boundary crossing — a segment or a crossing alley — is a door if the day's tree
@@ -604,9 +604,9 @@ static func home_region(map: CityMap) -> int:
 ## on the tree, never on which regions are calm-less. `tests/test_regions.gd` restates "the home
 ## region has a door, or every calm area the tree reaches is in the home region" as the
 ## unconditional sentence it always was rather than working around a rule that no longer exists.
-static func plan_day(map: CityMap, day: int, tree: RouteTree) -> RegionPlan:
+static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan:
 	var plan := RegionPlan.new()
-	if day < Tuning.REGION_WALL_FIRST_DAY or not tree:
+	if not spec.region_wall_stands() or not tree:
 		return plan
 	for segment in boundary_segments(map):
 		if tree.is_on_the_tree(segment.key()):

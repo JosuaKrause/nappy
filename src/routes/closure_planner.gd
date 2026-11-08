@@ -139,7 +139,7 @@ static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerat
 
 	var kinds := RoadClosure.kinds_on(day)
 	var corridor := tree if tree else RouteTree.for_day(map, day)
-	var regions := region_plan if region_plan else RegionPlanner.plan_day(map, day, corridor)
+	var regions := region_plan if region_plan else RegionPlanner.plan_day(map, spec, corridor)
 	# Built once and asked many times: the grid is the day's tiles, which do not move while
 	# candidates are tried — only the barrier tiles a candidate would add do.
 	var grid := ReachabilityGrid.build(map)

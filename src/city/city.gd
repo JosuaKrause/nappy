@@ -1089,13 +1089,19 @@ func _dress(state: CityState, day: int) -> void:
 ##
 ## **A stretch pastes no dawn**: its posters are the recipe's own (`setup.posters`), so the walls are
 ## marked pasted through today before the day starts and nothing the seed would paste appears.
-func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator) -> void:
+##
+## `spec` is the walk's, as `start_day()` takes it (whether the region wall stands is its answer);
+## left out, it is a day's (`DaySpec.for_day()`).
+func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
+		spec: DaySpec = null) -> void:
+	if spec == null:
+		spec = DaySpec.for_day(day)
 	_dress(state, day)
 	_posters.show_only()
 	scenery.update(_home_scenery_view(), true)
 	var edges := map.witness_only()
 	var tree := RouteTree.for_day(map, day)
-	var plan := RegionPlanner.plan_day(map, day, tree)
+	var plan := RegionPlanner.plan_day(map, spec, tree)
 	map.restore_edges(edges)
 	var closures: Array[RoadClosure] = map.recipe_closures.duplicate()
 	_streets.begin_day(tree, plan, closures)
@@ -1121,7 +1127,7 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
-	var plan := RegionPlanner.plan_day(map, day, tree)
+	var plan := RegionPlanner.plan_day(map, spec, tree)
 	trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.walls.size() + plan.doors.size(), plan.walls.size(),
 			plan.doors.size(), RegionPlanner.regions_with_calm(map)])

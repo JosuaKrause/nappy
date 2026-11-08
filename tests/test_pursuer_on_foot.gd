@@ -171,7 +171,7 @@ func _test_neither_is_ever_the_schedulers(t) -> void:
 func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var expected := "guardsman_giving_chase" if day >= 9 else "policeman_giving_chase"
-		t.check(EventCatalogue.on_foot_on(day).id == expected,
+		t.check(EventCatalogue.on_foot_on(DaySpec.for_day(day)).id == expected,
 				"day %d's pursuer on foot is %s" % [day, expected])
 	for day: int in [8, 9]:
 		var rig := _city_with_her(t, day)
@@ -389,8 +389,8 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 ## beside him she is reached only after his notice, and stopped rather than struck.
 func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 	for day: int in [8, 9]:
-		var out := EventCatalogue.out_of_the_car(day)
-		var own := EventCatalogue.on_foot_on(day)
+		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
+		var own := EventCatalogue.on_foot_on(DaySpec.for_day(day))
 		t.check(out.id == own.id and out.look == own.look,
 				"day %d: the man out of a patrol car is %s" % [day, own.id])
 		t.check(not out.hard_fail and is_equal_approx(out.pursuit.stop_excitement,
@@ -442,7 +442,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 	t.check(stop < Tuning.METER_MAX, "and less than the whole meter, so a calm day survives it")
 	t.check(stop > Baby.EXCITEMENT_OVERFLOW_TO_CRY,
 			"but more than the push at the cap, so a meter already high can be ended by it")
-	var out := EventCatalogue.out_of_the_car(8)
+	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
 	for walks_away: bool in [false, true]:
 		var man := EventInstance.new()
 		man.setup(out, Vector2(60.0, 0.0))
@@ -474,7 +474,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 ## there, so a stop would land nothing. Beside her through the whole hold he does not stop her; the
 ## frame she is let out, he does.
 func _test_he_waits_outside_a_hold_to_stop_her(t) -> void:
-	var out := EventCatalogue.out_of_the_car(8)
+	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
 	var man := EventInstance.new()
 	man.setup(out, Vector2(60.0, 0.0))
 	var her := Vector2.ZERO
@@ -597,7 +597,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 				"day %d: and %s got out" % [day, expected])
 		t.check(car_moved < 0.01, "day %d: the car stood while he was out" % day)
 		t.check(stopped_her_at < INF and stopped_her_at - out_at >= EventCatalogue.out_of_the_car(
-				day).telegraph_time, "day %d: standing still, she is reached after his notice "
+				DaySpec.for_day(day)).telegraph_time, "day %d: standing still, she is reached after his notice "
 				% day + "(%.2fs) and stopped" % (stopped_her_at - out_at))
 		t.check(struck[0] == "", "day %d: and the day does not end (%s)" % [day, struck[0]])
 		t.check(back_at.distance_to(door) <= 1.0 and officer != null
@@ -818,7 +818,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 					% [id, level])
 			t.check(hot.validate(), "'%s' heat %d: and it is fair" % [id, level])
 	for day: int in [8, 10]:
-		var man := EventCatalogue.out_of_the_car(day, false)
+		var man := EventCatalogue.out_of_the_car(DaySpec.for_day(day), false)
 		t.check(man.hard_fail and man.pursuit.stop_excitement == 0.0 and man.validate(),
 				"day %d: a hunting van's man ends the day when he catches her" % day)
 
@@ -854,7 +854,7 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	var men: Array[EventInstance] = []
 	for i in 2:
 		var man := EventInstance.new()
-		man.setup(EventCatalogue.out_of_the_car(10, false), Vector2(0.0, -60.0))
+		man.setup(EventCatalogue.out_of_the_car(DaySpec.for_day(10), false), Vector2(0.0, -60.0))
 		van.let_out(man)
 		men.append(man)
 	var elapsed := 0.0

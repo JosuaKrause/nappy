@@ -839,7 +839,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
 			"guardsman_giving_chase": Tuning.REGION_WALL_FIRST_DAY}
 	for id: String in day_of.keys():
 		for stops: bool in [true, false]:
-			var def := EventCatalogue.out_of_the_car(day_of[id], stops)
+			var def := EventCatalogue.out_of_the_car(DaySpec.for_day(day_of[id]), stops)
 			var name := "%s out of %s" % [id, "a patrol car" if stops else "a hunting van"]
 			t.check(def.pursuit.stands and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 					and is_equal_approx(def.telegraph_time, Tuning.WARNING_ALONE_MAX),
