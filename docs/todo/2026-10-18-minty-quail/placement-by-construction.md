@@ -1,13 +1,14 @@
 # The city's events are placed by construction: locations, and a bag per view
 
-**The ask.** The player laid out how the city's events are placed (inbox #1185 in gray-dolphin, its
-comments of 2026-11-08): three views on events, on the route, route-adjacent and off the route, each
+**The ask.** The player laid out how the city's events are placed (inbox #1185, its comments
+of 2026-11-08): three views on events, on the route, route-adjacent and off the route, each
 with its own bag; a location gets the event its view's bag draws, with no rejection; a route stays
-open by construction; a street is three sections of two sidewalk locations each; the roadblock
-phase at dawn spaces roadblocks over the route-adjacent locations; the city's fixed parts have
+open by construction (across the street from a drawn restaurant the draw is mostly "empty", a "yeller"
+at a low chance on later days); a street is three sections of two sidewalk locations each; the roadblock
+phase at dawn spaces roadblocks over the route-adjacent locations, and the regular pass never overwrites one; the city's fixed parts have
 phases of their own; and day 13's task swaps a whole section's content for a roadblock only when
 none is close by. Of building anything on today's placement first: "no duplicate work", "the
-refactors come first", "everything else would be meaningless" (inbox #1185 in gray-dolphin).
+refactors come first", "everything else would be meaningless" (inbox #1185).
 
 **Read as:** the design is `docs/EVENTS.md`'s "The three views and the placement order", cited line
 by line; its numbered list says where the code differs. Nothing in that section is reopened here.
