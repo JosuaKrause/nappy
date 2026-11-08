@@ -2309,7 +2309,7 @@ Top-down camera with a fake vertical extrusion:
   straight stretch of `StreetTrees.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
   five) consecutive blocks along one street line, horizontal or vertical, and there are
   `StreetTrees.STREET_TREE_RUNS` of them placed at random across the map, well under the
-  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  quarter-of-ordinary-streets ceiling `tests/test_blocks.gd` holds over a
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.

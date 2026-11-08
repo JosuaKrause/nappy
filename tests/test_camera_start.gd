@@ -14,8 +14,15 @@ extends RefCounted
 ## let the boot finish, however many it holds for (`tests/booted_main.gd`), and the title's button
 ## is pressed through the viewport. Each boot plays a run made fresh for it, parked in a sitting
 ## home of the test's own (`Boot.home_playing()`).
+##
+## **This suite boots `main` and keeps the real city, player, camera and screens, for a stated reason**:
+## its subject is `main`'s own boot, the order it builds the boot camera, the city, the title and her in
+## (the frame between `_city.build()` and `_player` existing), and the one thing no stand-in can hold is
+## that order. The city comes from the cache of generated maps (`tests/city_map_cache.gd`) and is not
+## generated for the boot. It is `main`'s composition, which `tests/test_main.gd` also holds.
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_camera_start_scratch.json"
 
@@ -33,6 +40,7 @@ func _start_a_boot(t, config: RunConfig) -> Array:
 	var main: Node2D = Boot.MAIN_SCENE.instantiate()
 	main.use_save(save)
 	main.use_sitting_home(home)
+	main.use_city_maps(MapCache.source())
 	main.configure(config)
 	t.add_child(main)
 	return [main, save, home]

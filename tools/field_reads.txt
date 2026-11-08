@@ -573,7 +573,6 @@ src/main.gd length
 src/main.gd number
 src/main.gd section
 src/main.gd world
-src/routes/seal_planner.gd number
 src/routes/seal_planner.gd seal_pictures
 src/routes/seal_planner.gd seals_every_street_off_the_walk
 src/routes/seal_planner.gd seals_the_main_road

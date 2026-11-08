@@ -753,7 +753,7 @@ func _ground_lets(tile: Vector2i, layers: int) -> bool:
 
 ## The ground a sweep over the whole map runs on for `mover`: each tile `UNREACHED`, or `BLOCKED`
 ## where a layer `mover` names stands today, and outside an authored scene's stretch. The ground's
-## own tile types are not laid out: a sweep reads them off `tiles` itself (`walkable_by_type()`),
+## own tile types are not laid out: a sweep reads them off `tiles` itself (`walkable_lut()`),
 ## since that is a lookup per neighbour against a call. What the red arrow's sweep and day 13's
 ## guard's walk to her run on (`WalkField`), laid out once for each state of the record
 ## (`day_record_version`, `obstruction_version`).
@@ -1195,12 +1195,6 @@ func _recompute_calm(state: CityState) -> void:
 static var _WALKABLE: PackedByteArray = _lut(Tile.is_walkable)
 static var _CALM: PackedByteArray = _lut(Tile.is_calm)
 
-## `Tile.is_walkable` as a table indexed by tile type, for a sweep over `tiles` outside this file
-## (`WalkField`, the red arrow's walking distances) that wants the same answer
-## `walk_field_from()` reads without a function call per neighbour.
-static func walkable_by_type() -> PackedByteArray:
-	return _WALKABLE
-
 ## Sized by the largest value rather than by the count of them, so an enum that later gains an
 ## explicit value cannot quietly index past the end or read a gap as "no".
 static func _lut(predicate: Callable) -> PackedByteArray:
@@ -1352,20 +1346,6 @@ func perimeter_tiles(block: Vector2i) -> Array[Vector2i]:
 			var tile := Vector2i(x, y)
 			if is_walkable(tile):
 				found.append(tile)
-	return found
-
-## Every walkable tile in or around the blocks that *started* as this purpose. Generation-
-## time identity, not today's: the resistance's "a civic block" means the one that was built
-## as a ministry, whatever has since happened to it.
-func purpose_tiles(purpose: GameEnums.BlockPurpose) -> Array[Vector2i]:
-	var found: Array[Vector2i] = []
-	for block: Vector2i in block_plans:
-		if starting_purpose(block) != purpose:
-			continue
-		for tile in rect_tiles(lot_rect(block)):
-			if is_walkable(tile):
-				found.append(tile)
-		found.append_array(perimeter_tiles(block))
 	return found
 
 ## Every tile of a given type. Cached, since the scheduler samples these every day.

@@ -186,7 +186,8 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t) -> void:
 				"seed %d day %d: the wall has a door in it" % [map.seed_used, day])
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-		var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+		var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+				closure_rng, tree, region_plan)
 		map.close_streets(closures)
 		var boundary := {}
 		for segment in region_plan.walls:

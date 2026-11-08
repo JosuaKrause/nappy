@@ -17,8 +17,6 @@ the code last, or that nothing ever did.
 
 **Where the rest is** (the survey with `check_test_only_members.py` and a scan for members named
 nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a few):
-- `src/city/`: `MarbleBag.take`, `MarbleBag.is_shared`, `MarbleBag.has_marbles`,
-  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION`, and three members named nowhere.
 - `src/events/`: `EventsAhead.walk_siting` and `EventLook.drawn_rect_now` (test-only), and four
   members named nowhere under `src/events/views/`.
 - `src/resistance/` and `src/autoload/`: one member each named nowhere, to be found again.
