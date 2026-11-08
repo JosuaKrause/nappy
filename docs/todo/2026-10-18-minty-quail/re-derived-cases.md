@@ -10,15 +10,12 @@ what another place already worked out, is moved into one object that derives it 
 to whoever asks (designing-classes). The dawn cases were built with `DayEvents`, `CalmAreas` and
 `DayRepairs` (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
-**What is left: three cases, as the orchestrator's notes name them, and the gatehouse day's last
+**What is left: two cases, as the orchestrator's notes name them, and the gatehouse day's last
 readers.** The survey that described the cases is gone, and the board's numbering of them (3, 4, 6
 and 7 among them) was not kept with the names, so which number each is cannot be told from what is
 on disk. Each case is found again, with its places in the code, before it is designed. Where to look
 first:
 
-- **The stand point of a moved body:** where a body moved after dawn (`EventManager.move_extra()`)
-  stands, which the move works out and the park cordon's own standing search
-  (`ParkCordon._standing_point()`) works out again.
 - **The held streets' reasons:** which street segments are held and why, which `CityMap.is_held()`
   and `is_held_at()` answer and `CrowdPockets._shut_the_held_segments()` and
   `ResistanceSteps.stands_on_held_ground()` read again for themselves.
