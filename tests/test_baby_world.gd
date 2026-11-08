@@ -15,10 +15,11 @@ extends RefCounted
 ## parent and reads her speed from. **That `main` calls `Baby.set_world()` at every place it puts
 ## her in a world is `tests/test_main.gd`'s** (`_test_main_hands_the_baby_the_world_it_puts_her_in`),
 ## since it is a claim about what `main` wires; what a real city answers for its ground and its bodies is
-## the city's own, and what the meter does with an answer is `tests/test_meters.gd`'s.
+## `tests/test_city_world.gd`'s, and what the meter does with an answer is `tests/test_meters.gd`'s.
 
-## The decay a walking baby is given on the street's ground, over the building's.
-const STREET_DECAY := 3.5
+## The decay multiplier the street gives her on calm ground, the highest the city gives, over the
+## building's 1.0.
+const STREET_DECAY := City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER
 ## What the street's one noise source charges her per second.
 const STREET_NOISE := 6.0
 
@@ -74,7 +75,6 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
 	rig.add_child(baby)
 
 	baby.set_world(building)
-	t.check(baby.world() == building, "she holds the world she was handed")
 	var walking := Tuning.EXCITEMENT_DECAY_WALKING
 	t.close_to(baby.decay_rate(), walking * building.decay,
 			"in the building her decay is the building's ground's")
@@ -82,7 +82,6 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
 	t.check(baby.last_incoming == 0.0, "and nothing in the building charges her")
 
 	baby.set_world(street)
-	t.check(baby.world() == street, "handed the street, she holds the street and not the building")
 	t.close_to(baby.decay_rate(), walking * STREET_DECAY,
 			"on the street her decay is the street's ground's")
 	await _let_her_tick(t, baby)

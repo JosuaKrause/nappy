@@ -9,8 +9,10 @@ minty-quail's `tests-one-module.md`, entry 2, the player and the baby, in #1227,
 - **`test_baby_world`**: the baby alone, two `FakeWorld`s on a bare `Stroller` showing she answers
   from the world last handed, and from none as neutral; the three boots moved to `test_main` as one
   case that main hands her the world it puts her in. Two checks of the real city's own answers (its
-  events charging a spot, its calm ground's gain) are dropped: they are the city's, and
-  `test_meters` holds the meter arithmetic.
+  events charging a spot, its calm ground's gain) are held by the new `test_city_world`, on a real
+  `City` over a cached map: `_test_a_live_event_charges_the_spot_it_stands_on` and
+  `_test_calm_ground_fills_sleepiness_faster_than_the_street`. `test_meters` holds the meter
+  arithmetic.
 - **`test_pelican`** and **`test_loose_dog_arrives`**: no City node. The shared fixture
   `tests/fixtures/street_events.gd` (`StreetEvents.over(t, map, run)`) hands an `EventManager` a
   cached map, a run and a bare world node. The pelican's case from warning to run log stays
