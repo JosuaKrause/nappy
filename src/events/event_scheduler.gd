@@ -768,9 +768,13 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
-## route-adjacent sections (`DayLocations`, laid out here off `corridor`), spread by a bias toward the
-## section farthest from those already placed, until every route tile has one close by. `def` is the
-## task's row, null on every other day, which this leaves exactly as it was.
+## route-adjacent sections, spread by a bias toward the section farthest from those already placed,
+## until every route tile has one close by. `def` is the task's row, null on every other day, which
+## this leaves exactly as it was.
+##
+## **The day's locations are laid out here, on day 13 alone** (`DayLocations.lay_out()` off
+## `corridor`), handed to the phase and dropped once it returns: in this step nothing else places
+## into them. The bags and the walk's draws, later steps of the placement, lay them out every day.
 ##
 ## **What a section is offered, and what close by is, are the day's**: `JudgedRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
@@ -794,13 +798,12 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 	def = def.for_day(day)
 	var judged := JudgedRoadblockGround.new(def, day, map, events, ground, leave_alone, corridor,
 			doors, rules)
-	var phase := RoadblockPhase.new(DayLocations.lay_out(map, corridor), judged, TASK_ROW_CLOSE_BY,
-			judged.reoffer_within())
+	var phase := RoadblockPhase.new(DayLocations.lay_out(map, corridor), judged)
 	var placed: Array[String] = []
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
 		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
 	_note(trace, "plan", ("%d %s placed beside the day's routes, at %s; %d route tiles left with " +
-			"none close by, no section beside the routes within reach taking one")
+			"none close by, no section beside the routes left to take one")
 			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
 			phase.left_uncovered()])
 
@@ -813,7 +816,10 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 ##   ground for its role (`_ground_for()`: off every tile a route runs along, off a held or closed
 ##   street, the home block, a tree) nearest the section's middle that `_judge()` refuses nothing,
 ##   asked against the day's plans and what stands (`DayEvents.standing()`). A section with no such
-##   tile is offered none, and none is ever offered on the main road (inbox #1186).
+##   tile is offered none, and none is ever offered on the main road (inbox #1186). **Room is no
+##   preference here**: a tile `_judge()` answers with less than all the room it wants (another
+##   roadblock within `EVENT_SPACING_SAME`, the one rule that bends) is taken like any other, since
+##   the phase spreads its roadblocks by its bias toward the farthest instead.
 ## - **Close by** is the walk her paths take, without leaving the circle of `TASK_ROW_CLOSE_BY` round
 ##   it, from the ground she touches it from (`_touched_from()`), with its own body standing.
 class JudgedRoadblockGround extends RoadblockGround:
@@ -848,8 +854,10 @@ class JudgedRoadblockGround extends RoadblockGround:
 		down.append_array(events.standing())
 		_shut = DayReach.shut_by(map, down)
 
-	## How far round a roadblock just placed what a section is offered can change: two of its fields
-	## and a street, the farthest a rule asked of two rows together reaches.
+	## Two of the row's fields and a street: the farthest a rule `_judge()` asks of two rows together
+	## reaches.
+	##
+	## Overrides RoadblockGround.reoffer_within.
 	func reoffer_within() -> float:
 		return 2.0 * maxf(_def.field_reach(), EventScheduler.EVENT_SPACING_ANY) \
 				+ (Tuning.BLOCK_SIZE + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE
@@ -2501,8 +2509,8 @@ class WalkSiting extends RefCounted:
 	## built where `old` stands, or, where that tile is not ground `def` stands on (a roadblock stands
 	## on the carriageway and most of the day's events on a sidewalk), on the nearest tile of its own
 	## ground on `old`'s street within `SWAP_SPREAD_TILES` of it, nearest first — and **checked before
-	## it is accepted** under the rules dawn places one under (`JudgedRoadblockGround.offer()`), or null,
-	## and no swap is made:
+	## it is accepted** under `_judge()`'s rules, which dawn's roadblock phase asks too
+	## (`JudgedRoadblockGround.offer()`), or null, and no swap is made:
 	##
 	## - its own ground for its role on that tile (`_ground_for()`): a tile the row may stand on,
 	##   off every tile a route runs along (a `WALL`'s ground), not on a held street, a closed one,
@@ -2513,9 +2521,9 @@ class WalkSiting extends RefCounted:
 	## - every rule `_judge()` asks against the walk's other plans (`WalkEvents.everything_but()`,
 	##   `old` left out, since it is what goes): clear of the unused calm and of the ground round the
 	##   doors, the route's junctions and sidewalks left open, and **room all round**, nothing within
-	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. The dawn pass takes
-	##   the roomiest of its tries where none has room all round; a swap takes a tile only with room
-	##   all round.
+	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. Dawn's roadblock
+	##   phase takes a tile `_judge()` refuses nothing, room all round or not; a swap takes a tile only
+	##   with room all round.
 	##
 	## The two rules a spec adds (`Rules`: the walk kept open past everything on it, one waiting
 	## guard's notice at a time) are the escape's and no day's, and a siting is a day's.

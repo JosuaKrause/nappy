@@ -35,9 +35,8 @@ func _mix_on(day: int) -> void:
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
-		for segment in map.network.segments():
-			if map.has_street(segment.key()):
-				streets[corridor.view_of(segment)] += 1
+		for segment in map.street_segments():
+			streets[corridor.view_of(segment)] += 1
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("placement_view_mix:%d:%d" % [map.seed_used, day])
 		var guarded := ResistanceSteps.guarded_row_on(day)

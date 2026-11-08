@@ -1227,11 +1227,13 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
 (inbox #1185).
 - *Read as* (the orchestrator's, open to correction): the roadblock phase is day 13's. It stops once
   every route tile has a roadblock within 1,024px along her paths, the measure day 13's task searches
-  with; the player called the 15 to 25 that leaves "good" (inbox #1185). On days 7 to 12 a roadblock
-  is an ordinary event of the route-adjacent bag.
-- `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`), each
-  section's roadblock considered only where today's rules leave it valid
-  (`EventScheduler.JudgedRoadblockGround`).
+  with; shown the count full coverage gives, the player called it good and said only a playtest can
+  tell (inbox #1185). On days 7 to 12 a roadblock is an ordinary event of the route-adjacent bag.
+- `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
+  route-adjacent section whose roadblock today's rules leave valid
+  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias. Where some route
+  tile can be covered by none of them, the stop is never reached, and the phase goes on until every
+  such section has one.
 
 **The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
 region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).
@@ -1282,8 +1284,10 @@ Each item quotes the code on this branch.
      (`_room_around()`), and the roomiest is taken.
    - **Rejection.** A row whose tries are all refused is not placed:
      `if not placement: continue`.
-2. **Only the roadblock phase places into locations.** Every street's three sections and their
-   sidewalk locations are laid out at dawn (`DayLocations`), but the rest of the day ignores them.
+2. **Locations are laid out on day 13 alone, and only the roadblock phase places into them.** On
+   that day every street's three sections and their sidewalk locations are laid out at dawn
+   (`DayLocations`), handed to the roadblock phase and dropped once it is done; on every other day
+   nothing is laid out.
    - For the fill, a candidate is any tile of a row's own ground.
    - The views appear there only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
      (`if corridor.carries_a_route(tile): return 0` for a wall).

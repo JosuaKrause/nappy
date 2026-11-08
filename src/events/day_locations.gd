@@ -7,17 +7,19 @@ extends RefCounted
 ## phase has assigned taken for the day. The one object holding those answers, so nothing works
 ## them out again (inbox #1156 in gray-dolphin).
 ##
-## Laid out by `EventScheduler.build_day()` after the routes are established and the day's holds
-## are on the map, and read by the roadblock phase (`RoadblockPhase`), which assigns its sections.
-## Pure state: no node, nothing that runs.
+## **Laid out on day 13 alone in this step**, by the roadblock phase's call in
+## `EventScheduler.build_day()` after the routes are established and the day's holds are on the map
+## (`EventScheduler._place_the_roadblocks()`), and read by the roadblock phase (`RoadblockPhase`)
+## alone, which assigns its sections; nothing reads it once the phase is done. The bags and the walk's
+## draws, later steps of the placement, lay it out every day. Pure state: no node, nothing that runs.
 
 var _streets := {}
 
 ## The day's locations on `map`, each street in the view `corridor` gives it. Every street the
-## lattice has (`CityMap.streets()`), the ones a calm zone absorbed left out.
+## lattice has (`CityMap.street_segments()`), the ones a calm zone absorbed left out.
 static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	var day := DayLocations.new()
-	for segment in map.streets():
+	for segment in map.street_segments():
 		day._streets[segment.key()] = StreetLocations.of(map, segment, corridor.view_of(segment))
 	return day
 

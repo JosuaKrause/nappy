@@ -905,7 +905,7 @@ func has_street(key: Vector3i) -> bool:
 ## **Every street this city's lattice really has**, in the lattice's own order: the network's
 ## segments less the ones a calm zone absorbed (`has_street()`). What the day's locations are laid out
 ## over (`DayLocations.lay_out()`).
-func streets() -> Array[StreetNetwork.Segment]:
+func street_segments() -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
 	for segment in network.segments():
 		if has_street(segment.key()):

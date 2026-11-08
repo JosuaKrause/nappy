@@ -55,6 +55,11 @@ static func _is_open(map: CityMap, tiles: Rect2i) -> bool:
 func sections() -> Array[Location]:
 	return _sections
 
+## The street's six sidewalk locations, two in each section, in order along it. Read by no draw yet:
+## the bags draw into them in a later step of the placement, and a section taken takes its two.
+func sidewalks() -> Array[Location]:
+	return _sidewalks
+
 ## Puts `plan`, an event that spans the street, on `section` for the day, and takes the section's
 ## two sidewalk locations with it, so no draw happens for any of the three.
 func take_section(section: Location, plan: EventScheduler.Planned) -> void:
