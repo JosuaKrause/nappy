@@ -468,9 +468,8 @@ static func neighbor_heading_home() -> EventDef:
 ## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius`
 ## (150) reaches past half of a 256px park block, so a playground with any real cost denied
 ## nearly the whole lot rather than merely contesting its middle. `EventKind.AMBIENT` is exempt
-## from `DayRepairs.ensure_one_usable_park` and `_spoil_the_parks_she_used`, which both skip
-## every `AMBIENT` plan before asking what it costs, so a park is still contested on the days
-## the scheduler spoils it, just never by its own swings.
+## from spoiling a park (`EventScheduler.Planned.spoils()` passes over every playground), so a park
+## is still contested on the days the scheduler spoils it, just never by its own swings.
 ##
 ## **The row stays rather than being deleted**: `tests/test_events.gd` looks it up by id and reads
 ## its `kind`, `EventInstance._field_distance()` names it as the row with no shape to fall back to,
@@ -897,8 +896,8 @@ static func _busker() -> EventDef:
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.0
 	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the
-	# only calm ground there is, and `DayRepairs.ensure_one_usable_park` pays for every one
-	# that lands on the block it ends up protecting.
+	# only calm ground there is, and the calm ground the day keeps clear refuses every one that
+	# would reach it.
 	def.max_per_day = 10
 	return def
 

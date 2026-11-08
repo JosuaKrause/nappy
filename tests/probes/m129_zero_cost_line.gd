@@ -11,9 +11,8 @@ extends RefCounted
 ## also, the routing should only cross the street at intersections. in block crossings are
 ## possible in game but shouldn't be counted on by the routing algorithm."* Nothing in the game
 ## checks that today: every guarantee that exists is about *reaching* (`ClosurePlanner`'s
-## two-distinct-calm-areas rule, `DayRepairs.ensure_the_city_is_still_walkable`, which drops
-## obstructing bodies until a park is reachable again), and a route that reaches through three
-## friction fields in a row is as legal as an empty one.
+## two-distinct-calm-areas rule, and the route rules every body the day places is judged by), and a
+## route that reaches through three friction fields in a row is as legal as an empty one.
 ##
 ## So this measures the thing before a rule is written against it: for each planned day, for every
 ## route in that day's `RouteTree` from the doorstep to its calm area, is there a line of tiles that
@@ -421,7 +420,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	standing.append_array(region_plan.wall_bodies)
 	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
 			CalmAreas.of(map, _used if not _used.is_empty() else no_calm), no_one_shots,
-			no_scars, tree, 0, doors, [], standing).placements()
+			no_scars, tree, 0, doors, standing).placements()
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.
 	_sources.clear()

@@ -209,7 +209,8 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
 
 **Each day adds its own, planned with the day rather than checked of the city.** At least two calm
 areas stay reachable through the day's closures ("The invariant"), and some calm stays reachable
-through the day's events (`DayRepairs.ensure_the_city_is_still_walkable`). And on the three
+through the day's events, since every body the day places is judged by the rules that keep its
+routes open (`StreetInvalidation`; the routes reach the calm). And on the three
 days the resistance sends her to one narrow place — **day 9's region door, day 12's swing and the
 power station's front door on the last night** (`ResistanceSteps.narrow_target_on`) — **a route
 from home to that place is kept open by construction**, so the day's own closures, seals and
@@ -222,14 +223,16 @@ bodies never seal it off:
   it, by the rules each already follows for the rest of the tree.
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
-- **The catalogue's own bodies are the last line**, and the one mechanism that is not already a
-  rule about the tree, since friction stands on the corridor.
-  `DayRepairs.ensure_the_city_is_still_walkable` drops the widest of them until some tile of the
-  place is reachable from home under the discs of every obstructing or hard-fail body the day has —
-  the seals and the region wall's own included, which it never drops — the question
-  `ResistanceDirector._reachable_from_home()` asks too, with the soft seals' bands added since the
-  red arrow reads those as shut. A soft seal stands only off the tree, so the bands never cut the
-  tree's way to the place. Only ever a removal, which is the city's one monotonic exception.
+- **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
+  corridor: every body the day places, the run's scars and the park spoilers included, is judged by
+  the rules that keep a route's junctions and its walked sidewalk open (`RouteJunctionsRule`,
+  `RouteSidewalkRule`, `PacingOpeningRule`) and the one that keeps every route tile home reaches
+  reached (`RouteReachRule`: an obstructing body whose disc would cut home off from a route tile it
+  reaches without it), asked against everything already down, the seals and the region wall's own
+  bodies included. A body that would close the tree is not placed. The last rule asks a body off
+  the routes too, since the last body of a ring that seals home in can stand beside a route an
+  earlier one already crossed. A soft seal
+  stands only off the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
 pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the
@@ -263,13 +266,13 @@ calm area it is that day. Once she has reached the swing it is taken, so the cal
 baby in has to be somewhere else, and the day plans for that too:
 
 - **`ClosurePlanner` already keeps two calm areas reachable**, so one of them is not the swing's.
-- **One other area is clean.** `DayRepairs.ensure_one_usable_park` is asked for a clean calm
-  area other than the swing's, and strips the least disturbed of the others if none is — day 12 is
-  the first day of act IV, so every area is unused and placement has already kept them clean.
-- **A route to it is kept.** `DayRepairs.ensure_the_city_is_still_walkable` asks its calm half of
-  the clean areas other than the swing's that today's closures leave reachable, not of any calm
-  tile, and drops bodies until one of them is reached. Reached from home, it is reached from the
-  swing: the swing is kept reachable from home, and walking is the same both ways.
+- **One other area is clean.** Day 12 is the first day of act IV, so every area is unused and the
+  calm rule has kept them clean (`CalmAreas.unused_ground()`); where she has used every area there
+  is, the one the spoilers pass over is kept clean the same way (`EventScheduler._calm_kept_clean()`,
+  never the swing's park).
+- **A route to it is kept** by the day's route rules, which keep the tree open, and the tree reaches
+  the calm. Reached from home, it is reached from the swing: the swing is kept reachable from home,
+  and walking is the same both ways.
 
 Which areas count as calm on day 12 is any calm purpose, not only a park: a forest or a quiet
 square settles the baby as well as a park does.
@@ -550,9 +553,9 @@ walks there without a route pointing the way.
   The run (`run.facts`) retains the first fenced block and its act for the whole run, including saves;
   `CityMap` exposes a physical fence only during that act. An expired fence spends the run's
   allowance even when no barrier stands today.
-- **At least one calm area is always usable.** `DayRepairs.ensure_one_usable_park` is the last line
-  under it, for the day she has settled in every calm area there is. The player has to find out
-  which.
+- **At least one calm area is always usable.** On the day she has settled in every calm area there
+  is, the one the spoilers pass over joins the ground nothing may reach
+  (`EventScheduler._calm_kept_clean()`). The player has to find out which.
 
 ## Road closures
 
@@ -643,13 +646,14 @@ question below:
 - `CalmAreas.unused_ground()` is the ground `EventScheduler` refuses: **nothing is placed near a
   calm area she has not used this act**, so those stay clean rather than being cleaned up
   afterwards.
-- `DayRepairs.ensure_one_usable_park` is the last line under it, for the day she has used
-  every calm area there is and nothing was protected.
+- `EventScheduler._calm_kept_clean()` covers the day she has used every calm area there is: the one
+  area the spoilers pass over joins the ground nothing may reach.
 - `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
   her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
   the run's single physical fence, which stands for the remainder of its chosen act.
-- `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city, or
-  seal off the one place the resistance sends her to that day (see "Guarantees").
+- Every body the day places, the scars and the spoilers included, is judged by the rules that keep
+  the routes open, so nothing seals the city or the one place the resistance sends her to that day
+  (see "Guarantees").
 
 **One thing that reads as guidance and was not designed as any:** the crowd respects closures, so
 a shut street is the street with nobody on it, and that is legible from a block away.
@@ -1267,8 +1271,8 @@ It comes out at two to six sites against about fifteen routes.
   rest of the day, because then *where she walked* would move everything planned after it.
 
 **No invariant forbids any of this**, which is worth stating because it is easy to assume
-otherwise. `DayRepairs._park_is_reachable` asks only that **some** calm area is still reachable
-from home, not that the city stays connected, so a sealed quarter is legal. `ClosurePlanner`'s
+otherwise. The route rules keep only the day's routes open, which reach the calm, not the city
+connected, so a sealed quarter is legal. `ClosurePlanner`'s
 two-distinct-routes rule is likewise about reaching calm rather than about global connectivity.
 
 So the honest summary: **the city permits routes to calm and protects them from becoming

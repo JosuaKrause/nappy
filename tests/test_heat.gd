@@ -276,7 +276,7 @@ func _test_a_day_is_a_function_of_its_heat(t) -> void:
 		t.check(first[i].def.id == second[i].def.id and first[i].position == second[i].position,
 				"placement %d of a hot day is where it was" % i)
 	# And nothing in the heated catalogue can plan a day that has no park left to walk to — the
-	# guarantee `DayRepairs.ensure_one_usable_park` makes cold has to survive the escalation.
+	# calm area dawn keeps clean cold (`EventScheduler._calm_kept_clean`) has to survive the escalation.
 	t.check(not first.is_empty(), "a hot day places events at all")
 
 # ------------------------------------------------------------ the patrol presses ---

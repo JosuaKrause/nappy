@@ -129,7 +129,7 @@ var bag := {}
 ## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none.
 var bag_rows := {}
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
-## (`CalmAreas.unused_ground()`, `DayRepairs.ensure_one_usable_park()`): every day's rule. The
+## (`CalmAreas.unused_ground()`, `EventScheduler._calm_kept_clean()`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
 var keeps_unused_calm_clear := true
@@ -158,7 +158,7 @@ var one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose
 ## bodies stand on the one walk rather than off it. A day keeps its routes through its corridor's own
-## rules instead (`EventScheduler._judge()`).
+## rules instead (`StreetInvalidation`: a route's junctions, its walked sidewalk, a beat's opening).
 var keeps_the_walk_open := false
 
 # --------------------------------------------------------- how its streets are sealed ---

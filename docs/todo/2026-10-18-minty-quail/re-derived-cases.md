@@ -7,8 +7,8 @@ case once the plan object exists (inbox #1156 in gray-dolphin).
 
 **Read as:** one fact derived from raw data in more than one place, or a private method re-deriving
 what another place already worked out, is moved into one object that derives it once and is handed
-to whoever asks (designing-classes). The dawn cases were built with `DayEvents`, `CalmAreas` and
-`DayRepairs` (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
+to whoever asks (designing-classes). The dawn cases were built with `DayEvents` and `CalmAreas`
+(#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
 **What is left: one case, as the orchestrator's notes name it,** found again with its places in the
 code before it is designed; placement by construction (`placement-by-construction.md`) replaces the

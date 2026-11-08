@@ -439,8 +439,8 @@ func _test_a_never_used_park_is_unaffected(t) -> void:
 			% compared)
 
 ## The scheduler's calm-ground pass spoils every used area the tree has taken off the route —
-## the day still has a clean open calm area, which `DayRepairs.ensure_one_usable_park`
-## guarantees — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
+## the day still has a clean open calm area, which dawn keeps clean before any spoiler is placed
+## (`EventScheduler._calm_kept_clean`) — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
 ## what it shows.
 func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 	var offered := 0

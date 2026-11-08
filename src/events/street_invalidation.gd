@@ -3,7 +3,8 @@ extends RefCounted
 ## **The day's placement rules a walk asks of a candidate** (`StreetRule`, one class per rule): the
 ## invalidation the design's draw leaves a refused row out by (inbox #1185, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
-## are stated once. A walk composes them from its spec: every walk's route rules, the calm she has
+## are stated once. A walk composes them from its spec: every walk's route rules (its junctions, its
+## walked sidewalk, a beat's opening, and no body cutting a route off from home), the calm she has
 ## not used and the doors' clear ground; the escape's on top, one notice at a time
 ## (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`).
 ##
@@ -29,6 +30,7 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 	_rules.append(RouteJunctionsRule.new(map, corridor, ground))
 	_rules.append(RouteSidewalkRule.new(map, corridor))
 	_rules.append(PacingOpeningRule.new(map, corridor))
+	_rules.append(RouteReachRule.new(map, corridor))
 	if one_notice:
 		_rules.append(OneNoticeRule.new(map))
 	if walk:

@@ -765,9 +765,8 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## beside the day's seals and the region wall, asked the exact question
 ## `_leaves_the_route_junctions_open` asks at placement time, over the day's whole final set
 ## rather than only each row's own insertion moment: sound because nothing after insertion ever
-## *adds* obstruction at a junction (`DayRepairs.ensure_the_city_is_still_walkable`/
-## `DayRepairs.ensure_one_usable_park` only ever remove, the **city** skill's one monotonic
-## exception), so a junction the rule kept open at every insertion is open in the finished set
+## *adds* obstruction at a junction (no pass removes or moves a placed row, and every body any
+## phase places is asked the same route rules), so a junction the rule kept open at every insertion is open in the finished set
 ## too, however the finished set is re-asked.
 ##
 ## **Checked against `main`'s own scheduler, not only asserted here.** With `standing` accepted by
@@ -834,12 +833,11 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var no_calm: Array[Vector2i] = []
-			var no_target: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
 			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
 					CalmAreas.of(map, no_calm), no_one_shots, no_scars, tree, 0,
-					PackedVector2Array(), no_target, standing).placements()
+					PackedVector2Array(), standing).placements()
 
 			var corridor := Corridor.of(tree)
 			# The background every row is checked against: the day's own final set beside the

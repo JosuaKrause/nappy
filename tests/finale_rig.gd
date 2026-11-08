@@ -1373,7 +1373,7 @@ static func _escape_rows_from(map: CityMap, bare: Dictionary,
 	var spec := _city_spec()
 	spec.bag = counts
 	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals).placements()
+			PackedVector2Array(), seals).placements()
 
 ## Whether two plans stand the same rows in the same places.
 static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
@@ -1403,7 +1403,7 @@ static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictiona
 	var spec := _city_spec()
 	spec.bag = counts
 	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), [], seals, trace).placements()
+			PackedVector2Array(), seals, trace).placements()
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.

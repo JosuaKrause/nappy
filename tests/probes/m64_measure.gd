@@ -65,10 +65,8 @@ func _role_and_depth_sweep() -> void:
 	var sum_streets_with_a_crossing := 0
 	var sum_solid_friction_on_corridor := 0
 	var day_count := 0
-	# The winnability guarantee, re-checked independently of `build_day`'s own
-	# `DayRepairs.ensure_the_city_is_still_walkable` (which already ran before `planned` came
-	# back) — a fresh flood from the home tile against every obstruction the day actually
-	# placed.
+	# The winnability guarantee, re-checked independently of `build_day`'s own route rules — a
+	# fresh flood from the home tile against every obstruction the day actually placed.
 	var days_unwinnable := 0
 
 	for i in SEEDS:
@@ -144,16 +142,19 @@ func _role_and_depth_sweep() -> void:
 		print("  %-16s total=%4d depth0=%4d depth1=%4d depth2+=%4d  roles: %s"
 				% [id, total, counts[0], counts[1], counts[2], ", ".join(role_bits)])
 
-## The same reachability guarantee `DayRepairs.ensure_the_city_is_still_walkable` states,
-## re-checked from the outside against the day `build_day` actually returned — calling the real
-## `DayRepairs._park_is_reachable` so this is not a second implementation to drift from the one
-## under test.
+## Whether home still reaches some calm tile with every body the day returned standing
+## (`EventScheduler.blocked_by()`), re-checked from the outside against the day `build_day` returned.
 func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Array) -> bool:
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan: EventScheduler.Planned in planned:
 		if plan.obstructs():
 			blockers.append(plan)
-	return DayRepairs._park_is_reachable(map, grid, blockers)
+	var blocked := EventScheduler.blocked_by(map, blockers)
+	var reached := grid.flood([map.home_tile()], blocked)
+	for tile in map.calm_tiles():
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
 
 # ---------------------------------------------------------- closures vs the access refusal ---
 

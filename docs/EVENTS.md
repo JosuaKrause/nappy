@@ -171,9 +171,8 @@ Three rules on it, in the order they matter:
    at `WALK_SPEED`, and the run starts a street's width off to one side — so she is outside its
    outer radius for the whole time it is telegraphing. That is the telegraph fairness contract
    holding for an event that arrives without warning, which is the only way one is allowed to.
-3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so
-   `DayRepairs.ensure_the_city_is_still_walkable` never sees it and nothing checks that what it
-   blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
+3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so the day's route rules never
+   see it and nothing checks that what it blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
    and so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
 
@@ -1292,40 +1291,36 @@ The city's fixed parts have their own phases, above.
 
 Each item quotes the code on this branch.
 
-1. **The day's locations are drawn at dawn by today's placement rules, not by street rules.**
-   Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
-   `EventScheduler._draw_the_locations()`), but whether a row is valid at a location is
-   `_judge()`'s answer for the whole day standing (`RuledLocationGround.offer()`), the tile tried
-   in the location's own order, not a rule asked of the street's other draws.
+1. **Whether a row is valid at a location is asked of the whole day standing, not of the street's
+   own draws.** Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
+   `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
+   each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
+   walked sidewalk and a pacing beat's opening, with the escape's one notice at a time and its walk
+   kept open), composed per walk (`StreetInvalidation`) with a location's own ground
+   (`LocationFit`), but each is asked against everything the day has placed within its reach, on
+   any street (fork 3 of the placement proposal, the orchestrator's reading: today's rules reach
+   across a junction), and the spacing still ranks a cramped tile rather than refusing it: a
+   location takes the first tile with room all round, else the roomiest a rule leaves valid
+   (`RuledLocationGround.offer()`).
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
-2. **The rest of the day's placement still rolls and judges a spot.** The scripted rows and the
-   one-shots go through `_place_one()` and `_best_of()`, the spoilers in a park she used through
-   their own grid, and the fixed parts' phases (masts, scars, ambient rows) stand where their
-   planners put them, none of them assigned to a location.
+2. **The rest of the day's placement still rolls a spot.** The scripted rows, the one-shots, the
+   walk's sitings and the scene recipes go through `_place_one()` and `_best_of()`, which roll
+   tiles and take the roomiest; each candidate is asked of the same rules (`StreetInvalidation`).
+   The spoilers in a park she used go through their own grid and the run's scars stand where they
+   happened, each left out where it would close a route; the masts and the ambient rows stand where
+   their planners put them. None of these is assigned to a location.
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
-   - **The escape's bag per street** (`_fill_the_walk_from_the_bag()`): each street of the walk
-     draws `DaySpec.slots_per_street` marbles from one bag, empty marbles among them, and a drawn
-     row still goes through `_best_of()` and can be refused.
-4. **The route is kept open by rules checked after a spot is drawn, not by construction.**
-   - `_judge()` refuses a spot that would close the route:
-     `_leaves_the_route_junctions_open()`, `_leaves_the_routes_sidewalk_open()` and
-     `_leaves_a_pacing_beats_opening()`.
-   - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
-     a route exists again.
-   - They are asked of the whole day standing, not of the street's own draws (item 1).
-   - In the design, these same rules decide which events make which others invalid on a street:
-     `_judge()`'s route-opening checks above, and the rest of what it asks (the unused calm,
-     `_reaches_any()`; a door's clearance, `_clear_of_the_doors()`; the spacing and the fields kept
-     clear, `_room_around()`). They become the invalidation applied when a street's other
-     locations draw, rather than a refusal after a spot is rolled.
-   - Nothing narrows a street's other draws once one of its events is drawn.
-5. **The roadblock phase judges a section's roadblock with today's placement rules**
-   (`RuledRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
-   is the invalidation item 4 describes, asked of the whole day rather than of a street's other
-   draws.
+   - **The escape's bag** (`_draw_the_walk()`): each street of the walk draws one marble from one
+     bag, empty marbles among them, and a drawn row is offered at the street's locations under the
+     walk's rules; a row no location takes is spent unmet rather than kept in the bag.
+4. **The roadblock phase judges a section's roadblock with today's placement rules**
+   (`RuledRoadblockGround.offer()` asks `StreetInvalidation`, and takes only a tile with room all
+   round), asked of the whole day rather than of a street's other draws.
+5. **Nothing narrows a street's other draws once one of its events is drawn** but the rules asked of
+   the whole day (item 1); in the design, the rules are applied as a street's other locations draw.
 6. **Most events are placed at dawn, not drawn during the walk.**
    - The dawn draw fills every location in the morning.
    - During the walk, only these are sited ahead of her:
@@ -1388,9 +1383,9 @@ route decision faces. *(The
 player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
 view's bag; issue #1185.)*
 
-The share is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
-calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
-the city. Measure what a day *places*, over several seeds. The moments she is owed take no location:
+The share is **not** the count: the day's rules leave out whatever would close a route or reach
+calm ground nothing may reach (`StreetInvalidation`), so a location can draw empty where its view's
+share says a row. Measure what a day *places*, over several seeds. The moments she is owed take no location:
 the day owes her `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before the bags,
 so a day's `plan` line reads as *n sited, m ahead*.
 
@@ -2150,24 +2145,27 @@ barrier he was standing at stays where it is and stays shut.
 "nobody ever asked for all four events on *every* street. that doesn't make any sense and cannot
 feasibly work at all. that is why the density is so high that it's impossible to get anywhere. yes,
 a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
-mix"; "frequency order is trucks > explosions > vans > barriers > empty".)* Every open street of
-the walk has `DaySpec.FINALE_SLOTS_PER_STREET` slots (1), and each slot draws one marble from a bag
-for the whole escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
+mix"; "frequency order is trucks > explosions > vans > barriers > empty". Of how many a street
+holds, inbox #1185's board answer: "one per street. fill empty in if any segment or location in the
+street has an event".)* Every open street of the walk draws one marble from a bag for the whole
+escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
 `FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
-roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on the
-street through every placement rule below; an empty marble leaves the slot with nothing; a row's
-marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
-the next street. The bag has its own stream off the plan's seed, so a lost section replans the same
+roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble is offered at the street's
+locations in the street's own order, under every placement rule below, and the first location it
+stands at takes it, the rest of the street empty; an empty marble leaves the street with nothing; a
+row's marble no location takes is spent unmet, so a refused danger never moves on to the next street
+(the builder's reading, open to correction: kept rather than leaving the marble in the bag, which
+would raise the escape's density by about the third of its streets that stand nothing). The bag has its own stream off the plan's seed, so a lost section replans the same
 streets. The two rows that take her, the van and the roadblock's guard, have the fewest marbles the
 player's order allows, and the counts were chosen by walking the shortest walk from the service
 exit to each exit through the plan's own events on two sets of 24 seeds: a walk meets about three
 trucks, three explosions, one van and one roadblock, and a plain walk gets out on 95 of 96.
 `tests/probes/escape_winnable.gd` walks the game's own plan with the game's own walker (`RouteRig`,
 `--start-escape city --route tunnel`) to measure it again. **The bag is a draw of the day's own
-scheduler**: the city section's `DaySpec` holds the bag, the slots and the rows
-(`DaySpec.Draw.BAG_PER_STREET`, `bag`, `slots_per_street`, `bag_rows`), `EventScheduler.build_day()`
-draws them (`_fill_the_walk_from_the_bag()`) along the streets of the walk `FinalePlanner` hands it
-(`RouteSource`), and every candidate goes through the same judge a day's does (`_best_of()`).
+scheduler**: the city section's `DaySpec` holds the bag and the rows (`DaySpec.Draw.BAG_PER_STREET`,
+`bag`, `bag_rows`), `EventScheduler.build_day()` draws them (`_draw_the_walk()`) along the streets of
+the walk `FinalePlanner` hands it (`RouteSource`), onto each street's locations (`StreetLocations`),
+and every candidate is asked of the same rules a day's is (`StreetInvalidation`).
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
@@ -2175,9 +2173,8 @@ excitement by just being close. Luring away one guard (the challenge) is not eno
 obstacle survivable")* Four things make that true:
 
 - **One roadblock a street**, so a crossing is one band and the one guard on her side of it: a
-  street has one slot (`DaySpec.FINALE_SLOTS_PER_STREET`), and the notice spacing below keeps two
-  bands off one street at any slot count, since a street is one block, 256px, and two notices need
-  360px. Two bands on a street would stand a couple of tiles apart on the same sidewalk, and luring
+  street draws one marble and holds one of the escape's rows at most, and the notice spacing below
+  keeps two bands off neighbouring streets' ends as well, since two notices need 360px. Two bands on a street would stand a couple of tiles apart on the same sidewalk, and luring
   the first one's guard off would leave the second one's posted in her way.
 - **The band costs nothing, ever** *(inbox #788 in minty-lemur, asked whether the band should cost nothing in
   the escape manned or not: "No cost at all, ever"; then "band costing nothing should also apply
@@ -2220,22 +2217,19 @@ street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest
 two are.
 
-**The escape rolls its ground per street rather than per city, on the day's own ground** —
-`EventScheduler.street_ground` takes the day's answer for the row (`open_ground_for()`) on one
-segment's own rect, since the chains already say which streets exist for it and there is no
-corridor to weight against. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
+**The escape offers its rows per street rather than per city, on the day's own ground** — a row
+fits a location of the street on the day's answer for the row (`LocationFit`, over
+`open_ground_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
 regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
 tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
-spread, the power station's front — and the precinct weight with them; all but the street the
+spread, the power station's front; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
 off; `docs/CITY.md`, "The escape"). What is sited after dawn reads the same setting off the walk's
 spec (`EventScheduler.WalkSiting.holds_the_home_streets`, handed over by `EventsAhead`), so a row
 placed while she walks keeps the rule the walk was planned under.
 Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
-below. The answers are a function of the city alone, so a restart of the city section reads the
-ones the first plan worked out (`EventScheduler.KeptGround`, held by `DayPlanner`) unless the city's tiles,
-closures, held streets or trees have changed since.
+below, and is never offered the ground she starts on.
 
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
@@ -2303,16 +2297,18 @@ the route you memorised on day 2 stops existing.
 
 From Act II several events physically close streets, and from Act IV the seals close every
 street off the day's routes. Any combination that seals the home off from every park makes the day
-unwinnable in a way the player cannot see coming, so after planning, obstructions are
-dropped — widest first — until a route exists again. Hard-fail events count as walls for
-this check: an abduction in progress is not something you walk through to reach the park
-behind it.
+unwinnable in a way the player cannot see coming, so **no body is placed that would cut home off
+from the day's routes**, and the routes run to the calm. Every obstructing body any phase places,
+the run's scars and the park spoilers included, is asked `RouteReachRule` against everything
+already down, the seals and the region wall's bodies included: one whose disc would leave a route
+tile home reached without it unreached is refused where it would stand. Hard-fail events count as
+walls for this rule: an abduction in progress is not something you walk through to reach the park
+behind it. Nothing is dropped after planning, so the day is never illegal on the way.
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day
-12's swing, the power station's front door on the last night — the same pass also keeps a route to one tile of that place,
-counting the day's seals and region wall as standing (it never drops those). The day is planned
-so that route exists before this pass ever runs; the pass is the last line for the catalogue's
-own bodies. `docs/CITY.md`, "Guarantees", has the whole of it.
+12's swing, the power station's front door on the last night — the day's routes run to that place
+too, so the same rule keeps one tile of it reached. `docs/CITY.md`, "Guarantees", has the whole of
+it.
 
 ## The emission model
 
@@ -3041,11 +3037,11 @@ way:
 
 ## Keeping a day winnable
 
-One rule runs while a day is planned and two run after it:
+Three rules run while a day is planned, and none after it:
 
 - **Nothing is placed near calm she has not used this act.** The calm ground of every area she has
-  not settled in is refused to every row at every location (`_judge()`, through the dawn draw's
-  ground), so the events that would have landed there go somewhere else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
+  not settled in is refused to every row at every location (`UnusedCalmRule`, through the dawn
+  draw's ground), so the events that would have landed there go somewhere else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
   rather than something today placed there, and a scar is something that already burnt.
 
   **It is a refusal rather than a repair**, which is the rule about checking before accepting: a day
@@ -3053,10 +3049,12 @@ One rule runs while a day is planned and two run after it:
   leaves the guarantee running only on the days a weaker one has already failed. Refusing the ground
   keeps every unvisited area clean on 64 planned days of 64 *and* raises the density, because
   nothing is placed to be thrown away.
-- **At least one park is left unspoiled.** The last line rather than the rule, and it has work to do
-  in exactly one case: she has settled in every calm area there is, so the placement rule protects
-  nothing. Whichever park has the fewest events reaching it has them removed — and where there is a
-  choice, the park it protects is **not** the one she used yesterday.
+- **At least one park is left unspoiled.** This has work to do in exactly one case: she has settled
+  in every calm area there is, so the placement rule protects nothing. Before the spoilers are
+  placed, the area she used longest ago that nothing spoils yet, or else the one the fewest rows
+  spoil, joins the ground nothing may reach (`EventScheduler._calm_kept_clean()`), so the spoilers
+  pass over it — and where there is a choice, the park it keeps is **not** the one she used
+  yesterday.
 - **A park stays reachable on foot.** See "Keeping a late day walkable".
 
 ### The city remembers where she went

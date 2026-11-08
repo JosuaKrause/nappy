@@ -321,12 +321,6 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for plan: EventScheduler.Planned in ambient:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
-	var no_scars: Array[Dictionary] = []
-	var scars := EventScheduler._place_scars(day, no_scars, 0)
-	events.add_all(scars)
-	for plan: EventScheduler.Planned in scars:
-		provenance[plan.get_instance_id()] = Source.OTHER
-
 	var before := events.size()
 	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), map, events, ground,
 			leave_alone, corridor, 0)
@@ -340,12 +334,13 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
-			calm, 0)
+			calm, CalmAreas.NONE, StreetInvalidation.new(map, corridor, ground, [] as Array[Rect2],
+					PackedVector2Array(), false), 0)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
 	EventScheduler._draw_the_locations(day, base, map, events, ground, leave_alone, corridor,
-			PackedVector2Array(), DaySpec.for_day(day), null, DayLocations.lay_out(map, corridor), 0,
+			PackedVector2Array(), DaySpec.for_day(day), DayLocations.lay_out(map, corridor), 0,
 			null)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
@@ -353,9 +348,6 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	EventScheduler._ensure_the_run_is_taught(day, events, 0)
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
-	# Removal-only passes: monotonic, never add a body, so tagging is complete before they run.
-	DayRepairs.ensure_one_usable_park(events, calm)
-	DayRepairs.ensure_the_city_is_still_walkable(map, events, calm)
 	var planned := events.placements()
 
 	for plan: EventScheduler.Planned in seals:

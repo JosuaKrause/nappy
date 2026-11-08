@@ -43,8 +43,7 @@ extends RouteSource
 ## **A second route is an offer, not a promise.** *"Having two distinct paths is really a
 ## niceness to the user. If we cannot construct a path B at all, let's not try."* An area with
 ## one way in is a legitimate area. What must still hold absolutely is only that *some* calm is
-## reachable, which is `DayRepairs.ensure_the_city_is_still_walkable`'s job and not this
-## class's.
+## reachable, which the day's route rules keep (`StreetInvalidation`) and not this class.
 ##
 ## **A step is a `ReachabilityGrid` node, one per 4-connected component of a cell — not a street
 ## and not a tile.** M69 moved the growth here from the junction graph: a tree of whole streets
@@ -474,7 +473,7 @@ func _carries(node: int, colour: int) -> bool:
 ##
 ## **It is a filter on this class's own view and nothing else.** `ReachabilityGrid` is
 ## untouched, so every guarantee stated over walkable ground — `ClosurePlanner`'s two-calm-areas
-## invariant, `DayRepairs.ensure_the_city_is_still_walkable`, `Corridor.depth()`'s own
+## invariant, `Corridor.depth()`'s own
 ## proximity field — still sees the city the player can walk, which is the city she can walk:
 ## **she may cross a street anywhere and stand in the road if she likes.** What changes is only
 ## what the day plans against.
@@ -641,8 +640,8 @@ func _resettle_the_tails() -> void:
 ## home-to-corridor is tree ground like any other."
 ##
 ## A no-op when nothing grew at all — there is no tree to join home to, and that day's
-## walkability is somebody else's question (`DayRepairs.ensure_the_city_is_still_walkable`,
-## `Tuning.MIN_CALM_AREAS_REACHABLE`), not this one's.
+## walkability is somebody else's question (`ClosurePlanner`'s `Tuning.MIN_CALM_AREAS_REACHABLE`),
+## not this one's.
 func _grow_the_trunk() -> void:
 	if _colours.is_empty():
 		return
@@ -696,7 +695,7 @@ func _trunk_path(avoid_spine: bool) -> Array[int]:
 ## first and with it only if nothing else joins, as the trunk is.
 ##
 ## A no-op when nothing grew, or when the destination cannot reach the tree at all; the first
-## leaves the day to `DayRepairs.ensure_the_city_is_still_walkable`, the second cannot happen
+## leaves the day to `ClosurePlanner`'s calm areas kept reachable, the second cannot happen
 ## on a city `CityGenerator.validate()` accepted, since every walkable tile is reachable from
 ## the home.
 func _grow_a_spur_to(tiles: Array[Vector2i]) -> void:

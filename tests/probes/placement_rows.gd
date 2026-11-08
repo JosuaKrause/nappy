@@ -39,7 +39,7 @@ func run(t) -> void:
 			var guarded := ResistanceSteps.guarded_row_on(day)
 			var consumed: Array[String] = []
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
-					consumed, [], tree, 0, PackedVector2Array(), [] as Array[Vector2i],
+					consumed, [], tree, 0, PackedVector2Array(),
 					[] as Array[EventScheduler.Planned], null,
 					EventCatalogue.by_id(guarded) if guarded != "" else null).placements():
 				var mode := plan.def.spawn_mode_on(day)

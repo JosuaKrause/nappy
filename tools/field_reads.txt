@@ -363,7 +363,6 @@ src/dev/scene_recipe_runtime.gd recipe_bounds
 src/events/calm_areas.gd calm_blocks
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
-src/events/day_repairs.gd closed_tiles
 src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds

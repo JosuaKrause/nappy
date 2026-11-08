@@ -171,13 +171,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
-	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
-	# as the tiles its contact may stand on today, and what obstructs the day whatever the
-	# catalogue does: the seals just planned and the region wall's own bodies. `build_day` keeps a
-	# route from home to one of those tiles among the day's own bodies, the way it keeps one to the
-	# calm (`docs/CITY.md`, "Guarantees"). Here rather than in `build_day` because only here is every
-	# hold the director refuses already on the map — the closures, the wall and doors, the home's
-	# streets and the hard seals — so the tiles protected are tiles the contact may actually take.
+	# What obstructs the day whatever the catalogue does: the seals just planned and the region
+	# wall's own bodies, which the day's rules read with what it places (`StreetInvalidation`).
 	var standing: Array[EventScheduler.Planned] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
@@ -185,6 +180,10 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# takes one for a roadblock the day placed, nor swaps one out.
 	for body in region_plan.wall_bodies:
 		body.stand_in_the_wall()
+	# The day's narrow resistance target — day 9's door, day 12's swing, the station's front door —
+	# as the tiles its contact may stand on today: the swing's park is the calm area set aside. The
+	# route to it is the day's route tree's, which the day's rules keep open (`docs/CITY.md`,
+	# "Guarantees").
 	var target := ResistanceDirector.target_ground(city_map, day, region_plan)
 	# The day's calm areas, made once here where the map, the run and the day meet, and handed
 	# to the scheduler, which hands them to every pass that asks about calm ground.
@@ -195,7 +194,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
 			world.run.resistance.progress) if guarded != "" else null
 	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
-			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
+			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors,
 			standing, world.trace, beside)
 	var placements := day_events.placements()
 	placements.append_array(seals)
@@ -267,7 +266,7 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 	placements.append_array(seals)
 	if populate_events:
 		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],
-				walk, 0, PackedVector2Array(), [], seals, trace).placements())
+				walk, 0, PackedVector2Array(), seals, trace).placements())
 	return placements
 
 # --------------------------------------------------------------- the building ---

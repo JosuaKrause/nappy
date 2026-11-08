@@ -1,6 +1,6 @@
 extends RefCounted
-## `RouteJunctionsRule`, `RouteSidewalkRule` and `PacingOpeningRule`, the three rules that keep the
-## day's routes open, each asked of candidates on a generated city's routes. **Why these build a
+## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteReachRule`, the four
+## rules that keep the day's routes open, each asked of candidates on a generated city's routes. **Why these build a
 ## city:** each rule reads the route tree's own geometry (which junction boxes the routes cross,
 ## which sidewalk a route is walked along, the beat a pacing man walks), and a stand-in corridor
 ## would be the rule's own arithmetic read back to it. The one combined suite is for that shared
@@ -14,6 +14,9 @@ extends RefCounted
 ## - **The pacing opening:** with a man shouting pacing his beat on a route street, some tile of that
 ##   street holds a delivery van that would close the opening his beat leaves, and the rule refuses
 ##   it there; with no man there, the same van at the same tile is allowed.
+## - **The reach:** barricades asked one at a time in rings round home, each kept when allowed,
+##   never leave home sealed off from a route tile it reached before, and at least one is refused
+##   (a ring is what seals home in).
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -34,6 +37,7 @@ func run(t) -> void:
 	_test_a_body_closing_a_route_crossing_is_refused(t)
 	_test_a_body_closing_a_route_sidewalk_is_refused(t)
 	_test_a_body_closing_a_beats_opening_is_refused(t)
+	_test_a_ring_of_bodies_never_seals_home_off(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventScheduler.Planned:
@@ -113,3 +117,36 @@ func _test_a_body_closing_a_beats_opening_is_refused(t) -> void:
 	t.check(allowed_without == refused_with,
 			"and every one of those vans is allowed with no man there (%d of %d)"
 			% [allowed_without, refused_with])
+
+func _test_a_ring_of_bodies_never_seals_home_off(t) -> void:
+	var rule := RouteReachRule.new(_map, _corridor)
+	var grid := ReachabilityGrid.build(_map)
+	var home := _map.home_tile()
+	var routes: Array[Vector2i] = []
+	for y in _map.size.y:
+		for x in _map.size.x:
+			if _corridor.carries_a_route(Vector2i(x, y)):
+				routes.append(Vector2i(x, y))
+	var reached_bare := grid.flood([home], _map.closed_tiles)
+	var kept: Array[EventScheduler.Planned] = []
+	var refused: Array[EventScheduler.Planned] = []
+	for radius in [3, 5, 7]:
+		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
+			var barricade := EventScheduler.Planned.new(EventCatalogue.by_id("barricade"),
+					_map.tile_to_world(home + step * radius))
+			if rule.allows(barricade, home + step * radius, NONE, kept):
+				kept.append(barricade)
+			else:
+				refused.append(barricade)
+	var blocked := EventScheduler.blocked_by(_map, kept)
+	var reached := grid.flood([home], blocked)
+	var lost := 0
+	for tile in routes:
+		if not blocked.has(tile) and grid.reaches(tile, _map.closed_tiles, reached_bare) \
+				and not grid.reaches(tile, blocked, reached):
+			lost += 1
+	t.check(lost == 0, "the barricades kept leave every route tile home reached still reached (%d lost)"
+			% lost)
+	t.check(not refused.is_empty(), "a ring of barricades round home has one refused (%d of 24)"
+			% refused.size())

@@ -16,8 +16,8 @@ extends RefCounted
 ##    the way the "roll" telemetry line ("<ids> in the park she used yesterday, <tile>") reports
 ##    it. Its own count and how much of the park's open ground it actually denies.
 ## 2. **The full day's plan** — `EventScheduler.build_day` with the same park as `used_calm`,
-##    filtered to whatever reaches the park the way `DayRepairs.ensure_one_usable_park` already
-##    asks the question (`EventScheduler.Planned.reaches()`). This is what a player actually
+##    filtered to whatever reaches the park the way the day asks whether a row spoils one
+##    (`EventScheduler.Planned.reaches()`). This is what a player actually
 ##    meets, which can be *more* than the roll alone placed: the visited park is not protected
 ##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
 ##    lists calm areas she has not used).
@@ -106,7 +106,8 @@ func _reproduce_zero_density_visits() -> void:
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
 				var roll_events := DayEvents.over(roll_calm)
 				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_events, roll_calm,
-						0)
+						CalmAreas.NONE, StreetInvalidation.new(map, null, {}, [] as Array[Rect2],
+								PackedVector2Array(), false), 0)
 				var roll_planned := roll_events.placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)
@@ -114,8 +115,8 @@ func _reproduce_zero_density_visits() -> void:
 				roll_denied.append(rd)
 
 				# 2. The full day, exactly as `build_day` plans it with this park as `used_calm`,
-				# filtered to whatever actually reaches the park — matching
-				# `DayRepairs.ensure_one_usable_park`'s own question.
+				# filtered to whatever actually reaches the park — the day's own question of a
+				# spoiler (`EventScheduler.Planned.reaches()`).
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
