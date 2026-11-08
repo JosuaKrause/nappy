@@ -1176,8 +1176,8 @@ the investigating car driving on once its man is back in or has been shaken off 
 ## The three views and the placement order
 
 **Read this before changing where any event is placed.** It is the player's design for placing
-the city's events. The numbered list at the end says where the code does not follow it yet, and
-which details the player's words leave unsettled. Nothing in that list is fixed here.
+the city's events. The numbered list at the end says where the code does not follow it yet.
+Nothing in that list is fixed here.
 
 ### The design
 
@@ -1193,6 +1193,8 @@ reachability check is ruled out (gray-dolphin #1173).
 **Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
 spot and then checks what kind it is (inbox #1185).
 - **Each view has its own bag.** A location is filled by drawing from its view's bag.
+- **A view's bag holds every event possible in that view**, each as many times as its weight.
+  Empty is one of them (inbox #1185).
 - **The event drawn is the event that appears there**, with no rejection (inbox #1185).
 
 **A location is part of a street** (inbox #1185):
@@ -1203,11 +1205,23 @@ spot and then checks what kind it is (inbox #1185).
 
 **A route stays open by construction.** Once one location's event is drawn, the other locations
 of the same street draw from their bag with the events that drawn event makes invalid left out. The
-bag itself is unchanged; the invalid events are only not considered in the draw (inbox #1185).
+bag itself is unchanged; the invalid events are only not considered in the draw. Which events make
+which others invalid on the same street is what today's placement rules decide; they keep applying,
+used when a street's other locations draw (inbox #1185).
 
 **The roadblock phase at dawn** comes after the routes are established. It goes through the
-route-adjacent locations and places roadblocks there, evenly spaced out. Those locations are then
-assigned, so no draw happens for them during the walk (inbox #1185).
+route-adjacent locations and places roadblocks there, evenly spaced out: each roadblock placed is
+biased toward the route-adjacent location farthest from the roadblocks already placed, a bias and
+not a strict rule. Those locations are then assigned, so no draw happens for them during the walk
+(inbox #1185).
+
+**The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
+region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).
+- A mast's location is known from the start of the run. On a day without masts it draws as if it
+  were empty. On a day with one, the mast stands on the tiles inside its location where it fits.
+- A wall makes its location unavailable throughout.
+- Scars are cosmetic, not events. What the code calls a scar, the burnt shell a fire leaves, is a
+  regular event under the design (inbox #1185).
 
 **Every other location is drawn during the walk.** As she walks, the placeholders are filled from
 the bag (gray-dolphin #1173). The roadblock phase is the only assignment made at dawn (inbox #1185).
@@ -1215,11 +1229,12 @@ the bag (gray-dolphin #1173). The roadblock phase is the only assignment made at
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
 then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 - **Only if none is close by**, it swaps one off-screen route-adjacent event for a roadblock, in
-  that event's place (gray-dolphin #1177, inbox #1185).
+  that event's place (gray-dolphin #1177, inbox #1185). The roadblock replaces the content of that
+  event's whole section (inbox #1185).
 - It never takes the region wall's guard houses, doors or barriers (gray-dolphin #1173).
 
 **The order:**
-1. The routes are established.
+1. The routes are established, and the city's fixed parts are placed in their own phases.
 2. The roadblock phase assigns roadblocks to route-adjacent locations, evenly spaced.
 3. During the walk, every other location is drawn from its view's bag, leaving out the events
    that the street's events already drawn make invalid.
@@ -1259,13 +1274,19 @@ Each item quotes the code on this branch.
      `_leaves_a_pacing_beats_opening()`.
    - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
      a route exists again.
+   - In the design, these same rules decide which events make which others invalid on a street:
+     `_judge()`'s route-opening checks above, and the rest of what it asks (the unused calm,
+     `_reaches_any()`; a door's clearance, `_clear_of_the_doors()`; the spacing and the fields kept
+     clear, `_room_around()`). They become the invalidation applied when a street's other
+     locations draw, rather than a refusal after a spot is rolled.
    - Nothing narrows a street's other draws once one of its events is drawn.
 5. **The roadblock phase is not an even spacing over route-adjacent locations.**
    - `_place_beside_the_routes()` takes the route tiles in the map's order. The first one with no
      roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one, rolled by `_best_of()`
      and judged by `_judge()`.
-   - It runs after `_place_ambient()`, `_place_scars()` and `_place_masts()`, not straight after
-     the routes.
+   - It runs after `_place_ambient()`, `_place_scars()` and `_place_masts()`.
+   - Its spread is a rule, not a bias toward the location farthest from the roadblocks already
+     placed: a route tile already covered within 1,024px gets none.
 6. **The fill also places roadblocks**, by the rules in item 1.
    - `roadblock` is a recurring row (`def.first_day = 7`, `def.max_per_day = 6`).
    - On day 13, the task's close-by search takes any roadblock the day placed.
@@ -1296,21 +1317,9 @@ Each item quotes the code on this branch.
    - The fill weights route-adjacent as `depth() <= 1`. The roadblock phase asks
      `is_beside_the_routes()`, whose `route_junctions()` also holds junctions that park and alley
      cuts cross.
-
-### Unsettled, unanswered
-
-The player's words do not yet settle these.
-
-1. What each view's bag holds, and in what proportions, day by day.
-2. Which events make which invalid on the same street.
-3. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
-4. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
-   order.
-5. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
-   roadblock's own ground is the carriageway (`def.placement = [GameEnums.TileType.ROAD,
-   GameEnums.TileType.CROSSING]`). On a sidewalk tile, `EventInstance.setup()` centres a still body
-   on the pavement band (`start = _centred_on_the_pavement_band(_map, start)`), and its band lies
-   across the street (`_spread_is_vertical()`).
+10. **A swapped-in roadblock takes one tile, not a section.** `WalkSiting.in_place_of()` builds it
+    on one tile of the event's street (`EventScheduler._build_placement(def, _map, tile, rng)`), and
+    the event it replaces is the only plan spent (`EventStreaming.swap()`: `old.spend()`).
 
 ## Scheduling
 
