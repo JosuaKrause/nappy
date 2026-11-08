@@ -75,6 +75,7 @@ func run(t) -> void:
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
 	_test_the_guards_side_is_decided_once_from_her_approach(t, true)
 	_test_the_guards_side_is_decided_once_from_her_approach(t, false)
+	_test_a_roadblock_streamed_out_and_in_keeps_its_side(t)
 	# The probes' days on which a guard once stood on her only way.
 	_streams = ""
 	for seed_value in [1234567, 314159]:
@@ -300,7 +301,9 @@ func _test_the_guard_stands_on_the_far_side_from_her(t, seed_value: int) -> void
 ## side, and she walks round to the opposite side, the roadblock out of view again: through the
 ## arrow's choices he stays where he stood, on the side away from where she first came. Without it
 ## the roadblock never came on screen, so the side was never decided: the same walk round moves him
-## to the far side from where she stands now, which is the move the decided side holds back.
+## to the far side from where she stands now, which is the move the decided side holds back. Seen,
+## the roadblock then comes into her view again from the second side, and he still stays: the side
+## is decided once, not each time she sees it.
 func _test_the_guards_side_is_decided_once_from_her_approach(t, seen: bool) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
@@ -343,24 +346,124 @@ func _test_the_guards_side_is_decided_once_from_her_approach(t, seen: bool) -> v
 		t.check(_task_guard() == guard and guard.global_position == stood
 				and _on_the_far_side(guard.global_position, body, first),
 				"seen from one side, its side is kept: she walks round to the other and he stays")
+		# Seen again from the other side: the side stays the one decided first.
+		_view = Rect2(second - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+		_choose_again(director)
+		_view = Rect2()
+		for i in 8:
+			_choose_again(director)
+		t.check(_task_guard() == guard and guard.global_position == stood,
+				"seen again from the other side, the side is not decided again: he stays")
 	else:
 		t.check(_task_guard() == guard and _on_the_far_side(guard.global_position, body, second),
 				"never seen, the side follows her: walked round, he is moved to the far side from her")
 	_tear_down(player, director, city)
 
+## **A roadblock that streams out and back in keeps its side**: its side is the plan's, not the
+## instance's. She walks up to another live roadblock of the day than the task's own (which the task
+## keeps in the world), and the guard follows her there; the day's others are finished, so the arrow
+## chooses between those two. She stands on one side of it, it comes into her view, which decides
+## its side, and the view goes. She walks back to the task's own, and the other is streamed out of
+## the world and back in
+## (`EventManager.stream_around()`), a new instance of the same plan, and she stands on its other
+## side: through the arrow's choices the guard stays on the side away from where she first came (he
+## may still be moved within it, from the ring past the band into the band).
+func _test_a_roadblock_streamed_out_and_in_keeps_its_side(t) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	_view = Rect2()
+	if director.contact():
+		director.contact().complete_now()
+	var rider := director.rider()
+	var guard := _task_guard()
+	# One other roadblock is kept, the first with open ground on either side of it away from the
+	# task's own, and the day's others are finished first, so the contact, which follows her between
+	# look-alikes, never rides one taken away under it.
+	var kept: EventInstance = null
+	for live in ResistanceReads.answering(city.events, director.current_step()):
+		if rider and live != rider and kept == null \
+				and not _either_side_of(city.map, live.body_position(), rider.body_position()).is_empty():
+			kept = live
+	for live in ResistanceReads.answering(city.events, director.current_step()):
+		if live != rider and live != kept:
+			city.events.retire(live)
+	var other := _her_way_to_another_roadblock(director, player, rider) if rider else null
+	t.check(other != null and guard != null, "(streamed) she walks up to another live roadblock")
+	if other == null or guard == null:
+		_tear_down(player, director, city)
+		return
+	var body := other.body_position()
+	var sides := _either_side_of(city.map, body, rider.body_position())
+	t.check(not sides.is_empty(), "(streamed) there is open ground on either side of it")
+	if sides.is_empty():
+		_tear_down(player, director, city)
+		return
+	var first: Vector2 = sides[0]
+	var second: Vector2 = sides[1]
+	player.global_position = first
+	for i in 4:
+		_choose_again(director)
+	_view = Rect2(first - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	_choose_again(director)
+	_view = Rect2()
+	var stood := guard.global_position
+	t.check(_on_the_far_side(stood, body, first),
+			"(streamed) seen from one side, he stands on its far side")
+	# She walks back to the task's own roadblock, so the contact, which follows her between
+	# look-alikes, rides it again rather than the one about to stream out under it.
+	var by_the_rider := _either_side_of(city.map, rider.body_position(), body)
+	if not by_the_rider.is_empty():
+		player.global_position = by_the_rider[0]
+		_settle_the_arrow(director)
+	t.check(not by_the_rider.is_empty()
+			and ResistanceReads.pointed_at(director, [rider] as Array[EventInstance]) != null,
+			"(streamed) she walks back to the task's own roadblock")
+	var away := body + Vector2(Tuning.EVENT_STREAM_RADIUS * 4.0, 0.0)
+	city.events.stream_around(away)
+	city.events.stream_around(second)
+	var again: EventInstance = null
+	for live in ResistanceReads.answering(city.events, director.current_step()):
+		if live != rider and live.body_position().distance_to(body) < 1.0:
+			again = live
+	t.check(again != null and again != other,
+			"it streams out and back in as a new instance of the same roadblock")
+	player.global_position = second
+	# The new instance's walk is swept a slice a tick before the arrow can turn back to it, so the
+	# arrow's choices run until it does, and a few after.
+	for i in ARROW_TURN_CHOICES:
+		_choose_again(director)
+	t.check(again != null
+			and ResistanceReads.pointed_at(director, [again] as Array[EventInstance]) != null,
+			"(streamed) the arrow turns back to it")
+	t.check(_task_guard() == guard and (guard.global_position - body).dot(first - body) < 0.0,
+			"walked round to its other side, the side decided before it streamed out is kept: he stays on the side away from where she first came")
+	_tear_down(player, director, city)
+
 ## Two open places on opposite sides of the roadblock at `body`, out along one axis 9 to 12 tiles
 ## from it — near enough that, standing at the first, the roadblock is in a view round her
-## (`Tuning.VIEW_HALF_EXTENT`) — or empty when no axis has both.
-static func _either_side_of(map: CityMap, body: Vector2) -> Array[Vector2]:
+## (`Tuning.VIEW_HALF_EXTENT`) — or empty when no axis has both. With `away_from`, neither is within
+## `AWAY_FROM_THE_OTHER` of it: another roadblock of the day, so standing there touches neither
+## that roadblock nor its band, which would complete the task.
+static func _either_side_of(map: CityMap, body: Vector2,
+		away_from := Vector2.INF) -> Array[Vector2]:
 	var centre := map.world_to_tile(body)
 	for axis: Vector2i in [Vector2i.RIGHT, Vector2i.DOWN]:
 		var reach := 9 if axis == Vector2i.RIGHT else 5
 		for out in range(reach, reach + 4):
 			var a := centre + axis * out
 			var b := centre - axis * out
+			if away_from != Vector2.INF and (map.tile_to_world(a).distance_to(away_from)
+					< AWAY_FROM_THE_OTHER or map.tile_to_world(b).distance_to(away_from)
+					< AWAY_FROM_THE_OTHER):
+				continue
 			if _open(map, a) and _open(map, b):
 				return [map.tile_to_world(a), map.tile_to_world(b)] as Array[Vector2]
 	return [] as Array[Vector2]
+
+## How far from another roadblock the places `_either_side_of()` picks stand: past any touch of it and
+## past its guard's band (`notice_within()` + 110px touch reach), with a tile to spare.
+const AWAY_FROM_THE_OTHER := 448.0
 
 ## Whether `tile` is ground she can stand on: in the city, walkable, open and unobstructed.
 static func _open(map: CityMap, tile: Vector2i) -> bool:

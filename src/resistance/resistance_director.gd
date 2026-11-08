@@ -220,11 +220,13 @@ var _task_guard_found_nothing_for: Array = []
 var _task_guard_found_nothing_age := 0.0
 ## How long a failed search stands before it is made again: longer than the camera takes to settle.
 const TASK_GUARD_RETRY_SECONDS := 3.0
-## **The way she came to each roadblock from, decided once** (inbox #1185): the roadblock's
-## instance id (the arrow's key for it) to the line from its body to her, as she stood the first
-## frame it was drawn on screen while it was the roadblock she approached (`_note_her_approach()`).
-## Which side of it the guard stands on reads it (`_approach_to()`), so the side does not change
-## while she walks. Emptied with the day.
+## **The way she came to each roadblock from, decided once** (inbox #1185): the roadblock's place
+## (`_approach_key()`, the tile its body stands on) to the line from its body to her, as she stood
+## the first frame it was drawn on screen while it was the roadblock she approached
+## (`_note_her_approach()`). Keyed by the place its plan put it rather than by the instance, since a
+## roadblock that streams out and back in is a new instance of the same plan. Which side of it the
+## guard stands on reads it (`_approach_to()`), so the side does not change while she walks.
+## Emptied with the day.
 var _approaches := {}
 ## The stream the task guard's moves are drawn from — its own, seeded from the day's, so how often
 ## she changes target and how long a move waits on her view move nothing the day's own stream
@@ -1480,8 +1482,9 @@ func _far_alley_mouth(at: Vector2) -> Vector2:
 ##
 ## **A task is placed near the mark that unlocked it** (`mark`; `_pick_near()`), where one of her
 ## paths from where she read it first reaches the edge of a `NEAR_THE_MARK` circle round her
-## (`_follow_the_paths_to_the_edge()`): the man shouting, the van, a roadblock, day 11's mast and
-## day 8's burnt building when the run has no fire of its own. *(feathery-marmot: "the van should spawn close to the mark not across the
+## (`_follow_the_paths_to_the_edge()`): the man shouting, the van, day 11's mast and day 8's burnt
+## building when the run has no fire of its own. Day 13's roadblock never comes here: it is one the
+## day placed, or one swapped in (`_place_the_roadblock_near()`). *(feathery-marmot: "the van should spawn close to the mark not across the
 ## city" · "this applies to almost all tasks".)* The ones whose place is fixed keep it: day 9's
 ## district door, day 12's swing park and the last night's station door are drawn from their own
 ## pools as before, day 10's neighbor walks home from wherever `_send_the_neighbor_home()` starts
@@ -2667,7 +2670,7 @@ func _move_the_task_guard_to_her_target() -> void:
 	var facing := _player.facing.snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
 	var asked := [_arrow_key, _map.world_to_tile(her), facing,
 			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version,
-			_map.day_record_version, _approaches.has(_arrow_key)]
+			_map.day_record_version, _approaches.has(_approach_key(target))]
 	if asked == _task_guard_found_nothing_for \
 			and _task_guard_found_nothing_age < TASK_GUARD_RETRY_SECONDS:
 		return
@@ -2696,13 +2699,13 @@ func _move_the_task_guard_to_her_target() -> void:
 ## (`TASK_BOX`, `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`). Answers whether it was kept now: false
 ## for a roadblock already kept, one not on screen, or with nobody to approach it.
 func _note_her_approach(roadblock: EventInstance) -> bool:
-	if roadblock == null or _approaches.has(roadblock.get_instance_id()):
+	if roadblock == null or _approaches.has(_approach_key(roadblock)):
 		return false
 	var her := _player_position()
 	if her == Vector2.INF or _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
 			_task_drawn, roadblock.global_position):
 		return false
-	_approaches[roadblock.get_instance_id()] = her - roadblock.body_position()
+	_approaches[_approach_key(roadblock)] = her - roadblock.body_position()
 	trace.note("roll", "the roadblock at %s comes on screen: its guard's side is the far one from "
 			% RunTrace.tile(_map.world_to_tile(roadblock.body_position()))
 			+ "her, %.0fpx off" % her.distance_to(roadblock.body_position()))
@@ -2713,10 +2716,16 @@ func _note_her_approach(roadblock: EventInstance) -> bool:
 ## (`_note_her_approach()`), and before that the line from its body to `her`, where she stands now.
 ## Zero with nobody there.
 func _approach_to(roadblock: EventInstance, her: Vector2) -> Vector2:
-	var kept: Variant = _approaches.get(roadblock.get_instance_id())
+	var kept: Variant = _approaches.get(_approach_key(roadblock))
 	if kept != null:
 		return kept
 	return Vector2.ZERO if her == Vector2.INF else her - roadblock.body_position()
+
+## **Which roadblock `roadblock` is, for its decided side** (`_approaches`): the tile its body stands
+## on. Its plan's place decides where every instance of it stands (`EventInstance.setup()`), so an
+## instance streamed in again answers the same.
+func _approach_key(roadblock: EventInstance) -> Vector2i:
+	return _map.world_to_tile(roadblock.body_position())
 
 ## **Day 13's done task sets its guard on her, wherever he stands** *(inbox #651 follow-up, the
 ## player, of a guard still at another roadblock when she reaches hers: "as long as he starts
