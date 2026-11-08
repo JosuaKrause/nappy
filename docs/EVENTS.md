@@ -1185,10 +1185,13 @@ Nothing in that list is fixed here.
 close one, so nothing checks during the walk whether she can still get through. A live
 reachability check is ruled out (gray-dolphin #1173).
 
-**There are three views on events in the city** (inbox #1185):
-- **On the route**: the ground the safe routes run along.
-- **Route-adjacent**: off the routes, on a street touching one (gray-dolphin #1173).
-- **Off the route**: deep, where nothing would be reachable at all (gray-dolphin #1173).
+**There are three views on events in the city: on the route, route-adjacent, and off the route**
+(inbox #1185).
+- **On the route** is the ground the safe routes run along.
+- **Route-adjacent**: the player said "the off route events need to be route adjacent. anything deep
+  wouldn't be reachable at all" (gray-dolphin #1173). *Read as* (the orchestrator's, which the
+  player agreed with): off the routes, on a street touching one (gray-dolphin #1173).
+- **Off the route** is the third view (inbox #1185).
 
 **Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
 spot and then checks what kind it is (inbox #1185).
@@ -1207,7 +1210,9 @@ spot and then checks what kind it is (inbox #1185).
 of the same street draw from their bag with the events that drawn event makes invalid left out. The
 bag itself is unchanged; the invalid events are only not considered in the draw. Which events make
 which others invalid on the same street is what today's placement rules decide; they keep applying,
-used when a street's other locations draw (inbox #1185).
+used when a street's other locations draw (inbox #1185). The player's example: across the street
+from a drawn restaurant, the draw is most likely "empty", and could be a yeller with a low chance on
+later days (inbox #1185).
 
 **The roadblock phase at dawn** comes after the routes are established. It goes through the
 route-adjacent locations and places roadblocks there, evenly spaced out: each roadblock placed is
@@ -1224,23 +1229,31 @@ region wall, its doors, the closures, the seals, the masts and the ambient rows 
 - Scars are cosmetic, not events. What the code calls a scar, the burnt shell a fire leaves, is a
   regular event under the design (inbox #1185).
 
-**Every other location is drawn during the walk.** As she walks, the placeholders are filled from
-the bag (gray-dolphin #1173). Beside the city's fixed parts, the roadblock phase is the only
-assignment made at dawn (inbox #1185).
+**Then the pass for regular events** places the events that can be placed in route-adjacent
+locations. It never overwrites a roadblock already placed (inbox #1185).
+
+*Read as* (the orchestrator's, open to correction): the draws happen during the walk. The player
+said the roadblocks' "locations are already assigned during gameplay so no drawing will happen for
+them in the first place" (inbox #1185), and that the placeholders "get filled in with non-blocking
+events from the bag" "when the player walks" (gray-dolphin #1173).
 
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
 then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 - **Only if none is close by**, it swaps one off-screen route-adjacent event for a roadblock, in
   that event's place (gray-dolphin #1177, inbox #1185). The roadblock replaces the content of that
   event's whole section (inbox #1185).
+- The event it takes is route-adjacent, since "anything deep wouldn't be reachable at all"
+  (gray-dolphin #1173).
 - It never takes the region wall's guard houses, doors or barriers (gray-dolphin #1173).
 
-**The order:**
-1. The routes are established, and the city's fixed parts are placed in their own phases.
-2. The roadblock phase assigns roadblocks to route-adjacent locations, evenly spaced.
-3. During the walk, every other location is drawn from its view's bag, leaving out the events
-   that the street's events already drawn make invalid.
-4. Day 13's task searches close by, and swaps only if it finds nothing.
+**The order, as the player gave it** (inbox #1185):
+1. The routes are established.
+2. Roadblocks are placed first, in route-adjacent locations, spread out across the city.
+3. The pass for regular events, which never overwrites a roadblock already placed.
+4. During gameplay, day 13's task searches for a roadblock close by along her paths, and swaps only
+   if it finds none.
+
+The city's fixed parts have their own phases, above.
 
 ### Where the code differs from the design
 

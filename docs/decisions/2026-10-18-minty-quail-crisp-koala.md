@@ -2,7 +2,8 @@
 
 
 minty-quail's walk-placed-blockers item, built whole in #1169. The design is the player's words in inbox #1173,
-#1177, #1179, #1182, #1183 and #1185 in gray-dolphin, and the orchestrator's readings marked there;
+#1177, #1179 and #1182 in gray-dolphin and on the open inbox issues #1183 and #1185, and the
+orchestrator's readings marked there;
 #1169's description holds the build commit by commit.
 
 **Built.**
@@ -15,10 +16,10 @@ minty-quail's walk-placed-blockers item, built whole in #1169. The design is the
   inside `WalkEvents`. Day 3's fire and day 11's added mast are sited on her way like the bag's
   events. The park cordon's gap check stays, and asks each event its clearance
   (`Planned.clearance()`, `where_it_stands_now()`).
-- **No convoy leaves a barricade** (inbox #1183 in gray-dolphin): `military_convoy` has no
+- **No convoy leaves a barricade** (inbox #1183): `military_convoy` has no
   `aftermath.on_finish`, so neither day 13's column nor a rolled convoy leaves one, and the
   column's trucks drive on and off. The `barricade` row stays, for dawn's seals.
-- **Day 13's task roadblock** (inbox #1185 in gray-dolphin): after the day's ambient rows, scars and
+- **Day 13's task roadblock** (inbox #1185): after the day's ambient rows, scars and
   masts and before the scripted rows and the fill, a dawn pass places roadblocks beside her routes
   (a street no route runs along, one of whose junctions a route crosses, never the main road),
   outside the budget on its own streams, until every route tile has one within 1,024px along her
@@ -28,15 +29,15 @@ minty-quail's walk-placed-blockers item, built whole in #1169. The design is the
   noticed her, the region wall's bodies, door bodies or scars), the roadblock taking the nearest
   road tile on that event's street within 3 tiles and passing every rule a roadblock is placed
   under. Nothing is added mid-walk: with neither, the task offers nothing after its mark (the
-  player: no fallback, "it can always swap", inbox #1185 in gray-dolphin).
-- **The guard's side is decided once** (inbox #1185 in gray-dolphin): the man who waits by day 13's
+  player: no fallback, "it can always swap", inbox #1185).
+- **The guard's side is decided once** (inbox #1185): the man who waits by day 13's
   task roadblock stands on its far side from the way she comes, fixed the first frame the
   roadblock the red arrow points at is drawn on screen; before that the side follows where she
   stands, and a guard on her side then is moved unseen once he and the new spot are out of her
   view. The decided side belongs to the roadblock's place, the tile its body stands on, so a
   roadblock that streams out and back in keeps it; seen again from its other side, it is not
   decided again. Nothing checks reachability.
-- **The placement design is written down** (inbox #1185 in gray-dolphin): `docs/EVENTS.md`, "The
+- **The placement design is written down** (inbox #1185): `docs/EVENTS.md`, "The
   three views and the placement order", the player's design (placement by construction: the three
   views on the route, route-adjacent and off the route, each with its own bag; a street's three
   sections and six locations; the roadblock phase at dawn; the section swap) and where the code
@@ -64,22 +65,21 @@ minty-quail's walk-placed-blockers item, built whole in #1169. The design is the
 
 **Rejected.**
 - A roadblock added mid-walk on the edge of the 576px circle round her when nothing was near and
-  nothing could be swapped: the player, no fallback (inbox #1185 in gray-dolphin).
+  nothing could be swapped: the player, no fallback (inbox #1185).
 - The barricade kept, placed by the task roadblock's rules or only where the column stops off her
-  routes: the player dropped the barricade instead (inbox #1183 in gray-dolphin).
+  routes: the player dropped the barricade instead (inbox #1183).
 - An extra roadblock pass after the fill, at most 6 (the orchestrator's pick on
   roadblocks-at-dawn): the player ordered the routes, then the spaced roadblocks, then the bag
-  (inbox #1185 in gray-dolphin).
+  (inbox #1185).
 - A swapped-in body no wider than the one it replaces: not needed, since a body off the routes
-  closes none of them (inbox #1185 in gray-dolphin).
+  closes none of them (inbox #1185).
 - Dawn standing a roadblock close by every place the chalk mark can be read, to cover the 33
-  misses: the orchestrator's reading, withdrawn when the player restated the design (inbox #1185
-  in gray-dolphin).
+  misses: the orchestrator's reading, withdrawn when the player restated the design (inbox #1185).
 - Widening the swap past 1,024px and to the streets a route runs along, which a queue item held
   for a while: not the player's measure, and the swap is replaced by placement by construction.
 - Narrowing the swap to the design on tiles (dropping standing still, having noticed her, the
   re-judged placement and the 1,024px cap): left for placement by construction, so the work is not
-  done twice (inbox #1185 in gray-dolphin).
+  done twice (inbox #1185).
 
 **Open to overturn** (the builder's choices where the design was silent):
 - the count: route tiles taken in the map's order, the first with no roadblock within 1,024px gets
@@ -91,6 +91,6 @@ minty-quail's walk-placed-blockers item, built whole in #1169. The design is the
 - the guard reads her position against the roadblock, not her heading, which flips with a turn;
   where the far side has no spot, he stands on her side and the run log says so;
 - the side is decided for the roadblock the red arrow points at when it first comes on screen,
-  since that is the roadblock she approaches (inbox #1185 in gray-dolphin);
+  since that is the roadblock she approaches (inbox #1185);
 - the swap keeps "standing still", since a moving event leaves no place to take;
 - `test_walk_siting_spec` keeps only its source scan and spec check of the home-street rule.

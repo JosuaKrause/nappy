@@ -7,10 +7,14 @@ authored roadblock that stands as one the day placed, on the side street off her
 
 - `task-13-roadblock-start.png`: a tenth of a second in. She starts 5 tiles west of the unread
   mark, on her street, with the mark's alley north of her.
-- `task-13-roadblock-at-capture.png`: at the recipe's `capture_at` (7.6s). She has read the mark
-  and walks west along her street. The red arrow points up the side street at the roadblock, and
-  its guard stands beyond it, on the far side from the way she comes. The task's line reads "Walk
-  up to the roadblock".
+- `task-13-roadblock-at-capture.png`: at the recipe's `capture_at` (7.6s).
+  - She has read the mark and walks west along her street.
+  - The red arrow points up the side street at the roadblock, whose body stands just inside the top
+    edge of the frame. The man just south of the barrier, between it and her, is the roadblock's
+    own posted guard, on her side.
+  - The task's waiting guard stands beyond the roadblock, out of frame. The still does not show
+    which side he takes; `tests/test_day13_guard.gd` holds that.
+  - The task's line reads "Walk up to the roadblock".
 - `task-13-roadblock-capture.json`: the capture run's manifest. It holds the observations every
   scene run checks, and all of them pass.
 
