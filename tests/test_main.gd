@@ -94,6 +94,96 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` hands the baby her world at every place it puts her in one** (`Baby.set_world()`): the
+## escape builds the building first and the city when she walks out of the service door, with the
+## same stroller rig, and so the same `Baby`, reparented between them, so a baby told her world once
+## would go on asking the building about a street. Booted for real on the player's seed
+## (4216201080) in the escape's building (`--start-escape`'s section), its briefs pressed through the
+## viewport and walked out through the building's `exit_requested`; and booted straight onto the
+## escape's street, and onto an ordinary day. What the baby does with the world she is handed is
+## `tests/test_baby_world.gd`'s, and what the city answers for its ground and bodies the city's.
+func _test_main_hands_the_baby_the_world_it_puts_her_in(t) -> void:
+	var run := _a_run_on(DaySpec.Section.BUILDING)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var main := booted.main
+	var interior := Boot.interior(main)
+	t.check(interior != null, "the boot stands in the building")
+	var baby := Boot.baby(main)
+	t.check(baby != null and interior != null and baby.world() == interior,
+			"in the building she is handed the building")
+	await Boot.press_continue(t, main)
+	if interior:
+		interior.exit_requested.emit()
+	await Boot.press_continue(t, main)
+	var city := Boot.city(main)
+	t.check(city != null, "the service door has put her in the city")
+	if city != null:
+		t.check(Boot.baby(main) == baby, "and it is the same baby")
+		t.check(baby.world() == city, "who is now handed the city, not the building (%s)"
+				% baby.world())
+	booted.free_all()
+	home.free()
+	await _boot_hands_the_baby_the_city(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
+	await _boot_hands_the_baby_the_city(t, DaySpec.Section.NONE, "an ordinary day's boot")
+
+## A fresh run on the player's seed, on day 1, in the escape's `section` (`DaySpec.Section.NONE` for
+## an ordinary day): what a boot is handed to play.
+func _a_run_on(section: int) -> RunState:
+	var run := RunState.new()
+	run.start_run(4216201080)
+	run.header.day = 1
+	run.facts.escape_section = section
+	return run
+
+func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
+	var run := _a_run_on(section)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var city := Boot.city(booted.main)
+	var baby := Boot.baby(booted.main)
+	t.check(city != null and baby != null and baby.world() == city,
+			"%s hands the baby the city" % what)
+	booted.free_all()
+	home.free()
+
+## **`main` binds the run's presentation choice to the rig before anything has drawn it**, on a
+## day's way in and on the escape's (`--start-escape`): real boots of `main` for each family
+## (`--parent`) whose stroller is caught the moment it enters the tree (`SceneTree.node_added`), and
+## the rig that stands after the boot is the family the run chose. What a rig draws of the family it is
+## handed is `tests/test_player_presentation.gd`'s.
+func _test_main_binds_the_family_before_the_first_draw(t) -> void:
+	for male in [false, true]:
+		var parent := "father" if male else "mother"
+		var in_the_escape: Array[bool] = []
+		var escape_seat := Seat.new(t)
+		var escape: Boot.Booted = await _boot_catching_the_rig(t, escape_seat,
+				["--parent", parent, "--start-escape"], in_the_escape)
+		escape.free_all()
+		escape_seat.end()
+		var on_a_day: Array[bool] = []
+		var seat := Seat.new(t)
+		var booted: Boot.Booted = await _boot_catching_the_rig(t, seat, ["--parent", parent], on_a_day)
+		var rig := Boot.player(booted.main)
+		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
+				and rig.is_male == male and seat.run.header.player_is_male == male,
+				"ordinary and escape construction share a choice bound before the first draw")
+		booted.free_all()
+		seat.end()
+
+## A boot of `main` over `seat`'s run on `words`, with the family of every stroller that entered the
+## tree during it, at the moment it entered, appended to `entered`.
+func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
+	var catch := func(node: Node) -> void:
+		if node is Stroller:
+			entered.append((node as Stroller).is_male)
+	t.get_tree().node_added.connect(catch)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
+	t.get_tree().node_added.disconnect(catch)
+	return booted
+
 ## `main` hands `--quit-when-still`'s watch the trace it hands every other writer (`StillWatch.trace`,
 ## the session's): a line written through the watch's trace reaches the recording run log the boot
 ## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
@@ -163,6 +253,8 @@ func run(t) -> void:
 	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
+	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
+	await _test_main_binds_the_family_before_the_first_draw(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
 	await _test_the_readout_is_not_assembled_outside_a_debug_build(t)

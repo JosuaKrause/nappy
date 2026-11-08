@@ -26,8 +26,7 @@ stay public for the same reason: the fairness tests check numbers against them.
 only]` group holds nine members, each of which gets the underscore, or a `[kept]` line with its reason, as this item's work: `BuildingShadows.compute`,
 `PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
 `DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
-`[no reader]` group holds `Stroller.family_sources`,
-`StreetTrees.STREET_TREE_MAX_LINED_FRACTION`, `CrowdField.contains` and `MarbleBag.take`, which this item owns, beside the older lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
+`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
 check cannot see, below.
 
 **What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
@@ -35,9 +34,8 @@ judged by its word, so a local or an engine method of that name hides it: `ParkC
 `gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
 `RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
 file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
-taken for the whole file, not per function. Three members have no test reader: `CrowdField.contains` and
-`MarbleBag.take` (the tests' reads are `String.contains` and `EventStreaming.take`, which the check cannot type) are
-listed as `[no reader]` and are dead code to delete, and `Main.use_sitting` is a hand-in no test calls (the tests'
+taken for the whole file, not per function. One member has no test reader:
+`Main.use_sitting` is a hand-in no test calls (the tests'
 `use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
@@ -45,4 +43,4 @@ also removing a check that holds nothing once its member is gone (curly-rabbit #
 becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,
 takes a `[kept]` line with its reason (curly-rabbit #1098). A `[no reader]` member gets a reader in the game, is tested
 through what the game shows, or is deleted, or takes a `[kept]` line where the information cannot be had another way
-and the test needs it to confirm the behavior (curly-rabbit #1095); `CrowdField.contains` and `MarbleBag.take` have no test reader, so they are deleted. A builder deletes the member's line from the CI check's list as it goes.
+and the test needs it to confirm the behavior (curly-rabbit #1095). A builder deletes the member's line from the CI check's list as it goes.

@@ -2030,7 +2030,7 @@ which must not say *"at a zebra"* on a street that has none.
   crossing is kept by the side street's contract, the painted carriageway and the horn — see
   docs/MECHANICS.md, "The traffic fairness contract". **The roads are harder that night on
   purpose.** *(The player, 2026-09-20: dead traffic lights are "part of the challenge of coming home
-  after the sabotage".)* `tests/test_blackout.gd` runs the spine lit and dark on the same day and
+  after the sabotage".)* `tests/test_dark_spine.gd` runs the spine lit and dark on the same day and
   holds the dark one to carrying its traffic as well as the lit one does.
 
 ## Junctions
@@ -2300,7 +2300,7 @@ Top-down camera with a fake vertical extrusion:
   straight stretch of `StreetTrees.STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` (three to
   five) consecutive blocks along one street line, horizontal or vertical, and there are
   `StreetTrees.STREET_TREE_RUNS` of them placed at random across the map, well under the
-  `StreetTrees.STREET_TREE_MAX_LINED_FRACTION` (a quarter) ceiling `tests/test_blocks.gd` holds over a
+  quarter-of-ordinary-streets ceiling `tests/test_blocks.gd` holds over a
   seed sweep. Every street outside every run is bare. **Rare on purpose, and the reason is the
   events rather than the look**: a tree standing beside a van or a yeller is a second silhouette
   to read past, and a street full of them is a street where an obstacle is hard to spot.

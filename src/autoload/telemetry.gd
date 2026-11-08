@@ -161,8 +161,8 @@ func begin_run(run_seed: int, played := true) -> void:
 	_log.header("nappy %s log  %s  version %s"
 			% ["run" if played else "rig", Time.get_datetime_string_from_system(),
 			BuildInfo.source_version()])
-	if _log.path != "":
-		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.path))
+	if _log.file_path() != "":
+		print("[Telemetry] %s" % ProjectSettings.globalize_path(_log.file_path()))
 
 ## Makes the run's own folder under `_directory` and sets `_run_dir` to it, or warns and answers
 ## false when it cannot be made, which leaves the run untraced.
@@ -337,7 +337,7 @@ func _default_bursts() -> BurstRecorder:
 ## another shot was taken a moment ago, or when there is no screen to photograph — a headless test
 ## run has a viewport with nothing in it, and the suite must not start writing images.
 func snapshot(kind: String) -> void:
-	if not _log or _log.path == "" or not _shots.allows(_clock):
+	if not _log or _log.file_path() == "" or not _shots.allows(_clock):
 		return
 	if not _screen.can_draw():
 		return
@@ -365,7 +365,7 @@ func snapshot_now(context: String) -> void:
 	if not _log:
 		return
 	note("shot", context)
-	if _log.path == "" or not _screen.can_draw():
+	if _log.file_path() == "" or not _screen.can_draw():
 		return
 	_shots.take_asked()
 	_capture("%s/%s" % [_type_dir("asked"), _shots.next_name("asked", _attempt_suffix())])
@@ -375,7 +375,7 @@ func snapshot_now(context: String) -> void:
 ## run folder to write in.
 func start_burst(context: String) -> bool:
 	var asked_dir := ""
-	if _log and _log.path != "" and _screen.can_draw():
+	if _log and _log.file_path() != "" and _screen.can_draw():
 		asked_dir = _type_dir("asked")
 	return _bursts.start(asked_dir, context)
 
@@ -415,7 +415,7 @@ func start_burst(context: String) -> bool:
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
-	if not _log or _log.path == "":
+	if not _log or _log.file_path() == "":
 		return
 	var path := "%s/day%02d%s%s.png" % [_type_dir("maps"), day, _attempt_suffix(),
 			"-dusk" if at_dusk else ""]

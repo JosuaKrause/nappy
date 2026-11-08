@@ -34,11 +34,20 @@ extends RefCounted
 ## read (`WorldMap.moves`), and the movers' poses off the nodes the game draws: an event's and a
 ## crowd body's position, and the cordon's officers' figures (`CordonOfficer`).
 ##
+## **This suite combines modules, for a stated reason**: the guarantee is a contract *between* the
+## movers and the map's list (every mover's move is on `WorldMap.moves` and stands where the mover
+## does, at the end of every tick), so the crowd, the events, the resistance's cordon and the map are all
+## real and ticking together, as the game ticks them. A fake for any of them could not hold the one
+## thing checked, that a real mover of each kind leaves no stale or open move. It was named for the
+## player and her walk, and the movers are not hers; their own suites hold what each does alone. The
+## cities come from the cache of generated maps (`tests/city_map_cache.gd`).
+##
 ## Every seed plays a run of its own (`tests/seat.gd`), and every boot is handed
 ## a save at a scratch path (`main.use_save()`), so nothing here leaks into the next suite or
 ## reaches the player's save.
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_move_poses_scratch.json"
@@ -77,7 +86,7 @@ func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	# to span the title press and the mark's completion as well.
 	var clock := Engine.time_scale
 	Engine.time_scale = Boot.STILL_SCALE
-	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
+	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
 	await Boot.press_title(t, booted.main, "Right")
 	var summary := Boot.summary(booted.main)
 	if summary and summary.is_showing():

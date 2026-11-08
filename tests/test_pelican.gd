@@ -15,9 +15,17 @@ extends RefCounted
 ## distinct pictures and the second pedal frame are `tests/test_event_views.gd` and
 ## `tests/test_event_strides.gd`; every picture being on the `events` page is
 ## `tests/test_atlas_events.gd`, through `EventPictures.family_sources()`.
+##
+## **No city is built.** The events are the subject, so an `EventManager` stands over a copy of the
+## generated city's map in a run of its own (`tests/fixtures/street_events.gd`), the way a rig that builds
+## no city hands it. **One case combines modules, for a stated reason**
+## (`_test_the_pelican_is_named_and_told_from_its_warning_to_its_hit`): the guarantee is that the
+## pelican is named the same from its warning to the page's counter and the run log, a claim about the
+## manager, the danger edge, the observer and the log together, so each is real in it, over the observer's
+## own stand-ins for the streets and the crowd (`DayStreets.new()`, the base `ExcitementSources`).
 
 const RecordingLog := preload("res://tests/recording_log.gd")
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const SEED := 4242
@@ -29,7 +37,8 @@ const STEP := 1.0 / 60.0
 const SHARE_SEEDS := 400
 const CYCLISTS_PER_RUN := 30
 
-var _city: City
+var _events: EventManager
+var _map: CityMap
 
 ## The run every test of this suite draws from: made here and freed at the end, so the suite plays
 ## no run but its own. `_new_run()` puts it back to a fresh bag of a seed's own.
@@ -45,20 +54,19 @@ func run(t) -> void:
 	_test_the_bag_follows_the_run_and_the_count(t)
 	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
 	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
-	_city = RunCity.in_run(CITY_SCENE, _run)
-	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
-	_city.events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
+	_map = MapCache.of(SEED)
+	_events = StreetEvents.over(t, _map, _run)
+	_events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
 	_record_the_drawing()
 	await _test_a_pelican_rides_as_one_throughout(t)
 	await _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)
 	await _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t)
-	_city.free()
+	_events.free()
 
 ## The city's events paint through a recording drawer from here on, handed to the world the way
 ## the manager hands the real one, so a check reads the pictures an event was drawn with.
 func _record_the_drawing() -> void:
-	_city.events.world.drawer = RecordingEventDrawer.new(_city.events.atlas)
+	_events.world.drawer = RecordingEventDrawer.new(_events.atlas)
 
 func _day_rng() -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -245,7 +253,7 @@ func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 ## created as the kid stays the kid.
 func _test_a_pelican_rides_as_one_throughout(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	var events := _city.events
+	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
 	t.check(pelican.is_pelican and _is_drawn_from(await _drawn_from(t, pelican),
@@ -275,7 +283,7 @@ func _test_a_pelican_rides_as_one_throughout(t) -> void:
 ## point around it, the same speed. Only the pictures it is drawn with differ.
 func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	var events := _city.events
+	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
 	for _i in 30:
@@ -326,7 +334,7 @@ func _is_drawn_from(pictures: Array[String], by_view: Dictionary, also_by_view: 
 
 ## A straight 300px line up the arterial's sidewalk, the kind `spawn_warned()` is handed.
 func _ride() -> PackedVector2Array:
-	var from := CrowdLanes.arterial_pavement(_city.map)
+	var from := CrowdLanes.arterial_pavement(_map)
 	return PackedVector2Array([from, from + Vector2(0.0, -300.0)])
 
 ## *(Inbox #527 in azure-tapir, the player: "when the pelican spawns, when it's on screen, and when it's hitting the
@@ -343,8 +351,8 @@ func _ride() -> PackedVector2Array:
 ## - **the observer's own lines call it `pelican`**: on screen, struck, and nearest.
 func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
-	var events := _city.events
-	var map := _city.map
+	var events := _events
+	var map := _map
 	# Nothing but what this test sends is in the world: the day's plan is let go and nothing is sited
 	# ahead of her, so the manager's own ticks, which run with her in the tree, act on the pelican
 	# and the kid alone.
@@ -377,7 +385,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
 	var clock := DayController.new()
 	clock.start(180.0)
 	var observer := TelemetryObserver.new(run_log)
-	observer.setup(_city.run, _city.map, _city.events, _city.streets(), _city.crowd.sources,
+	observer.setup(_run, _map, _events, DayStreets.new(), ExcitementSources.new(),
 			stroller, baby, clock, null, false)
 
 	# The director owes her one cyclist from a route bag holding nothing else, as a scene's recipe

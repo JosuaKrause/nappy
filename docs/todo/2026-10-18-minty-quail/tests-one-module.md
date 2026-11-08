@@ -21,14 +21,25 @@ gets a method, and suites move as a pull request touches them.
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first:
 
-1. telemetry (`test_telemetry`, `test_frame_record`);
-2. the player and the baby (`player_presentation`, `baby_world`, `move_poses`, `camera_start`,
-   `pelican`, `loose_dog_arrives`, `tutorial_dog`);
+1. telemetry: `test_frame_record_wiring` reads the other modules' timing hand-ins
+   (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
+   halo's `timing`) until each of those modules' passes gives them methods;
+2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
+   (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
+   events;
 3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
    `destination_drawing`, `debug_layers`);
-4. scene recipes (`scene_recipe_*`, `recipe_*`);
-5. the night group (`blackout`, `power_station`, `heat`, `bollards`, and `masts` once the events
-   allow);
+4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
+   and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
+   what it reads from the city (its map, streets, events and poster walls) instead of the whole
+   `City`, so a stand-in can be handed in; `test_recipe_crowd`'s `Crowd.recipe_coverage` check moves
+   to a crowd suite;
+5. the night group: `Blackout` takes the whole `City`, so `test_blackout`'s stand-in is a
+   never-built `City`, until `Blackout` takes a narrower hand-in; `test_heat` reads the event
+   instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
+   it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
+   to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
+   `test_frame_record`; `test_masts` waits for the events;
 6. the crowd (`crowd_bodies`, `crowd_contributions`, `crowd_yields`, `danger`, `wall_shield`);
 7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,

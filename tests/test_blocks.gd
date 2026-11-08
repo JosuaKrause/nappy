@@ -296,10 +296,12 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 	t.check(same, "the same seed plants the same trees in the same pits")
 
 ## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
-## vans restaurants etc.")*. This is the ceiling `StreetTrees.STREET_TREE_RUNS` is chosen under, not a
-## restatement of it: raising the run count is allowed right up to the point where a tree-lined
-## street stops being the exception, and this is the point.
+## vans restaurants etc.")*. This is the ceiling (a quarter of the ordinary streets)
+## `StreetTrees.STREET_TREE_RUNS` is chosen under, not a restatement of it: raising the run count is
+## allowed right up to the point where a tree-lined street stops being the exception, and this is the
+## point.
 func _test_tree_lined_streets_stay_rare(t) -> void:
+	var max_lined_fraction := 0.25
 	var worst := 0.0
 	var ordinary_total := 0
 	for map in _maps:
@@ -313,10 +315,10 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 		var lined := StreetTrees.segment_keys_with_trees(map).size()
 		var fraction := float(lined) / float(maxi(1, ordinary))
 		worst = maxf(worst, fraction)
-		t.check(fraction <= StreetTrees.STREET_TREE_MAX_LINED_FRACTION,
+		t.check(fraction <= max_lined_fraction,
 				"seed %d: %d of %d ordinary streets are tree-lined (%.1f%%), over the %.0f%% cap"
 				% [map.seed_used, lined, ordinary, 100.0 * fraction,
-				100.0 * StreetTrees.STREET_TREE_MAX_LINED_FRACTION])
+				100.0 * max_lined_fraction])
 	t.check(ordinary_total > 0, "there were ordinary streets to ask about (%d)" % ordinary_total)
 	t.check(worst > 0.0, "and at least one seed had trees at all (worst %.3f)" % worst)
 

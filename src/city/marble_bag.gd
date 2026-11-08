@@ -81,10 +81,6 @@ static func shared(marbles: Array, seed_value: int) -> MarbleBag:
 	bag._is_shared = true
 	return bag
 
-## Whether this bag is a shared bag (`shared()`).
-func is_shared() -> bool:
-	return _is_shared
-
 ## A bag of the keys of `weights` in proportion to their weights: `marbles_per_weight` marbles per
 ## unit of weight, rounded, and at least one of each, in `weights`' own order so a seeded draw over
 ## it is the same every time. A key in `counts` has that many marbles instead, its weight aside —
@@ -99,10 +95,6 @@ static func in_proportion(weights: Dictionary, marbles_per_weight: float,
 		for _i in count:
 			marbles.append(key)
 	return marbles
-
-## Whether there is anything to draw: a bag in front, or an ordinary set to fill one from.
-func has_marbles() -> bool:
-	return not _queue.is_empty() or not _ordinary.is_empty()
 
 ## The marble the next `draw()` gives, without taking it — for a caller that may not be able to use
 ## it yet and must not spend it. For a bag marble, what its own next draw gives. Null when there is
@@ -246,22 +238,6 @@ func _take(count: int, keep_out: Array) -> Array:
 		if bag.is_empty():
 			_queue.remove_at(at)
 	return taken
-
-## Takes one `marble` out of the bag being drawn from, filled first if there is none, without
-## drawing it — for a caller that hands that marble out itself, ahead of the bag, and wants the bag's
-## share of it to stay what it is. Answers whether the bag held one.
-func take(marble: Variant) -> bool:
-	if peek() == null:
-		return false
-	var bag: Array = _queue[0]
-	var at := bag.find(marble)
-	if at < 0:
-		return false
-	bag.remove_at(at)
-	_picked = -1
-	if bag.is_empty():
-		_queue.pop_front()
-	return true
 
 ## The size of every bag in the queue, the one being drawn from first. For a test, and for a scene
 ## that rigs a bag and wants to say what it left.
