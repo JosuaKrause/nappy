@@ -4,8 +4,8 @@ extends RefCounted
 ## invalidation the design's draw leaves a refused row out by (inbox #1185, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
 ## are stated once. A walk composes them from its spec: every walk's route rules (its junctions, its
-## walked sidewalk, a beat's opening, and no body cutting a route off from home), the calm she has
-## not used and the doors' clear ground; the escape's on top, one notice at a time
+## walked sidewalk, a beat's opening, and at dawn no body cutting a route off from home), the calm
+## she has not used and the doors' clear ground; the escape's on top, one notice at a time
 ## (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`).
 ##
 ## `room()` answers what a placement weighs a candidate by: `-INF` where a rule refuses it, else the
@@ -19,10 +19,14 @@ var _rules: Array[StreetRule] = []
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
 ## asks none of the route rules): `ground` the day's ground cache, `leave_alone` the calm ground she
 ## has not used, `doors` where the region doors' bodies stand, `one_notice` whether the spec keeps
-## one waiting guard's notice at a time, and `walk` the walk's ground where the spec keeps the walk
-## open, else null. The walk is asked last, since it is the expensive question.
+## one waiting guard's notice at a time, `walk` the walk's ground where the spec keeps the walk
+## open, else null, and `reach` the dawn's `RouteReachRule`, handed in so the reach it keeps in step
+## is worked out once for every judge of the day. A walk's siting hands none: the reach is a dawn
+## rule, asked of every body the day plans and not of what the walk sites ahead of her. The walk is
+## asked last, since it is the expensive question.
 func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Array[Rect2],
-		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null) -> void:
+		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null,
+		reach: RouteReachRule = null) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
@@ -30,7 +34,8 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 	_rules.append(RouteJunctionsRule.new(map, corridor, ground))
 	_rules.append(RouteSidewalkRule.new(map, corridor))
 	_rules.append(PacingOpeningRule.new(map, corridor))
-	_rules.append(RouteReachRule.new(map, corridor))
+	if reach:
+		_rules.append(reach)
 	if one_notice:
 		_rules.append(OneNoticeRule.new(map))
 	if walk:

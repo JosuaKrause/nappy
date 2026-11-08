@@ -710,8 +710,11 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	events.use_locations(locations)
 	# What may not close the day's routes, asked of the run's scars and the spoilers too: their
 	# ground is not the bags', but a body they stand on a route is a route closed all the same.
+	# Where home reaches among the day's bodies, worked out once and kept in step for every judge
+	# below (`RouteReachRule`).
+	var reach := RouteReachRule.new(map, corridor)
 	var keeps_the_routes := StreetInvalidation.new(map, corridor, ground, [] as Array[Rect2],
-			PackedVector2Array(), false)
+			PackedVector2Array(), false, null, reach)
 
 	events.add_all(_place_ambient(day, map, heat))
 	_place_scars(day, scars, map, events, keeps_the_routes, heat)
@@ -724,16 +727,16 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	if kept_clean != CalmAreas.NONE:
 		leave_alone.append(calm.ground_of(kept_clean))
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
-			corridor, doors, spec, locations, trace)
+			corridor, doors, spec, locations, trace, reach)
 	_place_scripted(day, _stream(base, 1), map, events, ground, leave_alone, corridor, heat,
-			doors, spec.holds_the_home_streets)
+			doors, spec.holds_the_home_streets, reach)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, ground,
-			leave_alone, corridor, heat, doors, trace, spec.holds_the_home_streets)
+			leave_alone, corridor, heat, doors, trace, spec.holds_the_home_streets, reach)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			keeps_the_routes, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
-			locations, heat, beside_the_routes)
+			locations, heat, beside_the_routes, reach)
 
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -762,13 +765,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
-		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations, trace: RunTrace) -> void:
+		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations, trace: RunTrace,
+		reach: RouteReachRule = null) -> void:
 	if def == null:
 		return
 	def = def.for_day(day)
 	var judged := RuledRoadblockGround.new(def, day, map, events, ground, corridor,
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time),
+					spec.one_notice_at_a_time, null, reach),
 			spec.holds_the_home_streets)
 	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
@@ -1035,7 +1039,7 @@ static func _draw_the_walk(spec: DaySpec, rng: RandomNumberGenerator, map: CityM
 	var corridor := route.corridor()
 	var walk := WalkGround.new(map, events.standing(), route) if spec.keeps_the_walk_open else null
 	var rules := StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-			spec.one_notice_at_a_time, walk)
+			spec.one_notice_at_a_time, walk, RouteReachRule.new(map, corridor))
 	var fit := LocationFit.new(spec.number, map, ground, corridor, spec.holds_the_home_streets,
 			route.start())
 	var offered := RuledLocationGround.new(spec.number, rng.seed, map, events, corridor, fit, rules)
@@ -1720,10 +1724,11 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		events: DayEvents, ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
-		holds_the_home_streets := true) -> void:
+		holds_the_home_streets := true, reach: RouteReachRule = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
 		var placement := _place_one(def, day, rng, map, events.placements(), ground,
-				leave_alone, corridor, NO_SITE, doors, events.standing(), holds_the_home_streets)
+				leave_alone, corridor, NO_SITE, doors, events.standing(), holds_the_home_streets,
+				reach)
 		if placement:
 			events.add(placement)
 
@@ -1731,7 +1736,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], events: DayEvents, ground := {},
 		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
 		doors := PackedVector2Array(), trace: RunTrace = null,
-		holds_the_home_streets := true) -> void:
+		holds_the_home_streets := true, reach: RouteReachRule = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -1772,7 +1777,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 					% [def.id, roll, threshold])
 			continue
 		var sited := _place_a_set_piece(day, def, rng, map, events.placements(), ground,
-				leave_alone, corridor, doors, events.standing(), holds_the_home_streets)
+				leave_alone, corridor, doors, events.standing(), holds_the_home_streets, reach)
 		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -1814,7 +1819,8 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors := PackedVector2Array(),
-		standing: Array[Planned] = [], holds_the_home_streets := true) -> Array[Planned]:
+		standing: Array[Planned] = [], holds_the_home_streets := true,
+		reach: RouteReachRule = null) -> Array[Planned]:
 	var made: Array[Planned] = []
 	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
 	for site in sites:
@@ -1823,13 +1829,13 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
 		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
-				doors, standing, holds_the_home_streets)
+				doors, standing, holds_the_home_streets, reach)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
 		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
-				NO_SITE, doors, standing, holds_the_home_streets)
+				NO_SITE, doors, standing, holds_the_home_streets, reach)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
 			# one-shot placement is tagged, and `EventStreaming.stream_in` spends the rest of a
@@ -2443,7 +2449,7 @@ class WalkSiting extends RefCounted:
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
-		heat: int, beside_the_routes: EventDef) -> Array[Planned]:
+		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> Array[Planned]:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
@@ -2455,7 +2461,7 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 	var judged := RuledLocationGround.new(day, base, map, events, corridor,
 			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time))
+					spec.one_notice_at_a_time, null, reach))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
 	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
 			_stream(base, LOCATIONS_SALT))
@@ -2815,7 +2821,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE,
 		doors := PackedVector2Array(), standing: Array[Planned] = [],
-		holds_the_home_streets := true) -> Planned:
+		holds_the_home_streets := true, reach: RouteReachRule = null) -> Planned:
 	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is owed here with no position and sited by
 	# `EventDirector` while the player walks. Asked over `spawn_mode_on(day)` rather than
@@ -2830,7 +2836,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	if open_candidates.is_empty():
 		return null
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
-			doors, standing)
+			doors, standing, null, reach)
 
 ## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
 ## its route roll, so unrelated background actors cannot move a required path. `calm` is the calm
@@ -2890,7 +2896,8 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[Planned] = [], kept: Verdicts = null) -> Planned:
+		standing: Array[Planned] = [], kept: Verdicts = null,
+		reach: RouteReachRule = null) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
 	# Built once per call rather than per try: neither `already` nor `standing` changes across the
@@ -2911,7 +2918,8 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
-	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false)
+	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null,
+			reach)
 	for _attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
