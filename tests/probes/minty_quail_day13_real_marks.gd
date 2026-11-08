@@ -42,6 +42,7 @@ func run(t) -> void:
 		var director := ResistanceDirector.new()
 		var player := _start_the_day(t, city, director, seed_value)
 		var marks := _legal_marks(city, director)
+		var roadblocks := _roadblocks(city)
 		var chosen := _spaced(marks, PER_SEED)
 		if not ONLY.is_empty():
 			chosen = []
@@ -70,8 +71,8 @@ func run(t) -> void:
 			print("RM_MARK seed %d mark %s | %s | %s" % [seed_value, chosen[index], kind,
 					"%.0fpx" % outcome[1] if outcome[1] != INF else "-"])
 			asked += 1
-		print("RM_SEED seed %d | %d legal marks, %d read | %s" % [seed_value, marks.size(),
-				chosen.size(), per_seed])
+		print("RM_SEED seed %d | %d legal marks, %d read | %d roadblocks the day placed | %s"
+				% [seed_value, marks.size(), chosen.size(), roadblocks, per_seed])
 		player.free()
 		director.free()
 		city.free()
@@ -247,6 +248,15 @@ func _legal_marks(city: City, director: ResistanceDirector) -> Array[Vector2i]:
 				and director._reachable_from_home(tile):
 			legal.append(tile)
 	return legal
+
+## How many roadblocks the day placed (not a region door's or the wall's own bodies).
+static func _roadblocks(city: City) -> int:
+	var count := 0
+	for plan in city.events.plans():
+		if plan.row_id() == "roadblock" and plan.is_placed() and not plan.is_door() \
+				and not plan.is_in_the_wall():
+			count += 1
+	return count
 
 static func _spaced(tiles: Array[Vector2i], most: int) -> Array[Vector2i]:
 	if tiles.size() <= most:

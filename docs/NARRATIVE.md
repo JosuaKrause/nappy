@@ -188,8 +188,8 @@ dawn stands roadblocks on the streets beside her routes, off them and never on t
 that one is close by wherever she reads the mark, and the task takes the nearest her paths reach
 inside that circle, then half a block and a street further out (896px), then a block and a street
 further (1,024px). Where none is, one of the
-day's own events beside her routes and out of her sight becomes a roadblock; where nothing is, the
-task is spawned on that edge as the other tasks' places are. Any roadblock answers the task, and
+day's own events beside her routes and out of her sight becomes a roadblock. Nothing is added in
+the walk, so where neither is, the task offers nothing after its mark. Any roadblock answers the task, and
 the arrow chooses among them all.
 *(2026-10-10, [mossy-beaver](playtests/2026-10-10-mossy-beaver.md): "let's place one properly and
 guide to that -- just make sure it's closeby".)* The places that are fixed keep them: day 9's district door, day 12's
