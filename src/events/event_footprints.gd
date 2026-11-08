@@ -155,6 +155,48 @@ static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vect
 		return not parallel_side if row.lies_across_its_street else parallel_side
 	return absf(face.x) >= absf(face.y)
 
+## **Where a body stands once it is built at `at`**, the one reading every place that needs it asks:
+## `at` moved to the middle of its pavement band when the row is a stationary solid body that
+## `pavement_side` does not pin to an edge (`_centred_on_the_pavement_band()`), otherwise `at` itself.
+## `EventInstance.setup()` and `move_to()` stand the body there, the scheduler's and the walk's
+## siting of its band and the body's recorded footprint (`EventSpawner.obstructed_footprint()`) read
+## it for a body not yet built, so a body moved after dawn stands where the record says it does.
+static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
+	if row.stands_on_its_band_middle():
+		return _centred_on_the_pavement_band(map, at)
+	return at
+
+## **A pavement is one piece of walkable ground, not two lanes a body has to fit inside one of.**
+## `EventScheduler` places a stationary body at `map.tile_to_world(tile)` — the centre of whichever
+## of the pavement's two lanes the scheduler happened to choose, 16px from that lane's own edge and
+## 48px from the far one — so a body sized against the *pavement* rather than the *lane* overhangs
+## by exactly the asymmetry between those two numbers (PLAYTEST-19).
+##
+## The remedy is the position, not a smaller radius: this shifts a stationary, unpinned body from
+## the lane tile the scheduler chose to the middle of the two-lane band it belongs to, so a body may
+## be up to the full `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide and exactly fill the pavement.
+##
+## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
+## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
+## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
+## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
+## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
+## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is
+## *also* "no line to walk," on purpose.
+static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2:
+	var tile := map.world_to_tile(at)
+	if map.pavement_inward(tile) == Vector2i.ZERO:
+		# Not a pavement tile at all, or a junction belonging to both corridors at once — nothing
+		# here has one band to be centred on.
+		return at
+	var offsets := map.corridor_offsets(tile)
+	var x_offset := offsets.x
+	var offset := x_offset if x_offset >= 0 else offsets.y
+	var band_offset := Tuning.SIDEWALK_WIDTH * 0.5 if offset < Tuning.SIDEWALK_WIDTH \
+			else float(Tuning.STREET_WIDTH) - Tuning.SIDEWALK_WIDTH * 0.5
+	var shift := (band_offset - offset - 0.5) * Tuning.TILE_SIZE
+	return at + (Vector2.RIGHT if x_offset >= 0 else Vector2.DOWN) * shift
+
 # ------------------------------------------------------------ the guard post ---
 
 ## `+1` or `-1`: which side of a band laid along `vertical`'s axis the offset `toward` falls on,

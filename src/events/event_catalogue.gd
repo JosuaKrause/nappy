@@ -2657,7 +2657,7 @@ static func _car_accident_parts() -> Array[EventDef.SolidPart]:
 	] as Array[EventDef.SolidPart]
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other sidewalk. Kerb-pinned
-## like `delivery_van`, so `EventInstance._centred_on_the_pavement_band` leaves it exactly where
+## like `delivery_van`, so `EventFootprints._centred_on_the_pavement_band` leaves it exactly where
 ## `SealPlanner._place_soft` puts it rather than spreading it across the whole band.
 static func _skip() -> EventDef:
 	var def := EventDef.new()

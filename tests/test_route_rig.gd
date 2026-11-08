@@ -1438,7 +1438,7 @@ func _passes_within(map: CityMap, path: Array[Vector2i], point: Vector2, reach: 
 	return false
 
 ## A door body stands in the middle of its two-lane sidewalk
-## (`EventInstance._centred_on_the_pavement_band()`), on the line between two lanes, so each lane's
+## (`EventFootprints._centred_on_the_pavement_band()`), on the line between two lanes, so each lane's
 ## centre is exactly half a tile off the body's crossing axis: both lanes are the crossing, and the
 ## lane beside them is door reach. Read as neither, a door left no open way through its wall, so
 ## the plan gave up every door's reach and walked her into the hut from the side.

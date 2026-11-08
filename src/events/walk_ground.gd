@@ -200,10 +200,8 @@ func held_by(plan: EventScheduler.Planned) -> Array[Solid]:
 ## recentred on the pavement band when it has a body `pavement_side` does not pin — the reading
 ## `EventInstance.setup()` makes.
 func _stands_at(plan: EventScheduler.Planned) -> Vector2:
-	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
-	if plan.def.obstructs_radius > 0.0 and plan.def.pavement_side == EventDef.Pavement.ANY:
-		at = EventInstance._centred_on_the_pavement_band(_map, at)
-	return at
+	return EventFootprints.stands_at(_map, plan.def,
+			plan.path[0] if plan.path.size() > 0 else plan.position)
 
 ## A placement's pieces as they stand for the whole walk — its own body, and its successor's
 ## where it leaves a solid one — with nothing for a mobile row or one with no body. The same
@@ -222,8 +220,7 @@ func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
 			continue
 		var at: Vector2 = plan.path[0] if def == plan.def and plan.path.size() > 0 \
 				else plan.position
-		if def.pavement_side == EventDef.Pavement.ANY:
-			at = EventInstance._centred_on_the_pavement_band(_map, at)
+		at = EventFootprints.stands_at(_map, def, at)
 		var axis := EventFootprints.body_axis(_map, def, at, plan.facing)
 		var vertical := EventInstance._spread_is_vertical(_map, at)
 		for piece in def.parts():

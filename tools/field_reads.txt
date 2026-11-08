@@ -787,7 +787,6 @@ src/events/event_instance.gd mobile
 src/events/event_instance.gd notice
 src/events/event_instance.gd obstructs_radius
 src/events/event_instance.gd path_mode
-src/events/event_instance.gd pavement_side
 src/events/event_instance.gd pulse_period
 src/events/event_instance.gd pursuit
 src/events/event_instance.gd redetains
@@ -827,7 +826,6 @@ src/events/event_spawner.gd id
 src/events/event_spawner.gd may_be_a_pelican
 src/events/event_spawner.gd mobile
 src/events/event_spawner.gd obstructs_radius
-src/events/event_spawner.gd pavement_side
 src/events/event_spawner.gd pulse_period
 src/events/event_spawner.gd pursuit
 src/events/event_spawner.gd shape
