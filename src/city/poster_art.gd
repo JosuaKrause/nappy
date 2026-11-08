@@ -105,7 +105,7 @@ func prepare(atlas: AtlasLibrary) -> void:
 			if poster == null or mask == null or overlay == null:
 				continue
 			_torn[kind * TEARS + tear] = ImageTexture.create_from_image(
-					compose(poster, mask, overlay))
+					_compose(poster, mask, overlay))
 	var crossed := _cut(page, WANTED_CROSSED)
 	for tear in TEARS:
 		var mask := _cut(page, TEAR_MASKS[tear])
@@ -113,7 +113,7 @@ func prepare(atlas: AtlasLibrary) -> void:
 		if crossed == null or mask == null or overlay == null:
 			continue
 		_torn[_CROSSED_TORN + tear] = ImageTexture.create_from_image(
-				compose(crossed, mask, overlay))
+				_compose(crossed, mask, overlay))
 
 ## The picture for a sheet as `PosterState` holds it: intact, or torn the `tear`th way, the wanted
 ## notice crossed out when `neighbor_taken`.
@@ -124,7 +124,7 @@ func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool
 ## The recipe, per pixel: the poster's colour with its alpha multiplied by the mask's, then the
 ## overlay drawn over the result with ordinary source-over blending. All three images are the same
 ## size and registration. Pure, so a test can hold it without a page.
-static func compose(poster: Image, mask: Image, overlay: Image) -> Image:
+static func _compose(poster: Image, mask: Image, overlay: Image) -> Image:
 	var result := Image.create(poster.get_width(), poster.get_height(), false, Image.FORMAT_RGBA8)
 	for y in poster.get_height():
 		for x in poster.get_width():
