@@ -25,10 +25,17 @@ first:
 - **The gatehouse day's last readers:** the day's spec answers whether the region wall stands
   today (`DaySpec.region_wall_stands()`), and three places still compare the day with
   `Tuning.REGION_WALL_FIRST_DAY` (day 9) instead of asking it, each in a file the day's events after
-  dawn (#1169) holds: `RegionPlanner.plan_day(map, day, tree)`, which plans no wall and no doors
-  before day 9 and becomes `plan_day(map, spec, tree)`, its callers in `DayPlanner` and the tests
-  handing the spec; `SceneRecipeRuntime._select_structures()`, which refuses a recipe's gates and
-  barriers before day 9; and `EventCatalogue._guardsmen_from_day()`, the day the pursuer on foot
-  becomes a guardsman, which whoever picks the pursuer asks the spec for instead.
+  dawn (#1169) holds:
+  - `RegionPlanner.plan_day(map, day, tree)`, which plans no wall and no doors before day 9,
+    becomes `plan_day(map, spec, tree)`. Each caller hands the spec: `DayPlanner`,
+    `City._close_streets()`, `RecipeCityBuilder`'s region plan, `ClosurePlanner.plan_day()`'s
+    fallback when no region plan is handed in, and the tests; `City.start_recipe_day()` has no spec
+    and is given one.
+  - `SceneRecipeRuntime._select_structures()`, which refuses a recipe's gates and barriers before
+    day 9.
+  - `EventCatalogue._guardsmen_from_day()`, the day the pursuer on foot becomes a guardsman, which
+    whoever picks the pursuer asks the spec for instead. The escape's spec answers no while its
+    events run on calendar day 14, where the comparison says yes, so the change confirms the
+    escape's pursuer on foot stays what it is (no escape row has one today).
 - **The ground cache:** which tiles each row may stand on (`EventScheduler.open_ground_for()`), a
   per-day cache `build_day()` builds at dawn and each `WalkSiting` builds again for itself.
