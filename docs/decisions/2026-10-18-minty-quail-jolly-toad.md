@@ -48,9 +48,11 @@ changed. Walls and friction on her route per day, events per city, main and the 
     friction: day 1 16.42, 2 13.52, 3 12.53, 4 16.66, 5 19.62, 6 19.78, 7 22.38, 8 22.41, 9 20.75,
               10 21.56, 11 20.66, 12 20.77, 13 17.95, 14 20.50
 
-The police patrol on her route is main's, 3.22 a city a day over days 1 to 14; against the tree
-before the bags (`9f148031c`) it is still 3.72 → 3.22 (−14%), and route-adjacent 1.52 → 1.86
-(+22%), what grassy-magpie measured. This step's parity is against main, so nothing here refits it.
+The police patrol on her route is main's, 3.22 a city a day over days 1 to 14. 3b leaves the
+patrol exactly at main's, still −14% on her route (3.72 → 3.22) and +22% route-adjacent
+(1.52 → 1.86) against `9f148031c`; it is fitted at the end-of-refactor remeasure, after the walk
+draws, not in 3b as grassy-magpie's note expected (the orchestrator's decision: step 4 moves
+placement again, so a fit now would be redone).
 Dawn planning time inside `build_day()` is +1.0% (2433 s → 2458 s over the 64 cities × 14 days,
 eight probes at once). The escape (`tests/probes/escape_density.gd`, 10 seeds, 309 streets): its
 own rows 204 → 203, planned in 279 → 317 ms a city on average.
@@ -101,7 +103,7 @@ verbatim:
     Note: (b) is empty because head places every cell as main does on all 64 cities: the rules ask what _judge() asked, and what replaces the repairs acts only on what this probe never plans. By the stopping rule, no table is refit.
 
     (c) Outside 2σ on at least two samples with the same sign (z per sample in the order of (b)):
-    Note: the police patrol on her route is main's on every day from 4 to 14 (day 4 3.69 → 3.69, day 5 4.59 → 4.59, day 6 4.45 → 4.45, day 7 4.42 → 4.42, day 8 4.48 → 4.48, day 9 3.91 → 3.91, day 10 3.66 → 3.66, day 11 4.05 → 4.05, day 12 4.16 → 4.16, day 13 3.38 → 3.38, day 14 4.25 → 4.25). The -14% it took in grassy-magpie, against the tree before the bags, stands: this step's parity is against main, so nothing here refits it.
+    Note: the police patrol on her route is main's on every day from 4 to 14 (day 4 3.69 → 3.69, day 5 4.59 → 4.59, day 6 4.45 → 4.45, day 7 4.42 → 4.42, day 8 4.48 → 4.48, day 9 3.91 → 3.91, day 10 3.66 → 3.66, day 11 4.05 → 4.05, day 12 4.16 → 4.16, day 13 3.38 → 3.38, day 14 4.25 → 4.25). Against the tree before the bags it is still -14% on her route and +22% route-adjacent; it is fitted at the end-of-refactor remeasure, after the walk draws.
 
     Summary, pooled over all 64 cities:
     - walls by view, on her route: 6.36 → 6.36 (+0%, z +0.0)

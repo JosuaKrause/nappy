@@ -31,7 +31,9 @@ swap and the escape's one draw a street that are built:
   fire). **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting
   due within the next two events after the mark (olive-koala 2), lands on the next location she
   comes to on her way, so a player who turns at a junction still meets him; today a body sited ahead
-  of her is never moved, and she can turn away from it.
+  of her is never moved, and she can turn away from it. This step also decides whether a placement
+  made during the walk is asked the reach rule (`RouteReachRule`, no body cutting a route tile off
+  from home), which today is a dawn rule and a walk's siting is not asked.
 
 Each of the last three takes some of the callers of `EventScheduler._place_one()` and `_best_of()`,
 which roll tiles and take the roomiest while asking the day's rules of each (the orchestrator's
