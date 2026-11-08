@@ -1,5 +1,10 @@
 extends RefCounted
 ## Authored scenery shares the production tree source, and pedestrian overrides end with a day.
+##
+## **Builds a real `City` and boots no `main`, to combine three modules for the guarantee that spans them**:
+## the tree a recipe relocates (`RecipeCityBuilder`) is the one the city's props stand and the crowd's walkers
+## avoid, and a recipe's pedestrian override (`SceneRecipeRuntime`) ends with the day. None of the three suites
+## can hold it: the builder has no city, and the crowd and city suites have no recipe to hand them.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 
