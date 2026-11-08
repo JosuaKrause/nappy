@@ -28,6 +28,8 @@ const DAY := 13
 ## At most this many marks per seed, evenly spaced over the legal ones in `_marks()`'s order.
 const PER_SEED := 24
 const RUN_SEED := 2
+## When not empty, only these marks are read, `[seed, mark tile]` each: a rerun of the misses.
+const ONLY: Array = []
 
 func run(t) -> void:
 	var totals := {}
@@ -41,6 +43,16 @@ func run(t) -> void:
 		var player := _start_the_day(t, city, director, seed_value)
 		var marks := _legal_marks(city, director)
 		var chosen := _spaced(marks, PER_SEED)
+		if not ONLY.is_empty():
+			chosen = []
+			for entry: Array in ONLY:
+				if entry[0] == seed_value:
+					chosen.append(entry[1])
+			if chosen.is_empty():
+				player.free()
+				director.free()
+				city.free()
+				continue
 		var per_seed := {}
 		for index in chosen.size():
 			if index > 0:
@@ -163,11 +175,43 @@ func _why_no_spot(city: City, director: ResistanceDirector, siting: EventSchedul
 		if first.is_empty():
 			first = why
 	if not any_own:
-		return ["no roadblock ground on its street within %d tiles"
-				% EventScheduler.SWAP_SPREAD_TILES] as Array[String]
+		return ["no roadblock ground on its street within %d tiles (%s)"
+				% [EventScheduler.SWAP_SPREAD_TILES, _why_not_ground(map, siting, plan)]] as Array[String]
 	if first.is_empty():
 		return ["its spot in view"] as Array[String]
 	return first
+
+## Why the road and crossing tiles in `plan`'s place are not a roadblock's ground
+## (`EventScheduler.open_ground_for()`'s refusals, then the role's: a route runs along it): each
+## reason found on any of them, joined.
+static func _why_not_ground(map: CityMap, siting: EventScheduler.WalkSiting,
+		plan: EventScheduler.Planned) -> String:
+	var found := {}
+	var trees := EventScheduler._street_tree_tiles(map, siting._ground)
+	var doorstep := EventScheduler._the_street_she_starts_on(map)
+	var road := 0
+	for tile in siting._tiles_in_place_of(plan):
+		var type := map.tile_at(tile)
+		if type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING:
+			continue
+		road += 1
+		if map.is_closed(tile):
+			found["closed"] = true
+		if map.is_held_at(tile):
+			found["held"] = true
+		if doorstep.has_point(tile):
+			found["her doorstep street"] = true
+		if map.is_on_home_block(tile):
+			found["home block"] = true
+		if trees.has(tile):
+			found["a street tree"] = true
+		if EventScheduler._is_a_corner(tile):
+			found["a corner"] = true
+		if siting._corridor.carries_a_route(tile):
+			found["a route runs along it"] = true
+	if road == 0:
+		return "no road on its street within reach"
+	return "/".join(found.keys())
 
 ## The filters that alone refuse some candidate: removing that one filter would let a swap through.
 static func _only_refusals(refusals: Dictionary) -> Array[String]:
