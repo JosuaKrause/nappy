@@ -2498,10 +2498,15 @@ const MOMENTS_SALT := 7
 ## - a row refused an alley the routes run down (`_refuses_required_alleys()`) has no marble on the
 ##   route.
 ##
-## **Every wall's weight is scaled by `DaySpec.wall_row_share`**, fewer of the hard blockers once the
-## region wall stands (azure-puffin 4: "fewer of all three"): the same share of the walls the day
-## took off after placing them, now kept off the bag instead.
-static func view_weight(def: EventDef, view: int, day: int, spec: DaySpec) -> float:
+## **A hard-blocking wall's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`): a wall with
+## a body in the way or a lethal field, fewer of them once the region wall stands (azure-puffin 4:
+## "let's loosen the density of the hard blocking events in that case", "fewer of all three"). A wall
+## by cost alone, nothing in her way (a patrol car, a leaf blower), is not a hard blocker and keeps its
+## weight. `_view_bags()` keeps the empty marbles a day without the share would have, so the share
+## takes walls away rather than giving their place to the other rows. *Read as, the builder's and open
+## to correction:* the share asks the player's "hard blocking", where the dawn thinning it replaces
+## took a share of every wall-role row.
+static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -> float:
 	var on := view == PlacementView.View.ON_THE_ROUTE
 	var off := view == PlacementView.View.OFF_THE_ROUTE
 	if on and _refuses_required_alleys(def):
@@ -2517,32 +2522,43 @@ static func view_weight(def: EventDef, view: int, day: int, spec: DaySpec) -> fl
 				times = float(WALL_DEEP_WEIGHT) if off else 1.0
 			else:
 				times = 1.0 if off else float(EVENT_WALL_RIM_WEIGHT)
-			times *= spec.wall_row_share
+			if def.obstructs_radius > 0.0 or def.hard_fail:
+				times *= wall_share
 		_:
 			times = 1.0
-	return def.weight * times
+	return def.drawn_as_often() * times
 
 ## **The day's three bags** (`view -> ViewBag`): each view's rows as many times as their weight in it
 ## (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
 ## and empty marbles enough that the view's share of locations holding an event is the share today's
 ## placement gave it (`VIEW_SHARES`, measured; the orchestrator's reading of fork 5(a), open to
-## correction). Each on its own stream off `base`.
+## correction) on the day as it is played. The empty marbles are counted against every wall weighed
+## in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that share of
+## them, the rest of the day as it was. Each on its own stream off `base`.
 static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
 	var bags := {}
+	var played := DaySpec.for_day(day).wall_row_share
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
 		var fill := {}
 		var weight := 0.0
+		var whole := 0.0
+		var as_played := 0.0
 		for id: String in rows:
-			var w := view_weight(rows[id], view, day, spec)
+			var w := view_weight(rows[id], view, day, spec.wall_row_share)
+			whole += view_weight(rows[id], view, day, 1.0)
+			as_played += view_weight(rows[id], view, day, played)
 			if w <= 0.0:
 				continue
 			fill[id] = maxi(1, roundi(w * BAG_MARBLES_PER_WEIGHT))
 			weight += w
 		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
 				* float(VIEW_SHARE_SCALES[view]), 0.001, 0.95)
-		fill[ViewBag.EMPTY] = maxi(1, roundi(weight * (1.0 - share) / share
-				* BAG_MARBLES_PER_WEIGHT))
+		# The measured share is the day's as it is played, its walls weighed by the day's own share;
+		# the marbles are set for that day with every wall weighed in full, so a spec's share of the
+		# walls takes walls away rather than giving their place to the other rows.
+		var in_full := clampf(share * whole / maxf(as_played, 0.0001), 0.001, 0.95)
+		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / in_full - weight) * BAG_MARBLES_PER_WEIGHT))
 		bags[view] = ViewBag.new(fill, hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view]))
 	return bags
 
@@ -2584,15 +2600,15 @@ static func _owe_the_moments(day: int, rng: RandomNumberGenerator, events: DayEv
 		var open: Array[EventDef] = []
 		var total := 0.0
 		for def in rows:
-			if not caps or int(owed.get(def.id, 0)) < def.max_per_day:
+			if not caps or int(owed.get(def.id, 0)) < def.most_in_a_day():
 				open.append(def)
-				total += def.weight
+				total += def.drawn_as_often()
 		if open.is_empty():
 			return
 		var roll := rng.randf() * total
 		var chosen: EventDef = open.back()
 		for def in open:
-			roll -= def.weight
+			roll -= def.drawn_as_often()
 			if roll <= 0.0:
 				chosen = def
 				break

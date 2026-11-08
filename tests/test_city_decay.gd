@@ -181,7 +181,7 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 					beside[tile] = true
 					break
 		var share := float(beside.size()) / float(candidates.size())
-		for roll in 3:
+		for roll in 5:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,

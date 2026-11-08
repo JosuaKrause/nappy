@@ -426,15 +426,16 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 ## **Nothing the day places reaches into a door's own clear ground** — *(2026-09-20, the player:
 ## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
 ## itself, `EventScheduler.clear_of_the_doors()`, over a whole planned day rather than over one
-## contrived placement: the ways a row gets onto the map are several (the fill, a scripted row, a
-## set piece and its fallback) and a check on one of them would say nothing about the rest.
+## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted row,
+## a set piece and its fallback) and a check on one of them would say nothing about the rest.
 ##
 ## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
 ## measures the price of the rule at the same time. The second call is the identical call with the
 ## argument empty, off the same seed and the same tree, so the only thing that differs between the
 ## two plans is which candidates were refused. The assertion on the cost is a relationship rather
-## than a count: refusing this ground has to stay something a day absorbs by putting the row
-## somewhere else, never something that empties it.
+## than a count. A location near a door draws among the rows its ground still accepts, so it draws
+## empty more often, while the rows it refused stay in the bag for the locations after it
+## (`ViewBag.draw()`): the day gives up a share of its events near the doors, never most of them.
 func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
 	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
 	var kept := 0
@@ -477,8 +478,8 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
 					"otherwise this sweep is checking nothing")
 					% [map.seed_used, day, inside_before])
 	t.check(found_a_door, "the sampled days actually carry doors to keep clear of")
-	t.check(kept >= int(round(0.9 * float(loose))),
-			("the gap costs the day almost nothing: %d placed with it against %d without, and a " +
+	t.check(kept >= int(round(0.8 * float(loose))),
+			("the gap costs the day a little: %d placed with it against %d without, and a " +
 			"refusal that emptied a day would be a density change rather than a spacing rule")
 			% [kept, loose])
 

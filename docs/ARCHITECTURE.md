@@ -190,8 +190,8 @@ src/
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
 	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    builds a day's event set from seed + the day's spec: the catalogue's
-	                      day, or the escape city's streets from its marble bag
+	event_scheduler.gd    builds a day's event set from seed + the day's spec: the day's locations drawn from
+	                      a bag per view, or the escape city's streets from its marble bag
 	day_events.gd         the day's planned rows read through one object: what each spoils, what
 	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
@@ -207,14 +207,20 @@ src/
 	walk_ground.gd        the walk kept open past everything standing on it: each street a
 	                      sidewalk, the walk joined — the rule a spec keeping its walk open asks
 	placement_view.gd     the three views on the city's events: on the route, route-adjacent, off it
-	day_locations.gd      every street's locations for one day, laid out at dawn and handed round:
-	                      each street's sections, its view, what a fixed part holds, what is taken,
+	day_locations.gd      every street's locations for one day, and the ground beyond them (alleys, open
+	                      lots, junction boxes), laid out at dawn and handed round: each one's view,
+	                      what a fixed part holds, what is taken or drawn,
 	                      and the open section of a view nearest along her paths
 	street_locations.gd   one street's locations: three sections along it, two sidewalk locations
 	                      in each, a section taken whole by an event that spans the street
 	location.gd           one location: its street, section, tiles, view, and what stands on it
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
+	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
+	                      the empty event, drawn without putting back, only what a location accepts
+	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
+	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
+	                      location's own weight, standing one; the day's own is the scheduler's judged ground
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
 	                      if valid, the route tiles one is close by, standing one; the day's own is
 	                      the scheduler's judged ground

@@ -55,7 +55,7 @@ func _draw(location: Location) -> EventScheduler.Planned:
 	var offered := {}
 	var accepts := func(id: String) -> bool:
 		var def: EventDef = _rows[id]
-		if _caps and int(_stood.get(id, 0)) >= def.max_per_day:
+		if _caps and int(_stood.get(id, 0)) >= def.most_in_a_day():
 			return false
 		var plan := _ground.offer(def, location)
 		offered[id] = plan

@@ -1573,10 +1573,13 @@ outward. The measurement that established this is in `docs/DECISIONS.md` under M
 **From the gatehouse day on, the bags hold only a share of their walls.** *(azure-puffin, point 4:
 "when the guard houses are set up the city gets much harder to navigate let's loosen the density of
 the hard blocking events in that case"; "fewer of all three".)* From `Tuning.REGION_WALL_FIRST_DAY`
-every wall-role row's weight in every view's bag is scaled by `DaySpec.wall_row_share`
-(`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day, `EventScheduler.view_weight()`), so a
-location draws a wall that much less often. The empty marbles are set from the shares, not from the
-walls, so what a wall gives up is not respent on friction: the day holds fewer walls. Only the bags'
+the weight in every view's bag of every wall-role row that is a hard blocker, a body in the way or a
+lethal field, is scaled by `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the
+gatehouse day, `EventScheduler.view_weight()`), so a location draws one that much less often. The
+empty marbles are counted against those walls weighed in full, so what a wall gives up is not
+respent on friction: the day holds fewer hard blockers. A wall by cost alone, nothing in her way,
+keeps its weight; *read as, the builder's and open to correction:* "hard blocking" in the player's
+words. Only the bags'
 walls are scaled; a scripted row, a one-shot and the spoilers in a park she used are placed for a
 reason that is not density. The seals and the road closures are thinned from the same day: see
 `docs/CITY.md`, "How heavy" and "Sealing the tree".
