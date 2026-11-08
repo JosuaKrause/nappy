@@ -18,6 +18,7 @@ func run(t) -> void:
 	_test_a_hard_fail_is_named_by_its_reason(t)
 	_test_a_won_day_moves_the_calendar_on(t)
 	_test_a_won_last_day_with_every_task_done_hands_over(t)
+	_test_a_scene_recipe_never_hands_over(t)
 	_test_a_won_day_with_a_player_and_no_city_ends(t)
 	_test_a_section_is_ended_but_not_settled(t)
 
@@ -131,18 +132,24 @@ func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 	_run.header.day = Tuning.RUN_LENGTH_DAYS
 	_run.resistance.progress = Tuning.RESISTANCE_GOAL
 	_run.resistance.sabotage_done = true
-	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"a won last day with every task done hands over")
-	director.escape_follows = false
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"a scene recipe never does")
-	director.escape_follows = true
 	_run.header.nerves = Tuning.STARTING_NERVES - 2
 	var end := director.finish_day(GameEnums.DayResult.WON)
+	t.check(end.hands_over_to_the_escape, "a won last day with every task done hands over")
 	t.check(_run.header.nerves == Tuning.STARTING_NERVES - 1,
 			"and the won day gives a nerve back, as every won day does")
-	t.check(end.hands_over_to_the_escape and _run.header.day == Tuning.RUN_LENGTH_DAYS
-			and not end.run_over, "and the calendar is left where it was for the escape to decide")
+	t.check(_run.header.day == Tuning.RUN_LENGTH_DAYS and not end.run_over,
+			"and the calendar is left where it was for the escape to decide")
+	_put_away(rig)
+
+func _test_a_scene_recipe_never_hands_over(t) -> void:
+	var rig := _rig(t)
+	var director: DayDirector = rig["director"]
+	_run.header.day = Tuning.RUN_LENGTH_DAYS
+	_run.resistance.progress = Tuning.RESISTANCE_GOAL
+	_run.resistance.sabotage_done = true
+	director.escape_follows = false
+	var end := director.finish_day(GameEnums.DayResult.WON)
+	t.check(not end.hands_over_to_the_escape, "a scene recipe's won last day never hands over")
 	_put_away(rig)
 
 func _test_a_section_is_ended_but_not_settled(t) -> void:
