@@ -1224,7 +1224,8 @@ region wall, its doors, the closures, the seals, the masts and the ambient rows 
   regular event under the design (inbox #1185).
 
 **Every other location is drawn during the walk.** As she walks, the placeholders are filled from
-the bag (gray-dolphin #1173). The roadblock phase is the only assignment made at dawn (inbox #1185).
+the bag (gray-dolphin #1173). Beside the city's fixed parts, the roadblock phase is the only
+assignment made at dawn (inbox #1185).
 
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
 then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
