@@ -123,17 +123,17 @@ func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> D
 # ---------------------------------------------------------------------- the core ---
 
 ## How far the share of streets sealed while the region wall stands may sit from
-## `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days — over a thousand rolls, so a share
-## honoured by the roll lands well inside this and one not honoured at all (every street sealed, or
-## none) lands well outside it.
+## `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE`, over one seed's days with the wall — about a thousand
+## rolls, so a share honoured by the roll lands well inside this and one not honoured at all (every
+## street sealed, or none) lands well outside it.
 const _SEAL_SHARE_TOLERANCE := 0.1
 
 ## The whole point: a seal stands on every off-tree, real, non-home street, and nowhere else — on a
-## day the region wall does not stand. While it stands, `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE` of
-## those streets carry one (azure-puffin, point 4: "fewer of all three"), so there the check is the
-## share sealed over the seed's days, and still never a seal off the candidates. Each day is planned
-## twice, handed each answer by a `FakeDaySpec` rather than working it out from the day number, so
-## the planner is seen to thin on the answer it is given and on nothing else.
+## day the region wall does not stand. While it stands (`DaySpec.region_wall_stands()`),
+## `SealPlanner.GATEHOUSE_DAY_SEAL_SHARE` of those streets carry one (azure-puffin, point 4: "fewer
+## of all three"), so there the check is the share sealed over the seed's days with the wall, and
+## still never a seal off the candidates. Which days those are is the day's spec's answer, the one
+## the planner is handed, not a comparison with the day number made here.
 func _test_off_tree_streets_are_sealed(t) -> void:
 	for map in _maps:
 		var walled_candidates := 0
@@ -142,31 +142,28 @@ func _test_off_tree_streets_are_sealed(t) -> void:
 			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
 			var candidates := _candidate_segments(map, tree, home)
-			for wall_stands: bool in [false, true]:
-				var spec := FakeDaySpec.new().on(day, wall_stands)
-				var planned := SealPlanner.plan_day(map, spec, tree, _seal_rng(map, day))
-				var sealed := _sealed_segments(map, planned)
+			var planned := _seals_for(map, day)
+			var sealed := _sealed_segments(map, planned)
 
-				var missing := 0
-				for key in candidates:
-					if not sealed.has(key):
-						missing += 1
-				if wall_stands:
-					walled_candidates += candidates.size()
-					walled_sealed += candidates.size() - missing
-				else:
-					t.check(missing == 0,
-							"seed %d day %d with no region wall: %d off-tree streets carry no seal "
-							% [map.seed_used, day, missing]
-							+ "(of %d candidates)" % candidates.size())
+			var missing := 0
+			for key in candidates:
+				if not sealed.has(key):
+					missing += 1
+			if DaySpec.for_day(day).region_wall_stands():
+				walled_candidates += candidates.size()
+				walled_sealed += candidates.size() - missing
+			else:
+				t.check(missing == 0,
+						"seed %d day %d: %d off-tree streets carry no seal (of %d candidates)"
+						% [map.seed_used, day, missing, candidates.size()])
 
-				var extra := 0
-				for key in sealed:
-					if not candidates.has(key):
-						extra += 1
-				t.check(extra == 0,
-						"seed %d day %d: %d seals stand on a street that was never a candidate"
-						% [map.seed_used, day, extra])
+			var extra := 0
+			for key in sealed:
+				if not candidates.has(key):
+					extra += 1
+			t.check(extra == 0,
+					"seed %d day %d: %d seals stand on a street that was never a candidate"
+					% [map.seed_used, day, extra])
 		t.check(walled_candidates > 0,
 				"seed %d: the days with the region wall had off-tree streets to seal (%d)"
 				% [map.seed_used, walled_candidates])

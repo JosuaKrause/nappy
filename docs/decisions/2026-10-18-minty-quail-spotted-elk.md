@@ -19,8 +19,14 @@ chance.
   field is added.
 - `tests/test_day_spec.gd` checks the answer on days 8, 9, 10 and 14 and on both escape sections,
   and that the catalogue's walls are thinned on exactly the days the wall stands, building no city.
-  `tests/fake_day_spec.gd` (`FakeDaySpec.on(day, wall_stands)`) hands a planner either answer; the
-  seal share and closure quota tests use it.
+  The seal share test (`tests/test_seals.gd`) and the closure quota test
+  (`tests/routes_closures_rig.gd`) plan each day once with its real spec, `DaySpec.for_day(day)`,
+  and take which days have the wall from its answer rather than from the day number. A day's spec
+  is plain data, built as it is (writing-tests). A fake that handed both answers on every day was
+  tried first, and the review rejected it: half its setups, the wall on days 1 to 8 and none on
+  days 9 to 14, are states the game never produces, and it doubled the seal suite's planning.
+- `SealPlanner` reads the day through `day_number()` too, so `tools/field_reads.txt` loses its
+  line for `seal_planner.gd` reading `number`.
 
 **Measured.** The placement fingerprint is identical to main's at 3aa31087: 15787 placements, the
 two sets of `FP ` lines byte for byte the same.
@@ -29,9 +35,7 @@ two sets of `FP ` lines byte for byte the same.
 - The escape's two sections answer no, though their day numbers are past 9: the halved alley-mouth
   chance the old comparison gave them was never rolled, since the escape seals every alley mouth.
 - The answer is stored when the spec is built; a hand-built `DaySpec.new()` answers no.
-- `ClosurePlanner` takes the spec rather than a true/false, to match `SealPlanner` and take the fake.
-- The planner tests hand both answers on every day, including pairs the game never produces (the
-  wall standing on day 3).
+- `ClosurePlanner` takes the spec rather than a true/false, to match `SealPlanner`.
 
 **Left.** Three readers in files #1169 holds still compare the day with the constant; the queue
 item names them.

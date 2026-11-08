@@ -1,7 +1,7 @@
 extends RefCounted
 ## `DaySpec`: whether the region wall stands on a day is worked out once, by the spec, on the days
 ## around the wall's first, and the escape's sections never have it. What each planner does with
-## the answer is its own suite's, handed a `FakeDaySpec` (`tests/fake_day_spec.gd`).
+## the answer is its own suite's (`tests/test_seals.gd`, `tests/routes_closures_rig.gd`).
 
 func run(t) -> void:
 	_test_the_region_wall_stands_from_its_first_day(t)

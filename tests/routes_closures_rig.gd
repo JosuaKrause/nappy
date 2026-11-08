@@ -92,43 +92,36 @@ func case_closures_are_deterministic(t) -> void:
 
 ## The count is the act's, unless the invariant would not let the planner have that many —
 ## which is a floor it may fall short of, never a ceiling it may exceed.
+##
+## **And while the region wall stands it is fewer than the act's** — azure-puffin, point 4: "fewer
+## of all three". Which days those are is the day's spec's answer (`DaySpec.region_wall_stands()`),
+## the one the planner is handed. Asked against `Tuning.closures_for_day()`, the act's own quota,
+## rather than against `ClosurePlanner.closures_wanted()`, which would read the rule back to itself:
+## on a day with the wall whose act quota is more than one street, the day shuts fewer than that
+## quota.
 func case_closure_counts_follow_the_act(t) -> void:
+	var thinned_days := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			var spec := DaySpec.for_day(day)
 			var closures := _plan(map, day)
-			var wanted := ClosurePlanner.closures_wanted(DaySpec.for_day(day))
+			var wanted := ClosurePlanner.closures_wanted(spec)
 			t.check(closures.size() <= wanted,
 					"seed %d day %d shuts at most the act's %d streets"
 					% [map.seed_used, day, wanted])
+			if spec.region_wall_stands() and Tuning.closures_for_day(day) > 1:
+				thinned_days += 1
+				t.check(closures.size() < Tuning.closures_for_day(day),
+						("seed %d day %d, with the region wall, shuts fewer than the act's %d " +
+						"streets (%d)")
+						% [map.seed_used, day, Tuning.closures_for_day(day), closures.size()])
 			for closure in closures:
 				t.check(day >= int(RoadClosure.KINDS[closure.kind]["first_day"]),
 						"seed %d day %d: %s cannot happen yet"
 						% [map.seed_used, day, RoadClosure.display_name(closure.kind)])
-
-## **While the region wall stands the quota is fewer than the act's** — azure-puffin, point 4:
-## "fewer of all three" — and with no wall it is the act's own. Handed the answer by a
-## `FakeDaySpec` on every day of the run rather than worked out from the day number, and asked
-## against `Tuning.closures_for_day()`, the act's own quota, rather than against the planner's
-## share, which would read the rule back to itself: on a day whose act quota is more than one
-## street, a day with the wall wants fewer than that quota. Needs no city: the quota is a function
-## of the act and the wall alone.
-func case_the_quota_is_fewer_while_the_region_wall_stands(t) -> void:
-	var thinned_days := 0
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var act_quota := Tuning.closures_for_day(day)
-		var without := ClosurePlanner.closures_wanted(FakeDaySpec.new().on(day, false))
-		t.check(without == act_quota,
-				"day %d with no region wall wants the act's %d streets (%d)"
-				% [day, act_quota, without])
-		if act_quota <= 1:
-			continue
-		thinned_days += 1
-		var with_the_wall := ClosurePlanner.closures_wanted(FakeDaySpec.new().on(day, true))
-		t.check(with_the_wall < act_quota,
-				"day %d with the region wall wants fewer than the act's %d streets (%d)"
-				% [day, act_quota, with_the_wall])
 	t.check(thinned_days > 0,
-			"the sweep had days with an act quota above one (%d)" % thinned_days)
+			"the sweep had days with the region wall and an act quota above one (%d)"
+			% thinned_days)
 
 ## Both mouths always come out, and nothing a closure marks closed ever stops being walkable —
 ## `close_streets` narrows *how much* of a street is unreachable, never whether the ground itself
