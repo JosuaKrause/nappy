@@ -40,6 +40,7 @@ func run(t) -> void:
 	_test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t)
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t)
+	_test_every_ground_weight_names_a_row_and_a_kind(t)
 	_test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t)
 	_test_nothing_beside_the_routes_stands_on_the_main_road(t)
 	_test_day_13s_roadblocks_stand_beside_the_routes(t)
@@ -513,6 +514,21 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 			var delta: Vector2 = plan.path[1] - plan.path[0]
 			t.check(is_zero_approx(delta.x) or is_zero_approx(delta.y),
 					"day %d: '%s' route follows a single corridor" % [day, plan.def.id])
+
+## **Every weight `EventScheduler.GROUND_WEIGHTS` holds is one the draw can find**: keyed by a row the
+## catalogue has and by a `Location.Kind`, so a misspelt row or a renamed kind fails here rather than
+## quietly weighing one and moving the fitted mix.
+func _test_every_ground_weight_names_a_row_and_a_kind(t) -> void:
+	var stray: Array[String] = []
+	for id: String in EventScheduler.GROUND_WEIGHTS:
+		if EventCatalogue.by_id(id) == null:
+			stray.append(id)
+			continue
+		for kind: Variant in (EventScheduler.GROUND_WEIGHTS[id] as Dictionary):
+			if typeof(kind) != TYPE_INT or not Location.Kind.values().has(kind):
+				stray.append("%s: %s" % [id, kind])
+	t.check(not EventScheduler.GROUND_WEIGHTS.is_empty() and stray.is_empty(),
+			"every ground weight names a catalogue row and a kind of location (%s)" % [stray])
 
 ## How far the share of its walls a day keeps from the gatehouse day on may sit from
 ## `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`, over the days the test below plans: the bags' wall

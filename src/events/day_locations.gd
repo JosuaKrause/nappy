@@ -7,13 +7,13 @@ extends RefCounted
 ## phase has assigned taken for the day. The one object holding those answers, so nothing works
 ## them out again (inbox #1156 in gray-dolphin).
 ##
-## **Laid out on day 13 alone in this step**, by the roadblock phase's call in
-## `EventScheduler.build_day()` after the routes are established and the day's holds are on the map
-## (`EventScheduler._place_the_roadblocks()`). The roadblock phase (`RoadblockPhase`) assigns its
-## sections at dawn; the day's plan hands it on to the walk (`DayEvents.locations()`,
-## `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's task takes a section for
-## its roadblock when none is close by (`nearest_section_in()`). The bags and the walk's draws, later
-## steps of the placement, lay it out every day. Pure state: no node, nothing that runs.
+## **Laid out every day at dawn**, in `EventScheduler.build_day()` after the routes are established
+## and the day's holds are on the map (`EventScheduler._plan_the_dawn()`). On day 13 the roadblock
+## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
+## view's bag (`LocationDraw`). The day's plan hands the locations on to the walk
+## (`DayEvents.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
+## task takes a section for its roadblock when none is close by (`nearest_section_in()`). Pure state:
+## no node, nothing that runs.
 
 var _streets := {}
 ## The ground beyond the streets: each alley's three locations, each open lot's grid of cells and

@@ -76,8 +76,8 @@ const RETURN_PATROL_INTERVAL := Vector2(9.0, 16.0)
 ## two inside a return leg rather than all of them.
 const RETURN_PATROL_WITHIN_THE_NEXT := 2
 ## Rows whose marbles in her route's bag are set here rather than by `ROUTE_BAG_MARBLES_PER_WEIGHT`
-## times their weight, because the weight is not only the bag's: the dawn's weighted roll reads it
-## on every day the row is placed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
+## times their weight, because the weight is not only the bag's: the dawn's draw reads it on every
+## day the row is placed, as its share of the view bags and of the moments she is owed. *(inbox #566 in feathery-stork: "if we want to change the probability then we can
 ## change the bag -- I'd say we could do 2 dogs -- we don't need the charging dog that often and in
 ## 17 rolls there are two guaranteed ones".)* `charging_dog` is in the bag only on day 3, the one
 ## day it is director-sited; its lesson is a bag of its own in front (`EventDirector._teach_the_run()`)
@@ -104,8 +104,8 @@ var _map: CityMap
 var _navigator: Navigator
 var _rng := RandomNumberGenerator.new()
 ## The events the day owes her and has not yet spent, in the order they are handed out. A `null`
-## entry is **a marble from the route's bag**: one of the events the day bought for her route,
-## which row it is decided by `_route` when it is handed out rather than by the dawn's roll. A
+## entry is **a marble from the route's bag**: one of the events the day owes her route, which row
+## it is decided by `_route` when it is handed out rather than at dawn. A
 ## non-null entry is a row owed as itself — a sprinkled dog, a forced row.
 var _owed: Array[EventDef] = []
 ## The day, for the siting a row asks for on it (`EventDef.spawn_mode_on()`).
@@ -124,7 +124,7 @@ var _route: MarbleBag = null
 ## ordinary bag holds, and any a rig put in front of it (`rig_her_route()`).
 var _route_rows := {}
 ## Row id -> how many of it the director has handed out today, so a row's `max_per_day` holds for
-## what she meets as it holds for what the dawn buys. Asked only of the ordinary bag's rows
+## what she meets as it holds for what the dawn draws. Asked only of the ordinary bag's rows
 ## (`_ordinary_rows`): a rigged marble is there because something asked for it.
 var _met_today := {}
 ## The ids the ordinary bag is filled with today.
@@ -219,7 +219,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	_walk_rng.seed = hash("%d:on-her-way" % rng.seed)
 	_crew_rng.seed = hash("%d:crews-on-her-way" % rng.seed)
 	_place_rng.seed = hash("%d:placed-from-the-route" % rng.seed)
-	# The first pursuer the day bought, for day 3's lesson — see `_teach_the_run()`.
+	# The first pursuer the day owes, for day 3's lesson — see `_teach_the_run()`.
 	var lesson: EventDef = null
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
@@ -303,13 +303,13 @@ func _take_the_forced_row() -> void:
 ## is a rigged bag with only one entry that is separate from anything that comes after" · "the
 ## lesson is not paid for. why would it be? that's not how the marble bag works".)* A bag holding
 ## only the dog goes in front of the route's bag (`MarbleBag.rig()` at a size of one takes nothing
-## from the bag behind it), and the first of the events the dawn bought for her route is the one
+## from the bag behind it), and the first of the events the dawn owes her route is the one
 ## drawn from it. The ordinary bag after it keeps every dog marble it was filled with
 ## (`ROUTE_BAG_MARBLES_OF`).
 ##
 ## It is *not* a scripted event, and that is deliberate: it is one of the day's own owed
 ## `AHEAD_OF_PLAYER` plans, so teaching the run cannot quietly make day 3 denser than the day's
-## count of moments says. If the day happened not to buy one, there is nothing to teach and nothing happens.
+## count of moments says. If the day happened to owe none, there is nothing to teach and nothing happens.
 ##
 ## **The one it hands out is the lesson's own row** (`EventCatalogue.lesson_of()`: the charging
 ## dog's is `charging_dog_tutorial`), the first of `lesson`'s row `due()` hands out, so its
@@ -402,10 +402,10 @@ func owed() -> int:
 # ------------------------------------------------------------ the route's bag ---
 
 ## Fills `_route` with every row the director sites on `day` — recurring, available, and
-## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day — in proportion to its weight. **The dawn placement
-## stays a weighted roll** (`EventScheduler._fill_with_recurring()`), and what it buys for her route
-## is how many she is owed, at the same cost as everything else; the bag only decides which row
-## each of those is, in the order she meets them. *(2026-09-27, asked how far the bags reach, the
+## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day — in proportion to its weight. **How many she is owed
+## is the day's** (`EventScheduler.MOMENTS_PER_DAY`, each drawn by weight under its cap by
+## `EventScheduler._owe_the_moments()`); the bag only decides which row each of those is, in the
+## order she meets them. *(2026-09-27, asked how far the bags reach, the
 ## player chose the route's events only.)*
 func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:
 	_route_rows.clear()
@@ -813,7 +813,7 @@ func owe_the_return(day: int, heat: int) -> void:
 	var for_return := _patrol_toward_her(heat)
 	if not for_return:
 		return
-	# One more event owed for each patrol, as the patrols were always on top of what the day bought;
+	# One more event owed for each patrol, as the patrols were always on top of what the day owes;
 	# each is the ensured marble of a rigged bag, rigged as the one before it is handed out.
 	_route_rows[RETURN_PATROL] = for_return
 	for i in count:
@@ -841,7 +841,7 @@ var _patrol_bag_left := 0
 ## has been handed out — so each comes within its own bag's events and two never come back to back
 ## unless the second bag starts with what the first ended on. *(inbox #561 in coral-bunny: "The return patrols in acts III and IV are added at the back of the
 ## route queue -- the marble bag approach will properly fix this" · "they will need rigged
-## bags".)* Behind the day's own events, the dozens the dawn buys and the pacing never drains, they
+## bags".)* Behind the day's own events, the dozens the dawn owes and the pacing never drains, they
 ## would never come; rigged, each one comes within that many events of the last.
 func _rig_the_next_patrol() -> void:
 	if _return_patrols_left <= 0 or not _route:

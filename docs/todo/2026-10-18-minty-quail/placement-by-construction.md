@@ -20,7 +20,10 @@ view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the road
 - the events the street's other draws make invalid left out of a location's draw: today's placement
   rules become that invalidation, in place of `JudgedLocationGround`, which still asks `_judge()`
   whether a candidate fits (the roadblock phase's own use of `_judge()` included), and
-  `DayRepairs` goes with them;
+  `DayRepairs` goes with them; the fitted tables that encode how often `_judge()` refuses
+  (`EventScheduler.VIEW_SHARE_SCALES`, `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES` and
+  `GROUND_WEIGHTS`) are fitted again against main in the same step, with
+  `tests/probes/placement_rows.gd`;
 - the escape on the same draw, one draw per street and the rest of the street empty once any
   location holds an event (inbox #1185's board answer), `_fill_the_walk_from_the_bag`, `KeptGround`
   and the escape's `Rules` going with it;

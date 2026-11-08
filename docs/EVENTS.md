@@ -298,7 +298,7 @@ finds it a site, which can be after an event behind it, or never. Three rigs sta
 from anything that comes after" · "the lesson is not paid for. why would it be? that's not how the
 marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
 behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
-first of the events the dawn bought for her route is drawn from it, at `LESSON_DELAY`.
+first of the events the dawn owes her route is drawn from it, at `LESSON_DELAY`.
 
 **A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
 into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "this makes it very unlikely that two events from the
@@ -320,7 +320,7 @@ stretch of a day nothing in the catalogue was ever pacing for. `EventDirector.RE
 the day's other plans of that row already use. **Each is a rigged bag** in her route's bag (inbox
 #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "they will need rigged bags"): the patrol and `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` less one
 drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
-within its own bag's events rather than behind the dozens the dawn bought for her route, which the
+within its own bag's events rather than behind the dozens the dawn owes her route, which the
 pacing never reaches. From then on the queue
 rolls `EventDirector.RETURN_PATROL_INTERVAL` (9–16s) instead of `EventDirector.AHEAD_INTERVAL` (11–26s) for the
 rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
@@ -1380,7 +1380,11 @@ locations that take it, and the sidewalk rows would take the share it lost: the 
 would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
 the view scales, until each row's daily count on each kind of ground is today's
 (`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
-they are measured, not derived, and are fitted again whenever the draw's rules change. *(The
+they are measured, not derived, and are fitted again whenever the draw's rules change. **And each
+role is weighed per view and act** (`EventScheduler.WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`),
+fitted the same way, since a weight per kind of ground scales a row the same in every view: without
+them the draw moved walls off her route onto the ground off it, and what her route holds is what the
+route decision faces. *(The
 player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
 view's bag; issue #1185.)*
 
@@ -1591,12 +1595,14 @@ outward. The measurement that established this is in `docs/DECISIONS.md` under M
 **From the gatehouse day on, the bags hold only a share of their walls.** *(azure-puffin, point 4:
 "when the guard houses are set up the city gets much harder to navigate let's loosen the density of
 the hard blocking events in that case"; "fewer of all three", to a question that listed the
-wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), the weight in
-every view's bag of every wall-role row is scaled by `DaySpec.wall_row_share`
-(`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`, `EventScheduler.view_weight()`), so a location draws one
-that much less often. The empty marbles are counted against the walls weighed in full, so what a
-wall gives up is not respent on friction: the day holds fewer walls, and a lighter weight does make
-fewer here because each view's empty marbles are fixed. Only the bags' walls are scaled; a scripted
+wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), every
+wall-role row is scaled by `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`) twice
+over: its weight in every view's bag (`EventScheduler.view_weight()`), so a location draws one that
+much less often, and its cap (`EventScheduler._caps_of()`, a fraction rounded up or down on its own
+stream), so a wall whose cap binds is thinned as well. The empty marbles are counted against the
+walls weighed in full, so what a wall gives up is not respent on friction: the day holds fewer walls.
+A lighter weight alone makes fewer only of a wall whose cap does not bind, which is why the cap is
+scaled too. Only the bags' walls are scaled; a scripted
 row, a one-shot and the spoilers in a park she used are placed for a reason that is not density. The
 seals and the road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and
 "Sealing the tree".

@@ -1352,13 +1352,13 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ## everything after it — and two things change between attempts by design:
 ##
 ## - `_place_one_shots` skips a one-shot the run has already spent. Skipping it *before* drawing its
-##   `randf()` starts `_fill_with_recurring` one value earlier on the second attempt and produces a
-##   different city's worth of events: measured on the day the fire engine runs, `homeless_yeller`
-##   goes from two to eight and `cyclist` from none to three between two attempts at the same day.
+##   `randf()` would start every later phase's draws one value earlier on the second attempt and
+##   produce a different city's worth of events.
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
 ##   `_room_around` to reject a placement against — and a rejection is a re-roll.
 ##
-## Separate streams close the first completely and most of the second (see `_fill_with_recurring`).
+## Separate streams close the first completely and most of the second (each phase's salt, the dawn
+## draw's `LOCATIONS_SALT` among them).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
 ## moves that event. That is the right answer — a fire that burnt a block down did happen, and the
 ## day should acknowledge it — and it is a handful of placements rather than the whole day.
@@ -2528,9 +2528,11 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 	if on and _refuses_required_alleys(def):
 		return 0.0
 	var times := 1.0
+	var act := _act_of(day)
 	match _role_for(def, day):
 		GameEnums.BlockerRole.FRICTION:
 			times = float(EVENT_CORRIDOR_WEIGHT) if on else 1.0
+			times *= float(FRICTION_VIEW_SCALES[view][act])
 		GameEnums.BlockerRole.WALL:
 			if not _is_a_wall_by_cost(def):
 				times = float(EVENT_CORRIDOR_WEIGHT) if on else 1.0
@@ -2538,10 +2540,36 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 				times = float(WALL_DEEP_WEIGHT) if off else 1.0
 			else:
 				times = 1.0 if off else float(EVENT_WALL_RIM_WEIGHT)
-			times *= wall_share
+			times *= wall_share * float(WALL_VIEW_SCALES[view][act])
 		_:
 			times = 1.0
 	return def.drawn_as_often() * times
+
+## **How each role weighs in each view, act by act** (`[view][act - 1]`), on top of the role's offers
+## above: fitted so the walls and the friction each view holds on each act are today's
+## (`tests/probes/placement_rows.gd` against main, each placed plan counted under its row's role).
+## One location draws one marble, and today's rules refuse a wall on her route more often than they
+## refused today's per-tile offers, so without it the walls left her route for the ground off it:
+## what her route holds is what the route decision faces. Measured, not derived, and fitted again with
+## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change.
+const WALL_VIEW_SCALES := [
+	[1.07, 1.08, 1.15, 1.14],
+	[1.04, 1.01, 1.01, 1.01],
+	[0.96, 0.95, 0.88, 0.89],
+]
+const FRICTION_VIEW_SCALES := [
+	[0.96, 0.98, 1.02, 1.02],
+	[1.15, 1.07, 1.11, 1.04],
+	[1.03, 1.06, 1.03, 1.03],
+]
+
+## The act `day` falls in, counted from 0 (`Tuning.ACT_START_DAYS`).
+static func _act_of(day: int) -> int:
+	var act := 0
+	for i in Tuning.ACT_START_DAYS.size():
+		if day >= int(Tuning.ACT_START_DAYS[i]):
+			act = i
+	return act
 
 ## **The day's three bags** (`view -> ViewBag`): each view's rows as many times as their weight in it
 ## (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
@@ -2594,16 +2622,16 @@ const VIEW_SHARES := [
 ## routes, and one scale for every day left the later days' routes light; what is on her route is
 ## what the route decision is about, so it is held at today's on each day. Fitted, not derived:
 ## each day's scale moved toward today's share by `tests/probes/placement_view_mix.gd`'s measure.
-const ON_SHARE_SCALES: Array[float] = [4.63, 5.00, 4.99, 5.17, 5.40, 5.22, 5.17, 4.76, 5.78, 5.85, 6.45, 6.42, 6.87, 6.80]
-const ADJACENT_SHARE_SCALES: Array[float] = [1.92, 2.10, 1.93, 1.97, 1.99, 2.16, 2.30, 2.11, 3.33, 3.67, 3.70, 4.04, 2.92, 4.43]
-const OFF_SHARE_SCALES: Array[float] = [1.78, 1.72, 1.77, 2.03, 1.74, 1.72, 1.85, 2.14, 2.96, 2.98, 3.19, 2.94, 3.23, 3.32]
+const ON_SHARE_SCALES: Array[float] = [4.64, 5.07, 4.91, 5.07, 5.33, 5.70, 5.12, 4.95, 6.21, 6.37, 6.54, 6.59, 7.20, 7.22]
+const ADJACENT_SHARE_SCALES: Array[float] = [2.12, 2.10, 2.06, 2.07, 2.08, 2.21, 2.27, 2.26, 3.36, 3.73, 3.91, 4.03, 3.03, 4.60]
+const OFF_SHARE_SCALES: Array[float] = [1.77, 1.66, 1.78, 2.06, 1.76, 1.71, 1.87, 2.08, 2.85, 2.90, 3.05, 2.91, 3.18, 3.25]
 const VIEW_SHARE_SCALES := [
 	ON_SHARE_SCALES,
 	ADJACENT_SHARE_SCALES,
 	OFF_SHARE_SCALES,
 ]
 
-## **How often a row is drawn on each kind of ground** (`row id -> {kind's name in Location.Kind -> weight}`),
+## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
 ## a weight a location of that kind scales the row's share of its view's bag by
 ## (`JudgedLocationGround.scale()`; the player's "yes" to a group of locations per kind of ground
 ## and a weight per location scaling its view's bag, issue #1185). **Why it is needed:** each
@@ -2615,36 +2643,34 @@ const VIEW_SHARE_SCALES := [
 ## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
-	"abduction": {"SIDEWALK": 0.13, "JUNCTION": 110},
-	"alley_mouse": {"ALLEY": 13.41},
-	"alley_robbery": {"ALLEY": 3.96},
-	"busker": {"OPEN": 135},
-	"cafe_tables": {"SIDEWALK": 0.44},
-	"charging_dog": {"SIDEWALK": 0.21, "OPEN": 0.47, "JUNCTION": 372},
-	"chatting_mother": {"SIDEWALK": 0.28, "JUNCTION": 400},
-	"construction": {"SIDEWALK": 0.49},
-	"delivery_van": {"SIDEWALK": 1.46},
-	"dog_walker": {"SIDEWALK": 0.82, "JUNCTION": 2.23},
-	"homeless_yeller": {"SIDEWALK": 0.9, "OPEN": 0.65, "JUNCTION": 2.27},
-	"ice_cream_van": {"SIDEWALK": 0.85},
-	"leaf_blower": {"SIDEWALK": 0.59, "OPEN": 0.53, "JUNCTION": 1.18},
-	"market_stall": {"SIDEWALK": 0.46, "OPEN": 0.37},
-	"military_convoy": {"SECTION": 0.79},
-	"pigeon_flock": {"SIDEWALK": 0.73, "OPEN": 1.7, "JUNCTION": 6.73},
-	"police_patrol": {"SECTION": 1.32, "JUNCTION": 5.16},
-	"poster_crew_square": {"OPEN": 24.03},
-	"protest": {"OPEN": 6.23, "JUNCTION": 16.08},
-	"reversing_lorry": {"SIDEWALK": 1.43},
-	"roadblock": {"SECTION": 2.39},
+	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
+	"alley_mouse": {Location.Kind.ALLEY: 14.67},
+	"alley_robbery": {Location.Kind.ALLEY: 4.46},
+	"busker": {Location.Kind.OPEN: 150},
+	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
+	"charging_dog": {Location.Kind.SIDEWALK: 0.21, Location.Kind.OPEN: 0.78, Location.Kind.JUNCTION: 319},
+	"chatting_mother": {Location.Kind.SIDEWALK: 0.25, Location.Kind.JUNCTION: 400},
+	"construction": {Location.Kind.SIDEWALK: 0.49},
+	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
+	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
+	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
+	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
+	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},
+	"market_stall": {Location.Kind.SIDEWALK: 0.44, Location.Kind.OPEN: 0.34},
+	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 1.43},
+	"pigeon_flock": {Location.Kind.SIDEWALK: 0.7, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
+	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 5.54},
+	"poster_crew_square": {Location.Kind.OPEN: 27.86},
+	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 16.89},
+	"reversing_lorry": {Location.Kind.SIDEWALK: 1.46},
+	"roadblock": {Location.Kind.SECTION: 2.69},
 }
 
 ## A row's weight on a location of `kind` (`Location.Kind`): `GROUND_WEIGHTS`', one where it lists
-## none. The table names a kind by its name in `Location.Kind`.
+## none.
 static func _ground_weight(def: EventDef, kind: int) -> float:
 	var weights: Dictionary = GROUND_WEIGHTS.get(def.id, {})
-	if weights.is_empty():
-		return 1.0
-	return float(weights.get(Location.Kind.find_key(kind), 1.0))
+	return float(weights.get(kind, 1.0))
 
 ## **The moments the day owes her** (`AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows, the cat that bolts
 ## across, the cyclist, the loose dog): sited in front of her by the director, on its own clock and
@@ -3056,8 +3082,8 @@ static func _judge(candidate: Planned, role: GameEnums.BlockerRole, map: CityMap
 ## the day's planning.
 ##
 ## The answer is two passes over every tile of the right type, and a sidewalk is five thousand of
-## them — while `_fill_with_recurring` asks the question once per attempt, which on a fourteenth day
-## is over four hundred times. Nothing it depends on can move inside one `build_day`: the grid was
+## them — while the dawn draw asks the question for every row a location weighs, hundreds of times on
+## a day. Nothing it depends on can move inside one `build_day`: the grid was
 ## repainted at dawn and the day's closures are already on the map.
 ##
 ## The key is the *question* rather than the event, because almost every row in the catalogue asks
