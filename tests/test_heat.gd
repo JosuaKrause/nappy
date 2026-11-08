@@ -6,16 +6,33 @@ extends RefCounted
 ## asserted on load, from data — so a row that gets worse with the resistance and is only ever
 ## validated cold has its contract stated about precisely the harmless version of itself. Progress
 ## is a bounded integer, so the whole set of shapes exists and all of it is checkable.
+##
+## **No city and no day are built.** The row cases are asked of `EventCatalogue.heated()`'s rows and of
+## `EventInstance`s set up on a hand-drawn path, with no world round them. **Why real `EventInstance`s
+## are in a heat suite**: what heat promises about a patrol, a guard or a raid is how the instance
+## made from the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a
+## guarantee between the catalogue's row and the instance that plays it, so a fake instance would
+## answer nothing. The instance's own members a case reads (`age`, `is_leaving`, `is_finished`,
+## `barrier_post`) have no method to read them through, and `src/events/` is not this change's to add
+## one to.
+##
+## **The two cases that plan a day** (`_test_a_day_is_a_function_of_its_heat`,
+## `_test_a_hot_day_places_more_patrols`) hand `EventScheduler.build_day()` a generated map from the
+## shared city cache (`tests/city_map_cache.gd`), because the guarantee is between the heated rows and
+## where the scheduler places them, which only a map the generator drew answers (the scheduler's own
+## suites, `tests/test_events_scheduler.gd` and its fellows, are `src/events/`'s fence's and do not
+## take them).
 
 const SEED := 8817
 const STEP := 1.0 / 60.0
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 
 var _map: CityMap
 
 func run(t) -> void:
-	_map = CityGenerator.generate(SEED)
+	_map = MapCache.of(SEED)
 	_test_every_shape_of_every_row_is_fair(t)
 	_test_a_row_that_answers_to_nothing_is_untouched(t)
 	_test_heat_is_derived_once_and_kept(t)
@@ -674,7 +691,7 @@ func _test_a_hot_day_places_more_patrols(t) -> void:
 	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
 	var any_strictly_more := false
 	for run_seed in seeds:
-		var map := CityGenerator.generate(run_seed)
+		var map := MapCache.of(run_seed)
 		var rng_seed := hash("%d:%d" % [run_seed, day])
 		var cold_rng := RandomNumberGenerator.new()
 		cold_rng.seed = rng_seed

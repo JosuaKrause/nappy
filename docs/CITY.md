@@ -2030,7 +2030,7 @@ which must not say *"at a zebra"* on a street that has none.
   crossing is kept by the side street's contract, the painted carriageway and the horn — see
   docs/MECHANICS.md, "The traffic fairness contract". **The roads are harder that night on
   purpose.** *(The player, 2026-09-20: dead traffic lights are "part of the challenge of coming home
-  after the sabotage".)* `tests/test_blackout.gd` runs the spine lit and dark on the same day and
+  after the sabotage".)* `tests/test_dark_spine.gd` runs the spine lit and dark on the same day and
   holds the dark one to carrying its traffic as well as the lit one does.
 
 ## Junctions

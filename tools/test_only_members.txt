@@ -9,6 +9,7 @@
 
 # [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
 # confirm what it does (inbox #1095 and #1098 in curly-rabbit; writing-tests). The reason is on each line.
+src/city/prop.gd body_shape  # the post's collision shape, the only way to confirm the body is the circle its shadow is drawn from and that no other prop has one; the body is a child the physics engine reads, nothing under src/ asks it
 src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
 src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
 src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check writing-tests asks for
