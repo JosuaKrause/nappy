@@ -4,6 +4,10 @@ extends RefCounted
 ## it is read, and
 ## refuses a pin rather than moving it. The scenes' own walks to their targets are
 ## `tools/scene-recipes.sh`'s headless assertions.
+##
+## **Builds a real `City`: the director's reading of a pinned task is wiring between the recipe's map, the
+## city's streets and the resistance director**, which the player's walk to the mark and a refusal both pass
+## through; the task schema's acceptance is checked without one.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")

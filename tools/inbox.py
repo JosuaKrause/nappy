@@ -621,9 +621,6 @@ def default_title(text: str) -> str:
     return first[: cut if cut > 0 else TITLE_LENGTH] + "…"
 
 
-ISSUE_URL = re.compile(r"/issues/(\d+)\s*$")
-
-
 def check_blocks(blocks: Sequence[Block], what: str) -> None:
     for _, text in blocks:
         refuse_markers(text, what)

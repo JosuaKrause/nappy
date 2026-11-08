@@ -302,7 +302,7 @@ func _ready() -> void:
 	# save symbol a reload carried, the save itself.
 	_take_the_sitting()
 	if config.frame_record_requested and not _sitting.frame_timing is FrameRecord:
-		_sitting.frame_timing = FrameRecord.new()
+		_sitting.use_frame_timing(FrameRecord.new())
 	# Before anything can end the run, so every boot (the escape's and a recipe's too) deletes the
 	# save when its run ends.
 	_save.clear_when_a_run_ends()
