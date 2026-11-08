@@ -241,15 +241,15 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## sealed it. A `Dictionary` parameter rather than a reach into `_city` from here: `SealPlanner`
 ## stays a pure function of what it is handed, the same as every other call in this file.
 ##
-## `held`, if given, gets every **hard** seal's segment key marked in it as it is placed —
-## `CityMap.held_segments` itself, in the ordinary caller (`EventManager.start_day`), which passes
+## `held`, if given, gets every **hard** seal's segment held in it as it is placed —
+## `CityMap.held` itself, in the ordinary caller (`EventManager.start_day`), which passes
 ## it in and then plans `EventScheduler.build_day` against it so a hard seal's ground is never
 ## also offered to a catalogue row. A soft seal is not marked: its carriageway is still walkable,
 ## and a café on it is the price of that route (`docs/TODO.md`, "Events spawn inside a fully
-## blocked street"). Left `{}` for a caller — a test, a rig — that only wants the placements.
+## blocked street"). Left null for a caller — a test, a rig — that only wants the placements.
 static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
-		held: Dictionary = {}) -> Array[EventScheduler.Planned]:
+		held: HeldStreets = null) -> Array[EventScheduler.Planned]:
 	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles` — is this function's
 	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
 	# itself is, rather than trusting a caller to clear it first.
@@ -290,7 +290,8 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 			soft_pairs.append(sited)
 		else:
 			planned.append_array(sited.bodies)
-			held[key] = true
+			if held != null:
+				held.hold(key, HeldStreets.Why.SEAL)
 	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
 	planned.append_array(_seal_alley_mouths(map, route, spec, rng, skip))
@@ -602,7 +603,7 @@ static func _no_wall_guards(def: EventDef) -> EventDef:
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
-## (`EventInstance._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
+## (`EventFootprints._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
 ## two lanes this names.
 static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 		def_ids: Array[String], along: int = -1) -> Array[EventScheduler.Planned]:

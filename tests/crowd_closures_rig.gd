@@ -110,7 +110,7 @@ func _advance(seconds: float) -> void:
 # a region wall, or a soft seal's own bodies. The three tests below are the shape
 # `_test_nothing_walks_into_a_hard_blocker` above already asks about the built-over kind, asked of
 # the day's own placed seals instead — see `docs/DECISIONS.md`, M100, "Events spawn inside a fully
-# blocked street", for `CityMap.held_segments` itself, which these read rather than duplicate.
+# blocked street", for `CityMap.held` itself, which these read rather than duplicate.
 
 ## M110, item 2, as M156 leaves it: a hard seal shuts its street to the **traffic**, and a walker
 ## walks up to the seal's own bodies and no further.
@@ -138,7 +138,7 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 
 	_city.map.clear_day_holds()
 	_city.map.clear_day_obstructions()
-	_city.map.hold_segment(segment.key())
+	_city.map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
 	var body_tiles := {}
 	var owner := 1
@@ -210,7 +210,7 @@ func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 	var at: Vector2 = sealed["at"]
 	_city.map.clear_day_holds()
 	for arm: StreetNetwork.Segment in sealed["arms"]:
-		_city.map.hold_segment(arm.key())
+		_city.map.hold_segment(arm.key(), HeldStreets.Why.SEAL)
 	_city.crowd.start_day(1, _rng(1), at)
 	_city.crowd.set_focus(at)
 
@@ -288,7 +288,7 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 	_city.crowd.start_day(1, _rng(2), at)
 	_advance_watching(4.0, at)
 	for arm: StreetNetwork.Segment in sealed["arms"]:
-		_city.map.hold_segment(arm.key())
+		_city.map.hold_segment(arm.key(), HeldStreets.Why.SEAL)
 	_city.crowd.step(STEP)
 
 	var watched := _inside(rect, CrowdAgent.Kind.CAR)
@@ -357,7 +357,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 	var at: Vector2 = sealed["at"]
 	_city.map.clear_day_holds()
 	_city.map.clear_day_obstructions()
-	_city.map.hold_segment(arm.key())
+	_city.map.hold_segment(arm.key(), HeldStreets.Why.SEAL)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
 	var owner := 1
 	for at_body: Vector2 in _across(arm, def):
@@ -415,7 +415,7 @@ func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
 	_city.crowd.start_day(1, _rng(3), at)
 	_advance_watching(3.0, at)
 	for arm: StreetNetwork.Segment in sealed["arms"]:
-		_city.map.hold_segment(arm.key())
+		_city.map.hold_segment(arm.key(), HeldStreets.Why.SEAL)
 
 	var facing := {}
 	var since := {}
@@ -540,7 +540,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 	# the second guard below catches. One shut street leaves the box full of cars and puts the turns
 	# it forces in front of the camera.
 	var shut: StreetNetwork.Segment = arms[0]
-	_city.map.hold_segment(shut.key())
+	_city.map.hold_segment(shut.key(), HeldStreets.Why.SEAL)
 
 	var watched_frames := 0
 	var landings := 0
@@ -750,9 +750,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	if walker == null or car == null or turner == null:
 		city.free()
 		return
-	walker.door_segments = {door_segment.key(): true}
-	car.door_segments = {door_segment.key(): true}
-	turner.door_segments = {door_segment.key(): true}
+	map.hold_segment(door_segment.key(), HeldStreets.Why.DOOR)
 	t.check(not walker.strategy.cannot_go_on(vertical, door_tile),
 			"a walker is not turned away from today's region door")
 	t.check(not car.strategy.cannot_go_on(vertical, door_tile),
@@ -1209,8 +1207,8 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## (`EventManager.start_day` holds them so no catalogue row lands there — `docs/DECISIONS.md`, M100,
 ## "Nothing on the home block") but carry no body across them at all: she walks out onto one of them
 ## every morning, and the home is a notch with one exit, so shutting it to the crowd the way item 2
-## shuts a hard seal's street would be wrong. `CrowdAgent.home_segments` is the carve-out, the same
-## shape `door_segments` already is. Driven off a real day — `held_segments` has to be genuinely
+## shuts a hard seal's street would be wrong. `HeldStreets.Why.HOME` is the carve-out, the same
+## shape a region door's is. Driven off a real day — `held` has to be genuinely
 ## non-empty around the home block for this to test anything rather than pass vacuously.
 func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 	var map := MapCache.of(SEED)

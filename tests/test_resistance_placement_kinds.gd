@@ -392,7 +392,7 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 
 ## Runs the real day order (`DayDirector.start_day()`: city, events, resistance) rather than
 ## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
-## day (`CityMap.held_segments`, filled from `region_plan.doors` among other things) — with it
+## day (`CityMap.held`, filled from `region_plan.doors` among other things) — with it
 ## never run, a bare `_pick_reachable()` call would find the door tile reachable whether or not
 ## `_place_at_a_door()`'s `allow_held` carve-out (`docs/DECISIONS.md`, M181) actually does
 ## anything, so this test would pass whether the carve-out worked or was deleted. Also asserts

@@ -1906,7 +1906,7 @@ func _place_at_a_door(rng: RandomNumberGenerator) -> Vector2:
 		return Vector2.INF
 	# `allow_held` is not optional here, it is the whole placement: every remaining tile sits on
 	# a segment `EventManager.start_day()` already held for the day (held so no catalogue row may
-	# be sited on a door — see `CityMap.held_segments`), and this director runs after that. The
+	# be sited on a door — see `CityMap.held`), and this director runs after that. The
 	# held filter would refuse the exact ground the task names: with it applied, every door
 	# candidate read `held` and step 8 answered `Vector2.INF` in every run — "nowhere to go" — so
 	# the crossing task never appeared at all. It does not reopen the home-block exemption: that

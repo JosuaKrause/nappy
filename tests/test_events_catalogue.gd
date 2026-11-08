@@ -19,6 +19,7 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 func run(t) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
+	_test_where_a_body_stands_is_read_from_one_place(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
@@ -95,9 +96,33 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.has_a_spread, "and so does a heated copy")
 
+## **Where a body stands once built is `EventFootprints.stands_at()`'s one answer**, which a body
+## moved after dawn (`EventInstance.move_to()`) takes as a new body does: a stationary solid row
+## the pavement does not pin is stood on the middle of its band, a mobile row, a pinned one or one
+## with no body where it is put.
+func _test_where_a_body_stands_is_read_from_one_place(t) -> void:
+	var map := CityGenerator.generate(4242)
+	var lane := Vector2i(-1, -1)
+	for y in map.size.y:
+		for x in map.size.x:
+			var tile := Vector2i(x, y)
+			if lane == Vector2i(-1, -1) and map.pavement_inward(tile) != Vector2i.ZERO:
+				lane = tile
+	t.check(lane != Vector2i(-1, -1), "the city has a pavement lane to stand a body on")
+	var at := map.tile_to_world(lane)
+	var solid_unpinned := 0
+	for def in EventCatalogue.all():
+		var stands := EventFootprints.stands_at(map, def, at)
+		var is_centred := def.stands_on_its_band_middle()
+		if is_centred:
+			solid_unpinned += 1
+		t.check((stands != at) == is_centred,
+				"%s stands %s" % [def.id, "on the middle of its band, off its lane" if is_centred else "where it is put"])
+	t.check(solid_unpinned > 0, "the catalogue has a stationary solid row the pavement does not pin")
+
 ## A `SIDEWALK` tile is one lane of a two-lane pavement, `SIDEWALK_WIDTH * TILE_SIZE` (64px) wide
 ## in total, and it is one piece of walkable ground rather than two lanes a body has to fit inside
-## one of. `EventInstance._centred_on_the_pavement_band()` moves a stationary, unpinned
+## one of. `EventFootprints._centred_on_the_pavement_band()` moves a stationary, unpinned
 ## (`pavement_side == ANY`) body from the lane tile `EventScheduler` chose to the middle of that
 ## whole band, so this is half of the *band*, not half of a *lane*.
 const _SIDEWALK_SPREAD_CLEARANCE := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5

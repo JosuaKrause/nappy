@@ -86,7 +86,7 @@ func _test_each_street_is_filed_under_the_view_it_is_told(t) -> void:
 
 func _test_a_held_or_absent_street_has_no_section_open(t) -> void:
 	var map := CityMap.new()
-	map.hold_segment(BESIDE)
+	map.hold_segment(BESIDE, HeldStreets.Why.SEAL)
 	map.absent_segments[OFF] = true
 	var locations := DayLocations.lay_out(map, _views())
 	t.check(_sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE).is_empty(),

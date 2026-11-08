@@ -504,7 +504,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t) -> void:
 	var bodies := 0
 	var off_a_point := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1]:
-		var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
+		var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 		var stood := RegionPlanner.RegionPlan.new()
 		for door in plan.doors:
 			RegionPlanner.stand_door(map, door, stood)

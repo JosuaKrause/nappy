@@ -1389,7 +1389,7 @@ as a check on what a roll came back with:
 - the street the front door opens onto (`_the_street_she_starts_on` — a notch with one exit is not
   a route decision, it is a tax);
 - a tile whose street segment is **held** today (`CityMap.is_held_at`) — a hard seal's own segment,
-  a region wall or door, or a segment bordering the home block, all in `CityMap.held_segments`; a
+  a region wall or door, or a segment bordering the home block, all in `CityMap.held_streets()`; a
   soft seal is not held, since its carriageway is still walkable and a café standing on it is the
   price of that route;
 - a tile inside the home block's own lot (`CityMap.is_on_home_block`), the same exemption stated
@@ -1477,7 +1477,7 @@ lane tile it is never re-centred off — it leaves `(SIDEWALK_WIDTH * TILE_SIZE 
 22 = 26px` to the frontage, narrower than the 28px she needs (`2 * PLAYER_BODY_RADIUS`). So
 `EventScheduler._closes_the_band_by_its_own_placement` reads a row's own numbers against the exact
 edge its `pavement_side` stands it at — the kerb or the frontage lane's own tile centre, or the
-band's true middle for `ANY` (where `EventInstance._centred_on_the_pavement_band()` always puts a
+band's true middle for `ANY` (where `EventFootprints._centred_on_the_pavement_band()` always puts a
 stationary, unpinned body) — rather than against a fixed threshold, so a row narrow enough to slip
 under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide. The
 same reading is also why `poster_crew` stands `AGAINST_THE_BUILDING` rather than `ANY`: centred, an

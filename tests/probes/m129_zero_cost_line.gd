@@ -371,20 +371,20 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 ## the region's wall and doors, the closures, the held ground, the seals, the catalogue's own fill,
 ## and the wall's and doors' bodies.
 func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventScheduler.Planned]:
-	var region_plan := RegionPlanner.plan_day(map, day, tree)
+	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
 	map.clear_day_holds()
 	for closure in closures:
-		map.hold_segment(closure.segment.key())
+		map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 	for segment in region_plan.walls:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
 	for segment in region_plan.walls:
@@ -397,7 +397,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 		boundary[rect.position] = true
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_segments)
+			map.held_streets())
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
 	var no_calm: Array[Vector2i] = []

@@ -534,11 +534,8 @@ func _planned_parts(plan: EventScheduler.Planned) -> Array:
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
 ## stationary solid row that `pavement_side` does not pin to an edge.
 func _planned_position(plan: EventScheduler.Planned) -> Vector2:
-	var at := plan.path[0] if plan.path.size() > 0 else plan.position
-	if not plan.def.mobile and plan.def.obstructs_radius > 0.0 \
-			and plan.def.pavement_side == EventDef.Pavement.ANY:
-		at = EventInstance._centred_on_the_pavement_band(_city.map, at)
-	return at
+	return EventFootprints.stands_at(_city.map, plan.def,
+			plan.path[0] if plan.path.size() > 0 else plan.position)
 
 ## The planned rows `CityMap.obstructed_tiles` records a body for
 ## (`EventSpawner.obstructed_footprint()`): solid, and neither `mobile` — somewhere else by the time

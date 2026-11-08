@@ -5,7 +5,7 @@ extends "res://tests/crowd_street_rig.gd"
 ##
 ## Kept apart from `crowd_rig.gd` because that file already holds the longest cases on disk and these
 ## all want the same rig: a crowd on a real generated map with **no day planned on it**, so
-## `held_segments` and `soft_sealed_tiles` are empty and the only thing standing anywhere is the
+## `held` and `soft_sealed_tiles` are empty and the only thing standing anywhere is the
 ## body the test put there. No city is built around it (`Crowd.setup()` is handed a bare world, the
 ## map and its lights, as a task scene's rig hands it): this suite tests the crowd. The wiring that
 ## fills `CityMap.obstructed_tiles` from a real day is `EventManager`'s and is asked about by
@@ -465,7 +465,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 ##
 ## Sited by hand on an unheld street rather than by planning a day, and that is the test's own
 ## finding as much as its rig: on a real day a crash is a hard seal, `SealPlanner.plan_day` marks
-## every hard seal's segment in `CityMap.held_segments`, and the record skips a body on held ground
+## every hard seal's segment in `CityMap.held`, and the record skips a body on held ground
 ## because the whole street is shut to the crowd already. So this asks the rasterising — the half
 ## M118 changed — on ground where the answer is not thrown away.
 func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: CityMap) -> void:

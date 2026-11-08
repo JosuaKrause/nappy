@@ -192,9 +192,9 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the home block":
 ## a catalogue placement is refused a candidate tile whose street segment is held today — a
 ## closure, a hard seal, a region wall or door, or a segment bordering the home block
-## (`CityMap.held_segments`) — or that lies inside the home block's own lot
+## (`CityMap.held`) — or that lies inside the home block's own lot
 ## (`CityMap.is_on_home_block`). Replicates `EventManager.start_day`'s own ordering: the seals and
-## the region plan are known, and `held_segments` is filled, before `EventScheduler.build_day`
+## the region plan are known, and `held` is filled, before `EventScheduler.build_day`
 ## rolls a single candidate.
 ##
 ## **And the fifth refusal, a standing street tree's own ground** (`docs/CITY.md`, "Street trees"):
@@ -239,7 +239,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
-			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
@@ -249,13 +249,13 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 			# The same population `EventManager.start_day` performs, before `build_day` runs.
 			map.clear_day_holds()
 			for closure in closures:
-				map.hold_segment(closure.segment.key())
+				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 			for segment in region_plan.walls:
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
 			for segment in region_plan.walls:
@@ -268,7 +268,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 			var unheld_rng := RandomNumberGenerator.new()
 			unheld_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
 			var seals_unheld := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, unheld_rng, boundary)
@@ -353,7 +353,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
-			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
@@ -362,13 +362,13 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 
 			map.clear_day_holds()
 			for closure in closures:
-				map.hold_segment(closure.segment.key())
+				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 			for segment in region_plan.walls:
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 			for segment in region_plan.doors:
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 			for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-				map.hold_segment(segment.key())
+				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 			var boundary := {}
 			for segment in region_plan.walls:
@@ -381,7 +381,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("seals:%d:%d" % [map.seed_used, day])
-			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_segments)
+			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, seal_rng, boundary, map.held_streets())
 
 			var consumed: Array[String] = []
 			var bodies: Array = []

@@ -29,6 +29,13 @@ var sends_poster_pursuits := true
 ## (`EventScheduler.WalkSiting.holds_the_home_streets`), so what is sited while she walks keeps the
 ## rule the walk was planned under at dawn.
 var holds_the_home_streets := true
+## The walk's spec, as the manager is handed it: whether the region wall stands in it says which man
+## is the pursuer on foot (`EventCatalogue.on_foot_on()`). Until one is handed in, one with no wall.
+var _spec := DaySpec.new()
+
+## Takes the walk's spec, as the manager is handed it, for the pursuer on foot.
+func use_the_walk_of(spec: DaySpec) -> void:
+	_spec = spec
 
 func _init(the_world: EventWorld, streaming: EventStreaming, spawner: EventSpawner,
 		warnings: WarningBoard, walk: WalkEvents) -> void:
@@ -171,7 +178,7 @@ func send_a_pursuer() -> void:
 	if not sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
 			or not _spawn_siting:
 		return
-	var def := EventCatalogue.on_foot_on(world.day)
+	var def := EventCatalogue.on_foot_on(_spec)
 	if not def:
 		return
 	var her := world.player.global_position
@@ -213,7 +220,7 @@ func let_the_officers_out() -> void:
 		var owed := vehicle.officers_owed()
 		if owed <= 0:
 			continue
-		var def := EventCatalogue.out_of_the_car(world.day,
+		var def := EventCatalogue.out_of_the_car(_spec,
 				vehicle.def.heat_response != EventDef.HeatResponse.HUNTS)
 		var stands := siting.ask_of_ground(Rect2(), EventInstance.mover_for(def))
 		for i in owed:

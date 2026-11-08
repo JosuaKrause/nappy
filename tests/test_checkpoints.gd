@@ -107,7 +107,7 @@ func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
 	if not _plan_cache.has(key):
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day)
-		_plan_cache[key] = RegionPlanner.plan_day(map, day, tree)
+		_plan_cache[key] = RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	return _plan_cache[key]
 
 # ------------------------------------------------------------------- the shape ---
@@ -446,7 +446,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var doors := PackedVector2Array()
-			for body in RegionPlanner.plan_day(map, day, tree).door_bodies:
+			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_bodies:
 				doors.append(body.position)
 			if doors.is_empty():
 				continue
@@ -1264,7 +1264,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
 		for day in days:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
-			var region := RegionPlanner.plan_day(map, day, tree)
+			var region := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			if region.door_bodies.is_empty():
 				continue
 			var doors := PackedVector2Array()
@@ -1927,7 +1927,7 @@ func _street_door_rig(t) -> Dictionary:
 	t.add_child(city)
 	city.build(map)
 	_repaint_for(map, day)
-	var plan := RegionPlanner.plan_day(map, day, RouteTree.for_day(map, day))
+	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map, day))
 	t.check(not plan.gates.is_empty(), "day %d on seed %d has a street door" % [day, BASE_SEED])
 	var gate: EventInstance = null
 	var huts: Array[EventInstance] = []

@@ -191,7 +191,7 @@ enum SpawnMode {
 ## a corner costs them nothing.
 ##
 ## **`EventScheduler.open_ground_for` asks this before it offers a corner as a site**: a junction
-## has no single street for the spread's axis or `EventInstance._centred_on_the_pavement_band` to
+## has no single street for the spread's axis or `EventFootprints._centred_on_the_pavement_band` to
 ## answer about, so only a row that asks either question has anything to lose by standing on one.
 ## Kept by every copy (`duplicate()`, `at_heat()`).
 @export var has_a_spread := false
@@ -1635,6 +1635,12 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 	if at_intensity >= 0.0 and intensity > 0.0:
 		core *= at_intensity / intensity
 	return maxf(field, Field.falloff(at_distance, core, inner_radius, core_radius, falloff_power))
+
+## Whether the row is a stationary solid body the pavement does not pin to an edge
+## (`pavement_side` `ANY`): the body a pavement band's middle is where it stands
+## (`EventFootprints.stands_at()`).
+func stands_on_its_band_middle() -> bool:
+	return not mobile and obstructs_radius > 0.0 and pavement_side == Pavement.ANY
 
 ## Whether the row carries a field at all (`intensity` above zero): a silent body bills nothing
 ## round it, so standing clear of it is standing clear of its body.

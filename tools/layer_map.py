@@ -100,6 +100,7 @@ FILES: dict[str, str] = {
     "src/city/city_map.gd": "model",
     "src/city/city_state.gd": "model",
     "src/city/garbage_sacks.gd": "model",
+    "src/city/held_streets.gd": "model",
     "src/city/ground_tiles.gd": "model",
     "src/city/litter.gd": "model",
     "src/city/marble_bag.gd": "model",
@@ -376,6 +377,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_scheduler.gd",
             "src/events/walk_ground.gd",
         ),
+        more=(
+            ("src/events/event_scheduler.gd", 2),
+            ("src/events/walk_ground.gd", 3),
+        ),
     ),
     Exception_(
         "names",
@@ -386,8 +391,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/walk_ground.gd",
         ),
         more=(
-            ("src/events/event_scheduler.gd", 3),
-            ("src/events/walk_ground.gd", 3),
+            ("src/events/event_scheduler.gd", 2),
+            ("src/events/walk_ground.gd", 1),
         ),
     ),
     Exception_(

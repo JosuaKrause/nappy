@@ -336,13 +336,10 @@ src/city/street_trees.gd recipe_dawn_tiles
 src/city/street_trees.gd recipe_tree_moves
 src/city/street_trees.gd recipe_trees
 src/city/street_trees.gd seed_used
-src/crowd/crowd.gd home_block
-src/crowd/crowd.gd network
 src/crowd/crowd_lanes.gd main_road
 src/crowd/crowd_lanes.gd precinct_spans
 src/crowd/crowd_lanes.gd seed_used
 src/crowd/crowd_pockets.gd closed_tiles
-src/crowd/crowd_pockets.gd held_segments
 src/crowd/crowd_pockets.gd network
 src/crowd/lane_mover.gd network
 src/crowd/walker_strategy.gd network
@@ -364,12 +361,10 @@ src/dev/scene_recipe_runtime.gd main_road
 src/dev/scene_recipe_runtime.gd network
 src/dev/scene_recipe_runtime.gd recipe_bounds
 src/events/calm_areas.gd calm_blocks
-src/events/day_planner.gd held_segments
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/day_repairs.gd closed_tiles
 src/events/event_scheduler.gd closed_tiles
-src/events/event_scheduler.gd held_segments
 src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
@@ -786,7 +781,6 @@ src/events/event_instance.gd mobile
 src/events/event_instance.gd notice
 src/events/event_instance.gd obstructs_radius
 src/events/event_instance.gd path_mode
-src/events/event_instance.gd pavement_side
 src/events/event_instance.gd pulse_period
 src/events/event_instance.gd pursuit
 src/events/event_instance.gd redetains
@@ -826,7 +820,6 @@ src/events/event_spawner.gd id
 src/events/event_spawner.gd may_be_a_pelican
 src/events/event_spawner.gd mobile
 src/events/event_spawner.gd obstructs_radius
-src/events/event_spawner.gd pavement_side
 src/events/event_spawner.gd pulse_period
 src/events/event_spawner.gd pursuit
 src/events/event_spawner.gd shape
@@ -1326,10 +1319,8 @@ src/crowd/car_strategy.gd shape
 src/crowd/car_strategy.gd traffic
 src/crowd/crowd.gd door_ahead
 src/crowd/crowd.gd door_ahead_along
-src/crowd/crowd.gd door_segments
 src/crowd/crowd.gd frame_timing
 src/crowd/crowd.gd gap_ahead
-src/crowd/crowd.gd home_segments
 src/crowd/crowd.gd leader_speed
 src/crowd/crowd.gd pockets
 src/crowd/crowd.gd strategy

@@ -384,7 +384,7 @@ func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
 func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
 	_start(day)
-	var alone: Dictionary = _city.map.held_segments.duplicate()
+	var alone := _city.map.held_streets().keys()
 	t.check(alone.size() > 0,
 			"a day started through the manager alone still holds some ground (%d segments)"
 			% alone.size())
@@ -395,7 +395,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 	closures_rng.seed = hash("m100-seals:closures:%d" % day)
 	_city.start_day(state, day, closures_rng)
 	_start(day)
-	var after_city: Dictionary = _city.map.held_segments.duplicate()
+	var after_city := _city.map.held_streets()
 
 	for key in alone:
 		t.check(after_city.has(key),

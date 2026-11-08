@@ -76,7 +76,7 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMa
 	var map := original.copy()
 	var street := _a_street_tile(map)
 	var segment := map.network.segment_containing(street)
-	map.hold_segment(segment.key())
+	map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
 	map.obstruct_tiles(7, body)
@@ -172,7 +172,7 @@ func _test_what_one_map_is_handed_leaves_the_other_alone(t, original: CityMap,
 func _hand_a_day_to(map: CityMap) -> void:
 	var street := _a_street_tile(map)
 	map.set_tile(street + Vector2i.DOWN, GameEnums.TileType.BUILDING)
-	map.hold_segment(map.network.segment_containing(street).key())
+	map.hold_segment(map.network.segment_containing(street).key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
 	map.obstruct_tiles(11, body)

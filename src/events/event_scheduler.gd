@@ -1130,7 +1130,7 @@ class KeptGround extends RefCounted:
 	## fresh set that holds its street trees.
 	func of(map: CityMap) -> Dictionary:
 		var trees := StreetTrees.footprint_tiles(map)
-		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
+		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_streets().fingerprint(),
 				trees.hash()]
 		if _of == null or _of.get_ref() != map or _stamp != stamp:
 			_of = weakref(map)
@@ -1181,11 +1181,8 @@ static func _keeps_its_notice_to_itself(map: CityMap, candidate: Planned,
 ## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
 ## and where he notices her from.
 static func _stands_at(map: CityMap, plan: Planned) -> Vector2:
-	var at: Vector2 = plan.path[0] if plan.path.size() > 0 else plan.position
-	if not plan.def.mobile and plan.def.obstructs_radius > 0.0 \
-			and plan.def.pavement_side == EventDef.Pavement.ANY:
-		at = EventInstance._centred_on_the_pavement_band(map, at)
-	return at
+	return EventFootprints.stands_at(map, plan.def,
+			plan.path[0] if plan.path.size() > 0 else plan.position)
 
 ## The tiles of one street of the walk a given row may stand on: **the day's own ground for the row**
 ## (`open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
@@ -1247,7 +1244,7 @@ static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary,
 ##
 ## **A body is her body plus its body.** The half tile on top of it is not a margin of taste: a
 ## stationary, unpinned body is moved from the lane tile the scheduler chose to the middle of the
-## pavement band by `EventInstance._centred_on_the_pavement_band()` when the instance is built, and
+## pavement band by `EventFootprints._centred_on_the_pavement_band()` when the instance is built, and
 ## the two lane centres sit `TILE_SIZE * 0.5` either side of that middle — so the ground a
 ## placement finally stands on is up to half a tile from the tile this loop is looking at, and the
 ## exclusion has to cover where it *ends up* rather than where it is rolled.
@@ -3126,7 +3123,7 @@ static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 				# can usefully happen: the player would never see it and the scheduler would have
 				# spent budget on nothing. `is_held_at` refuses the same ground for a street that is
 				# not closed but is still spoken for — a hard seal's segment, a region wall or door,
-				# or a segment bordering the home block (`CityMap.held_segments`) — and
+				# or a segment bordering the home block (`CityMap.held`) — and
 				# `is_on_home_block` refuses the block's own interior on top of that, both by
 				# construction rather than as a repair once something has landed there. See
 				# `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the
@@ -3463,7 +3460,7 @@ static func _closes_the_band_by_its_own_placement(def: EventDef) -> bool:
 	return maxf(near_gap, far_gap) < _HER_LANE_CLEARANCE
 
 ## Where `pavement_side` stands a body across a sidewalk band, as an offset from the kerb edge —
-## the same geometry `EventInstance._centred_on_the_pavement_band()` and its kerb/frontage
+## the same geometry `EventFootprints._centred_on_the_pavement_band()` and its kerb/frontage
 ## exemptions produce, read here off the def alone because a role is decided before any tile exists
 ## to ask the map about. `pavement_side` is typed `int` rather than `EventDef.Pavement`: a
 ## cross-script enum parameter does not always match the type Godot infers for a value read off

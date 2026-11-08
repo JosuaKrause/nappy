@@ -162,9 +162,9 @@ static func all() -> Array[EventDef]:
 		# And the man an investigating vehicle lets out, a copy of the day's pursuer on foot whose
 		# notice is the sight of him (the patrol car's, whose catch is a stop, and a hunting van's,
 		# whose catch ends the day), validated for the same reason.
-		for day: int in [_guardsmen_from_day() - 1, _guardsmen_from_day()]:
-			out_of_the_car(day).validate()
-			out_of_the_car(day, false).validate()
+		for on_foot_id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
+			_out_of(by_id(on_foot_id), true).validate()
+			_out_of(by_id(on_foot_id), false).validate()
 		escape_roadblock().validate()
 		# The rows of its own a row is met as on its one occasion: the day-3 lesson's dog and day
 		# 13's task guard, waiting and sent.
@@ -2274,15 +2274,11 @@ static func _guardsman_giving_chase() -> EventDef:
 	def.noun_plural = "guardsmen"
 	return def
 
-## The first day the pursuer on foot is a guardsman rather than a policeman: the day the region's
-## doors and their guards first stand (`Tuning.REGION_WALL_FIRST_DAY`, day 9).
-static func _guardsmen_from_day() -> int:
-	return Tuning.REGION_WALL_FIRST_DAY
-
-## The pursuer on foot on `day`: the policeman through day 8, the guardsman from day 9
-## (`_guardsmen_from_day()`).
-static func on_foot_on(day: int) -> EventDef:
-	return by_id("guardsman_giving_chase" if day >= _guardsmen_from_day()
+## The pursuer on foot on the walk `spec` describes: the policeman until the region wall stands, the
+## guardsman once it does (`DaySpec.region_wall_stands()`, from day 9 on a day's, never in the
+## escape).
+static func on_foot_on(spec: DaySpec) -> EventDef:
+	return by_id("guardsman_giving_chase" if spec.region_wall_stands()
 			else "policeman_giving_chase")
 
 ## Derived copies of the pursuer on foot, as he gets out of a vehicle, keyed by his row's id and
@@ -2310,8 +2306,11 @@ static var _out_of_the_car: Dictionary[String, EventDef] = {}
 ## `all()` holds this copy to on load). Every other number is his own row's.
 ##
 ## A derived copy rather than a catalogue row, as a heated row is: the same man, met another way.
-static func out_of_the_car(day: int, stops := true) -> EventDef:
-	var on_foot := on_foot_on(day)
+static func out_of_the_car(spec: DaySpec, stops := true) -> EventDef:
+	return _out_of(on_foot_on(spec), stops)
+
+## The man `out_of_the_car()` describes, made from the pursuer on foot `on_foot`.
+static func _out_of(on_foot: EventDef, stops: bool) -> EventDef:
 	var key := on_foot.id + (":stops" if stops else ":hunts")
 	if not _out_of_the_car.has(key):
 		var def := on_foot.duplicate() as EventDef
@@ -2638,7 +2637,7 @@ static func _car_accident_parts() -> Array[EventDef.SolidPart]:
 	] as Array[EventDef.SolidPart]
 
 ## Half of a soft seal: a skip at the kerb, facing `scaffolding` on the other sidewalk. Kerb-pinned
-## like `delivery_van`, so `EventInstance._centred_on_the_pavement_band` leaves it exactly where
+## like `delivery_van`, so `EventFootprints._centred_on_the_pavement_band` leaves it exactly where
 ## `SealPlanner._place_soft` puts it rather than spreading it across the whole band.
 static func _skip() -> EventDef:
 	var def := EventDef.new()

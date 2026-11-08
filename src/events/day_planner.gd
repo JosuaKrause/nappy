@@ -109,10 +109,10 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var region_plan: RegionPlanner.RegionPlan = \
 			world.city.streets().region_plan() if world.city else null
 	if not region_plan:
-		region_plan = RegionPlanner.plan_day(city_map, day, tree)
+		region_plan = RegionPlanner.plan_day(city_map, spec, tree)
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
-	# `CityMap.held_segments`. Closures, the region's own wall and door segments, and the
+	# `CityMap.held`. Closures, the region's own wall and door segments, and the
 	# streets around the home block are all known already; the hard seals are not, which is
 	# why `SealPlanner.plan_day` is planned ahead of `build_day` below (see that call's own note).
 	#
@@ -126,14 +126,14 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	city_map.clear_day_holds()
 	if world.city:
 		for closure in world.city.streets().closures():
-			city_map.hold_segment(closure.segment.key())
+			city_map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 	for segment in region_plan.walls:
-		city_map.hold_segment(segment.key())
+		city_map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:
-		city_map.hold_segment(segment.key())
+		city_map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	if spec.holds_the_home_streets:
 		for segment in city_map.network.around_blocks(Rect2i(city_map.home_block, Vector2i.ONE)):
-			city_map.hold_segment(segment.key())
+			city_map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
@@ -155,12 +155,12 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# **Planned before `build_day`.** `SealPlanner.plan_day` is a pure function of the map, the day,
 	# `tree` and its own RNG stream (`world.run.calendar.day_rng(day, "seals")`, never shared
 	# with the catalogue's), so planning it first changes which seals a day gets not at all —
-	# only how soon `build_day` can see where they landed. `held` is `city_map.held_segments`
+	# only how soon `build_day` can see where they landed. `held` is `city_map.held_streets()`
 	# itself: a hard seal's segment is marked there as it is placed, so the catalogue never
 	# offers a candidate row that same ground (`docs/DECISIONS.md`, M100, "Events spawn inside a
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
-			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_segments)
+			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_streets())
 	# Each says it is a seal, one of the city's fixed parts (`Planned.is_a_fixed_part()`), which day
 	# 13's swap never takes.
 	for seal in seals:

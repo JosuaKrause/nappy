@@ -277,21 +277,21 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## `_role_for` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
-	var region_plan := RegionPlanner.plan_day(map, day, tree)
+	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
-		map.hold_segment(closure.segment.key())
+		map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 	for segment: StreetNetwork.Segment in region_plan.walls:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment: StreetNetwork.Segment in region_plan.doors:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
 	for segment: StreetNetwork.Segment in region_plan.walls:
@@ -304,7 +304,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		boundary[rect.position] = true
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_segments)
+			map.held_streets())
 
 	var corridor := Corridor.of(tree)
 	var ground := {}

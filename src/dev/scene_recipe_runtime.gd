@@ -827,7 +827,7 @@ func _select_structures(errors: Array[String]) -> void:
 		if not _segment_inside_extent(segment):
 			errors.append("setup.gates: selected street leaves the authored extent")
 			continue
-		if _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+		if not _walk_spec.region_wall_stands():
 			errors.append("setup.gates: checkpoints are not available on this day")
 			continue
 		if not region.doors.any(func(door): return door.key() == key):
@@ -842,7 +842,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: selected street leaves the authored extent")
 			continue
 		if not _city.map.has_street(key) or _city.streets().route_tree().is_on_the_tree(key) \
-				or _run.header.day < Tuning.REGION_WALL_FIRST_DAY:
+				or not _walk_spec.region_wall_stands():
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
@@ -889,7 +889,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
 			plans.append_array(sited.bodies)
 			if candidate.strength == SealPlanner.Strength.HARD:
-				map.hold_segment(key)
+				map.hold_segment(key, HeldStreets.Why.SEAL)
 			else:
 				sited.shut_the_sidewalk(map, true)
 				sited.shut_the_sidewalk(map, false)
@@ -927,7 +927,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	if not finale:
 		plans.append_array(_authored_seals(errors))
 	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
 	for entry: Dictionary in setup.get("events", []):
 		var at := position_of(entry.at, errors)

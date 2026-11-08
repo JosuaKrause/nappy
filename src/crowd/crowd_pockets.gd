@@ -23,7 +23,7 @@ extends RefCounted
 ## was answering the symptom.
 ##
 ## **It is a property of the day's map rather than a search an agent runs.** The inputs are the ones
-## the crowd already reads — `CityMap.held_segments`, `closed_tiles` and which ground is driveable —
+## the crowd already reads — `CityMap.held`, `closed_tiles` and which ground is driveable —
 ## and they are fixed for the day, so one flood answers for every car for the whole of it. A
 ## per-agent version of the same question is a flood fill per placement, six times over per recycle,
 ## several times a second.
@@ -50,18 +50,15 @@ var _built_from := -1
 ## once a frame after that, so that a seal placed under a crowd that is already standing there
 ## reaches the agents without anybody having to remember to ask.
 ##
-## `crossable_segments` is the crowd's own carve-out from `held_segments` — the region's door
-## segments and the streets around the home block, which are held so that no catalogue row lands on
-## them rather than because anything stands across them. See `Crowd._door_segments` and
-## `Crowd._home_segments`.
-func refresh(map: CityMap, crossable_segments: Dictionary) -> void:
+## A held segment the crowd may cross anyway (`HeldStreets.is_crossable()`) is no wall of a pocket.
+func refresh(map: CityMap) -> void:
 	if map == null:
 		return
 	if map.day_record_version == _built_from and map.size == _size:
 		return
 	_built_from = map.day_record_version
 	_size = map.size
-	_cars = _flood(map, crossable_segments)
+	_cars = _flood(map)
 
 ## Whether a tile is in a pocket. False for anything that is not carriageway a car travels at all —
 ## a pavement, a tile off the map — because "there is nowhere to go from here" is a statement about
@@ -85,7 +82,7 @@ func tile_count() -> int:
 
 ## Paint the carriageway, take away what today has shut, and label every connected piece that
 ## reaches at most one junction.
-func _flood(map: CityMap, crossable_segments: Dictionary) -> PackedByteArray:
+func _flood(map: CityMap) -> PackedByteArray:
 	var width := map.size.x
 	var cells := width * map.size.y
 	var ground := PackedByteArray()
@@ -94,7 +91,7 @@ func _flood(map: CityMap, crossable_segments: Dictionary) -> PackedByteArray:
 		var row := y * width
 		for x in map.size.x:
 			ground[row + x] = 1 if _is_a_lane(map, Vector2i(x, y)) else 0
-	_shut_the_held_segments(map, crossable_segments, ground, width)
+	_shut_the_held_segments(map, ground, width)
 	for tile: Vector2i in map.closed_tiles:
 		if map.in_bounds(tile):
 			ground[tile.y * width + tile.x] = 0
@@ -173,12 +170,11 @@ func _is_a_lane(map: CityMap, tile: Vector2i) -> bool:
 
 ## Takes today's held segments out of the open ground — a hard seal's street, a region wall's, a
 ## closure's — except the ones the crowd is carved out of. Painted from the segments themselves
-## rather than asked per tile: `held_segments` holds a handful of keys and each one knows its own
+## rather than asked per tile: `held` holds a handful of keys and each one knows its own
 ## tile rect, where the per-tile question is a `StreetNetwork` lookup twenty-five thousand times over.
-func _shut_the_held_segments(map: CityMap, crossable_segments: Dictionary, ground: PackedByteArray,
-		width: int) -> void:
-	for key: Vector3i in map.held_segments:
-		if crossable_segments.has(key):
+func _shut_the_held_segments(map: CityMap, ground: PackedByteArray, width: int) -> void:
+	for key: Vector3i in map.held_streets().keys():
+		if map.held_streets().is_crossable(key):
 			continue
 		var segment := map.network.by_key(key)
 		if segment == null:

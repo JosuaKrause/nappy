@@ -711,7 +711,7 @@ func _test_a_walled_alley_escapes_no_other_check(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
 	var tree := RouteTree.for_day(map, day)
-	var region_plan := RegionPlanner.plan_day(map, day, tree)
+	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	t.check(not region_plan.alley_walls.is_empty(),
 			"seed %d day %d walls at least one crossing alley, or this test checks nothing"
 			% [seed_value, day])

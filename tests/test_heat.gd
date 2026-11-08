@@ -86,7 +86,7 @@ func _test_the_ladder_has_a_top(t) -> void:
 			t.check(not EventCatalogue.heated(def, level).hard_fail,
 					"'%s' presses without ever becoming hard_fail (heat %d)" % [def.id, level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var out := EventCatalogue.out_of_the_car(day)
+		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 		t.check(not out.hard_fail and out.pursuit.stop_excitement > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
@@ -111,7 +111,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
 						and hot.hard_fail == def.hard_fail,
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id, level] + "chasing her itself")
-				var man := EventCatalogue.out_of_the_car(10, false)
+				var man := EventCatalogue.out_of_the_car(DaySpec.for_day(10), false)
 				t.check(man.hard_fail, "'%s': and its men's catch ends the day" % def.id)
 				var reach := PursuitSpec.standoff(man.chase_speed(), man.standoff_reach())
 				t.check(not should_hunt or (reach < hot.notice_within()
@@ -332,7 +332,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 		t.check(hot.pursuit == null, "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
 			for day: int in [8, 9]:
-				var officer := EventCatalogue.out_of_the_car(day)
+				var officer := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 				var standoff := PursuitSpec.standoff(officer.chase_speed(),
 						officer.standoff_reach())
 				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.outer_radius,
@@ -407,7 +407,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	t.check(instance.officers_owed() == 1, "and owes the man it lets out")
 	var stopped_at := instance.position
 	var officer := EventInstance.new()
-	var out := EventCatalogue.out_of_the_car(6)
+	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
 	officer.setup(out, instance.door_for_its_officer(out))
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
