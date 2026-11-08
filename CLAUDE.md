@@ -215,9 +215,11 @@ follow; it is a claim with the evidence withheld.
   with, what each answer costs, and which you would pick — in the message that asks it, not in an
   earlier one (woolly-finch 10). The player answers from the message in front of them, and a
   question that leans on something said three turns ago is a question with its evidence withheld.
-- **An open point the player's recorded words already answer is never put back to them**, in a
-  question or in a status answer that relays a queue item's `Open:` line (inbox #1232): it is read
-  against their words first, and stated as the reading (**board**).
+- **An open point the player's recorded words already answer is never put back to them** (inbox
+  #1232): it is read against their words first, and stated as the reading (**board**). An open point is investigated
+  only with its task's full context, when the task is discussed or picked up, never in passing, and
+  a conclusion is written down where the next session reads it in the turn it is reached (inbox
+  #1244).
 - **A thing in the game is named the way the player knows it, and said what it is in each
   message that mentions it** (inbox #772 in minty-lemur): what it is and what it does in play, in a clause — "the
   checkpoint guard, who steps out of the hut when she walks under the raised boom" — never only

@@ -31,7 +31,6 @@ const POSTER_CREW := "events/poster_crew"
 ## The square crew's own badge silhouette: the same man at the advertising column he pastes on,
 ## which is what tells the two crews apart at badge size.
 const POSTER_CREW_SQUARE := "events/poster_crew_square"
-const ROBBER_WAITING := "events/robber_waiting"
 const ROBBER_LUNGING := "events/robber_lunging"
 const PROTESTER := "events/protester"
 ## The eight pointing poses, one per 45° bearing sector — see `protester_texture()`. Ordered
@@ -69,7 +68,6 @@ const UNMARKED_VAN_FRONT := "events/unmarked_van_front"
 const UNMARKED_VAN_BACK := "events/unmarked_van_back"
 const UNMARKED_VAN_FRONT_DIAGONAL := "events/unmarked_van_front_diagonal"
 const UNMARKED_VAN_BACK_DIAGONAL := "events/unmarked_van_back_diagonal"
-const VAN_VICTIM := "events/van_victim"
 ## The night raid's van: `EventLook._draw_eight_view()` reads `RIOT_VAN_BY_VIEW` below through the
 ## same octant/mirror convention `EightDirection` gives every other family. Its side picture is
 ## authored facing west, the same as `unmarked_van` and `army_truck` below
@@ -101,7 +99,6 @@ const GUARD_SHADOW_RADIUS := 9.0
 
 const BARRICADE_PILE := "events/barricade_pile"
 const CAFE_TABLE := "events/cafe_table"
-const CAFE_SITTER := "events/cafe_sitter"
 const DOG := "events/dog"
 const CYCLIST := "events/cyclist"
 const STALL := "events/stall"
@@ -120,7 +117,6 @@ const LORRY_FRONT_DIAGONAL := "events/lorry_front_diagonal"
 const LORRY_BACK_DIAGONAL := "events/lorry_back_diagonal"
 const CHARGING_DOG := "events/charging_dog"
 const CHATTING_MOTHER_WALKING := "events/chatting_mother_walking"
-const CHATTING_MOTHER_TALKING := "events/chatting_mother_talking"
 ## Seal pictures — see `SealPlanner` and `docs/DECISIONS.md`, "Eight seal pictures".
 const FALLEN_TREE := "events/fallen_tree"
 const CAR_ACCIDENT := "events/car_accident"

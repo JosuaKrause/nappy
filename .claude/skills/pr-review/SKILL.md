@@ -120,10 +120,9 @@ touches (the path table in `CLAUDE.md`). Look for:
 - a doc the change made false and left as it was;
 - anything the description claims that the diff does not do.
 
-The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It is an
-agent like any other, so it opens no window (inbox #1203): a visible change's picture is reported
-missing for the orchestrating session to take, never taken by the reviewer. It may run a suite from
-a checkout of its own, sparse unless the PR's evidence or references are what it is checking (**orchestrating**, "Create sparse worktrees"; `tools/agent-setup.sh --detach <ref>
+The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
+may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
+it is checking (**orchestrating**, "Create sparse worktrees"; `tools/agent-setup.sh --detach <ref>
 <name>` makes it, detached at the PR head, with no branch and no brief), and never runs `git grep`
 over a folder that holds images (see **using-tools**).
 
