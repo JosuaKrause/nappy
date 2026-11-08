@@ -28,9 +28,11 @@ the roadblock phase alone. #1249's two notes: the swap's pair is a typed
 `ResistanceDirector.SectionToSwap`, and the content test starts from her real screen view.
 
 **Measured.** Against main (`9f148031c`) with `tests/probes/placement_rows.gd`, which asks only
-what every tree has, over four samples, 64 cities: `90210+31i` (18, the per-row weights and the
-view scales fitted on them), `70001+37i` (18, pooled with the first for the walls-and-friction
-scales), and the reviewer's `31337+43i` and `24601+41i` (14 each, used in no fit). The fit stepped
+what every tree has, over four samples, 64 cities. `90210+31i` (18) is what the per-row weights and
+the view scales were first fitted on; from the walls-and-friction step on, every table
+(`GROUND_WEIGHTS`, `VIEW_SHARE_SCALES`, `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`) was stepped on it
+pooled with `70001+37i` (18), so both are fit samples. Only the reviewers' `31337+43i` and
+`24601+41i` (14 each, 28 cities) are unseen by every table. The fit stepped
 each row's weight per kind of ground (`GROUND_WEIGHTS`), each view's scale per day
 (`VIEW_SHARE_SCALES`), and the walls and the friction per view and act (`WALL_VIEW_SCALES`,
 `FRICTION_VIEW_SCALES`) together until the passes moved within noise, and then stopped: no further
@@ -46,8 +48,8 @@ route about 10% light. Read off the generator's output below:
     - friction by view, on her route: 19.33 → 18.96 (-2%, z -1.8)
     - friction by view, route-adjacent: 9.53 → 9.45 (-1%, z -0.5)
     - friction by view, off the route: 35.80 → 35.82 (+0%, z +0.1)
-    - each row per kind of ground: 48 cells, from -54% (leaf_blower open) to +100% (alley_mouse junction); within 2σ, from -31% to +100%
-    - each row per view: 65 cells, from -94% (poster_crew_square on her route) to +40% (poster_crew_square route-adjacent); within 2σ, from -47% to +40%
+    - each row per kind of ground: 49 cells, every cell main or head has, from -100% (military_convoy junction) to +100% (alley_mouse junction); within 2σ, from -31% to +100%
+    - each row per view: 65 cells, every cell main or head has, from -94% (poster_crew_square on her route) to +40% (poster_crew_square route-adjacent); within 2σ, from -47% to +40%
     
     Cells compared: 524. Outside 2σ pooled: 80. Outside on two samples or more, same sign: 21.
 
@@ -60,7 +62,7 @@ the test's fixed walk brought him into view, and that walk turns off his street 
 cities. The test now checks the guarantee itself, on every pinned city. The guarantee counts events
 after the mark, so a walk from the mark home that ends before they come owes nothing: on city 555
 the final draw leaves one event between the mark and home, and the test walks her on, back to the
-mark and home again, until the rig's events have come. Left for the walk's draws
+mark and home again, until he is sited. Left for the walk's draws
 (the step after this one): a body already in the world is never moved, so a player who turns at the
 next junction passes him by.
 
@@ -76,18 +78,22 @@ generated, not curated, so it names what changed rather than what one sample mov
 script reads the probe's logs for the four samples above (main and head on each), counts every cell
 (row by kind of ground, row by view, row by day, view by day, walls and friction by view and by view
 and day, and the day's whole count) over each sample's cities, takes z = (head − main) / √(head +
-main), and lists (a) the changes made on purpose, (b) every cell with |z| > 2 pooled over all 64
-cities, and (c) every cell with |z| > 2 on at least two samples with the same sign. Figures are
-events per city per day, main → head. Its output, verbatim:
+main), and lists (a) the changes made on purpose, then what the probe cannot see, (b) every cell
+with |z| > 2 pooled over all 64 cities, and (c) every cell with |z| > 2 on at least two samples with
+the same sign, each of the last two with a note. Figures are events per city per day, main → head.
+The script (`remeasure.py`) and the role table it reads stay outside the repository for this step;
+the end-of-refactor remeasure makes it a `tools/` script. Its output, verbatim:
 
     (a) Changed on purpose:
     - Day 13's roadblocks are the roadblock phase's alone; the fill's day-13 roadblocks are gone, and the task swaps more often for it.
     - The moments she is owed are a fixed count per day (EventScheduler.MOMENTS_PER_DAY, 23 to 32), where the fill's rolls made them vary by city.
-    - The gatehouse day's share scales every wall-role row's weight and its cap, the cap's fraction rounded up or down on its own stream.
+    - The gatehouse day's share scales every wall-role row's cap as well as its weight, the cap's fraction rounded up or down on its own stream.
     - A junction box is one location, the whole box (its corners, its carriageway and its crossings).
-    - The doors' gap may cost the day up to a fifth of the events near the region doors (test_checkpoints).
+    
+    What the probe cannot see:
     - Dawn planning time: +38% inside EventScheduler.build_day() (167 s → 232 s over 14 cities × 14 days) and +24% for the whole probe run, the reviewer's paired measurement at a04fa7589; remeasured in 3b, where _judge() goes.
-    - Day 4's walls on her route sit outside the fit: one scale per act (act II is days 4-7) cannot lift day 4 without lifting days 6 and 7.
+    - test_checkpoints' bound on what the doors' gap costs the day is loosened from 0.9 to 0.8 of the events placed without it.
+    - The probe plans at heat 0, with no region doors and nothing standing, so a row's share at heat (the police patrol's raised share among them) is not measured.
     
     (b) Outside 2σ pooled over all 64 cities (90210+31i (18), 70001+37i (18), 31337+43i (14), 24601+41i (14)), events per city per day, main → head:
     - friction by view and day: off the route day 8, 36.06 → 33.75 (-6%, z -2.2); z per sample -0.7 / -1.0 / -1.5 / -1.4
@@ -170,6 +176,7 @@ events per city per day, main → head. Its output, verbatim:
     - walls by view and day: off the route day 6, 22.88 → 24.81 (+8%, z +2.2); z per sample +0.3 / +1.8 / +0.8 / +1.7
     - walls by view and day: route-adjacent day 1, 34.75 → 32.45 (-7%, z -2.2); z per sample -0.3 / -1.8 / -1.3 / -1.1
     - walls by view and day: on her route day 4, 7.94 → 6.88 (-13%, z -2.2); z per sample -0.5 / -0.2 / -2.3 / -1.6
+    Note: day 4's walls on her route are in (b). WALL_VIEW_SCALES is one scale per act, and act II is days 4 to 7, so it cannot lift day 4 without lifting days 6 and 7; a scale per day would fit the noise of 14 days.
     
     (c) Outside 2σ on at least two samples with the same sign (z per sample in the order of (b)):
     - row by day: roadblock day 13, 22.89 → 16.89 (-26%, z -7.6); z per sample -4.0 / -4.0 / -3.6 / -3.6
@@ -193,3 +200,4 @@ events per city per day, main → head. Its output, verbatim:
     - row by view: reversing_lorry off the route, 2.92 → 3.09 (+6%, z +2.2); z per sample +0.7 / -0.9 / +2.3 / +2.4
     - row by view: reversing_lorry route-adjacent, 0.56 → 0.43 (-23%, z -3.8); z per sample -2.1 / -1.7 / -2.2 / -1.7
     - row by view: roadblock off the route, 1.38 → 1.18 (-15%, z -3.8); z per sample -2.1 / -1.4 / -2.1 / -2.1
+    Note: the police patrol. On her route it is lower than main's on every day from 4 to 14 (day 4 4.72 → 3.69, day 5 5.17 → 4.59, day 6 5.06 → 4.45, day 7 5.38 → 4.42, day 8 5.02 → 4.48, day 9 4.53 → 3.91, day 10 4.53 → 3.66, day 11 4.33 → 4.05, day 12 4.70 → 4.16, day 13 4.03 → 3.38, day 14 4.62 → 4.25), and route-adjacent it is +22%. It is the one to watch; 3b's refit, where _judge() goes, is where it is addressed.

@@ -2599,8 +2599,9 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> 
 const BAG_MARBLES_PER_WEIGHT := 10.0
 
 ## **Each view's share of locations holding an event, per day** (`[view][day - 1]`), as today's
-## placement gave it before the bags (`tests/probes/placement_rows.gd` on main, eighteen seeds; the orchestrator's reading of fork 5(a): the empty marble's weight is set from
-## today's measured count).
+## placement gave it before the bags: `tests/probes/placement_view_mix.gd`'s per-view lines on its
+## eighteen cities, main's events per view over the locations the probe counts (the orchestrator's
+## reading of fork 5(a): the empty marble's weight is set from today's measured count).
 const ON_SHARES: Array[float] = [0.0334, 0.0313, 0.0298, 0.0353, 0.0382, 0.0387, 0.0452, 0.0464, 0.0375, 0.0417, 0.0437, 0.0422, 0.0461, 0.0461]
 const ADJACENT_SHARES: Array[float] = [0.0512, 0.0537, 0.0517, 0.0566, 0.0583, 0.0631, 0.0642, 0.0618, 0.0433, 0.0420, 0.0451, 0.0463, 0.0707, 0.0485]
 const OFF_SHARES: Array[float] = [0.0373, 0.0393, 0.0425, 0.0486, 0.0594, 0.0677, 0.0610, 0.0694, 0.0563, 0.0578, 0.0568, 0.0628, 0.0626, 0.0636]
