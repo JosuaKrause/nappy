@@ -36,7 +36,6 @@ src/main.gd configure
 src/run/day_director.gd facts
 src/run/day_director.gd hands_over_to_the_escape
 src/run/run_calendar.gd facts
-src/ui/badge_model.gd watch
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each

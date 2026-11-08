@@ -87,7 +87,7 @@ func _init() -> void:
 ## city's on a day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `model.watch` on the next `_measure()`.
+## drops out of `model._watch` on the next `_measure()`.
 func setup(events: Node, player: Node2D) -> void:
 	_events = events
 	_player = player
