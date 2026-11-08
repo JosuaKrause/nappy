@@ -859,8 +859,7 @@ screens, which hand it to their buttons and lines; the touch controls; the badge
 symbol);
 nothing below the composition root fetches it. A test hands its boots a node of its own in place
 of the root (`main.use_sitting_home()`), so the boot standing for a reload takes the sitting the
-boot before parked there, and hands a `main` it drives off the tree one directly
-(`main.use_sitting()`), holding the run the test built where the test hands one (`Sitting.run`).
+boot before parked there, holding the run the test built where the test hands one (`Sitting.run`).
 
 ### `SummaryModel`
 Not an autoload: a pure `RefCounted` (`src/run/summary_model.gd`, the domain model) saying what one
