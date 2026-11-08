@@ -6,8 +6,8 @@ extends RefCounted
 ## keeps, and for the same reason: the geometry she learns has to stay true.
 ##
 ## **A pure function of `CityMap`, not a scene.** `City._spawn_street_trees()` draws exactly the
-## positions this returns, `ClosurePlanner` reads `has_trees()` to decide where a `fallen_tree`
-## closure may happen at all, and `EventScheduler` reads `footprint_tiles()` to refuse that ground
+## positions this returns, `ClosurePlanner` reads `segment_keys_with_trees()` to decide where a
+## `fallen_tree` closure may happen at all, and `EventScheduler` reads `footprint_tiles()` to refuse that ground
 ## to the day's events — one source of truth for all three, so the drawing, the planting and the
 ## planning can never disagree about which street has trees on it.
 ##
@@ -17,8 +17,8 @@ extends RefCounted
 ## like yeller, dog walker, etc.")* A tree and an event never share ground, so every pit is a tile
 ## the day may not put a van, a café, a market stall, a yeller or a seal on. The four numbers that
 ## keep that bill small are `STREET_TREE_RUNS`, the two run-length bounds, and
-## `STREET_TREE_PIT_SPACING`; `STREET_TREE_MAX_LINED_FRACTION` is the ceiling they
-## are chosen under.
+## `STREET_TREE_PIT_SPACING`; `tests/test_blocks.gd` holds the quarter of ordinary streets they
+## may line at most.
 ##
 ## **The mouth margin is what keeps a pit off a crossing and off a checkpoint.** A boundary
 ## segment's wall or door structure always stands at one of its two one-tile-deep mouths
@@ -63,12 +63,6 @@ const _FOOTPRINT_FRACTION := 0.28
 ## `STREET_TREE_PIT_SPACING` sets the rest, so the row jitters without ever crowding.
 const STREET_TREE_PLANT_CHANCE := 0.55
 
-## The most of the city's ordinary streets that may carry trees, as a fraction. Not a dial — the
-## runs are — but the ceiling the run count is chosen under, asserted over a seed sweep in
-## `tests/test_blocks.gd` so that raising `STREET_TREE_RUNS` cannot quietly make a tree-lined
-## street the ordinary case again.
-const STREET_TREE_MAX_LINED_FRACTION := 0.25
-
 const STREET_TREE_RUN_MAX_BLOCKS := 5
 
 ## The shortest and longest a run may be, in blocks — *(2026-09-11, the player: "it should be
@@ -80,7 +74,7 @@ const STREET_TREE_RUN_MIN_BLOCKS := 3
 ## How many tree-lined runs the city plants. A run is one straight stretch of consecutive blocks
 ## along a single street line, so this is the whole of "how much of the city has trees": at
 ## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
-## the quarter of ordinary streets `STREET_TREE_MAX_LINED_FRACTION` caps it at.
+## the quarter of ordinary streets `tests/test_blocks.gd` caps it at.
 ##
 ## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
 ## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
@@ -126,7 +120,7 @@ class Run extends RefCounted:
 		return found
 
 ## One standing street tree: where it is, which tile it stands on, and which segment it belongs
-## to — the fact `has_trees()` groups by.
+## to — the fact `segment_keys_with_trees()` groups by.
 class Planted extends RefCounted:
 	var position: Vector2
 	var tile: Vector2i
@@ -207,15 +201,10 @@ static func planted(map: CityMap) -> Array[Planted]:
 			tree.position = map.tile_to_world(tree.tile)
 	return found
 
-## Whether `segment` carries a standing street tree — what `ClosurePlanner._pick_kind` and
-## `SealPlanner` read to decide whether a fallen tree may happen on this street at all. **A run
-## segment with no pit on it answers false**, and that is the point: a fallen tree has to take a
-## pit, so a street with none is not a street a tree can fall on.
-static func has_trees(map: CityMap, segment: StreetNetwork.Segment) -> bool:
-	return segment_keys_with_trees(map).has(segment.key())
-
-## `planted()`'s own segments, as a set — built once per call rather than once per candidate
-## closure, since `ClosurePlanner.plan_day` asks this at most once per day.
+## `planted()`'s own segments, as a set — what `ClosurePlanner` and `SealPlanner` read to decide
+## whether a fallen tree may happen on a street at all. **A run segment with no pit on it is not in
+## the set**, and that is the point: a fallen tree has to take a pit, so a street with none is not a
+## street a tree can fall on.
 static func segment_keys_with_trees(map: CityMap) -> Dictionary:
 	var keys := {}
 	for tree in planted(map):
