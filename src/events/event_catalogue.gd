@@ -779,7 +779,6 @@ static func _dog_walker() -> EventDef:
 	# stated as one row; a cap in single figures makes it a coin flip. Repeats are fine, and
 	# `EVENT_SPACING_SAME` answers two of them thirty pixels apart.
 	def.max_per_day = 26
-	def.cost = 2
 	return def
 
 ## The sidewalk, taken. A cafe spilling out of its frontage: chairs, tables, conversation, and no
@@ -823,7 +822,6 @@ static func _cafe_tables() -> EventDef:
 	# single figures puts the expected number of cafes she *sees* in a day under one, and the day-1
 	# event built to force a crossing is absent from most day ones.
 	def.max_per_day = 24
-	def.cost = 2
 	return def
 
 ## Parked at the kerb, hazards going, half unloaded. Constant and stationary: the plain obstacle the
@@ -932,7 +930,6 @@ static func _construction() -> EventDef:
 	def.solid(GroundShape.band(SIDEWALK_SPREAD_MAX))
 	def.weight = 1.5
 	def.max_per_day = 15
-	def.cost = 2
 	return def
 
 ## Audible from streets away, moving fast down an arterial road, and it parks at the fire
@@ -1037,7 +1034,6 @@ static func _burning_building() -> EventDef:
 	def.draws_body_shadow = false
 	def.aftermath.scar = "burnt_shell"
 	def.aftermath.on_sight = "fire_truck"
-	def.cost = 4
 	return def
 
 ## What is left the next morning, and every morning after, never repaired: the building the fire
@@ -1146,7 +1142,6 @@ static func _loose_dog() -> EventDef:
 	# be built from on the one day the game has nothing lethal in it at all.
 	def.weight = 3.0
 	def.max_per_day = 24
-	def.cost = 2
 	return def
 
 ## A market trestle taking the sidewalk, and the second thing on day 1 she has to walk round.
@@ -1180,7 +1175,6 @@ static func _market_stall() -> EventDef:
 	def.solid(GroundShape.band(28.0))
 	def.weight = 1.6
 	def.max_per_day = 13
-	def.cost = 2
 	return def
 
 ## The loudest thing in act I, and it is a man tidying a park.
@@ -1245,7 +1239,6 @@ static func _leaf_blower() -> EventDef:
 	# having exactly two rows a wall can be made of.
 	def.weight = 3.0
 	def.max_per_day = 24
-	def.cost = 2
 	return def
 
 ## Pigeons off the sidewalk all at once: standing on the ground long before she is near, then up as
@@ -1440,7 +1433,6 @@ static func _cyclist() -> EventDef:
 	# owed row at a time from a shared queue with the cat and the dog, so how many she can meet is
 	# bounded by the day's length long before the cap is.
 	def.max_per_day = 14
-	def.cost = 3
 	return def
 
 ## A jingle you can hear three streets away, and children arriving from everywhere.
@@ -1476,7 +1468,6 @@ static func _ice_cream_van() -> EventDef:
 	def.solid(GroundShape.point(24.0))
 	def.weight = 1.5
 	def.max_per_day = 5
-	def.cost = 2
 	return def
 
 ## A box lorry reversing across the sidewalk into a yard, beeper going. Act I's second lethal thing,
@@ -1521,7 +1512,6 @@ static func _reversing_lorry() -> EventDef:
 	# A lethal wall row, capped like `cyclist` for the same reason: the deep band off the corridor is
 	# where the deadly end of the gradient lives, and a handful across 121 blocks cannot fill it.
 	def.max_per_day = 12
-	def.cost = 3
 	return def
 
 ## Another mother with a pram, on her own beat, with her own cost model: getting too close catches
@@ -1680,7 +1670,6 @@ static func _charging_dog() -> EventDef:
 	# Rare on purpose: it is the one thing running answers, and a street with three of them would
 	# turn the run button into a second walk speed.
 	def.max_per_day = 3
-	def.cost = 3
 	return def
 
 # ------------------------------------------------------- Act II: notices (4-7) ---
@@ -1842,7 +1831,6 @@ static func _loudspeaker() -> EventDef:
 	def.outer_radius = 210.0
 	def.telegraph_time = 3.0
 	def.pulse_period = 22.0
-	def.cost = 0
 	# `_place_masts()` places one at every site `MastSites.compute()` names, which is
 	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
 	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
@@ -1873,7 +1861,6 @@ static func _curfew_announce() -> EventDef:
 	def.duration = 26.0
 	def.telegraph_time = 2.0
 	def.intensity_ramp = 0.2
-	def.cost = 0
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
@@ -1975,7 +1962,6 @@ static func _roadblock() -> EventDef:
 	def.span_the_street()
 	def.weight = 2.0
 	def.max_per_day = 6
-	def.cost = 2
 	def.heat_response = EventDef.HeatResponse.HUNTS
 	return def
 
@@ -2028,7 +2014,6 @@ static func _abduction() -> EventDef:
 	# city should feel *occupied*, not landmined. Four unmarked vans across forty-nine blocks is one
 	# every twelve; twelve would be a difficulty setting nobody asked for.
 	def.max_per_day = 4
-	def.cost = 3
 	def.heat_response = EventDef.HeatResponse.HUNTS
 	def.hunts = HuntSpec.letting_out(2)
 	return def
@@ -2125,7 +2110,6 @@ static func _alley_robbery() -> EventDef:
 	def.hard_fail = true
 	def.weight = 1.5
 	def.max_per_day = 4
-	def.cost = 2
 	return def
 
 ## **The robber a task sets on her: the alley robber, awake from his first frame, coming at her
@@ -2405,7 +2389,6 @@ static func _night_raid() -> EventDef:
 	def.telegraph_time = 3.0
 	def.pulse_period = 6.0
 	def.solid(GroundShape.point(44.0))
-	def.cost = 4
 	def.heat_response = EventDef.HeatResponse.HUNTS
 	def.hunts = HuntSpec.letting_out(2)
 	return def
@@ -2442,7 +2425,6 @@ static func _military_convoy() -> EventDef:
 	def.path_mode = EventDef.PathMode.ALONG_STREET
 	def.path_length_tiles = 50
 	def.weight = 2.0
-	def.cost = 4
 	return def
 
 ## The widest hard seal: placed every morning from act IV on across a street off the day's route
@@ -2521,7 +2503,6 @@ static func _protest() -> EventDef:
 	# and pursues nothing, so this cap has no other cap to compete with, and late acts leave enough
 	# of the day's budget unspent that this row's own cap is what binds.
 	def.max_per_day = 12
-	def.cost = 3
 	return def
 
 ## The last thing in the catalogue and the worst. Static, extreme, lethal at the centre, and it
@@ -2554,7 +2535,6 @@ static func _firefight() -> EventDef:
 	# them at 0.62 of it either side), and far inside the 84 that ends the day.
 	def.solid(GroundShape.band(30.0))
 	def.hard_fail = true
-	def.cost = 5
 	return def
 
 # --------------------------------------------------------------- seal pictures ---

@@ -15,6 +15,14 @@ extends RefCounted
 ## Made only by `StreetLocations`; what stands on it changes only through `StreetLocations`, which
 ## `DayLocations` asks. Pure state: no node, nothing that runs.
 
+## What ground a location is, which decides the tiles a row may stand on in it (`takes()`): a
+## street's sidewalk, a street's section (its carriageway, for an event that spans the street or
+## drives it), an alley, an open lot (a square or a park), or a junction box. *(The player, of ground
+## beyond a street's six locations: "yes" to the pick, a group of locations per kind of ground, an
+## alley a one-sided street of three, a square or park a grid of section-sized locations, a junction
+## box one location its streets share, a carriageway event taking its section; issue #1185.)*
+enum Kind { SIDEWALK, SECTION, ALLEY, OPEN, JUNCTION }
+
 var _segment: StreetNetwork.Segment
 var _section := 0
 var _tiles := Rect2i()
@@ -24,9 +32,13 @@ var _view := PlacementView.View.OFF_THE_ROUTE
 var _available := true
 ## What a phase put here, or null while nothing has.
 var _plan: EventScheduler.Planned = null
+var _kind := Kind.SECTION
+## Whether a draw has filled it, with an event or with nothing (`record()`).
+var _drawn := false
 
 func _init(segment: StreetNetwork.Segment, section: int, tiles: Rect2i,
-		centre: Vector2, view: int, available: bool) -> void:
+		centre: Vector2, view: int, available: bool, kind := Kind.SECTION) -> void:
+	_kind = kind
 	_segment = segment
 	_section = section
 	_tiles = tiles
@@ -72,3 +84,33 @@ func shares_a_section_with(other: Location) -> bool:
 ## junction.
 func section() -> int:
 	return _section
+
+## What ground the location is (`Kind`).
+func kind() -> int:
+	return _kind
+
+## **Whether a row may stand on a tile of `type` in this location**: a sidewalk location takes
+## anything but the carriageway and the crossings, a section its carriageway (`ROAD`), an alley its
+## alley, an open lot its park or square, a junction box its crossings.
+func takes(type: int) -> bool:
+	match _kind:
+		Kind.SIDEWALK:
+			return type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING
+		Kind.SECTION:
+			return type == GameEnums.TileType.ROAD
+		Kind.ALLEY:
+			return type == GameEnums.TileType.ALLEY
+		Kind.OPEN:
+			return type == GameEnums.TileType.PARK or type == GameEnums.TileType.SQUARE
+		_:
+			return type == GameEnums.TileType.CROSSING
+
+## Whether a draw has filled it yet, with an event or with nothing.
+func is_drawn() -> bool:
+	return _drawn
+
+## Records what the draw put here: `plan`, or nothing for the empty event.
+func record(plan: EventScheduler.Planned) -> void:
+	_drawn = true
+	if plan:
+		_plan = plan

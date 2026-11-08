@@ -27,7 +27,7 @@ The city is a grid of **blocks** separated by **streets**.
 
 **Odd on both axes, and that is a constraint.** An odd lattice has a middle block, and the home goes
 in it — see "The home" below. Everything downstream is stated over `CITY_BLOCKS` rather than over a
-literal (the event budget per block, the crowd population per corridor, the arterial index), so a
+literal (the event locations per street, the crowd population per corridor, the arterial index), so a
 resize moves the city and nothing else. It is still a density change: re-measure rather than assume.
 
 **A 1-tile sidewalk does not work**: the rig's collision circle is 28 px across, so a 32 px
@@ -1821,7 +1821,7 @@ under her feet tells the same story without a word. Cracked paving, litter, garb
 shuttered shopfronts read the same one curve, `Tuning.degradation_for(day)` — zero through the
 early days, rising from `Tuning.DEGRADATION_FIRST_DAY` (day 5, one day into act II, so the ground
 catches up with what the act already told her rather than turning on the same morning) to 1.0 on
-the run's last day, the way `EventScheduler.budget_for()` rises. **None of it changes what a route
+the run's last day, the way the day's events rise. **None of it changes what a route
 costs** — not a tile's type, not its cost, not the crowd's lanes — it is presentation, the same way
 a closure is silent and a scar is a mark rather than an obstruction. One exception is stated below
 rather than smuggled in.

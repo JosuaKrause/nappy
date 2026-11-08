@@ -348,9 +348,9 @@ func solid_reach() -> float:
 ## For SCRIPTED events: the exact day it fires.
 @export var scripted_day := 0
 
-## Relative likelihood when filling the recurring budget, and what one costs of it.
+## Relative likelihood: how many marbles of the row a view's bag holds, before the view's own weight
+## for its role (`EventScheduler.view_weight()`).
 @export var weight := 1.0
-@export var cost := 1
 @export var max_per_day := 1
 
 ## Tile types an instance may be placed on.

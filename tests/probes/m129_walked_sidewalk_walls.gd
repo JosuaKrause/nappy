@@ -344,8 +344,9 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
-	EventScheduler._fill_with_recurring(day, base, map, events, ground, leave_alone, corridor,
-			0)
+	EventScheduler._draw_the_locations(day, base, map, events, ground, leave_alone, corridor,
+			PackedVector2Array(), DaySpec.for_day(day), null, DayLocations.lay_out(map, corridor), 0,
+			null)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()

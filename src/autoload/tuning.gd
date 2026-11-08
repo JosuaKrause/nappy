@@ -201,7 +201,7 @@ const SIDEWALK_WIDTH := 2
 ## On a lattice too small for both, the home gets walked outward until it is far enough, landing
 ## against the boundary, where most directions are a wall.
 ##
-## Everything downstream of this is stated over it — the event budget per block, the crowd
+## Everything downstream of this is stated over it — the event locations per street, the crowd
 ## population per corridor, the arterial index — so a change here is a change to the whole density
 ## table. **Re-measure rather than convert.**
 const CITY_BLOCKS := Vector2i(11, 11)
@@ -745,8 +745,8 @@ const AHEAD_MIN_SPEED := 40.0
 # ------------------------------------------------------ one event per block ---
 # The density target is one event per block, so the decision a player makes about an obstacle
 # happens several times a day rather than once. The density itself lives in
-# `EventScheduler.budget_for()` and the catalogue's `max_per_day`, both **measured** rather than
-# derived.
+# the view bags' shares (`EventScheduler.VIEW_SHARES`) and the catalogue's `max_per_day`, both
+# **measured** rather than derived.
 #
 # What lives here is what the density needs in order to be legible. Placement is a uniform random
 # tile, so a low per-type cap is the only thing keeping two of the same event off one pavement —
@@ -757,19 +757,17 @@ const AHEAD_MIN_SPEED := 40.0
 # **corridor** — the ways from the doorstep to the calm areas still worth reaching — and what each
 # of these numbers does is pull one kind of thing toward one part of it.
 #
-# Both are stated as **how many times a tile is offered to the roll**, which is `_ground_for`'s
-# existing mechanism rather than a new one: the roll is an index into the candidate array, so
-# offering a tile four times over *is* the weight, and every spacing rule downstream keeps working
-# unchanged. The precinct weight above is the same shape and is multiplied through, so a corridor
-# tile in a precinct is offered sixteen times.
+# Both are stated as **how many times over a row weighs in a view's bag**, which
+# `EventScheduler.view_weight()` reads for a row's role: friction four times over on the route, a
+# costly wall four times over beside it. The precinct weight above is a location's own weight, which
+# scales every row a precinct's location draws (`EventScheduler.JudgedLocationGround.scale()`), so a
+# friction row on a precinct route street weighs sixteen times over.
 #
-# Neither is a filter, and the one filter there is lives in `EventScheduler._copies_of`: **a wall
-# never stands on ground a route runs along.** That one can be absolute because the whole
-# off-corridor city remains available to it, so it cannot starve a row of ground — which is what a
-# weight buys everywhere else here and is why these are weights. It is stated per **sidewalk**, so
-# the far side of a route's own street is legal ground for a wall at the weight of ordinary far
-# ground; the weights below are still read off the street's depth, so the rim is still where a wall
-# is pulled.
+# Neither is a filter, and the one filter there is lives in the row's own ground
+# (`EventScheduler._ground_for()`): **a wall never stands on ground a route runs along.** That one
+# can be absolute because the whole off-corridor city remains available to it, so it cannot starve
+# a row of ground. It is stated per **sidewalk**, so the far side of a route's own street is legal
+# ground for a wall, which is where a wall the route view's bag draws stands.
 
 
 # ----------------------------------------------------- solid things are solid ---
@@ -1076,7 +1074,7 @@ const DEGRADATION_FIRST_DAY := 5
 
 ## The one density every visible sign of decline reads — cracked ground, litter, sacks, shuttered
 ## fronts — so the city degrades as one thing rather than as several unrelated rolls. Zero before
-## `DEGRADATION_FIRST_DAY`, rising the way `EventScheduler.budget_for()` rises, to 1.0 on the run's
+## `DEGRADATION_FIRST_DAY`, rising the way the day's events rise, to 1.0 on the run's
 ## last day. A per-block factor (a `BURNT_OUT` block further gone than a `RESIDENTIAL` one) can
 ## multiply this later; nothing below reads anything but this one number today.
 func degradation_for(day: int) -> float:

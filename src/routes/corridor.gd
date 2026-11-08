@@ -252,6 +252,22 @@ func view_of(segment: StreetNetwork.Segment) -> int:
 		return PlacementView.View.ROUTE_ADJACENT
 	return PlacementView.View.OFF_THE_ROUTE
 
+## **Which of the three views ground beyond the streets is in**: an alley, an open lot's cell or a
+## junction box (`DayLocations`), by the nearest of its tiles to the routes (`depth()`): on the route
+## where a route runs over any of them, route-adjacent one grid step off, off the route further. The
+## grid's own grain, which tells an alley or a park cut the routes take apart from the rest of the
+## same lot.
+func view_of_ground(tiles: Rect2i) -> int:
+	var nearest := DEEP
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			nearest = mini(nearest, depth(Vector2i(x, y)))
+	if nearest == 0:
+		return PlacementView.View.ON_THE_ROUTE
+	if nearest == 1:
+		return PlacementView.View.ROUTE_ADJACENT
+	return PlacementView.View.OFF_THE_ROUTE
+
 ## **Whether `segment` is beside the routes**: a street no route runs along (its whole street is off
 ## the tree, `depth()` above zero) one of whose two junction boxes a route crosses
 ## (`route_junctions()`). Where dawn stands day 13's roadblocks and the task's swap takes a section,

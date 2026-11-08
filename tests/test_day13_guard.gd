@@ -938,16 +938,18 @@ func _test_with_none_close_by_a_section_is_taken(t) -> void:
 
 ## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185: "it
 ## replaces the content of the section with the roadblock"): every roadblock the day placed is spent,
-## and she reads the mark standing in a route-adjacent section that holds one of the day's solid
-## bodies and none of the city's fixed parts, every other such section taken already and nothing in
-## her view, so it is the section the task takes. Everything it held is spent, and the map's record of what stands is the record from before
-## with the held plans' bodies given back and the roadblock's own body laid: no tile left shut or
-## obstructed by anything that is gone.
+## and she reads the mark where it stands, her screen round her. A route-adjacent section out of
+## that view holds one of the day's solid bodies and none of the city's fixed parts, and every other
+## route-adjacent section is taken already, as the roadblock phase takes its own, so it is the
+## section the task takes, however far. Everything it held is spent, and the map's record of what
+## stands is the record from before with the held plans' bodies given back and the roadblock's own
+## body laid: no tile left shut or obstructed by anything that is gone.
 func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
-	_view = Rect2()
+	var her := player.global_position
+	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	var map := city.map
 	for plan in city.events.plans():
 		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
@@ -956,9 +958,11 @@ func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
 	var chosen: Location = null
 	var held: Array[EventScheduler.Planned] = []
-	var stand := Vector2.INF
+	# Well clear of her screen, the section and anything standing in it.
+	var seen := _view.grow(Tuning.TILE_SIZE * 4.0)
 	for section in walk.locations().sections_in(PlacementView.View.ROUTE_ADJACENT):
-		if EventScheduler.across_the_section(def, map, section, RandomNumberGenerator.new()) == null:
+		if seen.intersects(map.tile_rect_to_world(section.tiles())) \
+				or EventScheduler.across_the_section(def, map, section, RandomNumberGenerator.new()) == null:
 			continue
 		var holds := walk.placed_within(map.tile_rect_to_world(section.tiles()))
 		var solid := false
@@ -968,11 +972,9 @@ func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 			fixed = fixed or plan.is_a_fixed_part()
 		if not solid or fixed:
 			continue
-		stand = _open_tile_in(map, section.tiles())
-		if stand != Vector2.INF:
-			chosen = section
-			held = holds
-			break
+		chosen = section
+		held = holds
+		break
 	t.check(chosen != null and not held.is_empty(),
 			"(content) a route-adjacent section holds one of the day's solid bodies (%d held)"
 			% held.size())
@@ -991,12 +993,11 @@ func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 		expected.release(plan.get_instance_id())
 		if plan.instance():
 			expected.release(plan.instance().get_instance_id())
-	player.global_position = stand
 	if director.current_step():
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
 	t.check(roadblock != null and chosen.tiles().has_point(map.world_to_tile(roadblock.body_position())),
-			"(content) the roadblock stands across the section she reads the mark in")
+			"(content) the roadblock stands across that section")
 	var all_spent := true
 	for plan in held:
 		all_spent = all_spent and plan.is_spent()
@@ -1009,15 +1010,6 @@ func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 	t.check(actual.bodies == expected.bodies and actual.soft_sealed == expected.soft_sealed,
 			"(content) the map keeps no body or shut tile of anything the section held")
 	_tear_down(player, director, city)
-
-## A walkable tile of `tiles` nothing stands on, as world space, or `Vector2.INF`.
-static func _open_tile_in(map: CityMap, tiles: Rect2i) -> Vector2:
-	for y in range(tiles.position.y, tiles.end.y):
-		for x in range(tiles.position.x, tiles.end.x):
-			var tile := Vector2i(x, y)
-			if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
-				return map.tile_to_world(tile)
-	return Vector2.INF
 
 ## Every tile she can walk to from `from` today, around every closure, sealed way and standing body.
 static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
